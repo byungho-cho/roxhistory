@@ -4,3 +4,6 @@ __pycache__/
 .DS_Store
 build/
 .codex-finalizer/
+
+# Private presentation builds and visual QA
+.work/
