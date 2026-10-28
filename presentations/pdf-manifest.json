@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "files": [
+    {
+      "source": "presentations/RoxHistory_Overview_v0.1-handover.pptx",
+      "pdf": "presentations/RoxHistory_Overview_v0.1-handover.pdf",
+      "source_sha256": "fe112b7307a1274fb465ac42abbace2234aad4f15aa2593f587b99108d98e025",
+      "pdf_sha256": "4bf46c6dc8fd8bb88a1b57eaf818094bd783899d6c4c7a2070d2ee37e30e1521",
+      "pages": 10
+    },
+    {
+      "source": "presentations/RoxHistory_Overview_v0.1.pptx",
+      "pdf": "presentations/RoxHistory_Overview_v0.1.pdf",
+      "source_sha256": "d2102d084a094d23b7ee924df3d09f6c60f50872196fed1c929d343b050d7e61",
+      "pdf_sha256": "82882fbacd3e7c07189a23315ea17c827fa4554807954111273a33a38418757f",
+      "pages": 10
+    }
+  ]
+}
