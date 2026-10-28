@@ -1,0 +1,28 @@
+# 발표 자료와 PDF 열람본
+
+PPTX 원본을 추가하거나 수정할 때는 **같은 폴더, 같은 이름의 PDF**를 반드시 함께 관리합니다. PDF는 웹 열람용이며 원본 PPTX를 대체하지 않습니다.
+
+| 자료 | 웹에서 보기 | 편집 원본 |
+| --- | --- | --- |
+| 최신 인수인계 정합본 | [PDF 보기](RoxHistory_Overview_v0.1-handover.pdf) | [PPTX](RoxHistory_Overview_v0.1-handover.pptx) |
+| 초기 개요 보존본 | [PDF 보기](RoxHistory_Overview_v0.1.pdf) | [PPTX](RoxHistory_Overview_v0.1.pptx) |
+
+## 자동 갱신
+
+`Presentation PDFs` GitHub Actions는 PPTX를 추가·수정한 브랜치에 같은 이름의 PDF와 `pdf-manifest.json`을 생성해 커밋합니다. 기존 원본은 수정하지 않습니다. 기본 브랜치에서도 동일하게 작동합니다. 보호 규칙이 자동 커밋을 차단하면 해당 실행이 실패하며, 수정 브랜치에서 생성된 PDF를 원본과 함께 병합해야 합니다.
+
+Pull Request에서는 원본/PDF의 SHA-256, 슬라이드 수와 PDF 페이지 수, 가로세로 비율, 슬라이드 본문과 표의 텍스트 보존을 검사합니다. PPTX만 바뀌었거나 PDF가 누락된 상태는 검사에 실패합니다. 해시 검사는 기록된 변환 쌍의 변경 여부를 검출하며 시각적 동일성까지 증명하지는 않습니다. 원본 변경 후 자동 변환 완료를 확인하고 PDF를 열어 레이아웃도 확인합니다.
+
+GitHub 파일 화면에서 PDF를 바로 열람할 수 있습니다. `raw` 다운로드 주소 대신 위의 PDF 파일 링크를 사용합니다.
+
+## 수동 변환 및 검사
+
+LibreOffice, Python 3.12와 한국어 글꼴이 필요합니다. CI에서는 Noto CJK와 대체 글꼴을 설치하며, 원본의 맑은 고딕이 없는 환경에서는 글꼴 대체가 발생할 수 있습니다.
+
+```sh
+python -m pip install -r scripts/presentation_pdf_requirements.txt
+python scripts/presentation_pdfs.py build
+python scripts/presentation_pdfs.py check
+```
+
+PPTX는 먼저 Git에 추가해야 자동 검색에 포함됩니다. PDF와 manifest도 함께 커밋합니다. CI 변환은 외부 문서 변환 서비스로 원본을 전송하지 않습니다.
