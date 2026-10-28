@@ -4,15 +4,15 @@
     {
       "source": "presentations/RoxHistory_Overview_v0.1-handover.pptx",
       "pdf": "presentations/RoxHistory_Overview_v0.1-handover.pdf",
-      "source_sha256": "fe112b7307a1274fb465ac42abbace2234aad4f15aa2593f587b99108d98e025",
-      "pdf_sha256": "b9cab9248f50b7c776e3f0514f714e338903e5422bb1adee52aa9a921b862243",
+      "source_sha256": "33df7af86712561e6c27761774cba0b21ea5c92ffb409ea6c3235da4a6be4de0",
+      "pdf_sha256": "a141eda12a51a6ed711d9febe65bbed38eb4568df37a8c32aa9bb9ed2971165c",
       "pages": 10
     },
     {
       "source": "presentations/RoxHistory_Overview_v0.1.pptx",
       "pdf": "presentations/RoxHistory_Overview_v0.1.pdf",
-      "source_sha256": "d2102d084a094d23b7ee924df3d09f6c60f50872196fed1c929d343b050d7e61",
-      "pdf_sha256": "e7f646a74b3645d02c0a148e93e7cf21806e9f6895efc09fca493c8685c55fbf",
+      "source_sha256": "b664d6c6556de7c2f1fa123c2cb7bb95b8175206246edaec7eed2fdada4cc719",
+      "pdf_sha256": "6d4af764ad0b5ff8ab7e29f5d51818d6a353ce5e66101463c3f82fbffda7d825",
       "pages": 10
     }
   ]
