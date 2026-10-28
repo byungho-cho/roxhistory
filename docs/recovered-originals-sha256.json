@@ -1,0 +1,61 @@
+{
+  "verifiedAt": "2026-10-28",
+  "sourceCommit": "0fe78ebca95833c96d22c130ae04a1f4ef4a46c0",
+  "files": [
+    {
+      "path": "docs/synopsis-v0.1.md",
+      "unchanged": true,
+      "sha256": "3b3effc9d8aa2545017b448c18afee3898b058dc7459dd93e62d0f5eade83da4"
+    },
+    {
+      "path": "docs/decisions.md",
+      "unchanged": true,
+      "sha256": "60de022db1e486b49ed3c0c5474608b303b7dfa1d194360c8a7ac1a344d08ed1"
+    },
+    {
+      "path": "docs/RoxHistory_Synopsis_v0.1.docx",
+      "unchanged": true,
+      "sha256": "ebaf2a929c4ab29e19ae7a520715e4d298dd1a58547657a12fc896711e33e7ed"
+    },
+    {
+      "path": "presentations/RoxHistory_Overview_v0.1.pptx",
+      "unchanged": true,
+      "sha256": "d2102d084a094d23b7ee924df3d09f6c60f50872196fed1c929d343b050d7e61"
+    },
+    {
+      "path": "design/README.md",
+      "unchanged": true,
+      "sha256": "c7c7b5e740bd808ab3d19137cd0bad7665dfbc2c2642c514a89e7ee3b7786246"
+    },
+    {
+      "path": "assets/visual-direction-1.png",
+      "unchanged": true,
+      "sha256": "2fb34ed73def8fcd231cb25d55192c3491f75a68620dab6e5b3ca4f3ad22c9fd"
+    },
+    {
+      "path": "assets/visual-direction-2.png",
+      "unchanged": true,
+      "sha256": "c5784dd35a767655d3cd320649c0a20cadc78bcc7cc2ffca7dc0ced3d084246c"
+    },
+    {
+      "path": "assets/visual-direction-3.png",
+      "unchanged": true,
+      "sha256": "adc7631f4a7f2be92595fade26a8b8325673f55f8012ea3797b92035df1d6c7f"
+    },
+    {
+      "path": "scripts/build_document.py",
+      "unchanged": true,
+      "sha256": "97f96f168665c500b9fdfa6b68fe2cd9ecd89f3587bc60d99b6515aeb6695b6d"
+    },
+    {
+      "path": "scripts/build_presentation.mjs",
+      "unchanged": true,
+      "sha256": "4e3e9559e5d0e5459bf0b48a929183e94f8e6c3703dcd75846d55ccf19ee9808"
+    },
+    {
+      "path": "scripts/deck-content.mjs",
+      "unchanged": true,
+      "sha256": "71f43cedc6cc046b721e44fd6d729b661f3b587f36ee4a34b8e4c98f5bdc2f3d"
+    }
+  ]
+}
