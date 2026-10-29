@@ -15,7 +15,7 @@ const font='Malgun Gothic';
 const C={bg:'#FCFBF8',text:'#222B38',muted:'#626C79',accent:'#BA563E',line:'#D9DCE1',wash:'#F2EEE7',white:'#FFFFFF',blue:'#4E657F'};
 const assetDir=process.env.ROX_DECK_ASSET_DIR||path.join(repo,'assets');
 const mode=process.argv[2]||'all';
-const baseNotes='근거: docs/synopsis-v0.1-handover.md, docs/synopsis-v0.1.md, docs/decision-register-v0.1.md 및 사용자 대화. 2026-10-29 발표자료 개편. 최신 기준과 기존 상세안을 구분한다. 2.5D 1안은 우선 검토 방향이며 최종 확정은 아니다.';
+const baseNotes='근거: docs/synopsis-v0.1-handover.md, docs/synopsis-v0.1.md, docs/decision-register-v0.1.md 및 사용자 대화. 2026-10-29 발표자료 개편. 최신 기준과 기존 상세안을 구분한다. 전체 디자인은 사용자가 선택한 아기자기한 2.5D 1안을 기준으로 한다. 보강 화면의 세부 연출은 검토 시안이다.';
 
 function txt(s,name,value,x,y,w,h,size=28,color=C.text,bold=false){
   const o=s.shapes.add({geometry:'textbox',name,position:{left:x,top:y,width:w,height:h},fill:'none',line:{style:'solid',fill:'none',width:0}});
@@ -189,7 +189,7 @@ async function original(){
     note(s,'역사적 사실, 해석과 게임 창작을 구분한다. 고구려의 옛 영역을 검토 범위로 삼되 선사문화를 고구려 문화로 단정하지 않는다. 고조선·삼국 영역 지도는 아직 확정하지 않았다.');
   }
   {
-    const s=slide(p,9,'우선 검토할 비주얼 방향','1안의 아기자기한 2.5D를 중심으로 구체화한다',true);
+    const s=slide(p,9,'기본 비주얼 방향','1안의 아기자기한 2.5D를 전체 디자인의 기준으로 사용한다',true);
     for(let i=1;i<=3;i++){
       let source=path.join(assetDir,`visual-direction-${i}.png`),contentType='image/png';
       const bytes=await fs.readFile(source).catch(async()=>{source=path.join(assetDir,`visual-direction-${i}.jpg`);contentType='image/jpeg';return fs.readFile(source);});
@@ -199,14 +199,22 @@ async function original(){
     txt(s,'preferred-label','1안  아기자기한 2.5D',72,581,670,46,29,C.accent,true);
     txt(s,'option-two','2안  생존 액션 RPG',790,369,418,34,22,C.muted);
     txt(s,'option-three','3안  도트 RPG',790,574,418,34,22,C.muted);
-    note(s,'2026-10-29 사용자 대화: 아기자기한 2.5D 1안을 선호하는 잠정 방향. 최종 확정은 아니다. 생성 비주얼 3개 원본의 내용과 비율을 유지한 비교안이며 실제 역사 복원도·확정 게임 화면·최종 에셋이 아니다. 사냥 대상, 전리품과 다음 성장 목표가 먼저 보이도록 검토한다.');
+    note(s,'2026-10-29 후속 사용자 지시: 전체 디자인과 비주얼은 아기자기한 2.5D 1안을 사용한다. 2안의 장점은 1안 안에 접목한다. 생성 비주얼 3개 원본의 내용과 비율을 유지한 비교안이며 실제 역사 복원도·확정 게임 화면·최종 에셋이 아니다. 사냥 대상, 전리품과 다음 성장 목표가 먼저 보이도록 검토한다.');
   }
   {
-    const s=slide(p,10,'다음 논의를 위한 정리','이전 게임 구상을 보존하고 현재 기획 기준과 맞춘다',true);
+    const s=slide(p,10,null,null,true);
+    txt(s,'title','1안 기반 비주얼 보강 시안',72,28,1136,62,42,C.text,true);
+    const bytes=await fs.readFile(path.join(assetDir,'visual-direction-1-enhanced.png'));
+    s.images.add({blob:bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength),contentType:'image/png',name:'visual-direction-1-enhanced',alt:'1안의 친근한 2.5D를 유지하고 자연광, 배경 깊이, 재질과 사냥 동작을 보강한 검토용 생성 이미지',fit:'contain',position:{left:140,top:98,width:1000,height:520}});
+    txt(s,'concept-disclosure','검토용 생성 이미지 · 자연광, 배경 깊이, 사냥 동작 보강',72,628,1136,30,20,C.muted);
+    note(s,'사용자 지시: 전체 스타일은 아기자기한 2.5D 1안을 사용하고 2안의 자연광, 배경 깊이, 재질 표현과 사냥 동작만 접목한다. 09장 다음에 추가한 하나의 화면이다. assets/visual-direction-1-enhanced.png 는 검토용 생성 이미지이며 실제 구현 화면이나 고증 승인 자료가 아니다. 화면 속 UI는 이미지의 일부다.');
+  }
+  {
+    const s=slide(p,11,'다음 논의를 위한 정리','이전 게임 구상을 보존하고 현재 기획 기준과 맞춘다',true);
     txt(s,'kept-title','보존한 게임 구상',72,231,530,55,34,C.text,true);
     txt(s,'next-title','다음에 결정할 내용',680,231,528,55,34,C.text,true);
     lines(s,'kept',['성장과 생존의 재미','세 가지 지역 시작 경로','변화하는 지도와 공통 사건','주요 시대 전환과 성과 계승'],72,318,530,53,27);
-    lines(s,'next',['정확한 시작 지역과 시점','역할, 계승 규칙과 장 목록','2.5D 스타일과 전투의 느낌','엔진, 저장과 서버 구성'],680,318,528,53,27);
+    lines(s,'next',['정확한 시작 지역과 시점','역할, 계승 규칙과 장 목록','2.5D 세부 연출과 전투의 느낌','엔진, 저장과 서버 구성'],680,318,528,53,27);
     txt(s,'figma-next','다음 Figma 검토',72,555,1136,40,29,C.accent,true);
     txt(s,'figma-scope','전체 지도, 지역 선택, 확대 흐름, 재미 중심 플레이 화면',72,607,1136,36,24,C.muted);
     note(s,'현재 기준은 docs/synopsis-v0.1-handover.md와 결정 기록이다. 이 자료의 구체 게임 규칙은 기존 상세안으로 재확인한다. React·TypeScript를 우선 검토하며 특정 엔진은 미확정이다. Figma https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS 는 구조 초안이다.');
@@ -225,7 +233,7 @@ async function save({p,name,tables}){
   const finalPath=path.join(finalDir,name+'.pptx');
   const hash=createHash('sha256').update(await fs.readFile(candidate)).digest('hex');
   let result;
-  try {result=await finalizePresentation({workspaceDir:repo,candidatePath:candidate,finalPath,pythonExecutable:python,integrityValidatorPath:path.join(skill,'container_tools/inspect_presentation_package_integrity.py'),layoutValidatorPath:path.join(skill,'container_tools/inspect_presentation_layout_geometry.py'),layoutArgs:['--expected-slide-size-emu','12192000,6858000','--validate-heading-fit',...tables.flatMap(n=>['--require-native-table-slide',String(n)])],explicitTotalSlideCount:10,requiredNativeTableOwnerSlides:tables,requiredNativeChartOwnerSlides:[],fontPolicy:{basis:'design',families:[font]},verifyArtifactToolImport:true,receiptPath:path.join(build,'validation.json')});}
+  try {result=await finalizePresentation({workspaceDir:repo,candidatePath:candidate,finalPath,pythonExecutable:python,integrityValidatorPath:path.join(skill,'container_tools/inspect_presentation_package_integrity.py'),layoutValidatorPath:path.join(skill,'container_tools/inspect_presentation_layout_geometry.py'),layoutArgs:['--expected-slide-size-emu','12192000,6858000','--validate-heading-fit',...tables.flatMap(n=>['--require-native-table-slide',String(n)])],explicitTotalSlideCount:name.endsWith('-handover')?10:11,requiredNativeTableOwnerSlides:tables,requiredNativeChartOwnerSlides:[],fontPolicy:{basis:'design',families:[font]},verifyArtifactToolImport:true,receiptPath:path.join(build,'validation.json')});}
   catch(e){
     // Some Windows workspaces permit file copies but do not support hard links.
     // The finalizer reaches this link only after all declared checks have passed.
