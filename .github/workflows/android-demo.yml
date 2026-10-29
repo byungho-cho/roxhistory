@@ -1,0 +1,88 @@
+name: Android playable demo
+on:
+  push:
+    branches: ["demo/**"]
+    paths: ["game/**", "scripts/bootstrap-demo-assets.py", ".github/workflows/android-demo.yml"]
+  pull_request:
+    paths: ["game/**", ".github/workflows/android-demo.yml"]
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      GODOT_VERSION: 4.5.1
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref || github.ref_name }}
+      - name: Materialize original design assets once
+        if: github.event_name != 'pull_request'
+        run: |
+          if test -f scripts/bootstrap-demo-assets.py; then
+            python3 scripts/bootstrap-demo-assets.py
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add game/assets
+            git rm scripts/bootstrap-demo-assets.py
+            git commit -m "assets: persist original Figma sources and Korean font"
+            git push
+          fi
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: android-actions/setup-android@v3
+      - name: Android SDK
+        run: sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+      - name: Godot and Android templates
+        run: |
+          mkdir -p "$RUNNER_TEMP/godot"
+          curl -fL --retry 3 "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip" -o "$RUNNER_TEMP/godot.zip"
+          unzip -q "$RUNNER_TEMP/godot.zip" -d "$RUNNER_TEMP/godot"
+          mv "$RUNNER_TEMP/godot/Godot_v${GODOT_VERSION}-stable_linux.x86_64" "$RUNNER_TEMP/godot/godot"
+          chmod +x "$RUNNER_TEMP/godot/godot"
+          touch "$RUNNER_TEMP/godot/_sc_"
+          mkdir -p "$RUNNER_TEMP/godot/editor_data/export_templates/${GODOT_VERSION}.stable"
+          curl -fL --retry 3 "https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_export_templates.tpz" -o "$RUNNER_TEMP/templates.zip"
+          unzip -j -q "$RUNNER_TEMP/templates.zip" templates/android_debug.apk templates/android_release.apk -d "$RUNNER_TEMP/godot/editor_data/export_templates/${GODOT_VERSION}.stable"
+          printf '[gd_resource type="EditorSettings" format=3]\n\n[resource]\nexport/android/java_sdk_path = "%s"\nexport/android/android_sdk_path = "%s"\n' "$JAVA_HOME" "$ANDROID_HOME" > "$RUNNER_TEMP/godot/editor_data/editor_settings-4.5.tres"
+          echo "$RUNNER_TEMP/godot" >> "$GITHUB_PATH"
+      - name: Import and state checks
+        run: |
+          godot --headless --path game --editor --import --quit 2>&1 | tee import.log
+          godot --headless --path game --script res://tests/state_tests.gd 2>&1 | tee state-tests.log
+          ! grep -E 'SCRIPT ERROR:|ERROR:' import.log state-tests.log
+      - name: Native render and synthetic multitouch checks
+        run: |
+          timeout 150 xvfb-run -a godot --audio-driver Dummy --path game --resolution 1280x720 --script res://tests/ui_smoke.gd -- --test-ui 2>&1 | tee ui-tests.log
+          ! grep -E 'SCRIPT ERROR:|ERROR:' ui-tests.log
+      - name: Export signed debug APK
+        run: |
+          mkdir -p build
+          keytool -genkeypair -keystore "$RUNNER_TEMP/debug.keystore" -alias androiddebugkey -storepass android -keypass android -dname "CN=Android Debug,O=Android,C=US" -keyalg RSA -validity 10000
+          export GODOT_ANDROID_KEYSTORE_DEBUG_PATH="$RUNNER_TEMP/debug.keystore"
+          export GODOT_ANDROID_KEYSTORE_DEBUG_USER=androiddebugkey
+          export GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD=android
+          godot --headless --path game --export-debug Android "$PWD/build/RoxHistory-0.1.0-debug.apk" 2>&1 | tee build/export.log
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose build/RoxHistory-0.1.0-debug.apk | tee build/signature.txt
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging build/RoxHistory-0.1.0-debug.apk > build/package.txt
+          sha256sum build/RoxHistory-0.1.0-debug.apk > build/SHA256SUMS
+          git rev-parse HEAD > build/SOURCE_COMMIT
+      - name: Complete source package
+        if: always()
+        run: |
+          mkdir -p build
+          git archive HEAD -o build/RoxHistory-0.1.0-source.zip
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: RoxHistory-0.1.0-demo
+          path: |
+            build/
+            game/reports/
+            *-tests.log
+            import.log
+          retention-days: 30
