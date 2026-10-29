@@ -17,8 +17,9 @@ jobs:
           import base64, io
           from PIL import Image
           image = Image.open('assets/visual-direction-1-enhanced.png').convert('RGB')
+          image.thumbnail((1280,720))
           output = io.BytesIO()
-          image.save(output, format='JPEG', quality=92)
+          image.save(output, format='JPEG', quality=75)
           print('CONCEPT_IMAGE:' + base64.b64encode(output.getvalue()).decode())
           print('CONCEPT_SIZE:' + str(image.width) + ':' + str(image.height))
           PY
