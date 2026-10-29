@@ -5,15 +5,15 @@
       "source": "presentations/RoxHistory_Overview_v0.1-handover.pptx",
       "pdf": "presentations/RoxHistory_Overview_v0.1-handover.pdf",
       "source_sha256": "33df7af86712561e6c27761774cba0b21ea5c92ffb409ea6c3235da4a6be4de0",
-      "pdf_sha256": "dce37a8bea0a668e8cce9fab2515cea416849e612d65ffb924ffdd397aece164",
+      "pdf_sha256": "97388134bd6e6d81cddb9c42f55e0907ae306480cd22c6ed1cb5d782320ce006",
       "pages": 10
     },
     {
       "source": "presentations/RoxHistory_Overview_v0.1.pptx",
       "pdf": "presentations/RoxHistory_Overview_v0.1.pdf",
-      "source_sha256": "b664d6c6556de7c2f1fa123c2cb7bb95b8175206246edaec7eed2fdada4cc719",
-      "pdf_sha256": "a808f9bcc1b4b9287670ab7a914fc08f48fa6cc824d8b849592f22a96a7f381d",
-      "pages": 10
+      "source_sha256": "09e0b4a09b25a6cab30ededa1edcaae8d9a3b1c008fbc07a985d069c3f23af66",
+      "pdf_sha256": "cdc6f99eaad9e6cb6f6487764d43aa3dc744f4995fbb62b071a3b2cd981917eb",
+      "pages": 11
     }
   ]
 }
