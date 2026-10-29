@@ -1,3 +1,5 @@
+> 현재 상태: 구현 초안. **원본 PNG 3개 복구 전에는 실행·APK 빌드 불가.** [복구 목록](../game/assets/RESTORE.md)
+
 # RoxHistory Android 첫 데모 v0.1.0
 
 ## 실행·빌드

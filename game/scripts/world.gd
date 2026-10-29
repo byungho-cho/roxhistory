@@ -104,7 +104,7 @@ func nearest() -> Dictionary:
 	return result
 
 func near_site() -> bool:
-	return player.position.distance_to(site.position) < 150
+	return player.position.distance_to(site.position) < 150 and player.position.y >= site.position.y
 
 func _process(_delta: float) -> void:
 	if not is_instance_valid(player):
