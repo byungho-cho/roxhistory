@@ -3,18 +3,12 @@ name: Presentation PDFs
 on:
   push:
     paths:
-      - '**/*.pptx'
       - '**/*.pdf'
-      - 'scripts/presentation_pdf*'
       - '.github/workflows/presentation-pdfs.yml'
-      - 'presentations/pdf-manifest.json'
   pull_request:
     paths:
-      - '**/*.pptx'
       - '**/*.pdf'
-      - 'scripts/presentation_pdf*'
       - '.github/workflows/presentation-pdfs.yml'
-      - 'presentations/pdf-manifest.json'
   workflow_dispatch:
 
 permissions:
@@ -25,72 +19,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  generate:
-    if: github.event_name != 'pull_request'
-    runs-on: ubuntu-24.04
-    timeout-minutes: 15
-    permissions:
-      contents: write
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.ref_name }}
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-      - name: Install converter and Korean fonts
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y libreoffice-impress fonts-noto-cjk fonts-liberation fonts-crosextra-carlito poppler-utils
-          python -m pip install -r scripts/presentation_pdf_requirements.txt Pillow
-      - name: Convert PPTX originals and validate PDFs
-        run: python scripts/presentation_pdfs.py build
-      - name: Commit PDF copies to the source branch
-        run: |
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          python - <<'PY'
-          import json, subprocess
-          data = json.load(open('presentations/pdf-manifest.json'))
-          subprocess.run(['git', 'add', '--', 'presentations/pdf-manifest.json', *[e['pdf'] for e in data['files']]], check=True)
-          PY
-          if ! git diff --cached --quiet; then
-            git commit -m 'docs: sync PDF copies with PPTX originals'
-            git push origin HEAD:"${GITHUB_REF_NAME}"
-          fi
-      - name: Render contact sheets for review
-        run: |
-          mkdir -p /tmp/rox-pdf-review
-          python - <<'PY'
-          import base64, io, json, subprocess
-          from pathlib import Path
-          from PIL import Image, ImageDraw
-          for index, entry in enumerate(json.load(open('presentations/pdf-manifest.json'))['files']):
-              prefix = Path('/tmp/rox-pdf-review') / str(index)
-              subprocess.run(['pdftoppm', '-scale-to', '800', '-png', entry['pdf'], str(prefix)], check=True)
-              paths = sorted(prefix.parent.glob(str(index) + '-*.png'), key=lambda p: int(p.stem.split('-')[-1]))
-              for start in range(0, len(paths), 4):
-                  sheet = Image.new('RGB', (1600, 948), 'white')
-                  draw = ImageDraw.Draw(sheet)
-                  for offset, path in enumerate(paths[start:start+4]):
-                      image = Image.open(path).convert('RGB')
-                      image.thumbnail((800, 450))
-                      x, y = (offset % 2) * 800, (offset // 2) * 474
-                      sheet.paste(image, (x, y+24))
-                      draw.text((x+8, y+4), f'{Path(entry["pdf"]).name} / {start+offset+1}', fill='black')
-                  buffer = io.BytesIO()
-                  sheet.save(buffer, format='JPEG', quality=85)
-                  print(f'REVIEW_IMAGE:{index}:{start//4}:' + base64.b64encode(buffer.getvalue()).decode())
-          PY
-      - uses: actions/upload-artifact@v4
-        with:
-          name: presentation-pdfs
-          path: |
-            **/*.pdf
-            presentations/pdf-manifest.json
-
   verify:
-    if: github.event_name == 'pull_request'
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
@@ -99,4 +28,21 @@ jobs:
         with:
           python-version: '3.12'
       - run: python -m pip install -r scripts/presentation_pdf_requirements.txt
-      - run: python scripts/presentation_pdfs.py check
+      - name: Validate PDF deliverables without PPTX conversion
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          from pypdf import PdfReader
+          files = sorted(Path('presentations').glob('*.pdf'))
+          if not files:
+              raise SystemExit('No presentation PDFs found')
+          for path in files:
+              reader = PdfReader(path, strict=True)
+              if not reader.pages:
+                  raise SystemExit(f'Empty PDF: {path}')
+              for page in reader.pages:
+                  if float(page.mediabox.width) <= 0 or float(page.mediabox.height) <= 0:
+                      raise SystemExit(f'Invalid page size: {path}')
+                  page.get_contents()
+              print(f'{path}: {len(reader.pages)} pages OK')
+          PY
