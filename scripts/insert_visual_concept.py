@@ -2,7 +2,7 @@
 from pathlib import Path
 from zipfile import ZipFile, ZIP_DEFLATED
 import copy
-import xml.etree.ElementTree as ET
+from lxml import etree as ET
 from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -89,7 +89,7 @@ parts[previous_last]=named_text(parts[previous_last],"page","11")
 new_slide_path="ppt/slides/slide11.xml"
 new_notes_path="ppt/notesSlides/notesSlide11.xml"
 assert new_slide_path not in parts
-slide=ET.Element("{"+P+"}sld")
+slide=ET.Element("{"+P+"}sld",nsmap={"p":P,"a":A,"r":R})
 common=ET.SubElement(slide,"{"+P+"}cSld",name="1안 기반 비주얼 보강 시안")
 bg=ET.SubElement(common,"{"+P+"}bg")
 bgpr=ET.SubElement(bg,"{"+P+"}bgPr")
@@ -132,11 +132,11 @@ parts[new_slide_path]=xml(slide)
 last_rel_path="ppt/slides/_rels/"+Path(previous_last).name+".rels"
 last_rels=ET.fromstring(parts[last_rel_path])
 layout=next(r.get("Target") for r in last_rels if r.get("Type").endswith("/slideLayout"))
-new_rels=ET.Element("{"+PKG+"}Relationships")
+new_rels=ET.Element("{"+PKG+"}Relationships",nsmap={None:PKG})
 for ident,kind,dest in [("rIdConceptImage","image","../media/visual-direction-1-enhanced.png"),("rIdLayout","slideLayout",layout),("rIdNotes","notesSlide","../notesSlides/notesSlide11.xml")]:
     ET.SubElement(new_rels,"{"+PKG+"}Relationship",Id=ident,Type=R+"/"+kind,Target=dest)
 parts["ppt/slides/_rels/slide11.xml.rels"]=xml(new_rels)
-notes=ET.Element("{"+P+"}notes")
+notes=ET.Element("{"+P+"}notes",nsmap={"p":P,"a":A,"r":R})
 ntree=ET.SubElement(ET.SubElement(notes,"{"+P+"}cSld"),"{"+P+"}spTree")
 nnv=ET.SubElement(ntree,"{"+P+"}nvGrpSpPr")
 ET.SubElement(nnv,"{"+P+"}cNvPr",id="1",name="")
@@ -146,7 +146,7 @@ ET.SubElement(ntree,"{"+P+"}grpSpPr")
 text_shape(ntree,2,"Notes","사용자 요청: 전체 스타일은 아기자기한 2.5D 1안으로 사용하고 2안의 자연광, 배경 깊이, 재질 표현과 사냥 동작만 접목한다. 한 화면으로 통합한 시각 검토용 생성 이미지이며 실제 구현 화면이나 고증 승인 자료가 아니다. 화면 속 UI는 이미지 일부다. 원본: assets/visual-direction-1-enhanced.png. 앞선 09장 비교 다음에 추가했으며 기존 마지막 장은 11장으로 이동한다.",0,0,700,500,20,"222B38")
 ET.SubElement(ET.SubElement(notes,"{"+P+"}clrMapOvr"),"{"+A+"}masterClrMapping")
 parts[new_notes_path]=xml(notes)
-note_rels=ET.Element("{"+PKG+"}Relationships")
+note_rels=ET.Element("{"+PKG+"}Relationships",nsmap={None:PKG})
 ET.SubElement(note_rels,"{"+PKG+"}Relationship",Id="rIdSlide",Type=R+"/slide",Target="../slides/slide11.xml")
 for part in list(parts):
     if part.startswith("ppt/notesSlides/_rels/") and part.endswith(".rels"):
