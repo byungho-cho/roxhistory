@@ -65,7 +65,8 @@ jobs:
           ! grep -E 'SCRIPT ERROR:|ERROR:' hybrid-occlusion-tests.log
           timeout 150 xvfb-run -a godot --audio-driver Dummy --path game --resolution 1280x720 --script res://tests/polish_tests.gd -- --test-ui 2>&1 | tee polish-tests.log
           ! grep -E 'SCRIPT ERROR:|ERROR:' polish-tests.log
-          timeout 150 xvfb-run -a godot --audio-driver Dummy --path game --resolution 1280x720 --script res://tests/interaction_tests.gd -- --test-ui 2>&1 | tee interaction-tests.log
+          # Sample action phases at deterministic engine time, independent of llvmpipe speed.
+          timeout 150 xvfb-run -a godot --fixed-fps 60 --audio-driver Dummy --path game --resolution 1280x720 --script res://tests/interaction_tests.gd -- --test-ui 2>&1 | tee interaction-tests.log
           ! grep -E 'SCRIPT ERROR:|ERROR:' interaction-tests.log
       - name: Export signed debug APK
         run: |

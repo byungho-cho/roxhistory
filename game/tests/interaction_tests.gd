@@ -1,4 +1,6 @@
 extends SceneTree
+# Run with --fixed-fps 60 for intermediate action-phase assertions. Production
+# timers remain 1.2/2 seconds; Android touch validation uses normal wall time.
 var app: Node
 var checks := 0
 var failed: Array[String] = []
@@ -17,7 +19,7 @@ func wait_work() -> void:
 	var limit := 0
 	while app.task != "" and limit < 180:
 		await physics_frame; limit += 1
-	check(app.task == "","Work finishes within bounded real physics time")
+	check(app.task == "","Work finishes within bounded engine physics time")
 func run() -> void:
 	app = load("res://scenes/main.tscn").instantiate(); root.add_child(app)
 	await process_frame
@@ -85,6 +87,6 @@ func run() -> void:
 		var rect: Rect2 = app.overlay.get_child(1).get_global_rect()
 		check(rect.position.x>=0 and rect.position.y>=0 and rect.end.x<=app.w+1 and rect.end.y<=app.h+1,"Completion card fits viewport "+str(size))
 		await snap("card-"+str(size.x)+"x"+str(size.y)); app.close_modal(); app.model.state.reward_claimed = true
-	var report := {"checks":checks,"failed":failed,"utc":Time.get_datetime_string_from_system(true),"runtime":"Native Godot real timers; test positions set explicitly, not Android touch play"}
+	var report := {"checks":checks,"failed":failed,"utc":Time.get_datetime_string_from_system(true),"runtime":"Native Godot engine timers at fixed 60fps; explicit test positions, not Android wall-time play"}
 	FileAccess.open("res://reports/interaction-tests.json",FileAccess.WRITE).store_string(JSON.stringify(report,"  "))
 	print(JSON.stringify(report)); quit(0 if failed.is_empty() else 1)
