@@ -1,0 +1,14 @@
+{
+  "source_url": "https://www.youtube.com/watch?v=LEAWRWjgh_M",
+  "title": "로드러쉬 - 게임플레이 영상 [신작모바일게임]",
+  "channel": "킷싱",
+  "downloaded_date_kst": "2026-10-31",
+  "evidence_type": "third-party gameplay video; not investigator direct play",
+  "file": "lordrush-youtube-LEAWRWjgh_M-review.mp4",
+  "bytes": 23371239,
+  "sha256": "b79c25fc5d4b732cd20958ef62c1a81bb888da25ec6b020b8745338bdb71098e",
+  "video": "H.264 590x1280, approximately 60fps",
+  "audio": "AAC stereo; stream present; not aurally evaluated",
+  "processing": "Full timeline transcoded for review, CRF25, AAC128k, faststart; no scene edits",
+  "original_download_sha256": "b218cd61769c4c6404dc4a91b36813dd58ec632a8a8fbd0c2e31a516cd2dd0aa"
+}
