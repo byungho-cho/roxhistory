@@ -1,0 +1,32 @@
+flowchart TD
+baseline["����: ��� ���� ���� Ȯ��"]
+phaseOne["1. ��桤������Ʈ / �Ϸ�"]
+gateOne{"ȯ�� ǰ�� Ȯ��"}
+phaseTwo["2. ĳ���� �ִϸ��̼� / ���� �غ�"]
+gateTwo{"���� ǰ�� Ȯ��"}
+phaseThree["3. ä�����Ǽ� / ���"]
+gateThree{"��ȣ�ۿ� Ȯ��"}
+phaseFour["4. UI���Ҹ���ī�޶� / ���"]
+gateFour{"���� ǰ�� Ȯ��"}
+phaseFive["5. ���� ���� / ���"]
+gateFive{"��ü �÷��� Ȯ��"}
+showcase["��ǥ: �ϼ��� �ұԸ� �׽�Ʈ ����"]
+baseline --> phaseOne
+phaseOne --> gateOne
+gateOne -->|"����"| phaseOne
+gateOne -->|"���� ����"| phaseTwo
+phaseTwo --> gateTwo
+gateTwo -->|"����"| phaseTwo
+gateTwo -->|"���� ����"| phaseThree
+phaseThree --> gateThree
+gateThree -->|"����"| phaseThree
+gateThree -->|"���� ����"| phaseFour
+phaseFour --> gateFour
+gateFour -->|"����"| phaseFour
+gateFour -->|"���� ����"| phaseFive
+phaseFive --> gateFive
+gateFive -->|"����"| phaseFive
+gateFive -->|"���� ����"| showcase
+style baseline fill:#C6FAF6,stroke:#5AD8CC
+style phaseOne fill:#FFECBD,stroke:#FFC943
+style showcase fill:#CDF4D3,stroke:#66D575
