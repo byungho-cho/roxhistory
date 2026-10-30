@@ -383,6 +383,8 @@ func _process(delta: float) -> void:
 		context.text = ""
 		if world.near_site() and not model.state.built:
 			context.text = "보금자리 터 · 건설 가능" if model.can_build() else "보금자리 터 · 나무와 돌을 모아 주세요"
+		elif not model.state.built and world.player.position.distance_to(world.site.position) < 150:
+			context.text = "보금자리 터 아래쪽 입구로 이동해 주세요"
 		elif not near.is_empty():
 			context.text = ("나무" if near.kind == "wood" else "돌")+" · 채집 버튼을 누르세요"
 	autosave += delta

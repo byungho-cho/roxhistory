@@ -45,6 +45,19 @@ func run() -> void:
 		touch_move(Vector2.ZERO)
 		await frames(3)
 		check(player.motion_state == "idle" and player.facing == entry[1],"Stop preserves direction and returns to idle")
+	# Sample all directions/action phases: tool grip must follow the rendered hand.
+	touch_move(Vector2.ZERO)
+	for face in 4:
+		player.facing = face
+		player.motion_state = "gather"
+		for t in [0.0,0.14,0.28,0.42]:
+			player.action_time = t
+			player.update_rig()
+			check(player.tool.position.distance_to(player.deform_point(player.hand_uv)) < 0.001,"Tool grip follows hand deformation")
+			var tip: Vector2 = player.tool.position+Vector2(0,-30).rotated(player.tool.rotation)
+			check(tip.x < player.tool.position.x if face == 2 else tip.x > player.tool.position.x,"Tool swings outside the body")
+	player.motion_state = "idle"
+	player.update_rig()
 	# Wall input must not animate walking in place or advance the distance clock.
 	player.position = Vector2(45,1030)
 	touch_move(Vector2.LEFT)

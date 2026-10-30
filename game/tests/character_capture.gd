@@ -13,6 +13,7 @@ func segment(text: String, movement: Vector2, action: String, count: int) -> voi
 	player.set_activity(action)
 	for i in count:
 		await physics_frame
+		if player.camera.top_level: player.camera.position = player.position+Vector2(0,-70)
 		await RenderingServer.frame_post_draw
 
 func snap(name: String) -> void:
@@ -53,9 +54,10 @@ func run() -> void:
 	player.facing = 0
 	await segment("P2 · 채집 동작",Vector2.ZERO,"gather",50)
 	await snap("character-gather")
-	player.facing = 2
-	await segment("P2 · 옆 방향 채집",Vector2.ZERO,"gather",50)
-	await snap("character-gather-side")
+	for face in [1,2,3]:
+		player.facing = face
+		await segment("P2 · 방향별 채집 "+str(face),Vector2.ZERO,"gather",50)
+		await snap("character-gather-"+str(face))
 	player.presentation_paused = true
 	await segment("P2 · 일시 정지",Vector2.ZERO,"",20)
 	player.presentation_paused = false

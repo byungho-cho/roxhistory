@@ -1,0 +1,5 @@
+{
+  "checks": 66,
+  "failed": [],
+  "runtime": "Native Godot physics/synthetic input, real action timers; not Android"
+}

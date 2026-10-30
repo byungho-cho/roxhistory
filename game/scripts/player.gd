@@ -10,6 +10,8 @@ const HEIGHT := 142.0
 const STRIDE := 104.0
 var direction := Vector2.ZERO
 var phase := 0.0
+var walk_weight := 0.0
+var hand_uv := Vector2.ZERO
 var idle_time := 0.0
 var action_time := 0.0
 var activity := ""
@@ -93,8 +95,7 @@ func _physics_process(delta: float) -> void:
 	motion_state = "paused" if presentation_paused else (activity if activity != "" else ("walk" if travelled > 0.05 else "idle"))
 	if motion_state == "walk":
 		phase = fposmod(phase+travelled/STRIDE*TAU,TAU)
-	elif motion_state == "idle":
-		phase = lerp_angle(phase,0.0,minf(1.0,delta*18.0))
+	walk_weight = move_toward(walk_weight,1.0 if motion_state == "walk" else 0.0,delta*9.0)
 	if not presentation_paused:
 		idle_time += delta
 		if activity != "": action_time += delta
@@ -103,55 +104,57 @@ func _physics_process(delta: float) -> void:
 func update_rig() -> void:
 	var region: Rect2 = PORTRAITS[facing]
 	var width := HEIGHT*region.size.x/region.size.y
-	var walking := motion_state == "walk"
 	var acting := motion_state == "gather" or motion_state == "build"
-	var stride := sin(phase) if walking else 0.0
-	var beat := sin(action_time*TAU*1.8) if acting else 0.0
-	var breath := sin(idle_time*2.4)*0.6 if not presentation_paused else 0.0
 	var points := PackedVector2Array()
 	var coords := PackedVector2Array()
 	for rest in rest_points:
-		var u := rest.x+0.5
-		var v := rest.y+1.0
-		var p := Vector2(rest.x*width,rest.y*HEIGHT)
-		coords.append(region.position+Vector2(u,v)*region.size)
-		var leg := smoothstep(0.78,0.93,v)
-		var side := -1.0 if u < 0.5 else 1.0
-		var step := stride*side
-		if facing < 2:
-			p.x += step*2.2*leg
-			p.y -= maxf(0.0,step)*8.0*leg
-		else:
-			step = stride*(-1.0 if u < 0.52 else 1.0)
-			p.x += step*9.0*leg
-			p.y -= maxf(0.0,step)*5.0*leg
-		var arm := smoothstep(0.52,0.69,v)*(1.0-smoothstep(0.75,0.83,v))
-		var outer := smoothstep(0.13,0.28,absf(u-0.5))
-		if facing >= 2:
-			var arm_center := 0.57 if facing == 2 else 0.44
-			outer = 1.0-smoothstep(0.08,0.2,absf(u-arm_center))
-			side = 1.0 if facing == 2 else -1.0
-		var arm_motion := -stride*side*0.23 if walking else breath*0.012
-		if acting: arm_motion = side*(-0.45+beat*0.65)
-		var shoulder := Vector2(side*width*0.23,-HEIGHT*0.47)
-		if facing >= 2: shoulder.x = side*width*0.08
-		p = p.lerp(shoulder+(p-shoulder).rotated(arm_motion),arm*outer)
-		var upper := 1.0-smoothstep(0.67,0.86,v)
-		p.y += (breath-(absf(stride)*1.5 if walking else 0.0)+(beat*1.6 if acting else 0.0))*upper
-		if acting: p.x += beat*1.3*upper
-		points.append(p)
+		var uv := rest+Vector2(0.5,1.0)
+		coords.append(region.position+uv*region.size)
+		points.append(deform_point(uv))
 	sprite.polygon = points
 	sprite.uv = coords
 	tool.visible = acting
 	if acting:
-		var hand_side := -1.0 if facing == 3 else 1.0
-		var shoulder := Vector2(hand_side*width*(0.08 if facing >= 2 else 0.23),-HEIGHT*0.47)
-		var hand := Vector2(hand_side*width*(0.09 if facing >= 2 else 0.34),-HEIGHT*0.29)
-		var arm_angle := hand_side*(-0.45+beat*0.65)
-		tool.position = shoulder+(hand-shoulder).rotated(arm_angle)
-		tool.rotation = hand_side*(0.8+beat*0.45) if facing < 2 else (-1.15+beat*0.45)*(1.0 if facing == 2 else -1.0)
+		hand_uv = Vector2(0.57,0.72) if facing == 2 else (Vector2(0.44,0.72) if facing == 3 else Vector2(0.84,0.72))
+		# Share the exact deformation with the painted hand, including breathing.
+		tool.position = deform_point(hand_uv)
+		var beat := sin(action_time*TAU*1.8)
+		# Swing outside the silhouette rather than through the face/chest.
+		tool.rotation = (-1.7 if facing == 2 else 1.7)+beat*0.25 if facing >= 2 else 1.2+beat*0.3
 		tool.z_index = -1 if facing == 1 else 1
 	queue_redraw()
+
+func deform_point(uv: Vector2) -> Vector2:
+	var region: Rect2 = PORTRAITS[facing]
+	var width := HEIGHT*region.size.x/region.size.y
+	var u := uv.x
+	var v := uv.y
+	var p := Vector2((u-0.5)*width,(v-1.0)*HEIGHT)
+	var acting := motion_state == "gather" or motion_state == "build"
+	var stride := sin(phase)*walk_weight if not acting and not presentation_paused else 0.0
+	var beat := sin(action_time*TAU*1.8) if acting else 0.0
+	var breath := sin(idle_time*2.4)*0.6 if not presentation_paused else 0.0
+	var leg := smoothstep(0.78,0.93,v)
+	# Continuous weights avoid a hard split through the middle mesh column.
+	var split := 0.5 if facing < 2 else 0.52
+	var step := stride*(smoothstep(split-0.06,split+0.06,u)*2.0-1.0)
+	p.x += step*(2.2 if facing < 2 else 7.0)*leg
+	p.y -= maxf(0.0,step)*(7.0 if facing < 2 else 4.0)*leg
+	var side := -1.0 if u < 0.5 else 1.0
+	var arm := smoothstep(0.52,0.69,v)*(1.0-smoothstep(0.75,0.83,v))
+	var outer := smoothstep(0.13,0.28,absf(u-0.5))
+	if facing >= 2:
+		var arm_center := 0.57 if facing == 2 else 0.44
+		outer = 1.0-smoothstep(0.08,0.2,absf(u-arm_center))
+		side = 1.0 if facing == 2 else -1.0
+	var arm_motion := -stride*side*0.23+breath*0.012
+	if acting: arm_motion = side*(-0.25+beat*0.35)
+	var shoulder := Vector2(side*width*(0.08 if facing >= 2 else 0.23),-HEIGHT*0.47)
+	p = p.lerp(shoulder+(p-shoulder).rotated(arm_motion),arm*outer)
+	var upper := 1.0-smoothstep(0.67,0.86,v)
+	p.y += (breath-absf(stride)*1.5+beat*1.0)*upper
+	if acting: p.x += beat*0.8*upper
+	return p
 
 func _draw() -> void:
 	draw_set_transform(Vector2(0,-2),0,Vector2(1,0.32))
