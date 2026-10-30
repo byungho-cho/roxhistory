@@ -88,5 +88,40 @@
     "path": "game/assets/icon.svg",
     "bytes": 571,
     "sha256": "11286814b359fa5c00e19d831ae29766c67bb8603b7faca88d934d7eec8035d3"
+  },
+  {
+    "path": "game/assets/environment/grass.png",
+    "bytes": 1749276,
+    "sha256": "234b050ff7ee93fdd21f3b3a6a11ab278bf2e9599ca848d24000d4d17910adc8"
+  },
+  {
+    "path": "game/assets/environment/hut.png",
+    "bytes": 1909753,
+    "sha256": "30396d3858889805d6c1effd8d4e501e381a29c204f20c3d68147f62c854becb"
+  },
+  {
+    "path": "game/assets/environment/props.png",
+    "bytes": 2797383,
+    "sha256": "913681e1f5d621c4cfaa0484825391228ef04dd790a05b134156877eb94ab98b"
+  },
+  {
+    "path": "game/assets/environment/rock.png",
+    "bytes": 2108887,
+    "sha256": "d5ed1f0e1a4933bb1145ef8500ff7f0bfc183758a7edeaae8b78692c9248d942"
+  },
+  {
+    "path": "game/assets/environment/shrub.png",
+    "bytes": 1627349,
+    "sha256": "1ea927e1c46e5198a5a4503688caaeaf8a31c4569cbf5d6d3c51123f64cb1ba5"
+  },
+  {
+    "path": "game/assets/environment/terrain.png",
+    "bytes": 3640462,
+    "sha256": "286edf11321fa41de87d842cc243a5c0f6f245c30679ec6e025c93be77021ddd"
+  },
+  {
+    "path": "game/assets/environment/tree.png",
+    "bytes": 2034630,
+    "sha256": "ccd087cf13afdd5a7ed7d83988dbcf7faea0deb2775d2dbacd50b2e872254bbc"
   }
 ]

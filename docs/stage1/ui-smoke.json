@@ -1,0 +1,30 @@
+{
+  "checks": 76,
+  "failed": [],
+  "runtime": "Native Godot synthetic touch; not Android device validation",
+  "screenshots": [
+    "res://reports/01-onboarding.png",
+    "res://reports/02-title.png",
+    "res://reports/03-region.png",
+    "res://reports/04-quest-intro.png",
+    "res://reports/05-gameplay.png",
+    "res://reports/06-complete.png",
+    "res://reports/07-home.png",
+    "res://reports/viewport-1280x720-onboarding.png",
+    "res://reports/viewport-1280x720-title.png",
+    "res://reports/viewport-1280x720-region.png",
+    "res://reports/viewport-1280x720-play.png",
+    "res://reports/viewport-896x370-onboarding.png",
+    "res://reports/viewport-896x370-title.png",
+    "res://reports/viewport-896x370-region.png",
+    "res://reports/viewport-896x370-play.png",
+    "res://reports/viewport-725x396-onboarding.png",
+    "res://reports/viewport-725x396-title.png",
+    "res://reports/viewport-725x396-region.png",
+    "res://reports/viewport-725x396-play.png",
+    "res://reports/viewport-816x616-onboarding.png",
+    "res://reports/viewport-816x616-title.png",
+    "res://reports/viewport-816x616-region.png",
+    "res://reports/viewport-816x616-play.png"
+  ]
+}
