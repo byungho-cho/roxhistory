@@ -2,9 +2,9 @@ name: Android playable demo
 on:
   push:
     branches: ["demo/**"]
-    paths: ["game/**", "scripts/verify-demo-assets.mjs", ".github/workflows/android-demo.yml"]
+    paths: [".gitattributes", "game/**", "scripts/verify-demo-assets.mjs", ".github/workflows/android-demo.yml"]
   pull_request:
-    paths: ["game/**", "scripts/verify-demo-assets.mjs", ".github/workflows/android-demo.yml"]
+    paths: [".gitattributes", "game/**", "scripts/verify-demo-assets.mjs", ".github/workflows/android-demo.yml"]
   workflow_dispatch:
 permissions:
   contents: read

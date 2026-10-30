@@ -1,0 +1,5 @@
+# Asset integrity uses the original bytes on every platform.
+game/assets/** -text
+game/assets/**/*.import text eol=lf
+game/assets/*.md text eol=lf
+game/assets/manifest.json text eol=lf
