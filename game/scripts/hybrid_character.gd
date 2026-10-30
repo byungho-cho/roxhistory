@@ -12,6 +12,7 @@ var attachments := {}
 var bones := {}
 var rests := {}
 var tool_3d: Node3D
+var work_block: Node3D
 var heading := 0.0
 var target_heading := 0.0
 var walk_blend := 0.0
@@ -114,6 +115,14 @@ func _ready() -> void:
 	rig.name = "VillagerSkeleton"
 	pivot.add_child(rig)
 	build_villager()
+	# A ground-supported piece of timber makes construction a visible task.
+	# It is presentation-only, sharing the hero viewport and contact projection.
+	work_block = Node3D.new(); pivot.add_child(work_block)
+	cone(work_block,Vector3(0,0.5,0),0.20,0.22,1.0,material("936438"))
+	cone(work_block,Vector3(0,0.998,0),0.185,0.185,0.006,material("d8ae70"))
+	cone(work_block,Vector3(0,1.002,0),0.12,0.12,0.004,material("b68750"))
+	cone(work_block,Vector3(0,1.005,0),0.07,0.07,0.004,material("d8ae70"))
+	work_block.visible = false
 	display = Sprite2D.new()
 	display.name = "Rendered3DCharacter"
 	display.texture = viewport.get_texture()
@@ -137,6 +146,7 @@ func animate(delta: float, movement: Vector2, phase: float, walking: bool, actio
 	if not enabled: return
 	if paused:
 		tool_3d.visible = false
+		work_block.visible = false
 		return
 	if movement.length() > 0.1: target_heading = atan2(movement.x,movement.y)
 	heading = lerp_angle(heading,target_heading,1.0-exp(-delta*12.0))
@@ -144,10 +154,25 @@ func animate(delta: float, movement: Vector2, phase: float, walking: bool, actio
 	if not paused: clock += delta
 	walk_blend = move_toward(walk_blend,1.0 if walking and not paused else 0.0,delta*8.0)
 	action_blend = move_toward(action_blend,1.0 if action != "" and not paused else 0.0,delta*10.0)
-	var gait := sin(phase)*walk_blend
 	# Retain the last work pose during release instead of jumping to t=0.
 	if action != "": last_action_time = action_time
 	var strike := HeroMotion.stroke(last_action_time)*action_blend
+	if action == "build" and not work_block.visible:
+		# Evaluate the fully engaged contact pose once; restore the current pose
+		# below. The timber then stays on the ground throughout the stroke.
+		var blend_before := action_blend
+		action_blend = 1.0
+		apply_pose(0,1.0)
+		var hit := rig.get_bone_global_pose(bones.handR)*Vector3(0,0.025,0.43)
+		work_block.position = Vector3(hit.x,0,hit.z)
+		work_block.scale.y = maxf(0.15,hit.y-0.04)
+		action_blend = blend_before
+	work_block.visible = action == "build"
+	apply_pose(phase,strike)
+	tool_3d.visible = action != "" and not paused
+
+func apply_pose(phase: float, strike: float) -> void:
+	var gait := sin(phase)*walk_blend
 	var breath := sin(clock*2.3)*0.015
 	rig.set_bone_pose_position(bones.hips,rests.hips+Vector3(0,-0.04,0))
 	rig.set_bone_pose_position(bones.spine,rests.spine+Vector3(0,breath*0.5,0))
@@ -173,7 +198,6 @@ func animate(delta: float, movement: Vector2, phase: float, walking: bool, actio
 		else: swing = lerpf(swing,-0.32-strike*0.14,action_blend)
 		rotate_bone("arm"+suffix,Vector3(swing,0,-side*lerpf(0.11,0.30,action_blend)))
 		rotate_bone("forearm"+suffix,Vector3(lerpf(-0.15,-0.48+strike*0.22,action_blend) if suffix == "R" else -0.12-strike*0.10,0,0))
-	tool_3d.visible = action != "" and not paused
 
 func tool_contact_world() -> Vector2:
 	# Project the stone head through the same camera used to draw the character.
