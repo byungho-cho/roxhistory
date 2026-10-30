@@ -35,7 +35,7 @@ def markdown(data):
     lines = [f"# {data['title']} v{data['version']}", '',
              f"������: {data['updatedAt']} KST. �ܰ� ������ �Ϸ� ������ �ֽ� ����� ���Ǹ� �����ϴ�.", '',
              '## ��ǥ�� ���� ��ġ', '', f"**{data['goal']}**", '', data['scope'], '',
-             f"���� ����: **{data['currentFocus']}**", '', data['progressPolicy'], '',
+             f"���� ����: **{data['currentFocus']}**", '', data['progressPolicy'], '', data.get('operatingPolicy',''), '', data.get('testBuildGoal',''), '',
              f"���� ���ؼ�: {data['baseline']['evidence']}", '', data['baseline']['notes'], '',
              f"��Ʈ ����: {data['design']['style']}", '',
              '## 5�ܰ� �ε��', '', '| �ܰ� | ���� ��ǥ | ���� | ���� ���� | ��ǥ�� |',
@@ -44,7 +44,7 @@ def markdown(data):
         predecessor = ', '.join(stage['dependsOn']) or '���� ��� ���� ����'
         lines.append(f"| {stage['id']} {stage['title']} | {stage['experience']} | {stage['status']} | {predecessor} | {dash(stage['targetDate'])} |")
     lines += ['', '## ���� �', '', data['schedulePolicy'], '',
-              '1�ܰ��� P1.1���� �����ϰ�, �� ǰ�� �ܰ��� ����� Ȯ�� �� ���� �ܰ踦 �����մϴ�. ��¥�� �������� ������ ���������� ������ ���� �ʽ��ϴ�.', '',
+              '1�ܰ��� P1.1���� �����ϰ�, �� ǰ�� �ܰ��� ������ ���� �Ǵ� �� ���� �ܰ踦 �����մϴ�. ����� �ǵ���� ���� �ݿ��մϴ�. ��¥�� �������� ������ ���������� ������ ���� �ʽ��ϴ�.', '',
               '## �ܰ躰 ������ �Ϸ� ����', '']
     for stage in data['stages']:
         lines += [f"### {stage['id']}. {stage['title']}", '', f"ü�� ��ǥ: **{stage['experience']}**", '', '�۾� ����:', '']
@@ -63,6 +63,7 @@ def markdown(data):
     lines += ['', '## ������ �������� ����', '',
               '- ���� ����: [quality-progress.json](quality-progress.json)',
               '- ���� ��Ȳǥ: [quality-progress.md](quality-progress.md)',
+              '- ���� P2 ���� ����: [stage2-character-instructions.md](stage2-character-instructions.md)',
               '- PDF: [RoxHistory_QualityRoadmap_v0.1.pdf](../presentations/RoxHistory_QualityRoadmap_v0.1.pdf)',
               f"- ���� ������: {data['design']['fileUrl']}",
               f"- Figma �ε��: {data['design']['roadmapUrl'] or data['design']['roadmapStatus']}",
@@ -76,20 +77,20 @@ def markdown(data):
 def progress_markdown(data):
     lines = ['# RoxHistory ǰ�� ���� ��Ȳ', '', f"������Ʈ: {data['updatedAt']} KST / �ε�� v{data['version']}", '',
              f"**����: {data['currentFocus']}**", '', data['progressPolicy'], '',
-             '## �ܰ躰 ��Ȳ', '', '| �ܰ� | ���� | ���� | ���� | ����� Ȯ�� | ��ǥ�� | ���� �Ϸ��� |',
+             '## �ܰ躰 ��Ȳ', '', '| �ܰ� | ���� | ���� | ���� | ���� ���� | ��ǥ�� | ���� �Ϸ��� |',
              '| --- | --- | --- | --- | --- | --- | --- |']
     for s in data['stages']:
-        lines.append(f"| {s['id']} {s['title']} | {s['status']} | {s['implementation']} | {s['validation']} | {s['userReview']} | {dash(s['targetDate'])} | {s['actualFinish'] or '�̿Ϸ�'} |")
+        lines.append(f"| {s['id']} {s['title']} | {s['status']} | {s['implementation']} | {s['validation']} | {s.get('leaderReview','���')} | {dash(s['targetDate'])} | {s['actualFinish'] or '�̿Ϸ�'} |")
     lines += ['', '## ���� ��', '', '| �ܰ� | ���� ���� | ��ǥ �Ϸ� | ���� ���� | ���� �Ϸ� |', '| --- | --- | --- | --- | --- |']
     lines += [f"| {s['id']} | {dash(s['plannedStart'])} | {dash(s['targetDate'])} | {s['actualStart'] or '������'} | {s['actualFinish'] or '�̿Ϸ�'} |" for s in data['stages']]
-    lines += ['', data['schedulePolicy'], '', '## ���� �۾� P1', '', '| �۾� | ���� | ���⹰ |', '| --- | --- | --- |']
+    lines += ['', data['schedulePolicy'], '', '## P1 �Ϸ� ��� / ���� �۾� P2', '', '[P2 ĳ���� ���� ����](stage2-character-instructions.md)', '', '| �۾� | ���� | ���⹰ |', '| --- | --- | --- |']
     lines += [f"| {t['id']} {t['title']} | {t['status']} | {t['result']} |" for t in data['stages'][0]['tasks']]
     lines += ['', '## ���� �ൿ�� ����', '']
     for s in data['stages']:
         lines += [f"- {s['id']}: {s['nextAction']}. ����: {s['blocker'] or '��� ����'}. ���� �ٰ�: {'; '.join(s['evidence']) or '�̵��'}"]
     lines += ['', '## ��Ȳ ���ſ� �ʿ��� ����', '',
               '����ڴ� �ܰ衤�۾� ID, ����, ���� ����/�Ϸ���, ���� ��ǥ��, ���� Ŀ�ԡ�PR, APK������, ���� ȯ�桤���, ������ ���� ��ġ�� �����մϴ�.', '',
-              'ǰ�� �ܰ� �Ϸ�� ����������������� Ȯ���� ��� ��ϵ� ��쿡�� ǥ���մϴ�. ����� �÷��� Ȯ���� ��� ���ؼ��̸� P1~P5 �Ϸῡ �ڵ� �ݿ����� �ʽ��ϴ�.', '',
+              'ǰ�� �ܰ� �Ϸ�� ���������������� �Ǵ��� ��ϵ� ��쿡 ǥ���մϴ�. ����� ������ ��ٸ��� ���� ������ ���� �ʽ��ϴ�. ����� �÷��� Ȯ���� ��� ���ؼ��̸� P1~P5 �Ϸῡ �ڵ� �ݿ����� �ʽ��ϴ�.', '',
               '������ ��û �Ǵ� ���� ������ ���� �� ����ȭ�մϴ�. �ڵ� ���ó� ���� �˸��� ���� �������� �ʾҽ��ϴ�.', '',
               '[��ü �ε��](quality-roadmap-v0.1.md) / [���� ����](quality-progress.json)', '']
     return '\n'.join(lines)
@@ -181,10 +182,10 @@ def pdf(data, destination):
     y = p(data['scope'],MARGIN,y)-19
     c.setFillColor(AMBER)
     c.roundRect(MARGIN,y-59,CONTENT,59,9,fill=1,stroke=0)
-    p('���� ����: P1 ��桤������Ʈ / ���� �غ�',MARGIN+14,y-11,CONTENT-28,ParagraphStyle('Focus',parent=normal,fontName='KR-Bold'))
-    p('ǰ�� �ܰ� ����� Ȯ�� 0/5  |  �̹� ���� ������ P1��',MARGIN+14,y-34,CONTENT-28,small)
+    p('���� ����: P1 �Ϸ� / P2 ĳ���� �ִϸ��̼� ���� �غ�',MARGIN+14,y-11,CONTENT-28,ParagraphStyle('Focus',parent=normal,fontName='KR-Bold'))
+    p('���� �ܰ� ���� �Ϸ� 1/5  |  ����� �ǵ�� ���� �ݿ�',MARGIN+14,y-34,CONTENT-28,small)
     y -= 82
-    y = table([['�ܰ�','���� ����','���� ����']]+[[s['id']+' '+s['title'],s['experience'],'���� ��� ����' if not s['dependsOn'] else s['dependsOn'][0]+' ����� Ȯ��'] for s in data['stages']], [172,217,CONTENT-389], y)
+    y = table([['�ܰ�','���� ����','���� ����']]+[[s['id']+' '+s['title'],s['experience'],'���� ��� ����' if not s['dependsOn'] else s['dependsOn'][0]+' ���� ����'] for s in data['stages']], [172,217,CONTENT-389], y)
     y = title('�̹� Ȯ�ε� �Ͱ� ������ Ȯ���� ��',y-2)
     y = p(data['baseline']['evidence'],MARGIN,y)-9
     y = p('���� ��� ������ �⺻ ���� Ȯ�ΰ� ���ο� ǰ�� �ܰ��� �ϷḦ �����մϴ�. ������ �ÿ��� �����ϴ� �뵵�̸� ���� ������ �������� �ʽ��ϴ�.',MARGIN,y,style=small)-13
@@ -202,7 +203,7 @@ def pdf(data, destination):
     p('����: '+data['stages'][0]['excluded'],MARGIN,y-3,style=small)
     c.showPage()
 
-    y=begin(3,'2~3�ܰ�','�����ӿ��� �ո�����','�� �ܰ��� ���� ����� ����� Ȯ�� �� ���� �ܰ�� �̵�')
+    y=begin(3,'2~3�ܰ�','�����ӿ��� �ո�����','�� �ܰ��� ������ ���� �Ǵ����� ����, ����� �ǵ���� ���� �ݿ�')
     y=stage_block(data['stages'][1],y)
     c.setStrokeColor(LINE); c.line(MARGIN,y+5,WIDTH-MARGIN,y+5)
     stage_block(data['stages'][2],y-10)
@@ -214,23 +215,23 @@ def pdf(data, destination):
     stage_block(data['stages'][4],y-10)
     c.showPage()
 
-    y=begin(5,'���� ��Ȳ','���� ������ �Դ°�','��ȹ������������������� Ȯ���� ������ ���')
+    y=begin(5,'���� ��Ȳ','���� ������ �Դ°�','��ȹ������������������ ������ ����� �ǵ���� ������ ���')
     y=title('���� ��Ȳ ������',y)
-    y=table([['�ܰ�','���� ����','����','����','����� Ȯ��']]+[[s['id'],s['status'],s['implementation'],s['validation'],s['userReview']] for s in data['stages']],[45,124,110,110,CONTENT-389],y)
+    y=table([['�ܰ�','���� ����','����','����','���� ����']]+[[s['id'],s['status'],s['implementation'],s['validation'],s.get('leaderReview','���')] for s in data['stages']],[45,124,110,110,CONTENT-389],y)
     y=title('���� ����',y)
     y=table([['�ܰ�','���� ����','��ǥ �Ϸ�','���� ����','���� �Ϸ�']]+[[s['id'],dash(s['plannedStart']),dash(s['targetDate']),s['actualStart'] or '������',s['actualFinish'] or '�̿Ϸ�'] for s in data['stages']],[45,116,116,116,CONTENT-393],y)
     y=p(data['schedulePolicy'],MARGIN,y)-17
     y=title('���� �ൿ',y)
-    y=p(data['stages'][0]['nextAction'],MARGIN,y)-12
-    y=p('���� P1 ����: ��� ����. P2~P5�� ���� �ܰ� ����� Ȯ�� ����Դϴ�. ���� ������ �����ϴ� Ŀ�ԡ����󡤰��� ����� ���� ������� �ʾҽ��ϴ�.',MARGIN,y,style=small)-12
+    y=p(data['stages'][1]['nextAction'],MARGIN,y)-12
+    y=p('P1�� PR #7�� CI��ȯ�桤�̵� ���䡤Android �⺻ ���� ����� �ٰŷ� �ܰ� �Ϸ� ó���߽��ϴ�. P2 ���� �غ��̸�, ��ü ��ǰ�� ��Ÿ �ϷḦ ������ �ʽ��ϴ�.',MARGIN,y,style=small)-12
     p('�ڵ� ���á����� �˸��� �������� �ʾҽ��ϴ�. ���� ���� �Ǵ� ����� Ȯ�� ��û�� ���� �� ���¸� �����ϰ� ����ȭ�մϴ�.',MARGIN,y,style=small)
     c.showPage()
 
     y=begin(6,'� ��Ģ','�ϷḦ Ȯ���ϴ� ���','���������� �����Figma�� ���� ���·� ����')
     y=table([['����','���� ����']]+[[r['status'],r['meaning']] for r in data['statusDefinitions']],[95,CONTENT-95],y)
     y=title('�ܰ躰 ���ް� ����ȭ',y)
-    y=bullets(['���� �� �ٰ� ��� �� ���ࡤ�ð���ȸ�� ���� �� ����� ���� �� ����� Ȯ�� �Ǵ� ���� �� ���� �ܰ�',
-               '�ܰ衤�۾� ID, ���, ���� ��ǥ��, ���� ��¥, ����, ������ ���� ��ġ�� ���',
+    y=bullets(['���������� �� ���� ���䡤���� �� main ���ա�APK �ܵ� ���� �� ���� �ܰ�',
+               '�ܰ衤�۾� ID, ���, ��ǥ�ϡ����� ��¥���ٰŸ� ���. ����� ������ �ʼ� ��� �������� ���� ����',
                'APK�����󡤰������� ���� Ŀ�ԡ���⡤OS���ð����̰��� ������ ����',
                'quality-progress.json ���� �� �ε�ʡ���Ȳǥ��PDF��Figma ���� ���¸� �Բ� ����',
                '���� �׽�Ʈ ����� �ִϸ��̼ǡ�������������� ���� �Ϸ�� ��ü���� ����'],y,style=small)
