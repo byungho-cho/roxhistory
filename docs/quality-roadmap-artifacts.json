@@ -1,0 +1,10 @@
+{
+  "version": "0.1",
+  "pdfSource": "presentations/RoxHistory_QualityRoadmap_v0.1.pdf",
+  "libraryFileId": "libfile_5e11fc281300819181861cef7688fd5a",
+  "pdfUrl": "https://chatgpt.com/library?file_id=libfile_5e11fc281300819181861cef7688fd5a&account_id=personal",
+  "figmaDesignUrl": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS",
+  "figjamRoadmapUrl": "https://www.figma.com/board/60HqJ7ggIuvs9OLva8ZIx2",
+  "statusSource": "docs/quality-progress.json",
+  "updatePolicy": "Update the same Library PDF identity when regenerating; update the existing FigJam roadmap rather than creating another board."
+}
