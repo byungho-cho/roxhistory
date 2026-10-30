@@ -1,0 +1,94 @@
+{
+  "version": 1,
+  "quest_id": "amsa_first_home",
+  "wood_cost": 40,
+  "stone_cost": 24,
+  "gather_yield": 2,
+  "gather_seconds": 3.5,
+  "build_seconds": 4,
+  "reward": 10,
+  "move_speed": 165,
+  "interact_radius": 110,
+  "spawn": [
+    990,
+    1020
+  ],
+  "build_site": [
+    730,
+    1030
+  ],
+  "world_size": [
+    2400,
+    1350
+  ],
+  "nodes": [
+    {
+      "id": "wood_1",
+      "kind": "wood",
+      "position": [
+        360,
+        780
+      ],
+      "charges": 5
+    },
+    {
+      "id": "wood_2",
+      "kind": "wood",
+      "position": [
+        660,
+        710
+      ],
+      "charges": 5
+    },
+    {
+      "id": "wood_3",
+      "kind": "wood",
+      "position": [
+        1420,
+        830
+      ],
+      "charges": 5
+    },
+    {
+      "id": "wood_4",
+      "kind": "wood",
+      "position": [
+        1830,
+        880
+      ],
+      "charges": 5
+    },
+    {
+      "id": "stone_1",
+      "kind": "stone",
+      "position": [
+        250,
+        990
+      ],
+      "charges": 4
+    },
+    {
+      "id": "stone_2",
+      "kind": "stone",
+      "position": [
+        1340,
+        1070
+      ],
+      "charges": 4
+    },
+    {
+      "id": "stone_3",
+      "kind": "stone",
+      "position": [
+        1950,
+        1010
+      ],
+      "charges": 4
+    }
+  ],
+  "history": {
+    "fact": "암사동은 한강 유역의 신석기시대 취락 유적입니다.",
+    "source": "https://contents.history.go.kr/mobile/kc/view.do?levelId=kc_r000400",
+    "fiction": "주인공, 임무, 자원량, 보상과 건설 시간은 게임을 위한 창작입니다. 지형과 움집 이미지는 역사 복원도가 아닙니다."
+  }
+}

@@ -1,0 +1,92 @@
+[
+  {
+    "path": "game/assets/characters/villager.png",
+    "bytes": 929060,
+    "sha256": "540317f691c7d42dfde9d5d736b8c653352997a2f89cdb4b5dc6f21cb6411762"
+  },
+  {
+    "path": "game/assets/figma/02422.svg",
+    "bytes": 2989,
+    "sha256": "e73b2ce4292ca69674af51580584b582995c83aaf0d4d3f7947e7cdd5e13d2a8"
+  },
+  {
+    "path": "game/assets/figma/0e5b8.png",
+    "bytes": 3372796,
+    "sha256": "352ee33c80087a860b3ad410fe0bed81740a41d148d564adf30402617af7c466"
+  },
+  {
+    "path": "game/assets/figma/0fa22.svg",
+    "bytes": 518,
+    "sha256": "dc9ae6fe2c25984068d0b2539811dce604662d6ddc3d229d72c34e22e98760c3"
+  },
+  {
+    "path": "game/assets/figma/20204.png",
+    "bytes": 2593822,
+    "sha256": "4c92f6935c25f82b82420037cdf074254f80e914a0cba9e9a9c7c38a3039e965"
+  },
+  {
+    "path": "game/assets/figma/2a735.svg",
+    "bytes": 2414,
+    "sha256": "5104c5d8f5d4580fb1fc2562ad244b197079b9d0f66d706815af5ae2a9bd8bd4"
+  },
+  {
+    "path": "game/assets/figma/3eebe.png",
+    "bytes": 3070469,
+    "sha256": "9a6a1d34e7e58c24ba6a980241c9000899b9734bf4fac7afc5b7baa3914c93f1"
+  },
+  {
+    "path": "game/assets/figma/4c704.svg",
+    "bytes": 2880,
+    "sha256": "9c9878687d914adeb688fb2c839ea884dfc8f42aa7f0096e0f36f90b93926da4"
+  },
+  {
+    "path": "game/assets/figma/75484.svg",
+    "bytes": 841,
+    "sha256": "bc2e58c41dc4f8b032cb2e9d5537176879739589feb4dcfd2bc6a3aeff3c4ff4"
+  },
+  {
+    "path": "game/assets/figma/98398.png",
+    "bytes": 3343603,
+    "sha256": "e6a32f06c6b4c42521a82ece1b78c3a9676af8fb1c4d3ff0f23ab34bfbe8ba8e"
+  },
+  {
+    "path": "game/assets/figma/ba95c.svg",
+    "bytes": 10930,
+    "sha256": "17036e7e63c314f8ddfa07ce5ac76852b96f62850e28851541ad917a9ca12dc1"
+  },
+  {
+    "path": "game/assets/figma/d3b84.svg",
+    "bytes": 510,
+    "sha256": "d1d0a7497b4cd7db685147e322c40c7a287a0d08a1959cfb49d0ee0bfbb5ad67"
+  },
+  {
+    "path": "game/assets/figma/f1627.svg",
+    "bytes": 1614,
+    "sha256": "afcea1e82059f6f22d50ddd77c31f107ea1df1e44da0dd5461da8eb4f7052230"
+  },
+  {
+    "path": "game/assets/figma/fac42.svg",
+    "bytes": 1596,
+    "sha256": "764829c4d0aa2f7f8ddf668a079dbb813a4f1101f9a2ac85fd6caad9dcf9865e"
+  },
+  {
+    "path": "game/assets/figma/fbe0a.svg",
+    "bytes": 422,
+    "sha256": "cec75fa0fe7fa9ef7b29ea3d5c113b91ffb4e385960e0aad178310015fd50945"
+  },
+  {
+    "path": "game/assets/fonts/NotoSansKR.ttf",
+    "bytes": 10414588,
+    "sha256": "194018e6b2b293a7964f037b25c0249ce1418bc9ab3c971060a03aa57861e252"
+  },
+  {
+    "path": "game/assets/fonts/OFL.txt",
+    "bytes": 4388,
+    "sha256": "1c05c68c34f9708415aada51f17e1b0092d2cea709bf4a94cd38114f9e73d7d9"
+  },
+  {
+    "path": "game/assets/icon.svg",
+    "bytes": 571,
+    "sha256": "11286814b359fa5c00e19d831ae29766c67bb8603b7faca88d934d7eec8035d3"
+  }
+]

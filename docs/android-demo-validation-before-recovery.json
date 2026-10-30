@@ -1,0 +1,9 @@
+{
+  "checks": 334,
+  "failed": [],
+  "engine": "4.5.1-stable (official)",
+  "utc": "2026-10-29T21:27:13",
+  "runtime": "Windows native headless Godot",
+  "scope": "GameState/SaveStore before remote recovery edits",
+  "limitation": "This is the recovered local result, not a passing result for the current remote commit."
+}
