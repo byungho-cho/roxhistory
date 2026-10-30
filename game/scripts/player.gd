@@ -14,6 +14,7 @@ var walk_weight := 0.0
 var hand_uv := Vector2.ZERO
 var idle_time := 0.0
 var action_time := 0.0
+var external_work_clock := false
 var activity := ""
 var facing := 0
 var presentation_paused := false
@@ -128,11 +129,12 @@ func _physics_process(delta: float) -> void:
 	if movement.length() > 0.1: face_target(position+movement)
 	motion_state = "paused" if presentation_paused else (activity if activity != "" else ("walk" if travelled > 0.05 else "idle"))
 	if motion_state == "walk":
-		phase = fposmod(phase+travelled/STRIDE*TAU,TAU)
+		var stride := hybrid.stride_world_length() if use_3d else STRIDE
+		phase = fposmod(phase+travelled/stride*TAU,TAU)
 	walk_weight = move_toward(walk_weight,1.0 if motion_state == "walk" else 0.0,delta*9.0)
 	if not presentation_paused:
 		idle_time += delta
-		if activity != "": action_time += delta
+		if activity != "" and not external_work_clock: action_time += delta
 	update_rig()
 	if use_3d:
 		tool.visible = false
@@ -195,5 +197,7 @@ func deform_point(uv: Vector2) -> Vector2:
 
 func _draw() -> void:
 	draw_set_transform(Vector2(0,-2),0,Vector2(1,0.32))
-	draw_circle(Vector2.ZERO,23,Color(0.1,0.08,0.02,0.25))
+	draw_circle(Vector2.ZERO,25,Color(0.12,0.09,0.04,0.045))
+	draw_circle(Vector2.ZERO,21,Color(0.12,0.09,0.04,0.075))
+	draw_circle(Vector2.ZERO,16,Color(0.12,0.09,0.04,0.13))
 	draw_set_transform(Vector2.ZERO)
