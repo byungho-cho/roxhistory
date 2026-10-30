@@ -7,6 +7,7 @@ var selected := ""
 var art_nodes := {}
 var site: Node2D
 var home: Sprite2D
+const RIVER_POLYGON = [Vector2(860,0),Vector2(2400,0),Vector2(2400,820),Vector2(2160,700),Vector2(1890,630),Vector2(1650,540),Vector2(1410,500),Vector2(1190,360),Vector2(900,280)]
 
 func _init(game: GameState) -> void:
 	model = game
@@ -18,7 +19,7 @@ func _ready() -> void:
 	background.scale = Vector2(2400.0/1672.0,1350.0/941.0)
 	background.z_index = -10
 	add_child(background)
-	polygon_body(PackedVector2Array([Vector2(860,0),Vector2(2400,0),Vector2(2400,820),Vector2(2160,700),Vector2(1890,630),Vector2(1650,540),Vector2(1410,500),Vector2(1190,360),Vector2(900,280)]))
+	polygon_body(PackedVector2Array(RIVER_POLYGON))
 	for rect in [Rect2(15,350,370,290),Rect2(420,230,420,280),Rect2(870,470,350,210),
 		Rect2(1740,630,140,110),Rect2(1450,1160,590,150),Rect2(0,0,2400,100)]:
 		rect_body(rect)
@@ -67,6 +68,7 @@ func rect_body(rect: Rect2) -> void:
 
 func polygon_body(points: PackedVector2Array) -> void:
 	var body := StaticBody2D.new()
+	body.name = "RiverBank"
 	var collision := CollisionPolygon2D.new()
 	collision.polygon = points
 	body.add_child(collision)

@@ -2,12 +2,12 @@ name: Android playable demo
 on:
   push:
     branches: ["demo/**"]
-    paths: ["game/**", "scripts/bootstrap-demo-assets.py", ".github/workflows/android-demo.yml"]
+    paths: ["game/**", "scripts/verify-demo-assets.mjs", ".github/workflows/android-demo.yml"]
   pull_request:
-    paths: ["game/**", ".github/workflows/android-demo.yml"]
+    paths: ["game/**", "scripts/verify-demo-assets.mjs", ".github/workflows/android-demo.yml"]
   workflow_dispatch:
 permissions:
-  contents: write
+  contents: read
 jobs:
   build:
     runs-on: ubuntu-24.04
@@ -17,27 +17,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.head_ref || github.ref_name }}
-      - name: Persist Korean font once
-        if: github.event_name != 'pull_request'
-        run: |
-          if test -f scripts/bootstrap-demo-assets.py; then
-            python3 scripts/bootstrap-demo-assets.py
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add game/assets
-            git rm scripts/bootstrap-demo-assets.py
-            git commit -m "assets: persist Korean font"
-            git push
-          fi
-      - name: Verify original Figma textures are available
-        run: |
-          for file in game/assets/figma/20204.png game/assets/figma/98398.png game/assets/figma/3eebe.png; do
-            if ! test -s "$file"; then
-              echo "::error::Original Figma asset missing: $file. Restore original bytes before building. See game/assets/RESTORE.md."
-              exit 1
-            fi
-          done
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Verify bundled design assets
+        run: node scripts/verify-demo-assets.mjs
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -60,15 +42,19 @@ jobs:
           echo "$RUNNER_TEMP/godot" >> "$GITHUB_PATH"
       - name: Import and state checks
         run: |
+          set -euo pipefail
           godot --headless --path game --editor --import --quit 2>&1 | tee import.log
           godot --headless --path game --script res://tests/state_tests.gd 2>&1 | tee state-tests.log
           ! grep -E 'SCRIPT ERROR:|ERROR:' import.log state-tests.log
       - name: Native render and synthetic multitouch checks
         run: |
+          set -euo pipefail
+          mkdir -p "$HOME/.local/share/godot/app_userdata/RoxHistory"
           timeout 150 xvfb-run -a godot --audio-driver Dummy --path game --resolution 1280x720 --script res://tests/ui_smoke.gd -- --test-ui 2>&1 | tee ui-tests.log
           ! grep -E 'SCRIPT ERROR:|ERROR:' ui-tests.log
       - name: Export signed debug APK
         run: |
+          set -euo pipefail
           mkdir -p build
           keytool -genkeypair -keystore "$RUNNER_TEMP/debug.keystore" -alias androiddebugkey -storepass android -keypass android -dname "CN=Android Debug,O=Android,C=US" -keyalg RSA -validity 10000
           export GODOT_ANDROID_KEYSTORE_DEBUG_PATH="$RUNNER_TEMP/debug.keystore"

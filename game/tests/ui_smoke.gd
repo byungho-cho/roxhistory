@@ -26,7 +26,7 @@ func touch(target: Control, index: int, pressed: bool, local: Vector2 = Vector2(
 	event.index = index
 	event.pressed = pressed
 	event.position = target.get_global_transform_with_canvas()*(target.size/2 if local.x < 0 else local)
-	root.push_input(event)
+	root.push_input(event,true)
 
 func press(target: Control, index: int = 1) -> void:
 	touch(target,index,true)
@@ -78,6 +78,8 @@ func run_tests() -> void:
 	var n: Dictionary = DemoConfig.get_data().nodes[0]
 	app.world.player.position = DemoConfig.point(n.position)+Vector2(70,0)
 	await process_frame
+	await process_frame
+	check(not app.gather_button.disabled,"Nearby resource enables gather action")
 	await press(app.gather_button)
 	check(app.task == "gather","Touch action starts gathering")
 	for i in 20: app.gather_action()
@@ -107,10 +109,27 @@ func run_tests() -> void:
 	check(saved.state.built and saved.state.reward_claimed,"Completed game persists across instances")
 	await snap("07-home")
 	app.world.player.position = Vector2(1270,680)
-	for i in 60:
-		app.world.player.direction = Vector2.UP
+	app.world.player.set_physics_process(false)
+	var river_collision := false
+	var entered_water := false
+	for i in 180:
 		await physics_frame
-	check(app.world.player.position.y > 490,"River bank blocks entry")
+		app.world.player.velocity = Vector2.UP * 165.0
+		app.world.player.move_and_slide()
+		for j in app.world.player.get_slide_collision_count():
+			if app.world.player.get_slide_collision(j).get_collider() == app.world.get_node("RiverBank"):
+				river_collision = true
+		entered_water = entered_water or Geometry2D.is_point_in_polygon(app.world.player.position,PackedVector2Array(DemoWorld.RIVER_POLYGON))
+	check(river_collision,"Moving player physically collides with river bank")
+	check(not entered_water,"Sliding along the bank never enters water")
+	app.world.player.position = Vector2(700,580)
+	for i in 90:
+		await physics_frame
+		app.world.player.velocity = Vector2.UP * 165.0
+		app.world.player.move_and_slide()
+	check(app.world.player.position.y >= 527 and app.world.player.position.y < 580,"Existing hut blocks actual physics movement")
+	app.world.player.velocity = Vector2.ZERO
+	app.world.player.set_physics_process(true)
 	for dims in [Vector2i(1280,720),Vector2i(896,370),Vector2i(725,396),Vector2i(816,616)]:
 		root.size = dims
 		await process_frame

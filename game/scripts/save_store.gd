@@ -97,6 +97,11 @@ func save_game(s: Dictionary, reset: bool = false) -> bool:
 	if write_error != OK or _read(temp).is_empty():
 		message = "저장 검증에 실패했습니다. 기존 저장 파일은 보존됩니다."
 		return false
+	if reset and FileAccess.file_exists(backup):
+		var archive := directory.path_join("save.backup.preserved.%s.json" % str(Time.get_ticks_usec()))
+		if DirAccess.rename_absolute(backup,archive) != OK:
+			message = "이전 여정의 백업을 보존하지 못했습니다."
+			return false
 	if FileAccess.file_exists(current):
 		if reset or _read(current).is_empty():
 			var archive := directory.path_join("save.preserved.%s.json" % str(Time.get_ticks_usec()))

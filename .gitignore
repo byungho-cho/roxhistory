@@ -4,9 +4,16 @@ __pycache__/
 .DS_Store
 build/
 .codex-finalizer/
+
+# Private presentation builds and visual QA
 .work/
+
+# Godot imports, local SDK/export credentials and generated APKs
 game/.godot/
+game/.godot-test/
 game/export_credentials.cfg
 *.keystore
 *.apk
 *.idsig
+game/Godot/
+game/reports/

@@ -1,0 +1,67 @@
+{
+  "validatedAt": "2026-10-30T01:17:09.004Z",
+  "engine": "4.5.1-stable (official)",
+  "platform": "Windows native Godot / OpenGL",
+  "import": {
+    "exitCode": 0,
+    "scriptErrors": 0
+  },
+  "state": {
+    "checks": 337,
+    "engine": "4.5.1-stable (official)",
+    "failed": [],
+    "utc": "2026-10-30T01:12:38"
+  },
+  "ui": {
+    "checks": 76,
+    "failed": [],
+    "runtime": "Native Godot synthetic touch; not Android device validation",
+    "screenshots": [
+      "res://reports/01-onboarding.png",
+      "res://reports/02-title.png",
+      "res://reports/03-region.png",
+      "res://reports/04-quest-intro.png",
+      "res://reports/05-gameplay.png",
+      "res://reports/06-complete.png",
+      "res://reports/07-home.png",
+      "res://reports/viewport-1280x720-onboarding.png",
+      "res://reports/viewport-1280x720-title.png",
+      "res://reports/viewport-1280x720-region.png",
+      "res://reports/viewport-1280x720-play.png",
+      "res://reports/viewport-896x370-onboarding.png",
+      "res://reports/viewport-896x370-title.png",
+      "res://reports/viewport-896x370-region.png",
+      "res://reports/viewport-896x370-play.png",
+      "res://reports/viewport-725x396-onboarding.png",
+      "res://reports/viewport-725x396-title.png",
+      "res://reports/viewport-725x396-region.png",
+      "res://reports/viewport-725x396-play.png",
+      "res://reports/viewport-816x616-onboarding.png",
+      "res://reports/viewport-816x616-title.png",
+      "res://reports/viewport-816x616-region.png",
+      "res://reports/viewport-816x616-play.png"
+    ]
+  },
+  "assetCount": 18,
+  "android": {
+    "package": "com.roxhistory.demo",
+    "versionName": "0.1.0",
+    "versionCode": 1,
+    "minSdk": 24,
+    "targetSdk": 35,
+    "architectures": [
+      "arm64-v8a",
+      "x86_64"
+    ],
+    "exportExitCode": 0,
+    "signatureVerifyExitCode": 0,
+    "signatureSchemes": [
+      "v2",
+      "v3"
+    ],
+    "apkBytes": 73000509,
+    "apkSha256": "87ace65072116360b838372ee7bde60a826f58dbea25b1fdb20966ef84189b02",
+    "physicalDeviceValidated": false,
+    "emulatorValidated": false
+  }
+}

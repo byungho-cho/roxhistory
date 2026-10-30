@@ -40,7 +40,10 @@ static func button_style(primary: bool = false) -> StyleBoxFlat:
 
 static func theme() -> Theme:
 	var t := Theme.new()
-	t.default_font = preload("res://assets/fonts/NotoSansKR.ttf")
+	var font := FontVariation.new()
+	font.base_font = preload("res://assets/fonts/NotoSansKR.ttf")
+	font.variation_opentype = {"wght":550.0}
+	t.default_font = font
 	t.default_font_size = 19
 	for cls in ["Label","Button"]:
 		t.set_color("font_color",cls,Color("49321e"))

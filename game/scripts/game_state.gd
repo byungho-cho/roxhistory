@@ -31,7 +31,7 @@ func save_position(pos: Vector2) -> bool:
 	return commit(next)
 
 func gather(node_id: String, pos: Vector2 = Vector2.ZERO) -> bool:
-	if busy:
+	if busy or state.is_empty():
 		return false
 	busy = true
 	for n in DemoConfig.get_data().nodes:
