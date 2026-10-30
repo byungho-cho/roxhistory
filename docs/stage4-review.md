@@ -49,3 +49,7 @@ Android15/API35 x86_64, 별도 AVD RoxHistoryP3, 호스트 RTX5060,1280×720. �
 첫 사용자가 도움 없이 동선을 이해하는지 관찰, 실제 Android 폰·ARM GPU·스피커/이어폰·물리 폴딩·발열·장시간 확인. 음색 선호와 환경음/효과음 상대 크기는 사용자 피드백 대상이다. 새 캐릭터 아트의 세밀한 질감, 물리 그림자와 경사 지형은 기존 잔여 항목으로 유지한다.
 
 [진행 현황](quality-progress.md) · [로드맵 PDF](../presentations/RoxHistory_QualityRoadmap_v0.1.pdf) · [FigJam](https://www.figma.com/board/60HqJ7ggIuvs9OLva8ZIx2)
+
+## 원격 검사 시점 보정
+
+첫 [CI 실행](https://github.com/byungho-cho/roxhistory/actions/runs/41064380080)에서 기존 hybrid_tests의 정지 후12물리 프레임 검사가 실패했다. 조이스틱은 `_process`에서 전달되므로 llvmpipe의 느린 렌더 프레임 사이에 여러 물리 틱이 진행되면 해제 입력 전달이 지연된다. 해당 합성 검사도 기존 P3/P4 검사와 같이 `--fixed-fps 60`으로 실행해 입력·물리 틱을 맞췄다. 30개 검사와 정지 기준 `<0.01`은 그대로이며 제품의 이동·애니메이션 코드는 변경하지 않았다. 실제 시간의 Android 터치 검사는 별도로 유지한다.

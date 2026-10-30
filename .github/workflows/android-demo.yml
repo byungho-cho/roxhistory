@@ -61,7 +61,8 @@ jobs:
           ! grep -E 'SCRIPT ERROR:|ERROR:' environment-review-tests.log
           timeout 150 xvfb-run -a godot --audio-driver Dummy --path game --resolution 1280x720 --script res://tests/character_tests.gd -- --test-ui 2>&1 | tee character-tests.log
           ! grep -E 'SCRIPT ERROR:|ERROR:' character-tests.log
-          timeout 150 xvfb-run -a godot --audio-driver Dummy --path game --resolution 1280x720 --script res://tests/hybrid_tests.gd -- --test-ui 2>&1 | tee hybrid-tests.log
+          # Joystick is sampled in _process; keep render and physics ticks paired for the 12-tick stop assertion.
+          timeout 150 xvfb-run -a godot --fixed-fps 60 --audio-driver Dummy --path game --resolution 1280x720 --script res://tests/hybrid_tests.gd -- --test-ui 2>&1 | tee hybrid-tests.log
           ! grep -E 'SCRIPT ERROR:|ERROR:' hybrid-tests.log
           timeout 150 xvfb-run -a godot --audio-driver Dummy --path game --resolution 1280x720 --script res://tests/hybrid_occlusion.gd -- --test-ui 2>&1 | tee hybrid-occlusion-tests.log
           ! grep -E 'SCRIPT ERROR:|ERROR:' hybrid-occlusion-tests.log
