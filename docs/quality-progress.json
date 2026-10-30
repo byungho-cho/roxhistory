@@ -6,7 +6,7 @@
   "goal": "암사동 한 지역에서 1~2분만 플레이해도, 완성된 게임의 매력과 확장 가능성을 느끼는 데모",
   "scope": "지역 하나 · 첫 보금자리 퀘스트 하나 · 움집 하나. 세계·캐릭터·상호작용·연출·보상·저장이 연결된 경험.",
   "qualityStatement": "캐릭터를 잠시 세워두어도 살아 있는 장소처럼 보이고, 움직이고 행동하면 소리와 연출이 즉시 반응한다.",
-  "currentFocus": "P1 완료 / P2 기본 동작 보완·Android 전체 루프 확인, 아트 품질 검토 중",
+  "currentFocus": "P2 3D 캐릭터 보완 후 P3 채집·건설 연출 검증 완료 / 다음 P4",
   "baseline": {
     "id": "B0",
     "status": "기본 실행 사용자 확인",
@@ -25,14 +25,14 @@
     }
   },
   "design": {
-    "style": "아기자기한 2.5D, 둥근 형태, 따뜻한 자연광, 자연 재질, 갈색·금빛 UI",
+    "style": "2D 강변 배경 + 실제 3D 캐릭터. 둥근 비율·갈색 묶은 머리·밝은 가죽옷·따뜻한 자연광 유지.",
     "fileUrl": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS",
     "specStatus": "현재 Figma 연결에서 Specs API 미지원",
     "roadmapUrl": "https://www.figma.com/board/60HqJ7ggIuvs9OLva8ZIx2",
-    "roadmapStatus": "FigJam 생성 완료 / 2026-10-30 현황"
+    "roadmapStatus": "P2 보완 선행·P3 결과 및 실기기 미검증을 반영"
   },
-  "schedulePolicy": "단계별 구현·검증·팀장 판단으로 순차 진행한다. 개발 담당의 작업 분해 후 목표일을 기록하고, 근거 없는 완료일은 약속하지 않는다. 사용자 피드백 대기를 일정의 필수 조건으로 두지 않는다.",
-  "progressPolicy": "팀장 단계 검토 완료 1/5. 작업량 백분율은 산출하지 않는다. 사용자 피드백은 수시 반영하며, 단계마다 사용자 응답을 기다리는 승인 절차를 두지 않는다.",
+  "schedulePolicy": "단계별 구현·실행 화면·회귀 검증을 먼저 완료한다. 일정 단축을 위해 범위나 검사를 생략하지 않으며 근거 없는 완료일을 약속하지 않는다.",
+  "progressPolicy": "P1~P3 개발 구현·검증 완료. 새 캐릭터 아트의 사용자 피드백과 Android 실기기 검증은 별도로 남긴다. 전체 베타 완료를 뜻하지 않는다.",
   "statusDefinitions": [
     {
       "status": "대기",
@@ -145,23 +145,23 @@
       "id": "P2",
       "number": 2,
       "title": "캐릭터 이동·대기·행동 애니메이션",
-      "status": "보완 중",
+      "status": "완료",
       "dependsOn": [
         "P1"
       ],
       "plannedStart": null,
       "targetDate": null,
       "actualStart": "2026-10-30",
-      "actualFinish": null,
-      "implementation": "메시 보행 전환·손/도구 밀착 보완 및 짧은 루프 구현",
-      "validation": "PC 자동 검사 통과 / Android 15 에뮬레이터 전체 루프 확인",
-      "userReview": "수시 피드백",
+      "actualFinish": "2026-10-30",
+      "implementation": "3D 원본 특징·연속 스킨·발 접점 보완",
+      "validation": "PC 회귀·시각 / Android 통합 확인",
+      "userReview": "새 아트 후속 피드백",
       "experience": "걷고 멈추는 것만으로 캐릭터가 살아 있다고 느낀다.",
       "work": [
-        "우선 4방향 걷기·대기·채집 동작 준비",
-        "이동 속도와 발걸음·방향 전환·동작 전환 연결",
-        "발 접점·그림자·오브젝트 가림을 1단계 공간에 맞춤",
-        "플레이어 필수 동작 검증 후 필요시 간단한 주민 대기 반응 추가"
+        "원본 캐릭터의 머리·눈·가죽옷·끈·잎 장식을 실제3D로 보완",
+        "연속 스킨의 팔·다리와 평지 발 접점·호흡·깜박임",
+        "아날로그 회전·보행·채집·중단 복귀·앞뒤 가림 유지",
+        "P2 검토를 먼저 커밋한 뒤 P3 착수"
       ],
       "gate": [
         "방향과 이동 애니메이션이 일치하고 발 미끄러짐·뜬 느낌이 없음",
@@ -174,40 +174,42 @@
         "실제 이동·대기·채집 전환 영상",
         "APK와 입력·충돌 회귀 결과"
       ],
-      "excluded": "8방향 확대, 전투 동작, 다수 주민 AI",
+      "excluded": "배경 전체3D 전환, 전투 동작, 다수 주민 AI, 경사 지형",
       "evidence": [
         "https://github.com/byungho-cho/roxhistory/pull/8",
         "stage2-review.md",
-        "stage2/android-full-loop.json"
+        "stage2/android-full-loop.json",
+        "https://github.com/byungho-cho/roxhistory/pull/9",
+        "stage3/p2-review.md",
+        "stage3/polish-tests.json"
       ],
       "blocker": null,
-      "nextAction": "P2 메시·도구 아트의 잔여 표현 검토. P3에서 자원 타격 반응·획득 효과·건설 단계 연출 준비",
+      "nextAction": "P3와 통합 검증 완료. 후속 아트 피드백은 P4에서 반영.",
       "owner": "개발 담당 / 캐릭터 아트·애니메이션",
-      "leaderReview": "아트 품질 최종 판정 대기",
-      "remaining": "분리 파츠/새 동작 프레임 미제작, 임시 도구 그림, 실기기·물리 폴딩·장시간 성능 미검증. P2 전체 완료나 베타 완료로 판정하지 않음."
+      "leaderReview": "개발 검토 완료",
+      "remaining": "원본의 붓질 질감과 완전 동일하지 않음. 타원 그림자·평지 보행 사용. 실기기·경사·장시간은 미검증."
     },
     {
       "id": "P3",
       "number": 3,
       "title": "채집·건설의 상호작용과 보상",
-      "status": "대기",
+      "status": "완료",
       "dependsOn": [
         "P2"
       ],
       "plannedStart": null,
       "targetDate": null,
-      "actualStart": null,
-      "actualFinish": null,
-      "implementation": "미착수",
-      "validation": "미착수",
-      "userReview": "수시 피드백",
+      "actualStart": "2026-10-30",
+      "actualFinish": "2026-10-30",
+      "implementation": "타격·획득·골조/지붕·완료 보상",
+      "validation": "취소·저장 실패·중복·Android 루프",
+      "userReview": "후속 플레이 피드백",
       "experience": "내 행동이 자원과 마을을 바꾸며 손맛과 성취감을 준다.",
       "work": [
-        "근접 대상 강조와 행동 가능·불가능 상태 안내",
-        "채집 동작·타격·자원 획득·수량 반영 연결",
-        "지정 터 건설 과정과 완성 변화 연출",
-        "짧은 주민 반응·퀘스트 완료·한 번만 지급되는 보상",
-        "데모는 나무·돌 각 1개로 건설, 채집 1.2초·건설 2초의 짧은 흐름 유지"
+        "근접 대상 강조와 필요한 다음 재료 안내",
+        "도구 타격·자원 반응·저장 성공 후 획득 표시",
+        "2초 안에 골조·지붕·완성 변화, 건물 보이는 보상 카드",
+        "나무1·돌1·채집1.2초 유지, 취소·저장 실패·중복 보상 방지"
       ],
       "gate": [
         "접근·행동·결과·보상이 하나의 흐름으로 이해됨",
@@ -221,11 +223,16 @@
         "APK와 저장·중복 처리 검사 결과"
       ],
       "excluded": "자유 건설, 제작 트리, 복수 퀘스트·경제 시스템",
-      "evidence": [],
+      "evidence": [
+        "stage3-review.md",
+        "stage3/interaction-tests.json",
+        "stage3/android-stage3-loop.json"
+      ],
       "blocker": null,
-      "nextAction": "P2 팀장 검토 후 행동 타이밍과 연출 설계",
+      "nextAction": "P4 UI·환경음·행동 소리·카메라 전환 통합. 실기기 성능 확인.",
       "owner": "개발 담당 / 게임플레이·효과",
-      "leaderReview": "대기"
+      "leaderReview": "개발 검토 완료",
+      "remaining": "주민 반응·환경음과 본격 사운드 연출은 후속. 실기기·ARM GPU·물리폴딩·발열 미검증."
     },
     {
       "id": "P4",
@@ -263,7 +270,7 @@
       "excluded": "새 테마·수익화·복잡한 설정 메뉴",
       "evidence": [],
       "blocker": null,
-      "nextAction": "P3 팀장 검토 후 UI·오디오·카메라 통합",
+      "nextAction": "P2·P3 결과를 기반으로 UI 대비·환경/행동 소리·카메라 전환을 통합. 새 지역은 추가하지 않음.",
       "owner": "개발 담당 / UI·오디오·연출",
       "leaderReview": "대기"
     },
@@ -373,6 +380,16 @@
       "date": "2026-10-30",
       "stage": "P2",
       "event": "PR #8 인수: 손과 도구 변형 좌표 통일·보행 대기 전환·건설 입구 안내 보완. 에뮬레이터 전체 루프·저장 복원 확인. P2 전체 품질 승인은 보류."
+    },
+    {
+      "date": "2026-10-30",
+      "stage": "P2",
+      "event": "사용자가 2D 배경+3D 캐릭터 유지를 확정. 원본 특징·연속 관절·발 접점을 먼저 보완·검토."
+    },
+    {
+      "date": "2026-10-30",
+      "stage": "P3",
+      "event": "채집·획득·건설·완료 연출과 취소/저장 실패/중복 보상 검증. 실기기 미검증은 별도 유지."
     }
   ],
   "references": [
@@ -393,8 +410,8 @@
       "url": "https://github.com/byungho-cho/roxhistory"
     }
   ],
-  "revision": 4,
-  "operatingPolicy": "사용자가 다음 단계 판단을 팀장에게 위임했다. 범위 안의 구현·시각·동작·회귀 검증을 팀장이 확인하면 다음 단계로 진행한다. 큰 기획 변경·범위 확장·핵심 위험만 사용자와 별도로 조율한다.",
+  "revision": 5,
+  "operatingPolicy": "사용자 지시: 속도보다 단계별 완성도 우선. P2를 먼저 보완·검토하고 P3로 진행한다. 2D 배경+3D 캐릭터를 유지하며 전체 3D 전환은 하지 않는다. 검증 후 main 병합과 서명 APK 단일 파일 전달.",
   "testBuildGoal": "단순 기능 데모를 넘어, 첫 진입부터 채집·건설·보상·저장·이어하기까지 연결되고 캐릭터·환경·소리·UI가 반응하는 소규모 테스트 빌드. 정식 베타 완료를 선언하는 것은 아니다.",
   "demoBalance": {
     "woodCost": 1,

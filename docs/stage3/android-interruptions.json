@@ -1,0 +1,11 @@
+{
+  "utc": "2026-10-30T12:18:57Z",
+  "checks": [
+    "movement cancels gather",
+    "quest popup cancels gather",
+    "Android Back cancels gather",
+    "Home cancels gather",
+    "resume permits one gather"
+  ],
+  "failed": []
+}

@@ -1,0 +1,6 @@
+{
+  "checks": 27,
+  "failed": [],
+  "runtime": "Native Godot real timers; test positions set explicitly, not Android touch play",
+  "utc": "2026-10-30T12:14:38"
+}
