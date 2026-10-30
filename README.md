@@ -1,9 +1,10 @@
 # Android 첫 데모 · 2026-10-30
 
-Godot 4.5.1 기반 오프라인 데모 v0.1.0 소스는 `game/`에 있습니다. `game/project.godot`을 열어 실행합니다.
+Godot 4.5.1 기반 오프라인 데모 v0.1.1-stage1 소스는 `game/`에 있습니다. `game/project.godot`을 열어 실행합니다.
 이동 → 나무·돌 채집 → 첫 움집 건설 → 보상 수령·저장·이어하기를 제공합니다.
 
-- [실행·빌드·검증 상태](docs/android-demo-v0.1.0.md)
+- [1단계 배경·오브젝트: 전후 캡처·영상·검증](docs/stage1/README.md)
+- [기존 v0.1.0 실행·빌드 기록](docs/android-demo-v0.1.0.md)
 - [원본 에셋과 무결성 확인](game/assets/RESTORE.md)
 - Android 빌드와 자동 검사는 `.github/workflows/android-demo.yml`에서 실행합니다.
 
