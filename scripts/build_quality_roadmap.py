@@ -28,71 +28,71 @@ CONTENT = WIDTH - MARGIN * 2
 
 
 def dash(value):
-    return value or '����'
+    return value or '미정'
 
 
 def markdown(data):
     lines = [f"# {data['title']} v{data['version']}", '',
-             f"������: {data['updatedAt']} KST. �ܰ� ������ �Ϸ� ������ �ֽ� ����� ���Ǹ� �����ϴ�.", '',
-             '## ��ǥ�� ���� ��ġ', '', f"**{data['goal']}**", '', data['scope'], '',
-             f"���� ����: **{data['currentFocus']}**", '', data['progressPolicy'], '', data.get('operatingPolicy',''), '', data.get('testBuildGoal',''), '',
-             f"���� ���ؼ�: {data['baseline']['evidence']}", '', data['baseline']['notes'], '',
-             f"��Ʈ ����: {data['design']['style']}", '',
-             '## 5�ܰ� �ε��', '', '| �ܰ� | ���� ��ǥ | ���� | ���� ���� | ��ǥ�� |',
+             f"기준일: {data['updatedAt']} KST. 단계 범위와 완료 기준은 최신 사용자 합의를 따릅니다.", '',
+             '## 목표와 현재 위치', '', f"**{data['goal']}**", '', data['scope'], '',
+             f"현재 초점: **{data['currentFocus']}**", '', data['progressPolicy'], '', data.get('operatingPolicy',''), '', data.get('testBuildGoal',''), '',
+             f"기존 기준선: {data['baseline']['evidence']}", '', data['baseline']['notes'], '',
+             f"아트 기준: {data['design']['style']}", '',
+             '## 5단계 로드맵', '', '| 단계 | 경험 목표 | 상태 | 선행 조건 | 목표일 |',
              '| --- | --- | --- | --- | --- |']
     for stage in data['stages']:
-        predecessor = ', '.join(stage['dependsOn']) or '���� ��� ���� ����'
+        predecessor = ', '.join(stage['dependsOn']) or '기존 기능 데모 보존'
         lines.append(f"| {stage['id']} {stage['title']} | {stage['experience']} | {stage['status']} | {predecessor} | {dash(stage['targetDate'])} |")
-    lines += ['', '## ���� �', '', data['schedulePolicy'], '',
-              '1�ܰ��� P1.1���� �����ϰ�, �� ǰ�� �ܰ��� ������ ���� �Ǵ� �� ���� �ܰ踦 �����մϴ�. ����� �ǵ���� ���� �ݿ��մϴ�. ��¥�� �������� ������ ���������� ������ ���� �ʽ��ϴ�.', '',
-              '## �ܰ躰 ������ �Ϸ� ����', '']
+    lines += ['', '## 일정 운영', '', data['schedulePolicy'], '',
+              '1단계의 P1.1부터 시작하고, 각 품질 단계의 검증과 팀장 판단 후 다음 단계를 진행합니다. 사용자 피드백은 수시 반영합니다. 날짜가 정해지기 전에는 지연·정상 판정을 하지 않습니다.', '',
+              '## 단계별 범위와 완료 기준', '']
     for stage in data['stages']:
-        lines += [f"### {stage['id']}. {stage['title']}", '', f"ü�� ��ǥ: **{stage['experience']}**", '', '�۾� ����:', '']
+        lines += [f"### {stage['id']}. {stage['title']}", '', f"체험 목표: **{stage['experience']}**", '', '작업 범위:', '']
         lines += [f'- {item}' for item in stage['work']]
         if stage.get('tasks'):
-            lines += ['', '| �۾� | ���⹰ | �Ϸ� Ȯ�� | ���� |', '| --- | --- | --- | --- |']
+            lines += ['', '| 작업 | 산출물 | 완료 확인 | 상태 |', '| --- | --- | --- | --- |']
             lines += [f"| {t['id']} {t['title']} | {t['result']} | {t['checks']} | {t['status']} |" for t in stage['tasks']]
-        lines += ['', '�ܰ� �Ϸ� ����:', ''] + [f'- {item}' for item in stage['gate']]
-        lines += ['', '���޹�:', ''] + [f'- {item}' for item in stage['deliverables']]
-        lines += ['', f"�̹� �ܰ� ����: {stage['excluded']}", '', f"���� �ൿ: {stage['nextAction']}", '']
-    lines += ['## ���� ������ ����', '', '| ���� | ���� ���� |', '| --- | --- |']
+        lines += ['', '단계 완료 기준:', ''] + [f'- {item}' for item in stage['gate']]
+        lines += ['', '전달물:', ''] + [f'- {item}' for item in stage['deliverables']]
+        lines += ['', f"이번 단계 제외: {stage['excluded']}", '', f"다음 행동: {stage['nextAction']}", '']
+    lines += ['## 진행 상태의 정의', '', '| 상태 | 판정 기준 |', '| --- | --- |']
     lines += [f"| {row['status']} | {row['meaning']} |" for row in data['statusDefinitions']]
-    lines += ['', '## ����� ����ȭ', '']
+    lines += ['', '## 검토와 현행화', '']
     lines += [f"{i}. {item}" for i, item in enumerate(data['reviewFlow'], 1)]
-    lines += ['', '����ȭ ��Ģ:', ''] + [f'- {item}' for item in data['updateRules']]
-    lines += ['', '## ������ �������� ����', '',
-              '- ���� ����: [quality-progress.json](quality-progress.json)',
-              '- ���� ��Ȳǥ: [quality-progress.md](quality-progress.md)',
-              '- ���� P2 ���� ����: [stage2-character-instructions.md](stage2-character-instructions.md)',
+    lines += ['', '현행화 규칙:', ''] + [f'- {item}' for item in data['updateRules']]
+    lines += ['', '## 문서와 디자인의 연결', '',
+              '- 상태 원본: [quality-progress.json](quality-progress.json)',
+              '- 현재 현황표: [quality-progress.md](quality-progress.md)',
+              '- 다음 P2 개발 지시: [stage2-character-instructions.md](stage2-character-instructions.md)',
               '- PDF: [RoxHistory_QualityRoadmap_v0.1.pdf](../presentations/RoxHistory_QualityRoadmap_v0.1.pdf)',
-              f"- ���� ������: {data['design']['fileUrl']}",
-              f"- Figma �ε��: {data['design']['roadmapUrl'] or data['design']['roadmapStatus']}",
-              '- �����: `python scripts/build_quality_roadmap.py`', '',
-              '## ���� �̷�', '', '| ��¥ | �ܰ� | ���� |', '| --- | --- | --- |']
+              f"- 기존 디자인: {data['design']['fileUrl']}",
+              f"- Figma 로드맵: {data['design']['roadmapUrl'] or data['design']['roadmapStatus']}",
+              '- 재생성: `python scripts/build_quality_roadmap.py`', '',
+              '## 변경 이력', '', '| 날짜 | 단계 | 변경 |', '| --- | --- | --- |']
     lines += [f"| {h['date']} | {h['stage']} | {h['event']} |" for h in data['history']]
-    lines += ['', '## ����', ''] + [f"- [{r['label']}]({r['url']})" for r in data['references']]
+    lines += ['', '## 참고', ''] + [f"- [{r['label']}]({r['url']})" for r in data['references']]
     return '\n'.join(lines) + '\n'
 
 
 def progress_markdown(data):
-    lines = ['# RoxHistory ǰ�� ���� ��Ȳ', '', f"������Ʈ: {data['updatedAt']} KST / �ε�� v{data['version']}", '',
-             f"**����: {data['currentFocus']}**", '', data['progressPolicy'], '',
-             '## �ܰ躰 ��Ȳ', '', '| �ܰ� | ���� | ���� | ���� | ���� ���� | ��ǥ�� | ���� �Ϸ��� |',
+    lines = ['# RoxHistory 품질 진행 현황', '', f"업데이트: {data['updatedAt']} KST / 로드맵 v{data['version']}", '',
+             f"**현재: {data['currentFocus']}**", '', data['progressPolicy'], '',
+             '## 단계별 현황', '', '| 단계 | 상태 | 구현 | 검증 | 팀장 판정 | 목표일 | 실제 완료일 |',
              '| --- | --- | --- | --- | --- | --- | --- |']
     for s in data['stages']:
-        lines.append(f"| {s['id']} {s['title']} | {s['status']} | {s['implementation']} | {s['validation']} | {s.get('leaderReview','���')} | {dash(s['targetDate'])} | {s['actualFinish'] or '�̿Ϸ�'} |")
-    lines += ['', '## ���� ��', '', '| �ܰ� | ���� ���� | ��ǥ �Ϸ� | ���� ���� | ���� �Ϸ� |', '| --- | --- | --- | --- | --- |']
-    lines += [f"| {s['id']} | {dash(s['plannedStart'])} | {dash(s['targetDate'])} | {s['actualStart'] or '������'} | {s['actualFinish'] or '�̿Ϸ�'} |" for s in data['stages']]
-    lines += ['', data['schedulePolicy'], '', '## P1 �Ϸ� ��� / ���� �۾� P2', '', '[P2 ĳ���� ���� ����](stage2-character-instructions.md)', '', '| �۾� | ���� | ���⹰ |', '| --- | --- | --- |']
+        lines.append(f"| {s['id']} {s['title']} | {s['status']} | {s['implementation']} | {s['validation']} | {s.get('leaderReview','대기')} | {dash(s['targetDate'])} | {s['actualFinish'] or '미완료'} |")
+    lines += ['', '## 일정 상세', '', '| 단계 | 예정 시작 | 목표 완료 | 실제 시작 | 실제 완료 |', '| --- | --- | --- | --- | --- |']
+    lines += [f"| {s['id']} | {dash(s['plannedStart'])} | {dash(s['targetDate'])} | {s['actualStart'] or '미착수'} | {s['actualFinish'] or '미완료'} |" for s in data['stages']]
+    lines += ['', data['schedulePolicy'], '', '## P1 완료 기록 / 다음 작업 P2', '', '[P2 캐릭터 개발 지시](stage2-character-instructions.md)', '', '| 작업 | 상태 | 산출물 |', '| --- | --- | --- |']
     lines += [f"| {t['id']} {t['title']} | {t['status']} | {t['result']} |" for t in data['stages'][0]['tasks']]
-    lines += ['', '## ���� �ൿ�� ����', '']
+    lines += ['', '## 다음 행동과 막힘', '']
     for s in data['stages']:
-        lines += [f"- {s['id']}: {s['nextAction']}. ����: {s['blocker'] or '��� ����'}. ���� �ٰ�: {'; '.join(s['evidence']) or '�̵��'}"]
-    lines += ['', '## ��Ȳ ���ſ� �ʿ��� ����', '',
-              '����ڴ� �ܰ衤�۾� ID, ����, ���� ����/�Ϸ���, ���� ��ǥ��, ���� Ŀ�ԡ�PR, APK������, ���� ȯ�桤���, ������ ���� ��ġ�� �����մϴ�.', '',
-              'ǰ�� �ܰ� �Ϸ�� ���������������� �Ǵ��� ��ϵ� ��쿡 ǥ���մϴ�. ����� ������ ��ٸ��� ���� ������ ���� �ʽ��ϴ�. ����� �÷��� Ȯ���� ��� ���ؼ��̸� P1~P5 �Ϸῡ �ڵ� �ݿ����� �ʽ��ϴ�.', '',
-              '������ ��û �Ǵ� ���� ������ ���� �� ����ȭ�մϴ�. �ڵ� ���ó� ���� �˸��� ���� �������� �ʾҽ��ϴ�.', '',
-              '[��ü �ε��](quality-roadmap-v0.1.md) / [���� ����](quality-progress.json)', '']
+        lines += [f"- {s['id']}: {s['nextAction']}. 막힘: {s['blocker'] or '기록 없음'}. 검증 근거: {'; '.join(s['evidence']) or '미등록'}"]
+    lines += ['', '## 현황 갱신에 필요한 정보', '',
+              '담당자는 단계·작업 ID, 상태, 실제 시작/완료일, 합의 목표일, 변경 커밋·PR, APK·영상, 검증 환경·결과, 막힘과 다음 조치를 보고합니다.', '',
+              '품질 단계 완료는 구현·검증·팀장 판단이 기록된 경우에 표시합니다. 사용자 응답을 기다리는 승인 절차는 두지 않습니다. 사용자 플레이 확인은 기능 기준선이며 P1~P5 완료에 자동 반영하지 않습니다.', '',
+              '문서는 요청 또는 개발 보고를 받을 때 현행화합니다. 자동 감시나 정기 알림은 아직 설정하지 않았습니다.', '',
+              '[전체 로드맵](quality-roadmap-v0.1.md) / [상태 원본](quality-progress.json)', '']
     return '\n'.join(lines)
 
 
@@ -171,74 +171,74 @@ def pdf(data, destination):
         top = title(f"{stage['id']}  {stage['title']}", top)
         top = p(stage['experience'], MARGIN, top) - 12
         top = bullets(stage['work'], top, style=small)
-        top = p('�Ϸ� Ȯ��', MARGIN, top-3, style=ParagraphStyle('Sub', parent=normal, fontName='KR-Bold')) - 7
+        top = p('완료 확인', MARGIN, top-3, style=ParagraphStyle('Sub', parent=normal, fontName='KR-Bold')) - 7
         top = bullets(stage['gate'], top, style=small)
-        top = p('���޹�: ' + ' / '.join(stage['deliverables']), MARGIN, top-2, style=small)-8
-        top = p('����: ' + stage['excluded'], MARGIN, top, style=small)-20
+        top = p('전달물: ' + ' / '.join(stage['deliverables']), MARGIN, top-2, style=small)-8
+        top = p('제외: ' + stage['excluded'], MARGIN, top, style=small)-20
         return top
 
-    y = begin(1,'��ü ��ǥ','ª�Ƶ�, �ϼ��� ����ó��','�ϻ絿 �� �������� �����ϴ� 5�ܰ� ǰ�� �ε��')
+    y = begin(1,'전체 목표','짧아도, 완성된 게임처럼','암사동 한 지역에서 시작하는 5단계 품질 로드맵')
     y = p(data['goal'], MARGIN,y,style=ParagraphStyle('Hero',parent=heading,fontSize=18,leading=28))-14
     y = p(data['scope'],MARGIN,y)-19
     c.setFillColor(AMBER)
     c.roundRect(MARGIN,y-59,CONTENT,59,9,fill=1,stroke=0)
-    p('���� ����: P1 �Ϸ� / P2 ĳ���� �ִϸ��̼� ���� �غ�',MARGIN+14,y-11,CONTENT-28,ParagraphStyle('Focus',parent=normal,fontName='KR-Bold'))
-    p('���� �ܰ� ���� �Ϸ� 1/5  |  ����� �ǵ�� ���� �ݿ�',MARGIN+14,y-34,CONTENT-28,small)
+    p('현재 초점: P1 완료 / P2 Android 루프 확인·아트 검토',MARGIN+14,y-11,CONTENT-28,ParagraphStyle('Focus',parent=normal,fontName='KR-Bold'))
+    p('팀장 단계 검토 완료 1/5  |  사용자 피드백 수시 반영',MARGIN+14,y-34,CONTENT-28,small)
     y -= 82
-    y = table([['�ܰ�','���� ����','���� ����']]+[[s['id']+' '+s['title'],s['experience'],'���� ��� ����' if not s['dependsOn'] else s['dependsOn'][0]+' ���� ����'] for s in data['stages']], [172,217,CONTENT-389], y)
-    y = title('�̹� Ȯ�ε� �Ͱ� ������ Ȯ���� ��',y-2)
+    y = table([['단계','만들 경험','착수 조건']]+[[s['id']+' '+s['title'],s['experience'],'기존 기능 보존' if not s['dependsOn'] else s['dependsOn'][0]+' 팀장 검토'] for s in data['stages']], [172,217,CONTENT-389], y)
+    y = title('이미 확인된 것과 앞으로 확인할 것',y-2)
     y = p(data['baseline']['evidence'],MARGIN,y)-9
-    y = p('���� ��� ������ �⺻ ���� Ȯ�ΰ� ���ο� ǰ�� �ܰ��� �ϷḦ �����մϴ�. ������ �ÿ��� �����ϴ� �뵵�̸� ���� ������ �������� �ʽ��ϴ�.',MARGIN,y,style=small)-13
-    p('���� ��Ʈ: '+data['design']['style'],MARGIN,y,style=small)
+    y = p('기존 기능 데모의 기본 실행 확인과 새로운 품질 단계의 완료를 구분합니다. 투자자 시연은 지향하는 용도이며 투자 성과를 보장하지 않습니다.',MARGIN,y,style=small)-13
+    p('공통 아트: '+data['design']['style'],MARGIN,y,style=small)
     c.showPage()
 
-    y=begin(2,'1�ܰ� ��','P1  ��� �ִ� ���� ������','���� ������Ʈ�� �����Ļ��� �����Ӻ��� �ϼ�')
+    y=begin(2,'1단계 상세','P1  살아 있는 강변 정착지','개별 오브젝트와 물·식생의 움직임부터 완성')
     y=p(data['stages'][0]['experience'],MARGIN,y)-15
     for task in data['stages'][0]['tasks']:
         y=p(task['id']+'  '+task['title']+'  /  '+task['status'],MARGIN,y,style=ParagraphStyle('Task',parent=normal,fontName='KR-Bold',fontSize=12,leading=19))-6
-        y=p('���⹰: '+task['result'],MARGIN,y)-5
-        y=p('Ȯ��: '+task['checks'],MARGIN,y,style=small)-18
-    y=title('�ݵ�� ��ų ���',y)
-    y=bullets(['��桤�����������Ļ��������ǹ�����ǰ�� �ʿ��� ������ �и�','���� �̵���ä�����Ǽ������� ��ɰ� ���� ���� UI ����','�������ٴ� �������׸��ڡ��յ� �������浹�� ��ġ','��濡 ���� UI���ι��� ���� ���� ����� �ߺ� ����'],y,style=small)
-    p('����: '+data['stages'][0]['excluded'],MARGIN,y-3,style=small)
+        y=p('산출물: '+task['result'],MARGIN,y)-5
+        y=p('확인: '+task['checks'],MARGIN,y,style=small)-18
+    y=title('반드시 지킬 경계',y)
+    y=bullets(['배경·지형·물·식생·돌·건물·소품을 필요한 단위로 분리','기존 이동·채집·건설·저장 기능과 현재 조작 UI 유지','시점·바닥 접점·그림자·앞뒤 가림·충돌을 일치','배경에 박힌 UI·인물과 실제 게임 요소의 중복 정리'],y,style=small)
+    p('제외: '+data['stages'][0]['excluded'],MARGIN,y-3,style=small)
     c.showPage()
 
-    y=begin(3,'2~3�ܰ�','�����ӿ��� �ո�����','�� �ܰ��� ������ ���� �Ǵ����� ����, ����� �ǵ���� ���� �ݿ�')
+    y=begin(3,'2~3단계','움직임에서 손맛으로','각 단계의 검증과 팀장 판단으로 진행, 사용자 피드백은 수시 반영')
     y=stage_block(data['stages'][1],y)
     c.setStrokeColor(LINE); c.line(MARGIN,y+5,WIDTH-MARGIN,y+5)
     stage_block(data['stages'][2],y-10)
     c.showPage()
 
-    y=begin(4,'4~5�ܰ�','���⿡�� �ÿ� ��������','ª�� �з� �ȿ��� ��ü ���밡 �¹������� ����')
+    y=begin(4,'4~5단계','연출에서 시연 경험으로','짧은 분량 안에서 전체 뼈대가 맞물리는지 검증')
     y=stage_block(data['stages'][3],y)
     c.setStrokeColor(LINE); c.line(MARGIN,y+5,WIDTH-MARGIN,y+5)
     stage_block(data['stages'][4],y-10)
     c.showPage()
 
-    y=begin(5,'���� ��Ȳ','���� ������ �Դ°�','��ȹ������������������ ������ ����� �ǵ���� ������ ���')
-    y=title('���� ��Ȳ ������',y)
-    y=table([['�ܰ�','���� ����','����','����','���� ����']]+[[s['id'],s['status'],s['implementation'],s['validation'],s.get('leaderReview','���')] for s in data['stages']],[45,124,110,110,CONTENT-389],y)
-    y=title('���� ����',y)
-    y=table([['�ܰ�','���� ����','��ǥ �Ϸ�','���� ����','���� �Ϸ�']]+[[s['id'],dash(s['plannedStart']),dash(s['targetDate']),s['actualStart'] or '������',s['actualFinish'] or '�̿Ϸ�'] for s in data['stages']],[45,116,116,116,CONTENT-393],y)
+    y=begin(5,'진행 현황','지금 어디까지 왔는가','계획·구현·검증·팀장 판정과 사용자 피드백을 구분해 기록')
+    y=title('현재 현황 스냅샷',y)
+    y=table([['단계','현재 상태','구현','검증','팀장 판정']]+[[s['id'],s['status'],s['implementation'],s['validation'],s.get('leaderReview','대기')] for s in data['stages']],[45,124,110,110,CONTENT-389],y)
+    y=title('일정 관리',y)
+    y=table([['단계','예정 시작','목표 완료','실제 시작','실제 완료']]+[[s['id'],dash(s['plannedStart']),dash(s['targetDate']),s['actualStart'] or '미착수',s['actualFinish'] or '미완료'] for s in data['stages']],[45,116,116,116,CONTENT-393],y)
     y=p(data['schedulePolicy'],MARGIN,y)-17
-    y=title('���� �ൿ',y)
+    y=title('다음 행동',y)
     y=p(data['stages'][1]['nextAction'],MARGIN,y)-12
-    y=p('P1�� PR #7�� CI��ȯ�桤�̵� ���䡤Android �⺻ ���� ����� �ٰŷ� �ܰ� �Ϸ� ó���߽��ϴ�. P2 ���� �غ��̸�, ��ü ��ǰ�� ��Ÿ �ϷḦ ������ �ʽ��ϴ�.',MARGIN,y,style=small)-12
-    p('�ڵ� ���á����� �˸��� �������� �ʾҽ��ϴ�. ���� ���� �Ǵ� ����� Ȯ�� ��û�� ���� �� ���¸� �����ϰ� ����ȭ�մϴ�.',MARGIN,y,style=small)
+    y=p('P1은 PR #7과 CI·환경·이동 검토·Android 기본 실행 기록을 근거로 단계 완료 처리했습니다. P2 데모 재료 각 1개와 Android 에뮬레이터 전체 루프를 확인했습니다. 아트 최종 판정과 실기기 검증은 남았습니다. 전체 베타 완료를 뜻하지 않습니다.',MARGIN,y,style=small)-12
+    p('자동 감시·정기 알림은 설정하지 않았습니다. 개발 보고 또는 사용자 확인 요청이 있을 때 상태를 대조하고 현행화합니다.',MARGIN,y,style=small)
     c.showPage()
 
-    y=begin(6,'� ��Ģ','�ϷḦ Ȯ���ϴ� ���','���������� �����Figma�� ���� ���·� ����')
-    y=table([['����','���� ����']]+[[r['status'],r['meaning']] for r in data['statusDefinitions']],[95,CONTENT-95],y)
-    y=title('�ܰ躰 ���ް� ����ȭ',y)
-    y=bullets(['���������� �� ���� ���䡤���� �� main ���ա�APK �ܵ� ���� �� ���� �ܰ�',
-               '�ܰ衤�۾� ID, ���, ��ǥ�ϡ����� ��¥���ٰŸ� ���. ����� ������ �ʼ� ��� �������� ���� ����',
-               'APK�����󡤰������� ���� Ŀ�ԡ���⡤OS���ð����̰��� ������ ����',
-               'quality-progress.json ���� �� �ε�ʡ���Ȳǥ��PDF��Figma ���� ���¸� �Բ� ����',
-               '���� �׽�Ʈ ����� �ִϸ��̼ǡ�������������� ���� �Ϸ�� ��ü���� ����'],y,style=small)
-    y=title('����� ���� Figma ����',y-1)
-    y=p('���� ������: '+data['design']['fileUrl'],MARGIN,y,style=small)-6
-    y=p('Figma �ε��: '+(data['design']['roadmapUrl'] or data['design']['roadmapStatus'])+'. ���� ���ῡ���� Specs ���� API�� ����� �� ���� ���� FigJam ���̾�׷����� �����մϴ�.',MARGIN,y,style=small)-11
-    y=title('���� �̷�',y)
+    y=begin(6,'운영 규칙','완료를 확인하는 방법','문서·실행 결과·Figma를 같은 상태로 유지')
+    y=table([['상태','판정 기준']]+[[r['status'],r['meaning']] for r in data['statusDefinitions']],[95,CONTENT-95],y)
+    y=title('단계별 전달과 현행화',y)
+    y=bullets(['구현·검증 → 팀장 검토·보완 → main 병합·APK 단독 전달 → 다음 단계',
+               '단계·작업 ID, 담당, 목표일·실제 날짜·근거를 기록. 사용자 응답을 필수 대기 조건으로 두지 않음',
+               'APK·영상·검증에는 기준 커밋·기기·OS·시각·미검증 범위를 연결',
+               'quality-progress.json 수정 후 로드맵·현황표·PDF·Figma 도식 상태를 함께 갱신',
+               '기존 테스트 통과를 애니메이션·공간감·재미의 검증 완료로 대체하지 않음'],y,style=small)
+    y=title('연결과 현재 Figma 상태',y-1)
+    y=p('기존 디자인: '+data['design']['fileUrl'],MARGIN,y,style=small)-6
+    y=p('Figma 로드맵: '+(data['design']['roadmapUrl'] or data['design']['roadmapStatus'])+'. 현재 연결에서는 Specs 문서 API를 사용할 수 없어 별도 FigJam 다이어그램으로 연결합니다.',MARGIN,y,style=small)-11
+    y=title('변경 이력',y)
     for h in data['history'][-4:]:
         y=p(h['date']+' / '+h['stage']+' / '+h['event'],MARGIN,y,style=small)-6
     c.showPage()
@@ -253,7 +253,7 @@ def main():
     (ROOT/'docs/quality-roadmap-v0.1.md').write_text(markdown(data),encoding='utf-8')
     (ROOT/'docs/quality-progress.md').write_text(progress_markdown(data),encoding='utf-8')
     pdf(data,Path(args.pdf))
-    print(json.dumps({'stages':len(data['stages']),'acceptedStages':sum(s['status']=='�Ϸ�' for s in data['stages']), 'pdf':args.pdf},ensure_ascii=False))
+    print(json.dumps({'stages':len(data['stages']),'acceptedStages':sum(s['status']=='완료' for s in data['stages']), 'pdf':args.pdf},ensure_ascii=False))
 
 
 if __name__=='__main__':

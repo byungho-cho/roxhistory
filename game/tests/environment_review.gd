@@ -38,7 +38,7 @@ func run() -> void:
 	app.set_process(false)
 	var world: DemoWorld = app.world
 	var player: DemoPlayer = world.player
-	var camera: Camera2D = player.get_child(2)
+	var camera: Camera2D = player.camera
 	camera.top_level = true
 	camera.position = Vector2(1170,800)
 	camera.offset = Vector2.ZERO

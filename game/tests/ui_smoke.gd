@@ -86,7 +86,7 @@ func run_tests() -> void:
 	check(app.task == "gather","Rapid input leaves one active gather task")
 	app.task_remaining = 0.01
 	await create_timer(0.06).timeout
-	check(app.model.state.wood == 2,"Single action grants one yield")
+	check(app.model.state.wood == 1,"Single action grants one demo resource")
 	app.world.player.position = DemoConfig.point(DemoConfig.get_data().build_site)+Vector2(140,0)
 	await process_frame
 	app.build_action()

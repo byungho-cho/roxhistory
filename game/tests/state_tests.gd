@@ -22,6 +22,14 @@ func run_tests() -> void:
 	check(not model.build(),"Insufficient resources cannot build")
 	check(not model.claim_reward(),"Cannot claim before construction")
 	check(not model.gather("missing"),"Unknown resource IDs rejected")
+	check(DemoConfig.get_data().wood_cost == 1 and DemoConfig.get_data().stone_cost == 1,"Demo requires one unit of each material")
+	check(model.gather("wood_1"),"One wood gathering succeeds")
+	check(not model.can_build(),"Wood alone cannot build")
+	check(model.gather("stone_1"),"One stone gathering succeeds")
+	check(model.state.wood == 1 and model.state.stone == 1 and model.can_build(),"One gathering per material unlocks construction")
+	check(model.build(),"Minimal demo construction succeeds")
+	check(model.state.wood == 0 and model.state.stone == 0,"Minimal construction deducts exactly one of each")
+	check(model.start_new(),"Reset before resource exhaustion checks")
 	for n in DemoConfig.get_data().nodes:
 		for i in int(n.charges):
 			check(model.gather(n.id),"Collect charge %s %d" % [n.id,i])
@@ -31,7 +39,7 @@ func run_tests() -> void:
 		check(model.state[n.kind] == before,"No duplicate resource credit")
 	check(model.can_build(),"All resources meet build cost")
 	check(model.build(),"Construction succeeds")
-	check(model.state.wood == 0 and model.state.stone == 0,"Construction deducts exact cost")
+	check(model.state.wood == 19 and model.state.stone == 11,"Construction deducts exact cost from excess inventory")
 	for i in 30:
 		check(not model.build(),"Repeated construction rejected")
 	check(model.claim_reward(),"Reward claimed")
