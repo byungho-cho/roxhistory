@@ -1,0 +1,36 @@
+{
+  "recorded_at_kst": "2026-10-31T06:53:04+09:00",
+  "files": [
+    {
+      "path": "screenshots/store-scene-a.jpg",
+      "source_url": "https://play-lh.googleusercontent.com/s81B8Ted-QCCbHERO_NwG3hXgTvOUREsNdf-U8D1gD19q2hqOvpudRVI8VoNxBQM_K2D6AoiAiqbY5Kc2TFEW4U=w526-h296",
+      "publisher": "Century Games Innovation Pte. Ltd. via Google Play",
+      "kind": "official_store_promotional_still_not_playtest_capture",
+      "source_page": "https://play.google.com/pc-store/games/details?id=com.s01.global",
+      "stored_at_kst": "2026-10-31T06:53:04+09:00",
+      "dimensions": [
+        166,
+        296
+      ],
+      "bytes": 33470,
+      "sha256": "a0e592998b9ee0c558364c70171247e8368baf2826e08711eaba0b0a203a54e6",
+      "modified": false
+    },
+    {
+      "path": "screenshots/store-scene-b.jpg",
+      "source_url": "https://play-lh.googleusercontent.com/RMpMVuUaAZT7EP3WSa3xA-z1DYFZVElLW6g77H97zvUZWwGs8gpa2_cXJ5tE79LVib1rsLXdysn3_91VJ-wKqQ=w526-h296",
+      "publisher": "Century Games Innovation Pte. Ltd. via Google Play",
+      "kind": "official_store_promotional_still_not_playtest_capture",
+      "source_page": "https://play.google.com/pc-store/games/details?id=com.s01.global",
+      "stored_at_kst": "2026-10-31T06:53:04+09:00",
+      "dimensions": [
+        166,
+        296
+      ],
+      "bytes": 33337,
+      "sha256": "96ca73d931700c06bc34ce73963951d43955a5bcc2d755e27a72ca2b03171b9a",
+      "modified": false
+    }
+  ],
+  "gameplay_clips": []
+}

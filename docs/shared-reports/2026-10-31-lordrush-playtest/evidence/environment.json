@@ -1,0 +1,42 @@
+{
+  "recorded_at_kst": "2026-10-31T06:53:04+09:00",
+  "environment_code_observed_at_kst": "2026-10-31T06:50:35+09:00",
+  "execution_os": "Linux",
+  "kernel": "6.18.57",
+  "architecture": "x86_64",
+  "native_game_control": {
+    "method": "cua.getState() inventory",
+    "observed_apps": [],
+    "observed_browsers": [
+      {
+        "name": "Chrome",
+        "type": "cdp",
+        "tabs": []
+      }
+    ],
+    "game_capture": false,
+    "game_mouse_keyboard_control": false,
+    "post_input_screen_check": false
+  },
+  "path_lookup": {
+    "adb": null,
+    "emulator": null,
+    "powershell.exe": null,
+    "cmd.exe": null
+  },
+  "checked_paths": {
+    "/mnt/c": false,
+    "/dev/kvm": false,
+    "/dev/bus/usb": false,
+    "/root/.android": false,
+    "/root/Android/Sdk": false
+  },
+  "windows_install_and_signature": "User handover only; not independently checked",
+  "prior_adb_error": "User handover only; not reproduced this run",
+  "direct_play": false,
+  "game_version": null,
+  "game_login_attempted": false,
+  "new_emulator_or_adb_server_started": false,
+  "baseline_main_sha": "3538ca2cb03b39601d093ee49206178233dd53f2",
+  "baseline_open_pr_search_count": 0
+}
