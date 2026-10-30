@@ -1,0 +1,32 @@
+{
+  "utc": "2026-10-30T13:24:29Z",
+  "method": "Android playback capture by scrcpy PCM; media volume15/15; excludes first second per segment",
+  "results": {
+    "foreground": {
+      "rms": 0.005668911636906022,
+      "dbfs": -44.93,
+      "samples": 401664
+    },
+    "background": {
+      "rms": 0.0,
+      "dbfs": -200.0,
+      "samples": 399616
+    },
+    "resumed": {
+      "rms": 0.005390629496453899,
+      "dbfs": -45.37,
+      "samples": 401664
+    },
+    "muted": {
+      "rms": 0.0,
+      "dbfs": -200.0,
+      "samples": 399616
+    },
+    "muted_after_restart": {
+      "rms": 0.0,
+      "dbfs": -200.0,
+      "samples": 401664
+    }
+  },
+  "failed": []
+}

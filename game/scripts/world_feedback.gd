@@ -1,5 +1,6 @@
 class_name WorldFeedback
 extends Node2D
+signal sound_cue(key: String)
 
 # Presentation only: inventory/build/reward mutations stay in GameState.
 var world: DemoWorld
@@ -63,6 +64,7 @@ func update_work(seconds: float, total: float) -> void:
 		impact_point = point; impact_strength = 1.0
 		burst(point,color,7,0.42)
 		remember("impact:"+activity)
+		sound_cue.emit(("wood" if target.begins_with("wood") else "stone") if activity == "gather" else "build")
 		next_hit += 1.0/1.8
 	queue_redraw()
 
@@ -88,16 +90,19 @@ func gathered(id: String) -> void:
 	burst(at,Color("f4d58b"),12,0.65)
 	notices.append({"p":at,"age":0.0,"text":("나무" if kind == "wood" else "돌")+" +1","icon":kind})
 	remember("credit:"+kind)
+	sound_cue.emit("gain")
 
 func built() -> void:
 	celebration = 1.5
 	burst(world.site.position+Vector2(0,-90),Color("ffe2a0"),24,1.1)
 	remember("built")
+	sound_cue.emit("complete")
 
 func rewarded() -> void:
 	notices.append({"p":world.player.position+Vector2(0,-170),"age":0.0,"text":"씨앗 +10 · 보금자리 완성","icon":""})
 	burst(world.player.position+Vector2(0,-95),Color("f6d88f"),18,0.9)
 	remember("reward")
+	sound_cue.emit("reward")
 
 func _process(delta: float) -> void:
 	pulse += delta

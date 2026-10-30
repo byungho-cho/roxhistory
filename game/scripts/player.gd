@@ -69,6 +69,9 @@ func _ready() -> void:
 	camera.limit_top = 0
 	camera.limit_right = 2400
 	camera.limit_bottom = 1350
+	camera.position_smoothing_enabled = true
+	camera.position_smoothing_speed = 9.0
+	camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
 	add_child(camera)
 	get_viewport().size_changed.connect(fit_camera)
 	fit_camera()
@@ -102,6 +105,7 @@ func fit_camera() -> void:
 	var viewport_size := get_viewport().get_visible_rect().size
 	var fit := maxf(0.5,maxf(viewport_size.x/2400.0,viewport_size.y/1350.0))
 	camera.zoom = Vector2(fit,fit)
+	camera.reset_smoothing()
 
 func face_target(target: Vector2) -> void:
 	var d := target-position

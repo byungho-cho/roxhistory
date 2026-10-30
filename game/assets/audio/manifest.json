@@ -1,0 +1,102 @@
+{
+  "author": "Original synthesis for RoxHistory; no third-party recordings or music",
+  "sample_rate": 22050,
+  "assets": [
+    {
+      "file": "wood_0.wav",
+      "seconds": 0.3,
+      "peak_dbfs": -4.73,
+      "rms_dbfs": -20.55,
+      "loop": false,
+      "sha256": "e9cc130d94dee86318c85bdb3e3796e46e8de47999d1fa6942724f9926bc44d7"
+    },
+    {
+      "file": "wood_1.wav",
+      "seconds": 0.3,
+      "peak_dbfs": -4.73,
+      "rms_dbfs": -21.47,
+      "loop": false,
+      "sha256": "0c819d7691d5c449f61e0525a94cd702eb16084535d7c9a85b7860ac94fadff7"
+    },
+    {
+      "file": "stone_0.wav",
+      "seconds": 0.3,
+      "peak_dbfs": -4.73,
+      "rms_dbfs": -23.53,
+      "loop": false,
+      "sha256": "d507e157ddb564b1dd195a716f24c5b9ce72de63dde2609f423feea73a110fbd"
+    },
+    {
+      "file": "stone_1.wav",
+      "seconds": 0.3,
+      "peak_dbfs": -4.73,
+      "rms_dbfs": -24.28,
+      "loop": false,
+      "sha256": "041912f5b29cc2355f2f4b084e438abcc6594690b90c53df26d4cea0645b4291"
+    },
+    {
+      "file": "build_0.wav",
+      "seconds": 0.3,
+      "peak_dbfs": -4.73,
+      "rms_dbfs": -22.48,
+      "loop": false,
+      "sha256": "0e71d3b9f90d00f5c9ad99526907895eba617d217412830b38d8311bc4bbc459"
+    },
+    {
+      "file": "build_1.wav",
+      "seconds": 0.3,
+      "peak_dbfs": -4.73,
+      "rms_dbfs": -21.08,
+      "loop": false,
+      "sha256": "78705582664a1c6ce23976bae896d26dcb23a9d4dbf64030b883bf7c041e7630"
+    },
+    {
+      "file": "ui.wav",
+      "seconds": 0.09,
+      "peak_dbfs": -11.06,
+      "rms_dbfs": -24.09,
+      "loop": false,
+      "sha256": "77d3209608ad5d38cae44b99ae00bdcefd398861a6788c45608dbc6a222c9a0a"
+    },
+    {
+      "file": "gain.wav",
+      "seconds": 0.74,
+      "peak_dbfs": -7.54,
+      "rms_dbfs": -20.68,
+      "loop": false,
+      "sha256": "afd1516656789f09d6e4bf405d45d76d33153702cdc3b385dff5dc57f68a04de"
+    },
+    {
+      "file": "complete.wav",
+      "seconds": 1.16,
+      "peak_dbfs": -7.54,
+      "rms_dbfs": -19.19,
+      "loop": false,
+      "sha256": "194f4164ad134b0967ce2bdb5b710b7a8f2e6b3475c45571a7bf39711f3cad16"
+    },
+    {
+      "file": "reward.wav",
+      "seconds": 1.08,
+      "peak_dbfs": -7.54,
+      "rms_dbfs": -19.27,
+      "loop": false,
+      "sha256": "52c1953a240a6b70a79ef92129d6d0d7f9a8eab13dae41b9686395399861fa1c"
+    },
+    {
+      "file": "river.wav",
+      "seconds": 12.0,
+      "peak_dbfs": -9.12,
+      "rms_dbfs": -23.47,
+      "loop": true,
+      "sha256": "37ccd6187db770810b3373152a68b05e516bbbbbcf4ba4e5e27f3361c8067d34"
+    },
+    {
+      "file": "wind.wav",
+      "seconds": 12.0,
+      "peak_dbfs": -11.06,
+      "rms_dbfs": -26.33,
+      "loop": true,
+      "sha256": "4c4b5fd09a543dfd1cd3752d28a3566d102d12a74f22d78f4a4c771e04306c05"
+    }
+  ]
+}

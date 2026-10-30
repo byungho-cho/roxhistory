@@ -3,6 +3,7 @@ extends RefCounted
 
 static var sheet: Texture2D = preload("res://assets/figma/20204.png")
 static var cache := {}
+static var shared_theme: Theme
 
 static func icon(key: String) -> Texture2D:
 	if cache.has(key):
@@ -19,7 +20,7 @@ static func icon(key: String) -> Texture2D:
 
 static func panel(dark: bool = false) -> StyleBoxFlat:
 	var s := StyleBoxFlat.new()
-	s.bg_color = Color("35332eeb") if dark else Color("f1deb9f5")
+	s.bg_color = Color("302d26f7") if dark else Color("f1deb9fc")
 	s.border_color = Color("a77942")
 	s.set_border_width_all(0 if dark else 2)
 	s.set_corner_radius_all(16)
@@ -39,17 +40,19 @@ static func button_style(primary: bool = false) -> StyleBoxFlat:
 	return s
 
 static func theme() -> Theme:
+	if shared_theme: return shared_theme
 	var t := Theme.new()
 	var font := FontVariation.new()
 	font.base_font = preload("res://assets/fonts/NotoSansKR.ttf")
-	font.variation_opentype = {"wght":550.0}
+	# Numeric OpenType tag: string "wght" is ignored by Godot 4.5.1.
+	font.variation_opentype = {TextServerManager.get_primary_interface().name_to_tag("wght"):600.0}
 	t.default_font = font
 	t.default_font_size = 19
 	for cls in ["Label","Button"]:
 		t.set_color("font_color",cls,Color("49321e"))
 	for prop in ["font_hover_color","font_pressed_color"]:
 		t.set_color(prop,"Button",Color("49321e"))
-	t.set_color("font_disabled_color","Button",Color("968b79"))
+	t.set_color("font_disabled_color","Button",Color("625a4b"))
 	t.set_stylebox("normal","Button",button_style())
 	t.set_stylebox("hover","Button",button_style(true))
 	var down := button_style(true)
@@ -58,4 +61,5 @@ static func theme() -> Theme:
 	var disabled := button_style()
 	disabled.bg_color = Color("b5ad9b")
 	t.set_stylebox("disabled","Button",disabled)
+	shared_theme = t
 	return t

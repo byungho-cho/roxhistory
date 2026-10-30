@@ -1,0 +1,11 @@
+--------- beginning of main
+10-30 13:24:31.843 10278 10300 I godot   : Godot Engine v4.5.1.stable.official.f62fdbde1 - https://godotengine.org
+10-30 13:24:32.882 10278 10300 I godot   : OpenGL API OpenGL ES 3.1 (4.5.0 NVIDIA 610.88) - Compatibility - Using Device: Google (NVIDIA Corporation) - Android Emulator OpenGL ES Translator (NVIDIA GeForce RTX 5060/PCIe/SSE2)
+10-30 13:24:32.904 10278 10300 I godot   : 
+10-30 13:25:00.318 10278 10300 I godot   : HYBRID_PERF {"frames":600,"gpu":"Android Emulator OpenGL ES Translator (NVIDIA GeForce RTX 5060/PCIe/SSE2)","mean_ms":31.2826233333333,"mode":"3D","p95_ms":52.567,"viewport":"(960.0, 540.0)"}
+10-30 13:25:11.951 12957 13052 I godot   : Godot Engine v4.5.1.stable.official.f62fdbde1 - https://godotengine.org
+10-30 13:25:12.325 12957 13052 E godot   : WARNING: Failed to load cached shader, recompiling.
+10-30 13:25:12.325 12957 13052 E godot   :    at: _load_from_cache (drivers/gles3/shader_gles3.cpp:612)
+10-30 13:25:13.453 12957 13052 I godot   : OpenGL API OpenGL ES 3.1 (4.5.0 NVIDIA 610.88) - Compatibility - Using Device: Google (NVIDIA Corporation) - Android Emulator OpenGL ES Translator (NVIDIA GeForce RTX 5060/PCIe/SSE2)
+10-30 13:25:13.485 12957 13052 I godot   : 
+10-30 13:25:38.055 12957 13052 I godot   : HYBRID_PERF {"frames":600,"gpu":"Android Emulator OpenGL ES Translator (NVIDIA GeForce RTX 5060/PCIe/SSE2)","mean_ms":24.9115416666667,"mode":"3D","p95_ms":41.376,"viewport":"(960.0, 540.0)"}

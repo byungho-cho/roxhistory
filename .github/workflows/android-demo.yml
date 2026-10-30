@@ -20,6 +20,8 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - name: Verify bundled design assets
         run: node scripts/verify-demo-assets.mjs
+      - name: Verify original audio assets
+        run: python3 scripts/verify_demo_audio.py
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -59,7 +61,8 @@ jobs:
           ! grep -E 'SCRIPT ERROR:|ERROR:' environment-review-tests.log
           timeout 150 xvfb-run -a godot --audio-driver Dummy --path game --resolution 1280x720 --script res://tests/character_tests.gd -- --test-ui 2>&1 | tee character-tests.log
           ! grep -E 'SCRIPT ERROR:|ERROR:' character-tests.log
-          timeout 150 xvfb-run -a godot --audio-driver Dummy --path game --resolution 1280x720 --script res://tests/hybrid_tests.gd -- --test-ui 2>&1 | tee hybrid-tests.log
+          # Joystick is sampled in _process; keep render and physics ticks paired for the 12-tick stop assertion.
+          timeout 150 xvfb-run -a godot --fixed-fps 60 --audio-driver Dummy --path game --resolution 1280x720 --script res://tests/hybrid_tests.gd -- --test-ui 2>&1 | tee hybrid-tests.log
           ! grep -E 'SCRIPT ERROR:|ERROR:' hybrid-tests.log
           timeout 150 xvfb-run -a godot --audio-driver Dummy --path game --resolution 1280x720 --script res://tests/hybrid_occlusion.gd -- --test-ui 2>&1 | tee hybrid-occlusion-tests.log
           ! grep -E 'SCRIPT ERROR:|ERROR:' hybrid-occlusion-tests.log
@@ -68,6 +71,8 @@ jobs:
           # Sample action phases at deterministic engine time, independent of llvmpipe speed.
           timeout 150 xvfb-run -a godot --fixed-fps 60 --audio-driver Dummy --path game --resolution 1280x720 --script res://tests/interaction_tests.gd -- --test-ui 2>&1 | tee interaction-tests.log
           ! grep -E 'SCRIPT ERROR:|ERROR:' interaction-tests.log
+          timeout 150 xvfb-run -a godot --fixed-fps 60 --audio-driver Dummy --path game --resolution 1280x720 --script res://tests/presentation_tests.gd -- --test-ui 2>&1 | tee presentation-tests.log
+          ! grep -E 'SCRIPT ERROR:|ERROR:' presentation-tests.log
       - name: Export signed debug APK
         run: |
           set -euo pipefail
@@ -76,20 +81,20 @@ jobs:
           export GODOT_ANDROID_KEYSTORE_DEBUG_PATH="$RUNNER_TEMP/debug.keystore"
           export GODOT_ANDROID_KEYSTORE_DEBUG_USER=androiddebugkey
           export GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD=android
-          godot --headless --path game --export-debug Android "$PWD/build/RoxHistory-0.1.4-stage3-debug.apk" 2>&1 | tee build/export.log
-          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose build/RoxHistory-0.1.4-stage3-debug.apk | tee build/signature.txt
-          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging build/RoxHistory-0.1.4-stage3-debug.apk > build/package.txt
-          sha256sum build/RoxHistory-0.1.4-stage3-debug.apk > build/SHA256SUMS
+          godot --headless --path game --export-debug Android "$PWD/build/RoxHistory-0.1.5-stage4-debug.apk" 2>&1 | tee build/export.log
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose build/RoxHistory-0.1.5-stage4-debug.apk | tee build/signature.txt
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging build/RoxHistory-0.1.5-stage4-debug.apk > build/package.txt
+          sha256sum build/RoxHistory-0.1.5-stage4-debug.apk > build/SHA256SUMS
           git rev-parse HEAD > build/SOURCE_COMMIT
       - name: Complete source package
         if: always()
         run: |
           mkdir -p build
-          git archive HEAD -o build/RoxHistory-0.1.4-stage3-source.zip
+          git archive HEAD -o build/RoxHistory-0.1.5-stage4-source.zip
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: RoxHistory-0.1.4-stage3-validation
+          name: RoxHistory-0.1.5-stage4-validation
           path: |
             build/
             game/reports/
@@ -99,6 +104,6 @@ jobs:
           retention-days: 30
       - uses: actions/upload-artifact@v4
         with:
-          name: RoxHistory-0.1.4-stage3-APK
-          path: build/RoxHistory-0.1.4-stage3-debug.apk
+          name: RoxHistory-0.1.5-stage4-APK
+          path: build/RoxHistory-0.1.5-stage4-debug.apk
           retention-days: 30
