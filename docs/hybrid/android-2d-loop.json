@@ -1,0 +1,33 @@
+{
+  "utc": "2026-10-30T10:57:49Z",
+  "elapsed_seconds": 28.75,
+  "environment": "Android 15 API35 x86_64 emulator, host RTX5060, 1280x720",
+  "input": "ADB touchscreen gestures, no teleport or save edits",
+  "state": {
+    "built": true,
+    "depleted": {
+      "stone_2": 1,
+      "wood_3": 1
+    },
+    "intro_seen": true,
+    "position": [
+      732.796997070312,
+      1071.03002929688
+    ],
+    "region": "amsa",
+    "reward_claimed": true,
+    "schema": 1,
+    "stone": 0,
+    "tokens": 10,
+    "wood": 0
+  },
+  "checks": [
+    "wood exactly once",
+    "stone exactly once",
+    "build costs 1+1",
+    "reward exactly 10",
+    "force-stop continue identical save",
+    "quest popup/back",
+    "home/resume movement"
+  ]
+}

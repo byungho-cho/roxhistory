@@ -241,7 +241,7 @@ func title_screen() -> void:
 	continue_btn.disabled = model.state.is_empty()
 	button(v,"새로 시작",new_game_prompt,false,"compass")
 	button(v,"데모 안내",show_about,false,"scroll")
-	label(stage,"1장 · 선사시대의 첫 불씨   |   v0.1.1-stage1",17,Color("fff0d1")).position = Vector2(safe.x+10,h-safe.y-30)
+	label(stage,"1장 · 선사시대의 첫 불씨   |   v0.1.3-hybrid",17,Color("fff0d1")).position = Vector2(safe.x+10,h-safe.y-30)
 
 func new_game_prompt() -> void:
 	if not model.state.is_empty() or model.store.blocked:
@@ -288,6 +288,7 @@ func enter_game() -> void:
 	if not is_instance_valid(world):
 		world = DemoWorld.new(model)
 		add_child(world)
+	world.player.set_character_3d(false if test_mode else settings.get_value("app","character_3d",true))
 	show_screen("play")
 	if not model.state.intro_seen:
 		var c := DemoConfig.get_data()
@@ -463,12 +464,20 @@ func pause_game() -> void:
 	show_modal("잠시 쉬어 가기","암사동 · 첫 보금자리\n진행은 기기에 자동 저장됩니다.",[
 		{"text":"계속하기","primary":true,"action":close_modal},
 		{"text":"시작 화면","action":func(): close_modal(); show_screen("title")},
-		{"text":"데모 안내·소리 설정","action":show_about}])
+		{"text":"2D로 비교" if world.player.use_3d else "3D로 비교","action":toggle_character},
+		{"text":"안내·소리","action":show_about}])
+
+func toggle_character() -> void:
+	var enabled: bool = not world.player.use_3d
+	world.player.set_character_3d(enabled)
+	settings.set_value("app","character_3d",enabled)
+	if settings.save(prefs_path) != OK: show_error("비교 설정을 저장하지 못했습니다.")
+	else: close_modal()
 
 func show_about() -> void:
 	var c := DemoConfig.get_data()
 	var sound: bool = settings.get_value("app","sound",false)
-	show_modal("RoxHistory · v0.1.1-stage1",c.history.fact+"\n\n"+c.history.fiction+"\n\n이 데모의 소리는 조작 효과음만 제공합니다. 씨앗은 완료 기념 보상입니다.",[
+	show_modal("RoxHistory · v0.1.3-hybrid",c.history.fact+"\n\n"+c.history.fiction+"\n\n이 데모의 소리는 조작 효과음만 제공합니다. 씨앗은 완료 기념 보상입니다.",[
 		{"text":"소리 끄기" if sound else "소리 켜기","action":func():
 			settings.set_value("app","sound",not sound)
 			if settings.save(prefs_path) != OK: show_error("소리 설정을 저장하지 못했습니다.")
@@ -550,6 +559,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		elif event.physical_keycode == KEY_B: build_action()
 
 func _notification(what: int) -> void:
+	# Synthetic tests issue PAUSED/RESUMED explicitly; desktop focus is external.
+	if test_mode and what in [NOTIFICATION_APPLICATION_FOCUS_OUT,NOTIFICATION_APPLICATION_FOCUS_IN]: return
 	if what == NOTIFICATION_WM_GO_BACK_REQUEST:
 		go_back()
 	elif what == NOTIFICATION_APPLICATION_PAUSED or what == NOTIFICATION_APPLICATION_FOCUS_OUT:

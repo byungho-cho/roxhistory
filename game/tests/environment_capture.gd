@@ -18,7 +18,7 @@ func run() -> void:
 		for p in app.world.environment_props: p.sprite.material = null
 		app.world.water.material = null
 	app.world.player.position = Vector2(990,1020)
-	var camera: Camera2D = app.world.player.get_child(2)
+	var camera: Camera2D = app.world.player.camera
 	camera.zoom = Vector2(0.5,0.5)
 	camera.offset = Vector2.ZERO
 	camera.position = Vector2(180,-220)

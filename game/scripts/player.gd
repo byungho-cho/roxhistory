@@ -19,6 +19,11 @@ var facing := 0
 var presentation_paused := false
 var motion_state := "idle"
 var sprite: Polygon2D
+var hybrid: HybridCharacter
+var use_3d := false
+var perf_frames: Array[float] = []
+var perf_start := 0
+var perf_done := false
 var camera: Camera2D
 var rest_points := PackedVector2Array()
 var tool: Node2D
@@ -68,6 +73,30 @@ func _ready() -> void:
 	get_viewport().size_changed.connect(fit_camera)
 	fit_camera()
 	update_rig()
+	hybrid = HybridCharacter.new()
+	add_child(hybrid)
+
+func set_character_3d(value: bool) -> void:
+	perf_frames.clear()
+	perf_start = Time.get_ticks_usec()
+	perf_done = false
+	use_3d = value
+	sprite.visible = not value
+	hybrid.set_enabled(value)
+	if value: tool.visible = false
+
+func _process(_delta: float) -> void:
+	if not OS.has_feature("android") or not OS.is_debug_build() or perf_done or presentation_paused: return
+	var now := Time.get_ticks_usec()
+	if perf_start > 0: perf_frames.append(float(now-perf_start)/1000.0)
+	perf_start = now
+	if perf_frames.size() == 660:
+		var samples: Array[float] = perf_frames.slice(60)
+		samples.sort()
+		var total := 0.0
+		for value in samples: total += value
+		print("HYBRID_PERF "+JSON.stringify({"mode":"3D" if use_3d else "2D","frames":600,"mean_ms":total/600.0,"p95_ms":samples[570],"viewport":str(get_viewport_rect().size),"gpu":RenderingServer.get_video_adapter_name()}))
+		perf_done = true
 
 func fit_camera() -> void:
 	var viewport_size := get_viewport().get_visible_rect().size
@@ -77,6 +106,7 @@ func fit_camera() -> void:
 func face_target(target: Vector2) -> void:
 	var d := target-position
 	if d.length_squared() > 0.01:
+		if is_instance_valid(hybrid): hybrid.target_heading = atan2(d.x,d.y)
 		facing = (2 if d.x < 0 else 3) if absf(d.x) > absf(d.y) else (1 if d.y < 0 else 0)
 
 func set_activity(value: String) -> void:
@@ -100,6 +130,9 @@ func _physics_process(delta: float) -> void:
 		idle_time += delta
 		if activity != "": action_time += delta
 	update_rig()
+	if use_3d:
+		tool.visible = false
+		hybrid.animate(delta,direction,phase,motion_state == "walk",activity,action_time,presentation_paused)
 
 func update_rig() -> void:
 	var region: Rect2 = PORTRAITS[facing]
