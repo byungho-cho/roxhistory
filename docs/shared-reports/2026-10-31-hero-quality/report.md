@@ -132,6 +132,8 @@ Windows / RTX 5060 / Godot 4.5.1 Compatibility / 1280×720 / VSync off. 두 버�
 5. **기기 한계:** Android 실기기, 실제 접힘 전환, 저가 ARM 성능·발열, 장시간 플레이, 스피커·이어폰 청감은 미검증이다.
 6. **후속 로드맵:** [CQ1–CQ6 일정·담당·상태](../../character-quality-roadmap.md), [구조화 현황](../../quality-progress.json), [기존 FigJam](https://www.figma.com/board/60HqJ7ggIuvs9OLva8ZIx2?node-id=23-74). P1–P4는 개발 이력으로 보존한다. [FigJam 갱신 캡처](evidence/screenshots/roadmap.png).
 
+증거 파일의 크기·SHA-256은 [manifest](evidence/manifest.json)에 기록했다. 텍스트 파일은 Git의 줄바꿈 정규화가 적용된 **원격 저장소 blob 바이트** 기준이다.
+
 ## Git·작업 보존
 
 원격 main에서 분리한 `feat/hero-quality-pass`에서 작업했다. 사용자의 기존 로컬 저장소에 남아 있던 로드맵·문서 변경은 덮어쓰거나 초기화하지 않았다. 이번 PR에는 위 게임 변경, 검증용 촬영 스크립트, 보고서·증거·로드맵 갱신만 포함한다.

@@ -1,7 +1,7 @@
 {
   "report.md": {
-    "bytes": 16418,
-    "sha256": "8ba9d789bf7e493ec05e8ea5005a7ba91bdcf2016b6cdd2e106b8014e2fb53b0"
+    "bytes": 16472,
+    "sha256": "89d517a22bcd0c361f54bf7c6315fcfbdd570912a16aff14eb28ee20c2c6f871"
   },
   "evidence/clips/ambient-foreground.wav": {
     "bytes": 974960,
@@ -100,72 +100,72 @@
     "sha256": "48c4e6bbf764e9cd85be1b4f5549d6acf209e803da8ce9c42f167f5d8ec614db"
   },
   "evidence/validation/android-audio.json": {
-    "bytes": 699,
-    "sha256": "3f32b6ba6738e12b091687a440d0a92327f04ad342300cd7ae9db2f6677a097d"
+    "bytes": 668,
+    "sha256": "51a993da3a8b59bbcb7a29c6b94f5e321c22a016b81498de66cb2151ba724abb"
   },
   "evidence/validation/android-final-logcat.txt": {
-    "bytes": 1662,
-    "sha256": "cd8000ca24f547c1e9e0f0c5aaf70a5f283fff3d7e0fec8d77d5f9e3b79cf8b4"
+    "bytes": 1650,
+    "sha256": "d2e5a3d47cb6e4114f50e9033985f2ee511d93567abbce5f05c456d467feda15"
   },
   "evidence/validation/android-hero-loop.json": {
-    "bytes": 901,
-    "sha256": "f5b12f03b34c5208e833a9f1ef0a542df1fab07d98466e390719ff9b1de58404"
+    "bytes": 869,
+    "sha256": "7b306ba7b98863157bf4957099b7725588e566bed28dfd78bb89559d202590a5"
   },
   "evidence/validation/android-interruptions.json": {
-    "bytes": 239,
-    "sha256": "9931af428a24085869f9bb825d5c7e368f973b5f2cb782263f8a888adea03bc3"
+    "bytes": 229,
+    "sha256": "3e1bf625bc28230854ead3691c2b41eddd1fec5ad275f0adcdbf6c2c66bb3067"
   },
   "evidence/validation/android-ratios.json": {
-    "bytes": 402,
-    "sha256": "a49a9099548a40d93898685451f96da4ba39944534f4cd4fc6e6ef7c807e3610"
+    "bytes": 387,
+    "sha256": "e3ffd5e0ca5450aaaba1b14415a431ce9e957e0f90be3208ba3f947acd954d61"
   },
   "evidence/validation/asset-validation.log": {
     "bytes": 47,
     "sha256": "938d8d0c0c9e795bd14bb79f01f5056c8e82c8b219fb4182e0643010d5dd8a22"
   },
   "evidence/validation/audio-assets.log": {
-    "bytes": 1666,
-    "sha256": "438f42c7807b1018f1d36a4af8e8ebd37f8536bd46068929bd8dbde15afcaef2"
+    "bytes": 1588,
+    "sha256": "d1bbee474189155baa5dc292452ce76baaa81c811d0e55abfa14fc4de7c2a04f"
   },
   "evidence/validation/character_tests.log": {
-    "bytes": 281,
-    "sha256": "332508324b8607eedc12558b2e5ee249c31c46a9149abde901cf94f4d5cfc521"
+    "bytes": 277,
+    "sha256": "dd161b19c17dc3ea9c52ae5b7cd5941209c363cbbc8d8f4ad8ab71015fb69e52"
   },
   "evidence/validation/completed-upgrade.json": {
-    "bytes": 521,
-    "sha256": "627efaed37eaba5b75da607348ded048b2a15f6a8242065e7bb810d293d43e7e"
+    "bytes": 497,
+    "sha256": "7f85bbad327353db3cef9c553052d43fcb800366912ee3b897d2fd9aa335e57f"
   },
   "evidence/validation/environment_review.log": {
-    "bytes": 291,
-    "sha256": "6ac92fa014c7a5b6094e07602996979d7c4f53a82a44f47d4588868b5c6ebc9c"
+    "bytes": 287,
+    "sha256": "e46128f94aafcb587c42d129eebdc254d19d639e2cc1424cd2472947fbb533b5"
   },
   "evidence/validation/environment_tests.log": {
-    "bytes": 227,
-    "sha256": "ab40a4d881d57ee4dd73dff77b146d868f7153986ebd16318e105d194d063290"
+    "bytes": 223,
+    "sha256": "b5e85054da543f1e13eb4668c3f5f8c6306f86240b9b2aa6d2fd1cd810b094a0"
   },
   "evidence/validation/hero_tests.log": {
-    "bytes": 227,
-    "sha256": "15d3386c7e3cef5d6a8c6f848741403aaa8f76fd2e07cc5c6c462164a1db9449"
+    "bytes": 223,
+    "sha256": "64e4f616bd82f4e3c810c3a3ead3f63bf6ad16ff1451427301161a5b4341052d"
   },
   "evidence/validation/hybrid_occlusion.log": {
-    "bytes": 291,
-    "sha256": "b68ceac0d948fab88f3cdf2df8192ff68e051ed7d42763db3399c4b300e0a8e9"
+    "bytes": 287,
+    "sha256": "77991d1705fd2673c04beae37f2525fe67e7ac030a549a4261f23a4d04ff293f"
   },
   "evidence/validation/hybrid_tests.log": {
-    "bytes": 227,
-    "sha256": "226d12d8d3b04fa517a819ecf9d98c215f1aa7a1e3aa27a911aba8a41c49780d"
+    "bytes": 223,
+    "sha256": "32f000aac735565b5014b8c6a9c54d4b43824a588289b8aca3b378c09bc9df5e"
   },
   "evidence/validation/import.log": {
-    "bytes": 1366,
-    "sha256": "5b13ef694fde3b7a8b464dcbe64e4c290355f60d04f87812f368a9a4df912734"
+    "bytes": 1346,
+    "sha256": "c20b5d1bb0bda5d386dbe9bc3d0eae222cd0cb6de24b78561a4fc693f218ee49"
   },
   "evidence/validation/interaction_tests.log": {
-    "bytes": 334,
-    "sha256": "b02e7b8f8b7671ee10e340556e109681f33197bd89f6204b565ddf225ed7c92b"
+    "bytes": 330,
+    "sha256": "ec184dadc34e855ec3f5eb802c244f2f43ec31018d7b9db6940e1629f5c2f13c"
   },
   "evidence/validation/package.txt": {
-    "bytes": 5061,
-    "sha256": "45e56604063ffdbe2b932fa9948cb53ede44d5383c0a519502ba3d523810659d"
+    "bytes": 4943,
+    "sha256": "62615c1951c7a8bd59e0033c173f2dfe3e583a1bab236ecfcc1d5502bc95d4d1"
   },
   "evidence/validation/performance-after.json": {
     "bytes": 288,
@@ -176,27 +176,27 @@
     "sha256": "652c947473c229b05d26eb8dc162ab876e82cf0896078a8d003edc3dcb366eb8"
   },
   "evidence/validation/polish_tests.log": {
-    "bytes": 227,
-    "sha256": "c42c17ca5161e15c018402e7acb637d10103ed439bcd07815bb06cbc1c568df8"
+    "bytes": 223,
+    "sha256": "1a7a491d4505ae9e42d2d017fc38a5690db7782d7d21f2893cbdbd82d786e88b"
   },
   "evidence/validation/presentation_tests.log": {
-    "bytes": 380,
-    "sha256": "8d4e97078e1fea2441c3bf158ade6002a2330830c5a317b7d931ee53c073a2da"
+    "bytes": 376,
+    "sha256": "031c3f2eb7c7abe25a236803191d579faca38fed7371fb234217208cbcdfef36"
   },
   "evidence/validation/signature.txt": {
-    "bytes": 971,
-    "sha256": "b4813d78e225fc866aff4d1885891fe9436eff4326230e5599df8fa37b2caf24"
+    "bytes": 954,
+    "sha256": "70a501f40135e0c4669625a95d0d47a4afd9ed4e3f9e9f24cd9d048e9da791fc"
   },
   "evidence/validation/state_tests.log": {
-    "bytes": 263,
-    "sha256": "f7957ff220b8af9a3feba79a01f35fcc82f95dcf8c716c764c74d171a4879ed9"
+    "bytes": 259,
+    "sha256": "3acc3a4565ea5a36b200ba4a3a15718d3ff5f755b75fcaa24aff3ac2798c05ea"
   },
   "evidence/validation/ui_smoke.log": {
-    "bytes": 1219,
-    "sha256": "79d092bb61a9d101583156a48afc7c677dad1da7a16226f9697fdeeea34bd573"
+    "bytes": 1215,
+    "sha256": "a279d12ca17b91eee4e1437166c246530ef3cab75919041c177a8c6281ba28a5"
   },
   "evidence/validation/upgrade.json": {
-    "bytes": 491,
-    "sha256": "61476be37dabbff2bfbcee7e5ea2a66a9e3dd814719f8458927a05a38595e3c9"
+    "bytes": 468,
+    "sha256": "43a35710575a9720f9d31af86bd26545615fb012a9e6a71531c71eefe989d809"
   }
 }
