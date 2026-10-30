@@ -2,9 +2,9 @@
 
 업데이트: 2026-10-30 KST / 로드맵 v0.1
 
-**현재: P2 3D 캐릭터 보완 후 P3 채집·건설 연출 검증 완료 / 다음 P4**
+**현재: P4 UI·카메라·소리 개발 검증 완료 / 다음 P5 통합 시연**
 
-P1~P3 개발 구현·검증 완료. 새 캐릭터 아트의 사용자 피드백과 Android 실기기 검증은 별도로 남긴다. 전체 베타 완료를 뜻하지 않는다.
+P1~P4 개발 구현·단계 검증 완료. 실기기·음색 선호·첫 사용자 관찰은 P5 후속 검증이며 전체 베타 완료는 아니다.
 
 ## 단계별 현황
 
@@ -13,7 +13,7 @@ P1~P3 개발 구현·검증 완료. 새 캐릭터 아트의 사용자 피드백�
 | P1 배경·오브젝트와 살아 있는 환경 | 완료 | 완료 | 단계 검증 통과 | 통과 | 미정 | 2026-10-30 |
 | P2 캐릭터 이동·대기·행동 애니메이션 | 완료 | 3D 원본 특징·연속 스킨·발 접점 보완 | PC 회귀·시각 / Android 통합 확인 | 개발 검토 완료 | 미정 | 2026-10-30 |
 | P3 채집·건설의 상호작용과 보상 | 완료 | 타격·획득·골조/지붕·완료 보상 | 취소·저장 실패·중복·Android 루프 | 개발 검토 완료 | 미정 | 2026-10-30 |
-| P4 UI·소리·카메라와 장면 전환 | 대기 | 미착수 | 미착수 | 대기 | 미정 | 미완료 |
+| P4 UI·소리·카메라와 장면 전환 | 완료 | 가독성·행동/환경음·부드러운 카메라·전환 | PC 694검사 / Android 전체 루프·오디오 출력 검증 | 개발 검토 완료 | 미정 | 2026-10-30 |
 | P5 짧은 통합 데모와 시연 품질 | 대기 | 미착수 | 미착수 | 대기 | 미정 | 미완료 |
 
 ## 일정 상세
@@ -23,12 +23,12 @@ P1~P3 개발 구현·검증 완료. 새 캐릭터 아트의 사용자 피드백�
 | P1 | 미정 | 미정 | 2026-10-30 | 2026-10-30 |
 | P2 | 미정 | 미정 | 2026-10-30 | 2026-10-30 |
 | P3 | 미정 | 미정 | 2026-10-30 | 2026-10-30 |
-| P4 | 미정 | 미정 | 미착수 | 미완료 |
+| P4 | 미정 | 미정 | 2026-10-30 | 2026-10-30 |
 | P5 | 미정 | 미정 | 미착수 | 미완료 |
 
 단계별 구현·실행 화면·회귀 검증을 먼저 완료한다. 일정 단축을 위해 범위나 검사를 생략하지 않으며 근거 없는 완료일을 약속하지 않는다.
 
-## P1 완료 기록 / 다음 작업 P4
+## P1 완료 기록 / 다음 작업 P5
 
 [P2 캐릭터 개발 지시](stage2-character-instructions.md)
 
@@ -42,10 +42,10 @@ P1~P3 개발 구현·검증 완료. 새 캐릭터 아트의 사용자 피드백�
 ## 다음 행동과 막힘
 
 - P1: 잔여 시각 개선과 실기기 성능 검증은 후속 목록에 유지하고 P2로 진행. 막힘: 기록 없음. 검증 근거: https://github.com/byungho-cho/roxhistory/pull/7; https://github.com/byungho-cho/roxhistory/actions/runs/41021126502; https://github.com/byungho-cho/roxhistory/blob/3236cf7b1b1252cc6d43e895af71e3c988c11da3/docs/stage1/after.png
-- P2: P3와 통합 검증 완료. 후속 아트 피드백은 P4에서 반영.. 막힘: 기록 없음. 검증 근거: https://github.com/byungho-cho/roxhistory/pull/8; stage2-review.md; stage2/android-full-loop.json; https://github.com/byungho-cho/roxhistory/pull/9; stage3/p2-review.md; stage3/polish-tests.json
-- P3: P4 UI·환경음·행동 소리·카메라 전환 통합. 실기기 성능 확인.. 막힘: 기록 없음. 검증 근거: stage3-review.md; stage3/interaction-tests.json; stage3/android-stage3-loop.json
-- P4: P2·P3 결과를 기반으로 UI 대비·환경/행동 소리·카메라 전환을 통합. 새 지역은 추가하지 않음.. 막힘: 기록 없음. 검증 근거: 미등록
-- P5: P4 팀장 검토 후 전체 시연 구간의 플레이 실측. 막힘: 기록 없음. 검증 근거: 미등록
+- P2: P5 통합 시연에서 후속 아트 피드백과 실기기 검토. 막힘: 기록 없음. 검증 근거: https://github.com/byungho-cho/roxhistory/pull/8; stage2-review.md; stage2/android-full-loop.json; https://github.com/byungho-cho/roxhistory/pull/9; stage3/p2-review.md; stage3/polish-tests.json
+- P3: P4 통합 완료. P5에서 첫 사용자 전체 흐름 검토. 막힘: 기록 없음. 검증 근거: stage3-review.md; stage3/interaction-tests.json; stage3/android-stage3-loop.json
+- P4: P5에서 첫 사용자 전체 흐름·실기기·장시간·음색 피드백 검토. 막힘: 기록 없음. 검증 근거: stage4-review.md; stage4/presentation-tests.json; stage4/android-stage4-loop.json; stage4/android-audio.json
+- P5: P4 결과를 사용자가 확인한 뒤 첫 체험 관찰·통합 시연 품질·대표 실기기 검증. 막힘: 기록 없음. 검증 근거: 미등록
 
 ## 현황 갱신에 필요한 정보
 

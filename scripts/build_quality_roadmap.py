@@ -44,7 +44,7 @@ def markdown(data):
         predecessor = ', '.join(stage['dependsOn']) or '기존 기능 데모 보존'
         lines.append(f"| {stage['id']} {stage['title']} | {stage['experience']} | {stage['status']} | {predecessor} | {dash(stage['targetDate'])} |")
     lines += ['', '## 일정 운영', '', data['schedulePolicy'], '',
-              'P2를 먼저 마무리한 뒤 P3를 진행했으며, 다음 단계는 P4입니다. 각 단계의 실행·시각·회귀 검증을 우선합니다. 사용자 피드백은 수시 반영합니다. 날짜가 정해지기 전에는 지연·정상 판정을 하지 않습니다.', '',
+              'P4 UI·카메라·소리까지 개발 검증을 마쳤으며, 다음 단계는 P5 통합 시연입니다. 각 단계의 실행·시각·회귀 검증을 우선합니다. 사용자 피드백은 수시 반영합니다. 날짜가 정해지기 전에는 지연·정상 판정을 하지 않습니다.', '',
               '## 단계별 범위와 완료 기준', '']
     for stage in data['stages']:
         lines += [f"### {stage['id']}. {stage['title']}", '', f"체험 목표: **{stage['experience']}**", '', '작업 범위:', '']
@@ -63,7 +63,7 @@ def markdown(data):
     lines += ['', '## 문서와 디자인의 연결', '',
               '- 상태 원본: [quality-progress.json](quality-progress.json)',
               '- 현재 현황표: [quality-progress.md](quality-progress.md)',
-              '- 다음 P2 개발 지시: [stage2-character-instructions.md](stage2-character-instructions.md)',
+              '- 이전 P2 개발 지시: [stage2-character-instructions.md](stage2-character-instructions.md)',
               '- PDF: [RoxHistory_QualityRoadmap_v0.1.pdf](../presentations/RoxHistory_QualityRoadmap_v0.1.pdf)',
               f"- 기존 디자인: {data['design']['fileUrl']}",
               f"- Figma 로드맵: {data['design']['roadmapUrl'] or data['design']['roadmapStatus']}",
@@ -83,7 +83,7 @@ def progress_markdown(data):
         lines.append(f"| {s['id']} {s['title']} | {s['status']} | {s['implementation']} | {s['validation']} | {s.get('leaderReview','대기')} | {dash(s['targetDate'])} | {s['actualFinish'] or '미완료'} |")
     lines += ['', '## 일정 상세', '', '| 단계 | 예정 시작 | 목표 완료 | 실제 시작 | 실제 완료 |', '| --- | --- | --- | --- | --- |']
     lines += [f"| {s['id']} | {dash(s['plannedStart'])} | {dash(s['targetDate'])} | {s['actualStart'] or '미착수'} | {s['actualFinish'] or '미완료'} |" for s in data['stages']]
-    lines += ['', data['schedulePolicy'], '', '## P1 완료 기록 / 다음 작업 P4', '', '[P2 캐릭터 개발 지시](stage2-character-instructions.md)', '', '| 작업 | 상태 | 산출물 |', '| --- | --- | --- |']
+    lines += ['', data['schedulePolicy'], '', '## P1 완료 기록 / 다음 작업 P5', '', '[P2 캐릭터 개발 지시](stage2-character-instructions.md)', '', '| 작업 | 상태 | 산출물 |', '| --- | --- | --- |']
     lines += [f"| {t['id']} {t['title']} | {t['status']} | {t['result']} |" for t in data['stages'][0]['tasks']]
     lines += ['', '## 다음 행동과 막힘', '']
     for s in data['stages']:
@@ -182,8 +182,8 @@ def pdf(data, destination):
     y = p(data['scope'],MARGIN,y)-19
     c.setFillColor(AMBER)
     c.roundRect(MARGIN,y-59,CONTENT,59,9,fill=1,stroke=0)
-    p('현재 초점: P2 보완·P3 연출 검증 완료 / 다음 P4',MARGIN+14,y-11,CONTENT-28,ParagraphStyle('Focus',parent=normal,fontName='KR-Bold'))
-    p('P1~P3 개발 검증 완료  |  새 아트 피드백·실기기 검증 별도',MARGIN+14,y-34,CONTENT-28,small)
+    p('현재 초점: P4 UI·카메라·소리 검증 완료 / 다음 P5',MARGIN+14,y-11,CONTENT-28,ParagraphStyle('Focus',parent=normal,fontName='KR-Bold'))
+    p('P1~P4 개발 검증 완료  |  사용자 음색·실기기 검증 별도',MARGIN+14,y-34,CONTENT-28,small)
     y -= 82
     y = table([['단계','만들 경험','착수 조건']]+[[s['id']+' '+s['title'],s['experience'],'기존 기능 보존' if not s['dependsOn'] else s['dependsOn'][0]+' 팀장 검토'] for s in data['stages']], [172,217,CONTENT-389], y)
     y = title('이미 확인된 것과 앞으로 확인할 것',y-2)
@@ -222,8 +222,8 @@ def pdf(data, destination):
     y=table([['단계','예정 시작','목표 완료','실제 시작','실제 완료']]+[[s['id'],dash(s['plannedStart']),dash(s['targetDate']),s['actualStart'] or '미착수',s['actualFinish'] or '미완료'] for s in data['stages']],[45,116,116,116,CONTENT-393],y)
     y=p(data['schedulePolicy'],MARGIN,y)-17
     y=title('다음 행동',y)
-    y=p(data['stages'][1]['nextAction'],MARGIN,y)-12
-    y=p('P2의 3D 캐릭터 원본 특징·관절·발 접점 보완을 먼저 검토한 뒤 P3 타격·획득·건설 연출을 통합했습니다. 나무1·돌1의 짧은 루프를 유지합니다. 새 아트 피드백과 Android 실기기·장시간 검증은 남았으며 전체 베타 완료가 아닙니다.',MARGIN,y,style=small)-12
+    y=p(next((s['nextAction'] for s in data['stages'] if s['status'] != '완료'), '후속 사용자 피드백 반영'),MARGIN,y)-12
+    y=p('P4에서 가독성·채집/건설 소리·강물/바람·부드러운 카메라와 전환을 통합했습니다. 나무1·돌1의 짧은 루프와 기존 분위기를 유지합니다. Android 출력 녹음·음소거/복귀를 확인했으며 실기기·장시간·첫 사용자 관찰은 P5에 남습니다. 전체 베타 완료가 아닙니다.',MARGIN,y,style=small)-12
     p('자동 감시·정기 알림은 설정하지 않았습니다. 개발 보고 또는 사용자 확인 요청이 있을 때 상태를 대조하고 현행화합니다.',MARGIN,y,style=small)
     c.showPage()
 

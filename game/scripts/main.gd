@@ -30,7 +30,12 @@ var safe := Vector2(24,18)
 var w := 960.0
 var h := 540.0
 var rebuilding := false
-var audio: AudioStreamPlayer
+var audio: DemoSoundscape
+var context_panel: PanelContainer
+var toast_panel: PanelContainer
+var resource_panel: PanelContainer
+var last_resource_text := ""
+var hud_tween: Tween
 
 func _ready() -> void:
 	get_tree().auto_accept_quit = false
@@ -39,17 +44,8 @@ func _ready() -> void:
 	if test_mode:
 		prefs_path = "user://tests/preferences.cfg"
 	settings.load(prefs_path)
-	audio = AudioStreamPlayer.new()
+	audio = DemoSoundscape.new()
 	add_child(audio)
-	var wav := AudioStreamWAV.new()
-	wav.format = AudioStreamWAV.FORMAT_16_BITS
-	wav.mix_rate = 22050
-	var samples := PackedByteArray()
-	samples.resize(2646)
-	for i in 1323:
-		samples.encode_s16(i*2,int(sin(float(i)*TAU*660.0/22050.0)*3000*(1.0-float(i)/1323.0)))
-	wav.data = samples
-	audio.stream = wav
 	model = GameState.new(SaveStore.new("user://tests/session" if test_mode else "user://"))
 	model.changed.connect(update_hud)
 	model.failed.connect(show_error)
@@ -81,6 +77,7 @@ func clear_children(node: Node) -> void:
 		child.queue_free()
 
 func show_screen(next: String) -> void:
+	var previous := screen
 	if is_instance_valid(joystick):
 		joystick.clear()
 	clear_children(ui)
@@ -111,13 +108,23 @@ func show_screen(next: String) -> void:
 		"title": title_screen()
 		"region": region_screen()
 		"play": play_hud()
-	toast_label = label(stage,"",18,Color("fff3d6"))
+	var notice_rect := Rect2(safe.x+84,safe.y+72,minf(330,w-safe.x*2-450),76) if screen == "play" else Rect2(safe.x,h-160,minf(480,w*0.48),76)
+	toast_panel = box(stage,notice_rect)
+	toast_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	toast_label = label(toast_panel,"",17,Color("fff3d6"))
 	toast_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	toast_label.position = Vector2(w*0.18,h-178)
-	toast_label.size = Vector2(w*0.64,65)
 	toast_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	toast_label.add_theme_color_override("font_outline_color",Color("30251c"))
-	toast_label.add_theme_constant_override("outline_size",8)
+	toast_panel.visible = false
+	sync_audio()
+	if next != previous:
+		var fade := ColorRect.new()
+		fade.color = Color("302d26")
+		fade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		ui.add_child(fade); fade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		fade.modulate.a = 0.45
+		var transition := create_tween()
+		transition.tween_property(fade,"modulate:a",0.0,0.28)
+		transition.tween_callback(fade.queue_free)
 	if screen == "title" and not model.store.message.is_empty():
 		toast(model.store.message,8)
 
@@ -164,7 +171,7 @@ func button(parent: Node, text: String, callback: Callable, primary: bool = fals
 		b.add_theme_constant_override("h_separation",8)
 	b.pressed.connect(callback)
 	b.pressed.connect(func():
-		if settings.get_value("app","sound",false): audio.play())
+		audio.cue("ui"))
 	parent.add_child(b)
 	return b
 
@@ -233,6 +240,8 @@ func welcome(sound: bool) -> void:
 	show_screen("title")
 
 func title_screen() -> void:
+	var title_back := box(stage,Rect2(safe.x,26,minf(510,w-390-safe.x*2),118))
+	title_back.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	label(stage,"RoxHistory",52,Color("fff0d1")).position = Vector2(safe.x+10,40)
 	label(stage,"작은 불씨에서 시작되는 우리의 역사",21,Color("fff0d1")).position = Vector2(safe.x+14,110)
 	var p := box(stage,Rect2(w-350-safe.x,h*0.32,350,h*0.57))
@@ -242,7 +251,7 @@ func title_screen() -> void:
 	continue_btn.disabled = model.state.is_empty()
 	button(v,"새로 시작",new_game_prompt,false,"compass")
 	button(v,"데모 안내",show_about,false,"scroll")
-	label(stage,"1장 · 선사시대의 첫 불씨   |   v0.1.4-stage3",17,Color("fff0d1")).position = Vector2(safe.x+10,h-safe.y-30)
+	label(stage,"1장 · 선사시대의 첫 불씨   |   v0.1.5-stage4",17,Color("fff0d1")).position = Vector2(safe.x+10,h-safe.y-30)
 
 func new_game_prompt() -> void:
 	if not model.state.is_empty() or model.store.blocked:
@@ -289,7 +298,9 @@ func enter_game() -> void:
 	if not is_instance_valid(world):
 		world = DemoWorld.new(model)
 		add_child(world)
+		world.feedback.sound_cue.connect(audio.cue)
 	world.player.set_character_3d(false if test_mode else settings.get_value("app","character_3d",true))
+	world.player.camera.reset_smoothing()
 	show_screen("play")
 	if not model.state.intro_seen:
 		var c := DemoConfig.get_data()
@@ -303,12 +314,12 @@ func enter_game() -> void:
 
 func play_hud() -> void:
 	back_button(pause_game)
-	var location_title := label(stage,"암사동 · 첫 보금자리",21,Color("fff0d1"))
-	location_title.position = Vector2(safe.x+86,safe.y)
-	location_title.add_theme_color_override("font_outline_color",Color("30291e"))
-	location_title.add_theme_constant_override("outline_size",7)
-	var res_panel := box(stage,Rect2(w-350-safe.x,safe.y,350,58),false)
-	resources = label(res_panel,"",18)
+	var title_panel := box(stage,Rect2(safe.x+84,safe.y,minf(330,w-safe.x*2-450),54))
+	var location_title := label(title_panel,"암사동 · 첫 보금자리",20,Color("fff0d1"))
+	location_title.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	resource_panel = box(stage,Rect2(w-350-safe.x,safe.y,350,58),false)
+	resources = label(resource_panel,"",18)
+	resources.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	resources.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	var quest_panel := box(stage,Rect2(w-288-safe.x,94,288,100),false)
 	objective = paragraph(quest_panel,"",18,Color("49321e"))
@@ -326,17 +337,16 @@ func play_hud() -> void:
 	build_button.custom_minimum_size = Vector2(126,82)
 	var journal := button(row,"임무",quest_details,false,"scroll")
 	journal.custom_minimum_size = Vector2(124,82)
-	context = label(stage,"",18,Color("fff0d1"))
-	context.position = Vector2(w*0.28,h-158)
-	context.size = Vector2(w*0.48,38)
+	context_panel = box(stage,Rect2(safe.x+84,safe.y+72,minf(330,w-safe.x*2-450),76))
+	context_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	context = label(context_panel,"",17,Color("fff0d1"))
+	context.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	context.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	context.add_theme_color_override("font_outline_color",Color("352717"))
-	context.add_theme_constant_override("outline_size",6)
 	task_bar = ProgressBar.new()
 	task_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	task_bar.show_percentage = false
-	task_bar.position = Vector2(w*0.33,h-115)
-	task_bar.size = Vector2(w*0.26,12)
+	task_bar.position = Vector2(safe.x+84,safe.y+166)
+	task_bar.size = Vector2(minf(330,w-safe.x*2-450),10)
 	stage.add_child(task_bar)
 	task_bar.visible = false
 	update_hud()
@@ -345,6 +355,12 @@ func update_hud() -> void:
 	if screen != "play" or not is_instance_valid(resources) or model.state.is_empty():
 		return
 	resources.text = "나무 %d   돌 %d   씨앗 %d" % [model.state.wood,model.state.stone,model.state.tokens]
+	if last_resource_text != "" and last_resource_text != resources.text:
+		if hud_tween: hud_tween.kill()
+		resource_panel.modulate = Color("ffe6a7")
+		hud_tween = create_tween()
+		hud_tween.tween_property(resource_panel,"modulate",Color.WHITE,0.35)
+	last_resource_text = resources.text
 	if model.state.built:
 		objective.text = "첫 보금자리 · 완료\n"+("보상을 받았습니다." if model.state.reward_claimed else "보상을 받아 주세요.")
 	else:
@@ -352,11 +368,14 @@ func update_hud() -> void:
 		objective.text = "첫 보금자리\n나무 %d/%d  ·  돌 %d/%d" % [mini(model.state.wood,c.wood_cost),c.wood_cost,mini(model.state.stone,c.stone_cost),c.stone_cost]
 
 func _process(delta: float) -> void:
+	if is_instance_valid(toast_panel): toast_panel.visible = toast_time > 0 and toast_label.text != ""
 	if toast_time > 0:
 		toast_time -= delta
 		if toast_time <= 0 and is_instance_valid(toast_label): toast_label.text = ""
 	if screen != "play" or not is_instance_valid(world):
 		return
+	audio.river_proximity = clampf(1.0-world.player.position.y/1350.0,0,1)
+	context_panel.visible = context.text != "" and not modal and not toast_panel.visible
 	var direction := Vector2.ZERO
 	if not modal and application_active:
 		if is_instance_valid(joystick): direction = joystick.value
@@ -445,6 +464,7 @@ func finish_task() -> void:
 		completion()
 
 func cancel_task() -> void:
+	if is_instance_valid(audio): audio.stop_work()
 	task = ""
 	task_target = ""
 	if is_instance_valid(world):
@@ -489,11 +509,11 @@ func toggle_character() -> void:
 func show_about() -> void:
 	var c := DemoConfig.get_data()
 	var sound: bool = settings.get_value("app","sound",false)
-	show_modal("RoxHistory · v0.1.4-stage3",c.history.fact+"\n\n"+c.history.fiction+"\n\n이 데모의 소리는 조작 효과음만 제공합니다. 씨앗은 완료 기념 보상입니다.",[
+	show_modal("RoxHistory · v0.1.5-stage4",c.history.fact+"\n\n"+c.history.fiction+"\n\n강물·바람과 채집·건설 효과음을 제공합니다. 씨앗은 완료 기념 보상입니다.",[
 		{"text":"소리 끄기" if sound else "소리 켜기","action":func():
 			settings.set_value("app","sound",not sound)
 			if settings.save(prefs_path) != OK: show_error("소리 설정을 저장하지 못했습니다.")
-			else: show_about()},
+			else: sync_audio(); show_about()},
 		{"text":"돌아가기","primary":true,"action":close_modal}])
 
 func show_modal(title: String, body: String, actions: Array, compact: bool = false) -> void:
@@ -506,6 +526,7 @@ func show_modal(title: String, body: String, actions: Array, compact: bool = fal
 		ui.remove_child(overlay)
 		overlay.queue_free()
 	modal = true
+	sync_audio()
 	overlay = Control.new()
 	ui.add_child(overlay)
 	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -543,6 +564,10 @@ func close_modal() -> void:
 	modal = false
 	if is_instance_valid(joystick): joystick.clear()
 	if is_instance_valid(world): world.player.presentation_paused = not application_active
+	sync_audio()
+
+func sync_audio() -> void:
+	if is_instance_valid(audio): audio.configure(settings.get_value("app","sound",false),application_active,screen == "play",modal)
 
 func toast(message: String, seconds: float = 3.0) -> void:
 	if is_instance_valid(toast_label): toast_label.text = message
@@ -578,6 +603,7 @@ func _notification(what: int) -> void:
 		go_back()
 	elif what == NOTIFICATION_APPLICATION_PAUSED or what == NOTIFICATION_APPLICATION_FOCUS_OUT:
 		application_active = false
+		sync_audio()
 		if is_instance_valid(world): world.feedback.clear_transients()
 		if is_instance_valid(joystick): joystick.clear()
 		cancel_task()
@@ -587,6 +613,7 @@ func _notification(what: int) -> void:
 			model.save_position(world.player.position)
 	elif what == NOTIFICATION_APPLICATION_RESUMED or what == NOTIFICATION_APPLICATION_FOCUS_IN:
 		application_active = true
+		sync_audio()
 		if is_instance_valid(world): world.player.presentation_paused = modal
 	elif what == NOTIFICATION_WM_CLOSE_REQUEST:
 		if is_instance_valid(world): model.save_position(world.player.position)
