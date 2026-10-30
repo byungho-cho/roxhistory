@@ -1,0 +1,4 @@
+Godot Engine v4.5.1.stable.official.f62fdbde1 - https://godotengine.org
+OpenGL API 3.3.0 NVIDIA 610.88 - Compatibility - Using Device: NVIDIA - NVIDIA GeForce RTX 5060
+
+{"camera_lag_world_units":14.747314453125,"checks":45,"failed":[],"runtime":"Native render at fixed60 engine time; audio lifecycle/state checks, not a listening or Android test","utc":"2026-10-30T23:34:39"}

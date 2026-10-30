@@ -1,0 +1,16 @@
+{
+  "utc": "2026-10-30T23:41:59Z",
+  "mode": "ADB wm size, not physical folding device",
+  "screens": [
+    {
+      "name": "cover",
+      "physical_override": "370x896",
+      "check": "Live resize; screenshot visual review required"
+    },
+    {
+      "name": "unfolded",
+      "physical_override": "616x816",
+      "check": "Live resize; screenshot visual review required"
+    }
+  ]
+}
