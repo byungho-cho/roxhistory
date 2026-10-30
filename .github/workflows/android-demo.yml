@@ -55,7 +55,8 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p "$HOME/.local/share/godot/app_userdata/RoxHistory"
-          timeout 150 xvfb-run -a godot --audio-driver Dummy --path game --resolution 1280x720 --script res://tests/ui_smoke.gd -- --test-ui 2>&1 | tee ui-tests.log
+          # The 0.15s input timer must span physics ticks even on slow llvmpipe frames.
+          timeout 150 xvfb-run -a godot --fixed-fps 60 --audio-driver Dummy --path game --resolution 1280x720 --script res://tests/ui_smoke.gd -- --test-ui 2>&1 | tee ui-tests.log
           ! grep -E 'SCRIPT ERROR:|ERROR:' ui-tests.log
           timeout 150 xvfb-run -a godot --audio-driver Dummy --path game --resolution 1280x720 --script res://tests/environment_review.gd -- --test-ui 2>&1 | tee environment-review-tests.log
           ! grep -E 'SCRIPT ERROR:|ERROR:' environment-review-tests.log

@@ -82,6 +82,8 @@ Windows / Godot 4.5.1 / RTX 5060 / 1280×720. 실행 로그의 시각은 UTC이�
 
 보완 커밋 `6b371bf9b1ab8b1a1814929c9dc2cf9f9607c6d5`의 [원격 실행 #21](https://github.com/byungho-cho/roxhistory/actions/runs/41145000624)은 2026-10-31 KST에 전체 검사·Android 내보내기·서명 검증까지 성공했다. 이후 앱 버전 표시는 프로젝트 설정을 읽도록 고쳤고 로컬 UI·표현 검사를 다시 통과했다. 최종 보고서 커밋의 CI도 병합 전 [PR Checks](https://github.com/byungho-cho/roxhistory/pull/15/checks)에서 확인한다.
 
+[최종 문서 커밋의 실행 #23](https://github.com/byungho-cho/roxhistory/actions/runs/41146451303)에서는 기존 UI 테스트의 0.15초 타이머가 느린 llvmpipe 렌더링에서 이동 물리 틱보다 먼저 종료되어 `Touch joystick moves player`가 실패했다. 로컬에서 사용한 것과 같은 고정 60fps 엔진 시간으로 이 합성 입력 검사를 실행하도록 맞췄다. 이동 조건과 검사 개수는 유지하며, 실제 터치 반응은 별도의 Android 실행 근거로 구분한다. 게임 소스나 APK는 이 CI 실행 조건 수정으로 바뀌지 않는다.
+
 CI APK는 실행마다 생성하는 임시 키를 쓰므로 업데이트 배포용이 아니다. 사용자에게 전달하는 Release APK는 기존 로컬 서명 키를 유지한다.
 
 ### Android
