@@ -101,6 +101,7 @@ func show_screen(next: String) -> void:
 	ui.add_child(stage)
 	stage.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	if is_instance_valid(world):
+		if next != "play": world.feedback.clear_transients()
 		world.visible = screen == "play"
 		world.set_process_mode(Node.PROCESS_MODE_INHERIT if screen == "play" else Node.PROCESS_MODE_DISABLED)
 	if screen != "play":
@@ -241,7 +242,7 @@ func title_screen() -> void:
 	continue_btn.disabled = model.state.is_empty()
 	button(v,"새로 시작",new_game_prompt,false,"compass")
 	button(v,"데모 안내",show_about,false,"scroll")
-	label(stage,"1장 · 선사시대의 첫 불씨   |   v0.1.3-hybrid",17,Color("fff0d1")).position = Vector2(safe.x+10,h-safe.y-30)
+	label(stage,"1장 · 선사시대의 첫 불씨   |   v0.1.4-stage3",17,Color("fff0d1")).position = Vector2(safe.x+10,h-safe.y-30)
 
 func new_game_prompt() -> void:
 	if not model.state.is_empty() or model.store.blocked:
@@ -375,6 +376,7 @@ func _process(delta: float) -> void:
 			toast("작업 범위를 벗어나 멈췄습니다.")
 		else:
 			task_remaining -= delta
+			world.feedback.update_work(task_total-task_remaining,task_total)
 			task_bar.value = (1.0-task_remaining/task_total)*100
 			if task_remaining <= 0: finish_task()
 	var near := world.nearest()
@@ -386,8 +388,11 @@ func _process(delta: float) -> void:
 			context.text = "보금자리 터 · 건설 가능" if model.can_build() else "보금자리 터 · 나무와 돌을 모아 주세요"
 		elif not model.state.built and world.player.position.distance_to(world.site.position) < 150:
 			context.text = "보금자리 터 아래쪽 입구로 이동해 주세요"
+		elif model.can_build():
+			context.text = "재료 준비 완료 · 금빛 터에서 건설"
 		elif not near.is_empty():
-			context.text = ("나무" if near.kind == "wood" else "돌")+" · 채집 버튼을 누르세요"
+			var ready: bool = model.state[near.kind] >= (DemoConfig.get_data().wood_cost if near.kind == "wood" else DemoConfig.get_data().stone_cost)
+			context.text = ("나무 준비 완료 · 돌을 찾아보세요" if near.kind == "wood" else "돌 준비 완료 · 나무를 찾아보세요") if ready and not model.state.built else ("나무" if near.kind == "wood" else "돌")+" · 채집 버튼을 누르세요"
 	autosave += delta
 	if autosave >= 8 and not modal and task == "":
 		autosave = 0
@@ -401,6 +406,7 @@ func gather_action() -> void:
 	world.player.face_target(DemoConfig.point(n.position))
 	world.player.set_activity("gather")
 	task_target = n.id
+	world.feedback.begin("gather",n.id)
 	task_total = float(DemoConfig.get_data().gather_seconds)
 	task_remaining = task_total
 	task_bar.visible = true
@@ -416,11 +422,13 @@ func build_action() -> void:
 		{"text":"돌아가기","action":close_modal},{"text":"건설 시작","primary":true,"action":func():
 			close_modal()
 			task = "build"
+			world.feedback.begin("build")
 			world.player.face_target(world.site.position)
 			world.player.set_activity("build")
 			task_total = float(DemoConfig.get_data().build_seconds)
 			task_remaining = task_total
 			task_bar.visible = true
+			toast("",0)
 			context.text = "보금자리 건설 중…"}])
 
 func finish_task() -> void:
@@ -429,24 +437,28 @@ func finish_task() -> void:
 	cancel_task()
 	if kind == "gather":
 		if model.gather(target,world.player.position):
-			var resource := "나무" if target.begins_with("wood") else "돌"
-			toast("%s +%d · 저장 완료" % [resource,DemoConfig.get_data().gather_yield])
-			if model.can_build(): toast("재료가 모였어요! 금빛 원으로 돌아가 건설해 주세요.",5)
+			world.feedback.gathered(target)
+			toast("",0)
+
 	elif kind == "build" and model.build(world.player.position):
+		world.feedback.built()
 		completion()
 
 func cancel_task() -> void:
 	task = ""
 	task_target = ""
-	if is_instance_valid(world): world.player.set_activity("")
+	if is_instance_valid(world):
+		world.player.set_activity("")
+		world.feedback.cancel()
 	if is_instance_valid(task_bar): task_bar.visible = false
 
 func completion() -> void:
 	if model.state.reward_claimed: return
 	var reward: int = DemoConfig.get_data().reward
-	show_modal("첫 보금자리 완성!","강변에 나의 첫 움집이 생겼습니다.\n완료 보상: 씨앗 %d개\n\n저장 후 앱을 종료하고 이어하기를 확인해 보세요." % reward,[
+	show_modal("첫 보금자리 완성!","강변에 첫 보금자리가 생겼어요!\n씨앗 %d개를 받아 여정을 이어가세요." % reward,[
 		{"text":"보상 받고 계속하기","primary":true,"action":func():
-			if model.claim_reward(): close_modal(); toast("보상 저장 완료",5)}])
+			if model.claim_reward():
+				close_modal(); world.feedback.rewarded(); toast("보상 저장 완료",5)}],true)
 
 func quest_details() -> void:
 	if model.state.built and not model.state.reward_claimed:
@@ -477,14 +489,14 @@ func toggle_character() -> void:
 func show_about() -> void:
 	var c := DemoConfig.get_data()
 	var sound: bool = settings.get_value("app","sound",false)
-	show_modal("RoxHistory · v0.1.3-hybrid",c.history.fact+"\n\n"+c.history.fiction+"\n\n이 데모의 소리는 조작 효과음만 제공합니다. 씨앗은 완료 기념 보상입니다.",[
+	show_modal("RoxHistory · v0.1.4-stage3",c.history.fact+"\n\n"+c.history.fiction+"\n\n이 데모의 소리는 조작 효과음만 제공합니다. 씨앗은 완료 기념 보상입니다.",[
 		{"text":"소리 끄기" if sound else "소리 켜기","action":func():
 			settings.set_value("app","sound",not sound)
 			if settings.save(prefs_path) != OK: show_error("소리 설정을 저장하지 못했습니다.")
 			else: show_about()},
 		{"text":"돌아가기","primary":true,"action":close_modal}])
 
-func show_modal(title: String, body: String, actions: Array) -> void:
+func show_modal(title: String, body: String, actions: Array, compact: bool = false) -> void:
 	if is_instance_valid(joystick): joystick.clear()
 	cancel_task()
 	if is_instance_valid(world):
@@ -499,13 +511,14 @@ func show_modal(title: String, body: String, actions: Array) -> void:
 	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
 	var shade := ColorRect.new()
-	shade.color = Color(0,0,0,0.55)
+	shade.color = Color(0,0,0,0.18 if compact else 0.55)
 	shade.mouse_filter = Control.MOUSE_FILTER_STOP
 	overlay.add_child(shade)
 	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	var width := minf(680,w-safe.x*2)
-	var height := minf(h-safe.y*2,500)
-	var p := box(overlay,Rect2((w-width)/2,(h-height)/2,width,height))
+	var width := minf(390 if compact else 680,w-safe.x*2)
+	var height := minf(h-safe.y*2,290 if compact else 500)
+	var at := Vector2(w-safe.x-width,safe.y) if compact else Vector2((w-width)/2,(h-height)/2)
+	var p := box(overlay,Rect2(at,Vector2(width,height)))
 	var v := column(p,12)
 	label(v,title,28,Color("fff1d6"))
 	var scroll := ScrollContainer.new()
@@ -565,6 +578,7 @@ func _notification(what: int) -> void:
 		go_back()
 	elif what == NOTIFICATION_APPLICATION_PAUSED or what == NOTIFICATION_APPLICATION_FOCUS_OUT:
 		application_active = false
+		if is_instance_valid(world): world.feedback.clear_transients()
 		if is_instance_valid(joystick): joystick.clear()
 		cancel_task()
 		if is_instance_valid(world) and screen == "play":

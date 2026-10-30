@@ -1,0 +1,4 @@
+
+10-30 12:20:47.672 13726 13750 I godot   : HYBRID_PERF {"frames":600,"gpu":"Android Emulator OpenGL ES Translator (NVIDIA GeForce RTX 5060/PCIe/SSE2)","mean_ms":16.6662766666667,"mode":"2D","p95_ms":18.262,"viewport":"(960.0, 540.0)"}
+10-30 12:21:00.808 13726 13750 I godot   : HYBRID_PERF {"frames":600,"gpu":"Android Emulator OpenGL ES Translator (NVIDIA GeForce RTX 5060/PCIe/SSE2)","mean_ms":16.6697933333333,"mode":"3D","p95_ms":18.326,"viewport":"(960.0, 540.0)"}
+

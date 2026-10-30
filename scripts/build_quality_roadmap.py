@@ -44,7 +44,7 @@ def markdown(data):
         predecessor = ', '.join(stage['dependsOn']) or '기존 기능 데모 보존'
         lines.append(f"| {stage['id']} {stage['title']} | {stage['experience']} | {stage['status']} | {predecessor} | {dash(stage['targetDate'])} |")
     lines += ['', '## 일정 운영', '', data['schedulePolicy'], '',
-              '1단계의 P1.1부터 시작하고, 각 품질 단계의 검증과 팀장 판단 후 다음 단계를 진행합니다. 사용자 피드백은 수시 반영합니다. 날짜가 정해지기 전에는 지연·정상 판정을 하지 않습니다.', '',
+              'P2를 먼저 마무리한 뒤 P3를 진행했으며, 다음 단계는 P4입니다. 각 단계의 실행·시각·회귀 검증을 우선합니다. 사용자 피드백은 수시 반영합니다. 날짜가 정해지기 전에는 지연·정상 판정을 하지 않습니다.', '',
               '## 단계별 범위와 완료 기준', '']
     for stage in data['stages']:
         lines += [f"### {stage['id']}. {stage['title']}", '', f"체험 목표: **{stage['experience']}**", '', '작업 범위:', '']
@@ -83,7 +83,7 @@ def progress_markdown(data):
         lines.append(f"| {s['id']} {s['title']} | {s['status']} | {s['implementation']} | {s['validation']} | {s.get('leaderReview','대기')} | {dash(s['targetDate'])} | {s['actualFinish'] or '미완료'} |")
     lines += ['', '## 일정 상세', '', '| 단계 | 예정 시작 | 목표 완료 | 실제 시작 | 실제 완료 |', '| --- | --- | --- | --- | --- |']
     lines += [f"| {s['id']} | {dash(s['plannedStart'])} | {dash(s['targetDate'])} | {s['actualStart'] or '미착수'} | {s['actualFinish'] or '미완료'} |" for s in data['stages']]
-    lines += ['', data['schedulePolicy'], '', '## P1 완료 기록 / 다음 작업 P2', '', '[P2 캐릭터 개발 지시](stage2-character-instructions.md)', '', '| 작업 | 상태 | 산출물 |', '| --- | --- | --- |']
+    lines += ['', data['schedulePolicy'], '', '## P1 완료 기록 / 다음 작업 P4', '', '[P2 캐릭터 개발 지시](stage2-character-instructions.md)', '', '| 작업 | 상태 | 산출물 |', '| --- | --- | --- |']
     lines += [f"| {t['id']} {t['title']} | {t['status']} | {t['result']} |" for t in data['stages'][0]['tasks']]
     lines += ['', '## 다음 행동과 막힘', '']
     for s in data['stages']:
@@ -182,8 +182,8 @@ def pdf(data, destination):
     y = p(data['scope'],MARGIN,y)-19
     c.setFillColor(AMBER)
     c.roundRect(MARGIN,y-59,CONTENT,59,9,fill=1,stroke=0)
-    p('현재 초점: P1 완료 / P2 Android 루프 확인·아트 검토',MARGIN+14,y-11,CONTENT-28,ParagraphStyle('Focus',parent=normal,fontName='KR-Bold'))
-    p('팀장 단계 검토 완료 1/5  |  사용자 피드백 수시 반영',MARGIN+14,y-34,CONTENT-28,small)
+    p('현재 초점: P2 보완·P3 연출 검증 완료 / 다음 P4',MARGIN+14,y-11,CONTENT-28,ParagraphStyle('Focus',parent=normal,fontName='KR-Bold'))
+    p('P1~P3 개발 검증 완료  |  새 아트 피드백·실기기 검증 별도',MARGIN+14,y-34,CONTENT-28,small)
     y -= 82
     y = table([['단계','만들 경험','착수 조건']]+[[s['id']+' '+s['title'],s['experience'],'기존 기능 보존' if not s['dependsOn'] else s['dependsOn'][0]+' 팀장 검토'] for s in data['stages']], [172,217,CONTENT-389], y)
     y = title('이미 확인된 것과 앞으로 확인할 것',y-2)
@@ -223,7 +223,7 @@ def pdf(data, destination):
     y=p(data['schedulePolicy'],MARGIN,y)-17
     y=title('다음 행동',y)
     y=p(data['stages'][1]['nextAction'],MARGIN,y)-12
-    y=p('P1은 PR #7과 CI·환경·이동 검토·Android 기본 실행 기록을 근거로 단계 완료 처리했습니다. P2 데모 재료 각 1개와 Android 에뮬레이터 전체 루프를 확인했습니다. 아트 최종 판정과 실기기 검증은 남았습니다. 전체 베타 완료를 뜻하지 않습니다.',MARGIN,y,style=small)-12
+    y=p('P2의 3D 캐릭터 원본 특징·관절·발 접점 보완을 먼저 검토한 뒤 P3 타격·획득·건설 연출을 통합했습니다. 나무1·돌1의 짧은 루프를 유지합니다. 새 아트 피드백과 Android 실기기·장시간 검증은 남았으며 전체 베타 완료가 아닙니다.',MARGIN,y,style=small)-12
     p('자동 감시·정기 알림은 설정하지 않았습니다. 개발 보고 또는 사용자 확인 요청이 있을 때 상태를 대조하고 현행화합니다.',MARGIN,y,style=small)
     c.showPage()
 
