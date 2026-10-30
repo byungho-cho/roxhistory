@@ -475,7 +475,10 @@ func show_about() -> void:
 
 func show_modal(title: String, body: String, actions: Array) -> void:
 	if is_instance_valid(joystick): joystick.clear()
-	if is_instance_valid(world): world.player.direction = Vector2.ZERO
+	cancel_task()
+	if is_instance_valid(world):
+		world.player.direction = Vector2.ZERO
+		world.player.presentation_paused = true
 	if is_instance_valid(overlay):
 		ui.remove_child(overlay)
 		overlay.queue_free()
@@ -515,6 +518,7 @@ func close_modal() -> void:
 	overlay = null
 	modal = false
 	if is_instance_valid(joystick): joystick.clear()
+	if is_instance_valid(world): world.player.presentation_paused = not application_active
 
 func toast(message: String, seconds: float = 3.0) -> void:
 	if is_instance_valid(toast_label): toast_label.text = message
@@ -556,6 +560,7 @@ func _notification(what: int) -> void:
 			model.save_position(world.player.position)
 	elif what == NOTIFICATION_APPLICATION_RESUMED or what == NOTIFICATION_APPLICATION_FOCUS_IN:
 		application_active = true
+		if is_instance_valid(world): world.player.presentation_paused = modal
 	elif what == NOTIFICATION_WM_CLOSE_REQUEST:
 		if is_instance_valid(world): model.save_position(world.player.position)
 		get_tree().quit()
