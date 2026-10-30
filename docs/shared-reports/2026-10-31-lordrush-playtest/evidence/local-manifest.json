@@ -1,0 +1,59 @@
+{
+  "investigation_date_kst": "2026-10-31",
+  "session": "Windows local follow-up; partial direct interaction",
+  "game_version": null,
+  "audio_recorded": false,
+  "capture_fps_not_game_fps": 20,
+  "files": [
+    {
+      "path": "evidence/clips/village-environment.mp4",
+      "bytes": 807941,
+      "sha256": "3dbdd252a5f9c9785c50bbeff049300adb527355c687d0b8b664666cc00cb6de"
+    },
+    {
+      "path": "evidence/clips/workbench-upgrade.mp4",
+      "bytes": 336717,
+      "sha256": "7d71b8e4f26ad96101a833430c27edd0aa446af55563e6b540aadb3edf3b24e9"
+    },
+    {
+      "path": "evidence/screenshots/02-building-panel.png",
+      "bytes": 881740,
+      "sha256": "0c0d867b8b0681ecf56ba24b4063d17dafd7e37466963bc8fe263c67095fec9b"
+    },
+    {
+      "path": "evidence/screenshots/05-workers.png",
+      "bytes": 793077,
+      "sha256": "92a80fee708fbad88cd087911c77f588ce818372884cf27500991daf23bd89f7"
+    },
+    {
+      "path": "evidence/screenshots/06-worker-assigned.png",
+      "bytes": 796686,
+      "sha256": "919eb445d69383c2539847b25fd7cd62103f85d22ecbe77b6614e8b6332cd117"
+    },
+    {
+      "path": "evidence/screenshots/07-workbench.png",
+      "bytes": 829289,
+      "sha256": "ce1ce249f9aedff4cdb43b5027366f18883986d73f971879f78f9cfc8eecf6eb"
+    },
+    {
+      "path": "evidence/screenshots/10-upgrade-result.png",
+      "bytes": 824576,
+      "sha256": "39af40e297c981385d800d71f415cb4e7c9bfdb1c2a71e898b8d7fbbd778bb12"
+    },
+    {
+      "path": "evidence/screenshots/11-camera-wheel.png",
+      "bytes": 1240484,
+      "sha256": "188dd7fdd5b9270676e384d45643333f198ed3d2de25aca9af82c12f3945045c"
+    },
+    {
+      "path": "evidence/screenshots/12-reward-flight.png",
+      "bytes": 1246126,
+      "sha256": "6b5e2348a9ac6fac869ea5c7c526a06dfd2a5e34f685c6b5b484aa64fe51bd3e"
+    },
+    {
+      "path": "evidence/screenshots/13-build-preview.png",
+      "bytes": 748942,
+      "sha256": "de138aa89d70701c961462adcaacaff06de92647754a7513954293a7221e2719"
+    }
+  ]
+}
