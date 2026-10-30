@@ -1,0 +1,136 @@
+{
+  "conditions": "Windows RTX 5060 / Godot 4.5.1 / 1280x720 / vsync off / player 990,1020 / camera zoom 0.5 position 180,-220 / 10000 frames, 3 alternating runs",
+  "runs": {
+    "before": [
+      {
+        "draw_calls": 52,
+        "engine": "4.5.1-stable (official)",
+        "frames": 10000,
+        "gpu": "NVIDIA GeForce RTX 5060",
+        "mean_frame_ms": 0.367135599999989,
+        "objects": 171,
+        "p95_frame_ms": 0.419,
+        "resolution": "(1280, 720)",
+        "utc": "2026-10-30T07:34:08",
+        "vsync": "disabled"
+      },
+      {
+        "draw_calls": 52,
+        "engine": "4.5.1-stable (official)",
+        "frames": 10000,
+        "gpu": "NVIDIA GeForce RTX 5060",
+        "mean_frame_ms": 0.365335999999994,
+        "objects": 171,
+        "p95_frame_ms": 0.415,
+        "resolution": "(1280, 720)",
+        "utc": "2026-10-30T07:34:35",
+        "vsync": "disabled"
+      },
+      {
+        "draw_calls": 52,
+        "engine": "4.5.1-stable (official)",
+        "frames": 10000,
+        "gpu": "NVIDIA GeForce RTX 5060",
+        "mean_frame_ms": 0.362172500000021,
+        "objects": 171,
+        "p95_frame_ms": 0.402,
+        "resolution": "(1280, 720)",
+        "utc": "2026-10-30T07:35:02",
+        "vsync": "disabled"
+      }
+    ],
+    "effects-off": [
+      {
+        "draw_calls": 167,
+        "engine": "4.5.1-stable (official)",
+        "frames": 10000,
+        "gpu": "NVIDIA GeForce RTX 5060",
+        "mean_frame_ms": 0.623092299999974,
+        "objects": 421,
+        "p95_frame_ms": 0.675,
+        "resolution": "(1280, 720)",
+        "utc": "2026-10-30T07:34:18",
+        "vsync": "disabled"
+      },
+      {
+        "draw_calls": 167,
+        "engine": "4.5.1-stable (official)",
+        "frames": 10000,
+        "gpu": "NVIDIA GeForce RTX 5060",
+        "mean_frame_ms": 0.627211300000002,
+        "objects": 421,
+        "p95_frame_ms": 0.682,
+        "resolution": "(1280, 720)",
+        "utc": "2026-10-30T07:34:45",
+        "vsync": "disabled"
+      },
+      {
+        "draw_calls": 167,
+        "engine": "4.5.1-stable (official)",
+        "frames": 10000,
+        "gpu": "NVIDIA GeForce RTX 5060",
+        "mean_frame_ms": 0.627467200000003,
+        "objects": 421,
+        "p95_frame_ms": 0.677,
+        "resolution": "(1280, 720)",
+        "utc": "2026-10-30T07:35:12",
+        "vsync": "disabled"
+      }
+    ],
+    "effects-on": [
+      {
+        "draw_calls": 186,
+        "engine": "4.5.1-stable (official)",
+        "frames": 10000,
+        "gpu": "NVIDIA GeForce RTX 5060",
+        "mean_frame_ms": 0.672142499999997,
+        "objects": 421,
+        "p95_frame_ms": 0.73,
+        "resolution": "(1280, 720)",
+        "utc": "2026-10-30T07:34:28",
+        "vsync": "disabled"
+      },
+      {
+        "draw_calls": 186,
+        "engine": "4.5.1-stable (official)",
+        "frames": 10000,
+        "gpu": "NVIDIA GeForce RTX 5060",
+        "mean_frame_ms": 0.666697000000006,
+        "objects": 421,
+        "p95_frame_ms": 0.716,
+        "resolution": "(1280, 720)",
+        "utc": "2026-10-30T07:34:55",
+        "vsync": "disabled"
+      },
+      {
+        "draw_calls": 186,
+        "engine": "4.5.1-stable (official)",
+        "frames": 10000,
+        "gpu": "NVIDIA GeForce RTX 5060",
+        "mean_frame_ms": 0.670855199999986,
+        "objects": 421,
+        "p95_frame_ms": 0.728,
+        "resolution": "(1280, 720)",
+        "utc": "2026-10-30T07:35:23",
+        "vsync": "disabled"
+      }
+    ]
+  },
+  "summary": {
+    "before": {
+      "mean_frame_ms": 0.364881366666668,
+      "mean_p95_ms": 0.412,
+      "draw_calls": 52
+    },
+    "effects-off": {
+      "mean_frame_ms": 0.625923599999993,
+      "mean_p95_ms": 0.678,
+      "draw_calls": 167
+    },
+    "effects-on": {
+      "mean_frame_ms": 0.6698982333333295,
+      "mean_p95_ms": 0.7246666666666667,
+      "draw_calls": 186
+    }
+  }
+}

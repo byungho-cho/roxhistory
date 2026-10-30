@@ -5,6 +5,7 @@ var direction := Vector2.ZERO
 var phase := 0.0
 var sprite: Sprite2D
 var frames: Array[Texture2D] = []
+var camera: Camera2D
 
 func _ready() -> void:
 	var shape := CollisionShape2D.new()
@@ -24,13 +25,23 @@ func _ready() -> void:
 	sprite.scale = Vector2(0.205,0.205)
 	sprite.position = Vector2(0,-50)
 	add_child(sprite)
-	var camera := Camera2D.new()
+	camera = Camera2D.new()
+	camera.name = "Camera2D"
+	camera.zoom = Vector2(0.5,0.5)
+	camera.position = Vector2(180,-220)
 	camera.limit_left = 0
 	camera.limit_top = 0
 	camera.limit_right = 2400
 	camera.limit_bottom = 1350
 	add_child(camera)
+	get_viewport().size_changed.connect(fit_camera)
+	fit_camera()
 	queue_redraw()
+
+func fit_camera() -> void:
+	var viewport_size := get_viewport().get_visible_rect().size
+	var fit := maxf(0.5,maxf(viewport_size.x/2400.0,viewport_size.y/1350.0))
+	camera.zoom = Vector2(fit,fit)
 
 func _physics_process(delta: float) -> void:
 	velocity = direction.limit_length()*float(DemoConfig.get_data().move_speed)
