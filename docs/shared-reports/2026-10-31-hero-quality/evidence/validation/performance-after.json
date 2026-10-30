@@ -1,0 +1,12 @@
+{
+  "draw_calls": 217.0,
+  "engine": "4.5.1-stable (official)",
+  "frames": 10000,
+  "gpu": "NVIDIA GeForce RTX 5060",
+  "mean_frame_ms": 0.977296400000001,
+  "objects": 442.0,
+  "p95_frame_ms": 1.595,
+  "resolution": "(1280, 720)",
+  "utc": "2026-10-30T23:32:03",
+  "vsync": "disabled"
+}

@@ -1,6 +1,36 @@
 class_name CharacterGeometry
 extends RefCounted
 
+# Editable ring profiles (height, half-width, half-depth), with continuous seams.
+# Used for the cheek/jaw and one-piece hide garment instead of stacked primitives.
+static func profile(parent: Node3D, rings: Array[Vector3], mat: Material, folds := 0.0) -> MeshInstance3D:
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var sides := 40
+	var samples: Array[Vector3] = []
+	for j in rings.size()-1:
+		for k in 4:
+			var t := float(k)/4.0
+			samples.append(rings[j].lerp(rings[j+1],smoothstep(0,1,t)))
+	samples.append(rings[-1])
+	for j in samples.size():
+		var ring := samples[j]
+		var slope := samples[mini(j+1,samples.size()-1)]-samples[maxi(0,j-1)]
+		for i in sides+1:
+			var a := TAU*i/sides
+			var ripple := 1.0+folds*cos(a*7.0+ring.x*2.0)
+			var n := Vector3(cos(a)/maxf(ring.y,0.02),-(slope.y+slope.z)/maxf(0.002,slope.x)*0.8,sin(a)/maxf(ring.z,0.02)).normalized()
+			st.set_normal(n)
+			st.add_vertex(Vector3(cos(a)*ring.y*ripple,ring.x,sin(a)*ring.z*ripple))
+	for j in samples.size()-1:
+		for i in sides:
+			var a := j*(sides+1)+i
+			for k in [a,a+1,a+sides+1,a+1,a+sides+2,a+sides+1]: st.add_index(k)
+	var node := MeshInstance3D.new()
+	node.name="SculptedProfile"
+	node.mesh=st.commit();node.material_override=mat;parent.add_child(node)
+	return node
+
 # Original modeled geometry: tapered locks, braided cords and continuous skin.
 static func strand(parent: Node3D, points: Array[Vector3], width: float, depth: float, outward: Vector3, mat: Material, taper := true) -> MeshInstance3D:
 	var st := SurfaceTool.new()

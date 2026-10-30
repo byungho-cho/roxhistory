@@ -251,7 +251,7 @@ func title_screen() -> void:
 	continue_btn.disabled = model.state.is_empty()
 	button(v,"새로 시작",new_game_prompt,false,"compass")
 	button(v,"데모 안내",show_about,false,"scroll")
-	label(stage,"1장 · 선사시대의 첫 불씨   |   v0.1.5-stage4",17,Color("fff0d1")).position = Vector2(safe.x+10,h-safe.y-30)
+	label(stage,"1장 · 선사시대의 첫 불씨   |   v"+str(ProjectSettings.get_setting("application/config/version")),17,Color("fff0d1")).position = Vector2(safe.x+10,h-safe.y-30)
 
 func new_game_prompt() -> void:
 	if not model.state.is_empty() or model.store.blocked:
@@ -509,7 +509,7 @@ func toggle_character() -> void:
 func show_about() -> void:
 	var c := DemoConfig.get_data()
 	var sound: bool = settings.get_value("app","sound",false)
-	show_modal("RoxHistory · v0.1.5-stage4",c.history.fact+"\n\n"+c.history.fiction+"\n\n강물·바람과 채집·건설 효과음을 제공합니다. 씨앗은 완료 기념 보상입니다.",[
+	show_modal("RoxHistory · v"+str(ProjectSettings.get_setting("application/config/version")),c.history.fact+"\n\n"+c.history.fiction+"\n\n강물·바람과 채집·건설 효과음을 제공합니다. 씨앗은 완료 기념 보상입니다.",[
 		{"text":"소리 끄기" if sound else "소리 켜기","action":func():
 			settings.set_value("app","sound",not sound)
 			if settings.save(prefs_path) != OK: show_error("소리 설정을 저장하지 못했습니다.")

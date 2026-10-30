@@ -1,0 +1,202 @@
+{
+  "report.md": {
+    "bytes": 17079,
+    "sha256": "85d72ba119b2eeb88983ccb38861f5a6e331776b206de90ee62ad411304145ca"
+  },
+  "evidence/clips/ambient-foreground.wav": {
+    "bytes": 974960,
+    "sha256": "084586aa872c7547ab89ef6fa3f946b8bfa8f1f65fad86d31e26021caff425a3"
+  },
+  "evidence/clips/android-play.mp4": {
+    "bytes": 8979479,
+    "sha256": "54a045c63500ccb11fbb186235f4211874d900f593b139566c2545d616c07be4"
+  },
+  "evidence/clips/hero-before-after.mp4": {
+    "bytes": 4232591,
+    "sha256": "0f38adf0a1dacf5445421ab689269bdb342e5901495c90042f4c3e8bbd7fa314"
+  },
+  "evidence/clips/hero-motion.mp4": {
+    "bytes": 8636133,
+    "sha256": "1d7bfd34cb77998798ea49034a3d189ac3447a1352d15f579d84098e55cd35d4"
+  },
+  "evidence/clips/work-actions-half-speed.mp4": {
+    "bytes": 4063776,
+    "sha256": "3d9d716ebda00e47344b70b6ba0de51ec245b48650b400bc01a74d9b19f58026"
+  },
+  "evidence/clips/work-actions.mp4": {
+    "bytes": 3975682,
+    "sha256": "ff0c7c644ab31a2a6741cac71bac56d01c42fbabe2e68b3d82b4ca0996d499c9"
+  },
+  "evidence/screenshots/after-back.png": {
+    "bytes": 1428932,
+    "sha256": "46707c1085db47f1b2520ddd0ec72b32adcd8002c24a90d9920deee09fa8025e"
+  },
+  "evidence/screenshots/after-front.png": {
+    "bytes": 1433985,
+    "sha256": "fdbedd9bcd53132e7c63163390a66a234afcffb45b4f77fd4b9b11949d798139"
+  },
+  "evidence/screenshots/after-side.png": {
+    "bytes": 1430621,
+    "sha256": "38b22a89b81074f0310f7ad27596fd3d082bd319991a79202e18408e568dc638"
+  },
+  "evidence/screenshots/after-world.png": {
+    "bytes": 1747190,
+    "sha256": "ea8346dda0a7d6da6113ca2443ccce0eb5b4156cb665d510e54aed2e8c4dd3c4"
+  },
+  "evidence/screenshots/android-cover.png": {
+    "bytes": 788659,
+    "sha256": "44e9cce1954b01142df3530f25b247d4b017a6d31713bdcaa527b14db81bff1f"
+  },
+  "evidence/screenshots/android-interruptions-recovered.png": {
+    "bytes": 1753932,
+    "sha256": "7b1ef11bddc82e6ddac966640af35e9387cd821e48e09679bd4c6f7ecdbb7975"
+  },
+  "evidence/screenshots/android-unfolded.png": {
+    "bytes": 1139867,
+    "sha256": "4f97590e775ff1b558ed1698a2515e04b28a3c25652d2277ec563a0cd4362591"
+  },
+  "evidence/screenshots/before-back.png": {
+    "bytes": 1432733,
+    "sha256": "00d66bb7d7738994a2cf43611a80628539156ecc41e3c00c146635c0b8e40ddc"
+  },
+  "evidence/screenshots/before-front.png": {
+    "bytes": 1437379,
+    "sha256": "09d55bdd836ecd98289f8b798ed8910304a8435281cd067c4792fdefc44a6a0a"
+  },
+  "evidence/screenshots/before-side.png": {
+    "bytes": 1433398,
+    "sha256": "29c55131b2b418867e1e58a65fe3e804a630c8481eeffeb5ea65acaa52df8d1b"
+  },
+  "evidence/screenshots/before-world.png": {
+    "bytes": 1747736,
+    "sha256": "d8aa8a561e823f4bfe262c1bb2f795943d6f0ebb82ce82577f1e86188c98334a"
+  },
+  "evidence/screenshots/build-contact.png": {
+    "bytes": 1136308,
+    "sha256": "b8aeefdce7357292fad0aa5f84c3ecb86512d2b081e7b7ca1e9f5736ed6b4d3a"
+  },
+  "evidence/screenshots/final-completed.png": {
+    "bytes": 1760883,
+    "sha256": "6228de835e6147afada307ca5a67b9f175aa76931ca8971188fe5a36e0074bdf"
+  },
+  "evidence/screenshots/final-continued.png": {
+    "bytes": 1835834,
+    "sha256": "da6d75e44bcbbdcfe9abaef2348ce8900c0fe843459641c22410351ce12b8b33"
+  },
+  "evidence/screenshots/front-comparison.png": {
+    "bytes": 702932,
+    "sha256": "b3f496dc83b13e30322a3ee4cecfb951c0d206e1b7fc176c9117ab49eb6cfb30"
+  },
+  "evidence/screenshots/roadmap.png": {
+    "bytes": 51633,
+    "sha256": "8296716ae2077a066565f053250d6869167f0d3b75b1a0ab1b1c3e2dbd7dd0ca"
+  },
+  "evidence/screenshots/stone-contact.png": {
+    "bytes": 1474681,
+    "sha256": "172094580f497beb06d6e3d11e485e14173e12cbdc8313fffe69ba69e1289a0b"
+  },
+  "evidence/screenshots/wood-contact.png": {
+    "bytes": 1301025,
+    "sha256": "48c4e6bbf764e9cd85be1b4f5549d6acf209e803da8ce9c42f167f5d8ec614db"
+  },
+  "evidence/validation/android-audio.json": {
+    "bytes": 668,
+    "sha256": "51a993da3a8b59bbcb7a29c6b94f5e321c22a016b81498de66cb2151ba724abb"
+  },
+  "evidence/validation/android-final-logcat.txt": {
+    "bytes": 1650,
+    "sha256": "d2e5a3d47cb6e4114f50e9033985f2ee511d93567abbce5f05c456d467feda15"
+  },
+  "evidence/validation/android-hero-loop.json": {
+    "bytes": 869,
+    "sha256": "7b306ba7b98863157bf4957099b7725588e566bed28dfd78bb89559d202590a5"
+  },
+  "evidence/validation/android-interruptions.json": {
+    "bytes": 229,
+    "sha256": "3e1bf625bc28230854ead3691c2b41eddd1fec5ad275f0adcdbf6c2c66bb3067"
+  },
+  "evidence/validation/android-ratios.json": {
+    "bytes": 387,
+    "sha256": "e3ffd5e0ca5450aaaba1b14415a431ce9e957e0f90be3208ba3f947acd954d61"
+  },
+  "evidence/validation/asset-validation.log": {
+    "bytes": 47,
+    "sha256": "938d8d0c0c9e795bd14bb79f01f5056c8e82c8b219fb4182e0643010d5dd8a22"
+  },
+  "evidence/validation/audio-assets.log": {
+    "bytes": 1588,
+    "sha256": "d1bbee474189155baa5dc292452ce76baaa81c811d0e55abfa14fc4de7c2a04f"
+  },
+  "evidence/validation/character_tests.log": {
+    "bytes": 277,
+    "sha256": "dd161b19c17dc3ea9c52ae5b7cd5941209c363cbbc8d8f4ad8ab71015fb69e52"
+  },
+  "evidence/validation/completed-upgrade.json": {
+    "bytes": 497,
+    "sha256": "7f85bbad327353db3cef9c553052d43fcb800366912ee3b897d2fd9aa335e57f"
+  },
+  "evidence/validation/environment_review.log": {
+    "bytes": 287,
+    "sha256": "e46128f94aafcb587c42d129eebdc254d19d639e2cc1424cd2472947fbb533b5"
+  },
+  "evidence/validation/environment_tests.log": {
+    "bytes": 223,
+    "sha256": "b5e85054da543f1e13eb4668c3f5f8c6306f86240b9b2aa6d2fd1cd810b094a0"
+  },
+  "evidence/validation/hero_tests.log": {
+    "bytes": 223,
+    "sha256": "64e4f616bd82f4e3c810c3a3ead3f63bf6ad16ff1451427301161a5b4341052d"
+  },
+  "evidence/validation/hybrid_occlusion.log": {
+    "bytes": 287,
+    "sha256": "77991d1705fd2673c04beae37f2525fe67e7ac030a549a4261f23a4d04ff293f"
+  },
+  "evidence/validation/hybrid_tests.log": {
+    "bytes": 223,
+    "sha256": "32f000aac735565b5014b8c6a9c54d4b43824a588289b8aca3b378c09bc9df5e"
+  },
+  "evidence/validation/import.log": {
+    "bytes": 1346,
+    "sha256": "c20b5d1bb0bda5d386dbe9bc3d0eae222cd0cb6de24b78561a4fc693f218ee49"
+  },
+  "evidence/validation/interaction_tests.log": {
+    "bytes": 330,
+    "sha256": "ec184dadc34e855ec3f5eb802c244f2f43ec31018d7b9db6940e1629f5c2f13c"
+  },
+  "evidence/validation/package.txt": {
+    "bytes": 4943,
+    "sha256": "62615c1951c7a8bd59e0033c173f2dfe3e583a1bab236ecfcc1d5502bc95d4d1"
+  },
+  "evidence/validation/performance-after.json": {
+    "bytes": 288,
+    "sha256": "3823dacf625df29fccbb48ee657d6650b0976cb1b664b4184880f6dabee97577"
+  },
+  "evidence/validation/performance-before.json": {
+    "bytes": 288,
+    "sha256": "652c947473c229b05d26eb8dc162ab876e82cf0896078a8d003edc3dcb366eb8"
+  },
+  "evidence/validation/polish_tests.log": {
+    "bytes": 223,
+    "sha256": "1a7a491d4505ae9e42d2d017fc38a5690db7782d7d21f2893cbdbd82d786e88b"
+  },
+  "evidence/validation/presentation_tests.log": {
+    "bytes": 376,
+    "sha256": "031c3f2eb7c7abe25a236803191d579faca38fed7371fb234217208cbcdfef36"
+  },
+  "evidence/validation/signature.txt": {
+    "bytes": 954,
+    "sha256": "70a501f40135e0c4669625a95d0d47a4afd9ed4e3f9e9f24cd9d048e9da791fc"
+  },
+  "evidence/validation/state_tests.log": {
+    "bytes": 259,
+    "sha256": "3acc3a4565ea5a36b200ba4a3a15718d3ff5f755b75fcaa24aff3ac2798c05ea"
+  },
+  "evidence/validation/ui_smoke.log": {
+    "bytes": 1215,
+    "sha256": "a279d12ca17b91eee4e1437166c246530ef3cab75919041c177a8c6281ba28a5"
+  },
+  "evidence/validation/upgrade.json": {
+    "bytes": 468,
+    "sha256": "43a35710575a9720f9d31af86bd26545615fb012a9e6a71531c71eefe989d809"
+  }
+}

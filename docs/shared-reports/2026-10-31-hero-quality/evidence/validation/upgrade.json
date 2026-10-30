@@ -1,0 +1,24 @@
+{
+  "utc": "2026-10-30T23:17:38Z",
+  "from": "public v0.1.5-stage4",
+  "to": "v0.1.6-hero",
+  "install": "adb install -r (no uninstall)",
+  "save_byte_identical": true,
+  "loaded_state": {
+    "built": false,
+    "depleted": {
+      "wood_3": 1
+    },
+    "intro_seen": true,
+    "position": [
+      1470.27807617188,
+      790.308776855469
+    ],
+    "region": "amsa",
+    "reward_claimed": false,
+    "schema": 1,
+    "stone": 0,
+    "tokens": 0,
+    "wood": 1
+  }
+}

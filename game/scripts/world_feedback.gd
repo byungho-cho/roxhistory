@@ -7,7 +7,7 @@ var world: DemoWorld
 var activity := ""
 var target := ""
 var elapsed := 0.0
-var next_hit := 0.278
+var next_hit := HeroMotion.CONTACT
 var particles: Array[Dictionary] = []
 var notices: Array[Dictionary] = []
 var events: Array[String] = []
@@ -43,7 +43,9 @@ func remember(event: String) -> void:
 
 func begin(kind: String, id := "") -> void:
 	cancel()
-	activity = kind; target = id; elapsed = 0; next_hit = 0.278
+	activity = kind; target = id; elapsed = 0; next_hit = HeroMotion.CONTACT
+	world.player.hybrid.work_kind = ("wood" if id.begins_with("wood") else "stone") if kind == "gather" else "build"
+	world.player.external_work_clock = true
 	preview_progress = 0
 	preview.visible = kind == "build"
 	roof.material.set_shader_parameter("progress",0.0)
@@ -52,6 +54,7 @@ func begin(kind: String, id := "") -> void:
 func update_work(seconds: float, total: float) -> void:
 	elapsed = seconds
 	if activity == "": return
+	world.player.action_time = seconds
 	if activity == "build":
 		preview_progress = clampf(seconds/total,0,1)
 		roof.material.set_shader_parameter("progress",smoothstep(0.15,1.0,preview_progress))
@@ -61,14 +64,21 @@ func update_work(seconds: float, total: float) -> void:
 		if activity == "gather" and world.art_nodes.has(target):
 			point = world.art_nodes[target].position+Vector2(0,-35)
 			color = Color("d4bd92") if target.begins_with("wood") else Color("b6b7a4")
+		# Particles originate at the rendered tool head, not the object's center
+		# several pixels away. Object sway and the matching sound share this beat.
+		if world.player.use_3d:
+			var hero := world.player.hybrid
+			hero.animate(0,Vector2.ZERO,world.player.phase,false,activity,next_hit,false)
+			point = hero.tool_contact_world()
 		impact_point = point; impact_strength = 1.0
 		burst(point,color,7,0.42)
 		remember("impact:"+activity)
 		sound_cue.emit(("wood" if target.begins_with("wood") else "stone") if activity == "gather" else "build")
-		next_hit += 1.0/1.8
+		next_hit += HeroMotion.CYCLE
 	queue_redraw()
 
 func cancel() -> void:
+	world.player.external_work_clock = false
 	if target != "" and world.art_nodes.has(target): world.art_nodes[target].get_child(0).rotation = 0
 	activity = ""; target = ""; impact_strength = 0
 	if is_instance_valid(preview): preview.visible = false
