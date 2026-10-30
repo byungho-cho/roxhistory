@@ -19,6 +19,7 @@ var screen := ""
 var modal := false
 var task := ""
 var task_target := ""
+var application_active := true
 var task_remaining := 0.0
 var task_total := 0.0
 var autosave := 0.0
@@ -355,16 +356,17 @@ func _process(delta: float) -> void:
 	if screen != "play" or not is_instance_valid(world):
 		return
 	var direction := Vector2.ZERO
-	if not modal:
+	if not modal and application_active:
 		if is_instance_valid(joystick): direction = joystick.value
 		var keyboard := Vector2(float(Input.is_physical_key_pressed(KEY_D) or Input.is_physical_key_pressed(KEY_RIGHT))-float(Input.is_physical_key_pressed(KEY_A) or Input.is_physical_key_pressed(KEY_LEFT)),float(Input.is_physical_key_pressed(KEY_S) or Input.is_physical_key_pressed(KEY_DOWN))-float(Input.is_physical_key_pressed(KEY_W) or Input.is_physical_key_pressed(KEY_UP)))
 		if keyboard.length() > 0: direction = keyboard.normalized()
 	world.player.direction = direction
+	world.player.presentation_paused = modal or not application_active
 	if task != "":
 		var cancel := modal
 		if task == "gather":
 			var n := world.nearest()
-			cancel = cancel or str(n.get("id","")) != task_target
+			cancel = cancel or str(n.get("id","")) != task_target or direction.length() > 0.12
 		else:
 			cancel = cancel or not world.near_site() or direction.length() > 0.12
 		if cancel:
@@ -393,6 +395,8 @@ func gather_action() -> void:
 	var n := world.nearest()
 	if n.is_empty(): return
 	task = "gather"
+	world.player.face_target(DemoConfig.point(n.position))
+	world.player.set_activity("gather")
 	task_target = n.id
 	task_total = float(DemoConfig.get_data().gather_seconds)
 	task_remaining = task_total
@@ -409,6 +413,8 @@ func build_action() -> void:
 		{"text":"돌아가기","action":close_modal},{"text":"건설 시작","primary":true,"action":func():
 			close_modal()
 			task = "build"
+			world.player.face_target(world.site.position)
+			world.player.set_activity("build")
 			task_total = float(DemoConfig.get_data().build_seconds)
 			task_remaining = task_total
 			task_bar.visible = true
@@ -429,6 +435,7 @@ func finish_task() -> void:
 func cancel_task() -> void:
 	task = ""
 	task_target = ""
+	if is_instance_valid(world): world.player.set_activity("")
 	if is_instance_valid(task_bar): task_bar.visible = false
 
 func completion() -> void:
@@ -540,11 +547,15 @@ func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_GO_BACK_REQUEST:
 		go_back()
 	elif what == NOTIFICATION_APPLICATION_PAUSED or what == NOTIFICATION_APPLICATION_FOCUS_OUT:
+		application_active = false
 		if is_instance_valid(joystick): joystick.clear()
 		cancel_task()
 		if is_instance_valid(world) and screen == "play":
 			world.player.direction = Vector2.ZERO
+			world.player.presentation_paused = true
 			model.save_position(world.player.position)
+	elif what == NOTIFICATION_APPLICATION_RESUMED or what == NOTIFICATION_APPLICATION_FOCUS_IN:
+		application_active = true
 	elif what == NOTIFICATION_WM_CLOSE_REQUEST:
 		if is_instance_valid(world): model.save_position(world.player.position)
 		get_tree().quit()

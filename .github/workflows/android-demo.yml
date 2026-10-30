@@ -57,6 +57,8 @@ jobs:
           ! grep -E 'SCRIPT ERROR:|ERROR:' ui-tests.log
           timeout 150 xvfb-run -a godot --audio-driver Dummy --path game --resolution 1280x720 --script res://tests/environment_review.gd -- --test-ui 2>&1 | tee environment-review-tests.log
           ! grep -E 'SCRIPT ERROR:|ERROR:' environment-review-tests.log
+          timeout 150 xvfb-run -a godot --audio-driver Dummy --path game --resolution 1280x720 --script res://tests/character_tests.gd -- --test-ui 2>&1 | tee character-tests.log
+          ! grep -E 'SCRIPT ERROR:|ERROR:' character-tests.log
       - name: Export signed debug APK
         run: |
           set -euo pipefail
@@ -65,24 +67,29 @@ jobs:
           export GODOT_ANDROID_KEYSTORE_DEBUG_PATH="$RUNNER_TEMP/debug.keystore"
           export GODOT_ANDROID_KEYSTORE_DEBUG_USER=androiddebugkey
           export GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD=android
-          godot --headless --path game --export-debug Android "$PWD/build/RoxHistory-0.1.1-stage1-debug.apk" 2>&1 | tee build/export.log
-          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose build/RoxHistory-0.1.1-stage1-debug.apk | tee build/signature.txt
-          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging build/RoxHistory-0.1.1-stage1-debug.apk > build/package.txt
-          sha256sum build/RoxHistory-0.1.1-stage1-debug.apk > build/SHA256SUMS
+          godot --headless --path game --export-debug Android "$PWD/build/RoxHistory-0.1.2-stage2-debug.apk" 2>&1 | tee build/export.log
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose build/RoxHistory-0.1.2-stage2-debug.apk | tee build/signature.txt
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging build/RoxHistory-0.1.2-stage2-debug.apk > build/package.txt
+          sha256sum build/RoxHistory-0.1.2-stage2-debug.apk > build/SHA256SUMS
           git rev-parse HEAD > build/SOURCE_COMMIT
       - name: Complete source package
         if: always()
         run: |
           mkdir -p build
-          git archive HEAD -o build/RoxHistory-0.1.1-stage1-source.zip
+          git archive HEAD -o build/RoxHistory-0.1.2-stage2-source.zip
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: RoxHistory-0.1.1-stage1-demo
+          name: RoxHistory-0.1.2-stage2-validation
           path: |
             build/
             game/reports/
             *-tests.log
             import.log
             docs/stage1/
+          retention-days: 30
+      - uses: actions/upload-artifact@v4
+        with:
+          name: RoxHistory-0.1.2-stage2-APK
+          path: build/RoxHistory-0.1.2-stage2-debug.apk
           retention-days: 30
