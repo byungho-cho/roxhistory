@@ -42,12 +42,12 @@ func run() -> void:
 	app.close_modal(); await frames(12)
 	var before: Vector2 = p.position
 	var state: Dictionary = app.model.state.duplicate(true)
-	app.toggle_character(); await frames(3)
-	check(not p.use_3d and p.sprite.visible,"Switch back to original 2D")
-	check(p.hybrid.viewport.render_target_update_mode == SubViewport.UPDATE_DISABLED,"2D stops 3D rendering cost")
-	check(p.position == before and app.model.state == state,"Comparison preserves world and save")
-	app.toggle_character(); await frames(3)
-	check(p.use_3d and not p.sprite.visible,"Switch again without duplicate character")
+	p.set_character_3d(false); await frames(3)
+	check(p.use_3d and not p.sprite.visible,"Legacy 2D request keeps the 3D hero")
+	check(p.hybrid.viewport.render_target_update_mode == SubViewport.UPDATE_ALWAYS,"3D renderer remains active after legacy setting")
+	check(p.position == before and app.model.state == state,"Legacy setting migration preserves world and save")
+	p.set_character_3d(true); await frames(3)
+	check(p.use_3d and not p.sprite.visible,"Repeated 3D activation keeps one character")
 	var report := {"checks":checks,"failed":failed,"utc":Time.get_datetime_string_from_system(true)}
 	var f := FileAccess.open("res://reports/hybrid-tests.json",FileAccess.WRITE)
 	f.store_string(JSON.stringify(report,"  ")); print(JSON.stringify(report))

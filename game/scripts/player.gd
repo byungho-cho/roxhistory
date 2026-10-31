@@ -21,11 +21,14 @@ var presentation_paused := false
 var motion_state := "idle"
 var sprite: Polygon2D
 var hybrid: HybridCharacter
-var use_3d := false
+var use_3d := true
 var perf_frames: Array[float] = []
 var perf_start := 0
 var perf_done := false
 var camera: Camera2D
+var zoom_factor := 1.0
+var guide_tween: Tween
+var guide_generation := 0
 var rest_points := PackedVector2Array()
 var tool: Node2D
 
@@ -79,15 +82,16 @@ func _ready() -> void:
 	update_rig()
 	hybrid = HybridCharacter.new()
 	add_child(hybrid)
+	set_character_3d(true)
 
-func set_character_3d(value: bool) -> void:
+func set_character_3d(_value: bool = true) -> void:
 	perf_frames.clear()
 	perf_start = Time.get_ticks_usec()
 	perf_done = false
-	use_3d = value
-	sprite.visible = not value
-	hybrid.set_enabled(value)
-	if value: tool.visible = false
+	use_3d = true
+	sprite.visible = false
+	hybrid.set_enabled(true)
+	tool.visible = false
 
 func _process(_delta: float) -> void:
 	if not OS.has_feature("android") or not OS.is_debug_build() or perf_done or presentation_paused: return
@@ -105,8 +109,35 @@ func _process(_delta: float) -> void:
 func fit_camera() -> void:
 	var viewport_size := get_viewport().get_visible_rect().size
 	var fit := maxf(0.5,maxf(viewport_size.x/2400.0,viewport_size.y/1350.0))
-	camera.zoom = Vector2(fit,fit)
+	camera.zoom = Vector2.ONE*fit*zoom_factor
 	camera.reset_smoothing()
+
+func zoom_at(midpoint: Vector2, factor: float, world_anchor: Vector2=Vector2.INF) -> void:
+	var anchor := get_viewport().get_canvas_transform().affine_inverse()*midpoint if not world_anchor.is_finite() else world_anchor
+	zoom_factor=clampf(factor,1.0,3.0)
+	fit_camera()
+	var half := get_viewport_rect().size*0.5/camera.zoom
+	var center := anchor-(midpoint-get_viewport_rect().size*0.5)/camera.zoom
+	center.x=clampf(center.x,half.x,2400-half.x)
+	center.y=clampf(center.y,half.y,1350-half.y)
+	camera.position=center-global_position
+	camera.reset_smoothing();camera.force_update_scroll()
+
+func cancel_camera_guide() -> void:
+	guide_generation+=1
+	if guide_tween: guide_tween.kill()
+
+func guide_to(point: Vector2) -> void:
+	cancel_camera_guide()
+	var generation:=guide_generation
+	var old:=camera.position
+	guide_tween=create_tween()
+	guide_tween.tween_property(camera,"position",point-global_position,0.55).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	guide_tween.tween_interval(0.9)
+	guide_tween.tween_callback(func():
+		if generation==guide_generation:
+			guide_tween=create_tween()
+			guide_tween.tween_property(camera,"position",old,0.6).set_trans(Tween.TRANS_SINE))
 
 func face_target(target: Vector2) -> void:
 	var d := target-position
@@ -135,7 +166,7 @@ func _physics_process(delta: float) -> void:
 	if not presentation_paused:
 		idle_time += delta
 		if activity != "" and not external_work_clock: action_time += delta
-	update_rig()
+	if not use_3d: update_rig()
 	if use_3d:
 		tool.visible = false
 		hybrid.animate(delta,direction,phase,motion_state == "walk",activity,action_time,presentation_paused)

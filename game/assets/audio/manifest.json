@@ -85,10 +85,10 @@
     {
       "file": "river.wav",
       "seconds": 12.0,
-      "peak_dbfs": -9.12,
-      "rms_dbfs": -23.47,
+      "peak_dbfs": -10.46,
+      "rms_dbfs": -23.74,
       "loop": true,
-      "sha256": "37ccd6187db770810b3373152a68b05e516bbbbbcf4ba4e5e27f3361c8067d34"
+      "sha256": "d9f43cd19d1ae843f910cc721211bfbccd48e3039772be32c29bcd1032b6dc70"
     },
     {
       "file": "wind.wav",

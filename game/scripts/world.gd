@@ -12,6 +12,7 @@ var water: Polygon2D
 var environment_props: Array[EnvironmentProp] = []
 var effects_enabled := true
 var feedback: WorldFeedback
+var objectives: WorldObjectives
 # Water visuals and physics share the shoreline traced on terrain.png.
 const SHORE = [Vector2(690,0),Vector2(790,100),Vector2(1000,201),Vector2(1249,287),Vector2(1478,402),Vector2(1722,488),Vector2(1981,552),Vector2(2167,631),Vector2(2400,689)]
 const RIVER_POLYGON = [Vector2(690,0),Vector2(2400,0),Vector2(2400,689),Vector2(2167,631),Vector2(1981,552),Vector2(1722,488),Vector2(1478,402),Vector2(1249,287),Vector2(1000,201),Vector2(790,100)]
@@ -90,6 +91,7 @@ func _ready() -> void:
 	player = DemoPlayer.new()
 	player.position = DemoConfig.point(model.state.position)
 	add_child(player)
+	objectives=WorldObjectives.new(self);add_child(objectives)
 	feedback = WorldFeedback.new(self)
 	add_child(feedback)
 	model.changed.connect(refresh)
@@ -186,6 +188,7 @@ func _process(_delta: float) -> void:
 	if id != selected:
 		selected = id
 		queue_redraw()
+	for key in resource_labels: resource_labels[key].visible=key==selected
 
 func _draw() -> void:
 	if not is_instance_valid(player): return

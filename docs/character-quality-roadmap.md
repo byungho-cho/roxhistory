@@ -1,5 +1,7 @@
 # 캐릭터 중심 품질 개선 로드맵
 
+> 2026-10-31 최신 우선 작업: **v0.1.7 주인공·확대·목표/UI·채집·강물 체감 고도화 — 개발·Android 통합 검증 중**. 아래 P1~P4/CQ1 기록은 이전 구현 이력이며 이번 품질 승인을 의미하지 않는다. 주민·동물은 계속 대기한다. [이번 보고서](shared-reports/2026-10-31-play-experience/report.md).
+
 2026-10-31 KST. P1~P4는 구현 이력으로 보존한다. 구현·실행 검증·체감 품질 승인은 별개이며 검사 수로 완성도 백분율을 만들지 않는다.
 
 [FigJam](https://www.figma.com/board/60HqJ7ggIuvs9OLva8ZIx2?node-id=23-74) · [구조화 현황](quality-progress.json)

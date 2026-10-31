@@ -24,6 +24,16 @@ func run() -> void:
 	var p: DemoPlayer = app.world.player
 	p.set_character_3d(true);p.set_process(false);p.set_physics_process(false)
 	var hero := p.hybrid
+	hero.walk_blend=0;hero.action_blend=1;hero.apply_pose(0,0)
+	var standing_hips:=hero.rig.get_bone_global_pose(hero.bones.hips).origin
+	var standing_feet: Array[Vector3]=[]
+	for suffix in ["L","R"]: standing_feet.append(hero.rig.get_bone_global_pose(hero.bones["foot"+suffix]).origin)
+	hero.apply_pose(0,1)
+	check(hero.rig.get_bone_global_pose(hero.bones.hips).origin.distance_to(standing_hips)>0.02,"Contact transfers body weight")
+	for i in 2:
+		var suffix: String=["L","R"][i]
+		check(hero.rig.get_bone_global_pose(hero.bones["foot"+suffix]).origin.distance_to(standing_feet[i])<0.003,"Leg articulation preserves support point during weight transfer")
+	hero.action_blend=0
 	for i in 30: hero.animate(1.0/60,Vector2.ZERO,0,false,"gather",i/60.0,false)
 	hero.work_kind="wood";hero.animate(0,Vector2.ZERO,0,false,"gather",HeroMotion.CONTACT,false)
 	var wood := hero.rig.get_bone_pose_rotation(hero.bones.armR)

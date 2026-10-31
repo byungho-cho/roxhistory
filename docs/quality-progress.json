@@ -6,7 +6,7 @@
   "goal": "암사동 한 지역에서 1~2분만 플레이해도, 완성된 게임의 매력과 확장 가능성을 느끼는 데모",
   "scope": "지역 하나 · 첫 보금자리 퀘스트 하나 · 움집 하나. 세계·캐릭터·상호작용·연출·보상·저장이 연결된 경험.",
   "qualityStatement": "캐릭터를 잠시 세워두어도 살아 있는 장소처럼 보이고, 움직이고 행동하면 소리와 연출이 즉시 반응한다.",
-  "currentFocus": "CQ1 주인공 개선 개발 검증·전달 / 체감 승인 대기",
+  "currentFocus": "v0.1.7 주인공·확대·목표/UI·채집·강물 체감 고도화 및 Android 통합 검증",
   "baseline": {
     "id": "B0",
     "status": "기본 실행 사용자 확인",
@@ -452,13 +452,13 @@
         "targetCompletion": "2026-11-01",
         "actualStart": "2026-10-31",
         "actualCompletion": null,
-        "status": "개발 검증 완료 · 체감 검토 대기",
+        "status": "사용자 후속 지시에 따른 체감 고도화·통합 검증 중",
         "implementation": "1A·1B 개선 구현 완료",
         "runtimeVerification": "로컬·Android 에뮬레이터 검증; 실기기 미검증",
         "perceivedQuality": "팀장·사용자 검토 대기",
-        "resultLink": "shared-reports/2026-10-31-hero-quality/report.md",
+        "resultLink": "shared-reports/2026-10-31-play-experience/report.md",
         "blockers": "최종 외형·동작 승인, 실기기 청감·장시간 검증",
-        "nextAction": "비교 영상과 v0.1.6-hero APK를 팀장·사용자가 검토한 뒤 CQ2 착수 여부 결정",
+        "nextAction": "이번 주인공·플레이 화면 결과를 검토한 뒤 CQ2 진행 판단",
         "implementationCompleted": "2026-10-31"
       },
       {
@@ -552,5 +552,26 @@
         "nextAction": "선행 단계 검토 후 자산·범위 재산정"
       }
     ]
+  },
+  "playExperienceIteration": {
+    "date": "2026-10-31",
+    "version": "0.1.7-play",
+    "status": "개발·통합 검증 중",
+    "report": "shared-reports/2026-10-31-play-experience/report.md",
+    "scope": [
+      "3D 전용 주인공 외형",
+      "두 손가락 확대·입력 분리",
+      "목표 구역·초상화·자원 UI·버튼",
+      "채집 파편·획득 이동",
+      "잔잔한 강물"
+    ],
+    "deferred": [
+      "주민",
+      "사슴",
+      "멧돼지"
+    ],
+    "subjectiveApproval": "미완료",
+    "phoneValidation": "미검증",
+    "listeningValidation": "미검증"
   }
 }

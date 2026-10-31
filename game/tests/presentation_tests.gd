@@ -77,7 +77,8 @@ func run() -> void:
 	for size in [Vector2i(1280,720),Vector2i(896,370),Vector2i(816,616)]:
 		root.size = size; await frames(15)
 		var area := Rect2(Vector2.ZERO,Vector2(app.w,app.h))
-		check(area.encloses(app.resource_panel.get_global_rect()),"Resource panel fits "+str(size))
+		for kind in ["wood","stone","tokens"]:
+			check(area.encloses(app.chrome.slot(kind)),"Resource cell fits "+kind+" "+str(size))
 		check(area.encloses(app.gather_button.get_parent().get_global_rect()),"Action row fits "+str(size))
 		app.toast("나무 1 · 돌 1 — 첫 보금자리 준비 완료",2); await frames(2)
 		check(area.encloses(app.toast_panel.get_global_rect()),"Toast fits "+str(size))

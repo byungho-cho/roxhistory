@@ -71,7 +71,7 @@ func update_work(seconds: float, total: float) -> void:
 			hero.animate(0,Vector2.ZERO,world.player.phase,false,activity,next_hit,false)
 			point = hero.tool_contact_world()
 		impact_point = point; impact_strength = 1.0
-		burst(point,color,7,0.42)
+		burst(point,color,9,0.50,("wood" if target.begins_with("wood") else "stone") if activity=="gather" else "wood")
 		remember("impact:"+activity)
 		sound_cue.emit(("wood" if target.begins_with("wood") else "stone") if activity == "gather" else "build")
 		next_hit += HeroMotion.CYCLE
@@ -88,17 +88,16 @@ func cancel() -> void:
 func clear_transients() -> void:
 	cancel(); particles.clear(); notices.clear(); celebration = 0; queue_redraw()
 
-func burst(at: Vector2, color: Color, count: int, lifetime: float) -> void:
+func burst(at: Vector2, color: Color, count: int, lifetime: float, material_kind: String="spark") -> void:
 	for i in count:
 		var a := TAU*i/count
-		particles.append({"p":at,"v":Vector2(cos(a)*65,-48-absf(sin(a))*65),"age":0.0,"life":lifetime,"color":color,"size":3.0+i%3})
+		particles.append({"p":at,"v":Vector2(cos(a)*65,-48-absf(sin(a))*65),"age":0.0,"life":lifetime,"color":color,"size":4.0+i%3,"material":material_kind,"spin":i*0.75})
 	if particles.size() > 120: particles = particles.slice(particles.size()-120)
 
 func gathered(id: String) -> void:
 	var kind := "wood" if id.begins_with("wood") else "stone"
 	var at: Vector2 = world.art_nodes[id].position+Vector2(0,-125)
 	burst(at,Color("f4d58b"),12,0.65)
-	notices.append({"p":at,"age":0.0,"text":("나무" if kind == "wood" else "돌")+" +1","icon":kind})
 	remember("credit:"+kind)
 	sound_cue.emit("gain")
 
@@ -147,7 +146,13 @@ func _draw() -> void:
 	for p in particles:
 		var color: Color = p.color
 		color.a *= 1.0-p.age/p.life
-		draw_circle(p.p,p.size*(1-p.age/p.life*0.4),color)
+		var extent: float=p.size*(1-p.age/p.life*0.4)
+		if p.material=="spark": draw_circle(p.p,extent,color)
+		else:
+			draw_set_transform(p.p,p.spin+p.age*7)
+			if p.material=="wood": draw_colored_polygon(PackedVector2Array([Vector2(-extent,-2),Vector2(extent,-1),Vector2(extent*0.7,2),Vector2(-extent*0.8,1)]),color)
+			else: draw_colored_polygon(PackedVector2Array([Vector2(-extent,0),Vector2(-extent*0.3,-extent),Vector2(extent,extent*0.2),Vector2(0,extent)]),color)
+			draw_set_transform(Vector2.ZERO)
 	for n in notices:
 		var alpha := minf(1,(1.45-n.age)*3)
 		var at: Vector2 = n.p+Vector2(-48,-n.age*40)
