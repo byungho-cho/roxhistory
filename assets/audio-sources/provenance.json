@@ -1,0 +1,20 @@
+{
+  "title": "gentle river flow",
+  "author": "Garuda1982",
+  "page": "https://freesound.org/people/Garuda1982/sounds/707576/",
+  "license": "CC0-1.0",
+  "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+  "download": "https://cdn.freesound.org/previews/707/707576_2061858-hq.mp3",
+  "recorded_location": "Mittelherwigsdorf, Germany; generic water ambience, not a Korean-site recording",
+  "edits": "Source10..36s; highpass90Hz/lowpass4500Hz, 22050Hz stereo PCM16; 2s equal-power circular crossfade; 24s loop, peak0.30.",
+  "inputs": [
+    {
+      "path": "assets/audio-sources/gentle-river-flow-source.mp3",
+      "sha256": "b213df0c228895a3c094807d9fd5eca0764dbc056b1629f9fcdbddf4a2a34da8"
+    },
+    {
+      "path": "assets/audio-sources/gentle-river-flow-filtered.wav",
+      "sha256": "57c3318f887f73685b0125a5fc9eb3fb15a4c60c63799d5aa3c5ea55fbb5a319"
+    }
+  ]
+}

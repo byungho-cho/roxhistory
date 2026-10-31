@@ -1,0 +1,15 @@
+{
+  "utc": "2026-10-31T06:42:23Z",
+  "checks": [
+    "movement cancels gather",
+    "quest popup cancels gather",
+    "Android Back cancels gather",
+    "Home cancels gather",
+    "resume permits one gather"
+  ],
+  "failed": [],
+  "recovery_observed_seconds": 2.36,
+  "timing_note": "Configured gather1.2 engine seconds; observed wall time includes approach, emulator scheduling and save-read latency. Negative cancellation observations wait3.5 seconds.",
+  "final_source_commit": "a432dd023466b7d0833e4f61d2f239e28e39fef8",
+  "final_apk_sha256": "dc2bd5a8a4ee966e87d377231ac98c9bbe94e0d8a8bdbebad0229322555121b0"
+}

@@ -1,6 +1,6 @@
 # 최신 구현·검토 자료 — 2026-10-31
 
-[주인공·플레이 화면 v0.1.7 보고서](shared-reports/2026-10-31-play-experience/report.md)에서 전후 화면, Android 영상, APK와 검증 범위를 확인합니다. [공유 보고서 목록](shared-reports/README.md), [현재 진행](quality-progress.md), [CQ1 이후 계획](character-quality-roadmap.md)을 최신 기준으로 사용합니다. 기존 PDF는 과거 기록이며 이번에는 새로 만들지 않았습니다.
+[대표 정착지 아트·공간 v0.1.8 보고서](shared-reports/2026-10-31-visual-refactor/report.md)에서 전후 화면, Android 영상, APK와 검증 범위를 확인합니다. [공유 보고서 목록](shared-reports/README.md), [현재 진행](quality-progress.md), [CQ1 이후 계획](character-quality-roadmap.md)을 최신 기준으로 사용합니다. 기존 PDF는 과거 기록이며 이번에는 새로 만들지 않았습니다.
 
 아래는 기존 기획 문서 안내 이력입니다.
 

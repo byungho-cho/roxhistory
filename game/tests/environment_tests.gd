@@ -16,14 +16,15 @@ func run() -> void:
 	await physics_frame
 	var player := world.player
 	player.set_physics_process(false)
-	player.position = Vector2(1640,1150)
+	var settlement_tree: Node2D = world.get_node("SettlementTree")
+	player.position = settlement_tree.position+Vector2(0,90)
 	var hit := false
 	for i in 90:
 		await physics_frame
 		player.velocity = Vector2.UP*165
 		player.move_and_slide()
 		if player.get_slide_collision_count() > 0: hit = true
-	check(hit and player.position.y >= 1077 and player.position.y < 1100,"Visible tree base blocks physical movement")
+	check(hit and player.position.y >= settlement_tree.position.y+17 and player.position.y < settlement_tree.position.y+40,"Visible tree base blocks physical movement")
 	player.position = Vector2(990,700)
 	world.restore_clear_position()
 	await physics_frame

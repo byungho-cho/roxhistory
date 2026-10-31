@@ -71,7 +71,7 @@ func update_work(seconds: float, total: float) -> void:
 			hero.animate(0,Vector2.ZERO,world.player.phase,false,activity,next_hit,false)
 			point = hero.tool_contact_world()
 		impact_point = point; impact_strength = 1.0
-		burst(point,color,9,0.50,("wood" if target.begins_with("wood") else "stone") if activity=="gather" else "wood")
+		burst(point,color,6,0.40,("wood" if target.begins_with("wood") else "stone") if activity=="gather" else "wood")
 		remember("impact:"+activity)
 		sound_cue.emit(("wood" if target.begins_with("wood") else "stone") if activity == "gather" else "build")
 		next_hit += HeroMotion.CYCLE
@@ -91,13 +91,13 @@ func clear_transients() -> void:
 func burst(at: Vector2, color: Color, count: int, lifetime: float, material_kind: String="spark") -> void:
 	for i in count:
 		var a := TAU*i/count
-		particles.append({"p":at,"v":Vector2(cos(a)*65,-48-absf(sin(a))*65),"age":0.0,"life":lifetime,"color":color,"size":4.0+i%3,"material":material_kind,"spin":i*0.75})
+		particles.append({"p":at,"v":Vector2(cos(a)*65,-48-absf(sin(a))*65),"age":0.0,"life":lifetime,"color":color,"size":3.0+i%2,"material":material_kind,"spin":i*0.75})
 	if particles.size() > 120: particles = particles.slice(particles.size()-120)
 
 func gathered(id: String) -> void:
 	var kind := "wood" if id.begins_with("wood") else "stone"
-	var at: Vector2 = world.art_nodes[id].position+Vector2(0,-125)
-	burst(at,Color("f4d58b"),12,0.65)
+	var at: Vector2 = world.art_nodes[id].position+Vector2(0,-35)
+	burst(at,Color("f4d58b"),5,0.45)
 	remember("credit:"+kind)
 	sound_cue.emit("gain")
 
@@ -108,7 +108,6 @@ func built() -> void:
 	sound_cue.emit("complete")
 
 func rewarded() -> void:
-	notices.append({"p":world.player.position+Vector2(0,-170),"age":0.0,"text":"씨앗 +10 · 보금자리 완성","icon":""})
 	burst(world.player.position+Vector2(0,-95),Color("f6d88f"),18,0.9)
 	remember("reward")
 	sound_cue.emit("reward")

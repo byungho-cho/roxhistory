@@ -1,0 +1,31 @@
+{
+  "utc": "2026-10-31T06:49:59Z",
+  "method": "Initial staged isolated test position1700,1150; all subsequent movement actual Android touch, normal save preserved",
+  "positions": {
+    "front": [
+      1700.0,
+      1150.0
+    ],
+    "blocked": [
+      1697.6689453125,
+      1078.06701660156
+    ],
+    "behind": [
+      1704.87548828125,
+      929.714477539062
+    ],
+    "return": [
+      1705.94702148438,
+      1116.23913574219
+    ]
+  },
+  "ui_calibration": "After wm-size restoration, observed safe inset shifts joystick center to184/582 and back center to106/65; coordinates confirmed from live screenshot",
+  "checks": [
+    "visible trunk blocks forward movement",
+    "walk around trunk to behind canopy",
+    "return to front"
+  ],
+  "visual_review": "screenshots and original-speed clip reviewed separately",
+  "final_source_commit": "a432dd023466b7d0833e4f61d2f239e28e39fef8",
+  "final_apk_sha256": "dc2bd5a8a4ee966e87d377231ac98c9bbe94e0d8a8bdbebad0229322555121b0"
+}

@@ -3,3 +3,5 @@ game/assets/** -text
 game/assets/**/*.import text eol=lf
 game/assets/*.md text eol=lf
 game/assets/manifest.json text eol=lf
+
+*.mp3 -text

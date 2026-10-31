@@ -13,7 +13,7 @@ func _ready() -> void:
 	if ResourceLoader.exists("res://assets/ui/hero_portrait.png"): portrait=load("res://assets/ui/hero_portrait.png")
 func slot(kind: String) -> Rect2:
 	var i: int=["wood","stone","tokens"].find(kind)
-	return Rect2(Vector2(app.w-app.safe.x-318+i*106,app.safe.y+5),Vector2(100,50))
+	return Rect2(Vector2(app.w-app.safe.x-258+i*86,app.safe.y+5),Vector2(80,40))
 func gained(kind: String, at: Vector2) -> void:
 	flights.append({"kind":kind,"world":at,"age":0.0})
 func clear_effects() -> void: flights.clear();queue_redraw()
@@ -36,21 +36,21 @@ func frame(rect: Rect2, fill: Color, border: Color) -> void:
 func _draw() -> void:
 	if not is_instance_valid(app.world) or app.model.state.is_empty(): return
 	var font:=DemoArt.theme().default_font
-	var origin: Vector2=app.safe+Vector2(88,0)
-	frame(Rect2(origin,Vector2(262,64)),Color("493020f2"),Color("b88a46"))
-	draw_circle(origin+Vector2(33,32),31,Color("221b14"))
-	draw_arc(origin+Vector2(33,32),30,0,TAU,64,Color("edc77f"),2,true)
-	if portrait: draw_texture_rect(portrait,Rect2(origin+Vector2(4,3),Vector2(58,58)),false)
-	draw_string(font,origin+Vector2(76,26),"암사동 강변",HORIZONTAL_ALIGNMENT_LEFT,176,18,Color("fff1cf"))
-	draw_string(font,origin+Vector2(76,48),"첫 보금자리",HORIZONTAL_ALIGNMENT_LEFT,176,14,Color("d8bd89"))
+	var origin: Vector2=app.safe+Vector2(76,0)
+	frame(Rect2(origin,Vector2(216,SceneStyle.HEADER_HEIGHT)),Color("493020f2"),Color("b88a46"))
+	draw_circle(origin+Vector2(25,24),23,Color("221b14"))
+	draw_arc(origin+Vector2(25,24),23,0,TAU,64,Color("edc77f"),2,true)
+	if portrait: draw_texture_rect(portrait,Rect2(origin+Vector2(3,2),Vector2(44,44)),false)
+	draw_string(font,origin+Vector2(58,20),"암사동 강변",HORIZONTAL_ALIGNMENT_LEFT,148,16,Color("fff1cf"))
+	draw_string(font,origin+Vector2(58,38),"첫 보금자리",HORIZONTAL_ALIGNMENT_LEFT,148,12,Color("d8bd89"))
 	for key in ["wood","stone","tokens"]:
 		var rect:=slot(key);var beat: float=pulse[key]
 		frame(rect.grow(beat*2),Color("38291eef"),Color("ffe2a0") if beat>0 else Color("b88a46"))
 		var tex:=preload("res://assets/ui/seed.svg") if key=="tokens" else DemoArt.icon(key)
-		draw_texture_rect(tex,Rect2(rect.position+Vector2(8,7),Vector2(36,36)),false)
-		draw_string(font,rect.position+Vector2(53,33),str(int(app.model.state[key])),HORIZONTAL_ALIGNMENT_LEFT,43,23,Color("fff5d8"))
+		draw_texture_rect(tex,Rect2(rect.position+Vector2(6,6),Vector2(28,28)),false)
+		draw_string(font,rect.position+Vector2(43,28),str(int(app.model.state[key])),HORIZONTAL_ALIGNMENT_LEFT,33,20,Color("fff5d8"))
 		if beat>0:
-			var c:=rect.position+Vector2(80,10)
+			var c:=rect.position+Vector2(65,8)
 			draw_line(c-Vector2(5,0),c+Vector2(5,0),Color(1,.9,.5,beat),2,true)
 			draw_line(c-Vector2(0,5),c+Vector2(0,5),Color(1,.9,.5,beat),2,true)
 	for f in flights:

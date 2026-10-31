@@ -1,0 +1,30 @@
+{
+  "conditions": "Android15/API35 x86_64, RTX5060 host, physical1280x720, logical960x540, staged test position1060,1030, base zoom, 3D idle, no video/audio recording or other Godot test process; first60 frames discarded, next600 process intervals. One sample each; not physical-device GPU profiling or sustained thermal test.",
+  "results": [
+    {
+      "frames": 600,
+      "gpu": "Android Emulator OpenGL ES Translator (NVIDIA GeForce RTX 5060/PCIe/SSE2)",
+      "mean_ms": 80.2582733333333,
+      "mode": "3D",
+      "p95_ms": 90.823,
+      "viewport": "(960.0, 540.0)",
+      "version": "0.1.7-play",
+      "apk_sha256": "af38b854dd3b1562b430feca21000a694e6c0e5997ca70938da3bf9e11a1ca41",
+      "utc": "2026-10-31T06:45:01Z"
+    },
+    {
+      "frames": 600,
+      "gpu": "Android Emulator OpenGL ES Translator (NVIDIA GeForce RTX 5060/PCIe/SSE2)",
+      "mean_ms": 74.1942900000001,
+      "mode": "3D",
+      "p95_ms": 87.468,
+      "viewport": "(960.0, 540.0)",
+      "version": "0.1.8-scene",
+      "apk_sha256": "dc2bd5a8a4ee966e87d377231ac98c9bbe94e0d8a8bdbebad0229322555121b0",
+      "utc": "2026-10-31T06:46:35Z"
+    }
+  ],
+  "normal_save_unchanged": true,
+  "final_source_commit": "a432dd023466b7d0833e4f61d2f239e28e39fef8",
+  "final_apk_sha256": "dc2bd5a8a4ee966e87d377231ac98c9bbe94e0d8a8bdbebad0229322555121b0"
+}

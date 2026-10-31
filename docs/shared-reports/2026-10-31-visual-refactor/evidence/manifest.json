@@ -1,0 +1,347 @@
+[
+  {
+    "path": "evidence/audio/river-before-rejected.wav",
+    "bytes": 979056,
+    "sha256": "cc89c28a0c47d3cdc96a73f08029047e1679e1533869829a5b3796db0491875e"
+  },
+  {
+    "path": "evidence/audio/river-loop-output.mp3",
+    "bytes": 640648,
+    "sha256": "a524fcb92524c52724a9ce846151217b8c619a3018c7642fabb3df4d7e03ac94"
+  },
+  {
+    "path": "evidence/audio/river-output.wav",
+    "bytes": 979056,
+    "sha256": "4cacf029098cb774f669206aaf9ed966f1ed32cdbf9cb0c32fd7649b383656b5"
+  },
+  {
+    "path": "evidence/checks/android-audio.json",
+    "bytes": 827,
+    "sha256": "6563c33f49346a6b3751974d6166ed94d84562fd91bfb5866ab3ae62ef08d8b2"
+  },
+  {
+    "path": "evidence/checks/android-controls.json",
+    "bytes": 901,
+    "sha256": "5263d39ae40988613831228646eddf4ecb02f3d8841eb13972feacc622954ba0"
+  },
+  {
+    "path": "evidence/checks/android-interruptions.json",
+    "bytes": 615,
+    "sha256": "eeb3f20216b59cf0753a75775e5014c9a1d087b5e0a6fb00ab122d8ae95dc924"
+  },
+  {
+    "path": "evidence/checks/android-occlusion.json",
+    "bytes": 983,
+    "sha256": "52514f87a3a578e9cb5c3869574455ad5ca1f8e800f0b76cd1404d5a2ba331e3"
+  },
+  {
+    "path": "evidence/checks/android-performance.json",
+    "bytes": 1329,
+    "sha256": "6581fb466de38bc9561f767178dd774163848d4c02793d46e75f99e0b10b1038"
+  },
+  {
+    "path": "evidence/checks/android-play-loop.json",
+    "bytes": 1151,
+    "sha256": "632a9c51a0207e02fc1af5b9d35ba1d9c70b41c26b6899e1966bc819e0baa9f0"
+  },
+  {
+    "path": "evidence/checks/android-ratios.json",
+    "bytes": 634,
+    "sha256": "59243df1584df49d3b8a0ef34facea0cd7af4b470c572941672ed47549cf0483"
+  },
+  {
+    "path": "evidence/checks/android-systemui-retry.json",
+    "bytes": 2076,
+    "sha256": "b0295b00d13dfd9b30717bbda90d1bd99c4328a231aaaba49d3c69d25b81f1f4"
+  },
+  {
+    "path": "evidence/checks/assets.txt",
+    "bytes": 47,
+    "sha256": "2dbe6c53f586f578285d6ed7291d9c8a1c8223a8f83bb510050c3b4b5eda9289"
+  },
+  {
+    "path": "evidence/checks/audio-assets.json",
+    "bytes": 1587,
+    "sha256": "aad67a25994b32f6290d6fe2f2c2d722d3cc5a9b8c6ec10296e44f12a1c882b6"
+  },
+  {
+    "path": "evidence/checks/build-info.json",
+    "bytes": 670,
+    "sha256": "93e579fe03bfea6c0c1a2f7f90a3ae6017e81281188b8ec8764396c09374a136"
+  },
+  {
+    "path": "evidence/checks/character_tests.log",
+    "bytes": 277,
+    "sha256": "e276b18eb0cae0e545359a42708c70baea21952cf24b6618b80f30b7bde5081b"
+  },
+  {
+    "path": "evidence/checks/environment_review.log",
+    "bytes": 287,
+    "sha256": "659faf3a440360e066364dd891959e3f73d1e66aa3724f5332db98d3ce84a370"
+  },
+  {
+    "path": "evidence/checks/environment_tests.log",
+    "bytes": 223,
+    "sha256": "8080feab2babfb1561ef4bcaf33a176ce9da09e8ee1f93dcf117b6bb72f0cfba"
+  },
+  {
+    "path": "evidence/checks/figma-update.json",
+    "bytes": 550,
+    "sha256": "0096a7eebb7aaa5b6fe3493ba74510c32eaf0aebd6fd8b3c96a6a4ee8a333562"
+  },
+  {
+    "path": "evidence/checks/fresh-checkout.txt",
+    "bytes": 47,
+    "sha256": "2dbe6c53f586f578285d6ed7291d9c8a1c8223a8f83bb510050c3b4b5eda9289"
+  },
+  {
+    "path": "evidence/checks/gather_contact_tests.log",
+    "bytes": 2436,
+    "sha256": "761fa8666d783c4252f5c40b049eb84be24d2183bed06855914627b4b81b9eda"
+  },
+  {
+    "path": "evidence/checks/harness/README.md",
+    "bytes": 1198,
+    "sha256": "475bb4e25a0ce6843a9afde41ddac3e2b74eb5c800a43de4b5e994ba9802ef08"
+  },
+  {
+    "path": "evidence/checks/harness/android-visual-audio.py",
+    "bytes": 3276,
+    "sha256": "40af85c54acd9a989aa2799e201ea8c24ec46398d9a169d1c31928170b41141e"
+  },
+  {
+    "path": "evidence/checks/harness/android-visual-controls.py",
+    "bytes": 4593,
+    "sha256": "94d731eb220f718845007c42ffc0addc5a5d9e0386ac3ed812cfd188ef2b593a"
+  },
+  {
+    "path": "evidence/checks/harness/android-visual-interruptions.py",
+    "bytes": 2913,
+    "sha256": "2c990013dae9d30265ec20f4ec352e2e1ca8d1ba202f7d22ca2a60cf952cadd7"
+  },
+  {
+    "path": "evidence/checks/harness/android-visual-loop.py",
+    "bytes": 4100,
+    "sha256": "7a12be52f1214e4ffc3ab115d4178e5682d6e8dfffa30edb25daac1deab8cbd4"
+  },
+  {
+    "path": "evidence/checks/harness/android-visual-occlusion.py",
+    "bytes": 3398,
+    "sha256": "de3ba652722aa7b8e6f54697b1aec782e40583f512ebe43f81052a415094579c"
+  },
+  {
+    "path": "evidence/checks/harness/android-visual-performance.py",
+    "bytes": 3722,
+    "sha256": "188a18cbc57084afd321e2daeb7b48edf73e41a857799c562924649563c91ed9"
+  },
+  {
+    "path": "evidence/checks/harness/android-visual-ratios.py",
+    "bytes": 1597,
+    "sha256": "923278875967f25efb9bf6bfed7d70ac2cad55a172a2547bf14b6f73a6255e17"
+  },
+  {
+    "path": "evidence/checks/harness/android_ready.py",
+    "bytes": 2006,
+    "sha256": "d58926e206cd5226e420e55ef8e89391e9aa164d07ef45869a4e7571e3f517c3"
+  },
+  {
+    "path": "evidence/checks/harness/comparison-fixture.json",
+    "bytes": 265,
+    "sha256": "a0c5d6e11acfdf75f0d34a872a9f3d049cfd7d0224c258d8ee3a9cd17253491c"
+  },
+  {
+    "path": "evidence/checks/harness/comparison-prefs.cfg",
+    "bytes": 49,
+    "sha256": "561eda293043699d9fa3c963ed72ca1fe0da1990f9d05cc7cdde5e9b6ca8b347"
+  },
+  {
+    "path": "evidence/checks/hero_tests.log",
+    "bytes": 223,
+    "sha256": "d06c9ed5a030923b7ba7f762e6079a4b2b15bc7af9cb3e0d516bc9c25104cc86"
+  },
+  {
+    "path": "evidence/checks/hybrid_occlusion.log",
+    "bytes": 287,
+    "sha256": "2bf9aca44641eef89461736e3b7d535a4efa1f5af2edc61c0f08fd8cf02c671a"
+  },
+  {
+    "path": "evidence/checks/hybrid_tests.log",
+    "bytes": 223,
+    "sha256": "e055000446be17dd0e518fa889031338491d6bc5bd2b450883b6aa9f49e128d7"
+  },
+  {
+    "path": "evidence/checks/interaction_tests.log",
+    "bytes": 330,
+    "sha256": "50b0bf4194dcdf8dd99f3a6bfcfc8c9557747da5d04c56a8d807325425d54036"
+  },
+  {
+    "path": "evidence/checks/local-validation.json",
+    "bytes": 7776,
+    "sha256": "e2ce60c26eab46957468a9659015c4d245b41ccf7f91771c2864bb26b69431e4"
+  },
+  {
+    "path": "evidence/checks/package.txt",
+    "bytes": 4944,
+    "sha256": "ca28f0364351c009b3b61fb2a46c97f6776c2c6621c6d6e09acfc12745414fcc"
+  },
+  {
+    "path": "evidence/checks/play_experience_tests.log",
+    "bytes": 300,
+    "sha256": "f6c1f68fa277def1906d5c7a7bc4dadf05a51a6d451082a6bbab377cb8d2e9f2"
+  },
+  {
+    "path": "evidence/checks/polish_tests.log",
+    "bytes": 223,
+    "sha256": "5191498ebc62c9947872b26ffcaa2bc19df5f32260a1bfe7a0a5a62ef7d28ed3"
+  },
+  {
+    "path": "evidence/checks/presentation_tests.log",
+    "bytes": 376,
+    "sha256": "903dfefafd8e9d344f11490d817c19abfb85a457eac2646a031d536eb13c75ff"
+  },
+  {
+    "path": "evidence/checks/signature.txt",
+    "bytes": 954,
+    "sha256": "70a501f40135e0c4669625a95d0d47a4afd9ed4e3f9e9f24cd9d048e9da791fc"
+  },
+  {
+    "path": "evidence/checks/state_tests.log",
+    "bytes": 259,
+    "sha256": "26a56a33351f8c47687a71d498d1efb93cc9c30af2ddc2e2192571d3bd67f04a"
+  },
+  {
+    "path": "evidence/checks/ui_smoke.log",
+    "bytes": 1215,
+    "sha256": "3bf8c444775805c8c6448063c2e1e8e3a6eba3738c4f338578d55f49fbc2ed39"
+  },
+  {
+    "path": "evidence/clips/after-comparison.mp4",
+    "bytes": 2763389,
+    "sha256": "d77906d55e23f1abc234e9b3fdd9cfd517500229292a43e1f77f62c6c06067e1"
+  },
+  {
+    "path": "evidence/clips/android-controls.mp4",
+    "bytes": 4071238,
+    "sha256": "473032a54c5d84ea834ba21f12ae6a8964cff5d02071eb6ffced3ef4e90f214e"
+  },
+  {
+    "path": "evidence/clips/android-occlusion.mp4",
+    "bytes": 3140283,
+    "sha256": "109e3bb0d9da4cd7e187539b5eb2fbfd25c37aaf6e67a5bd76dcb0a37d07c312"
+  },
+  {
+    "path": "evidence/clips/android-play-loop.mp4",
+    "bytes": 6798491,
+    "sha256": "5af7a88e47981fce09106d6ed3c00bcfe89ceee2f3f4db87af6c9221b764f1ef"
+  },
+  {
+    "path": "evidence/clips/before-comparison.mp4",
+    "bytes": 3844282,
+    "sha256": "3536f01a3eb197375f166b23075c52a5366db59041ad28cde978bcfb0cb36e6f"
+  },
+  {
+    "path": "evidence/screenshots/after-android-world.png",
+    "bytes": 1671245,
+    "sha256": "3b9789ba8796f6090a0affcae173037c7c3322b213bdf97c77a4cb44098de3d3"
+  },
+  {
+    "path": "evidence/screenshots/after-android-zoom.png",
+    "bytes": 912729,
+    "sha256": "b1b13e6563cab2ee81ebb6e9000ceff05f6dea677c0e9aa3dd5773facb414d4c"
+  },
+  {
+    "path": "evidence/screenshots/android-cover-zoom.png",
+    "bytes": 524766,
+    "sha256": "2b6871515bbf6ceb21bf166ea9da97642e161240efe6ff428e4058a005fc4e60"
+  },
+  {
+    "path": "evidence/screenshots/android-cover.png",
+    "bytes": 720877,
+    "sha256": "51d96e30d956282c86bb68b69892f88a04e1cbd73458971df6d376d0f2dc0f14"
+  },
+  {
+    "path": "evidence/screenshots/android-unfolded-zoom.png",
+    "bytes": 824303,
+    "sha256": "6806e336bf06f0df09fd5f484a5f9fdc651ee63f51de6d72f560d0e0eea23dc7"
+  },
+  {
+    "path": "evidence/screenshots/android-unfolded.png",
+    "bytes": 1017234,
+    "sha256": "1da494a65de8f478555f80992ae7ffdcc57aed7f165959c24c9d3644a07de205"
+  },
+  {
+    "path": "evidence/screenshots/before-android-world.png",
+    "bytes": 1945485,
+    "sha256": "699d074ea8bc3a098074bc1a2e68b9e01f9bc22dea4df20e012df17231195b1e"
+  },
+  {
+    "path": "evidence/screenshots/before-android-zoom.png",
+    "bytes": 1254692,
+    "sha256": "2a17a0a604372733975ee61ff87dbd197e6f1418233c1015764b00aa79ff34f7"
+  },
+  {
+    "path": "evidence/screenshots/final-completed.png",
+    "bytes": 1669556,
+    "sha256": "715c16c7ed719152ea343354a88ae6343a0e6551f413b12e36e2f6e0da7b344a"
+  },
+  {
+    "path": "evidence/screenshots/final-continued.png",
+    "bytes": 1523355,
+    "sha256": "3b0c54eda3adc32153918d75f97cdf92b791ffa5aebd9c9ecd67b2a51ae0bf8c"
+  },
+  {
+    "path": "evidence/screenshots/loop-stone.png",
+    "bytes": 1622555,
+    "sha256": "9f0fb58c26bd05a4e1386b54c5b6b8487f3b2b21883058f7d9f312cf0e05d126"
+  },
+  {
+    "path": "evidence/screenshots/loop-wood.png",
+    "bytes": 1621425,
+    "sha256": "4db48213755a1b9aba23a74569cf52c071ef4cec72d173b6659daef7e832a753"
+  },
+  {
+    "path": "evidence/screenshots/occlusion-behind.png",
+    "bytes": 1673163,
+    "sha256": "32225ff77423c595ee71c5a4dde2e648841a8f11c5dff853d17ceb77ba673736"
+  },
+  {
+    "path": "evidence/screenshots/occlusion-blocked.png",
+    "bytes": 1663538,
+    "sha256": "d301c38fc7bb48e0f75208d6877e67a0f7eda5ea1d3c52bd7a0fa66fc88ef973"
+  },
+  {
+    "path": "evidence/screenshots/occlusion-return.png",
+    "bytes": 1664796,
+    "sha256": "1b4130ebbd4a89d91a6ccdb5b980872f927faf4b9ba9943058ddf08698ecfb64"
+  },
+  {
+    "path": "evidence/screenshots/play-back.png",
+    "bytes": 895884,
+    "sha256": "a2a9a7d2ac4a88b6ac2a2ebe903a3b5550508feac31ac4a3fc2eb04650e95f16"
+  },
+  {
+    "path": "evidence/screenshots/play-front.png",
+    "bytes": 904359,
+    "sha256": "507bbbb7f89cf20571cfccf9ef3d5781dfecdf774e2ff2ee9263c11a79e64f8e"
+  },
+  {
+    "path": "evidence/screenshots/play-side.png",
+    "bytes": 900897,
+    "sha256": "4ddd1009b87f85696eddb05aa0ac50ac45e7fe83036a8a8b71f9d26b311c3768"
+  },
+  {
+    "path": "evidence/screenshots/play-world.png",
+    "bytes": 1675545,
+    "sha256": "b5f9dd89d916bce39f981468cd4b932b4b262bf6be4ba196533fdb1130576127"
+  },
+  {
+    "path": "evidence/screenshots/ratio-early-cropped.png",
+    "bytes": 610403,
+    "sha256": "3dc3116db4aa7760e20ceb39628ad40c470831dfe45ba94087d7071de9b5e1af"
+  },
+  {
+    "path": "evidence/screenshots/representative-interim.png",
+    "bytes": 1681824,
+    "sha256": "c96df798fe11c36c50218a9700308579087e404ff47f07e76c1d31cb9f1c8130"
+  }
+]

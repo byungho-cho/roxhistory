@@ -1,0 +1,13 @@
+{
+  "version": "0.1.8-scene",
+  "version_code": 9,
+  "package": "com.roxhistory.demo",
+  "source_commit": "a432dd023466b7d0833e4f61d2f239e28e39fef8",
+  "game_tree": "a501388a648bc51eaa8420003ac6bc9c7051ba1f",
+  "bytes": 95785633,
+  "sha256": "dc2bd5a8a4ee966e87d377231ac98c9bbe94e0d8a8bdbebad0229322555121b0",
+  "signer_sha256": "cf65aeecb4e399ba9e2e6b9fa947f34f8c31bd75c8e3b686ad29d8431bb1695f",
+  "compatibility": "adb install -r succeeds over v0.1.7; original normal save preserved",
+  "apk_url": "https://github.com/byungho-cho/roxhistory/releases/download/v0.1.8-scene/RoxHistory-0.1.8-scene-debug.apk",
+  "pr": "https://github.com/byungho-cho/roxhistory/pull/18"
+}

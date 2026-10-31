@@ -6,7 +6,7 @@
   "goal": "암사동 한 지역에서 1~2분만 플레이해도, 완성된 게임의 매력과 확장 가능성을 느끼는 데모",
   "scope": "지역 하나 · 첫 보금자리 퀘스트 하나 · 움집 하나. 세계·캐릭터·상호작용·연출·보상·저장이 연결된 경험.",
   "qualityStatement": "캐릭터를 잠시 세워두어도 살아 있는 장소처럼 보이고, 움직이고 행동하면 소리와 연출이 즉시 반응한다.",
-  "currentFocus": "v0.1.7 주인공·플레이 체감 고도화 개발 검증 완료 / 팀장·사용자 검토",
+  "currentFocus": "v0.1.8 대표 정착지 아트·공간 개발 검증 완료 / 팀장·사용자 체감 검토",
   "baseline": {
     "id": "B0",
     "status": "기본 실행 사용자 확인",
@@ -29,7 +29,7 @@
     "fileUrl": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS",
     "specStatus": "현재 Figma 연결에서 Specs API 미지원",
     "roadmapUrl": "https://www.figma.com/board/60HqJ7ggIuvs9OLva8ZIx2",
-    "roadmapStatus": "기존 FigJam CQ1 카드에 v0.1.7 범위·939검사·Android 루프·체감 승인 대기 반영"
+    "roadmapStatus": "FigJam CQ1/CQ5에 대표 구역 선행 범위·검증과 남은 품질 작업 기록"
   },
   "schedulePolicy": "단계별 구현·실행 화면·회귀 검증을 먼저 완료한다. 일정 단축을 위해 범위나 검사를 생략하지 않으며 근거 없는 완료일을 약속하지 않는다.",
   "progressPolicy": "P1~P4는 구현·검증 이력으로 보존. 캐릭터 중심 CQ1~CQ6는 별도 품질 트랙이며 구현, 실행 검증, 체감 품질 승인을 구분한다. 검사 수를 완성도 백분율로 환산하지 않는다.",
@@ -433,12 +433,16 @@
     "policy": "데모 요구량 최소화: 나무·돌을 각각 한 번 채집하면 건설 가능. 정식 게임 밸런스 확정값이 아님."
   },
   "characterQualityTrack": {
-    "basis": "2026-10-31 사용자 지시: 주인공 우선, 주민·동물은 후속",
+    "basis": "2026-10-31 최신 지시: 주인공과 대표 구역의 장면 조화를 먼저 완성; 주민·동물은 후속",
     "scheduleBasis": "CQ1은 기존 15본 리그·모델 생성기 재사용으로 1~2일. CQ2는 리그 재사용과 간단한 경로로 3일. CQ3·4는 서로 다른 사족 체형·리깅·행동을 각 4일로 잠정 산정. CQ5·6 각 2일. 후속 자산 미확정으로 약속된 완료일이 아니며 선행 검토·모델 확보 시 재산정한다.",
     "scheduleChanges": [
       {
         "date": "2026-10-31",
         "reason": "사용자 요청으로 P5 즉시 통합 대신 주인공→주민→사슴→멧돼지→조화→통합으로 품질 개선 트랙 분리"
+      },
+      {
+        "date": "2026-10-31",
+        "reason": "대표 구역 아트·공간 정리를 CQ1과 함께 선행. CQ5 일부를 앞당기고, 후속 일정은 체감 검토 후 재산정."
       }
     ],
     "steps": [
@@ -452,13 +456,36 @@
         "targetCompletion": "2026-11-01",
         "actualStart": "2026-10-31",
         "actualCompletion": null,
-        "status": "v0.1.7 개발 검증·전달 / 체감 승인 대기",
-        "implementation": "3D 외형·핀치·목표/UI·채집 접점/획득·강물 구현",
-        "runtimeVerification": "로컬/CI 939건, Android 전체 루프·다중 터치·취소·출력 검증; 실기기 미검증",
+        "status": "v0.1.8 대표 구역 개발 검증 / 체감 승인 대기",
+        "implementation": "3D 재질·눈 깊이·비율·주름·작업 손목/몸통 보완. 기존 실제 3D 리그·핀치·저장 유지.",
+        "runtimeVerification": "최종 소스 로컬965, Android 통합·핀치·취소·가림·출력·동일 조건 성능; 실기기/직접 청취 미검증",
         "perceivedQuality": "팀장·사용자 검토 대기",
-        "resultLink": "shared-reports/2026-10-31-play-experience/report.md",
+        "resultLink": "shared-reports/2026-10-31-visual-refactor/report.md",
         "blockers": "최종 외형·동작 승인, 실기기 청감·장시간 검증",
-        "nextAction": "이번 주인공·플레이 화면 결과를 검토한 뒤 CQ2 진행 판단",
+        "nextAction": "대표 구역의 실제 플레이 비교·청감·실기기 검토 후 후속 범위 판단",
+        "implementationCompleted": "2026-10-31"
+      },
+      {
+        "id": "CQ5",
+        "title": "장면 조화",
+        "owner": "개발 담당",
+        "reviewer": "팀장·사용자",
+        "scope": "배치·그림자·가림·환경·효과·UI 강약",
+        "plannedStart": "2026-10-31",
+        "targetCompletion": null,
+        "actualStart": "2026-10-31",
+        "actualCompletion": null,
+        "status": "v0.1.8 대표 구역 개발 검증 / 체감 승인 대기",
+        "implementation": "대표 구역의 배경·독립 오브젝트·크기·그림자·UI 강약 선행. 주민·동물 포함 전체 조화는 후속.",
+        "runtimeVerification": "최종 소스 로컬965, Android 통합·핀치·취소·가림·출력·동일 조건 성능; 실기기/직접 청취 미검증",
+        "perceivedQuality": "팀장·사용자 검토 대기",
+        "resultLink": "shared-reports/2026-10-31-visual-refactor/report.md",
+        "blockers": "인물·동물 자산 선행",
+        "nextAction": "대표 구역의 실제 플레이 비교·청감·실기기 검토 후 후속 범위 판단",
+        "previousSchedule": {
+          "plannedStart": "2026-11-13",
+          "targetCompletion": "2026-11-14"
+        },
         "implementationCompleted": "2026-10-31"
       },
       {
@@ -467,8 +494,8 @@
         "owner": "개발 담당",
         "reviewer": "팀장·사용자",
         "scope": "목적지 이동·멈춤·살피기·간단한 작업",
-        "plannedStart": "2026-11-02",
-        "targetCompletion": "2026-11-04",
+        "plannedStart": null,
+        "targetCompletion": null,
         "actualStart": null,
         "actualCompletion": null,
         "status": "대기",
@@ -477,7 +504,11 @@
         "perceivedQuality": "팀장·사용자 검토 대기",
         "resultLink": null,
         "blockers": "주인공 체감 검토와 주민 원본 확인",
-        "nextAction": "선행 단계 검토 후 자산·범위 재산정"
+        "nextAction": "선행 단계 검토 후 자산·범위 재산정",
+        "previousSchedule": {
+          "plannedStart": "2026-11-02",
+          "targetCompletion": "2026-11-04"
+        }
       },
       {
         "id": "CQ3",
@@ -485,8 +516,8 @@
         "owner": "개발 담당",
         "reviewer": "팀장·사용자",
         "scope": "풀 뜯기·걷기·경계·짧은 도주·네 발 접지",
-        "plannedStart": "2026-11-05",
-        "targetCompletion": "2026-11-08",
+        "plannedStart": null,
+        "targetCompletion": null,
         "actualStart": null,
         "actualCompletion": null,
         "status": "대기",
@@ -495,7 +526,11 @@
         "perceivedQuality": "팀장·사용자 검토 대기",
         "resultLink": null,
         "blockers": "사족 원본·리깅 제작량 미확정",
-        "nextAction": "선행 단계 검토 후 자산·범위 재산정"
+        "nextAction": "선행 단계 검토 후 자산·범위 재산정",
+        "previousSchedule": {
+          "plannedStart": "2026-11-05",
+          "targetCompletion": "2026-11-08"
+        }
       },
       {
         "id": "CQ4",
@@ -503,8 +538,8 @@
         "owner": "개발 담당",
         "reviewer": "팀장·사용자",
         "scope": "냄새 맡기·땅 파기·걷기·경계·별도 체형",
-        "plannedStart": "2026-11-09",
-        "targetCompletion": "2026-11-12",
+        "plannedStart": null,
+        "targetCompletion": null,
         "actualStart": null,
         "actualCompletion": null,
         "status": "대기",
@@ -513,25 +548,11 @@
         "perceivedQuality": "팀장·사용자 검토 대기",
         "resultLink": null,
         "blockers": "별도 멧돼지 체형·행동 제작량 미확정",
-        "nextAction": "선행 단계 검토 후 자산·범위 재산정"
-      },
-      {
-        "id": "CQ5",
-        "title": "장면 조화",
-        "owner": "개발 담당",
-        "reviewer": "팀장·사용자",
-        "scope": "배치·그림자·가림·환경·효과·UI 강약",
-        "plannedStart": "2026-11-13",
-        "targetCompletion": "2026-11-14",
-        "actualStart": null,
-        "actualCompletion": null,
-        "status": "대기",
-        "implementation": "미착수",
-        "runtimeVerification": "미수행",
-        "perceivedQuality": "팀장·사용자 검토 대기",
-        "resultLink": null,
-        "blockers": "인물·동물 자산 선행",
-        "nextAction": "선행 단계 검토 후 자산·범위 재산정"
+        "nextAction": "선행 단계 검토 후 자산·범위 재산정",
+        "previousSchedule": {
+          "plannedStart": "2026-11-09",
+          "targetCompletion": "2026-11-12"
+        }
       },
       {
         "id": "CQ6",
@@ -539,8 +560,8 @@
         "owner": "개발 담당",
         "reviewer": "팀장·사용자",
         "scope": "나무·돌 각 1회 → 건설 → 보상 → 저장·재진입",
-        "plannedStart": "2026-11-15",
-        "targetCompletion": "2026-11-16",
+        "plannedStart": null,
+        "targetCompletion": null,
         "actualStart": null,
         "actualCompletion": null,
         "status": "대기",
@@ -549,7 +570,11 @@
         "perceivedQuality": "팀장·사용자 검토 대기",
         "resultLink": null,
         "blockers": "실기기·청감·장시간 검증 환경 확보",
-        "nextAction": "선행 단계 검토 후 자산·범위 재산정"
+        "nextAction": "선행 단계 검토 후 자산·범위 재산정",
+        "previousSchedule": {
+          "plannedStart": "2026-11-15",
+          "targetCompletion": "2026-11-16"
+        }
       }
     ]
   },
@@ -580,5 +605,23 @@
     "localChecks": 939,
     "androidLoopSeconds": 29.5,
     "normalSavePreserved": true
+  },
+  "visualSceneIteration": {
+    "version": "0.1.8-scene",
+    "status": "개발 검증·전달 / 체감 승인 대기",
+    "sourceCommit": "25853f4096c6db686ee19e0b4beadcd41a76f2bb",
+    "gameTree": "3677793eea88488ca6732b2a6f8e70bfae1f9d92",
+    "prUrl": "https://github.com/byungho-cho/roxhistory/pull/18",
+    "report": "shared-reports/2026-10-31-visual-refactor/report.md",
+    "reference": "shared-reports/2026-10-31-visual-refactor-reference/README.md",
+    "scope": "대표 구역 배경/오브젝트/3D 주인공/UI/접점 조화. 주민·동물·실내·밤낮·전투 제외.",
+    "remaining": "실기기·직접 청취·고배율 아트 체감 승인·장시간 발열",
+    "localChecks": 965,
+    "apkUrl": "https://github.com/byungho-cho/roxhistory/releases/download/v0.1.8-scene/RoxHistory-0.1.8-scene-debug.apk",
+    "apkSha256": "dc2bd5a8a4ee966e87d377231ac98c9bbe94e0d8a8bdbebad0229322555121b0",
+    "androidLoopSeconds": 46.02,
+    "physicalDeviceVerified": false,
+    "actualListeningVerified": false,
+    "userListeningFeedback": "이전 합성 강물은 잡음 평가로 반려; 실제 녹음 A로 교체, 사용자 현재 음량 유지 동의 / 출력 장치 미확인"
   }
 }

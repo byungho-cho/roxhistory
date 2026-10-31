@@ -1,11 +1,11 @@
-# 현재 개발 상태 — v0.1.7 플레이 체감 고도화
+# 현재 개발 상태 — v0.1.8 대표 정착지 아트·공간 리팩토링
 
-2D 강변 배경을 유지하고 3D 주인공 외형, 핀치 확대, 목표 구역, 초상화·자원 UI, 채집 접점·획득 연출, 강물 소리를 보완했습니다. 개발·실행 검증과 팀장·사용자의 체감 품질 승인은 구분합니다. 주민·동물은 후속 단계이며 전체 베타 완료가 아닙니다.
+2D 강변과 실제 3D 주인공을 유지하면서 바닥·강물의 대비, 독립 움집·나무·돌·통나무의 크기와 접지, 주인공 재질·작업 접점, UI 점유를 정리했습니다. 로컬 965개 검사와 Android 에뮬레이터 통합 검증을 수행했습니다. 실제 기기·직접 청취·최종 체감 품질 승인은 별도입니다. 주민·동물과 전체 베타 완료가 아닙니다.
 
-- [전후 화면·실행 영상·검증 보고서](docs/shared-reports/2026-10-31-play-experience/report.md)
-- [v0.1.7 서명된 APK 한 파일](https://github.com/byungho-cho/roxhistory/releases/download/v0.1.7-play/RoxHistory-0.1.7-play-debug.apk)
-- [최신 진행 현황](docs/quality-progress.md) · [캐릭터 중심 품질 로드맵](docs/character-quality-roadmap.md)
-- [이전 P4 기록](docs/stage4-review.md)
+- [같은 구도 전후·원속도 영상·검증 보고서](docs/shared-reports/2026-10-31-visual-refactor/report.md)
+- [v0.1.8 기존 서명 APK 한 파일](https://github.com/byungho-cho/roxhistory/releases/download/v0.1.8-scene/RoxHistory-0.1.8-scene-debug.apk)
+- [최신 진행 현황](docs/quality-progress.md) · [주인공·대표 정착지 품질 로드맵](docs/character-quality-roadmap.md)
+- [이전 v0.1.7 기록](docs/shared-reports/2026-10-31-play-experience/report.md) · [이전 P4 기록](docs/stage4-review.md)
 
 아래는 기존 기록입니다. 일부 과거 한글 텍스트의 인코딩 손상이 남아 있습니다.
 

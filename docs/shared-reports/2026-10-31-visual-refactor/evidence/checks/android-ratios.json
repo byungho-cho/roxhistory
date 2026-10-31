@@ -1,0 +1,18 @@
+{
+  "utc": "2026-10-31T06:55:38Z",
+  "mode": "ADB wm size, not physical folding device",
+  "screens": [
+    {
+      "name": "cover",
+      "physical_override": "370x896",
+      "check": "Live resize with10s settle; early3s capture was stale/cropped, settled screenshot reviewed"
+    },
+    {
+      "name": "unfolded",
+      "physical_override": "616x816",
+      "check": "Live resize with10s settle; early3s capture was stale/cropped, settled screenshot reviewed"
+    }
+  ],
+  "final_source_commit": "a432dd023466b7d0833e4f61d2f239e28e39fef8",
+  "final_apk_sha256": "dc2bd5a8a4ee966e87d377231ac98c9bbe94e0d8a8bdbebad0229322555121b0"
+}

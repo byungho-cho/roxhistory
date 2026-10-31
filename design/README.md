@@ -1,3 +1,7 @@
+# 최신 장면 기준 — v0.1.8
+
+[대표 구역 전후·자산·실행 검토](../docs/shared-reports/2026-10-31-visual-refactor/report.md)를 최신 구현 기준으로 사용합니다. 2D 배경+실제 3D, 대표 정착지 조화 우선. Figma 스타일 참조와 FigJam CQ1/CQ5 상태를 반영했고 주민·동물은 후속입니다. 아래는 이전 기록이며 PDF를 새로 만들지 않았습니다.
+
 # ǰ�� �ε�ʰ� ���� ������ �۾� �� 2026-10-30
 
 - [���� Ȯ�� ������](https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS)

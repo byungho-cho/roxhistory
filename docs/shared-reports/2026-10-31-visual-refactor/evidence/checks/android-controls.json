@@ -1,0 +1,20 @@
+{
+  "utc": "2026-10-31T06:39:04Z",
+  "checks": [
+    "legacy false comparison setting still displays the 3D hero",
+    "symmetric two-pointer pinch reaches 2.75x",
+    "pinch-in returns toward base",
+    "one stationary finger and one moving finger reaches bounded 3x zoom",
+    "eight short joystick directions rendered",
+    "quest guidance interrupted by pinch",
+    "joystick-owned finger excluded from pinch",
+    "disabled UI touch does not grant resources",
+    "HOME interrupts pinch and resume preserves zero movement",
+    "no unintended resource mutation"
+  ],
+  "normal_save_unchanged": true,
+  "environment": "API35 emulator; actual Android MotionEvent injection; staged isolated save for controls comparison",
+  "failures": [],
+  "final_source_commit": "a432dd023466b7d0833e4f61d2f239e28e39fef8",
+  "final_apk_sha256": "dc2bd5a8a4ee966e87d377231ac98c9bbe94e0d8a8bdbebad0229322555121b0"
+}

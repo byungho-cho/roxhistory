@@ -44,9 +44,9 @@ func _draw() -> void:
 	for key in targets:
 		var at:=DemoConfig.point(targets[key].position)
 		draw_set_transform(at,0,Vector2(1,0.58))
-		draw_circle(Vector2.ZERO,168,Color(0.65,0.80,0.35,0.13+flash*0.06))
-		draw_arc(Vector2.ZERO,168,0,TAU,64,Color(.18,.27,.11,.65),7,true)
-		draw_arc(Vector2.ZERO,168,0,TAU,64,Color(.87,.90,.47,.78+flash*.20),3,true)
+		draw_circle(Vector2.ZERO,168,Color(0.65,0.80,0.35,0.055+flash*0.07))
+		draw_arc(Vector2.ZERO,168,0,TAU,64,Color(.28,.33,.20,.35),4,true)
+		draw_arc(Vector2.ZERO,168,0,TAU,64,Color(.80,.82,.51,.55+flash*.30),2,true)
 		draw_set_transform(Vector2.ZERO)
 		if world.selected==str(targets[key].id):
 			# Actual reach is a world-space circle, not the larger decorative zone.
@@ -58,6 +58,6 @@ func draw_markers() -> void:
 	for key in targets:
 		if world.selected==str(targets[key].id): continue
 		var at:=DemoConfig.point(targets[key].position)+Vector2(55,-92-flash*8)
-		markers.draw_circle(at,27,Color("493020ed"))
-		markers.draw_arc(at,27,0,TAU,48,Color("dbe58d"),2,true)
-		markers.draw_texture_rect(DemoArt.icon(key),Rect2(at-Vector2(19,18),Vector2(38,36)),false)
+		markers.draw_circle(at,21,Color("493020ed"))
+		markers.draw_arc(at,21,0,TAU,48,Color("dbe58d"),2,true)
+		markers.draw_texture_rect(DemoArt.icon(key),Rect2(at-Vector2(15,14),Vector2(30,28)),false)

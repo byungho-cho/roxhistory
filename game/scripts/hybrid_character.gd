@@ -92,7 +92,7 @@ func _ready() -> void:
 	env.environment.background_mode = Environment.BG_COLOR
 	env.environment.background_color = Color(0,0,0,0)
 	env.environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	env.environment.ambient_light_color = Color("ffe1b4")
+	env.environment.ambient_light_color = Color("fff0d9")
 	env.environment.ambient_light_energy = 0.50
 	scene.add_child(env)
 	var sun := DirectionalLight3D.new()
@@ -179,7 +179,7 @@ func animate(delta: float, movement: Vector2, phase: float, walking: bool, actio
 		var blend_before := action_blend
 		action_blend = 1.0
 		apply_pose(0,1.0)
-		var hit := rig.get_bone_global_pose(bones.handR)*Vector3(0,0.025,0.43)
+		var hit := rig.get_bone_global_pose(bones.handR)*tool_3d.transform*Vector3(0,0.025,0.43)
 		work_block.position = Vector3(hit.x,0,hit.z)
 		work_block.scale.y = maxf(0.15,hit.y-0.04)
 		action_blend = blend_before
@@ -190,7 +190,8 @@ func animate(delta: float, movement: Vector2, phase: float, walking: bool, actio
 func apply_pose(phase: float, strike: float) -> void:
 	var gait := sin(phase)*walk_blend
 	var breath := sin(clock*2.3)*0.015
-	var weight_shift:=maxf(0,strike)*0.025
+	var weight_shift:=maxf(0,strike)*(0.08 if work_kind=="wood" else 0.025)
+	tool_3d.rotation.x=1.15*strike if work_kind=="wood" else (0.35*strike if work_kind=="stone" else 0.0)
 	rig.set_bone_pose_position(bones.hips,rests.hips+Vector3(0,-0.04-weight_shift,weight_shift))
 	rig.set_bone_pose_position(bones.spine,rests.spine+Vector3(0,breath*0.5,0))
 	var blink := 1.0-0.94*pow(maxf(0.0,cos(clock*TAU/4.7)),80.0)
@@ -218,7 +219,7 @@ func apply_pose(phase: float, strike: float) -> void:
 
 func tool_contact_world() -> Vector2:
 	# Project the stone head through the same camera used to draw the character.
-	var point := pivot.global_transform*rig.get_bone_global_pose(bones.handR)*Vector3(0,0.025,0.43)
+	var point := pivot.global_transform*rig.get_bone_global_pose(bones.handR)*tool_3d.transform*Vector3(0,0.025,0.43)
 	return global_position+display.position+camera.unproject_position(point)*display.scale
 
 func stride_world_length() -> float:
@@ -242,13 +243,13 @@ func braid(parent: Node3D, height: float, radius: float, mat: Material) -> void:
 
 func build_villager() -> void:
 	var skin := material("efb68e")
-	skin.roughness = 0.82
+	skin.roughness = 0.94
 	var hair := material("342016")
-	hair.roughness = 0.70
+	hair.roughness = 0.96
 	var hair_mid := material("4b3227")
 	var hair_glow := material("61432f")
-	var cream := material("a97743")
-	var trim := material("ead6ad")
+	var cream := material("ad8058")
+	var trim := material("d6c5a4")
 	var cloth := material("96704e")
 	var rope := material("b98740")
 	var leaf := material("75804b")
@@ -258,7 +259,7 @@ func build_villager() -> void:
 	bone("hips","",Vector3(0,0.77,0))
 	var torso := bone("spine","hips",Vector3(0,0.23,0))
 	# One softly shaped hide tunic: broad shoulders, cinched waist, folded hem.
-	CharacterGeometry.profile(torso,[Vector3(-0.40,0.29,0.23),Vector3(-0.36,0.37,0.27),Vector3(-0.20,0.34,0.25),Vector3(-0.07,0.29,0.23),Vector3(0.10,0.35,0.25),Vector3(0.29,0.34,0.23),Vector3(0.38,0.22,0.18),Vector3(0.40,0.14,0.12)],cream,0.035)
+	CharacterGeometry.profile(torso,[Vector3(-0.40,0.29,0.23),Vector3(-0.36,0.37,0.27),Vector3(-0.20,0.34,0.25),Vector3(-0.07,0.29,0.23),Vector3(0.10,0.35,0.25),Vector3(0.29,0.34,0.23),Vector3(0.38,0.22,0.18),Vector3(0.40,0.14,0.12)],cream,0.055)
 	mesh_count += 1
 	CharacterGeometry.profile(torso,[Vector3(-0.405,0.30,0.24),Vector3(-0.375,0.385,0.282),Vector3(-0.33,0.37,0.275)],trim,0.045)
 	CharacterGeometry.profile(torso,[Vector3(0.29,0.35,0.25),Vector3(0.35,0.27,0.21),Vector3(0.40,0.15,0.13)],trim,0.025)
@@ -274,7 +275,7 @@ func build_villager() -> void:
 	# Front diagonal cord, keeping the reference costume's asymmetry.
 	lock(torso,Vector3(0.24,0.36,0.14),Vector3(0.04,0.15,0.29),Vector3(-0.27,-0.03,0.18),0.025,0.025,Vector3.FORWARD,rope)
 	var head := bone("head","spine",Vector3(0,0.72,0))
-	rig.set_bone_pose_scale(bones.head,Vector3.ONE*1.12)
+	rig.set_bone_pose_scale(bones.head,Vector3.ONE*1.08)
 	CharacterGeometry.profile(head,[Vector3(-0.45,0.06,0.08),Vector3(-0.38,0.26,0.28),Vector3(-0.23,0.43,0.39),Vector3(-0.02,0.51,0.44),Vector3(0.20,0.49,0.42),Vector3(0.38,0.34,0.31),Vector3(0.46,0.02,0.02)],skin)
 	mesh_count += 1
 	ellipsoid(head,Vector3(0,0.17,-0.11),Vector3(1.10,0.82,0.95),hair)
@@ -282,7 +283,7 @@ func build_villager() -> void:
 		ellipsoid(head,Vector3(side*0.49,-0.07,0.025),Vector3(0.19,0.26,0.17),skin)
 		ellipsoid(head,Vector3(side*0.51,-0.075,0.105),Vector3(0.10,0.15,0.035),material("d88d6f"))
 		# Large warm eyes: dark contour, cream sclera, brown iris and two glints.
-		var eye := Node3D.new(); head.add_child(eye); eye.position=Vector3(side*0.205,-0.018,0.411); eye.scale=Vector3(0.88,0.88,0.35); eye_nodes.append(eye)
+		var eye := Node3D.new(); head.add_child(eye); eye.position=Vector3(side*0.205,-0.018,0.411); eye.scale=Vector3(0.82,0.88,0.27); eye_nodes.append(eye)
 		ellipsoid(eye,Vector3.ZERO,Vector3(0.245,0.295,0.10),dark)
 		ellipsoid(eye,Vector3(0,-0.002,0.014),Vector3(0.220,0.264,0.095),white)
 		ellipsoid(eye,Vector3(side*-0.009,-0.008,0.061),Vector3(0.190,0.235,0.044),iris)

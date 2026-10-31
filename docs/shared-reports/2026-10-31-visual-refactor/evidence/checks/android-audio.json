@@ -1,0 +1,34 @@
+{
+  "utc": "2026-10-31T06:43:20Z",
+  "method": "Android playback capture by scrcpy PCM; media volume15/15; excludes first second per segment",
+  "results": {
+    "foreground": {
+      "rms": 0.0029661472250547705,
+      "dbfs": -50.56,
+      "samples": 393472
+    },
+    "background": {
+      "rms": 0.0,
+      "dbfs": -200.0,
+      "samples": 325888
+    },
+    "resumed": {
+      "rms": 0.002753190138759224,
+      "dbfs": -51.2,
+      "samples": 381184
+    },
+    "muted": {
+      "rms": 0.0,
+      "dbfs": -200.0,
+      "samples": 389376
+    },
+    "muted_after_restart": {
+      "rms": 0.0,
+      "dbfs": -200.0,
+      "samples": 383232
+    }
+  },
+  "failed": [],
+  "final_source_commit": "a432dd023466b7d0833e4f61d2f239e28e39fef8",
+  "final_apk_sha256": "dc2bd5a8a4ee966e87d377231ac98c9bbe94e0d8a8bdbebad0229322555121b0"
+}
