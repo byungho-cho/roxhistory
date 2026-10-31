@@ -1,6 +1,7 @@
 {
-  "utc": "2026-10-31T10:26:25Z",
-  "elapsed_seconds": 32.54,
+  "utc": "2026-10-31T10:45:02Z",
+  "elapsed_seconds": 31.43,
+  "resume_input_ready_wait_seconds": 0.81,
   "environment": "Android15/API35 x86_64 emulator, RTX5060 host,1280x720; actual ADB touch input",
   "checks": [
     "onboarding sound choice persisted",
@@ -23,8 +24,8 @@
     },
     "intro_seen": true,
     "position": [
-      781.6201171875,
-      1079.314453125
+      798.100036621094,
+      1078.001953125
     ],
     "region": "amsa",
     "reward_claimed": true,

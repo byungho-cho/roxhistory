@@ -1,0 +1,20 @@
+{
+  "utc": "2026-10-31T10:55:00Z",
+  "source_commit": "53fd8de69704b56680ee4dfcb224f6cf124d83df",
+  "checks": [
+    "current journal button opens actual quest modal",
+    "Android back closes journal",
+    "ordinary HOME/resume permits movement",
+    "normal save unchanged"
+  ],
+  "before": [
+    1060.0,
+    1030.0
+  ],
+  "after": [
+    968.90625,
+    1028.28125
+  ],
+  "input_ready_seconds": 0.64,
+  "failed": []
+}

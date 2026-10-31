@@ -1,5 +1,5 @@
 {
-  "utc": "2026-10-31T10:32:24Z",
+  "utc": "2026-10-31T10:51:23Z",
   "condition": "Same isolated fixture at1060,1030;1280x720;600 idle frames after60 warmup; no recording during frame measurement; emulator/API35/RTX5060",
   "results": [
     {
@@ -20,31 +20,31 @@
     {
       "frames": 600,
       "gpu": "Android Emulator OpenGL ES Translator (NVIDIA GeForce RTX 5060/PCIe/SSE2)",
-      "mean_ms": 66.7508133333333,
+      "mean_ms": 66.93606,
       "mode": "3D",
-      "p95_ms": 75.226,
+      "p95_ms": 75.331,
       "viewport": "(960.0, 540.0)",
       "version": "0.1.9-c001",
-      "utc": "2026-10-31T10:31:42Z",
-      "apk_sha256": "5859b4d866bc4d29f32226fc739f40a5460bf7c805043b83dd1291a2c60db14c",
+      "utc": "2026-10-31T10:50:43Z",
+      "apk_sha256": "f20b92c5ca1df0b8b1ab8bbd2dc48c5ef01bc837ac22aac3c307505e3fade608",
       "audio": {
-        "rms": 0.001154212643662307,
-        "dbfs": -58.754283451652725
+        "rms": 0.0011568343069319747,
+        "dbfs": -58.734576809526175
       }
     }
   ],
   "audio_lifecycle": {
     "foreground": {
-      "rms": 0.001154212643662307,
-      "dbfs": -58.754283451652725
+      "rms": 0.0011568343069319747,
+      "dbfs": -58.734576809526175
     },
     "background": {
       "rms": 0.0,
       "dbfs": -200.0
     },
     "resumed": {
-      "rms": 0.0010311793302343628,
-      "dbfs": -59.73331601811879
+      "rms": 0.0010353862982859427,
+      "dbfs": -59.697951730451635
     },
     "muted": {
       "rms": 0.0,

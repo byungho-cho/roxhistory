@@ -160,5 +160,5 @@
   "checks": 160,
   "failed": [],
   "runtime": "Native Godot real collision movement; 8 approaches at both quest resources and left/right at every other resource; test state reset between cases",
-  "utc": "2026-10-31T10:21:46"
+  "utc": "2026-10-31T10:38:17"
 }
