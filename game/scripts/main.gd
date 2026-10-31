@@ -213,28 +213,68 @@ func menu_background(map: bool = false) -> void:
 	stage.add_child(shade)
 	shade.size = Vector2(w,h)
 
+func design_rect(x: float,y: float,width: float,height: float) -> Rect2:
+	var factor:=minf(w/1600.0,h/900.0)
+	return Rect2((Vector2(w,h)-Vector2(1600,900)*factor)/2+Vector2(x,y)*factor,Vector2(width,height)*factor)
+
+func design_label(parent: Node,text: String,rect: Rect2,font_size: int,color:=Color("eeeeee"),center:=false) -> Label:
+	var l:=label(parent,text,font_size,color)
+	l.position=rect.position;l.size=rect.size
+	l.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER if center else HORIZONTAL_ALIGNMENT_LEFT
+	l.vertical_alignment=VERTICAL_ALIGNMENT_CENTER
+	return l
+
+func design_button(parent: Node,text: String,rect: Rect2,callback: Callable,primary:=false,key:="") -> DemoButton:
+	var b:=button(parent,text,callback,primary,key)
+	b.custom_minimum_size=Vector2.ZERO;b.position=rect.position;b.size=rect.size
+	b.add_theme_stylebox_override("normal",DesignSkin.style("gold" if primary else "ivory"))
+	b.add_theme_stylebox_override("hover",DesignSkin.style("gold"))
+	b.add_theme_stylebox_override("pressed",DesignSkin.style("pressed"))
+	b.add_theme_color_override("font_color",Color("49321e"))
+	b.add_theme_color_override("font_hover_color",Color("49321e"))
+	b.add_theme_color_override("font_pressed_color",Color("49321e"))
+	b.add_theme_font_size_override("font_size",maxi(14,int(rect.size.y*.28)))
+	b.add_theme_constant_override("icon_max_width",int(rect.size.y*.58))
+	b.expand_icon=false
+	if not key.is_empty():
+		var tex:=b.icon
+		b.icon=null
+		var font_color:=Color("49321e")
+		var font:=DemoArt.theme().default_font
+		var fs:=maxi(14,int(rect.size.y*.28))
+		var iw:=rect.size.y*.54
+		var tw:=font.get_string_size(text,HORIZONTAL_ALIGNMENT_LEFT,-1,fs).x
+		var x: float=(rect.size.x-iw-(8+tw if text!="" else 0))/2
+		picture(b,tex,Rect2(x,(rect.size.y-iw)/2,iw,iw))
+		if text!="":
+			b.add_theme_color_override("font_color",Color.TRANSPARENT)
+			b.add_theme_color_override("font_hover_color",Color.TRANSPARENT)
+			b.add_theme_color_override("font_pressed_color",Color.TRANSPARENT)
+			b.add_theme_color_override("font_disabled_color",Color.TRANSPARENT)
+			design_label(b,text,Rect2(x+iw+8,0,tw,rect.size.y),fs,font_color)
+	return b
+
+func design_panel(rect: Rect2,dark:=true) -> Control:
+	var p:=Panel.new();stage.add_child(p);p.position=rect.position;p.size=rect.size
+	p.add_theme_stylebox_override("panel",DesignSkin.style("dark" if dark else "ivory"))
+	p.mouse_filter=Control.MOUSE_FILTER_IGNORE
+	return p
+
 func onboarding() -> void:
-	label(stage,"RoxHistory",30,Color("fff0d1")).position = safe
-	var panel := box(stage,Rect2(w*0.17,80,w*0.66,h-122))
-	var v := column(panel,10)
-	var icon := TextureRect.new()
-	icon.texture = DemoArt.icon("hut")
-	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	icon.custom_minimum_size.y = 65
-	v.add_child(icon)
-	var heading := label(v,"당신의 여정이 시작됩니다",28,Color("fff1d6"))
-	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	var body := paragraph(v,"강가의 작은 터전에서\n나만의 이야기를 만들어 보세요.",20)
-	body.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	body.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation",12)
-	v.add_child(row)
-	for sound in [false,true]:
-		var b := button(row,"소리 켜고 시작" if sound else "소리 없이 시작",func(): welcome(sound),sound,"horn")
-		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	paragraph(v,"소리 설정은 게임 안에서 바꿀 수 있습니다.",15).horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var k:=minf(w/1600,h/900)
+	design_label(stage,"RoxHistory",design_rect(54,28,400,64),int(48*k),Color("fff0d2"))
+	var panel:=design_panel(design_rect(300,154,1000,626));panel.clip_contents=true
+	var pattern:=picture(panel,preload("res://assets/figma/2a735.svg"),Rect2(Vector2.ZERO,panel.size));pattern.stretch_mode=TextureRect.STRETCH_SCALE
+	for item in [["4c704",Rect2(-25,-23,338,371),38.27],["02422",Rect2(669,-47,331,385),-30.52],["f1627",Rect2(40,56,903,541),0.0],["75484",Rect2(158,118,641,139),0.0]]:
+		var r: Rect2=item[1];var pic:=picture(panel,load("res://assets/figma/"+item[0]+".svg"),Rect2(r.position*k,r.size*k));pic.modulate.a=.29;pic.rotation=deg_to_rad(item[2]);pic.pivot_offset=pic.size*.5
+	picture(stage,DemoArt.icon("hut"),design_rect(747,196,106,97))
+	design_label(stage,"나의 첫 역사",design_rect(342,309,916,32),int(21*k),Color("bbbbbb"),true)
+	design_label(stage,"당신의 여정이 시작됩니다",design_rect(342,357,916,64),int(48*k),Color("eeeeee"),true)
+	design_label(stage,"강가의 작은 터전에서\n나만의 이야기를 만들어 보세요.",design_rect(342,437,916,80),int(26*k),Color("eeeeee"),true)
+	design_label(stage,"어떤 소리로 시작할까요?",design_rect(342,550,916,32),int(21*k),Color("bbbbbb"),true)
+	design_button(stage,"소리 없이 시작",design_rect(342,598,448,88),func():welcome(false),false,"horn")
+	design_button(stage,"소리 켜고 시작",design_rect(810,598,448,88),func():welcome(true),true,"horn")
+	design_label(stage,"소리 설정은 게임 안에서 언제든 바꿀 수 있습니다.",design_rect(342,702,916,32),int(21*k),Color("bbbbbb"),true)
 
 func welcome(sound: bool) -> void:
 	settings.set_value("app","welcomed",true)
@@ -245,18 +285,27 @@ func welcome(sound: bool) -> void:
 	show_screen("title")
 
 func title_screen() -> void:
-	var title_back := box(stage,Rect2(safe.x,26,minf(510,w-390-safe.x*2),118))
-	title_back.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	label(stage,"RoxHistory",52,Color("fff0d1")).position = Vector2(safe.x+10,40)
-	label(stage,"작은 불씨에서 시작되는 우리의 역사",21,Color("fff0d1")).position = Vector2(safe.x+14,110)
-	var p := box(stage,Rect2(w-350-safe.x,h*0.32,350,h*0.57))
-	var v := column(p,10)
-	label(v,"당신의 여정",21,Color("eee5d5"))
-	var continue_btn := button(v,"이어서 하기",enter_game,true,"hut")
-	continue_btn.disabled = model.state.is_empty()
-	button(v,"새로 시작",new_game_prompt,false,"compass")
-	button(v,"데모 안내",show_about,false,"scroll")
-	label(stage,"1장 · 선사시대의 첫 불씨   |   v"+str(ProjectSettings.get_setting("application/config/version")),17,Color("fff0d1")).position = Vector2(safe.x+10,h-safe.y-30)
+	var k:=minf(w/1600,h/900)
+	var title:=design_label(stage,"RoxHistory",design_rect(68,65,600,96),int(88*k),Color("fff0d0"));title.add_theme_constant_override("outline_size",3);title.add_theme_color_override("font_outline_color",Color("49321e"))
+	design_label(stage,"작은 불씨에서 시작되는 우리의 역사",design_rect(78,175,970,48),int(34*k),Color("ffedc7"))
+	design_panel(design_rect(1082,300,440,430))
+	picture(stage,DemoArt.icon("scroll"),design_rect(1108,326,58,53))
+	design_label(stage,"당신의 여정",design_rect(1178,334,260,36),int(25*k))
+	var continue_btn:=design_button(stage,"이어서 하기",design_rect(1108,401,388,90),enter_game,true,"hut");continue_btn.disabled=model.state.is_empty();continue_btn.hint_text="먼저 새 여정을 시작해 주세요."
+	design_button(stage,"새로 시작",design_rect(1108,513,388,82),new_game_prompt,false,"spear")
+	design_button(stage,"장 선택",design_rect(1108,617,388,82),chapter_menu,false,"compass")
+	var horn:=design_button(stage,"",design_rect(1445,44,88,88),toggle_sound,false,"horn");horn.tooltip_text="소리 켜기 / 끄기";horn.add_theme_stylebox_override("normal",DesignSkin.round_style("ivory"))
+	design_panel(design_rect(76,744,360,78),false)
+	picture(stage,DemoArt.icon("hut"),design_rect(95,760,50,46))
+	design_label(stage,"1장 · 선사시대의 첫 불씨",design_rect(157,767,270,32),int(21*k),Color("49321e"))
+
+func toggle_sound() -> void:
+	settings.set_value("app","sound",not settings.get_value("app","sound",false))
+	if settings.save(prefs_path)!=OK:show_error("소리 설정을 저장하지 못했습니다.")
+	else:sync_audio();toast("소리 켜짐" if settings.get_value("app","sound",false) else "소리 꺼짐")
+
+func chapter_menu() -> void:
+	show_modal("장 선택","1장 · 선사시대의 첫 불씨\n암사동 강변에서 첫 보금자리를 지어 보세요.\n\n다음 장은 준비 중입니다.",[{"text":"돌아가기","action":close_modal},{"text":"1장 선택","primary":true,"action":func():close_modal();new_game_prompt()}])
 
 func new_game_prompt() -> void:
 	if not model.state.is_empty() or model.store.blocked:
@@ -266,28 +315,28 @@ func new_game_prompt() -> void:
 		show_screen("region")
 
 func region_screen() -> void:
-	back_button(func(): show_screen("title"))
-	label(stage,"첫 터전을 고르세요",34,Color("fff0d1")).position = Vector2(safe.x+90,safe.y+5)
-	label(stage,"신석기 · 암사동 강변",18,Color("fff0d1")).position = Vector2(safe.x+92,safe.y+52)
-	var amsa := button(stage,"암사동\n신석기 · 선택됨",func(): toast("암사동을 선택했습니다."),true,"hut")
-	amsa.position = Vector2(w*0.25,h*0.48)
-	amsa.size = Vector2(230,88)
-	for row in [["전곡리 · 준비 중",Vector2(w*0.37,h*0.25)],["동삼동 · 준비 중",Vector2(w*0.49,h*0.73)]]:
-		var b := button(stage,row[0],func(): toast("후속 데모에서 만나요."),false,"hut")
-		b.position = row[1]
-		b.size = Vector2(215,72)
-	var p := box(stage,Rect2(w-286-safe.x,115,286,h-150))
-	var v := column(p,12)
-	var art := TextureRect.new()
-	art.texture = DemoArt.icon("hut")
-	art.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	art.custom_minimum_size.y = 92
-	v.add_child(art)
-	label(v,"암사동",32,Color("fff1d6"))
-	paragraph(v,"신석기 · 강변의 생활\n나무와 돌을 모아 첫 보금자리를 지어 보세요.",18).size_flags_vertical = Control.SIZE_EXPAND_FILL
-	button(v,"이곳에서 시작",start_region,true,"compass")
-	label(stage,"현대 해안선 참고 · 지형과 표식은 구성용 이미지",14,Color("fff0d1")).position = Vector2(safe.x,h-36)
+	var k:=minf(w/1600,h/900)
+	back_button(func():show_screen("title"))
+	design_label(stage,"첫 터전을 고르세요",design_rect(148,32,1220,64),int(48*k),Color("fff1d5"))
+	design_label(stage,"시대와 삶의 흔적을 따라 여정을 시작합니다",design_rect(148,100,1220,32),int(21*k),Color("ebd1a7"))
+	design_button(stage,"",design_rect(1472,32,88,88),show_about,false,"bag")
+	# Preserve established map anchors; visual extents are 80% of v0.1.8.
+	for item in [["전곡리","구석기",Vector2(w*.37,h*.25),Vector2(215,72),false],["암사동","신석기",Vector2(w*.25,h*.48),Vector2(230,88),true],["동삼동","신석기",Vector2(w*.49-215*.4,h*.73),Vector2(215,72),false]]:
+		var selected: bool=item[4]
+		var b:=design_button(stage,item[0]+"\n"+item[1],Rect2(item[2],item[3]*.8),func():toast("암사동을 선택했습니다." if selected else "이 지역은 준비 중입니다."),selected,"hut")
+		b.add_theme_font_size_override("font_size",16)
+		if not selected:
+			b.add_theme_stylebox_override("normal",DesignSkin.style("dark"))
+			for child in b.get_children():
+				if child is Label:child.add_theme_color_override("font_color",Color("eeeeee"))
+	design_panel(design_rect(1140,173,402,630))
+	var pattern:=picture(stage,preload("res://assets/figma/ba95c.svg"),design_rect(1140,173,402,630));pattern.stretch_mode=TextureRect.STRETCH_SCALE
+	picture(stage,DemoArt.icon("hut"),design_rect(1267,201,148,135))
+	design_label(stage,"암사동",design_rect(1168,354,346,64),int(48*k),Color("eeeeee"),true)
+	design_label(stage,"신석기 · 강변의 생활",design_rect(1168,436,346,32),int(21*k),Color("bbbbbb"),true)
+	design_label(stage,"강가에 터를 잡고\n마을의 첫 불씨를 피우세요.",design_rect(1168,506,346,80),int(26*k),Color("eeeeee"),true)
+	for i in 3:picture(stage,DemoArt.icon(["wood","stone","berries"][i]),design_rect(1217+i*90,604,68,62))
+	design_button(stage,"이곳에서 시작",design_rect(1168,684,346,86),start_region,true,"compass")
 
 func start_region() -> void:
 	if model.start_new():
@@ -318,46 +367,37 @@ func enter_game() -> void:
 		completion()
 
 func play_hud() -> void:
-	back_button(pause_game)
-	var quest_panel:=button(stage,"",focus_objective,false,"scroll")
-	quest_panel.custom_minimum_size=Vector2(220,54)
-	quest_panel.position=Vector2(w-safe.x-220,safe.y+56);quest_panel.size=Vector2(220,54)
-	quest_panel.add_theme_constant_override("icon_max_width",26)
-	quest_panel.icon_alignment=HORIZONTAL_ALIGNMENT_LEFT
-	objective=label(quest_panel,"",15,Color("fff0d1"));objective.position=Vector2(46,6)
-	joystick = DemoJoystick.new()
-	stage.add_child(joystick)
-	joystick.position = Vector2(safe.x+14,h-safe.y-154)
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation",int(SceneStyle.ACTION_GAP))
-	stage.add_child(row)
-	row.position = Vector2(w-304-safe.x,h-safe.y-70)
-	row.size = Vector2(304,64)
-	gather_button = button(row,"채집",gather_action,true,"wood")
-	gather_button.custom_minimum_size = SceneStyle.ACTION_SIZE
-	build_button = button(row,"건설",build_action,false,"hut")
-	build_button.custom_minimum_size = SceneStyle.ACTION_SIZE
-	var journal := button(row,"임무",quest_details,false,"scroll")
-	journal.custom_minimum_size = SceneStyle.ACTION_SIZE
-	for action_button in [gather_button,build_button,journal]:
-		action_button.add_theme_constant_override("icon_max_width",30)
-		action_button.add_theme_constant_override("h_separation",6)
-		action_button.add_theme_font_size_override("font_size",17)
-	context_panel = box(stage,Rect2(safe.x+76,safe.y+56,minf(300,w-safe.x*2-420),48))
-	context_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	context_panel.visible=false
-	context = label(context_panel,"",15,Color("fff0d1"))
-	context.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	context.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	task_bar = ProgressBar.new()
-	task_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	task_bar.show_percentage = false
-	task_bar.position = Vector2(safe.x+84,safe.y+111)
-	task_bar.size = Vector2(minf(330,w-safe.x*2-450),10)
-	stage.add_child(task_bar)
-	task_bar.visible = false
+	var back:=back_button(pause_game);back.position=Vector2(safe.x,h-safe.y-56);back.visible=false
+	var quest_panel:=design_button(stage,"",Rect2(w-safe.x-192,safe.y+120,192,78),focus_objective,false,"")
+	quest_panel.name="QuestPanel"
+	picture(quest_panel,DemoArt.icon("hut"),Rect2(10,8,22,20))
+	objective=label(quest_panel,"",14,Color("49321e"));objective.position=Vector2(14,10);objective.size=Vector2(166,58)
+	joystick=DemoJoystick.new();stage.add_child(joystick);joystick.position=Vector2(safe.x+14,h-safe.y-154)
+	var row:=HBoxContainer.new();row.name="Actions";row.add_theme_constant_override("separation",10);stage.add_child(row)
+	row.position=Vector2(w*.5-163,h-safe.y-72);row.size=Vector2(326,72)
+	for data in [["사냥","spear"],["채집","berries"],["제작","hammer"],["건설","hut"]]:
+		var caption: String=data[0]
+		var callback: Callable=gather_action if caption=="채집" else build_action if caption=="건설" else func():show_modal(caption+" 준비 중","이번 데모에서는 나무와 돌을 모아 움막을 지을 수 있습니다.",[{"text":"돌아가기","action":close_modal}])
+		var b:=design_button(row,caption,Rect2(0,0,74,72),callback,caption=="채집","")
+		b.custom_minimum_size=Vector2(74,72);b.expand_icon=true;b.icon=DemoArt.icon(data[1]);b.vertical_icon_alignment=VERTICAL_ALIGNMENT_TOP;b.icon_alignment=HORIZONTAL_ALIGNMENT_CENTER
+		b.add_theme_constant_override("icon_max_width",38);b.add_theme_font_size_override("font_size",14)
+		if caption=="채집":gather_button=b
+		elif caption=="건설":build_button=b
+		else:b.modulate=Color(.85,.85,.85,1);b.tooltip_text="준비 중"
+	var journal:=design_button(stage,"",Rect2(w-safe.x-140,h-safe.y-62,56,56),quest_details,false,"scroll");journal.name="JournalButton"
+	var bag:=design_button(stage,"",Rect2(w-safe.x-64,h-safe.y-66,62,62),inventory_summary,false,"bag");bag.name="InventoryButton"
+	for b in [journal,bag]:b.add_theme_stylebox_override("normal",DesignSkin.round_style("dark"))
+	context_panel=box(stage,Rect2(safe.x+76,safe.y+106,minf(300,w-safe.x*2-420),48));context_panel.mouse_filter=Control.MOUSE_FILTER_IGNORE;context_panel.visible=false
+	context=label(context_panel,"",15,Color("fff0d1"));context.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART;context.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
+	task_bar=ProgressBar.new();task_bar.mouse_filter=Control.MOUSE_FILTER_IGNORE;task_bar.show_percentage=false;task_bar.position=Vector2(w*.5-145,h-safe.y-89);task_bar.size=Vector2(290,8);stage.add_child(task_bar);task_bar.visible=false
 	chrome=PlayChrome.new(self);stage.add_child(chrome);chrome.size=Vector2(w,h)
+	var portrait_hit:=design_button(stage,"",Rect2(safe.x,safe.y+26,62,62),pause_game,false,"");portrait_hit.name="PortraitPause"
+	for state in ["normal","hover","pressed"]:portrait_hit.add_theme_stylebox_override(state,StyleBoxEmpty.new())
+	portrait_hit.tooltip_text="일시 정지 · 소리 설정"
 	update_hud()
+
+func inventory_summary() -> void:
+	show_modal("가진 재료","나무 %d개 · 돌 %d개\n완료 기념 씨앗 %d개"%[model.state.wood,model.state.stone,model.state.tokens],[{"text":"돌아가기","action":close_modal}])
 
 func update_hud() -> void:
 	if screen != "play" or not is_instance_valid(chrome) or model.state.is_empty():
@@ -366,10 +406,11 @@ func update_hud() -> void:
 		var goal_panel:Control=objective.get_parent()
 		goal_panel.custom_minimum_size=Vector2(178,48)
 		goal_panel.size=Vector2(178,48);goal_panel.position.x=w-safe.x-178
+		objective.position=Vector2(36,8);objective.size=Vector2(136,32)
 		objective.text = "보금자리 완성 ✓" if model.state.reward_claimed else "완성 · 보상 받기"
 	else:
 		var c := DemoConfig.get_data()
-		objective.text = "첫 보금자리\n나무 %d/%d  ·  돌 %d/%d" % [mini(model.state.wood,c.wood_cost),c.wood_cost,mini(model.state.stone,c.stone_cost),c.stone_cost]
+		objective.text = "       움막을 지어라.\n돌 %d/%d개 · 나무 %d/%d개" % [mini(model.state.stone,c.stone_cost),c.stone_cost,mini(model.state.wood,c.wood_cost),c.wood_cost]
 
 func _process(delta: float) -> void:
 	if is_instance_valid(toast_panel): toast_panel.visible = toast_time > 0 and toast_label.text != ""

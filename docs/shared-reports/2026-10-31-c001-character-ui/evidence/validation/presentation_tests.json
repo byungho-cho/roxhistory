@@ -1,0 +1,7 @@
+{
+  "camera_lag_world_units": 14.747314453125,
+  "checks": 53,
+  "failed": [],
+  "runtime": "Native render at fixed60 engine time; audio lifecycle/state checks, not a listening or Android test",
+  "utc": "2026-10-31T10:37:55"
+}

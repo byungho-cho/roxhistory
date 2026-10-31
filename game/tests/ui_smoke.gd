@@ -65,7 +65,7 @@ func run_tests() -> void:
 	await create_timer(0.15).timeout
 	check(app.world.player.position.x > before.x,"Touch joystick moves player")
 	check(app.joystick.finger == 0,"Joystick owns first finger")
-	var journal: Control = app.gather_button.get_parent().get_child(2)
+	var journal: Control = app.stage.get_node("JournalButton")
 	await press(journal,1)
 	check(app.modal,"Second finger opens quest while first is held")
 	check(app.joystick.value == Vector2.ZERO,"Popup clears held movement")

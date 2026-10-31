@@ -1,0 +1,164 @@
+{
+  "cases": [
+    {
+      "contact": true,
+      "direction": 0,
+      "engine_seconds": 1.5,
+      "resource": "wood_1"
+    },
+    {
+      "contact": true,
+      "direction": 4,
+      "engine_seconds": 1.5,
+      "resource": "wood_1"
+    },
+    {
+      "contact": true,
+      "direction": 0,
+      "engine_seconds": 1.5,
+      "resource": "wood_2"
+    },
+    {
+      "contact": true,
+      "direction": 4,
+      "engine_seconds": 1.5,
+      "resource": "wood_2"
+    },
+    {
+      "contact": true,
+      "direction": 0,
+      "engine_seconds": 1.5,
+      "resource": "wood_3"
+    },
+    {
+      "contact": true,
+      "direction": 1,
+      "engine_seconds": 1.65,
+      "resource": "wood_3"
+    },
+    {
+      "contact": true,
+      "direction": 2,
+      "engine_seconds": 1.9,
+      "resource": "wood_3"
+    },
+    {
+      "contact": true,
+      "direction": 3,
+      "engine_seconds": 1.65,
+      "resource": "wood_3"
+    },
+    {
+      "contact": true,
+      "direction": 4,
+      "engine_seconds": 1.5,
+      "resource": "wood_3"
+    },
+    {
+      "contact": true,
+      "direction": 5,
+      "engine_seconds": 1.65,
+      "resource": "wood_3"
+    },
+    {
+      "contact": true,
+      "direction": 6,
+      "engine_seconds": 1.93333333333333,
+      "resource": "wood_3"
+    },
+    {
+      "contact": true,
+      "direction": 7,
+      "engine_seconds": 1.65,
+      "resource": "wood_3"
+    },
+    {
+      "contact": true,
+      "direction": 0,
+      "engine_seconds": 1.5,
+      "resource": "wood_4"
+    },
+    {
+      "contact": true,
+      "direction": 4,
+      "engine_seconds": 1.5,
+      "resource": "wood_4"
+    },
+    {
+      "contact": true,
+      "direction": 0,
+      "engine_seconds": 1.55,
+      "resource": "stone_1"
+    },
+    {
+      "contact": true,
+      "direction": 4,
+      "engine_seconds": 1.55,
+      "resource": "stone_1"
+    },
+    {
+      "contact": true,
+      "direction": 0,
+      "engine_seconds": 1.55,
+      "resource": "stone_2"
+    },
+    {
+      "contact": true,
+      "direction": 1,
+      "engine_seconds": 1.56666666666667,
+      "resource": "stone_2"
+    },
+    {
+      "contact": true,
+      "direction": 2,
+      "engine_seconds": 1.78333333333333,
+      "resource": "stone_2"
+    },
+    {
+      "contact": true,
+      "direction": 3,
+      "engine_seconds": 1.56666666666667,
+      "resource": "stone_2"
+    },
+    {
+      "contact": true,
+      "direction": 4,
+      "engine_seconds": 1.55,
+      "resource": "stone_2"
+    },
+    {
+      "contact": true,
+      "direction": 5,
+      "engine_seconds": 1.75,
+      "resource": "stone_2"
+    },
+    {
+      "contact": true,
+      "direction": 6,
+      "engine_seconds": 2.16666666666667,
+      "resource": "stone_2"
+    },
+    {
+      "contact": true,
+      "direction": 7,
+      "engine_seconds": 1.75,
+      "resource": "stone_2"
+    },
+    {
+      "contact": true,
+      "direction": 0,
+      "engine_seconds": 1.55,
+      "resource": "stone_3"
+    },
+    {
+      "contact": true,
+      "direction": 4,
+      "engine_seconds": 1.55,
+      "resource": "stone_3"
+    }
+  ],
+  "checks": 160,
+  "failed": [],
+  "runtime": "Native Godot real collision movement; 8 approaches at both quest resources and left/right at every other resource; test state reset between cases",
+  "utc": "2026-10-31T10:38:17"
+}

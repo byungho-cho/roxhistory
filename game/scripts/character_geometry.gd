@@ -6,12 +6,12 @@ extends RefCounted
 static func profile(parent: Node3D, rings: Array[Vector3], mat: Material, folds := 0.0) -> MeshInstance3D:
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var sides := 40
+	var sides := 28
 	var samples: Array[Vector3] = []
 	for j in rings.size()-1:
 		for k in 4:
 			var t := float(k)/4.0
-			samples.append(rings[j].lerp(rings[j+1],smoothstep(0,1,t)))
+			samples.append(rings[j].cubic_interpolate(rings[j+1],rings[maxi(0,j-1)],rings[mini(rings.size()-1,j+2)],t))
 	samples.append(rings[-1])
 	for j in samples.size():
 		var ring := samples[j]
@@ -21,6 +21,7 @@ static func profile(parent: Node3D, rings: Array[Vector3], mat: Material, folds 
 			var ripple := 1.0+folds*cos(a*7.0+ring.x*2.0)
 			var n := Vector3(cos(a)/maxf(ring.y,0.02),-(slope.y+slope.z)/maxf(0.002,slope.x)*0.8,sin(a)/maxf(ring.z,0.02)).normalized()
 			st.set_normal(n)
+			st.set_uv(Vector2(float(i)/sides,float(j)/maxi(1,samples.size()-1)))
 			st.add_vertex(Vector3(cos(a)*ring.y*ripple,ring.x,sin(a)*ring.z*ripple))
 	for j in samples.size()-1:
 		for i in sides:
@@ -36,18 +37,19 @@ static func strand(parent: Node3D, points: Array[Vector3], width: float, depth: 
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var rings := 12
-	var sides := 10
+	var sides := 8
 	for j in rings+1:
 		var t := float(j)/rings
 		var center := points[0]*(1-t)*(1-t)+points[1]*2*t*(1-t)+points[2]*t*t
 		var tangent := ((points[1]-points[0])*(1-t)+(points[2]-points[1])*t).normalized()
 		var across := tangent.cross(outward).normalized()
 		var normal := across.cross(tangent).normalized()
-		var shape := maxf(0.015,pow(sin(PI*(0.18+t*0.82)),0.7)) if taper else 1.0
+		var shape := maxf(0.004,pow(sin(PI*(0.18+t*0.82)),1.35)) if taper else 1.0
 		for i in sides+1:
 			var a := TAU*i/sides
 			var n := (across*sin(a)+normal*cos(a)).normalized()
 			st.set_normal(n)
+			st.set_uv(Vector2(float(i)/sides,t))
 			st.add_vertex(center+across*sin(a)*width*shape+normal*cos(a)*depth*shape)
 	for j in rings:
 		for i in sides:
@@ -62,14 +64,15 @@ static func strand(parent: Node3D, points: Array[Vector3], width: float, depth: 
 static func limb(parent: Node3D, rig: Skeleton3D, upper: int, lower: int, top: Vector3, elbow: Vector3, end: Vector3, radius: float, mat: Material) -> MeshInstance3D:
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var rings := 20
-	var sides := 16
+	var rings := 16
+	var sides := 12
 	var joint_t := top.distance_to(elbow)/top.distance_to(end)
 	for j in rings+1:
 		var t := float(j)/rings
 		var center := top.lerp(end,t)
 		var blend := smoothstep(joint_t-0.16,joint_t+0.16,t)
-		var profile := lerpf(1.0,0.68,t)+sin(t*PI)*0.10
+		var segment_t := t/joint_t if t<joint_t else (t-joint_t)/(1-joint_t)
+		var profile := lerpf(1.05,0.68,segment_t)+sin(segment_t*PI)*0.10 if t<joint_t else lerpf(0.68,0.60,segment_t)+sin(segment_t*PI)*0.29
 		if j == 0 or j == rings: profile *= 0.8
 		for i in sides+1:
 			var a := TAU*i/sides
@@ -77,6 +80,7 @@ static func limb(parent: Node3D, rig: Skeleton3D, upper: int, lower: int, top: V
 			st.set_normal(n)
 			st.set_bones(PackedInt32Array([upper,lower,0,0]))
 			st.set_weights(PackedFloat32Array([1-blend,blend,0,0]))
+			st.set_uv(Vector2(float(i)/sides,t))
 			st.add_vertex(center+n*radius*profile)
 	for j in rings:
 		for i in sides:

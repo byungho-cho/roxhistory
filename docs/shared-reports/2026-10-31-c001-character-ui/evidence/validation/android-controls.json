@@ -1,0 +1,13 @@
+{
+  "utc": "2026-10-31T10:46:43Z",
+  "checks": [
+    "symmetric Android two-pointer pinch",
+    "eight joystick directions",
+    "joystick and action button touch ownership",
+    "resume retains inventory"
+  ],
+  "failed": [],
+  "blocked": [
+    "HOME during an injected two-pointer gesture: Pixel Launcher swipe-up gesture monitor ANR; app save retained, integration recovery not accepted as passed"
+  ]
+}

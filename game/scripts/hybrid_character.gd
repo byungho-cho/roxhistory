@@ -28,7 +28,12 @@ var last_action_time := 0.0
 func material(color: String) -> StandardMaterial3D:
 	var m := StandardMaterial3D.new()
 	m.albedo_color = Color(color)
-	m.roughness = 0.92
+	m.roughness = 0.94
+	m.metallic_specular = 0.12
+	var texture_path: String = "res://assets/characters/c001-textures/"+color+".png"
+	if ResourceLoader.exists(texture_path):
+		m.albedo_texture=load(texture_path)
+		m.albedo_color=Color.WHITE
 	m.cull_mode = BaseMaterial3D.CULL_DISABLED
 	return m
 
@@ -52,8 +57,8 @@ func ellipsoid(parent: Node3D, pos: Vector3, size: Vector3, mat: Material) -> Me
 	var mesh := SphereMesh.new()
 	mesh.radius = 0.5
 	mesh.height = 1.0
-	mesh.radial_segments = 16
-	mesh.rings = 8
+	mesh.radial_segments = 24
+	mesh.rings = 14
 	node.mesh = mesh
 	node.material_override = mat
 	node.position = pos
@@ -68,7 +73,7 @@ func cone(parent: Node3D, pos: Vector3, top: float, bottom: float, height: float
 	mesh.top_radius = top
 	mesh.bottom_radius = bottom
 	mesh.height = height
-	mesh.radial_segments = 16
+	mesh.radial_segments = 20
 	node.mesh = mesh
 	node.material_override = mat
 	node.position = pos
@@ -109,16 +114,17 @@ func _ready() -> void:
 	scene.add_child(fill)
 	camera = Camera3D.new()
 	camera.projection = Camera3D.PROJECTION_ORTHOGONAL
-	camera.size = 3.15
+	camera.size = 3.5
 	scene.add_child(camera)
 	camera.position = Vector3(0,3.6,6)
-	camera.look_at(Vector3(0,1.25,0))
+	camera.look_at(Vector3(0,1.45,0))
 	pivot = Node3D.new()
 	scene.add_child(pivot)
 	rig = Skeleton3D.new()
 	rig.name = "VillagerSkeleton"
 	pivot.add_child(rig)
 	build_villager()
+	pivot.scale=Vector3(1.08,1.0,1.02)
 	# A ground-supported piece of timber makes construction a visible task.
 	# It is presentation-only, sharing the hero viewport and contact projection.
 	work_block = Node3D.new(); pivot.add_child(work_block)
@@ -190,7 +196,7 @@ func animate(delta: float, movement: Vector2, phase: float, walking: bool, actio
 func apply_pose(phase: float, strike: float) -> void:
 	var gait := sin(phase)*walk_blend
 	var breath := sin(clock*2.3)*0.015
-	var weight_shift:=maxf(0,strike)*(0.08 if work_kind=="wood" else 0.025)
+	var weight_shift:=maxf(0,strike)*(0.32 if work_kind=="wood" else 0.40 if work_kind=="stone" else 0.025)
 	tool_3d.rotation.x=1.15*strike if work_kind=="wood" else (0.35*strike if work_kind=="stone" else 0.0)
 	rig.set_bone_pose_position(bones.hips,rests.hips+Vector3(0,-0.04-weight_shift,weight_shift))
 	rig.set_bone_pose_position(bones.spine,rests.spine+Vector3(0,breath*0.5,0))
@@ -204,18 +210,18 @@ func apply_pose(phase: float, strike: float) -> void:
 		var stride := HeroMotion.step(phase,side)
 		var foot_z := stride.x*walk_blend-weight_shift
 		var lift := stride.y*walk_blend
-		var foot_y := -0.52+lift+weight_shift
-		var distance := minf(0.559,sqrt(foot_y*foot_y+foot_z*foot_z))
-		var knee := acos(clampf((distance*distance-2*0.28*0.28)/(2*0.28*0.28),-1,1))
+		var foot_y := -0.80+lift+weight_shift
+		var distance := minf(0.839,sqrt(foot_y*foot_y+foot_z*foot_z))
+		var knee := acos(clampf((distance*distance-2*0.42*0.42)/(2*0.42*0.42),-1,1))
 		var thigh := atan2(-foot_z,-foot_y)-knee*0.5
 		rotate_bone("thigh"+suffix,Vector3(thigh,0,0))
 		rotate_bone("shin"+suffix,Vector3(knee,0,0))
 		rotate_bone("foot"+suffix,Vector3(-thigh-knee,0,0))
 		var swing: float = -step*0.45
-		if suffix == "R": swing = lerpf(swing,-1.25+(1.05 if work_kind == "wood" else 1.45)*strike,action_blend)
+		if suffix == "R": swing = lerpf(swing,-1.25+(1.05 if work_kind=="wood" else 1.30 if work_kind=="stone" else 1.45)*strike,action_blend)
 		else: swing = lerpf(swing,-0.32-strike*0.14,action_blend)
-		rotate_bone("arm"+suffix,Vector3(swing,0,-side*lerpf(0.11,0.30,action_blend)))
-		rotate_bone("forearm"+suffix,Vector3(lerpf(-0.15,-0.48+strike*0.22,action_blend) if suffix == "R" else -0.12-strike*0.10,0,0))
+		rotate_bone("arm"+suffix,Vector3(swing,0,side*lerpf(0.20,-0.30,action_blend)))
+		rotate_bone("forearm"+suffix,Vector3(lerpf(-0.15,-0.48+strike*(-0.03 if work_kind=="stone" else 0.22),action_blend) if suffix == "R" else -0.12-strike*0.10,0,0))
 
 func tool_contact_world() -> Vector2:
 	# Project the stone head through the same camera used to draw the character.
@@ -242,107 +248,171 @@ func braid(parent: Node3D, height: float, radius: float, mat: Material) -> void:
 			mesh_count += 1
 
 func build_villager() -> void:
-	var skin := material("efb68e")
+	var skin := material("f3b589")
 	skin.roughness = 0.94
-	var hair := material("342016")
+	var hair := material("57301f")
 	hair.roughness = 0.96
-	var hair_mid := material("4b3227")
-	var hair_glow := material("61432f")
-	var cream := material("ad8058")
-	var trim := material("d6c5a4")
+	var hair_mid := material("754328")
+	var hair_glow := material("965c36")
+	var cream := material("99603a")
+	var trim := material("e9d3a7")
 	var cloth := material("96704e")
 	var rope := material("b98740")
 	var leaf := material("75804b")
 	var white := material("fff3df")
 	var dark := material("321b12")
 	var iris := material("794a28")
-	bone("hips","",Vector3(0,0.77,0))
-	var torso := bone("spine","hips",Vector3(0,0.23,0))
+	bone("hips","",Vector3(0,1.05,0))
+	var torso := bone("spine","hips",Vector3(0,0.39,0))
+	torso.scale.y=1.12
 	# One softly shaped hide tunic: broad shoulders, cinched waist, folded hem.
-	CharacterGeometry.profile(torso,[Vector3(-0.40,0.29,0.23),Vector3(-0.36,0.37,0.27),Vector3(-0.20,0.34,0.25),Vector3(-0.07,0.29,0.23),Vector3(0.10,0.35,0.25),Vector3(0.29,0.34,0.23),Vector3(0.38,0.22,0.18),Vector3(0.40,0.14,0.12)],cream,0.055)
+	CharacterGeometry.profile(torso,[Vector3(-0.40,0.29,0.23),Vector3(-0.36,0.37,0.27),Vector3(-0.20,0.34,0.25),Vector3(-0.07,0.33,0.27),Vector3(0.10,0.37,0.30),Vector3(0.29,0.34,0.23),Vector3(0.38,0.22,0.18),Vector3(0.40,0.14,0.12)],cream,0.055)
 	mesh_count += 1
 	CharacterGeometry.profile(torso,[Vector3(-0.405,0.30,0.24),Vector3(-0.375,0.385,0.282),Vector3(-0.33,0.37,0.275)],trim,0.045)
 	CharacterGeometry.profile(torso,[Vector3(0.29,0.35,0.25),Vector3(0.35,0.27,0.21),Vector3(0.40,0.15,0.13)],trim,0.025)
 	mesh_count += 2
 	# The hem remains one continuous surface rather than dangling bead shapes.
 	lock(torso,Vector3(-0.20,0.34,0.16),Vector3(-0.10,0.12,0.27),Vector3(0.15,-0.25,0.25),0.10,0.014,Vector3.FORWARD,material("ead2a5"))
-	braid(torso,-0.075,0.30,rope)
+	braid(torso,-0.075,0.34,rope)
 	# Small knot and two broad cord ends read at gameplay size.
 	for side in [-1.0,1.0]:
 		lock(torso,Vector3(0.08,-0.08,0.28),Vector3(side*0.06,-0.12,0.32),Vector3(side*0.06,-0.29,0.28),0.022,0.018,Vector3.FORWARD,rope)
+	# Overlapping hide panels and leaf tie reproduce the original layered silhouette.
+	for i in 11:
+		var a:=TAU*i/11.0
+		var n:=Vector3(sin(a),0,cos(a))
+		lock(torso,n*0.29+Vector3(0,-0.10,0),n*0.37+Vector3(0,-0.29,0),n*0.34+Vector3(0,-0.45-0.045*sin(i*2.1),0),0.115,0.025,n,cream if i%3 else trim)
+	for i in 19:
+		var t:=float(i)/18.0
+		var x:=lerpf(-0.28,0.30,t)
+		var y:=lerpf(-0.02,0.35,t)
+		lock(torso,Vector3(x,y+0.12,0.23),Vector3(x-0.03,y+0.035,0.33),Vector3(x-0.13,y-0.12-0.040*sin(i*4.0),0.30),0.062,0.013,Vector3.FORWARD,trim)
+	for i in 9:
+		var a:=TAU*i/9.0
+		var n:=Vector3(sin(a),0,cos(a))
+		lock(torso,n*0.32+Vector3(0,-0.22,0),n*0.40+Vector3(0,-0.35,0),n*0.36+Vector3(0,-0.50+0.035*sin(i*2.0),0),0.11,0.020,n,trim if i%3 else cloth)
+	for i in 13:
+		var x:=(i-6)*.047
+		lock(torso,Vector3(x,.38,-.15),Vector3(x+.035,.28,-.25),Vector3(x+.06,.15-.045*cos(i*2.4),-.25),.062,.013,Vector3.BACK,trim)
 	# Neck and sleeve overlap cover the joint while the continuous skin bends.
 	ellipsoid(torso,Vector3(0,0.39,0),Vector3(0.25,0.21,0.24),skin)
 	# Front diagonal cord, keeping the reference costume's asymmetry.
 	lock(torso,Vector3(0.24,0.36,0.14),Vector3(0.04,0.15,0.29),Vector3(-0.27,-0.03,0.18),0.025,0.025,Vector3.FORWARD,rope)
-	var head := bone("head","spine",Vector3(0,0.72,0))
-	rig.set_bone_pose_scale(bones.head,Vector3.ONE*1.08)
-	CharacterGeometry.profile(head,[Vector3(-0.45,0.06,0.08),Vector3(-0.38,0.26,0.28),Vector3(-0.23,0.43,0.39),Vector3(-0.02,0.51,0.44),Vector3(0.20,0.49,0.42),Vector3(0.38,0.34,0.31),Vector3(0.46,0.02,0.02)],skin)
+	var head := bone("head","spine",Vector3(0,0.74,0))
+	var head_rest:=rig.get_bone_rest(bones.head)
+	head_rest.basis=Basis.from_scale(Vector3(0.77,0.82,0.80))
+	rig.set_bone_rest(bones.head,head_rest)
+	rig.set_bone_pose_scale(bones.head,Vector3(0.77,0.82,0.80))
+	CharacterGeometry.profile(head,[Vector3(-0.45,0.06,0.08),Vector3(-0.38,0.31,0.29),Vector3(-0.23,0.47,0.40),Vector3(-0.02,0.51,0.44),Vector3(0.20,0.49,0.42),Vector3(0.38,0.34,0.31),Vector3(0.46,0.02,0.02)],skin)
 	mesh_count += 1
 	ellipsoid(head,Vector3(0,0.17,-0.11),Vector3(1.10,0.82,0.95),hair)
 	for side in [-1.0,1.0]:
 		ellipsoid(head,Vector3(side*0.49,-0.07,0.025),Vector3(0.19,0.26,0.17),skin)
 		ellipsoid(head,Vector3(side*0.51,-0.075,0.105),Vector3(0.10,0.15,0.035),material("d88d6f"))
 		# Large warm eyes: dark contour, cream sclera, brown iris and two glints.
-		var eye := Node3D.new(); head.add_child(eye); eye.position=Vector3(side*0.205,-0.018,0.411); eye.scale=Vector3(0.82,0.88,0.27); eye_nodes.append(eye)
+		var eye := Node3D.new(); head.add_child(eye); eye.position=Vector3(side*0.205,-0.018,0.411); eye.scale=Vector3(0.88,0.90,0.32); eye_nodes.append(eye)
 		ellipsoid(eye,Vector3.ZERO,Vector3(0.245,0.295,0.10),dark)
 		ellipsoid(eye,Vector3(0,-0.002,0.014),Vector3(0.220,0.264,0.095),white)
 		ellipsoid(eye,Vector3(side*-0.009,-0.008,0.061),Vector3(0.190,0.235,0.044),iris)
 		ellipsoid(eye,Vector3(side*-0.009,0.0,0.082),Vector3(0.110,0.177,0.025),dark)
 		ellipsoid(eye,Vector3(-0.029,0.053,0.097),Vector3(0.049,0.063,0.015),white)
 		ellipsoid(eye,Vector3(0.028,-0.051,0.094),Vector3(0.021,0.026,0.012),white)
-		lock(head,Vector3(side*0.10,0.19,0.41),Vector3(side*0.20,0.25,0.41),Vector3(side*0.31,0.20,0.37),0.025,0.018,Vector3.FORWARD,hair)
-		ellipsoid(head,Vector3(side*0.32,-0.17,0.333),Vector3(0.18,0.075,0.024),material("e99b80"))
+		lock(head,Vector3(side*0.10,0.19,0.41),Vector3(side*0.20,0.25,0.41),Vector3(side*0.39,0.20,0.37),0.025,0.018,Vector3.FORWARD,hair)
+		ellipsoid(head,Vector3(side*0.32,-0.17,0.333),Vector3(0.13,0.055,0.009),material("e99b80"))
 	ellipsoid(head,Vector3(0,-0.12,0.45),Vector3(0.10,0.08,0.058),skin)
-	# Quiet curved smile stays integrated with the cheeks, without a protruding mouth.
-	lock(head,Vector3(-0.09,-0.258,0.377),Vector3(0,-0.29,0.389),Vector3(0.09,-0.258,0.377),0.014,0.010,Vector3.FORWARD,material("8f4c36"))
-	# Sculpted, tapered overlapping locks around the crown, sides and back.
-	for row in 1:
-		for i in 13:
-			var a := TAU*i/13.0+row*0.20
-			var n := Vector3(sin(a),0,cos(a))
-			var front := cos(a)>0.50
-			var end_y := 0.30 if front else -0.10
-			end_y -= row*0.07
-			var start := n*0.38+Vector3(0,0.48-row*0.12,-0.07)
-			var mid := n*0.59+Vector3(0,0.32-row*0.11,-0.05)
-			var end := n*0.49+Vector3(sin(a+0.8)*0.07,end_y,-0.03)
-			lock(head,start,mid,end,0.17,0.045,n,hair)
-	# Swept fringe in front, with a readable pointed center lock.
-	for i in 7:
-		var x := (i-3)*0.13
-		lock(head,Vector3(x*0.7+0.08,0.51,0.26),Vector3(x+0.10,0.34,0.54),Vector3(x-0.055,0.13+0.065*cos(i*1.4),0.47),0.125,0.045,Vector3.FORWARD,hair_mid if i%3==0 else hair)
-	# Rounded tied tuft, swept backward rather than a flower-shaped crown.
-	ellipsoid(head,Vector3(0.015,0.63,-0.13),Vector3(0.34,0.30,0.38),hair)
-	braid(head,0.53,0.15,rope)
-	for i in 3:
-		lock(head,Vector3(-0.10+i*0.10,0.56,-0.03),Vector3(-0.16+i*0.13,0.83,-0.17),Vector3(-0.11+i*0.11,0.70,-0.36),0.08,0.05,Vector3.UP,hair_mid if i%2 else hair)
+	lock(head,Vector3(-0.10,-0.25,0.376),Vector3(0,-0.295,0.40),Vector3(0.10,-0.25,0.376),0.009,0.008,Vector3.FORWARD,material("8b4931"))
+	# Individually placed crown and fringe: origin, bend, pointed tip, width.
+	var locks: Array = [
+		[Vector3(.08,.53,.10),Vector3(-.17,.61,.35),Vector3(-.56,.28,.27),.19],
+		[Vector3(.10,.54,.14),Vector3(-.01,.54,.53),Vector3(-.24,.07,.47),.15],
+		[Vector3(.14,.53,.13),Vector3(.23,.43,.54),Vector3(.12,.12,.48),.13],
+		[Vector3(.18,.50,.08),Vector3(.40,.41,.48),Vector3(.46,.20,.34),.15],
+		[Vector3(-.08,.48,.12),Vector3(-.34,.37,.49),Vector3(-.39,.06,.37),.14],
+		[Vector3(.28,.41,.04),Vector3(.56,.29,.30),Vector3(.57,.37,.20),.14],
+		[Vector3(-.25,.40,.05),Vector3(-.58,.24,.26),Vector3(-.61,.30,.13),.14],
+		[Vector3(.36,.29,.10),Vector3(.58,.08,.19),Vector3(.49,-.16,.11),.10],
+		[Vector3(-.36,.30,.08),Vector3(-.57,.04,.20),Vector3(-.48,-.15,.10),.11],
+		[Vector3(.08,.54,-.10),Vector3(.42,.47,-.37),Vector3(.62,.22,-.18),.18],
+		[Vector3(-.06,.53,-.12),Vector3(-.34,.48,-.40),Vector3(-.60,.29,-.23),.18],
+		[Vector3(.04,.52,-.16),Vector3(.17,.34,-.58),Vector3(.40,.05,-.46),.18],
+		[Vector3(-.12,.48,-.18),Vector3(-.24,.29,-.57),Vector3(-.43,-.03,-.43),.17],
+		[Vector3(.19,.30,-.31),Vector3(.39,.08,-.52),Vector3(.50,-.17,-.29),.14],
+		[Vector3(-.22,.29,-.32),Vector3(-.43,.06,-.48),Vector3(-.53,-.14,-.24),.14],
+		[Vector3(.02,.26,-.46),Vector3(.14,.02,-.54),Vector3(.22,-.27,-.36),.16],
+		[Vector3(-.15,.23,-.44),Vector3(-.22,-.05,-.51),Vector3(-.16,-.29,-.34),.16]
+	]
+	for i in locks.size():
+		var item: Array=locks[i]
+		var outward: Vector3=Vector3(item[1].x,0,item[1].z).normalized()
+		lock(head,item[0],item[1],item[2],item[3],0.045,outward,hair_mid if i%4==0 else hair)
+		# Irregular overlapping secondary tips break up each broad crown lock.
+		var tip: Vector3=item[2]+Vector3((.07 if i%2 else -.09),-.035,.025)
+		lock(head,item[0].lerp(item[1],.35)+outward*.035,item[1]+outward*.045,tip,item[3]*.56,.021,outward,hair_mid if i%3 else hair_glow)
+		# Thin directional ridges, curved with the main tuft rather than floating.
+		for j in 2:
+			var off:=outward*0.038+Vector3((j-.5)*.026,0,0)
+			lock(head,item[0]+off,item[1]+off,item[2],.009,.004,outward,hair_glow if i%5==0 else hair_mid)
+	var back_layers: Array=[
+		[Vector3(-.21,.43,-.31),Vector3(-.32,.27,-.54),Vector3(-.40,.03,-.47),.13],
+		[Vector3(.03,.47,-.34),Vector3(-.08,.24,-.61),Vector3(-.18,-.03,-.53),.15],
+		[Vector3(.22,.40,-.32),Vector3(.24,.19,-.58),Vector3(.11,-.11,-.54),.14],
+		[Vector3(-.25,.23,-.43),Vector3(-.34,.02,-.53),Vector3(-.26,-.24,-.41),.12],
+		[Vector3(-.04,.22,-.49),Vector3(-.08,-.01,-.61),Vector3(.03,-.30,-.43),.14],
+		[Vector3(.28,.23,-.41),Vector3(.39,.00,-.50),Vector3(.30,-.24,-.37),.11],
+		[Vector3(.09,.10,-.53),Vector3(.21,-.09,-.58),Vector3(.18,-.34,-.33),.12]
+	]
+	for i in back_layers.size():
+		var b: Array=back_layers[i]
+		lock(head,b[0],b[1],b[2],b[3],.024,Vector3.BACK,hair_mid if i%3 else hair)
+	braid(head,0.53,0.145,rope)
+	var tails: Array=[
+		[Vector3(-.08,.54,-.12),Vector3(-.22,.80,-.15),Vector3(-.10,.89,-.25)],
+		[Vector3(.02,.55,-.12),Vector3(.07,.83,-.08),Vector3(.24,.84,-.19)],
+		[Vector3(.08,.55,-.15),Vector3(.29,.75,-.23),Vector3(.33,.74,-.40)],
+		[Vector3(-.02,.55,-.20),Vector3(-.10,.76,-.41),Vector3(.07,.80,-.49)]
+	]
+	for i in tails.size():
+		var tip:Vector3=tails[i][2]+Vector3(.15,-.015,-.06)
+		lock(head,tails[i][0],tails[i][1],tip,.10,.025,Vector3.FORWARD,hair_mid if i%2 else hair)
+		lock(head,tails[i][0]+Vector3(.02,0,.03),tails[i][1]+Vector3(.025,0,.03),tip,.025,.006,Vector3.FORWARD,hair_glow)
 	for side in [-1.0,1.0]:
 		var suffix := "L" if side < 0 else "R"
-		var upper := bone("arm"+suffix,"spine",Vector3(side*0.31,0.33,0))
+		var upper := bone("arm"+suffix,"spine",Vector3(side*0.39,0.33,0))
 		CharacterGeometry.profile(upper,[Vector3(-0.18,0.12,0.13),Vector3(-0.12,0.145,0.15),Vector3(0.02,0.15,0.16),Vector3(0.08,0.04,0.05)],cream)
 		mesh_count += 1
-		bone("forearm"+suffix,"arm"+suffix,Vector3(side*0.045,-0.33,0))
-		var hand := bone("hand"+suffix,"forearm"+suffix,Vector3(0,-0.29,0.015))
-		ellipsoid(hand,Vector3(0,-0.015,0),Vector3(0.20,0.23,0.19),skin)
+		bone("forearm"+suffix,"arm"+suffix,Vector3(side*0.045,-0.39,0))
+		var forearm: Node3D=attachments["forearm"+suffix]
+		cone(forearm,Vector3(0,-0.21,0),0.125,0.12,0.20,cloth)
+		for band in 3:
+			cone(forearm,Vector3(0,-0.135-band*0.060,0),0.13,0.13,0.023,rope).rotation.z=0.12*side
+		var hand := bone("hand"+suffix,"forearm"+suffix,Vector3(0,-0.34,0.015))
+		ellipsoid(hand,Vector3(0,-0.015,0),Vector3(0.21,0.20,0.17),skin)
+		for finger in 4:
+			ellipsoid(hand,Vector3((finger-1.5)*.048,-.105+absf(finger-1.5)*.012,.018),Vector3(.059,.14,.070),skin)
 		ellipsoid(hand,Vector3(-side*0.075,0.005,0.045),Vector3(0.09,0.13,0.10),skin)
 		if suffix == "R":
-			tool_3d = Node3D.new(); hand.add_child(tool_3d)
+			tool_3d = Node3D.new(); tool_3d.name="StoneAxe"; hand.add_child(tool_3d)
 			cone(tool_3d,Vector3(0,0,0.19),0.025,0.03,0.52,material("775039")).rotation.x=PI/2
 			var stone := ellipsoid(tool_3d,Vector3(0,0.025,0.43),Vector3(0.30,0.13,0.18),material("858879"))
 			stone.mesh.radial_segments=7;stone.mesh.rings=3
 			for band in 3:
 				cone(tool_3d,Vector3(0,0,0.35+band*0.024),0.036,0.036,0.018,rope).rotation.x=PI/2
-		bone("thigh"+suffix,"hips",Vector3(side*0.145,-0.07,0))
-		bone("shin"+suffix,"thigh"+suffix,Vector3(0,-0.28,0))
-		var foot := bone("foot"+suffix,"shin"+suffix,Vector3(0,-0.28,0))
-		ellipsoid(foot,Vector3(0,-0.065,0.07),Vector3(0.23,0.15,0.34),skin)
-		for toe in 3:
-			ellipsoid(foot,Vector3((toe-1)*0.058,-0.078,0.213),Vector3(0.073,0.09,0.095),skin)
+		bone("thigh"+suffix,"hips",Vector3(side*0.19,-0.07,0))
+		bone("shin"+suffix,"thigh"+suffix,Vector3(0,-0.42,0))
+		var foot := bone("foot"+suffix,"shin"+suffix,Vector3(0,-0.42,0))
+		ellipsoid(foot,Vector3(0,-0.055,0.09),Vector3(0.29,0.22,0.43),cloth)
+		cone(foot,Vector3(0,0.10,0),0.14,0.13,0.24,cloth)
+		for band in 4:
+			cone(foot,Vector3(0,0.02+band*0.05,0),0.148,0.148,0.025,rope).rotation.z=0.15*side
+		for f in 9:
+			var a:=TAU*f/9.0
+			var n:=Vector3(sin(a),0,cos(a))
+			lock(foot,n*0.13+Vector3(0,0.25,0),n*0.17+Vector3(0,0.23,0),n*0.17+Vector3(0,0.16,0),0.055,0.018,n,trim)
 	# Continuous weighted surfaces bridge the elbows and knees with no detached balls.
 	for side in [-1.0,1.0]:
 		var suffix := "L" if side<0 else "R"
-		skinned_limbs.append(CharacterGeometry.limb(pivot,rig,bones["arm"+suffix],bones["forearm"+suffix],Vector3(side*0.31,1.33,0),Vector3(side*0.355,1.0,0),Vector3(side*0.355,0.71,0.015),0.12,skin))
-		skinned_limbs.append(CharacterGeometry.limb(pivot,rig,bones["thigh"+suffix],bones["shin"+suffix],Vector3(side*0.145,0.70,0),Vector3(side*0.145,0.42,0),Vector3(side*0.145,0.14,0),0.14,skin))
+		skinned_limbs.append(CharacterGeometry.limb(pivot,rig,bones["arm"+suffix],bones["forearm"+suffix],Vector3(side*0.39,1.77,0),Vector3(side*0.435,1.38,0),Vector3(side*0.435,1.04,0.015),0.155,skin))
+		skinned_limbs.append(CharacterGeometry.limb(pivot,rig,bones["thigh"+suffix],bones["shin"+suffix],Vector3(side*0.19,0.98,0),Vector3(side*0.19,0.56,0),Vector3(side*0.19,0.14,0),0.175,skin))
 		mesh_count += 2
 	batch_static(rig)
 

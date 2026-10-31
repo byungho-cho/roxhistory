@@ -8,10 +8,10 @@ static var shared_theme: Theme
 static func icon(key: String) -> Texture2D:
 	if cache.has(key):
 		return cache[key]
-	var boxes := {"hut":Rect2(1143,12,378,355),"wood":Rect2(777,389,375,287),
+	var boxes := {"spear":Rect2(30,16,369,348),"hammer":Rect2(790,16,354,344),"meat":Rect2(8,690,380,310),"hut":Rect2(1143,12,378,355),"wood":Rect2(777,389,375,287),
 		"stone":Rect2(1169,380,366,297),"scroll":Rect2(391,384,372,282),
 		"berries":Rect2(430,20,343,323),"bag":Rect2(22,369,353,317),
-		"horn":Rect2(1150,720,365,292),"compass":Rect2(785,723,355,290)}
+		"horn":Rect2(1150,720,365,292),"compass":Rect2(410,665,330,335)}
 	var tex := AtlasTexture.new()
 	tex.atlas = sheet
 	tex.region = boxes.get(key,boxes.hut)

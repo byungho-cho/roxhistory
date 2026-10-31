@@ -1,0 +1,56 @@
+{
+  "utc": "2026-10-31T10:51:23Z",
+  "condition": "Same isolated fixture at1060,1030;1280x720;600 idle frames after60 warmup; no recording during frame measurement; emulator/API35/RTX5060",
+  "results": [
+    {
+      "frames": 600,
+      "gpu": "Android Emulator OpenGL ES Translator (NVIDIA GeForce RTX 5060/PCIe/SSE2)",
+      "mean_ms": 65.93206,
+      "mode": "3D",
+      "p95_ms": 75.868,
+      "viewport": "(960.0, 540.0)",
+      "version": "0.1.8-scene",
+      "utc": "2026-10-31T10:07:28Z",
+      "apk_sha256": "dc2bd5a8a4ee966e87d377231ac98c9bbe94e0d8a8bdbebad0229322555121b0",
+      "audio": {
+        "rms": 0.0019727884358811624,
+        "dbfs": -54.098389729886975
+      }
+    },
+    {
+      "frames": 600,
+      "gpu": "Android Emulator OpenGL ES Translator (NVIDIA GeForce RTX 5060/PCIe/SSE2)",
+      "mean_ms": 66.93606,
+      "mode": "3D",
+      "p95_ms": 75.331,
+      "viewport": "(960.0, 540.0)",
+      "version": "0.1.9-c001",
+      "utc": "2026-10-31T10:50:43Z",
+      "apk_sha256": "f20b92c5ca1df0b8b1ab8bbd2dc48c5ef01bc837ac22aac3c307505e3fade608",
+      "audio": {
+        "rms": 0.0011568343069319747,
+        "dbfs": -58.734576809526175
+      }
+    }
+  ],
+  "audio_lifecycle": {
+    "foreground": {
+      "rms": 0.0011568343069319747,
+      "dbfs": -58.734576809526175
+    },
+    "background": {
+      "rms": 0.0,
+      "dbfs": -200.0
+    },
+    "resumed": {
+      "rms": 0.0010353862982859427,
+      "dbfs": -59.697951730451635
+    },
+    "muted": {
+      "rms": 0.0,
+      "dbfs": -200.0
+    }
+  },
+  "normal_save_unchanged": true,
+  "listening": "Playback PCM capture only; no physical speaker/headphone listening claimed"
+}
