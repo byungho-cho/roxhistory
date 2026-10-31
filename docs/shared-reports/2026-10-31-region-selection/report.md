@@ -1,6 +1,6 @@
 # Meshy 주인공과 첫 터전 선택 v0.1.10
 
-작업일: 2026-10-31~2026-11-01 KST. 상태: 로컬 기능·Android 에뮬레이터 검증 완료, 원격 CI와 최종 배포 대기.
+작업일: 2026-10-31~2026-11-01 KST. 상태: 로컬 기능·Android 에뮬레이터 검증 완료 / 사용자 외형 승인·실기기 검증은 후속.
 
 ## 범위와 기준
 
@@ -83,3 +83,10 @@ Native 1280×720, 위치 (1060,1030), 기본/2배 카메라, 같은 캡처 스�
 ## 남은 품질 항목
 
 주인공 얼굴 표정·손가락·극단적인 자세의 의상 변형, 사용자 외형 검토, Android 실기기 성능과 실제 폴드 조작은 후속이다. 주민·동물과 전체 3D 배경 전환은 이번 범위가 아니다. 게임 전체 또는 베타 완료로 판정하지 않는다.
+
+## 원격 반영과 APK
+
+- [PR #20](https://github.com/byungho-cho/roxhistory/pull/20): 최신 커밋의 CI 결과·병합 여부와 병합 SHA를 확인한다. [검사 목록](https://github.com/byungho-cho/roxhistory/pull/20/checks).
+- [v0.1.10-region 배포](https://github.com/byungho-cho/roxhistory/releases/tag/v0.1.10-region): 병합 후 main에서 재빌드한 APK의 기준 커밋·SHA-256·크기·최종 설치 결과를 기록하는 배포 원장이다. 이 문서 작성 시점의 후보 APK를 최종 파일로 단정하지 않는다.
+- 최종 배포 파일명은 `RoxHistory-0.1.10-region-debug.apk`이며 소스/로그 ZIP과 구분한다. Release 파일만 기존 개발 서명으로 제공한다. CI 검사용 APK의 임시 서명과 구분해야 한다.
+- 기존 배포 인증서 SHA-256: `cf65aeecb4e399ba9e2e6b9fa947f34f8c31bd75c8e3b686ad29d8431bb1695f`. 후보 APK의 v2/v3 서명과 업데이트 설치는 확인했다. 최종 main 빌드도 동일 인증서를 재확인한다.
