@@ -101,6 +101,10 @@ func run() -> void:
 			player.position = DemoConfig.point(n.position)+Vector2(70,0)
 			await frames(3)
 			app.gather_action()
+			for tick in 120:
+				if not app.gather_approach: break
+				await frames(1)
+			check(app.task=="gather" and not app.gather_approach,"Contact positioning finishes before measuring the real work duration")
 			await create_timer(float(DemoConfig.get_data().gather_seconds)+0.15).timeout
 			check(app.task == "" and app.model.state[n.kind] == 1,"One real-duration gather credits exactly one "+str(n.kind))
 	check(app.model.can_build(),"Two gather actions unlock construction")

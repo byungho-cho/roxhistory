@@ -205,3 +205,13 @@ func _draw() -> void:
 			var post := Vector2.from_angle(i*TAU/8)*108
 			draw_line(post,post-Vector2(0,20),Color("9c703d"),7,true)
 		draw_set_transform(Vector2.ZERO)
+
+func gather_stand(target: Vector2) -> Vector2:
+	# Keep the short contact stance clear of huts and scenery, without teleporting.
+	var side: float=-1.0 if player.position.x<=target.x else 1.0
+	for x in [side*64,-side*64]:
+		for y in [0,-32,32]:
+			var candidate:=target+Vector2(x,y)
+			var at:=player.transform;at.origin=candidate
+			if not player.test_move(at,Vector2.ZERO,null,0.08,true):return candidate
+	return Vector2.INF

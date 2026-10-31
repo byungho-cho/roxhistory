@@ -16,6 +16,7 @@ var idle_time := 0.0
 var action_time := 0.0
 var external_work_clock := false
 var activity := ""
+var work_destination:=Vector2.INF
 var facing := 0
 var presentation_paused := false
 var motion_state := "idle"
@@ -151,6 +152,8 @@ func set_activity(value: String) -> void:
 
 func _physics_process(delta: float) -> void:
 	var movement := Vector2.ZERO if presentation_paused or activity != "" else direction.limit_length()
+	if not presentation_paused and activity=="" and work_destination.is_finite():
+		movement=(work_destination-position).limit_length(float(DemoConfig.get_data().move_speed)*delta)/maxf(0.001,float(DemoConfig.get_data().move_speed)*delta)
 	velocity = movement*float(DemoConfig.get_data().move_speed)
 	var before := position
 	move_and_slide()
@@ -169,7 +172,7 @@ func _physics_process(delta: float) -> void:
 	if not use_3d: update_rig()
 	if use_3d:
 		tool.visible = false
-		hybrid.animate(delta,direction,phase,motion_state == "walk",activity,action_time,presentation_paused)
+		hybrid.animate(delta,movement,phase,motion_state == "walk",activity,action_time,presentation_paused)
 
 func update_rig() -> void:
 	var region: Rect2 = PORTRAITS[facing]

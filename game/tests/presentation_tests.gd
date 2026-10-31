@@ -11,6 +11,11 @@ func frames(n: int) -> void:
 func snap(name: String) -> void:
 	await RenderingServer.frame_post_draw
 	root.get_texture().get_image().save_png("res://reports/p4-"+name+".png")
+func wait_positioning() -> void:
+	for tick in 120:
+		if not app.gather_approach:break
+		await frames(1)
+	check(app.task=="gather" and not app.gather_approach,"Contact positioning finishes before testing the work sound timeline")
 func run() -> void:
 	DirAccess.make_dir_recursive_absolute("res://reports")
 	app = load("res://scenes/main.tscn").instantiate(); root.add_child(app); await frames(2)
@@ -41,9 +46,9 @@ func run() -> void:
 	check(audio.voices.all(func(v): return not v.get_meta("work",false) or not v.playing),"Cancel stops in-flight work sounds")
 	var after_cancel := audio.events.size(); await frames(30)
 	check(audio.events.size() == after_cancel,"Cancelled work schedules no late sounds")
-	audio.stop_effects(); app.gather_action(); await frames(80)
+	audio.stop_effects(); app.gather_action(); await wait_positioning(); await frames(80)
 	check(app.model.state.wood == 1 and audio.events.count("gain") == 1,"Successful committed gather cues once")
-	p.position = Vector2(1360,1080); await frames(4); audio.stop_effects(); app.gather_action(); await frames(80)
+	p.position = Vector2(1360,1080); await frames(4); audio.stop_effects(); app.gather_action(); await wait_positioning(); await frames(80)
 	check(audio.events.any(func(e): return e.begins_with("stone_")),"Stone has separate impact sound")
 	check(app.model.state.stone == 1,"Stone commit remains one")
 	p.position = Vector2(820,1060); await frames(4); app.build_action()

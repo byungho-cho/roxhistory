@@ -18,6 +18,8 @@ var screen := ""
 var modal := false
 var task := ""
 var task_target := ""
+var gather_approach:=false
+var approach_elapsed:=0.0
 var application_active := true
 var task_remaining := 0.0
 var task_total := 0.0
@@ -389,6 +391,15 @@ func _process(delta: float) -> void:
 		if cancel:
 			cancel_task()
 			toast("작업 범위를 벗어나 멈췄습니다.")
+		elif gather_approach:
+			approach_elapsed+=delta
+			if world.player.position.distance_to(world.player.work_destination)<3:
+				gather_approach=false;world.player.work_destination=Vector2.INF
+				world.player.face_target(world.art_nodes[task_target].position)
+				world.player.set_activity("gather");task_bar.visible=true
+				context.text="채집 중… 이동하면 멈춥니다"
+			elif approach_elapsed>1.5:
+				cancel_task();toast("자원 옆의 빈 공간으로 이동해 주세요")
 		else:
 			task_remaining -= delta
 			world.feedback.update_work(task_total-task_remaining,task_total)
@@ -428,13 +439,20 @@ func gather_action() -> void:
 	if n.is_empty(): return
 	task = "gather"
 	world.player.face_target(DemoConfig.point(n.position))
-	world.player.set_activity("gather")
+	var target_point:=DemoConfig.point(n.position)
+	var stand: Vector2=world.gather_stand(target_point)
+	if not stand.is_finite():
+		cancel_task();toast("자원 옆의 빈 공간으로 이동해 주세요");return
+	gather_approach=world.player.position.distance_to(stand)>4
+	approach_elapsed=0
+	world.player.work_destination=stand if gather_approach else Vector2.INF
+	world.player.set_activity("" if gather_approach else "gather")
 	task_target = n.id
 	world.feedback.begin("gather",n.id)
 	task_total = float(DemoConfig.get_data().gather_seconds)
 	task_remaining = task_total
-	task_bar.visible = true
-	context.text = "채집 중… 범위를 벗어나면 멈춥니다"
+	task_bar.visible = not gather_approach
+	context.text = "자원 옆에 자리 잡는 중" if gather_approach else "채집 중… 이동하면 멈춥니다"
 
 func build_action() -> void:
 	if modal or gestures.blocked or task != "" or model.state.built or not world.near_site(): return
@@ -474,7 +492,9 @@ func cancel_task() -> void:
 	if is_instance_valid(audio): audio.stop_work()
 	task = ""
 	task_target = ""
+	gather_approach=false;approach_elapsed=0
 	if is_instance_valid(world):
+		world.player.work_destination=Vector2.INF
 		world.player.set_activity("")
 		world.feedback.cancel()
 	if is_instance_valid(task_bar): task_bar.visible = false
