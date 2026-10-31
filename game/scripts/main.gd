@@ -36,6 +36,8 @@ var context_panel: PanelContainer
 var toast_panel: PanelContainer
 var gestures: WorldGestures
 var chrome: PlayChrome
+var region_selection: RegionSelection
+var region_snapshot := {}
 
 func _ready() -> void:
 	gestures=WorldGestures.new(self);add_child(gestures)
@@ -80,6 +82,7 @@ func clear_children(node: Node) -> void:
 
 func show_screen(next: String) -> void:
 	var previous := screen
+	region_snapshot=region_selection.snapshot() if next=="region" and screen=="region" and is_instance_valid(region_selection) else {}
 	if is_instance_valid(joystick):
 		joystick.clear()
 	clear_children(ui)
@@ -103,8 +106,8 @@ func show_screen(next: String) -> void:
 		if next != "play": world.feedback.clear_transients()
 		world.visible = screen == "play"
 		world.set_process_mode(Node.PROCESS_MODE_INHERIT if screen == "play" else Node.PROCESS_MODE_DISABLED)
-	if screen != "play":
-		menu_background(screen == "region")
+	if screen not in ["play","region"]:
+		menu_background()
 	match screen:
 		"onboarding": onboarding()
 		"title": title_screen()
@@ -315,30 +318,12 @@ func new_game_prompt() -> void:
 		show_screen("region")
 
 func region_screen() -> void:
-	var k:=minf(w/1600,h/900)
-	back_button(func():show_screen("title"))
-	design_label(stage,"첫 터전을 고르세요",design_rect(148,32,1220,64),int(48*k),Color("fff1d5"))
-	design_label(stage,"시대와 삶의 흔적을 따라 여정을 시작합니다",design_rect(148,100,1220,32),int(21*k),Color("ebd1a7"))
-	design_button(stage,"",design_rect(1472,32,88,88),show_about,false,"bag")
-	# Preserve established map anchors; visual extents are 80% of v0.1.8.
-	for item in [["전곡리","구석기",Vector2(w*.37,h*.25),Vector2(215,72),false],["암사동","신석기",Vector2(w*.25,h*.48),Vector2(230,88),true],["동삼동","신석기",Vector2(w*.49-215*.4,h*.73),Vector2(215,72),false]]:
-		var selected: bool=item[4]
-		var b:=design_button(stage,item[0]+"\n"+item[1],Rect2(item[2],item[3]*.8),func():toast("암사동을 선택했습니다." if selected else "이 지역은 준비 중입니다."),selected,"hut")
-		b.add_theme_font_size_override("font_size",16)
-		if not selected:
-			b.add_theme_stylebox_override("normal",DesignSkin.style("dark"))
-			for child in b.get_children():
-				if child is Label:child.add_theme_color_override("font_color",Color("eeeeee"))
-	design_panel(design_rect(1140,173,402,630))
-	var pattern:=picture(stage,preload("res://assets/figma/ba95c.svg"),design_rect(1140,173,402,630));pattern.stretch_mode=TextureRect.STRETCH_SCALE
-	picture(stage,DemoArt.icon("hut"),design_rect(1267,201,148,135))
-	design_label(stage,"암사동",design_rect(1168,354,346,64),int(48*k),Color("eeeeee"),true)
-	design_label(stage,"신석기 · 강변의 생활",design_rect(1168,436,346,32),int(21*k),Color("bbbbbb"),true)
-	design_label(stage,"강가에 터를 잡고\n마을의 첫 불씨를 피우세요.",design_rect(1168,506,346,80),int(26*k),Color("eeeeee"),true)
-	for i in 3:picture(stage,DemoArt.icon(["wood","stone","berries"][i]),design_rect(1217+i*90,604,68,62))
-	design_button(stage,"이곳에서 시작",design_rect(1168,684,346,86),start_region,true,"compass")
+	region_selection=RegionSelection.new(self,region_snapshot)
+	stage.add_child(region_selection)
 
 func start_region() -> void:
+	if is_instance_valid(region_selection) and region_selection.selected!="amsa":
+		toast("현재 데모는 암사동에서 시작할 수 있습니다.");return
 	if model.start_new():
 		if is_instance_valid(world):
 			remove_child(world)
@@ -596,6 +581,7 @@ func show_about() -> void:
 		{"text":"돌아가기","primary":true,"action":close_modal}])
 
 func show_modal(title: String, body: String, actions: Array, compact: bool = false) -> void:
+	if is_instance_valid(region_selection):region_selection.cancel_input()
 	if gestures: gestures.clear()
 	if is_instance_valid(joystick): joystick.clear()
 	cancel_task()
@@ -682,6 +668,7 @@ func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_GO_BACK_REQUEST:
 		go_back()
 	elif what == NOTIFICATION_APPLICATION_PAUSED or what == NOTIFICATION_APPLICATION_FOCUS_OUT:
+		if is_instance_valid(region_selection):region_selection.cancel_input()
 		if gestures: gestures.clear()
 		if is_instance_valid(chrome): chrome.clear_effects()
 		application_active = false

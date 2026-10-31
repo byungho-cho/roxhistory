@@ -5,3 +5,6 @@ game/assets/*.md text eol=lf
 game/assets/manifest.json text eol=lf
 
 *.mp3 -text
+
+# Editable character source must retain its original binary bytes.
+art-source/**/*.blend -text

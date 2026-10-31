@@ -2,7 +2,7 @@ config_version=5
 
 [application]
 config/name="RoxHistory"
-config/version="0.1.9-c001"
+config/version="0.1.10-region"
 config/icon="res://assets/app-icon-hut.png"
 run/main_scene="res://scenes/main.tscn"
 config/features=PackedStringArray("4.5", "GL Compatibility")
@@ -17,6 +17,7 @@ window/stretch/aspect="expand"
 window/handheld/orientation=0
 
 [rendering]
+textures/vram_compression/import_etc2_astc=true
 renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"
 textures/vram_compression/import_etc2_astc=true

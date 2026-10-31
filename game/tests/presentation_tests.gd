@@ -36,7 +36,8 @@ func run() -> void:
 	for i in 8: app.sync_audio()
 	check(audio.get_child_count() == count,"Repeated sync does not create duplicate players")
 	var p: DemoPlayer = app.world.player
-	p.position = Vector2(1360,830); p.camera.reset_smoothing(); await frames(30)
+	p.position = Vector2(1360,830)
+	p.position=app.world.gather_stand(Vector2(1420,830),"wood"); p.camera.reset_smoothing(); await frames(30)
 	await snap("gather-ready")
 	app.gather_action(); await frames(20)
 	check(audio.events.any(func(e): return e.begins_with("wood_")),"Wood impact is synchronized to work phase")

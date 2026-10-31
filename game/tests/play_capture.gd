@@ -20,7 +20,7 @@ func run() -> void:
 	if "--portrait" in OS.get_cmdline_user_args():
 		p.hybrid.heading=0;p.hybrid.target_heading=0;p.hybrid.animate(0,Vector2.ZERO,0,false,"",0,false)
 		p.hybrid.viewport.size=Vector2i(512,512)
-		p.hybrid.camera.size=1.75;p.hybrid.camera.position=Vector3(0,2.5,5);p.hybrid.camera.look_at(Vector3(0,1.86,0))
+		p.hybrid.camera.size=1.6;p.hybrid.camera.position=Vector3(0,2.65,5);p.hybrid.camera.look_at(Vector3(0,2.28,0))
 		await frames(5)
 		var portrait:=p.hybrid.viewport.get_texture().get_image();portrait.resize(256,256,Image.INTERPOLATE_LANCZOS)
 		DirAccess.make_dir_recursive_absolute("res://assets/ui")

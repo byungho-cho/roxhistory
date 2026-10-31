@@ -1,0 +1,14 @@
+{
+  "draw_calls": 239.0,
+  "frames": 600,
+  "gpu": "Android Emulator OpenGL ES Translator (NVIDIA GeForce RTX 5060/PCIe/SSE2)",
+  "mean_ms": 16.670675,
+  "mode": "3D",
+  "p95_ms": 20.918,
+  "physics_ms": 0.707,
+  "primitives": 73274.0,
+  "process_ms": 5.622,
+  "viewport": "(960.0, 540.0)",
+  "condition": "e66 final code; cold boot 4GB 4vCPU; no recording; same fixture1060,1030;1280x720;600 frames after60 warmup",
+  "utc": "2026-10-31T21:26:09Z"
+}

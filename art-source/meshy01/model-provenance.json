@@ -1,0 +1,137 @@
+{
+  "source": "Meshy_AI__01.glb",
+  "source_sha256": "834c2082d9f5b0c5fa77ad6d9b1a1b1af3a6ac5cafd352bc96aa66a4bd4ea2c4",
+  "original_triangles": 1745859,
+  "triangles": 60000,
+  "vertices": 55957,
+  "bones": 15,
+  "height": 3,
+  "material": {
+    "roughness": 0.92,
+    "specular": 0.12,
+    "normal_strength": 0.22
+  },
+  "joints": {
+    "hips": [
+      "",
+      [
+        0,
+        1.1,
+        0
+      ]
+    ],
+    "spine": [
+      "hips",
+      [
+        0,
+        1.5,
+        0
+      ]
+    ],
+    "head": [
+      "spine",
+      [
+        0,
+        1.92,
+        0
+      ]
+    ],
+    "armL": [
+      "spine",
+      [
+        -0.34,
+        1.78,
+        0
+      ]
+    ],
+    "forearmL": [
+      "armL",
+      [
+        -0.48,
+        1.47,
+        0
+      ]
+    ],
+    "handL": [
+      "forearmL",
+      [
+        -0.58,
+        1.12,
+        0.04
+      ]
+    ],
+    "thighL": [
+      "hips",
+      [
+        -0.25,
+        1.06,
+        0
+      ]
+    ],
+    "shinL": [
+      "thighL",
+      [
+        -0.25,
+        0.72,
+        0
+      ]
+    ],
+    "footL": [
+      "shinL",
+      [
+        -0.25,
+        0.22,
+        0
+      ]
+    ],
+    "armR": [
+      "spine",
+      [
+        0.34,
+        1.78,
+        0
+      ]
+    ],
+    "forearmR": [
+      "armR",
+      [
+        0.48,
+        1.47,
+        0
+      ]
+    ],
+    "handR": [
+      "forearmR",
+      [
+        0.58,
+        1.12,
+        0.04
+      ]
+    ],
+    "thighR": [
+      "hips",
+      [
+        0.25,
+        1.06,
+        0
+      ]
+    ],
+    "shinR": [
+      "thighR",
+      [
+        0.25,
+        0.72,
+        0
+      ]
+    ],
+    "footR": [
+      "shinR",
+      [
+        0.25,
+        0.22,
+        0
+      ]
+    ]
+  },
+  "license": "User-provided Meshy asset; account-specific commercial/export rights not independently verified."
+}

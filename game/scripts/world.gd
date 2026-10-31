@@ -217,7 +217,7 @@ func gather_stand(target: Vector2, resource_kind: String="wood") -> Vector2:
 	var side: float=-1.0 if player.position.x<=target.x else 1.0
 	var reach:=47.0 if resource_kind=="stone" else 53.0
 	for x in [side*reach,-side*reach]:
-		for y in ([16,24,32] if resource_kind=="stone" else [0,16,32]):
+		for y in ([16,24,32] if resource_kind=="stone" else [12,20,32]):
 			var candidate:=target+Vector2(x,y)
 			var at:=player.transform;at.origin=candidate
 			if not player.test_move(at,Vector2.ZERO,null,0.08,true):return candidate

@@ -1,0 +1,44 @@
+[
+  {
+    "draw_calls": 238.0,
+    "frames": 120,
+    "gpu": "Android Emulator OpenGL ES Translator (NVIDIA GeForce RTX 5060/PCIe/SSE2)",
+    "mean_ms": 100.809516666667,
+    "mode": "3D",
+    "p95_ms": 135.82,
+    "physics_ms": 7.775,
+    "primitives": 13274.0,
+    "process_ms": 96.625,
+    "viewport": "(960.0, 540.0)",
+    "profile": "hidden",
+    "utc": "2026-10-31T13:25:50Z"
+  },
+  {
+    "draw_calls": 239.0,
+    "frames": 120,
+    "gpu": "Android Emulator OpenGL ES Translator (NVIDIA GeForce RTX 5060/PCIe/SSE2)",
+    "mean_ms": 106.090666666667,
+    "mode": "3D",
+    "p95_ms": 146.323,
+    "physics_ms": 23.464,
+    "primitives": 73274.0,
+    "process_ms": 131.545,
+    "viewport": "(960.0, 540.0)",
+    "profile": "static",
+    "utc": "2026-10-31T13:26:27Z"
+  },
+  {
+    "draw_calls": 239.0,
+    "frames": 600,
+    "gpu": "Android Emulator OpenGL ES Translator (NVIDIA GeForce RTX 5060/PCIe/SSE2)",
+    "mean_ms": 113.971078333333,
+    "mode": "3D",
+    "p95_ms": 156.316,
+    "physics_ms": 2.366,
+    "primitives": 73274.0,
+    "process_ms": 102.545,
+    "viewport": "(960.0, 540.0)",
+    "profile": "animated",
+    "utc": "2026-10-31T13:27:57Z"
+  }
+]

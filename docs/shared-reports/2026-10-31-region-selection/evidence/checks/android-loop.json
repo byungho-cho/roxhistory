@@ -1,0 +1,40 @@
+{
+  "version": "0.1.10-region",
+  "source_commit": "e66ad3e00dab33f7fea938dc2f71b3a7907baa0b",
+  "utc": "2026-10-31T21:24:21Z",
+  "elapsed_seconds": 27.91,
+  "resume_input_ready_wait_seconds": 0.71,
+  "environment": "Android15/API35 x86_64 emulator, RTX5060 host,1280x720; actual ADB touch input",
+  "checks": [
+    "onboarding sound choice persisted",
+    "legacy 2D setting ignored",
+    "fresh test session",
+    "wood once with repeat tap",
+    "stone once with repeat tap",
+    "build once costs 1+1",
+    "reward once grants10",
+    "force-stop/continue exact save",
+    "popup/back",
+    "home/resume center-to-edge joystick drag",
+    "normal save unchanged"
+  ],
+  "state": {
+    "built": true,
+    "depleted": {
+      "stone_2": 1,
+      "wood_3": 1
+    },
+    "intro_seen": true,
+    "position": [
+      779.390197753906,
+      1079.1513671875
+    ],
+    "region": "amsa",
+    "reward_claimed": true,
+    "schema": 1,
+    "stone": 0,
+    "tokens": 10,
+    "wood": 0
+  },
+  "failed": []
+}

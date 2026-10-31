@@ -99,12 +99,13 @@ func _process(_delta: float) -> void:
 	var now := Time.get_ticks_usec()
 	if perf_start > 0: perf_frames.append(float(now-perf_start)/1000.0)
 	perf_start = now
-	if perf_frames.size() == 660:
+	var sample_count:=120 if "--test-ui" in OS.get_cmdline_user_args() and "--profile-short" in OS.get_cmdline_user_args() else 600
+	if perf_frames.size() == sample_count+60:
 		var samples: Array[float] = perf_frames.slice(60)
 		samples.sort()
 		var total := 0.0
 		for value in samples: total += value
-		print("HYBRID_PERF "+JSON.stringify({"mode":"3D" if use_3d else "2D","frames":600,"mean_ms":total/600.0,"p95_ms":samples[570],"viewport":str(get_viewport_rect().size),"gpu":RenderingServer.get_video_adapter_name()}))
+		print("HYBRID_PERF "+JSON.stringify({"mode":"3D" if use_3d else "2D","frames":sample_count,"mean_ms":total/float(sample_count),"p95_ms":samples[int(sample_count*.95)],"viewport":str(get_viewport_rect().size),"gpu":RenderingServer.get_video_adapter_name(),"process_ms":Performance.get_monitor(Performance.TIME_PROCESS)*1000.0,"physics_ms":Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS)*1000.0,"draw_calls":Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME),"primitives":Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME)}))
 		perf_done = true
 
 func fit_camera() -> void:
