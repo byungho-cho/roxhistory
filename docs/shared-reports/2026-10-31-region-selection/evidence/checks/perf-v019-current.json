@@ -1,0 +1,10 @@
+{
+  "frames": 600,
+  "gpu": "Android Emulator OpenGL ES Translator (NVIDIA GeForce RTX 5060/PCIe/SSE2)",
+  "mean_ms": 114.713371666667,
+  "mode": "3D",
+  "p95_ms": 158.794,
+  "viewport": "(960.0, 540.0)",
+  "condition": "v0.1.9 contemporary baseline; no recording; same fixture1060,1030;1280x720;600 frames after60 warmup",
+  "utc": "2026-10-31T13:30:11Z"
+}
