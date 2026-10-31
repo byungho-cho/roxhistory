@@ -618,9 +618,10 @@
     "remaining": "실기기·직접 청취·고배율 아트 체감 승인·장시간 발열",
     "localChecks": 965,
     "apkUrl": "https://github.com/byungho-cho/roxhistory/releases/download/v0.1.8-scene/RoxHistory-0.1.8-scene-debug.apk",
-    "apkSha256": "ded2320f2be5621f0a6259f5eab3482aa99f9b79bda003282ac146af7521a1d9",
-    "androidLoopSeconds": 28.08,
+    "apkSha256": "dc2bd5a8a4ee966e87d377231ac98c9bbe94e0d8a8bdbebad0229322555121b0",
+    "androidLoopSeconds": 46.02,
     "physicalDeviceVerified": false,
-    "actualListeningVerified": false
+    "actualListeningVerified": false,
+    "userListeningFeedback": "이전 합성 강물은 잡음 평가로 반려; 실제 녹음 A로 교체, 사용자 현재 음량 유지 동의 / 출력 장치 미확인"
   }
 }

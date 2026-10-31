@@ -1,6 +1,6 @@
 {
-  "utc": "2026-10-31T05:30:19Z",
-  "elapsed_seconds": 28.08,
+  "utc": "2026-10-31T06:36:06Z",
+  "elapsed_seconds": 46.02,
   "environment": "Android 15 API35 x86_64 emulator, host RTX5060, 1280x720",
   "input": "ADB touchscreen gestures, no teleport or save edits; existing --test-ui isolated save path, 3D-only renderer; no comparison menu; focus-only notifications ignored by test mode, Android PAUSED/RESUMED remain active",
   "state": {
@@ -11,8 +11,8 @@
     },
     "intro_seen": true,
     "position": [
-      783.450134277344,
-      1093.45581054688
+      800.917907714844,
+      1074.85070800781
     ],
     "region": "amsa",
     "reward_claimed": true,
@@ -30,6 +30,6 @@
     "quest popup/back",
     "home/resume movement"
   ],
-  "final_source_commit": "25853f4096c6db686ee19e0b4beadcd41a76f2bb",
-  "final_apk_sha256": "ded2320f2be5621f0a6259f5eab3482aa99f9b79bda003282ac146af7521a1d9"
+  "final_source_commit": "a432dd023466b7d0833e4f61d2f239e28e39fef8",
+  "final_apk_sha256": "dc2bd5a8a4ee966e87d377231ac98c9bbe94e0d8a8bdbebad0229322555121b0"
 }

@@ -6,7 +6,7 @@
 
 - 시작 main: `4e4ea429c1315106d7705a484a74292d06247c76`. 별도 브랜치 `feat/visual-refactor-v018`.
 - 아트/접점 변경: `c5e15a662f3f785863946b04447d1c193477b44c`.
-- 최종 게임 소스: `25853f4096c6db686ee19e0b4beadcd41a76f2bb`. 게임 트리 `3677793eea88488ca6732b2a6f8e70bfae1f9d92`. 이후 보고서 커밋은 게임 내용이 동일하다.
+- 최종 게임 소스: `a432dd023466b7d0833e4f61d2f239e28e39fef8`. 게임 트리 `a501388a648bc51eaa8420003ac6bc9c7051ba1f`. 이후 보고서 커밋은 게임 내용이 동일하다.
 - [PR #18 · 최종 변경/병합 기록](https://github.com/byungho-cho/roxhistory/pull/18), [최종 HEAD 원격 체크](https://github.com/byungho-cho/roxhistory/pull/18/checks). 병합 커밋과 최종 CI 실행 링크는 PR 본문/병합 기록에 보존한다.
 
 ## 같은 구도의 전후
@@ -29,13 +29,13 @@ Android 15/API35 x86_64 에뮬레이터, 1280×720, 저장 위치 `(1060,1030)`,
 5. **UI:** 헤더 216×48, 행동 버튼 96×64, 뒤로가기 56×56의 논리 크기로 정리했다. 목표 영역·아이콘 강도를 낮추고 완료 안내는 2초 후 줄어든 요약으로 남긴다. 연속 건설 확인 입력에서 작업 중 안내가 자원 접근 안내로 덮이던 문제도 수정했다.
 6. **채집:** 낮은 목재에 맞춰 손목·몸통 자세와 준비 거리를 조정했다. 도구 변환을 포함한 실제 접촉점에서 대상 반응·재질별 파편·타격음이 발생한다. 성공한 저장/지급 뒤에만 자원 아이콘이 HUD로 이동한다. 파편 수와 크기, 중복 완료 문구를 줄였다.
 
-[중간 실행 캡처](evidence/screenshots/representative-interim.png)는 최종 배치 이전 기록이다. 최종 결과는 위 Android 비교가 기준이다. [확대 정면](evidence/screenshots/play-front.png) · [측면](evidence/screenshots/play-side.png) · [후면](evidence/screenshots/play-back.png)은 네이티브 Godot 외형 검토 자료다. 네이티브 외형 캡처는 아트 커밋 `c5e15a6`에서 촬영했고, 이후 변경은 진행 중 안내 문구 우선순위뿐이다.
+[중간 실행 캡처](evidence/screenshots/representative-interim.png)는 최종 배치 이전 기록이다. 최종 결과는 위 Android 비교가 기준이다. [확대 정면](evidence/screenshots/play-front.png) · [측면](evidence/screenshots/play-side.png) · [후면](evidence/screenshots/play-back.png)은 네이티브 Godot 외형 검토 자료다. 네이티브 외형 캡처는 아트 커밋 `c5e15a6`에서 촬영했고, 이후 변경은 진행 중 안내와 음원/믹스이며 외형은 같다.
 
 ## 실제 플레이·가림·화면 비율
 
-[최종 APK 전체 플레이 영상](evidence/clips/android-play-loop.mp4): 약 4~7초 나무, 9~12초 돌, 18~22초 건설, 22~24초 보상, 이후 종료·이어하기·복귀. 나무/돌 각 1개, 각 1회, 채집 1.2초·건설 2초 유지. 접근 이동 시간은 작업 시간과 별도다. 반복 입력에도 지급/건설/보상 중복이 없었다.
+[최종 APK 전체 플레이 영상](evidence/clips/android-play-loop.mp4): 새 게임 후 나무·돌, 건설, 보상, 종료·이어하기·복귀 순서. 이동 중 위치를 읽기 위한 검사 전용 일시정지 메뉴가 포함되어 있다. 나무/돌 각 1개, 각 1회, 채집 1.2초·건설 2초 유지. 접근 이동 시간은 작업 시간과 별도다. 반복 입력에도 지급/건설/보상 중복이 없었다.
 
-자동 터치 시나리오의 새 게임 메뉴부터 보상까지 **28.08초**. 메뉴·짧은 녹화 준비 대기를 포함한 스크립트 실행 시간이며 사람의 첫 플레이 시간/권장 플레이 시간은 아니다. 완료 뒤 나무0·돌0·씨앗10·움집1을 저장하고 재진입 상태가 일치했다.
+자동 터치 시나리오의 새 게임 메뉴부터 보상까지 **46.02초**. 메뉴·짧은 녹화 준비 대기를 포함한 스크립트 실행 시간이며 사람의 첫 플레이 시간/권장 플레이 시간은 아니다. 완료 뒤 나무0·돌0·씨앗10·움집1을 저장하고 재진입 상태가 일치했다.
 
 [실제 두 손가락·8방향·복귀 영상](evidence/clips/android-controls.mp4) · [나무 앞/충돌/뒤/복귀 영상](evidence/clips/android-occlusion.mp4). 가림 검사는 격리 저장의 시작점만 `(1700,1150)`으로 준비하고 이후 실제 Android 터치로 이동했다. 나무 앞에서 막힌 뒤 옆으로 돌아 잎 뒤에 가려지고 다시 앞으로 나오는 것을 캡처로 확인했다. 중간 일시정지 팝업은 저장 좌표 확인용이다.
 
@@ -44,11 +44,11 @@ Android 15/API35 x86_64 에뮬레이터, 1280×720, 저장 위치 `(1060,1030)`,
 | ![커버](evidence/screenshots/android-cover.png) | ![펼침](evidence/screenshots/android-unfolded.png) |
 | ![커버 확대](evidence/screenshots/android-cover-zoom.png) | ![펼침 확대](evidence/screenshots/android-unfolded-zoom.png) |
 
-`wm size`로 896×370 / 816×616 가로 화면을 모사했다. 실제 폴드 기기의 접힘·힌지·센서·디스플레이 전환 시험은 아니다. HUD와 버튼의 잘림/겹침은 발견하지 않았다. 손가락 중심을 유지한 커버 확대에서 하단 월드 자원 라벨 일부가 화면 밖으로 나가는 경우는 남아 있다.
+`wm size`로 896×370 / 816×616 가로 화면을 모사했다. 실제 폴드 기기의 접힘·힌지·센서·디스플레이 전환 시험은 아니다. 화면 변경3초 시점에는 이전 프레임이 잘린 캡처가 있었고,10초 안정 후 두 비율 모두 HUD·버튼이 전체 표시되는 것을 확인했다. [초기 캡처](evidence/screenshots/ratio-early-cropped.png). 이 전환 지연과 실제 폴드 기기 동작은 후속 확인이 필요하다. 손가락 중심을 유지한 커버 확대에서 하단 월드 자원 라벨 일부가 화면 밖으로 나가는 경우는 남아 있다.
 
 ## 검증과 성능
 
-기준 소스 `25853f4096c6db686ee19e0b4beadcd41a76f2bb` / 최종 APK SHA-256 `ded2320f2be5621f0a6259f5eab3482aa99f9b79bda003282ac146af7521a1d9`. 로컬 검사는 2026-10-31T14:26:42.100134+09:00 ~ 2026-10-31T14:28:10.491606+09:00. 자동 통과와 시각·청취 판단은 구분한다.
+기준 소스 `a432dd023466b7d0833e4f61d2f239e28e39fef8` / 최종 APK SHA-256 `dc2bd5a8a4ee966e87d377231ac98c9bbe94e0d8a8bdbebad0229322555121b0`. 로컬 검사는 2026-10-31T15:50:04.029124+09:00 ~ 2026-10-31T15:51:57.294267+09:00. 자동 통과와 시각·청취 판단은 구분한다.
 
 | 로컬 검사 | 건수 | 결과 |
 | --- | ---: | --- |
@@ -73,18 +73,20 @@ Android 15/API35 x86_64 에뮬레이터, 1280×720, 저장 위치 `(1060,1030)`,
 
 Android 최종 APK: 업데이트 설치, 새 게임/채집/건설/보상/재진입, 실제 두 포인터 핀치, 조이스틱/UI 터치 분리, 이동·임무 팝업·Back·Home 취소, 복귀 후 입력 정리, 과거 비교 설정, 두 화면 비율, 음소거/복귀 출력 확인. [각 실행 시각·결과 JSON](evidence/checks/). 실기기는 미검증이다.
 
+재검증 중 Android SystemUI의 edge-swipe 응답 없음과 후속 ADB 입력 실패가 있어 같은 임시 AVD를 재부팅했다. 재부팅 직후에는 고정 대기보다 로딩이 길어 실제 제목 화면 준비 확인을 추가했다. 검사 조이스틱 중심도 현재 UI의 x144에 맞췄다(이전 x184는 오른쪽으로 이동시켜 채집 버튼이 활성화되는 준비 오류). 시작 저장·검사 조건·판정은 유지했다. 축소된 뒤로가기 버튼과 화면 비율 복원 뒤 달라진 안전 영역도 실제 캡처에 맞춰 검사 좌표를 보정했다. 고정 시간 이동 대신 실제 조이스틱 이동 후 위치를 확인하며, 취소는3.5초 관찰하고 복귀 채집은 저장 완료까지 제한 시간 내 확인했다. [실행에 사용한 보조 스크립트](evidence/checks/harness/README.md). [실패 지점과 재검증 기록](evidence/checks/android-systemui-retry.json).
+
 | 동일 조건 성능 | 평균 프레임 간격 | P95 |
 | --- | ---: | ---: |
-| v0.1.7 | 25.01 ms | 32.25 ms |
-| v0.1.8 | 25.05 ms | 32.46 ms |
+| v0.1.7 | 80.26 ms | 90.82 ms |
+| v0.1.8 | 74.19 ms | 87.47 ms |
 
-RTX5060 호스트의 Android15/API35 x86_64, 물리1280×720/논리960×540, 대표 위치·기본 배율·3D 대기. 녹화와 다른 Godot 실행 없이 최초60프레임 제외 후600프레임, 버전별 1회. 통계적 개선이나 실기기 60fps 보장으로 해석하지 않는다. [원본 측정 조건·시각·APK 해시](evidence/checks/android-performance.json).
+RTX5060 호스트의 Android15/API35 x86_64, 물리1280×720/논리960×540, 대표 위치·기본 배율·3D 대기. 녹화와 다른 Godot 실행 없이 최초60프레임 제외 후600프레임, 버전별 1회. 통계적 개선이나 실기기 60fps 보장으로 해석하지 않는다. 초기 검증 세션에서는 두 버전 모두 약25ms였으나, 재부팅 후 최종 세션은 두 버전 모두 크게 느려졌다. 환경 민감도를 분리 검증해야 하며 현재 성능을 완성 수준으로 판정하지 않는다. [초기 세션 기록](https://github.com/byungho-cho/roxhistory/blob/84d326b33122ebee4896cc728fa60267f65b40fd/docs/shared-reports/2026-10-31-visual-refactor/evidence/checks/android-performance.json). [원본 측정 조건·시각·APK 해시](evidence/checks/android-performance.json).
 
 ## 강물과 소리
 
-강물은 v0.1.7의 조용한 흐름 음원을 유지했다. 이번에는 음원을 다시 교체하지 않았다. 반복 경계 수치·출력·음소거·중단/복귀를 확인했지만 **개발 환경에서 실제 스피커/헤드폰으로 청취했다고 보고하지 않는다**. 청감 승인은 팀장·사용자 검토 대기다.
+사용자 청취에서 이전 합성 강물이 잡음처럼 들린다는 피드백을 받았다. [Garuda1982의 실제 강물 녹음](https://freesound.org/people/Garuda1982/sounds/707576/)을 CC0 조건으로 편집해 교체했다. 24초 반복·2초 연결 혼합, 바람 배경음 10dB 감소, 사용자 추가 요청으로 강물 3dB 감소를 적용했다. 실제 녹음 A에 추가 감쇠를 적용했고 사용자가 현재 음량 유지에 동의했다. 출력 장치는 확인되지 않았으며 전체 아트 품질 승인을 뜻하지 않는다. [원본·사용 조건·편집 방법](../../../assets/audio-sources/README.md). 반복 경계 수치·출력·음소거·중단/복귀를 확인했지만 **개발 환경에서 실제 스피커/헤드폰으로 청취했다고 보고하지 않는다**. 사용자는 현재 음량 유지에 동의했다. 청취 장치와 실기기 음향은 확인되지 않았다.
 
-[최종 APK의 강물 출력 WAV](evidence/audio/river-output.wav), 위 플레이 영상의 채집·건설·UI 소리. 출력 경로는 에뮬레이터 Android playback capture → scrcpy PCM, 미디어 볼륨15/15. 전경 -47.39 dBFS / 복귀 -47.79 dBFS, 백그라운드·음소거·음소거 재실행은 디지털 무음. 복귀 후 중복 증폭은 없었다. 이 수치를 잔잔하다는 청감 평가로 대체하지 않는다.
+[이전 사용자 반려 녹음](evidence/audio/river-before-rejected.wav) · [최종 APK의 강물 출력 WAV](evidence/audio/river-output.wav) · [반복 경계 포함 28초 녹음](evidence/audio/river-loop-output.mp3), 위 플레이 영상의 채집·건설·UI 소리. 출력 경로는 에뮬레이터 Android playback capture → scrcpy PCM, 미디어 볼륨15/15. 전경 -50.56 dBFS / 복귀 -51.2 dBFS, 백그라운드·음소거·음소거 재실행은 디지털 무음. 복귀 후 중복 증폭은 없었다. 이 수치를 잔잔하다는 청감 평가로 대체하지 않는다.
 
 ## 남은 품질 과제와 자산
 
@@ -98,10 +100,8 @@ RTX5060 호스트의 Android15/API35 x86_64, 물리1280×720/논리960×540, 대
 
 [로드맵](../../character-quality-roadmap.md) · [진행 JSON](../../quality-progress.json) · [FigJam CQ1/CQ5](https://www.figma.com/board/60HqJ7ggIuvs9OLva8ZIx2?node-id=23-74). PDF는 새로 만들지 않았다.
 
-[증거 파일 목록·SHA-256](evidence/manifest.json)은 Git 저장소에 정규화된 파일 바이트 기준이다. 이미지·영상·음원 원본 바이트를 보존했다.
-
 ## APK 전달
 
-서명된 디버그 APK **한 파일**, `com.roxhistory.demo`, v0.1.8-scene/code9, **95,572,641 bytes (91.15 MiB)**. SHA-256 `ded2320f2be5621f0a6259f5eab3482aa99f9b79bda003282ac146af7521a1d9`. 기존 인증서 SHA-256 `cf65aeecb4e399ba9e2e6b9fa947f34f8c31bd75c8e3b686ad29d8431bb1695f`와 일치하며 v0.1.7 위 업데이트 설치와 일반 저장 보존을 확인했다. [빌드/서명 정보](evidence/checks/build-info.json).
+서명된 디버그 APK **한 파일**, `com.roxhistory.demo`, v0.1.8-scene/code9, **95,785,633 bytes (91.35 MiB)**. SHA-256 `dc2bd5a8a4ee966e87d377231ac98c9bbe94e0d8a8bdbebad0229322555121b0`. 기존 인증서 SHA-256 `cf65aeecb4e399ba9e2e6b9fa947f34f8c31bd75c8e3b686ad29d8431bb1695f`와 일치하며 v0.1.7 위 업데이트 설치와 일반 저장 보존을 확인했다. [빌드/서명 정보](evidence/checks/build-info.json).
 
 [APK 단일 파일 직접 다운로드](https://github.com/byungho-cho/roxhistory/releases/download/v0.1.8-scene/RoxHistory-0.1.8-scene-debug.apk)

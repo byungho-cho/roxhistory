@@ -1,22 +1,22 @@
 {
-  "source_commit": "25853f4096c6db686ee19e0b4beadcd41a76f2bb",
-  "game_tree": "3677793eea88488ca6732b2a6f8e70bfae1f9d92",
+  "source_commit": "a432dd023466b7d0833e4f61d2f239e28e39fef8",
+  "game_tree": "a501388a648bc51eaa8420003ac6bc9c7051ba1f",
   "engine": "Godot4.5.1 Windows native, RTX5060, fixed60 test frames",
-  "kst_start_log": "2026-10-31T14:26:42.100134+09:00",
-  "kst_end_log": "2026-10-31T14:28:10.491606+09:00",
+  "kst_start_log": "2026-10-31T15:50:04.029124+09:00",
+  "kst_end_log": "2026-10-31T15:51:57.294267+09:00",
   "suites": [
     {
       "suite": "state_tests",
       "checks": 345,
       "engine": "4.5.1-stable (official)",
       "failed": [],
-      "utc": "2026-10-31T05:26:42"
+      "utc": "2026-10-31T06:50:04"
     },
     {
       "suite": "environment_tests",
       "checks": 17,
       "failed": [],
-      "utc": "2026-10-31T05:26:45"
+      "utc": "2026-10-31T06:50:08"
     },
     {
       "suite": "ui_smoke",
@@ -54,7 +54,7 @@
       "checks": 13,
       "failed": [],
       "runtime": "Native Godot physics and visual review; not Android",
-      "utc": "2026-10-31T05:27:04"
+      "utc": "2026-10-31T06:50:40"
     },
     {
       "suite": "character_tests",
@@ -66,27 +66,27 @@
       "suite": "hybrid_tests",
       "checks": 30,
       "failed": [],
-      "utc": "2026-10-31T05:27:15"
+      "utc": "2026-10-31T06:50:56"
     },
     {
       "suite": "hybrid_occlusion",
       "checks": 13,
       "failed": [],
       "runtime": "Native Godot physics and visual review; not Android",
-      "utc": "2026-10-31T05:27:25"
+      "utc": "2026-10-31T06:51:07"
     },
     {
       "suite": "polish_tests",
       "checks": 62,
       "failed": [],
-      "utc": "2026-10-31T05:27:28"
+      "utc": "2026-10-31T06:51:10"
     },
     {
       "suite": "interaction_tests",
       "checks": 27,
       "failed": [],
       "runtime": "Native Godot engine timers at fixed 60fps; explicit test positions, not Android wall-time play",
-      "utc": "2026-10-31T05:27:36"
+      "utc": "2026-10-31T06:51:19"
     },
     {
       "suite": "presentation_tests",
@@ -94,20 +94,20 @@
       "checks": 53,
       "failed": [],
       "runtime": "Native render at fixed60 engine time; audio lifecycle/state checks, not a listening or Android test",
-      "utc": "2026-10-31T05:27:45"
+      "utc": "2026-10-31T06:51:29"
     },
     {
       "suite": "hero_tests",
       "checks": 51,
       "failed": [],
-      "utc": "2026-10-31T05:27:48"
+      "utc": "2026-10-31T06:51:32"
     },
     {
       "suite": "play_experience_tests",
       "checks": 45,
       "failed": [],
       "runtime": "Native Godot synthetic multi-touch; Android is tested separately",
-      "utc": "2026-10-31T05:27:52"
+      "utc": "2026-10-31T06:51:38"
     },
     {
       "suite": "gather_contact_tests",
@@ -272,7 +272,7 @@
       "checks": 160,
       "failed": [],
       "runtime": "Native Godot real collision movement; 8 approaches at both quest resources and left/right at every other resource; test state reset between cases",
-      "utc": "2026-10-31T05:28:10"
+      "utc": "2026-10-31T06:51:57"
     }
   ],
   "checks": 965,

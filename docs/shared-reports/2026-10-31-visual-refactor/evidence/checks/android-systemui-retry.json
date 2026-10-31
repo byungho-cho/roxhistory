@@ -1,0 +1,18 @@
+{
+  "utc": "2026-10-31T06:04:39Z",
+  "failure": "Android SystemUI edge-swipe gesture monitor ANR; subsequent adb input tap exited20",
+  "events": [
+    "10-31 06:04:39.289   600 21555 I am_anr  : [0,834,com.android.systemui,550026765,Input dispatching timed out ([Gesture Monitor] edge-swipe (server) is not responding. Waited 5011ms for MotionEvent(deviceId=-1, eventTime=25074812000000, source=TOUCHSCREEN, displayId=0, action=MOVE, actionButton=0x00000000, flags=0x00000000, metaState=0x00000000, buttonState=0x00000000, classification=NONE, edgeFlags=0x00000000, xPrecision=1.0, yPrecision=1.0, xCursorPosition=nan, yCursorPosition=nan, pointers=[0: (435.0, 807.6), 1: (435.0, 1232.4)]), policyFlags=0x6b000000).]"
+  ],
+  "game_crash_observed": false,
+  "action": "Reboot same read-only temporary AVD; retain APK/data, rerun unchanged tests; normal save checked before and after.",
+  "subsequent_harness_findings": [
+    "After guest reboot, cold shader loading exceeded the fixed delay; title-ready event polling added before first gameplay input.",
+    "Old joystick x184 was40 pixels right of actual x144; the eight-direction script and ownership case moved toward stone, making the assumed-disabled gather button legitimately enabled. Corrected joystick center, unchanged fixture/conditions/assertions.",
+    "Back button shrank to56 logical pixels; its actual center is x68, not the old x120. Updated all test taps.",
+    "Timed movement was sensitive to emulator scheduling. The full loop now uses actual joystick movement with pause-menu saved-position checkpoints; no teleport or save editing.",
+    "A recovery save read at a fixed delay preceded completion; changed to one action plus bounded completion observation, with longer negative cancellation observations. Configured game durations remain1.2/2 seconds."
+  ],
+  "final_result": "Final APK core loop, controls, interruption/recovery, audio, settled aspect ratios, performance comparison and occlusion verified; full native965 passed.",
+  "final_source_commit": "a432dd023466b7d0833e4f61d2f239e28e39fef8"
+}

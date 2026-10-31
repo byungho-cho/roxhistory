@@ -13,3 +13,5 @@ User listening feedback on 2026-10-31 rejected the synthetic river as noise. Thi
 The A/B audition also included BurghRecords, [Gentle Stream Natural Stream Sound](https://freesound.org/people/BurghRecords/sounds/446019/), CC0. It is not included in the game. A was selected as the initial implementation assumption pending user preference, not represented as user approval.
 
 Follow-up user request: make the water slightly calmer. River playback is reduced by 3dB (distance range -30..-20dB); Foley/UI gains and source recording are unchanged.
+
+The user subsequently agreed to keep the 3dB-lower river level. Their physical output device was not specified; this is not approval of every visual-quality item.

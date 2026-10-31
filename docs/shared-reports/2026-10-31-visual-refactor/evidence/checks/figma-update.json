@@ -18,6 +18,7 @@
     "CQ6"
   ],
   "font": "Noto Sans KR Regular",
-  "visual_review": "Korean rendered and cards fit without overlap; final section screenshot inspected",
-  "utc": "2026-10-31T05:40:13.640128+00:00"
+  "visual_review": "Korean CQ1 revised card screenshot inspected; fits without overlap; report/PR links restored",
+  "utc": "2026-10-31T06:57:19.557092+00:00",
+  "audio_revision": "Real recording, -3dB follow-up accepted by user; physical output device unspecified"
 }

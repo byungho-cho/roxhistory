@@ -65,8 +65,8 @@
     {
       "asset": "river.wav",
       "peak_dbfs": -10.46,
-      "rms_dbfs": -23.74,
-      "loop_boundary_delta": 900
+      "rms_dbfs": -24.6,
+      "loop_boundary_delta": 120
     },
     {
       "asset": "wind.wav",

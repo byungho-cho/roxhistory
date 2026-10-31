@@ -2,9 +2,9 @@ name: Android playable demo
 on:
   push:
     branches: ["demo/**"]
-    paths: [".gitattributes", "game/**", "scripts/verify-demo-assets.mjs", ".github/workflows/android-demo.yml"]
+    paths: [".gitattributes", "game/**", "scripts/verify-demo-assets.mjs", "scripts/*audio*.py", "assets/audio-sources/**", ".github/workflows/android-demo.yml"]
   pull_request:
-    paths: [".gitattributes", "game/**", "scripts/verify-demo-assets.mjs", ".github/workflows/android-demo.yml"]
+    paths: [".gitattributes", "game/**", "scripts/verify-demo-assets.mjs", "scripts/*audio*.py", "assets/audio-sources/**", ".github/workflows/android-demo.yml"]
   workflow_dispatch:
 permissions:
   contents: read
@@ -20,7 +20,7 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - name: Verify bundled design assets
         run: node scripts/verify-demo-assets.mjs
-      - name: Verify original audio assets
+      - name: Verify audio assets and provenance
         run: python3 scripts/verify_demo_audio.py
       - uses: actions/setup-java@v4
         with:
@@ -88,20 +88,20 @@ jobs:
           export GODOT_ANDROID_KEYSTORE_DEBUG_PATH="$RUNNER_TEMP/debug.keystore"
           export GODOT_ANDROID_KEYSTORE_DEBUG_USER=androiddebugkey
           export GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD=android
-          godot --headless --path game --export-debug Android "$PWD/build/RoxHistory-0.1.7-play-debug.apk" 2>&1 | tee build/export.log
-          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose build/RoxHistory-0.1.7-play-debug.apk | tee build/signature.txt
-          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging build/RoxHistory-0.1.7-play-debug.apk > build/package.txt
-          sha256sum build/RoxHistory-0.1.7-play-debug.apk > build/SHA256SUMS
+          godot --headless --path game --export-debug Android "$PWD/build/RoxHistory-0.1.8-scene-debug.apk" 2>&1 | tee build/export.log
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose build/RoxHistory-0.1.8-scene-debug.apk | tee build/signature.txt
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging build/RoxHistory-0.1.8-scene-debug.apk > build/package.txt
+          sha256sum build/RoxHistory-0.1.8-scene-debug.apk > build/SHA256SUMS
           git rev-parse HEAD > build/SOURCE_COMMIT
       - name: Complete source package
         if: always()
         run: |
           mkdir -p build
-          git archive HEAD -o build/RoxHistory-0.1.7-play-source.zip
+          git archive HEAD -o build/RoxHistory-0.1.8-scene-source.zip
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: RoxHistory-0.1.7-play-validation
+          name: RoxHistory-0.1.8-scene-validation
           path: |
             build/
             game/reports/
@@ -111,6 +111,6 @@ jobs:
           retention-days: 30
       - uses: actions/upload-artifact@v4
         with:
-          name: RoxHistory-0.1.7-play-APK
-          path: build/RoxHistory-0.1.7-play-debug.apk
+          name: RoxHistory-0.1.8-scene-APK
+          path: build/RoxHistory-0.1.8-scene-debug.apk
           retention-days: 30
