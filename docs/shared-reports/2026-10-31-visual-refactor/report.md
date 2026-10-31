@@ -98,6 +98,8 @@ RTX5060 호스트의 Android15/API35 x86_64, 물리1280×720/논리960×540, 대
 
 [로드맵](../../character-quality-roadmap.md) · [진행 JSON](../../quality-progress.json) · [FigJam CQ1/CQ5](https://www.figma.com/board/60HqJ7ggIuvs9OLva8ZIx2?node-id=23-74). PDF는 새로 만들지 않았다.
 
+[증거 파일 목록·SHA-256](evidence/manifest.json)은 Git 저장소에 정규화된 파일 바이트 기준이다. 이미지·영상·음원 원본 바이트를 보존했다.
+
 ## APK 전달
 
 서명된 디버그 APK **한 파일**, `com.roxhistory.demo`, v0.1.8-scene/code9, **95,572,641 bytes (91.15 MiB)**. SHA-256 `ded2320f2be5621f0a6259f5eab3482aa99f9b79bda003282ac146af7521a1d9`. 기존 인증서 SHA-256 `cf65aeecb4e399ba9e2e6b9fa947f34f8c31bd75c8e3b686ad29d8431bb1695f`와 일치하며 v0.1.7 위 업데이트 설치와 일반 저장 보존을 확인했다. [빌드/서명 정보](evidence/checks/build-info.json).
