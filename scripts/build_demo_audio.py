@@ -1,4 +1,4 @@
-"""Original deterministic synthesized Foley and river/wind beds; no external audio.
+"""Original deterministic Foley/wind plus a CC0 recorded river loop.
 Run with Python + numpy. WAV files are source assets, not generated at runtime.
 """
 from pathlib import Path
@@ -55,7 +55,7 @@ for name, notes, gap in [('gain',[660,880],.07),('complete',[330,440,550,660],.1
 
 # Integer-period modulation + periodic FFT noise avoids loop seams.
 t=np.arange(SR*12)/SR
-# Preserve the established wind/Foley random sequence; river has its own seed.
+# Preserve the established wind/Foley random sequence; river uses recorded PCM.
 RNG.normal(0,1,(4,len(t)))
 from river_audio import render_river
 write('river',render_river(SR),.30,True)
@@ -63,5 +63,7 @@ wind=[]
 for ch in range(2):
     wind.append(noise(len(t),80,1500)*(.5+.25*np.sin(2*np.pi*t/12+ch*.4))+.1*noise(len(t),1200,4800))
 write('wind',np.stack(wind,axis=1),.28,True)
-(OUT/'manifest.json').write_text(json.dumps({'author':'Original synthesis for RoxHistory; no third-party recordings or music','sample_rate':SR,'assets':manifest},indent=2),encoding='utf-8',newline='\n')
+river_source=json.loads((ROOT/'assets/audio-sources/provenance.json').read_text(encoding='utf-8'))
+next(item for item in manifest if item['file']=='river.wav')['source']=river_source
+(OUT/'manifest.json').write_text(json.dumps({'author':'Original Foley/wind synthesis; river: Garuda1982, gentle river flow, CC0-1.0','sample_rate':SR,'assets':manifest},indent=2),encoding='utf-8',newline='\n')
 print(json.dumps(manifest,indent=2))

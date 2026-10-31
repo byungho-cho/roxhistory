@@ -72,5 +72,5 @@ func cue(key: String) -> void:
 func _process(delta: float) -> void:
 	if river and river.playing:
 		var duck := -8.0 if ducked else 0.0
-		river.volume_db = move_toward(river.volume_db,lerpf(-29,-19,river_proximity)+duck,delta*22)
-		wind.volume_db = move_toward(wind.volume_db,-29+duck,delta*22)
+		river.volume_db = move_toward(river.volume_db,lerpf(-27,-17,river_proximity)+duck,delta*22)
+		wind.volume_db = move_toward(wind.volume_db,-39+duck,delta*22)

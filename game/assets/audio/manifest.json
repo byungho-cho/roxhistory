@@ -1,5 +1,5 @@
 {
-  "author": "Original synthesis for RoxHistory; no third-party recordings or music",
+  "author": "Original Foley/wind synthesis; river: Garuda1982, gentle river flow, CC0-1.0",
   "sample_rate": 22050,
   "assets": [
     {
@@ -84,11 +84,31 @@
     },
     {
       "file": "river.wav",
-      "seconds": 12.0,
+      "seconds": 24.0,
       "peak_dbfs": -10.46,
-      "rms_dbfs": -23.74,
+      "rms_dbfs": -24.6,
       "loop": true,
-      "sha256": "d9f43cd19d1ae843f910cc721211bfbccd48e3039772be32c29bcd1032b6dc70"
+      "sha256": "0125cb1cfb80aa003c88a4ede8a0d656e461e027d3533f732f1337cd62935fbf",
+      "source": {
+        "title": "gentle river flow",
+        "author": "Garuda1982",
+        "page": "https://freesound.org/people/Garuda1982/sounds/707576/",
+        "license": "CC0-1.0",
+        "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+        "download": "https://cdn.freesound.org/previews/707/707576_2061858-hq.mp3",
+        "recorded_location": "Mittelherwigsdorf, Germany; generic water ambience, not a Korean-site recording",
+        "edits": "Source10..36s; highpass90Hz/lowpass4500Hz, 22050Hz stereo PCM16; 2s equal-power circular crossfade; 24s loop, peak0.30.",
+        "inputs": [
+          {
+            "path": "assets/audio-sources/gentle-river-flow-source.mp3",
+            "sha256": "b213df0c228895a3c094807d9fd5eca0764dbc056b1629f9fcdbddf4a2a34da8"
+          },
+          {
+            "path": "assets/audio-sources/gentle-river-flow-filtered.wav",
+            "sha256": "57c3318f887f73685b0125a5fc9eb3fb15a4c60c63799d5aa3c5ea55fbb5a319"
+          }
+        ]
+      }
     },
     {
       "file": "wind.wav",
