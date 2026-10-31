@@ -416,8 +416,9 @@ func _process(delta: float) -> void:
 			task_bar.value = (1.0-task_remaining/task_total)*100
 			if task_remaining <= 0: finish_task()
 	var near := world.nearest()
-	gather_button.hint_text="자원 가까이 이동해 주세요" if near.is_empty() else "작업을 마친 뒤 사용할 수 있어요"
-	build_button.hint_text="완성된 보금자리입니다" if model.state.built else ("나무 1개와 돌 1개가 필요해요" if not model.can_build() else "금빛 건설 터 안으로 이동해 주세요")
+	var working_hint := "채집 중… 이동하면 멈춥니다" if task=="gather" else "보금자리 건설 중…"
+	gather_button.hint_text=working_hint if task!="" else ("자원 가까이 이동해 주세요" if near.is_empty() else "작업을 마친 뒤 사용할 수 있어요")
+	build_button.hint_text=working_hint if task!="" else ("완성된 보금자리입니다" if model.state.built else ("나무 1개와 돌 1개가 필요해요" if not model.can_build() else "금빛 건설 터 안으로 이동해 주세요"))
 	gather_button.set_working(task=="gather");build_button.set_working(task=="build")
 	var build_ready: bool=model.can_build() and world.near_site()
 	if build_button.get_meta("ready",false)!=build_ready:
