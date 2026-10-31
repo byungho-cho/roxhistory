@@ -1,10 +1,11 @@
-# 현재 개발 상태 — P4 UI·카메라·소리
+# 현재 개발 상태 — v0.1.7 플레이 체감 고도화
 
-2D 강변 배경과 3D 캐릭터를 유지하며 UI 가독성, 채집·건설 효과음, 환경음과 카메라 추적을 보완했습니다. P1–P4 개발 검증을 마쳤으며 다음은 P5 통합 시연·실기기·최종 청감 검토입니다. 전체 베타 완료를 뜻하지 않습니다.
+2D 강변 배경을 유지하고 3D 주인공 외형, 핀치 확대, 목표 구역, 초상화·자원 UI, 채집 접점·획득 연출, 강물 소리를 보완했습니다. 개발·실행 검증과 팀장·사용자의 체감 품질 승인은 구분합니다. 주민·동물은 후속 단계이며 전체 베타 완료가 아닙니다.
 
-- [P4 변경·실행 영상·검증 범위](docs/stage4-review.md)
-- [최신 진행 현황](docs/quality-progress.md) · [품질 로드맵](docs/quality-roadmap-v0.1.md)
-- [APK 릴리스](https://github.com/byungho-cho/roxhistory/releases)
+- [전후 화면·실행 영상·검증 보고서](docs/shared-reports/2026-10-31-play-experience/report.md)
+- [v0.1.7 서명된 APK 한 파일](https://github.com/byungho-cho/roxhistory/releases/download/v0.1.7-play/RoxHistory-0.1.7-play-debug.apk)
+- [최신 진행 현황](docs/quality-progress.md) · [캐릭터 중심 품질 로드맵](docs/character-quality-roadmap.md)
+- [이전 P4 기록](docs/stage4-review.md)
 
 아래는 기존 기록입니다. 일부 과거 한글 텍스트의 인코딩 손상이 남아 있습니다.
 

@@ -1,0 +1,84 @@
+{
+  "source_commit": "6f1a99ef5ba5d35272e184cf10d194fdfe429cec",
+  "run_id": 41159639919,
+  "run_number": 28,
+  "url": "https://github.com/byungho-cho/roxhistory/actions/runs/41159639919",
+  "status": "success",
+  "started_utc": "2026-10-31T02:21:39.2187565Z",
+  "ended_utc": "2026-10-31T02:33:32.6595952Z",
+  "checks": 939,
+  "suites": [
+    {
+      "checks": 345,
+      "failed": [],
+      "utc": "2026-10-31T02:22:22"
+    },
+    {
+      "checks": 17,
+      "failed": [],
+      "utc": "2026-10-31T02:22:24"
+    },
+    {
+      "checks": 81,
+      "failed": [],
+      "utc": null
+    },
+    {
+      "checks": 13,
+      "failed": [],
+      "utc": "2026-10-31T02:24:27"
+    },
+    {
+      "checks": 68,
+      "failed": [],
+      "utc": null
+    },
+    {
+      "checks": 30,
+      "failed": [],
+      "utc": "2026-10-31T02:25:41"
+    },
+    {
+      "checks": 13,
+      "failed": [],
+      "utc": "2026-10-31T02:27:00"
+    },
+    {
+      "checks": 62,
+      "failed": [],
+      "utc": "2026-10-31T02:27:04"
+    },
+    {
+      "checks": 27,
+      "failed": [],
+      "utc": "2026-10-31T02:27:47"
+    },
+    {
+      "checks": 53,
+      "failed": [],
+      "utc": "2026-10-31T02:28:47"
+    },
+    {
+      "checks": 51,
+      "failed": [],
+      "utc": "2026-10-31T02:28:50"
+    },
+    {
+      "checks": 45,
+      "failed": [],
+      "utc": "2026-10-31T02:29:13"
+    },
+    {
+      "checks": 134,
+      "failed": [],
+      "utc": "2026-10-31T02:32:43"
+    }
+  ],
+  "assets": 27,
+  "audio_assets": 12,
+  "android_export": "success; CI uses an ephemeral key, delivery APK uses the established local signing key",
+  "initial_failure": {
+    "commit": "9742301284d7ad4f841d4add16dac322a0c3f92c",
+    "reason": "Character synthetic input used unmatched wall/render/physics timing on llvmpipe. Fixed engine-time execution; assertions retained. Subsequent source runs 26, 27, 28 succeeded."
+  }
+}

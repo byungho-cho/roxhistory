@@ -1,0 +1,336 @@
+{
+  "source_commit": "6f1a99ef5ba5d35272e184cf10d194fdfe429cec",
+  "game_tree": "33ab7dc0832d1c6a19fe6418c56af8aa6f3b85c2",
+  "apk": "RoxHistory-0.1.7-play-debug.apk",
+  "bytes": 89415045,
+  "sha256": "af38b854dd3b1562b430feca21000a694e6c0e5997ca70938da3bf9e11a1ca41",
+  "version": "0.1.7-play",
+  "version_code": 8,
+  "package": "com.roxhistory.demo",
+  "certificate_sha256": "cf65aeecb4e399ba9e2e6b9fa947f34f8c31bd75c8e3b686ad29d8431bb1695f",
+  "utc": "2026-10-31T02:21:50.693926+00:00",
+  "local_checks": 939,
+  "tests": [
+    {
+      "suite": "character_tests",
+      "checks": 68,
+      "result": {
+        "checks": 68,
+        "failed": [],
+        "runtime": "Native Godot physics/synthetic input, real action timers; not Android"
+      },
+      "log_mtime_utc": "2026-10-31T02:18:35.294719+00:00"
+    },
+    {
+      "suite": "environment_review",
+      "checks": 13,
+      "result": {
+        "checks": 13,
+        "failed": [],
+        "runtime": "Native Godot physics and visual review; not Android",
+        "utc": "2026-10-31T02:18:28"
+      },
+      "log_mtime_utc": "2026-10-31T02:18:28.103193+00:00"
+    },
+    {
+      "suite": "environment_tests",
+      "checks": 17,
+      "result": {
+        "checks": 17,
+        "failed": [],
+        "utc": "2026-10-31T02:18:06"
+      },
+      "log_mtime_utc": "2026-10-31T02:18:06.121408+00:00"
+    },
+    {
+      "suite": "gather_contact_tests",
+      "checks": 134,
+      "result": {
+        "cases": [
+          {
+            "contact": true,
+            "direction": 0,
+            "engine_seconds": 1.2,
+            "resource": "wood_1"
+          },
+          {
+            "contact": true,
+            "direction": 4,
+            "engine_seconds": 1.43333333333333,
+            "resource": "wood_1"
+          },
+          {
+            "contact": true,
+            "direction": 0,
+            "engine_seconds": 1.43333333333333,
+            "resource": "wood_2"
+          },
+          {
+            "contact": true,
+            "direction": 4,
+            "engine_seconds": 1.43333333333333,
+            "resource": "wood_2"
+          },
+          {
+            "contact": true,
+            "direction": 0,
+            "engine_seconds": 1.43333333333333,
+            "resource": "wood_3"
+          },
+          {
+            "contact": true,
+            "direction": 1,
+            "engine_seconds": 1.63333333333333,
+            "resource": "wood_3"
+          },
+          {
+            "contact": true,
+            "direction": 2,
+            "engine_seconds": 1.93333333333333,
+            "resource": "wood_3"
+          },
+          {
+            "contact": true,
+            "direction": 3,
+            "engine_seconds": 1.63333333333333,
+            "resource": "wood_3"
+          },
+          {
+            "contact": true,
+            "direction": 4,
+            "engine_seconds": 1.43333333333333,
+            "resource": "wood_3"
+          },
+          {
+            "contact": true,
+            "direction": 5,
+            "engine_seconds": 1.63333333333333,
+            "resource": "wood_3"
+          },
+          {
+            "contact": true,
+            "direction": 6,
+            "engine_seconds": 1.93333333333333,
+            "resource": "wood_3"
+          },
+          {
+            "contact": true,
+            "direction": 7,
+            "engine_seconds": 1.63333333333333,
+            "resource": "wood_3"
+          },
+          {
+            "contact": true,
+            "direction": 0,
+            "engine_seconds": 1.43333333333333,
+            "resource": "wood_4"
+          },
+          {
+            "contact": true,
+            "direction": 4,
+            "engine_seconds": 1.43333333333333,
+            "resource": "wood_4"
+          },
+          {
+            "contact": true,
+            "direction": 0,
+            "engine_seconds": 1.43333333333333,
+            "resource": "stone_1"
+          },
+          {
+            "contact": true,
+            "direction": 4,
+            "engine_seconds": 1.43333333333333,
+            "resource": "stone_1"
+          },
+          {
+            "contact": true,
+            "direction": 0,
+            "engine_seconds": 1.43333333333333,
+            "resource": "stone_2"
+          },
+          {
+            "contact": true,
+            "direction": 1,
+            "engine_seconds": 1.63333333333333,
+            "resource": "stone_2"
+          },
+          {
+            "contact": true,
+            "direction": 2,
+            "engine_seconds": 1.93333333333333,
+            "resource": "stone_2"
+          },
+          {
+            "contact": true,
+            "direction": 3,
+            "engine_seconds": 1.63333333333333,
+            "resource": "stone_2"
+          },
+          {
+            "contact": true,
+            "direction": 4,
+            "engine_seconds": 1.43333333333333,
+            "resource": "stone_2"
+          },
+          {
+            "contact": true,
+            "direction": 5,
+            "engine_seconds": 1.63333333333333,
+            "resource": "stone_2"
+          },
+          {
+            "contact": true,
+            "direction": 6,
+            "engine_seconds": 1.93333333333333,
+            "resource": "stone_2"
+          },
+          {
+            "contact": true,
+            "direction": 7,
+            "engine_seconds": 1.63333333333333,
+            "resource": "stone_2"
+          },
+          {
+            "contact": true,
+            "direction": 0,
+            "engine_seconds": 1.43333333333333,
+            "resource": "stone_3"
+          },
+          {
+            "contact": true,
+            "direction": 4,
+            "engine_seconds": 1.43333333333333,
+            "resource": "stone_3"
+          }
+        ],
+        "checks": 134,
+        "failed": [],
+        "runtime": "Native Godot real collision movement; 8 approaches at both quest resources and left/right at every other resource; test state reset between cases",
+        "utc": "2026-10-31T02:15:30"
+      },
+      "log_mtime_utc": "2026-10-31T02:15:30.373619+00:00"
+    },
+    {
+      "suite": "hero_tests",
+      "checks": 51,
+      "result": {
+        "checks": 51,
+        "failed": [],
+        "utc": "2026-10-31T02:15:06"
+      },
+      "log_mtime_utc": "2026-10-31T02:15:06.063272+00:00"
+    },
+    {
+      "suite": "hybrid_occlusion",
+      "checks": 13,
+      "result": {
+        "checks": 13,
+        "failed": [],
+        "runtime": "Native Godot physics and visual review; not Android",
+        "utc": "2026-10-31T02:18:52"
+      },
+      "log_mtime_utc": "2026-10-31T02:18:52.681991+00:00"
+    },
+    {
+      "suite": "hybrid_tests",
+      "checks": 30,
+      "result": {
+        "checks": 30,
+        "failed": [],
+        "utc": "2026-10-31T02:18:41"
+      },
+      "log_mtime_utc": "2026-10-31T02:18:41.320949+00:00"
+    },
+    {
+      "suite": "interaction_tests",
+      "checks": 27,
+      "result": {
+        "checks": 27,
+        "failed": [],
+        "runtime": "Native Godot engine timers at fixed 60fps; explicit test positions, not Android wall-time play",
+        "utc": "2026-10-31T02:19:05"
+      },
+      "log_mtime_utc": "2026-10-31T02:19:05.649508+00:00"
+    },
+    {
+      "suite": "play_experience_tests",
+      "checks": 45,
+      "result": {
+        "checks": 45,
+        "failed": [],
+        "runtime": "Native Godot synthetic multi-touch; Android is tested separately",
+        "utc": "2026-10-31T02:15:11"
+      },
+      "log_mtime_utc": "2026-10-31T02:15:11.713512+00:00"
+    },
+    {
+      "suite": "polish_tests",
+      "checks": 62,
+      "result": {
+        "checks": 62,
+        "failed": [],
+        "utc": "2026-10-31T02:18:56"
+      },
+      "log_mtime_utc": "2026-10-31T02:18:56.221283+00:00"
+    },
+    {
+      "suite": "presentation_tests",
+      "checks": 53,
+      "result": {
+        "camera_lag_world_units": 14.747314453125,
+        "checks": 53,
+        "failed": [],
+        "runtime": "Native render at fixed60 engine time; audio lifecycle/state checks, not a listening or Android test",
+        "utc": "2026-10-31T02:15:01"
+      },
+      "log_mtime_utc": "2026-10-31T02:15:01.815044+00:00"
+    },
+    {
+      "suite": "state_tests",
+      "checks": 345,
+      "result": {
+        "checks": 345,
+        "engine": "4.5.1-stable (official)",
+        "failed": [],
+        "utc": "2026-10-31T02:18:01"
+      },
+      "log_mtime_utc": "2026-10-31T02:18:01.659350+00:00"
+    },
+    {
+      "suite": "ui_smoke",
+      "checks": 81,
+      "result": {
+        "checks": 81,
+        "failed": [],
+        "runtime": "Native Godot synthetic touch; not Android device validation",
+        "screenshots": [
+          "res://reports/01-onboarding.png",
+          "res://reports/02-title.png",
+          "res://reports/03-region.png",
+          "res://reports/04-quest-intro.png",
+          "res://reports/05-gameplay.png",
+          "res://reports/06-complete.png",
+          "res://reports/07-home.png",
+          "res://reports/viewport-1280x720-onboarding.png",
+          "res://reports/viewport-1280x720-title.png",
+          "res://reports/viewport-1280x720-region.png",
+          "res://reports/viewport-1280x720-play.png",
+          "res://reports/viewport-896x370-onboarding.png",
+          "res://reports/viewport-896x370-title.png",
+          "res://reports/viewport-896x370-region.png",
+          "res://reports/viewport-896x370-play.png",
+          "res://reports/viewport-725x396-onboarding.png",
+          "res://reports/viewport-725x396-title.png",
+          "res://reports/viewport-725x396-region.png",
+          "res://reports/viewport-725x396-play.png",
+          "res://reports/viewport-816x616-onboarding.png",
+          "res://reports/viewport-816x616-title.png",
+          "res://reports/viewport-816x616-region.png",
+          "res://reports/viewport-816x616-play.png"
+        ]
+      },
+      "log_mtime_utc": "2026-10-31T02:18:16.778322+00:00"
+    }
+  ]
+}

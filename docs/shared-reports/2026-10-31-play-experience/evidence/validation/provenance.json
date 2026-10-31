@@ -1,0 +1,8 @@
+{
+  "source_commit": "6f1a99ef5ba5d35272e184cf10d194fdfe429cec",
+  "game_tree": "33ab7dc0832d1c6a19fe6418c56af8aa6f3b85c2",
+  "apk_sha256": "af38b854dd3b1562b430feca21000a694e6c0e5997ca70938da3bf9e11a1ca41",
+  "normal_save_sha256": "41a9a6a1e4b3e2bc248f43136ac3cb93444b3f232e32087dd3045cf114815e9e",
+  "normal_save_unchanged": true,
+  "note": "Normal save contents are intentionally not included. All gameplay state in evidence is the isolated test session."
+}
