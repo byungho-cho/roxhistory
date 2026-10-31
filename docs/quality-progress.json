@@ -6,7 +6,7 @@
   "goal": "암사동 한 지역에서 1~2분만 플레이해도, 완성된 게임의 매력과 확장 가능성을 느끼는 데모",
   "scope": "지역 하나 · 첫 보금자리 퀘스트 하나 · 움집 하나. 세계·캐릭터·상호작용·연출·보상·저장이 연결된 경험.",
   "qualityStatement": "캐릭터를 잠시 세워두어도 살아 있는 장소처럼 보이고, 움직이고 행동하면 소리와 연출이 즉시 반응한다.",
-  "currentFocus": "v0.1.8 대표 정착지 아트·공간 개발 검증 완료 / 팀장·사용자 체감 검토",
+  "currentFocus": "C001 지정 원화 주인공·최초 UI v0.1.9 검토 빌드 / 외형 승인 미완료",
   "baseline": {
     "id": "B0",
     "status": "기본 실행 사용자 확인",
@@ -623,5 +623,23 @@
     "physicalDeviceVerified": false,
     "actualListeningVerified": false,
     "userListeningFeedback": "이전 합성 강물은 잡음 평가로 반려; 실제 녹음 A로 교체, 사용자 현재 음량 유지 동의 / 출력 장치 미확인"
+  },
+  "c001Iteration": {
+    "version": "0.1.9-c001",
+    "version_code": 10,
+    "package": "com.roxhistory.demo",
+    "source_commit": "832b68faecf6d5e304318e3f3d7ffae281e07c5c",
+    "game_tree": "1248745ac0ae2d2cd3faa7673a98a55797bf789f",
+    "bytes": 96963524,
+    "sha256": "5859b4d866bc4d29f32226fc739f40a5460bf7c805043b83dd1291a2c60db14c",
+    "signer_sha256": "cf65aeecb4e399ba9e2e6b9fa947f34f8c31bd75c8e3b686ad29d8431bb1695f",
+    "local_checks": 985,
+    "url": "https://github.com/byungho-cho/roxhistory/releases/download/v0.1.9-c001/RoxHistory-0.1.9-c001-debug.apk",
+    "status": "게임 적용·기능 검증 / 원화 재현도·사용자 승인 미완료",
+    "report": "shared-reports/2026-10-31-c001-character-ui/report.md",
+    "prUrl": "https://github.com/byungho-cho/roxhistory/pull/19",
+    "physicalDeviceVerified": false,
+    "actualListeningVerified": false,
+    "remaining": "원화 비율·머리·털·의상 디테일, 실기기 성능, 실제 청감"
   }
 }

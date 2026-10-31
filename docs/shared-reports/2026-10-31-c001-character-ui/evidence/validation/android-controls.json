@@ -1,0 +1,11 @@
+{
+  "utc": "2026-10-31T10:28:04Z",
+  "checks": [
+    "symmetric Android two-pointer pinch",
+    "eight joystick directions",
+    "joystick and action button touch ownership",
+    "HOME during pinch releases movement",
+    "resume retains inventory"
+  ],
+  "failed": []
+}

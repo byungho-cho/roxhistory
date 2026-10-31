@@ -1,0 +1,12 @@
+{
+  "version": "0.1.9-c001",
+  "version_code": 10,
+  "package": "com.roxhistory.demo",
+  "source_commit": "832b68faecf6d5e304318e3f3d7ffae281e07c5c",
+  "game_tree": "1248745ac0ae2d2cd3faa7673a98a55797bf789f",
+  "bytes": 96963524,
+  "sha256": "5859b4d866bc4d29f32226fc739f40a5460bf7c805043b83dd1291a2c60db14c",
+  "signer_sha256": "cf65aeecb4e399ba9e2e6b9fa947f34f8c31bd75c8e3b686ad29d8431bb1695f",
+  "local_checks": 985,
+  "url": "https://github.com/byungho-cho/roxhistory/releases/download/v0.1.9-c001/RoxHistory-0.1.9-c001-debug.apk"
+}

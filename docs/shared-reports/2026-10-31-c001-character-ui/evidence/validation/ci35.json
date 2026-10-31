@@ -1,0 +1,83 @@
+{
+  "run": 35,
+  "url": "https://github.com/byungho-cho/roxhistory/actions/runs/41192430878",
+  "source_commit": "832b68faecf6d5e304318e3f3d7ffae281e07c5c",
+  "conclusion": "success",
+  "environment": "GitHub Actions ubuntu-24.04 / Godot4.5.1 / llvmpipe",
+  "checks": 985,
+  "suites": [
+    {
+      "checks": 345,
+      "failed": [],
+      "utc": "2026-10-31T10:22:22"
+    },
+    {
+      "checks": 17,
+      "failed": [],
+      "utc": "2026-10-31T10:22:24"
+    },
+    {
+      "checks": 101,
+      "failed": [],
+      "utc": "2026-10-31T10:23:09.5778994Z",
+      "runtime": "Native Godot synthetic touch; not Android device validation"
+    },
+    {
+      "checks": 13,
+      "failed": [],
+      "utc": "2026-10-31T10:24:35",
+      "runtime": "Native Godot physics and visual review; not Android"
+    },
+    {
+      "checks": 68,
+      "failed": [],
+      "utc": "2026-10-31T10:25:22.3982550Z",
+      "runtime": "Native Godot physics/synthetic input, real action timers; not Android"
+    },
+    {
+      "checks": 30,
+      "failed": [],
+      "utc": "2026-10-31T10:25:52"
+    },
+    {
+      "checks": 13,
+      "failed": [],
+      "utc": "2026-10-31T10:27:16",
+      "runtime": "Native Godot physics and visual review; not Android"
+    },
+    {
+      "checks": 62,
+      "failed": [],
+      "utc": "2026-10-31T10:27:19"
+    },
+    {
+      "checks": 27,
+      "failed": [],
+      "utc": "2026-10-31T10:28:04",
+      "runtime": "Native Godot engine timers at fixed 60fps; explicit test positions, not Android wall-time play"
+    },
+    {
+      "checks": 53,
+      "failed": [],
+      "utc": "2026-10-31T10:29:06",
+      "runtime": "Native render at fixed60 engine time; audio lifecycle/state checks, not a listening or Android test"
+    },
+    {
+      "checks": 51,
+      "failed": [],
+      "utc": "2026-10-31T10:29:08"
+    },
+    {
+      "checks": 45,
+      "failed": [],
+      "utc": "2026-10-31T10:29:33",
+      "runtime": "Native Godot synthetic multi-touch; Android is tested separately"
+    },
+    {
+      "checks": 160,
+      "failed": [],
+      "utc": "2026-10-31T10:33:16",
+      "runtime": "Native Godot real collision movement; 8 approaches at both quest resources and left/right at every other resource; test state reset between cases"
+    }
+  ]
+}
