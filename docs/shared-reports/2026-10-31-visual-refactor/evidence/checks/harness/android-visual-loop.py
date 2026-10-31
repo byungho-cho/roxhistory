@@ -45,4 +45,3 @@ rec.wait(timeout=105);rec_log.close();assert rec.returncode==0,'Audio/video reco
 original=(root/'play-evidence/normal-save-preserved.json').read_text(encoding='utf-8')
 assert original==run('shell','run-as','com.roxhistory.demo','cat','files/save.json'),'Normal save changed'
 print('Normal save byte-for-byte preserved.')
-

@@ -121,8 +121,8 @@
   },
   {
     "path": "evidence/checks/harness/android-visual-loop.py",
-    "bytes": 4101,
-    "sha256": "4bb9da1e896c96f3c4a373c26935854aabe53316c2817905bcd764de606c0018"
+    "bytes": 4100,
+    "sha256": "7a12be52f1214e4ffc3ab115d4178e5682d6e8dfffa30edb25daac1deab8cbd4"
   },
   {
     "path": "evidence/checks/harness/android-visual-occlusion.py",
