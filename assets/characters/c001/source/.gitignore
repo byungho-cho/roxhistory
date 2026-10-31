@@ -1,2 +1,4 @@
 .godot/
 profile/
+*.import
+c001-rigged_*.png

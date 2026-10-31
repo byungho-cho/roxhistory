@@ -24,6 +24,8 @@ func ui_hit(at: Vector2) -> bool:
 	if at.y < app.safe.y+76: return true
 	for c in [app.joystick,app.gather_button,app.build_button,app.objective.get_parent(),app.context_panel]:
 		if is_instance_valid(c) and c.is_visible_in_tree() and c.get_global_rect().has_point(at): return true
+	for button in app.stage.find_children("*","Button",true,false):
+		if button.is_visible_in_tree() and button.get_global_rect().has_point(at):return true
 	var row: Control=app.gather_button.get_parent()
 	return row.get_global_rect().has_point(at)
 func _input(event: InputEvent) -> void:

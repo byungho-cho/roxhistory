@@ -28,7 +28,12 @@ var last_action_time := 0.0
 func material(color: String) -> StandardMaterial3D:
 	var m := StandardMaterial3D.new()
 	m.albedo_color = Color(color)
-	m.roughness = 0.92
+	m.roughness = 0.94
+	m.metallic_specular = 0.12
+	var texture_path: String = "res://textures/"+color+".png"
+	if ResourceLoader.exists(texture_path):
+		m.albedo_texture=load(texture_path)
+		m.albedo_color=Color.WHITE
 	m.cull_mode = BaseMaterial3D.CULL_DISABLED
 	return m
 
@@ -213,10 +218,10 @@ func apply_pose(phase: float, strike: float) -> void:
 		rotate_bone("shin"+suffix,Vector3(knee,0,0))
 		rotate_bone("foot"+suffix,Vector3(-thigh-knee,0,0))
 		var swing: float = -step*0.45
-		if suffix == "R": swing = lerpf(swing,-1.25+(1.05 if work_kind == "wood" else 1.45)*strike,action_blend)
+		if suffix == "R": swing = lerpf(swing,-1.25+(1.05 if work_kind=="wood" else 1.30 if work_kind=="stone" else 1.45)*strike,action_blend)
 		else: swing = lerpf(swing,-0.32-strike*0.14,action_blend)
-		rotate_bone("arm"+suffix,Vector3(swing,0,-side*lerpf(0.11,0.30,action_blend)))
-		rotate_bone("forearm"+suffix,Vector3(lerpf(-0.15,-0.48+strike*0.22,action_blend) if suffix == "R" else -0.12-strike*0.10,0,0))
+		rotate_bone("arm"+suffix,Vector3(swing,0,side*lerpf(0.20,-0.30,action_blend)))
+		rotate_bone("forearm"+suffix,Vector3(lerpf(-0.15,-0.48+strike*(-0.03 if work_kind=="stone" else 0.22),action_blend) if suffix == "R" else -0.12-strike*0.10,0,0))
 
 func tool_contact_world() -> Vector2:
 	# Project the stone head through the same camera used to draw the character.
@@ -245,10 +250,10 @@ func braid(parent: Node3D, height: float, radius: float, mat: Material) -> void:
 func build_villager() -> void:
 	var skin := material("f3b589")
 	skin.roughness = 0.94
-	var hair := material("342016")
+	var hair := material("57301f")
 	hair.roughness = 0.96
-	var hair_mid := material("4b3227")
-	var hair_glow := material("61432f")
+	var hair_mid := material("754328")
+	var hair_glow := material("965c36")
 	var cream := material("99603a")
 	var trim := material("e9d3a7")
 	var cloth := material("96704e")
@@ -276,23 +281,27 @@ func build_villager() -> void:
 		var a:=TAU*i/11.0
 		var n:=Vector3(sin(a),0,cos(a))
 		lock(torso,n*0.29+Vector3(0,-0.10,0),n*0.37+Vector3(0,-0.29,0),n*0.34+Vector3(0,-0.45-0.045*sin(i*2.1),0),0.115,0.025,n,cream if i%3 else trim)
-	for i in 3:
-		lock(torso,Vector3(-0.15,-0.09,0.30),Vector3(-0.20+i*0.07,-0.21,0.34),Vector3(-0.28+i*0.11,-0.35,0.31),0.060,0.016,Vector3.FORWARD,leaf)
-	for i in 14:
-		var t:=float(i)/13.0
+	for i in 19:
+		var t:=float(i)/18.0
 		var x:=lerpf(-0.28,0.30,t)
 		var y:=lerpf(-0.02,0.35,t)
-		lock(torso,Vector3(x,y+0.12,0.23),Vector3(x-0.03,y+0.035,0.33),Vector3(x-0.12,y-0.08-0.025*sin(i*4.0),0.30),0.066,0.018,Vector3.FORWARD,trim)
+		lock(torso,Vector3(x,y+0.12,0.23),Vector3(x-0.03,y+0.035,0.33),Vector3(x-0.13,y-0.12-0.040*sin(i*4.0),0.30),0.062,0.013,Vector3.FORWARD,trim)
 	for i in 9:
 		var a:=TAU*i/9.0
 		var n:=Vector3(sin(a),0,cos(a))
 		lock(torso,n*0.32+Vector3(0,-0.22,0),n*0.40+Vector3(0,-0.35,0),n*0.36+Vector3(0,-0.50+0.035*sin(i*2.0),0),0.11,0.020,n,trim if i%3 else cloth)
+	for i in 13:
+		var x:=(i-6)*.047
+		lock(torso,Vector3(x,.38,-.15),Vector3(x+.035,.28,-.25),Vector3(x+.06,.15-.045*cos(i*2.4),-.25),.062,.013,Vector3.BACK,trim)
 	# Neck and sleeve overlap cover the joint while the continuous skin bends.
 	ellipsoid(torso,Vector3(0,0.39,0),Vector3(0.25,0.21,0.24),skin)
 	# Front diagonal cord, keeping the reference costume's asymmetry.
 	lock(torso,Vector3(0.24,0.36,0.14),Vector3(0.04,0.15,0.29),Vector3(-0.27,-0.03,0.18),0.025,0.025,Vector3.FORWARD,rope)
-	var head := bone("head","spine",Vector3(0,0.72,0))
-	rig.set_bone_pose_scale(bones.head,Vector3(0.98,1.04,1.0))
+	var head := bone("head","spine",Vector3(0,0.74,0))
+	var head_rest:=rig.get_bone_rest(bones.head)
+	head_rest.basis=Basis.from_scale(Vector3(0.83,0.88,0.86))
+	rig.set_bone_rest(bones.head,head_rest)
+	rig.set_bone_pose_scale(bones.head,Vector3(0.83,0.88,0.86))
 	CharacterGeometry.profile(head,[Vector3(-0.45,0.06,0.08),Vector3(-0.38,0.31,0.29),Vector3(-0.23,0.47,0.40),Vector3(-0.02,0.51,0.44),Vector3(0.20,0.49,0.42),Vector3(0.38,0.34,0.31),Vector3(0.46,0.02,0.02)],skin)
 	mesh_count += 1
 	ellipsoid(head,Vector3(0,0.17,-0.11),Vector3(1.10,0.82,0.95),hair)
@@ -311,34 +320,60 @@ func build_villager() -> void:
 		ellipsoid(head,Vector3(side*0.32,-0.17,0.333),Vector3(0.13,0.055,0.009),material("e99b80"))
 	ellipsoid(head,Vector3(0,-0.12,0.45),Vector3(0.10,0.08,0.058),skin)
 	lock(head,Vector3(-0.10,-0.25,0.376),Vector3(0,-0.295,0.40),Vector3(0.10,-0.25,0.376),0.009,0.008,Vector3.FORWARD,material("8b4931"))
-	# Swept locks follow the skull; slender raised ridges share each lock's curve.
-	for row in 2:
-		for i in 19:
-			var a:=TAU*i/19.0+row*0.14+0.045*sin(i*5.2)
-			if cos(a)>0.55: continue
-			var n:=Vector3(sin(a),0,cos(a))
-			var sweep:=Vector3(cos(a),0,-sin(a))
-			var start:=n*0.26+Vector3(0,0.53-row*0.17,-0.08)
-			var mid:=n*0.58+sweep*0.10+Vector3(0,0.35-row*0.19,-0.07)
-			var end:=n*(0.56+0.025*sin(i*2.3))+sweep*(0.11+0.08*sin(i*1.9))+Vector3(0,-0.03-row*0.12+0.06*sin(i*2.1),-0.06)
-			lock(head,start,mid,end,0.095,0.035,n,hair_mid if i%4==0 else hair)
-			for line in 3:
-				var offset:=sweep*(line-1)*0.026+n*0.028
-				lock(head,start+offset,mid+offset,end,0.006,0.004,n,hair_mid)
-	# Asymmetric swept fringe: narrow tapered tips, open forehead and eyes.
-	for i in 9:
-		var x:=(i-4)*0.104
-		var start:=Vector3(x*0.65+0.10,0.51,0.25)
-		var mid:=Vector3(x+0.11,0.37,0.49)
-		var end:=Vector3(x-0.08+0.03*sin(i*2.0),0.10+0.17*absf(float(i-4)/4.0)+0.04*sin(i*2.3),0.44)
-		lock(head,start,mid,end,0.090,0.032,Vector3.FORWARD,hair_mid if i%4==1 else hair)
-		for line in 3:
-			var offset:=Vector3((line-1)*0.022,0,0.029)
-			lock(head,start+offset,mid+offset,end,0.005,0.003,Vector3.FORWARD,hair_mid)
+	# Individually placed crown and fringe: origin, bend, pointed tip, width.
+	var locks: Array = [
+		[Vector3(.08,.53,.10),Vector3(-.17,.61,.35),Vector3(-.56,.28,.27),.19],
+		[Vector3(.10,.54,.14),Vector3(-.01,.54,.53),Vector3(-.24,.07,.47),.15],
+		[Vector3(.14,.53,.13),Vector3(.23,.43,.54),Vector3(.12,.12,.48),.13],
+		[Vector3(.18,.50,.08),Vector3(.40,.41,.48),Vector3(.46,.20,.34),.15],
+		[Vector3(-.08,.48,.12),Vector3(-.34,.37,.49),Vector3(-.39,.06,.37),.14],
+		[Vector3(.28,.41,.04),Vector3(.56,.29,.30),Vector3(.57,.37,.20),.14],
+		[Vector3(-.25,.40,.05),Vector3(-.58,.24,.26),Vector3(-.61,.30,.13),.14],
+		[Vector3(.36,.29,.10),Vector3(.58,.08,.19),Vector3(.49,-.16,.11),.10],
+		[Vector3(-.36,.30,.08),Vector3(-.57,.04,.20),Vector3(-.48,-.15,.10),.11],
+		[Vector3(.08,.54,-.10),Vector3(.42,.47,-.37),Vector3(.62,.22,-.18),.18],
+		[Vector3(-.06,.53,-.12),Vector3(-.34,.48,-.40),Vector3(-.60,.29,-.23),.18],
+		[Vector3(.04,.52,-.16),Vector3(.17,.34,-.58),Vector3(.40,.05,-.46),.18],
+		[Vector3(-.12,.48,-.18),Vector3(-.24,.29,-.57),Vector3(-.43,-.03,-.43),.17],
+		[Vector3(.19,.30,-.31),Vector3(.39,.08,-.52),Vector3(.50,-.17,-.29),.14],
+		[Vector3(-.22,.29,-.32),Vector3(-.43,.06,-.48),Vector3(-.53,-.14,-.24),.14],
+		[Vector3(.02,.26,-.46),Vector3(.14,.02,-.54),Vector3(.22,-.27,-.36),.16],
+		[Vector3(-.15,.23,-.44),Vector3(-.22,-.05,-.51),Vector3(-.16,-.29,-.34),.16]
+	]
+	for i in locks.size():
+		var item: Array=locks[i]
+		var outward: Vector3=Vector3(item[1].x,0,item[1].z).normalized()
+		lock(head,item[0],item[1],item[2],item[3],0.045,outward,hair_mid if i%4==0 else hair)
+		# Irregular overlapping secondary tips break up each broad crown lock.
+		var tip: Vector3=item[2]+Vector3((.07 if i%2 else -.09),-.035,.025)
+		lock(head,item[0].lerp(item[1],.35)+outward*.035,item[1]+outward*.045,tip,item[3]*.56,.021,outward,hair_mid if i%3 else hair_glow)
+		# Thin directional ridges, curved with the main tuft rather than floating.
+		for j in 2:
+			var off:=outward*0.038+Vector3((j-.5)*.026,0,0)
+			lock(head,item[0]+off,item[1]+off,item[2],.009,.004,outward,hair_glow if i%5==0 else hair_mid)
+	var back_layers: Array=[
+		[Vector3(-.21,.43,-.31),Vector3(-.32,.27,-.54),Vector3(-.40,.03,-.47),.13],
+		[Vector3(.03,.47,-.34),Vector3(-.08,.24,-.61),Vector3(-.18,-.03,-.53),.15],
+		[Vector3(.22,.40,-.32),Vector3(.24,.19,-.58),Vector3(.11,-.11,-.54),.14],
+		[Vector3(-.25,.23,-.43),Vector3(-.34,.02,-.53),Vector3(-.26,-.24,-.41),.12],
+		[Vector3(-.04,.22,-.49),Vector3(-.08,-.01,-.61),Vector3(.03,-.30,-.43),.14],
+		[Vector3(.28,.23,-.41),Vector3(.39,.00,-.50),Vector3(.30,-.24,-.37),.11],
+		[Vector3(.09,.10,-.53),Vector3(.21,-.09,-.58),Vector3(.18,-.34,-.33),.12]
+	]
+	for i in back_layers.size():
+		var b: Array=back_layers[i]
+		lock(head,b[0],b[1],b[2],b[3],.024,Vector3.BACK,hair_mid if i%3 else hair)
 	braid(head,0.53,0.145,rope)
-	for i in 7:
-		var x:=(i-3)*0.045
-		lock(head,Vector3(x,0.54,-0.09),Vector3(x-0.15,0.81,-0.10),Vector3(x-0.20+0.07*sin(i*2.0),0.73+0.09*cos(i*2.1),-0.32),0.061,0.028,Vector3.UP,hair_mid if i%3==0 else hair)
+	var tails: Array=[
+		[Vector3(-.08,.54,-.12),Vector3(-.22,.80,-.15),Vector3(-.10,.89,-.25)],
+		[Vector3(.02,.55,-.12),Vector3(.07,.83,-.08),Vector3(.24,.84,-.19)],
+		[Vector3(.08,.55,-.15),Vector3(.29,.75,-.23),Vector3(.33,.74,-.40)],
+		[Vector3(-.02,.55,-.20),Vector3(-.10,.76,-.41),Vector3(.07,.80,-.49)]
+	]
+	for i in tails.size():
+		var tip:Vector3=tails[i][2]+Vector3(.15,-.015,-.06)
+		lock(head,tails[i][0],tails[i][1],tip,.10,.025,Vector3.FORWARD,hair_mid if i%2 else hair)
+		lock(head,tails[i][0]+Vector3(.02,0,.03),tails[i][1]+Vector3(.025,0,.03),tip,.025,.006,Vector3.FORWARD,hair_glow)
 	for side in [-1.0,1.0]:
 		var suffix := "L" if side < 0 else "R"
 		var upper := bone("arm"+suffix,"spine",Vector3(side*0.39,0.33,0))
@@ -350,10 +385,12 @@ func build_villager() -> void:
 		for band in 3:
 			cone(forearm,Vector3(0,-0.135-band*0.060,0),0.13,0.13,0.023,rope).rotation.z=0.12*side
 		var hand := bone("hand"+suffix,"forearm"+suffix,Vector3(0,-0.29,0.015))
-		ellipsoid(hand,Vector3(0,-0.015,0),Vector3(0.25,0.26,0.23),skin)
+		ellipsoid(hand,Vector3(0,-0.015,0),Vector3(0.21,0.20,0.17),skin)
+		for finger in 4:
+			ellipsoid(hand,Vector3((finger-1.5)*.048,-.105+absf(finger-1.5)*.012,.018),Vector3(.059,.14,.070),skin)
 		ellipsoid(hand,Vector3(-side*0.075,0.005,0.045),Vector3(0.09,0.13,0.10),skin)
 		if suffix == "R":
-			tool_3d = Node3D.new(); hand.add_child(tool_3d)
+			tool_3d = Node3D.new(); tool_3d.name="StoneAxe"; hand.add_child(tool_3d)
 			cone(tool_3d,Vector3(0,0,0.19),0.025,0.03,0.52,material("775039")).rotation.x=PI/2
 			var stone := ellipsoid(tool_3d,Vector3(0,0.025,0.43),Vector3(0.30,0.13,0.18),material("858879"))
 			stone.mesh.radial_segments=7;stone.mesh.rings=3

@@ -5,6 +5,7 @@ var flights: Array[Dictionary]=[]
 var pulse := {"wood":0.0,"stone":0.0,"tokens":0.0}
 var styles: Dictionary={}
 var portrait: Texture2D
+var last_map_position := Vector2.INF
 func _init(owner_app: Node) -> void: app=owner_app
 func _ready() -> void:
 	app.model.changed.connect(queue_redraw)
@@ -12,13 +13,21 @@ func _ready() -> void:
 	mouse_filter=Control.MOUSE_FILTER_IGNORE
 	if ResourceLoader.exists("res://assets/ui/hero_portrait.png"): portrait=load("res://assets/ui/hero_portrait.png")
 func slot(kind: String) -> Rect2:
-	var i: int=["wood","stone","tokens"].find(kind)
-	return Rect2(Vector2(app.w-app.safe.x-258+i*86,app.safe.y+5),Vector2(80,40))
+	var i: int=["wood","stone","meat","berries","tokens"].find(kind)
+	if kind=="tokens":return Rect2(app.w-app.safe.x-62,app.h-app.safe.y-66,62,62)
+	return Rect2(Vector2(app.w-app.safe.x-390+i*68,app.safe.y+5),Vector2(66,36))
 func gained(kind: String, at: Vector2) -> void:
 	flights.append({"kind":kind,"world":at,"age":0.0})
 func clear_effects() -> void: flights.clear();queue_redraw()
 func _process(delta: float) -> void:
-	if flights.is_empty() and pulse.values().all(func(v):return v<=0):return
+	var moving_map := false
+	if is_instance_valid(app.world):
+		var p: Vector2=app.world.player.position
+		moving_map=p!=last_map_position
+		last_map_position=p
+	var active := moving_map or not flights.is_empty()
+	for key in pulse: active=active or pulse[key]>0
+	if not active:return
 	for key in pulse: pulse[key]=maxf(0,pulse[key]-delta*2.5)
 	for f in flights:
 		f.age+=delta
@@ -36,23 +45,37 @@ func frame(rect: Rect2, fill: Color, border: Color) -> void:
 func _draw() -> void:
 	if not is_instance_valid(app.world) or app.model.state.is_empty(): return
 	var font:=DemoArt.theme().default_font
-	var origin: Vector2=app.safe+Vector2(76,0)
-	frame(Rect2(origin,Vector2(216,SceneStyle.HEADER_HEIGHT)),Color("493020f2"),Color("b88a46"))
-	draw_circle(origin+Vector2(25,24),23,Color("221b14"))
-	draw_arc(origin+Vector2(25,24),23,0,TAU,64,Color("edc77f"),2,true)
-	if portrait: draw_texture_rect(portrait,Rect2(origin+Vector2(3,2),Vector2(44,44)),false)
-	draw_string(font,origin+Vector2(58,20),"암사동 강변",HORIZONTAL_ALIGNMENT_LEFT,148,16,Color("fff1cf"))
-	draw_string(font,origin+Vector2(58,38),"첫 보금자리",HORIZONTAL_ALIGNMENT_LEFT,148,12,Color("d8bd89"))
-	for key in ["wood","stone","tokens"]:
-		var rect:=slot(key);var beat: float=pulse[key]
-		frame(rect.grow(beat*2),Color("38291eef"),Color("ffe2a0") if beat>0 else Color("b88a46"))
-		var tex:=preload("res://assets/ui/seed.svg") if key=="tokens" else DemoArt.icon(key)
+	var origin: Vector2=app.safe
+	draw_string(font,origin+Vector2(0,18),"RoxHistory",HORIZONTAL_ALIGNMENT_LEFT,180,21,Color("fff0d1"))
+	draw_circle(origin+Vector2(31,57),31,Color("221b14"))
+	if portrait:draw_texture_rect(portrait,Rect2(origin+Vector2(4,30),Vector2(54,54)),false)
+	draw_arc(origin+Vector2(31,57),31,0,TAU,64,Color("fff7e0"),3,true)
+	draw_string(font,origin+Vector2(74,44),"새벽 · Lv.—",HORIZONTAL_ALIGNMENT_LEFT,150,15,Color("fff1d4"))
+	frame(Rect2(origin+Vector2(74,53),Vector2(145,15)),Color("bd2d17"),Color("a77942"))
+	draw_string(font,origin+Vector2(121,65),"— / —",HORIZONTAL_ALIGNMENT_LEFT,75,12,Color("fff4da"))
+	frame(Rect2(origin+Vector2(74,74),Vector2(122,9)),Color("4b8a32"),Color("a77942"))
+	draw_style_box(DesignSkin.style("ivory"),Rect2(app.w-app.safe.x-394,app.safe.y,280,44))
+	for key in ["wood","stone","meat","berries"]:
+		var rect:=slot(key);var beat: float=pulse.get(key,0.0)
+		var tex:=DemoArt.icon(key)
 		draw_texture_rect(tex,Rect2(rect.position+Vector2(6,6),Vector2(28,28)),false)
-		draw_string(font,rect.position+Vector2(43,28),str(int(app.model.state[key])),HORIZONTAL_ALIGNMENT_LEFT,33,20,Color("fff5d8"))
+		draw_string(font,rect.position+Vector2(36,27),str(int(app.model.state[key])) if app.model.state.has(key) else "—",HORIZONTAL_ALIGNMENT_LEFT,30,16,Color("49321e"))
 		if beat>0:
 			var c:=rect.position+Vector2(65,8)
 			draw_line(c-Vector2(5,0),c+Vector2(5,0),Color(1,.9,.5,beat),2,true)
 			draw_line(c-Vector2(0,5),c+Vector2(0,5),Color(1,.9,.5,beat),2,true)
+	var center:=Vector2(app.w-app.safe.x-50,app.safe.y+50)
+	draw_circle(center,51,Color("49321e"))
+	var points:=PackedVector2Array();var uv:=PackedVector2Array()
+	for i in 64:
+		var d:=Vector2.from_angle(TAU*i/64.0)
+		points.append(center+d*48);uv.append(Vector2(.5,.5)+d*.5)
+	draw_colored_polygon(points,Color.WHITE,uv,preload(SceneStyle.TERRAIN))
+	draw_arc(center,50,0,TAU,64,Color("c8a15e"),3,true)
+	var normalized: Vector2=app.world.player.position/Vector2(2400,1350)-Vector2(.5,.5)
+	var dot:=center+(normalized*96).limit_length(45)
+	draw_circle(dot,4,Color("ffe28b"));draw_arc(dot,5,0,TAU,16,Color("49321e"),1,true)
+	draw_string(font,center+Vector2(-5,-33),"N",HORIZONTAL_ALIGNMENT_LEFT,20,12,Color("fff2cf"))
 	for f in flights:
 		var from: Vector2=app.world.get_global_transform_with_canvas()*f.world
 		var to:=slot(f.kind).get_center()

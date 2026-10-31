@@ -1,8 +1,193 @@
 [
   {
+    "path": "game/assets/app-icon-hut.png",
+    "bytes": 13982,
+    "sha256": "44c03e5f2041a3bd886348cf51bab7c1ac5dfff5db8a5ad515cd934bd89d3361"
+  },
+  {
+    "path": "game/assets/characters/c001-textures/321b12.png",
+    "bytes": 16977,
+    "sha256": "5aee6299cb472394afdcd25353f4200cfe5997168182e58f292d11f9eb525eb3"
+  },
+  {
+    "path": "game/assets/characters/c001-textures/342016.png",
+    "bytes": 26873,
+    "sha256": "dc9d4cae7dbb79654a93fd82d39372c21b948a51797ad0a1effa5e462adf876c"
+  },
+  {
+    "path": "game/assets/characters/c001-textures/4b3227.png",
+    "bytes": 32066,
+    "sha256": "c2694d1723bbad24e24e0aeab1a6d3818dffeffd1af9f242f329066c7ac1de30"
+  },
+  {
+    "path": "game/assets/characters/c001-textures/57301f.png",
+    "bytes": 28101,
+    "sha256": "b50f0fb4aeb5e017f851ebe49cc0e67f9ea2965fecd8bafb29c9202d9dbc9700"
+  },
+  {
+    "path": "game/assets/characters/c001-textures/61432f.png",
+    "bytes": 36803,
+    "sha256": "4d8a088251c581c72401c1445a566edb5eab8c69ff14dc19ad791f50a4354d3a"
+  },
+  {
+    "path": "game/assets/characters/c001-textures/754328.png",
+    "bytes": 31442,
+    "sha256": "ea4d2eacd145a7cba8b965d2995548ba69e33d0e2fb46484fdbf81a7d5854931"
+  },
+  {
+    "path": "game/assets/characters/c001-textures/75804b.png",
+    "bytes": 36703,
+    "sha256": "ad63cb050cb4e2dac0656f426dc15d137f012ba844aee50da8c1c7088938520c"
+  },
+  {
+    "path": "game/assets/characters/c001-textures/775039.png",
+    "bytes": 33148,
+    "sha256": "096794cd130ffe2d1a5c44add5cac7c5f72bef2f819e98400fe6284de1bc8bab"
+  },
+  {
+    "path": "game/assets/characters/c001-textures/794a28.png",
+    "bytes": 31562,
+    "sha256": "6a89c64d217c60a97414e03be654f378ded70bd91c2faacb26084cc22e3b0e87"
+  },
+  {
+    "path": "game/assets/characters/c001-textures/858879.png",
+    "bytes": 36130,
+    "sha256": "e62b2eca1951253dce598f6cbad878eddd2779843b530196b373be767ac98d54"
+  },
+  {
+    "path": "game/assets/characters/c001-textures/8b4931.png",
+    "bytes": 33186,
+    "sha256": "721e978ff567df4967b637d96a1697630a431828b95551994fbe818761862f94"
+  },
+  {
+    "path": "game/assets/characters/c001-textures/936438.png",
+    "bytes": 36110,
+    "sha256": "90a0e4bbf83ed597b7ae809bd4719a893b7362a843b3e4b16be4a11e7aa9bc28"
+  },
+  {
+    "path": "game/assets/characters/c001-textures/965c36.png",
+    "bytes": 35613,
+    "sha256": "ddebd48b5c8535e3eeb59486f23d96435535a398738739b3204f535b435d8ae7"
+  },
+  {
+    "path": "game/assets/characters/c001-textures/96704e.png",
+    "bytes": 37554,
+    "sha256": "cfd99c8b5bfd60443b847b4083aef3fde9f96bf287e5aa37e92ed07f2153d32a"
+  },
+  {
+    "path": "game/assets/characters/c001-textures/99603a.png",
+    "bytes": 36339,
+    "sha256": "a97001dabc4fc8f097978d01607b934eafa4e7a93ce5f923f59a0204a450a760"
+  },
+  {
+    "path": "game/assets/characters/c001-textures/b68750.png",
+    "bytes": 40286,
+    "sha256": "44259e8f945cfbf5f94f0ad71b791a1dff9c5a8756d315410e3bcf1e3cde5cc3"
+  },
+  {
+    "path": "game/assets/characters/c001-textures/b98740.png",
+    "bytes": 39608,
+    "sha256": "1aa955a2a0f868107040a68a5629dc1353c5eba634f31069b9864a615562da6a"
+  },
+  {
+    "path": "game/assets/characters/c001-textures/d88d6f.png",
+    "bytes": 42663,
+    "sha256": "e759bae0969ed617251a90fe3ef0d0234945c13d0278f44f6befbc4b6f886993"
+  },
+  {
+    "path": "game/assets/characters/c001-textures/d8ae70.png",
+    "bytes": 43700,
+    "sha256": "1d80fb958cfaeb581a79db6342395fcf34a76a00b9630fb881553aa60f783b31"
+  },
+  {
+    "path": "game/assets/characters/c001-textures/e99b80.png",
+    "bytes": 44239,
+    "sha256": "bc7d08fef2884b05b1c121685427ad081a89ab175c7047ffc3ce6f84d7952e9e"
+  },
+  {
+    "path": "game/assets/characters/c001-textures/e9d3a7.png",
+    "bytes": 46336,
+    "sha256": "50371ada129eba95b724b8ddf0a319bed4a5a8a718f7ba29a787749d96ba6c28"
+  },
+  {
+    "path": "game/assets/characters/c001-textures/ead2a5.png",
+    "bytes": 46381,
+    "sha256": "1c7f978ab7ef5090fba67e58504ef354edfb63e3d987bc1cbce1ca5135d65328"
+  },
+  {
+    "path": "game/assets/characters/c001-textures/f3b589.png",
+    "bytes": 27772,
+    "sha256": "cae959a46aba90d938f34bec1cc82f20e5634061dc79c144fa7ee1025187820a"
+  },
+  {
+    "path": "game/assets/characters/c001-textures/fff3df.png",
+    "bytes": 44337,
+    "sha256": "d1049c82332afda70e43a47f6051ae0467bcf387f5e4b0c0c4f17bee163d0c92"
+  },
+  {
     "path": "game/assets/characters/villager.png",
     "bytes": 929060,
     "sha256": "540317f691c7d42dfde9d5d736b8c653352997a2f89cdb4b5dc6f21cb6411762"
+  },
+  {
+    "path": "game/assets/environment/fallen-logs.png",
+    "bytes": 1224722,
+    "sha256": "b13ac6eb1c427c5af1b59b52cd841b8cc2edc05d0fc6348f81eb237ecff0f314"
+  },
+  {
+    "path": "game/assets/environment/grass.png",
+    "bytes": 1749276,
+    "sha256": "234b050ff7ee93fdd21f3b3a6a11ab278bf2e9599ca848d24000d4d17910adc8"
+  },
+  {
+    "path": "game/assets/environment/hut-v018.png",
+    "bytes": 1527256,
+    "sha256": "d7411ec85a8b9a0b3674337c38101c8efb845a3a40aeef5ce0598627d687f913"
+  },
+  {
+    "path": "game/assets/environment/hut.png",
+    "bytes": 1909753,
+    "sha256": "30396d3858889805d6c1effd8d4e501e381a29c204f20c3d68147f62c854becb"
+  },
+  {
+    "path": "game/assets/environment/props.png",
+    "bytes": 2797383,
+    "sha256": "913681e1f5d621c4cfaa0484825391228ef04dd790a05b134156877eb94ab98b"
+  },
+  {
+    "path": "game/assets/environment/rock-v018.png",
+    "bytes": 1813847,
+    "sha256": "292ecab63711a9c4d72d35bec3c8e154fcd18eedaaae8746c33e61b918161865"
+  },
+  {
+    "path": "game/assets/environment/rock.png",
+    "bytes": 2108887,
+    "sha256": "d5ed1f0e1a4933bb1145ef8500ff7f0bfc183758a7edeaae8b78692c9248d942"
+  },
+  {
+    "path": "game/assets/environment/shrub.png",
+    "bytes": 1627349,
+    "sha256": "1ea927e1c46e5198a5a4503688caaeaf8a31c4569cbf5d6d3c51123f64cb1ba5"
+  },
+  {
+    "path": "game/assets/environment/terrain-v018.png",
+    "bytes": 2553509,
+    "sha256": "e3670bb0ebdff9c28e874ab2ae3219482251c697fdcb9bf07131bec32fd8f0e0"
+  },
+  {
+    "path": "game/assets/environment/terrain.png",
+    "bytes": 3640462,
+    "sha256": "286edf11321fa41de87d842cc243a5c0f6f245c30679ec6e025c93be77021ddd"
+  },
+  {
+    "path": "game/assets/environment/tree-v018.png",
+    "bytes": 1699946,
+    "sha256": "7043a5bd3b7f5ab0abc78cd2bfa6c9925174d5d9fc0c1686587f23b8b806eabe"
+  },
+  {
+    "path": "game/assets/environment/tree.png",
+    "bytes": 2034630,
+    "sha256": "ccd087cf13afdd5a7ed7d83988dbcf7faea0deb2775d2dbacd50b2e872254bbc"
   },
   {
     "path": "game/assets/figma/02422.svg",
@@ -90,73 +275,33 @@
     "sha256": "11286814b359fa5c00e19d831ae29766c67bb8603b7faca88d934d7eec8035d3"
   },
   {
-    "path": "game/assets/environment/grass.png",
-    "bytes": 1749276,
-    "sha256": "234b050ff7ee93fdd21f3b3a6a11ab278bf2e9599ca848d24000d4d17910adc8"
+    "path": "game/assets/ui/design/dark.svg",
+    "bytes": 498,
+    "sha256": "6b4b1b0c446d97bfdf07031e6362460ed5bc8cf2ef3cf0b1329b264747a2713f"
   },
   {
-    "path": "game/assets/environment/hut.png",
-    "bytes": 1909753,
-    "sha256": "30396d3858889805d6c1effd8d4e501e381a29c204f20c3d68147f62c854becb"
+    "path": "game/assets/ui/design/gold.svg",
+    "bytes": 498,
+    "sha256": "ebf3817c6d148d343adc9ff025421f67140826043dcfe93215e8d6fddd6703a7"
   },
   {
-    "path": "game/assets/environment/props.png",
-    "bytes": 2797383,
-    "sha256": "913681e1f5d621c4cfaa0484825391228ef04dd790a05b134156877eb94ab98b"
+    "path": "game/assets/ui/design/ivory.svg",
+    "bytes": 498,
+    "sha256": "b7ed3c9fa7ccd6e7658357029b10a8ec5fb72aa523233f2345c7d471731eb436"
   },
   {
-    "path": "game/assets/environment/rock.png",
-    "bytes": 2108887,
-    "sha256": "d5ed1f0e1a4933bb1145ef8500ff7f0bfc183758a7edeaae8b78692c9248d942"
-  },
-  {
-    "path": "game/assets/environment/shrub.png",
-    "bytes": 1627349,
-    "sha256": "1ea927e1c46e5198a5a4503688caaeaf8a31c4569cbf5d6d3c51123f64cb1ba5"
-  },
-  {
-    "path": "game/assets/environment/terrain.png",
-    "bytes": 3640462,
-    "sha256": "286edf11321fa41de87d842cc243a5c0f6f245c30679ec6e025c93be77021ddd"
-  },
-  {
-    "path": "game/assets/environment/tree.png",
-    "bytes": 2034630,
-    "sha256": "ccd087cf13afdd5a7ed7d83988dbcf7faea0deb2775d2dbacd50b2e872254bbc"
+    "path": "game/assets/ui/design/pressed.svg",
+    "bytes": 498,
+    "sha256": "55dc9962875d94778d29e2ec28baab447807d9db8c993a5c0477b32d0398d9dc"
   },
   {
     "path": "game/assets/ui/hero_portrait.png",
-    "bytes": 46460,
-    "sha256": "da08e657f0aee0fdaaeefaec495864e99bd437799505048e7f892fa96216acb5"
+    "bytes": 54327,
+    "sha256": "01c02febaef04a7341b354e36ae8aa98efc05ebbd825f27684ef239ededd6400"
   },
   {
     "path": "game/assets/ui/seed.svg",
     "bytes": 740,
     "sha256": "70e848935ae620056d539a55a344768d31902764398f8a08d231dad8c1360426"
-  },
-  {
-    "path": "game/assets/environment/terrain-v018.png",
-    "bytes": 2553509,
-    "sha256": "e3670bb0ebdff9c28e874ab2ae3219482251c697fdcb9bf07131bec32fd8f0e0"
-  },
-  {
-    "path": "game/assets/environment/hut-v018.png",
-    "bytes": 1527256,
-    "sha256": "d7411ec85a8b9a0b3674337c38101c8efb845a3a40aeef5ce0598627d687f913"
-  },
-  {
-    "path": "game/assets/environment/tree-v018.png",
-    "bytes": 1699946,
-    "sha256": "7043a5bd3b7f5ab0abc78cd2bfa6c9925174d5d9fc0c1686587f23b8b806eabe"
-  },
-  {
-    "path": "game/assets/environment/rock-v018.png",
-    "bytes": 1813847,
-    "sha256": "292ecab63711a9c4d72d35bec3c8e154fcd18eedaaae8746c33e61b918161865"
-  },
-  {
-    "path": "game/assets/environment/fallen-logs.png",
-    "bytes": 1224722,
-    "sha256": "b13ac6eb1c427c5af1b59b52cd841b8cc2edc05d0fc6348f81eb237ecff0f314"
   }
 ]

@@ -2,8 +2,8 @@ config_version=5
 
 [application]
 config/name="RoxHistory"
-config/version="0.1.8-scene"
-config/icon="res://assets/icon.svg"
+config/version="0.1.9-c001"
+config/icon="res://assets/app-icon-hut.png"
 run/main_scene="res://scenes/main.tscn"
 config/features=PackedStringArray("4.5", "GL Compatibility")
 
