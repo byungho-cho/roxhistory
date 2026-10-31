@@ -11,6 +11,9 @@ var camera: Camera3D
 var attachments := {}
 var bones := {}
 var rests := {}
+var rotation_left:Array[Quaternion]=[]
+var rotation_right:Array[Quaternion]=[]
+var profile_static:=OS.is_debug_build() and "--test-ui" in OS.get_cmdline_user_args() and "--profile-static-hero" in OS.get_cmdline_user_args()
 var tool_3d: Node3D
 var work_block: Node3D
 var heading := 0.0
@@ -159,12 +162,11 @@ func set_enabled(value: bool) -> void:
 
 func rotate_bone(label: String, euler: Vector3) -> void:
 	var index: int=bones[label]
-	var local_rest:=rig.get_bone_rest(index).basis.orthonormalized()
-	var global_rest:=rig.get_bone_global_rest(index).basis.orthonormalized()
-	rig.set_bone_pose_rotation(index,(local_rest*global_rest.inverse()*Basis.from_euler(euler)*global_rest).get_rotation_quaternion())
+	rig.set_bone_pose_rotation(index,rotation_left[index]*Quaternion.from_euler(euler)*rotation_right[index])
 
 func animate(delta: float, movement: Vector2, phase: float, walking: bool, action: String, action_time: float, paused: bool) -> void:
 	if not enabled: return
+	if profile_static and clock>0:return
 	if paused:
 		tool_3d.visible = false
 		work_block.visible = false
@@ -236,11 +238,16 @@ func stride_world_length() -> float:
 func build_villager() -> void:
 	var imported=preload("res://assets/characters/meshy01/hero.glb").instantiate()
 	pivot.add_child(imported)
+	if OS.is_debug_build() and "--test-ui" in OS.get_cmdline_user_args() and "--profile-no-hero" in OS.get_cmdline_user_args():imported.visible=false
 	rig=imported.find_children("*","Skeleton3D",true,false)[0]
 	for i in rig.get_bone_count():
 		var label:=rig.get_bone_name(i)
 		bones[label]=i;rests[label]=rig.get_bone_rest(i).origin
-		var attach:=BoneAttachment3D.new();attach.bone_name=label;rig.add_child(attach);attachments[label]=attach
+		var local_rest:=rig.get_bone_rest(i).basis.orthonormalized()
+		var global_rest:=rig.get_bone_global_rest(i).basis.orthonormalized()
+		rotation_left.append((local_rest*global_rest.inverse()).get_rotation_quaternion());rotation_right.append(global_rest.get_rotation_quaternion())
+		if label=="handR":
+			var attach:=BoneAttachment3D.new();attach.bone_name=label;rig.add_child(attach);attachments[label]=attach
 	for mesh in imported.find_children("*","MeshInstance3D",true,false):
 		mesh_count+=mesh.mesh.get_surface_count()
 		if mesh.skin:skinned_limbs.append(mesh)

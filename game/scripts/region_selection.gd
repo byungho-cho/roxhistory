@@ -37,6 +37,7 @@ var saved := {}
 var selection_count := 0
 var marker_icons := {}
 var marker_font:FontVariation
+var map_surface:TextureRect
 
 func _init(owner_app: Node, snapshot_state: Dictionary={}) -> void:
 	app=owner_app;saved=snapshot_state;name="RegionSelection"
@@ -45,14 +46,18 @@ func _ready() -> void:
 	size=Vector2(app.w,app.h);mouse_filter=Control.MOUSE_FILTER_IGNORE
 	texture_repeat=CanvasItem.TEXTURE_REPEAT_DISABLED
 	marker_font=FontVariation.new();marker_font.base_font=preload("res://assets/fonts/NotoSansKR.ttf");marker_font.variation_opentype={"wght":600}
-	factor=minf(size.x/BASE.x,size.y/BASE.y);origin=(size-BASE*factor)*.5
+	var usable:Vector2=size-app.safe*2
+	factor=minf(usable.x/BASE.x,usable.y/BASE.y);origin=(size-BASE*factor)*.5
 	pan=origin
+	map_surface=TextureRect.new();map_surface.texture=MAP;map_surface.expand_mode=TextureRect.EXPAND_IGNORE_SIZE;map_surface.stretch_mode=TextureRect.STRETCH_SCALE;map_surface.size=size;map_surface.mouse_filter=Control.MOUSE_FILTER_IGNORE;map_surface.show_behind_parent=true
+	map_surface.material=ShaderMaterial.new();map_surface.material.shader=preload("res://scripts/map_surround.gdshader");add_child(map_surface)
 	for key in REGIONS:marker_icons[key]=round_picture(self,region_symbol(key),Rect2(Vector2.ZERO,Vector2.ONE*70*factor)).get_parent()
 	ui_root=Control.new();ui_root.name="FixedMapUI";ui_root.mouse_filter=Control.MOUSE_FILTER_IGNORE;add_child(ui_root);ui_root.position=origin;ui_root.scale=Vector2.ONE*factor
 	var back=app.design_button(ui_root,"",Rect2(36,32,84,84),func():app.show_screen("title"),false,"");back.name="RegionBack"
 	back.add_theme_stylebox_override("normal",DesignSkin.round_style("dark"));app.picture(back,preload("res://assets/region-selection/fac42.svg"),Rect2(24,24,36,36))
-	text("첫 터전을 고르세요",Rect2(148,32,1220,64),48,Color("fff1d5"))
-	text("대한민국의 강과 산을 따라, 나의 첫 이야기를 시작합니다",Rect2(148,100,1220,32),21,Color("ebd1a7"))
+	var heading=text("첫 터전을 고르세요",Rect2(148,32,1220,64),48,Color("fff1d5"))
+	heading.name="RegionHeading"
+	var subtitle=text("대한민국의 강과 산을 따라, 나의 첫 이야기를 시작합니다",Rect2(148,100,1220,32),21,Color("ebd1a7"))
 	var bag=app.design_button(ui_root,"",Rect2(1472,32,88,88),app.show_about,false,"bag");bag.name="RegionBag";bag.add_theme_stylebox_override("normal",DesignSkin.round_style("dark"))
 	details=Panel.new();details.name="RegionDetails";details.position=Vector2(1140,173);details.size=Vector2(402,630);details.add_theme_stylebox_override("panel",DesignSkin.style("dark"));ui_root.add_child(details)
 	app.picture(details,preload("res://assets/region-selection/ba95c.svg"),Rect2(0,0,402,630))
@@ -66,11 +71,20 @@ func _ready() -> void:
 	start_button=app.design_button(details,"이곳에서 시작",Rect2(28,524,346,86),app.start_region,true,"compass");start_button.name="RegionStart"
 	var reset=app.design_button(ui_root,"",Rect2(40,810,76,76),restore,false,"");reset.name="MapReset";reset.tooltip_text="지도 최소 배율로 복원";reset.add_theme_stylebox_override("normal",DesignSkin.round_style("dark"));app.picture(reset,RESET,Rect2(23,23,30,30))
 	var gesture_hint=text("두 손가락으로 확대·축소",Rect2(140,836,300,24),18,Color("fff1d5"))
-	for fixed in [back,bag,reset,details]:
-		var at:Vector2=origin+fixed.position*factor
-		at=at.clamp(app.safe,size-app.safe-fixed.size*factor)
-		fixed.position=(at-origin)/factor
-	gesture_hint.position.y=reset.position.y+26
+	gesture_hint.name="GestureHint"
+	gesture_hint.add_theme_font_size_override("font_size",maxi(18,int(10/factor)))
+	# Keep each fixed group together when safe insets or aspect ratio change.
+	var header_shift:Vector2=(app.safe-origin)/factor
+	for item in [back,heading,subtitle]:item.position+=header_shift
+	bag.position=Vector2((size.x-app.safe.x-origin.x)/factor-128,32+header_shift.y)
+	var footer_shift:Vector2=Vector2(header_shift.x,(size.y-app.safe.y-origin.y)/factor-900)
+	reset.position+=footer_shift;gesture_hint.position+=footer_shift
+	subtitle.add_theme_font_size_override("font_size",maxi(21,int(10/factor)))
+	var panel_factor=minf(maxf(factor,.5),(size.y-app.safe.y*2-132*factor)/630)
+	details.scale=Vector2.ONE*(panel_factor/factor)
+	var panel_x=size.x-app.safe.x-58*factor-402*panel_factor
+	var panel_y=clampf((size.y-630*panel_factor)*.5+38*factor,app.safe.y+132*factor,size.y-app.safe.y-630*panel_factor)
+	details.position=(Vector2(panel_x,panel_y)-origin)/factor
 	app.picture(ui_root,DemoArt.icon("compass"),Rect2(1036,160,58,58));text("N",Rect2(1058,136,30,22),16,Color.WHITE)
 	if not saved.is_empty():
 		selected=saved.get("selected","amsa");zoom=clampf(saved.get("zoom",1.0),1,2);pan=size*.5-saved.get("center",BASE*.5)*factor*zoom;pan=bounded(pan,zoom)
@@ -102,6 +116,9 @@ func region_symbol(key:String) -> Texture2D:
 
 func update_markers() -> void:
 	for key in marker_icons:marker_icons[key].position=marker_rect(key).position+Vector2(5.8,4.2)*factor
+	map_surface.material.set_shader_parameter("viewport_size",size)
+	map_surface.material.set_shader_parameter("map_origin",pan)
+	map_surface.material.set_shader_parameter("map_extent",BASE*factor*zoom)
 	queue_redraw()
 
 func refresh() -> void:
@@ -161,7 +178,7 @@ func ui_hit(at:Vector2) -> bool:
 	if details.get_global_rect().has_point(at):return true
 	for control in ui_root.find_children("*","Button",true,false):
 		if control.get_global_rect().has_point(at):return true
-	return at.y<origin.y+132*factor
+	return at.y<app.safe.y+132*factor
 
 func begin_pointer(index:int,at:Vector2) -> void:
 	if fingers.is_empty():moved=false;multi=false
@@ -213,9 +230,6 @@ func _input(event:InputEvent) -> void:
 
 func _draw() -> void:
 	if factor<=0:return
-	# Edge-clamped map pixels fill non-16:9 margins without cropping the full map at minimum zoom.
-	var tex_scale=Vector2(MAP.get_size())/BASE
-	draw_texture_rect_region(MAP,Rect2(Vector2.ZERO,size),Rect2(-pan/(factor*zoom)*tex_scale,size/(factor*zoom)*tex_scale),Color.WHITE,false,false)
 	draw_rect(Rect2(Vector2.ZERO,size),Color(0.09,0.07,0.035,.1232))
 	for key in REGIONS:
 		var data:Dictionary=REGIONS[key];var chosen=key==selected;var point=map_point(key);var rect=marker_rect(key)
@@ -229,7 +243,7 @@ func _draw() -> void:
 		var style=DesignSkin.style("gold" if chosen else "dark")
 		draw_style_box(style,Rect2(0,0,81.6,78.4));draw_style_box(style,Rect2(88,4,161.6,76.8))
 		var color=Color("49321e") if chosen else Color("eeeeee")
-		draw_string(marker_font,Vector2(97.6,35),data.name,HORIZONTAL_ALIGNMENT_LEFT,142.4,20,color)
-		draw_string(marker_font,Vector2(97.6,61),data.short,HORIZONTAL_ALIGNMENT_LEFT,142.4,17,color)
+		draw_string(marker_font,Vector2(97.6,35),data.name,HORIZONTAL_ALIGNMENT_LEFT,142.4,maxi(20,int(13/factor)),color)
+		draw_string(marker_font,Vector2(97.6,61),data.short,HORIZONTAL_ALIGNMENT_LEFT,142.4,maxi(17,int(10/factor)),color)
 		draw_set_transform(Vector2.ZERO,0,Vector2.ONE)
 

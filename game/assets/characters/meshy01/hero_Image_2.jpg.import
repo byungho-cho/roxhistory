@@ -3,9 +3,11 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://ch45w7j2wn0bx"
-path="res://.godot/imported/hero_Image_2.jpg-bdf2607c59cbc896b6dd25ea35d88c9d.ctex"
+path.s3tc="res://.godot/imported/hero_Image_2.jpg-bdf2607c59cbc896b6dd25ea35d88c9d.s3tc.ctex"
+path.etc2="res://.godot/imported/hero_Image_2.jpg-bdf2607c59cbc896b6dd25ea35d88c9d.etc2.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc", "etc2_astc"],
+"vram_texture": true
 }
 generator_parameters={
 "md5": "4d91d55835f73e79dd18b2d12d0623f4"
@@ -14,11 +16,11 @@ generator_parameters={
 [deps]
 
 source_file="res://assets/characters/meshy01/hero_Image_2.jpg"
-dest_files=["res://.godot/imported/hero_Image_2.jpg-bdf2607c59cbc896b6dd25ea35d88c9d.ctex"]
+dest_files=["res://.godot/imported/hero_Image_2.jpg-bdf2607c59cbc896b6dd25ea35d88c9d.s3tc.ctex", "res://.godot/imported/hero_Image_2.jpg-bdf2607c59cbc896b6dd25ea35d88c9d.etc2.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0
@@ -39,5 +41,5 @@ process/premult_alpha=false
 process/normal_map_invert_y=false
 process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
-process/size_limit=0
+process/size_limit=2048
 detect_3d/compress_to=1
