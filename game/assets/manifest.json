@@ -126,12 +126,37 @@
   },
   {
     "path": "game/assets/ui/hero_portrait.png",
-    "bytes": 50607,
-    "sha256": "5f81b279a5d9d7134ce6f74c0b47ad32f9a399858219b7912a52984140264045"
+    "bytes": 46460,
+    "sha256": "da08e657f0aee0fdaaeefaec495864e99bd437799505048e7f892fa96216acb5"
   },
   {
     "path": "game/assets/ui/seed.svg",
     "bytes": 740,
     "sha256": "70e848935ae620056d539a55a344768d31902764398f8a08d231dad8c1360426"
+  },
+  {
+    "path": "game/assets/environment/terrain-v018.png",
+    "bytes": 2553509,
+    "sha256": "e3670bb0ebdff9c28e874ab2ae3219482251c697fdcb9bf07131bec32fd8f0e0"
+  },
+  {
+    "path": "game/assets/environment/hut-v018.png",
+    "bytes": 1527256,
+    "sha256": "d7411ec85a8b9a0b3674337c38101c8efb845a3a40aeef5ce0598627d687f913"
+  },
+  {
+    "path": "game/assets/environment/tree-v018.png",
+    "bytes": 1699946,
+    "sha256": "7043a5bd3b7f5ab0abc78cd2bfa6c9925174d5d9fc0c1686587f23b8b806eabe"
+  },
+  {
+    "path": "game/assets/environment/rock-v018.png",
+    "bytes": 1813847,
+    "sha256": "292ecab63711a9c4d72d35bec3c8e154fcd18eedaaae8746c33e61b918161865"
+  },
+  {
+    "path": "game/assets/environment/fallen-logs.png",
+    "bytes": 1224722,
+    "sha256": "b13ac6eb1c427c5af1b59b52cd841b8cc2edc05d0fc6348f81eb237ecff0f314"
   }
 ]

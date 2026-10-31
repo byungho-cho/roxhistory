@@ -35,7 +35,8 @@ static func button_style(primary: bool = false) -> StyleBoxFlat:
 	s.bg_color = Color("81562c") if primary else Color("503b29")
 	s.border_color = Color("d2ad66")
 	s.set_corner_radius_all(12)
-	s.shadow_size = 4
+	s.set_content_margin_all(10)
+	s.shadow_size = 3
 	s.shadow_offset = Vector2(0,3)
 	return s
 

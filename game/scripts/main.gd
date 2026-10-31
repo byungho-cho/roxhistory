@@ -110,7 +110,7 @@ func show_screen(next: String) -> void:
 		"title": title_screen()
 		"region": region_screen()
 		"play": play_hud()
-	var notice_rect := Rect2(safe.x+84,safe.y+72,minf(330,w-safe.x*2-450),76) if screen == "play" else Rect2(safe.x,h-160,minf(480,w*0.48),76)
+	var notice_rect := Rect2(safe.x+76,safe.y+56,minf(300,w-safe.x*2-420),48) if screen == "play" else Rect2(safe.x,h-160,minf(480,w*0.48),76)
 	toast_panel = box(stage,notice_rect)
 	toast_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	toast_label = label(toast_panel,"",17,Color("fff3d6"))
@@ -181,14 +181,16 @@ func button(parent: Node, text: String, callback: Callable, primary: bool = fals
 func back_button(callback: Callable) -> DemoButton:
 	var b := button(stage,"",callback)
 	b.position = safe
-	b.size = Vector2(68,68)
+	b.custom_minimum_size = Vector2(56,56)
+	b.size = Vector2(56,56)
 	var style := DemoArt.panel(true)
 	style.bg_color = Color(0.15,0.15,0.15,0.8)
-	style.set_corner_radius_all(34)
+	style.set_corner_radius_all(28)
+	style.set_content_margin_all(8)
 	b.add_theme_stylebox_override("normal",style)
 	b.icon = preload("res://assets/figma/fac42.svg")
 	b.expand_icon = true
-	b.add_theme_constant_override("icon_max_width",36)
+	b.add_theme_constant_override("icon_max_width",30)
 	return b
 
 func picture(parent: Node, texture: Texture2D, rect: Rect2) -> TextureRect:
@@ -318,34 +320,39 @@ func enter_game() -> void:
 func play_hud() -> void:
 	back_button(pause_game)
 	var quest_panel:=button(stage,"",focus_objective,false,"scroll")
-	quest_panel.position=Vector2(w-safe.x-252,safe.y+78);quest_panel.size=Vector2(252,72)
-	quest_panel.add_theme_constant_override("icon_max_width",32)
+	quest_panel.custom_minimum_size=Vector2(220,54)
+	quest_panel.position=Vector2(w-safe.x-220,safe.y+56);quest_panel.size=Vector2(220,54)
+	quest_panel.add_theme_constant_override("icon_max_width",26)
 	quest_panel.icon_alignment=HORIZONTAL_ALIGNMENT_LEFT
-	objective=label(quest_panel,"",15,Color("fff0d1"));objective.position=Vector2(56,12)
+	objective=label(quest_panel,"",15,Color("fff0d1"));objective.position=Vector2(46,6)
 	joystick = DemoJoystick.new()
 	stage.add_child(joystick)
 	joystick.position = Vector2(safe.x+14,h-safe.y-154)
 	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation",12)
+	row.add_theme_constant_override("separation",int(SceneStyle.ACTION_GAP))
 	stage.add_child(row)
-	row.position = Vector2(w-336-safe.x,h-safe.y-90)
-	row.size = Vector2(336,82)
+	row.position = Vector2(w-304-safe.x,h-safe.y-70)
+	row.size = Vector2(304,64)
 	gather_button = button(row,"채집",gather_action,true,"wood")
-	gather_button.custom_minimum_size = Vector2(104,82)
+	gather_button.custom_minimum_size = SceneStyle.ACTION_SIZE
 	build_button = button(row,"건설",build_action,false,"hut")
-	build_button.custom_minimum_size = Vector2(104,82)
+	build_button.custom_minimum_size = SceneStyle.ACTION_SIZE
 	var journal := button(row,"임무",quest_details,false,"scroll")
-	journal.custom_minimum_size = Vector2(104,82)
-	context_panel = box(stage,Rect2(safe.x+84,safe.y+72,minf(330,w-safe.x*2-450),76))
+	journal.custom_minimum_size = SceneStyle.ACTION_SIZE
+	for action_button in [gather_button,build_button,journal]:
+		action_button.add_theme_constant_override("icon_max_width",30)
+		action_button.add_theme_constant_override("h_separation",6)
+		action_button.add_theme_font_size_override("font_size",17)
+	context_panel = box(stage,Rect2(safe.x+76,safe.y+56,minf(300,w-safe.x*2-420),48))
 	context_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	context_panel.visible=false
-	context = label(context_panel,"",17,Color("fff0d1"))
+	context = label(context_panel,"",15,Color("fff0d1"))
 	context.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	context.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	task_bar = ProgressBar.new()
 	task_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	task_bar.show_percentage = false
-	task_bar.position = Vector2(safe.x+84,safe.y+166)
+	task_bar.position = Vector2(safe.x+84,safe.y+111)
 	task_bar.size = Vector2(minf(330,w-safe.x*2-450),10)
 	stage.add_child(task_bar)
 	task_bar.visible = false
@@ -356,7 +363,10 @@ func update_hud() -> void:
 	if screen != "play" or not is_instance_valid(chrome) or model.state.is_empty():
 		return
 	if model.state.built:
-		objective.text = "첫 보금자리 · 완료\n"+("보상을 받았습니다." if model.state.reward_claimed else "보상을 받아 주세요.")
+		var goal_panel:Control=objective.get_parent()
+		goal_panel.custom_minimum_size=Vector2(178,48)
+		goal_panel.size=Vector2(178,48);goal_panel.position.x=w-safe.x-178
+		objective.text = "보금자리 완성 ✓" if model.state.reward_claimed else "완성 · 보상 받기"
 	else:
 		var c := DemoConfig.get_data()
 		objective.text = "첫 보금자리\n나무 %d/%d  ·  돌 %d/%d" % [mini(model.state.wood,c.wood_cost),c.wood_cost,mini(model.state.stone,c.stone_cost),c.stone_cost]
@@ -440,7 +450,7 @@ func gather_action() -> void:
 	task = "gather"
 	world.player.face_target(DemoConfig.point(n.position))
 	var target_point:=DemoConfig.point(n.position)
-	var stand: Vector2=world.gather_stand(target_point)
+	var stand: Vector2=world.gather_stand(target_point,n.kind)
 	if not stand.is_finite():
 		cancel_task();toast("자원 옆의 빈 공간으로 이동해 주세요");return
 	gather_approach=world.player.position.distance_to(stand)>4
@@ -505,7 +515,7 @@ func completion() -> void:
 	show_modal("첫 보금자리 완성!","강변에 첫 보금자리가 생겼어요!\n씨앗 %d개를 받아 여정을 이어가세요." % reward,[
 		{"text":"보상 받고 계속하기","primary":true,"action":func():
 			if model.claim_reward():
-				close_modal(); world.feedback.rewarded(); toast("보상 저장 완료",5)}],true)
+				close_modal(); world.feedback.rewarded(); toast("보금자리 완성 · 저장됨",2)}],true)
 
 func focus_objective() -> void:
 	if gestures.blocked or modal: return

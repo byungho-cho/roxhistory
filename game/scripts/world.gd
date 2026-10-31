@@ -22,7 +22,7 @@ func _init(game: GameState) -> void:
 
 func _ready() -> void:
 	y_sort_enabled = true
-	var terrain: Texture2D = preload("res://assets/environment/terrain.png")
+	var terrain: Texture2D = preload(SceneStyle.TERRAIN)
 	var background := Sprite2D.new()
 	background.name = "Terrain"
 	background.texture = terrain
@@ -43,14 +43,14 @@ func _ready() -> void:
 	water.material = water_material
 	add_child(water)
 	polygon_body(PackedVector2Array(RIVER_POLYGON))
-	prop("hut",Vector2(700,510),340,Vector2(270,100),"ExistingHut")
-	prop("hut",Vector2(470,880),360,Vector2(285,110),"VillageHut")
-	prop("hut",Vector2(990,740),340,Vector2(260,100),"RiversideHut")
+	prop("hut",Vector2(700,510),380,Vector2(270,100),"ExistingHut")
+	prop("hut",Vector2(360,720),390,Vector2(285,110),"VillageHut")
+	prop("hut",Vector2(990,740),400,Vector2(260,100),"RiversideHut")
 	prop("props",Vector2(1140,790),100,Vector2(60,24),"RiversidePottery")
 	prop("props",Vector2(700,610),108,Vector2(65,28),"PotteryAndGrindingStone")
 	prop("props",Vector2(570,935),100,Vector2(60,24),"FishingNet")
-	for entry in [[180,680,330],[320,400,310],[530,270,285],[1110,620,260],[1640,1060,320],[2120,1150,320],[80,1190,280],[1220,1300,260],[2290,840,260]]:
-		prop("tree",Vector2(entry[0],entry[1]),entry[2],Vector2(54,38),"Tree")
+	for entry in [[180,680,330],[320,400,310],[530,270,285],[1110,620,260],[1700,1060,290],[2120,1150,320],[80,1190,280],[1150,1350,210],[2290,840,260]]:
+		prop("tree",Vector2(entry[0],entry[1]),entry[2],Vector2(54,38),"SettlementTree" if entry[0]==1700 else "Tree")
 	for entry in [[900,380,108],[1330,410,84],[1570,510,102],[1860,600,90],[2070,700,115],[2300,770,90],[280,1140,95],[1470,1210,80]]:
 		prop("rock",Vector2(entry[0],entry[1]),entry[2],Vector2(entry[2]*0.65,30),"BankStone")
 	for entry in [[800,340,120],[1440,470,130],[1810,620,140],[2200,810,125],[300,1230,145],[1900,1250,155]]:
@@ -68,11 +68,17 @@ func _ready() -> void:
 		root.position = DemoConfig.point(n.position)
 		add_child(root)
 		var icon := Sprite2D.new()
-		icon.texture = DemoArt.icon("wood") if n.kind == "wood" else EnvironmentProp.asset("rock")
-		var width := 100.0 if n.kind == "wood" else 108.0
+		icon.texture = EnvironmentProp.asset("wood") if n.kind == "wood" else EnvironmentProp.asset("rock")
+		var width := SceneStyle.WOOD_WIDTH if n.kind == "wood" else SceneStyle.STONE_WIDTH
 		icon.scale = Vector2.ONE*width/icon.texture.get_width()
 		icon.position.y = -icon.texture.get_height()*icon.scale.y*0.5
+		if n.kind=="stone":icon.material=EnvironmentProp.stone_surface()
 		root.add_child(icon)
+		var contact_shadow:=Polygon2D.new()
+		var outline:=PackedVector2Array()
+		for k in 32: outline.append(Vector2(cos(k*TAU/32)*width*.48,sin(k*TAU/32)*9))
+		contact_shadow.polygon=outline;contact_shadow.color=SceneStyle.SHADOW
+		contact_shadow.position=Vector2(5,-5);contact_shadow.z_index=-1;root.add_child(contact_shadow)
 		var text := Label.new()
 		text.theme = DemoArt.theme()
 		text.add_theme_font_size_override("font_size",16)
@@ -87,7 +93,7 @@ func _ready() -> void:
 	site = Node2D.new()
 	site.position = DemoConfig.point(DemoConfig.get_data().build_site)
 	add_child(site)
-	home = prop("hut",site.position,290,Vector2.ZERO,"QuestHome")
+	home = prop("hut",site.position,340,Vector2.ZERO,"QuestHome")
 	player = DemoPlayer.new()
 	player.position = DemoConfig.point(model.state.position)
 	add_child(player)
@@ -206,11 +212,12 @@ func _draw() -> void:
 			draw_line(post,post-Vector2(0,20),Color("9c703d"),7,true)
 		draw_set_transform(Vector2.ZERO)
 
-func gather_stand(target: Vector2) -> Vector2:
+func gather_stand(target: Vector2, resource_kind: String="wood") -> Vector2:
 	# Keep the short contact stance clear of huts and scenery, without teleporting.
 	var side: float=-1.0 if player.position.x<=target.x else 1.0
-	for x in [side*64,-side*64]:
-		for y in [0,-32,32]:
+	var reach:=47.0 if resource_kind=="stone" else 53.0
+	for x in [side*reach,-side*reach]:
+		for y in [0,16,32]:
 			var candidate:=target+Vector2(x,y)
 			var at:=player.transform;at.origin=candidate
 			if not player.test_move(at,Vector2.ZERO,null,0.08,true):return candidate

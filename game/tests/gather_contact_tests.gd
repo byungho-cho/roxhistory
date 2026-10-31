@@ -29,6 +29,12 @@ func run() -> void:
 					var sprite: Sprite2D=target.get_child(0)
 					var bounds: Rect2=sprite.get_global_transform()*sprite.get_rect()
 					check(bounds.has_point(app.world.feedback.impact_point),"Tool head contacts visible resource bounds: "+id+" direction "+str(index))
+					var surface:=sprite.texture.get_image()
+					var uv:Vector2=(sprite.to_local(app.world.feedback.impact_point)-sprite.get_rect().position)/sprite.get_rect().size
+					var pixel:Vector2i=Vector2i(uv*Vector2(surface.get_size())).clamp(Vector2i.ZERO,surface.get_size()-Vector2i.ONE)
+					var opaque:=surface.get_pixelv(pixel).a>0.5 and Rect2(Vector2.ZERO,Vector2.ONE).has_point(uv)
+					check(opaque,"Tool contacts opaque material, not transparent sprite padding: "+id+" "+str(index))
+					if not opaque or not bounds.has_point(app.world.feedback.impact_point):print("CONTACT_DIAGNOSTIC ",id," ",index," offset=",app.world.feedback.impact_point-target.position," uv=",uv)
 					check(not p.work_destination.is_finite(),"Positioning ends before the first strike")
 			var kind: String="wood" if id.begins_with("wood") else "stone"
 			check(contact_checked and app.task=="" and app.model.state[kind]==1,"Approach and one gather finish without duplicate credit: "+id+" "+str(index))
@@ -50,3 +56,4 @@ func run() -> void:
 	app.close_modal()
 	var report: Dictionary={"checks":checks,"failed":failures,"cases":cases,"utc":Time.get_datetime_string_from_system(true),"runtime":"Native Godot real collision movement; 8 approaches at both quest resources and left/right at every other resource; test state reset between cases"}
 	FileAccess.open("res://reports/gather-contact-tests.json",FileAccess.WRITE).store_string(JSON.stringify(report,"  "));print(JSON.stringify(report));quit(0 if failures.is_empty() else 1)
+
