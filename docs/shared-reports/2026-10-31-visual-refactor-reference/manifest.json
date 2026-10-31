@@ -1,0 +1,65 @@
+{
+  "date_kst": "2026-10-31",
+  "scope": "Reference material only; not the five newly attached JPG originals",
+  "images": [
+    {
+      "file": "images/01-lordrush-day-layout.jpg",
+      "bytes": 145656,
+      "sha256": "005e8b3fadac474046f2929a9084257722eff9e42ba667a33bcd08dccabfe77f",
+      "git_blob_sha": "d6a07da34ed588c6beb3afb7a4ff9f0b52edc9c2",
+      "width": 608,
+      "height": 1080,
+      "source": "../2026-10-31-lordrush-playtest/evidence/clips/village-environment.mp4",
+      "source_sha256": "3dbdd252a5f9c9785c50bbeff049300adb527355c687d0b8b664666cc00cb6de",
+      "source_seconds": 0,
+      "evidence_type": "Frame from prior investigator recording; no new direct play",
+      "processing": "Decoded frame exported as JPEG; no scene compositing or retouching"
+    },
+    {
+      "file": "images/02-lordrush-interior.jpg",
+      "bytes": 83344,
+      "sha256": "15d1aeb00bdb2653949b86f708fabffc372f479b6b9dc97dc4aeb4e8ec2f2d71",
+      "git_blob_sha": "6d156b6811dc20786ba6981b0387c01ea709f56f",
+      "width": 590,
+      "height": 1280,
+      "source": "../2026-10-31-lordrush-playtest/evidence/external-video/lordrush-youtube-LEAWRWjgh_M-review.mp4",
+      "source_sha256": "b79c25fc5d4b732cd20958ef62c1a81bb888da25ec6b020b8745338bdb71098e",
+      "source_seconds": 78.5,
+      "evidence_type": "Frame from third-party gameplay video",
+      "processing": "Decoded frame exported as JPEG; no scene compositing or retouching"
+    },
+    {
+      "file": "images/03-lordrush-night-layout.jpg",
+      "bytes": 66092,
+      "sha256": "b0e1d7d3e396c83ec1254abea84369646a19e0327257dbbfba6f45bfc672a191",
+      "git_blob_sha": "e93e9943eda64c9c4aba3c077398b08b36ca5001",
+      "width": 590,
+      "height": 1280,
+      "source": "../2026-10-31-lordrush-playtest/evidence/external-video/lordrush-youtube-LEAWRWjgh_M-review.mp4",
+      "source_sha256": "b79c25fc5d4b732cd20958ef62c1a81bb888da25ec6b020b8745338bdb71098e",
+      "source_seconds": 140.5,
+      "evidence_type": "Frame from third-party gameplay video",
+      "processing": "Decoded frame exported as JPEG; no scene compositing or retouching"
+    },
+    {
+      "file": "images/04-roxhistory-current-world.png",
+      "bytes": 1945291,
+      "sha256": "43846e367a4190bbba6af6a22873a09b56ae53d070b1b9cf412b1a8bb5e88bcf",
+      "git_blob_sha": "c8ccbfab2e76671fa2b6a33f6dc7557ce9e354b6",
+      "source": "../2026-10-31-play-experience/evidence/screenshots/after-world.png",
+      "source_commit": "85e417a32eed18eb14fb60a950addddb7625dd09",
+      "evidence_type": "Existing RoxHistory v0.1.7 development capture",
+      "processing": "Original Git blob reused unchanged"
+    },
+    {
+      "file": "images/05-roxhistory-completed.png",
+      "bytes": 1879786,
+      "sha256": "d3579cccba27397b47167a9e85d374969d26fa1cc58d8eb7b2f2e1396a722ca8",
+      "git_blob_sha": "6698abfe3809eb96f68a7bd3f2e1935205b8192d",
+      "source": "../2026-10-31-play-experience/evidence/screenshots/completed.png",
+      "source_commit": "85e417a32eed18eb14fb60a950addddb7625dd09",
+      "evidence_type": "Existing RoxHistory v0.1.7 development capture",
+      "processing": "Original Git blob reused unchanged"
+    }
+  ]
+}
