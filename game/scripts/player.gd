@@ -111,6 +111,7 @@ func fit_camera() -> void:
 	var viewport_size := get_viewport().get_visible_rect().size
 	var fit := maxf(0.5,maxf(viewport_size.x/2400.0,viewport_size.y/1350.0))
 	camera.zoom = Vector2.ONE*fit*zoom_factor
+	if is_instance_valid(hybrid):hybrid.set_render_zoom(zoom_factor)
 	camera.reset_smoothing()
 
 func zoom_at(midpoint: Vector2, factor: float, world_anchor: Vector2=Vector2.INF) -> void:

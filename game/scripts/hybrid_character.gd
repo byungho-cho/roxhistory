@@ -79,7 +79,7 @@ func cone(parent: Node3D, pos: Vector3, top: float, bottom: float, height: float
 func _ready() -> void:
 	viewport = SubViewport.new()
 	viewport.name = "Character3DViewport"
-	viewport.size = Vector2i(768,960)
+	viewport.size = Vector2i(384,480)
 	viewport.transparent_bg = true
 	viewport.own_world_3d = true
 	viewport.render_target_update_mode = SubViewport.UPDATE_DISABLED
@@ -137,6 +137,18 @@ func _ready() -> void:
 	# Project the shared ground origin: rotation never changes the 2D foot anchor.
 	display.position = -camera.unproject_position(Vector3.ZERO)*display.scale
 	set_enabled(false)
+
+func set_render_zoom(factor: float) -> void:
+	# Base play already downsamples the hero substantially. Reserve 4x pixels for inspection.
+	# Hysteresis avoids allocation churn around a pinch threshold; projection stays identical.
+	if not viewport or not display:return
+	var width:=viewport.size.x
+	if factor>=1.5:width=768
+	elif factor<=1.25:width=384
+	if viewport.size.x==width:return
+	viewport.size=Vector2i(width,width*5/4)
+	display.scale=Vector2.ONE*(0.70/1.5)*(384.0/width)
+	display.position=-camera.unproject_position(Vector3.ZERO)*display.scale
 
 func set_enabled(value: bool) -> void:
 	enabled = value

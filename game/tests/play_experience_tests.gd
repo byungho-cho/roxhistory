@@ -32,6 +32,8 @@ func run() -> void:
 	check(app.world.objectives.targets.size()==2,"Fresh quest marks one wood and one stone area")
 	check(app.world.objectives.targets.wood.id=="wood_3","Guidance groups required resources into a short route")
 	check(app.chrome.portrait!=null,"HUD portrait uses the new model render")
+	check(p.hybrid.viewport.size==Vector2i(384,480),"Base view uses the lower render cost")
+	var hero_size: Vector2=p.hybrid.display.get_rect().size*p.hybrid.display.scale
 	var ui_rect: Rect2=app.gather_button.get_global_rect()
 	p.position=Vector2(1200,900);p.camera.position=Vector2(0,-120);p.camera.reset_smoothing();await frames(4)
 	var anchor: Vector2=root.get_canvas_transform().affine_inverse()*Vector2(500,300)
@@ -39,6 +41,8 @@ func run() -> void:
 	check(app.gestures.pinching and app.gestures.blocked,"Two world-owned fingers begin pinch")
 	drag(11,Vector2(700,300));await frames(2)
 	check(is_equal_approx(p.zoom_factor,1.75),"Pinch distance sets proportional zoom")
+	check(p.hybrid.viewport.size==Vector2i(768,960),"Zoom increases actual 3D rendering resolution")
+	check((p.hybrid.display.get_rect().size*p.hybrid.display.scale).distance_to(hero_size)<0.01,"Resolution change preserves the world-space character size")
 	var projected: Vector2=root.get_canvas_transform()*anchor
 	check(projected.distance_to(Vector2(560,300))<2,"Original world anchor follows the finger midpoint")
 	check(app.gather_button.get_global_rect()==ui_rect,"Pinch leaves UI size and placement unchanged")
@@ -58,6 +62,13 @@ func run() -> void:
 	check(app.gestures.touches.is_empty() and not app.gestures.blocked,"All releases clear gesture ownership")
 	p.zoom_at(Vector2(500,300),99);check(p.zoom_factor==3,"Maximum zoom is bounded")
 	p.zoom_at(Vector2(500,300),0.01);check(p.zoom_factor==1,"Minimum zoom retains original composition")
+	check(p.hybrid.viewport.size==Vector2i(384,480),"Returning to base releases the higher render cost")
+	for factor in [1.6,1.4,1.2,2.0,1.0]:
+		p.zoom_at(Vector2(500,300),factor)
+		await RenderingServer.frame_post_draw
+		var nonempty:=p.hybrid.viewport.get_texture().get_image().get_used_rect().has_area()
+		var ground: Vector2=p.hybrid.display.position+p.hybrid.camera.unproject_position(Vector3.ZERO)*p.hybrid.display.scale
+		check(nonempty and ground.length()<0.01,"First rendered frame after resolution transition retains the hero and foot anchor at "+str(factor))
 	for factor in [1.0,3.0]:
 		p.zoom_at(Vector2(0,0),factor)
 		await frames(2)
