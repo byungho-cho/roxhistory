@@ -1,0 +1,27 @@
+{
+  "utc": "2026-10-31T02:38:02Z",
+  "position": [
+    1060,
+    1030
+  ],
+  "media_volume": "15/15",
+  "output": "Android playback capture to PCM; no physical speaker/headphone listening performed",
+  "before_apk_sha256": "ef254148f81fc1d7d6e76ea1e34ef0859a09098682f3af687d87fe210327d9fb",
+  "after_apk_sha256": "af38b854dd3b1562b430feca21000a694e6c0e5997ca70938da3bf9e11a1ca41",
+  "metrics": {
+    "before": {
+      "rms_dbfs": -44.77,
+      "peak_dbfs": -30.12,
+      "sample_rate": 48000,
+      "channels": 2
+    },
+    "after": {
+      "rms_dbfs": -50.93,
+      "peak_dbfs": -36.83,
+      "sample_rate": 48000,
+      "channels": 2
+    }
+  },
+  "source_commit": "6f1a99ef5ba5d35272e184cf10d194fdfe429cec",
+  "apk_sha256": "af38b854dd3b1562b430feca21000a694e6c0e5997ca70938da3bf9e11a1ca41"
+}

@@ -12,6 +12,7 @@ var water: Polygon2D
 var environment_props: Array[EnvironmentProp] = []
 var effects_enabled := true
 var feedback: WorldFeedback
+var objectives: WorldObjectives
 # Water visuals and physics share the shoreline traced on terrain.png.
 const SHORE = [Vector2(690,0),Vector2(790,100),Vector2(1000,201),Vector2(1249,287),Vector2(1478,402),Vector2(1722,488),Vector2(1981,552),Vector2(2167,631),Vector2(2400,689)]
 const RIVER_POLYGON = [Vector2(690,0),Vector2(2400,0),Vector2(2400,689),Vector2(2167,631),Vector2(1981,552),Vector2(1722,488),Vector2(1478,402),Vector2(1249,287),Vector2(1000,201),Vector2(790,100)]
@@ -90,6 +91,7 @@ func _ready() -> void:
 	player = DemoPlayer.new()
 	player.position = DemoConfig.point(model.state.position)
 	add_child(player)
+	objectives=WorldObjectives.new(self);add_child(objectives)
 	feedback = WorldFeedback.new(self)
 	add_child(feedback)
 	model.changed.connect(refresh)
@@ -186,6 +188,7 @@ func _process(_delta: float) -> void:
 	if id != selected:
 		selected = id
 		queue_redraw()
+	for key in resource_labels: resource_labels[key].visible=key==selected
 
 func _draw() -> void:
 	if not is_instance_valid(player): return
@@ -202,3 +205,13 @@ func _draw() -> void:
 			var post := Vector2.from_angle(i*TAU/8)*108
 			draw_line(post,post-Vector2(0,20),Color("9c703d"),7,true)
 		draw_set_transform(Vector2.ZERO)
+
+func gather_stand(target: Vector2) -> Vector2:
+	# Keep the short contact stance clear of huts and scenery, without teleporting.
+	var side: float=-1.0 if player.position.x<=target.x else 1.0
+	for x in [side*64,-side*64]:
+		for y in [0,-32,32]:
+			var candidate:=target+Vector2(x,y)
+			var at:=player.transform;at.origin=candidate
+			if not player.test_move(at,Vector2.ZERO,null,0.08,true):return candidate
+	return Vector2.INF

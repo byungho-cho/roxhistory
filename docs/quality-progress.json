@@ -6,7 +6,7 @@
   "goal": "암사동 한 지역에서 1~2분만 플레이해도, 완성된 게임의 매력과 확장 가능성을 느끼는 데모",
   "scope": "지역 하나 · 첫 보금자리 퀘스트 하나 · 움집 하나. 세계·캐릭터·상호작용·연출·보상·저장이 연결된 경험.",
   "qualityStatement": "캐릭터를 잠시 세워두어도 살아 있는 장소처럼 보이고, 움직이고 행동하면 소리와 연출이 즉시 반응한다.",
-  "currentFocus": "CQ1 주인공 개선 개발 검증·전달 / 체감 승인 대기",
+  "currentFocus": "v0.1.7 주인공·플레이 체감 고도화 개발 검증 완료 / 팀장·사용자 검토",
   "baseline": {
     "id": "B0",
     "status": "기본 실행 사용자 확인",
@@ -25,11 +25,11 @@
     }
   },
   "design": {
-    "style": "2D 강변 배경 + 실제 3D 캐릭터. 둥근 비율·갈색 묶은 머리·밝은 가죽옷·따뜻한 자연광 유지.",
+    "style": "2D 강변 배경 + 실제 3D 주인공 전용. 둥근 비율·묶은 머리·갈색 가죽옷과 밝은 마감·따뜻한 자연광.",
     "fileUrl": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS",
     "specStatus": "현재 Figma 연결에서 Specs API 미지원",
     "roadmapUrl": "https://www.figma.com/board/60HqJ7ggIuvs9OLva8ZIx2",
-    "roadmapStatus": "FigJam 기존 P1~P4 이력 보존, CQ1~CQ6 잠정 일정·담당·상태 추가 (section 23:74)"
+    "roadmapStatus": "기존 FigJam CQ1 카드에 v0.1.7 범위·939검사·Android 루프·체감 승인 대기 반영"
   },
   "schedulePolicy": "단계별 구현·실행 화면·회귀 검증을 먼저 완료한다. 일정 단축을 위해 범위나 검사를 생략하지 않으며 근거 없는 완료일을 약속하지 않는다.",
   "progressPolicy": "P1~P4는 구현·검증 이력으로 보존. 캐릭터 중심 CQ1~CQ6는 별도 품질 트랙이며 구현, 실행 검증, 체감 품질 승인을 구분한다. 검사 수를 완성도 백분율로 환산하지 않는다.",
@@ -452,13 +452,13 @@
         "targetCompletion": "2026-11-01",
         "actualStart": "2026-10-31",
         "actualCompletion": null,
-        "status": "개발 검증 완료 · 체감 검토 대기",
-        "implementation": "1A·1B 개선 구현 완료",
-        "runtimeVerification": "로컬·Android 에뮬레이터 검증; 실기기 미검증",
+        "status": "v0.1.7 개발 검증·전달 / 체감 승인 대기",
+        "implementation": "3D 외형·핀치·목표/UI·채집 접점/획득·강물 구현",
+        "runtimeVerification": "로컬/CI 939건, Android 전체 루프·다중 터치·취소·출력 검증; 실기기 미검증",
         "perceivedQuality": "팀장·사용자 검토 대기",
-        "resultLink": "shared-reports/2026-10-31-hero-quality/report.md",
+        "resultLink": "shared-reports/2026-10-31-play-experience/report.md",
         "blockers": "최종 외형·동작 승인, 실기기 청감·장시간 검증",
-        "nextAction": "비교 영상과 v0.1.6-hero APK를 팀장·사용자가 검토한 뒤 CQ2 착수 여부 결정",
+        "nextAction": "이번 주인공·플레이 화면 결과를 검토한 뒤 CQ2 진행 판단",
         "implementationCompleted": "2026-10-31"
       },
       {
@@ -552,5 +552,33 @@
         "nextAction": "선행 단계 검토 후 자산·범위 재산정"
       }
     ]
+  },
+  "playExperienceIteration": {
+    "date": "2026-10-31",
+    "version": "0.1.7-play",
+    "status": "구현·로컬/에뮬레이터 검증 완료 / 체감 승인 대기",
+    "report": "shared-reports/2026-10-31-play-experience/report.md",
+    "scope": [
+      "3D 전용 주인공 외형",
+      "두 손가락 확대·입력 분리",
+      "목표 구역·초상화·자원 UI·버튼",
+      "채집 파편·획득 이동",
+      "잔잔한 강물"
+    ],
+    "deferred": [
+      "주민",
+      "사슴",
+      "멧돼지"
+    ],
+    "subjectiveApproval": "미완료",
+    "phoneValidation": "미검증",
+    "listeningValidation": "미검증",
+    "sourceCommit": "6f1a99ef5ba5d35272e184cf10d194fdfe429cec",
+    "prUrl": "https://github.com/byungho-cho/roxhistory/pull/16",
+    "ciUrl": "https://github.com/byungho-cho/roxhistory/actions/runs/41159639919",
+    "apkUrl": "https://github.com/byungho-cho/roxhistory/releases/download/v0.1.7-play/RoxHistory-0.1.7-play-debug.apk",
+    "localChecks": 939,
+    "androidLoopSeconds": 29.5,
+    "normalSavePreserved": true
   }
 }

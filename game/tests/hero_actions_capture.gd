@@ -20,5 +20,5 @@ func run() -> void:
 	app.overlay.get_child(1).get_child(0).get_child(2).get_child(1).pressed.emit();await frames(18)
 	root.get_texture().get_image().save_png("res://reports/hero-build-contact.png");await frames(125)
 	assert(app.model.state.built and app.model.state.wood==0 and app.model.state.stone==0)
-	app.audio.configure(false,false,false,false);app.queue_free();await process_frame;await process_frame
+	app.audio.configure(false,false,false,false)
 	quit()

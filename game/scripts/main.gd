@@ -7,7 +7,6 @@ var ui: Control
 var stage: Control
 var overlay: Control
 var joystick: DemoJoystick
-var resources: Label
 var objective: Label
 var context: Label
 var gather_button: DemoButton
@@ -19,6 +18,8 @@ var screen := ""
 var modal := false
 var task := ""
 var task_target := ""
+var gather_approach:=false
+var approach_elapsed:=0.0
 var application_active := true
 var task_remaining := 0.0
 var task_total := 0.0
@@ -33,11 +34,11 @@ var rebuilding := false
 var audio: DemoSoundscape
 var context_panel: PanelContainer
 var toast_panel: PanelContainer
-var resource_panel: PanelContainer
-var last_resource_text := ""
-var hud_tween: Tween
+var gestures: WorldGestures
+var chrome: PlayChrome
 
 func _ready() -> void:
+	gestures=WorldGestures.new(self);add_child(gestures)
 	get_tree().auto_accept_quit = false
 	get_tree().quit_on_go_back = false
 	test_mode = "--test-ui" in OS.get_cmdline_user_args()
@@ -65,6 +66,7 @@ func queue_layout() -> void:
 	call_deferred("relayout")
 
 func relayout() -> void:
+	if gestures: gestures.clear()
 	rebuilding = false
 	if modal:
 		close_modal()
@@ -172,6 +174,7 @@ func button(parent: Node, text: String, callback: Callable, primary: bool = fals
 	b.pressed.connect(callback)
 	b.pressed.connect(func():
 		audio.cue("ui"))
+	b.unavailable.connect(func(reason: String): toast(reason,2.5))
 	parent.add_child(b)
 	return b
 
@@ -299,7 +302,7 @@ func enter_game() -> void:
 		world = DemoWorld.new(model)
 		add_child(world)
 		world.feedback.sound_cue.connect(audio.cue)
-	world.player.set_character_3d(false if test_mode else settings.get_value("app","character_3d",true))
+	world.player.set_character_3d(true)
 	world.player.camera.reset_smoothing()
 	show_screen("play")
 	if not model.state.intro_seen:
@@ -314,31 +317,28 @@ func enter_game() -> void:
 
 func play_hud() -> void:
 	back_button(pause_game)
-	var title_panel := box(stage,Rect2(safe.x+84,safe.y,minf(330,w-safe.x*2-450),54))
-	var location_title := label(title_panel,"암사동 · 첫 보금자리",20,Color("fff0d1"))
-	location_title.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	resource_panel = box(stage,Rect2(w-350-safe.x,safe.y,350,58),false)
-	resources = label(resource_panel,"",18)
-	resources.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-	resources.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	var quest_panel := box(stage,Rect2(w-288-safe.x,94,288,100),false)
-	objective = paragraph(quest_panel,"",18,Color("49321e"))
+	var quest_panel:=button(stage,"",focus_objective,false,"scroll")
+	quest_panel.position=Vector2(w-safe.x-252,safe.y+78);quest_panel.size=Vector2(252,72)
+	quest_panel.add_theme_constant_override("icon_max_width",32)
+	quest_panel.icon_alignment=HORIZONTAL_ALIGNMENT_LEFT
+	objective=label(quest_panel,"",15,Color("fff0d1"));objective.position=Vector2(56,12)
 	joystick = DemoJoystick.new()
 	stage.add_child(joystick)
 	joystick.position = Vector2(safe.x+14,h-safe.y-154)
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation",12)
 	stage.add_child(row)
-	row.position = Vector2(w-400-safe.x,h-safe.y-90)
-	row.size = Vector2(400,82)
+	row.position = Vector2(w-336-safe.x,h-safe.y-90)
+	row.size = Vector2(336,82)
 	gather_button = button(row,"채집",gather_action,true,"wood")
-	gather_button.custom_minimum_size = Vector2(126,82)
+	gather_button.custom_minimum_size = Vector2(104,82)
 	build_button = button(row,"건설",build_action,false,"hut")
-	build_button.custom_minimum_size = Vector2(126,82)
+	build_button.custom_minimum_size = Vector2(104,82)
 	var journal := button(row,"임무",quest_details,false,"scroll")
-	journal.custom_minimum_size = Vector2(124,82)
+	journal.custom_minimum_size = Vector2(104,82)
 	context_panel = box(stage,Rect2(safe.x+84,safe.y+72,minf(330,w-safe.x*2-450),76))
 	context_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	context_panel.visible=false
 	context = label(context_panel,"",17,Color("fff0d1"))
 	context.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	context.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -349,18 +349,12 @@ func play_hud() -> void:
 	task_bar.size = Vector2(minf(330,w-safe.x*2-450),10)
 	stage.add_child(task_bar)
 	task_bar.visible = false
+	chrome=PlayChrome.new(self);stage.add_child(chrome);chrome.size=Vector2(w,h)
 	update_hud()
 
 func update_hud() -> void:
-	if screen != "play" or not is_instance_valid(resources) or model.state.is_empty():
+	if screen != "play" or not is_instance_valid(chrome) or model.state.is_empty():
 		return
-	resources.text = "나무 %d   돌 %d   씨앗 %d" % [model.state.wood,model.state.stone,model.state.tokens]
-	if last_resource_text != "" and last_resource_text != resources.text:
-		if hud_tween: hud_tween.kill()
-		resource_panel.modulate = Color("ffe6a7")
-		hud_tween = create_tween()
-		hud_tween.tween_property(resource_panel,"modulate",Color.WHITE,0.35)
-	last_resource_text = resources.text
 	if model.state.built:
 		objective.text = "첫 보금자리 · 완료\n"+("보상을 받았습니다." if model.state.reward_claimed else "보상을 받아 주세요.")
 	else:
@@ -374,10 +368,14 @@ func _process(delta: float) -> void:
 		if toast_time <= 0 and is_instance_valid(toast_label): toast_label.text = ""
 	if screen != "play" or not is_instance_valid(world):
 		return
-	audio.river_proximity = clampf(1.0-world.player.position.y/1350.0,0,1)
+	var river_distance:=INF
+	for i in world.SHORE.size()-1:
+		var closest:=Geometry2D.get_closest_point_to_segment(world.player.position,world.SHORE[i],world.SHORE[i+1])
+		river_distance=minf(river_distance,world.player.position.distance_to(closest))
+	audio.river_proximity=1.0-smoothstep(80,720,river_distance)
 	context_panel.visible = context.text != "" and not modal and not toast_panel.visible
 	var direction := Vector2.ZERO
-	if not modal and application_active:
+	if not modal and application_active and not gestures.blocked:
 		if is_instance_valid(joystick): direction = joystick.value
 		var keyboard := Vector2(float(Input.is_physical_key_pressed(KEY_D) or Input.is_physical_key_pressed(KEY_RIGHT))-float(Input.is_physical_key_pressed(KEY_A) or Input.is_physical_key_pressed(KEY_LEFT)),float(Input.is_physical_key_pressed(KEY_S) or Input.is_physical_key_pressed(KEY_DOWN))-float(Input.is_physical_key_pressed(KEY_W) or Input.is_physical_key_pressed(KEY_UP)))
 		if keyboard.length() > 0: direction = keyboard.normalized()
@@ -393,14 +391,32 @@ func _process(delta: float) -> void:
 		if cancel:
 			cancel_task()
 			toast("작업 범위를 벗어나 멈췄습니다.")
+		elif gather_approach:
+			approach_elapsed+=delta
+			if world.player.position.distance_to(world.player.work_destination)<3:
+				gather_approach=false;world.player.work_destination=Vector2.INF
+				world.player.face_target(world.art_nodes[task_target].position)
+				world.player.set_activity("gather");task_bar.visible=true
+				context.text="채집 중… 이동하면 멈춥니다"
+			elif approach_elapsed>1.5:
+				cancel_task();toast("자원 옆의 빈 공간으로 이동해 주세요")
 		else:
 			task_remaining -= delta
 			world.feedback.update_work(task_total-task_remaining,task_total)
 			task_bar.value = (1.0-task_remaining/task_total)*100
 			if task_remaining <= 0: finish_task()
 	var near := world.nearest()
+	gather_button.hint_text="자원 가까이 이동해 주세요" if near.is_empty() else "작업을 마친 뒤 사용할 수 있어요"
+	build_button.hint_text="완성된 보금자리입니다" if model.state.built else ("나무 1개와 돌 1개가 필요해요" if not model.can_build() else "금빛 건설 터 안으로 이동해 주세요")
+	gather_button.set_working(task=="gather");build_button.set_working(task=="build")
+	var build_ready: bool=model.can_build() and world.near_site()
+	if build_button.get_meta("ready",false)!=build_ready:
+		build_button.set_meta("ready",build_ready)
+		build_button.add_theme_stylebox_override("normal",DemoArt.button_style(build_ready))
+	gather_button.text="채집 중" if task=="gather" else "채집"
+	build_button.text="건설 중" if task=="build" else "건설"
 	gather_button.disabled = modal or task != "" or near.is_empty()
-	build_button.disabled = modal or task != "" or model.state.built or not world.near_site()
+	build_button.disabled = modal or task != "" or model.state.built or not world.near_site() or not model.can_build()
 	if task == "":
 		context.text = ""
 		if world.near_site() and not model.state.built:
@@ -418,21 +434,28 @@ func _process(delta: float) -> void:
 		model.save_position(world.player.position)
 
 func gather_action() -> void:
-	if modal or task != "" or screen != "play": return
+	if modal or gestures.blocked or task != "" or screen != "play": return
 	var n := world.nearest()
 	if n.is_empty(): return
 	task = "gather"
 	world.player.face_target(DemoConfig.point(n.position))
-	world.player.set_activity("gather")
+	var target_point:=DemoConfig.point(n.position)
+	var stand: Vector2=world.gather_stand(target_point)
+	if not stand.is_finite():
+		cancel_task();toast("자원 옆의 빈 공간으로 이동해 주세요");return
+	gather_approach=world.player.position.distance_to(stand)>4
+	approach_elapsed=0
+	world.player.work_destination=stand if gather_approach else Vector2.INF
+	world.player.set_activity("" if gather_approach else "gather")
 	task_target = n.id
 	world.feedback.begin("gather",n.id)
 	task_total = float(DemoConfig.get_data().gather_seconds)
 	task_remaining = task_total
-	task_bar.visible = true
-	context.text = "채집 중… 범위를 벗어나면 멈춥니다"
+	task_bar.visible = not gather_approach
+	context.text = "자원 옆에 자리 잡는 중" if gather_approach else "채집 중… 이동하면 멈춥니다"
 
 func build_action() -> void:
-	if modal or task != "" or model.state.built or not world.near_site(): return
+	if modal or gestures.blocked or task != "" or model.state.built or not world.near_site(): return
 	var c := DemoConfig.get_data()
 	if not model.can_build():
 		toast("자원이 부족합니다. 나무 %d · 돌 %d가 필요해요." % [c.wood_cost,c.stone_cost])
@@ -457,6 +480,8 @@ func finish_task() -> void:
 	if kind == "gather":
 		if model.gather(target,world.player.position):
 			world.feedback.gathered(target)
+			var resource_kind: String="wood" if target.begins_with("wood") else "stone"
+			chrome.gained(resource_kind,world.art_nodes[target].position+Vector2(0,-70))
 			toast("",0)
 
 	elif kind == "build" and model.build(world.player.position):
@@ -467,7 +492,9 @@ func cancel_task() -> void:
 	if is_instance_valid(audio): audio.stop_work()
 	task = ""
 	task_target = ""
+	gather_approach=false;approach_elapsed=0
 	if is_instance_valid(world):
+		world.player.work_destination=Vector2.INF
 		world.player.set_activity("")
 		world.feedback.cancel()
 	if is_instance_valid(task_bar): task_bar.visible = false
@@ -479,6 +506,14 @@ func completion() -> void:
 		{"text":"보상 받고 계속하기","primary":true,"action":func():
 			if model.claim_reward():
 				close_modal(); world.feedback.rewarded(); toast("보상 저장 완료",5)}],true)
+
+func focus_objective() -> void:
+	if gestures.blocked or modal: return
+	if model.state.built:
+		quest_details();return
+	var point:=world.objectives.focus_point()
+	var screen_point: Vector2=world.get_global_transform_with_canvas()*point
+	if not Rect2(Vector2(80,90),Vector2(w-160,h-190)).has_point(screen_point): world.player.guide_to(point+Vector2(0,-35))
 
 func quest_details() -> void:
 	if model.state.built and not model.state.reward_claimed:
@@ -496,15 +531,7 @@ func pause_game() -> void:
 	show_modal("잠시 쉬어 가기","암사동 · 첫 보금자리\n진행은 기기에 자동 저장됩니다.",[
 		{"text":"계속하기","primary":true,"action":close_modal},
 		{"text":"시작 화면","action":func(): close_modal(); show_screen("title")},
-		{"text":"2D로 비교" if world.player.use_3d else "3D로 비교","action":toggle_character},
 		{"text":"안내·소리","action":show_about}])
-
-func toggle_character() -> void:
-	var enabled: bool = not world.player.use_3d
-	world.player.set_character_3d(enabled)
-	settings.set_value("app","character_3d",enabled)
-	if settings.save(prefs_path) != OK: show_error("비교 설정을 저장하지 못했습니다.")
-	else: close_modal()
 
 func show_about() -> void:
 	var c := DemoConfig.get_data()
@@ -517,6 +544,7 @@ func show_about() -> void:
 		{"text":"돌아가기","primary":true,"action":close_modal}])
 
 func show_modal(title: String, body: String, actions: Array, compact: bool = false) -> void:
+	if gestures: gestures.clear()
 	if is_instance_valid(joystick): joystick.clear()
 	cancel_task()
 	if is_instance_valid(world):
@@ -602,6 +630,8 @@ func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_GO_BACK_REQUEST:
 		go_back()
 	elif what == NOTIFICATION_APPLICATION_PAUSED or what == NOTIFICATION_APPLICATION_FOCUS_OUT:
+		if gestures: gestures.clear()
+		if is_instance_valid(chrome): chrome.clear_effects()
 		application_active = false
 		sync_audio()
 		if is_instance_valid(world): world.feedback.clear_transients()

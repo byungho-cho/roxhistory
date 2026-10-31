@@ -123,5 +123,15 @@
     "path": "game/assets/environment/tree.png",
     "bytes": 2034630,
     "sha256": "ccd087cf13afdd5a7ed7d83988dbcf7faea0deb2775d2dbacd50b2e872254bbc"
+  },
+  {
+    "path": "game/assets/ui/hero_portrait.png",
+    "bytes": 50607,
+    "sha256": "5f81b279a5d9d7134ce6f74c0b47ad32f9a399858219b7912a52984140264045"
+  },
+  {
+    "path": "game/assets/ui/seed.svg",
+    "bytes": 740,
+    "sha256": "70e848935ae620056d539a55a344768d31902764398f8a08d231dad8c1360426"
   }
 ]

@@ -32,8 +32,8 @@ static func panel(dark: bool = false) -> StyleBoxFlat:
 
 static func button_style(primary: bool = false) -> StyleBoxFlat:
 	var s := panel()
-	s.bg_color = Color("e9c575") if primary else Color("f4e8cf")
-	s.border_color = Color("a77c40")
+	s.bg_color = Color("81562c") if primary else Color("503b29")
+	s.border_color = Color("d2ad66")
 	s.set_corner_radius_all(12)
 	s.shadow_size = 4
 	s.shadow_offset = Vector2(0,3)
@@ -51,15 +51,18 @@ static func theme() -> Theme:
 	for cls in ["Label","Button"]:
 		t.set_color("font_color",cls,Color("49321e"))
 	for prop in ["font_hover_color","font_pressed_color"]:
-		t.set_color(prop,"Button",Color("49321e"))
-	t.set_color("font_disabled_color","Button",Color("625a4b"))
+		t.set_color(prop,"Button",Color("fff4d6"))
+	t.set_color("font_color","Button",Color("fff4d6"))
+	t.set_color("font_disabled_color","Button",Color("d9d1bd"))
+	t.set_color("icon_disabled_color","Button",Color(.9,.86,.75,.85))
 	t.set_stylebox("normal","Button",button_style())
 	t.set_stylebox("hover","Button",button_style(true))
 	var down := button_style(true)
-	down.bg_color = Color("caa15a")
+	down.bg_color = Color("382719")
 	t.set_stylebox("pressed","Button",down)
 	var disabled := button_style()
-	disabled.bg_color = Color("b5ad9b")
+	disabled.bg_color = Color("514d42")
+	disabled.border_color=Color("827969")
 	t.set_stylebox("disabled","Button",disabled)
 	shared_theme = t
 	return t

@@ -4,7 +4,7 @@
   "figmaDesignUrl": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS",
   "figjamRoadmapUrl": "https://www.figma.com/board/60HqJ7ggIuvs9OLva8ZIx2",
   "statusSource": "docs/quality-progress.json",
-  "updatePolicy": "Repository PDF is the current generated copy; historical Library snapshot retained separately. Existing FigJam updated in place.",
+  "updatePolicy": "Latest scope and status are maintained in Markdown, JSON and the existing FigJam. PDF is a historical snapshot; no new PDF for the 2026-10-31 play-experience iteration.",
   "previousLibrarySnapshot": {
     "libraryFileId": "libfile_5e11fc281300819181861cef7688fd5a",
     "pdfUrl": "https://chatgpt.com/library?file_id=libfile_5e11fc281300819181861cef7688fd5a&account_id=personal",

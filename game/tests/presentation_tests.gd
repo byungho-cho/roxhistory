@@ -11,6 +11,11 @@ func frames(n: int) -> void:
 func snap(name: String) -> void:
 	await RenderingServer.frame_post_draw
 	root.get_texture().get_image().save_png("res://reports/p4-"+name+".png")
+func wait_positioning() -> void:
+	for tick in 120:
+		if not app.gather_approach:break
+		await frames(1)
+	check(app.task=="gather" and not app.gather_approach,"Contact positioning finishes before testing the work sound timeline")
 func run() -> void:
 	DirAccess.make_dir_recursive_absolute("res://reports")
 	app = load("res://scenes/main.tscn").instantiate(); root.add_child(app); await frames(2)
@@ -41,9 +46,9 @@ func run() -> void:
 	check(audio.voices.all(func(v): return not v.get_meta("work",false) or not v.playing),"Cancel stops in-flight work sounds")
 	var after_cancel := audio.events.size(); await frames(30)
 	check(audio.events.size() == after_cancel,"Cancelled work schedules no late sounds")
-	audio.stop_effects(); app.gather_action(); await frames(80)
+	audio.stop_effects(); app.gather_action(); await wait_positioning(); await frames(80)
 	check(app.model.state.wood == 1 and audio.events.count("gain") == 1,"Successful committed gather cues once")
-	p.position = Vector2(1360,1080); await frames(4); audio.stop_effects(); app.gather_action(); await frames(80)
+	p.position = Vector2(1360,1080); await frames(4); audio.stop_effects(); app.gather_action(); await wait_positioning(); await frames(80)
 	check(audio.events.any(func(e): return e.begins_with("stone_")),"Stone has separate impact sound")
 	check(app.model.state.stone == 1,"Stone commit remains one")
 	p.position = Vector2(820,1060); await frames(4); app.build_action()
@@ -77,7 +82,8 @@ func run() -> void:
 	for size in [Vector2i(1280,720),Vector2i(896,370),Vector2i(816,616)]:
 		root.size = size; await frames(15)
 		var area := Rect2(Vector2.ZERO,Vector2(app.w,app.h))
-		check(area.encloses(app.resource_panel.get_global_rect()),"Resource panel fits "+str(size))
+		for kind in ["wood","stone","tokens"]:
+			check(area.encloses(app.chrome.slot(kind)),"Resource cell fits "+kind+" "+str(size))
 		check(area.encloses(app.gather_button.get_parent().get_global_rect()),"Action row fits "+str(size))
 		app.toast("나무 1 · 돌 1 — 첫 보금자리 준비 완료",2); await frames(2)
 		check(area.encloses(app.toast_panel.get_global_rect()),"Toast fits "+str(size))

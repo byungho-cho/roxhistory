@@ -1,0 +1,13 @@
+{
+  "utc": "2026-10-31T02:34:09Z",
+  "checks": [
+    "movement cancels gather",
+    "quest popup cancels gather",
+    "Android Back cancels gather",
+    "Home cancels gather",
+    "resume permits one gather"
+  ],
+  "failed": [],
+  "source_commit": "6f1a99ef5ba5d35272e184cf10d194fdfe429cec",
+  "apk_sha256": "af38b854dd3b1562b430feca21000a694e6c0e5997ca70938da3bf9e11a1ca41"
+}

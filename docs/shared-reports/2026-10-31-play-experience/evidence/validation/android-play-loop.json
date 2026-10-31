@@ -1,0 +1,35 @@
+{
+  "utc": "2026-10-31T02:32:14Z",
+  "elapsed_seconds": 29.5,
+  "environment": "Android 15 API35 x86_64 emulator, host RTX5060, 1280x720",
+  "input": "ADB touchscreen gestures, no teleport or save edits; existing --test-ui isolated save path, 3D-only renderer; no comparison menu; focus-only notifications ignored by test mode, Android PAUSED/RESUMED remain active",
+  "state": {
+    "built": true,
+    "depleted": {
+      "stone_2": 1,
+      "wood_3": 1
+    },
+    "intro_seen": true,
+    "position": [
+      808.960876464844,
+      1101.83129882812
+    ],
+    "region": "amsa",
+    "reward_claimed": true,
+    "schema": 1,
+    "stone": 0,
+    "tokens": 10,
+    "wood": 0
+  },
+  "checks": [
+    "wood exactly once despite rapid repeat tap",
+    "stone exactly once despite rapid repeat tap",
+    "repeated confirmation builds once and costs 1+1",
+    "repeated reward tap grants exactly 10",
+    "force-stop continue identical save",
+    "quest popup/back",
+    "home/resume movement"
+  ],
+  "source_commit": "6f1a99ef5ba5d35272e184cf10d194fdfe429cec",
+  "apk_sha256": "af38b854dd3b1562b430feca21000a694e6c0e5997ca70938da3bf9e11a1ca41"
+}

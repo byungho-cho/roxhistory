@@ -55,15 +55,13 @@ for name, notes, gap in [('gain',[660,880],.07),('complete',[330,440,550,660],.1
 
 # Integer-period modulation + periodic FFT noise avoids loop seams.
 t=np.arange(SR*12)/SR
-river=[]
-for ch in range(2):
-    bed=noise(len(t),180,4200)*(.7+.12*np.sin(2*np.pi*t/3+ch))
-    bed+=.16*noise(len(t),35,500)*(1+.3*np.sin(2*np.pi*t/4))
-    river.append(bed)
-write('river',np.stack(river,axis=1),.35,True)
+# Preserve the established wind/Foley random sequence; river has its own seed.
+RNG.normal(0,1,(4,len(t)))
+from river_audio import render_river
+write('river',render_river(SR),.30,True)
 wind=[]
 for ch in range(2):
     wind.append(noise(len(t),80,1500)*(.5+.25*np.sin(2*np.pi*t/12+ch*.4))+.1*noise(len(t),1200,4800))
 write('wind',np.stack(wind,axis=1),.28,True)
-(OUT/'manifest.json').write_text(json.dumps({'author':'Original synthesis for RoxHistory; no third-party recordings or music','sample_rate':SR,'assets':manifest},indent=2),encoding='utf-8')
+(OUT/'manifest.json').write_text(json.dumps({'author':'Original synthesis for RoxHistory; no third-party recordings or music','sample_rate':SR,'assets':manifest},indent=2),encoding='utf-8',newline='\n')
 print(json.dumps(manifest,indent=2))

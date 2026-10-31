@@ -84,6 +84,10 @@ func run_tests() -> void:
 	check(app.task == "gather","Touch action starts gathering")
 	for i in 20: app.gather_action()
 	check(app.task == "gather","Rapid input leaves one active gather task")
+	for i in 120:
+		if not app.gather_approach: break
+		await physics_frame;await process_frame
+	check(app.task=="gather" and not app.gather_approach,"Touch gathering reaches the contact stance before its work timer")
 	app.task_remaining = 0.01
 	await create_timer(0.06).timeout
 	check(app.model.state.wood == 1,"Single action grants one demo resource")

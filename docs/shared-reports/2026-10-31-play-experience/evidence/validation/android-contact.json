@@ -1,0 +1,11 @@
+{
+  "utc": "2026-10-31T02:47:06Z",
+  "checks": [
+    "wood contact and exactly one grant at zoom",
+    "stone contact and exactly one grant at zoom"
+  ],
+  "method": "Actual Android two-pointer MotionEvents and action tap; separate isolated saved-position fixtures for closeups, not a continuous playthrough",
+  "failed": [],
+  "source_commit": "6f1a99ef5ba5d35272e184cf10d194fdfe429cec",
+  "apk_sha256": "af38b854dd3b1562b430feca21000a694e6c0e5997ca70938da3bf9e11a1ca41"
+}
