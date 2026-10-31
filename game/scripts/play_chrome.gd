@@ -3,9 +3,12 @@ extends Control
 var app: Node
 var flights: Array[Dictionary]=[]
 var pulse := {"wood":0.0,"stone":0.0,"tokens":0.0}
+var styles: Dictionary={}
 var portrait: Texture2D
 func _init(owner_app: Node) -> void: app=owner_app
 func _ready() -> void:
+	app.model.changed.connect(queue_redraw)
+	resized.connect(queue_redraw)
 	mouse_filter=Control.MOUSE_FILTER_IGNORE
 	if ResourceLoader.exists("res://assets/ui/hero_portrait.png"): portrait=load("res://assets/ui/hero_portrait.png")
 func slot(kind: String) -> Rect2:
@@ -13,8 +16,9 @@ func slot(kind: String) -> Rect2:
 	return Rect2(Vector2(app.w-app.safe.x-318+i*106,app.safe.y+5),Vector2(100,50))
 func gained(kind: String, at: Vector2) -> void:
 	flights.append({"kind":kind,"world":at,"age":0.0})
-func clear_effects() -> void: flights.clear()
+func clear_effects() -> void: flights.clear();queue_redraw()
 func _process(delta: float) -> void:
+	if flights.is_empty() and pulse.values().all(func(v):return v<=0):return
 	for key in pulse: pulse[key]=maxf(0,pulse[key]-delta*2.5)
 	for f in flights:
 		f.age+=delta
@@ -22,10 +26,13 @@ func _process(delta: float) -> void:
 	flights=flights.filter(func(f): return f.age<0.85)
 	queue_redraw()
 func frame(rect: Rect2, fill: Color, border: Color) -> void:
-	var style:=StyleBoxFlat.new();style.bg_color=fill;style.border_color=border
-	style.set_corner_radius_all(12);style.set_border_width_all(2)
-	style.shadow_color=Color(0.10,0.06,0.02,0.3);style.shadow_size=3;style.shadow_offset=Vector2(0,3)
-	draw_style_box(style,rect)
+	var key:=fill.to_html()+border.to_html()
+	if not styles.has(key):
+		var style:=StyleBoxFlat.new();style.bg_color=fill;style.border_color=border
+		style.set_corner_radius_all(12);style.set_border_width_all(2)
+		style.shadow_color=Color(0.10,0.06,0.02,0.3);style.shadow_size=3;style.shadow_offset=Vector2(0,3)
+		styles[key]=style
+	draw_style_box(styles[key],rect)
 func _draw() -> void:
 	if not is_instance_valid(app.world) or app.model.state.is_empty(): return
 	var font:=DemoArt.theme().default_font

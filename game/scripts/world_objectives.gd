@@ -3,6 +3,7 @@ extends Node2D
 var world: DemoWorld
 var targets := {}
 var flash := 0.0
+var previous_selection:=""
 var markers: Node2D
 func _init(owner_world: DemoWorld) -> void: world=owner_world
 func _ready() -> void:
@@ -11,7 +12,7 @@ func _ready() -> void:
 	world.model.changed.connect(refresh)
 	refresh()
 func refresh() -> void:
-	if world.model.state.built: targets.clear();queue_redraw();return
+	if world.model.state.built: targets.clear();redraw();return
 	for kind in ["wood","stone"]:
 		if world.model.state[kind]>=1: targets.erase(kind);continue
 		if targets.has(kind) and not world.exhausted(targets[kind]): continue
@@ -26,14 +27,19 @@ func refresh() -> void:
 			if is_finite(other_distance): d+=other_distance*0.65
 			if d<distance: best=n;distance=d
 		if not best.is_empty(): targets[kind]=best
-	queue_redraw()
+	redraw()
 func focus_point() -> Vector2:
 	flash=1.0
 	for kind in ["wood","stone"]:
 		if targets.has(kind): return DemoConfig.point(targets[kind].position)
 	return world.site.position
+func redraw() -> void:
+	queue_redraw()
+	if markers:markers.queue_redraw()
 func _process(delta: float) -> void:
-	flash=maxf(0,flash-delta*0.8);queue_redraw();markers.queue_redraw()
+	if flash<=0 and previous_selection==world.selected:return
+	previous_selection=world.selected
+	flash=maxf(0,flash-delta*0.8);redraw()
 func _draw() -> void:
 	for key in targets:
 		var at:=DemoConfig.point(targets[key].position)

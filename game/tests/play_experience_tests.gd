@@ -32,6 +32,14 @@ func run() -> void:
 	check(app.world.objectives.targets.size()==2,"Fresh quest marks one wood and one stone area")
 	check(app.world.objectives.targets.wood.id=="wood_3","Guidance groups required resources into a short route")
 	check(app.chrome.portrait!=null,"HUD portrait uses the new model render")
+	var draws: Array[int]=[0]
+	app.chrome.draw.connect(func():draws[0]+=1)
+	await frames(3)
+	var settled_draws:=draws[0]
+	await frames(8)
+	check(draws[0]==settled_draws,"Idle HUD does not rebuild style boxes and drawing commands every frame")
+	app.model.changed.emit();await frames(2)
+	check(draws[0]>settled_draws,"Authoritative state changes invalidate the cached HUD")
 	check(p.hybrid.viewport.size==Vector2i(384,480),"Base view uses the lower render cost")
 	var hero_size: Vector2=p.hybrid.display.get_rect().size*p.hybrid.display.scale
 	var ui_rect: Rect2=app.gather_button.get_global_rect()
