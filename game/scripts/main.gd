@@ -406,6 +406,7 @@ func update_hud() -> void:
 		var goal_panel:Control=objective.get_parent()
 		goal_panel.custom_minimum_size=Vector2(178,48)
 		goal_panel.size=Vector2(178,48);goal_panel.position.x=w-safe.x-178
+		objective.position=Vector2(36,8);objective.size=Vector2(136,32)
 		objective.text = "보금자리 완성 ✓" if model.state.reward_claimed else "완성 · 보상 받기"
 	else:
 		var c := DemoConfig.get_data()
