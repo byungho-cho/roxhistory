@@ -11,3 +11,5 @@ User listening feedback on 2026-10-31 rejected the synthetic river as noise. Thi
 - `provenance.json`: source URLs, edit parameters and input checksums. `verify_demo_audio.py` checks these inputs and the shipped PCM. Other11 sound assets remain byte-identical.
 
 The A/B audition also included BurghRecords, [Gentle Stream Natural Stream Sound](https://freesound.org/people/BurghRecords/sounds/446019/), CC0. It is not included in the game. A was selected as the initial implementation assumption pending user preference, not represented as user approval.
+
+Follow-up user request: make the water slightly calmer. River playback is reduced by 3dB (distance range -30..-20dB); Foley/UI gains and source recording are unchanged.
