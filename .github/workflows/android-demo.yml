@@ -11,7 +11,7 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-24.04
-    timeout-minutes: 25
+    timeout-minutes: 35
     env:
       GODOT_VERSION: 4.5.1
     steps:
@@ -78,7 +78,9 @@ jobs:
           ! grep -E 'SCRIPT ERROR:|ERROR:' hero-tests.log
           timeout 150 xvfb-run -a godot --fixed-fps 60 --audio-driver Dummy --path game --resolution 1280x720 --script res://tests/play_experience_tests.gd -- --test-ui 2>&1 | tee play-experience-tests.log
           ! grep -E 'SCRIPT ERROR:|ERROR:' play-experience-tests.log
-          timeout 300 xvfb-run -a godot --fixed-fps 60 --audio-driver Dummy --path game --resolution 1280x720 --script res://tests/gather_contact_tests.gd -- --test-ui 2>&1 | tee gather-contact-tests.log
+          # All 26 approaches still render the real skinned hero. llvmpipe can
+          # exceed 300s; keep every assertion and the 60fps simulation unchanged.
+          timeout 900 xvfb-run -a godot --fixed-fps 60 --audio-driver Dummy --path game --resolution 1280x720 --script res://tests/gather_contact_tests.gd -- --test-ui 2>&1 | tee gather-contact-tests.log
           ! grep -E 'SCRIPT ERROR:|ERROR:' gather-contact-tests.log
           timeout 150 xvfb-run -a godot --fixed-fps 60 --audio-driver Dummy --path game --resolution 1280x720 --script res://tests/region_tests.gd -- --test-ui 2>&1 | tee region-tests.log
           ! grep -E 'SCRIPT ERROR:|ERROR:' region-tests.log
