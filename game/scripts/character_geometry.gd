@@ -6,7 +6,7 @@ extends RefCounted
 static func profile(parent: Node3D, rings: Array[Vector3], mat: Material, folds := 0.0) -> MeshInstance3D:
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var sides := 40
+	var sides := 28
 	var samples: Array[Vector3] = []
 	for j in rings.size()-1:
 		for k in 4:
@@ -36,8 +36,8 @@ static func profile(parent: Node3D, rings: Array[Vector3], mat: Material, folds 
 static func strand(parent: Node3D, points: Array[Vector3], width: float, depth: float, outward: Vector3, mat: Material, taper := true) -> MeshInstance3D:
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var rings := 24
-	var sides := 24
+	var rings := 12
+	var sides := 8
 	for j in rings+1:
 		var t := float(j)/rings
 		var center := points[0]*(1-t)*(1-t)+points[1]*2*t*(1-t)+points[2]*t*t
@@ -64,14 +64,15 @@ static func strand(parent: Node3D, points: Array[Vector3], width: float, depth: 
 static func limb(parent: Node3D, rig: Skeleton3D, upper: int, lower: int, top: Vector3, elbow: Vector3, end: Vector3, radius: float, mat: Material) -> MeshInstance3D:
 	var st := SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var rings := 20
-	var sides := 16
+	var rings := 16
+	var sides := 12
 	var joint_t := top.distance_to(elbow)/top.distance_to(end)
 	for j in rings+1:
 		var t := float(j)/rings
 		var center := top.lerp(end,t)
 		var blend := smoothstep(joint_t-0.16,joint_t+0.16,t)
-		var profile := lerpf(0.95,0.65,t)+sin(t*PI)*0.17+0.06*cos(t*TAU*2)
+		var segment_t := t/joint_t if t<joint_t else (t-joint_t)/(1-joint_t)
+		var profile := lerpf(1.05,0.68,segment_t)+sin(segment_t*PI)*0.10 if t<joint_t else lerpf(0.68,0.60,segment_t)+sin(segment_t*PI)*0.29
 		if j == 0 or j == rings: profile *= 0.8
 		for i in sides+1:
 			var a := TAU*i/sides

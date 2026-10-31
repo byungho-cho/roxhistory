@@ -296,8 +296,8 @@
   },
   {
     "path": "game/assets/ui/hero_portrait.png",
-    "bytes": 54327,
-    "sha256": "01c02febaef04a7341b354e36ae8aa98efc05ebbd825f27684ef239ededd6400"
+    "bytes": 52610,
+    "sha256": "1963b2bca1334cec7dd84195294d0735b7d64a49ed2ddb6ed775a25eee6c609e"
   },
   {
     "path": "game/assets/ui/seed.svg",

@@ -8,9 +8,9 @@ func run():
 	for i in 4:
 		var hero:=HybridCharacter.new();root.add_child(hero);hero.set_enabled(true)
 		hero.viewport.size=Vector2i(800,1000)
-		hero.camera.size=3.25
+		hero.camera.size=3.5
 		hero.camera.position=Vector3(0,2.2,7)
-		hero.camera.look_at(Vector3(0,1.35,0))
+		hero.camera.look_at(Vector3(0,1.5,0))
 		hero.pivot.rotation.y=[0.0,0.65,PI/2,PI][i]
 		hero.tool_3d.visible=false
 		hero.display.scale=Vector2(0.48,0.48)

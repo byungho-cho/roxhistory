@@ -57,8 +57,8 @@ func ellipsoid(parent: Node3D, pos: Vector3, size: Vector3, mat: Material) -> Me
 	var mesh := SphereMesh.new()
 	mesh.radius = 0.5
 	mesh.height = 1.0
-	mesh.radial_segments = 40
-	mesh.rings = 24
+	mesh.radial_segments = 24
+	mesh.rings = 14
 	node.mesh = mesh
 	node.material_override = mat
 	node.position = pos
@@ -73,7 +73,7 @@ func cone(parent: Node3D, pos: Vector3, top: float, bottom: float, height: float
 	mesh.top_radius = top
 	mesh.bottom_radius = bottom
 	mesh.height = height
-	mesh.radial_segments = 40
+	mesh.radial_segments = 20
 	node.mesh = mesh
 	node.material_override = mat
 	node.position = pos
@@ -114,10 +114,10 @@ func _ready() -> void:
 	scene.add_child(fill)
 	camera = Camera3D.new()
 	camera.projection = Camera3D.PROJECTION_ORTHOGONAL
-	camera.size = 3.15
+	camera.size = 3.5
 	scene.add_child(camera)
 	camera.position = Vector3(0,3.6,6)
-	camera.look_at(Vector3(0,1.25,0))
+	camera.look_at(Vector3(0,1.45,0))
 	pivot = Node3D.new()
 	scene.add_child(pivot)
 	rig = Skeleton3D.new()
@@ -196,7 +196,7 @@ func animate(delta: float, movement: Vector2, phase: float, walking: bool, actio
 func apply_pose(phase: float, strike: float) -> void:
 	var gait := sin(phase)*walk_blend
 	var breath := sin(clock*2.3)*0.015
-	var weight_shift:=maxf(0,strike)*(0.08 if work_kind=="wood" else 0.025)
+	var weight_shift:=maxf(0,strike)*(0.32 if work_kind=="wood" else 0.40 if work_kind=="stone" else 0.025)
 	tool_3d.rotation.x=1.15*strike if work_kind=="wood" else (0.35*strike if work_kind=="stone" else 0.0)
 	rig.set_bone_pose_position(bones.hips,rests.hips+Vector3(0,-0.04-weight_shift,weight_shift))
 	rig.set_bone_pose_position(bones.spine,rests.spine+Vector3(0,breath*0.5,0))
@@ -210,9 +210,9 @@ func apply_pose(phase: float, strike: float) -> void:
 		var stride := HeroMotion.step(phase,side)
 		var foot_z := stride.x*walk_blend-weight_shift
 		var lift := stride.y*walk_blend
-		var foot_y := -0.52+lift+weight_shift
-		var distance := minf(0.559,sqrt(foot_y*foot_y+foot_z*foot_z))
-		var knee := acos(clampf((distance*distance-2*0.28*0.28)/(2*0.28*0.28),-1,1))
+		var foot_y := -0.80+lift+weight_shift
+		var distance := minf(0.839,sqrt(foot_y*foot_y+foot_z*foot_z))
+		var knee := acos(clampf((distance*distance-2*0.42*0.42)/(2*0.42*0.42),-1,1))
 		var thigh := atan2(-foot_z,-foot_y)-knee*0.5
 		rotate_bone("thigh"+suffix,Vector3(thigh,0,0))
 		rotate_bone("shin"+suffix,Vector3(knee,0,0))
@@ -262,8 +262,9 @@ func build_villager() -> void:
 	var white := material("fff3df")
 	var dark := material("321b12")
 	var iris := material("794a28")
-	bone("hips","",Vector3(0,0.77,0))
-	var torso := bone("spine","hips",Vector3(0,0.23,0))
+	bone("hips","",Vector3(0,1.05,0))
+	var torso := bone("spine","hips",Vector3(0,0.39,0))
+	torso.scale.y=1.12
 	# One softly shaped hide tunic: broad shoulders, cinched waist, folded hem.
 	CharacterGeometry.profile(torso,[Vector3(-0.40,0.29,0.23),Vector3(-0.36,0.37,0.27),Vector3(-0.20,0.34,0.25),Vector3(-0.07,0.33,0.27),Vector3(0.10,0.37,0.30),Vector3(0.29,0.34,0.23),Vector3(0.38,0.22,0.18),Vector3(0.40,0.14,0.12)],cream,0.055)
 	mesh_count += 1
@@ -299,9 +300,9 @@ func build_villager() -> void:
 	lock(torso,Vector3(0.24,0.36,0.14),Vector3(0.04,0.15,0.29),Vector3(-0.27,-0.03,0.18),0.025,0.025,Vector3.FORWARD,rope)
 	var head := bone("head","spine",Vector3(0,0.74,0))
 	var head_rest:=rig.get_bone_rest(bones.head)
-	head_rest.basis=Basis.from_scale(Vector3(0.83,0.88,0.86))
+	head_rest.basis=Basis.from_scale(Vector3(0.77,0.82,0.80))
 	rig.set_bone_rest(bones.head,head_rest)
-	rig.set_bone_pose_scale(bones.head,Vector3(0.83,0.88,0.86))
+	rig.set_bone_pose_scale(bones.head,Vector3(0.77,0.82,0.80))
 	CharacterGeometry.profile(head,[Vector3(-0.45,0.06,0.08),Vector3(-0.38,0.31,0.29),Vector3(-0.23,0.47,0.40),Vector3(-0.02,0.51,0.44),Vector3(0.20,0.49,0.42),Vector3(0.38,0.34,0.31),Vector3(0.46,0.02,0.02)],skin)
 	mesh_count += 1
 	ellipsoid(head,Vector3(0,0.17,-0.11),Vector3(1.10,0.82,0.95),hair)
@@ -379,12 +380,12 @@ func build_villager() -> void:
 		var upper := bone("arm"+suffix,"spine",Vector3(side*0.39,0.33,0))
 		CharacterGeometry.profile(upper,[Vector3(-0.18,0.12,0.13),Vector3(-0.12,0.145,0.15),Vector3(0.02,0.15,0.16),Vector3(0.08,0.04,0.05)],cream)
 		mesh_count += 1
-		bone("forearm"+suffix,"arm"+suffix,Vector3(side*0.045,-0.33,0))
+		bone("forearm"+suffix,"arm"+suffix,Vector3(side*0.045,-0.39,0))
 		var forearm: Node3D=attachments["forearm"+suffix]
 		cone(forearm,Vector3(0,-0.21,0),0.125,0.12,0.20,cloth)
 		for band in 3:
 			cone(forearm,Vector3(0,-0.135-band*0.060,0),0.13,0.13,0.023,rope).rotation.z=0.12*side
-		var hand := bone("hand"+suffix,"forearm"+suffix,Vector3(0,-0.29,0.015))
+		var hand := bone("hand"+suffix,"forearm"+suffix,Vector3(0,-0.34,0.015))
 		ellipsoid(hand,Vector3(0,-0.015,0),Vector3(0.21,0.20,0.17),skin)
 		for finger in 4:
 			ellipsoid(hand,Vector3((finger-1.5)*.048,-.105+absf(finger-1.5)*.012,.018),Vector3(.059,.14,.070),skin)
@@ -397,8 +398,8 @@ func build_villager() -> void:
 			for band in 3:
 				cone(tool_3d,Vector3(0,0,0.35+band*0.024),0.036,0.036,0.018,rope).rotation.x=PI/2
 		bone("thigh"+suffix,"hips",Vector3(side*0.19,-0.07,0))
-		bone("shin"+suffix,"thigh"+suffix,Vector3(0,-0.28,0))
-		var foot := bone("foot"+suffix,"shin"+suffix,Vector3(0,-0.28,0))
+		bone("shin"+suffix,"thigh"+suffix,Vector3(0,-0.42,0))
+		var foot := bone("foot"+suffix,"shin"+suffix,Vector3(0,-0.42,0))
 		ellipsoid(foot,Vector3(0,-0.055,0.09),Vector3(0.29,0.22,0.43),cloth)
 		cone(foot,Vector3(0,0.10,0),0.14,0.13,0.24,cloth)
 		for band in 4:
@@ -410,8 +411,8 @@ func build_villager() -> void:
 	# Continuous weighted surfaces bridge the elbows and knees with no detached balls.
 	for side in [-1.0,1.0]:
 		var suffix := "L" if side<0 else "R"
-		skinned_limbs.append(CharacterGeometry.limb(pivot,rig,bones["arm"+suffix],bones["forearm"+suffix],Vector3(side*0.39,1.33,0),Vector3(side*0.435,1.0,0),Vector3(side*0.435,0.71,0.015),0.155,skin))
-		skinned_limbs.append(CharacterGeometry.limb(pivot,rig,bones["thigh"+suffix],bones["shin"+suffix],Vector3(side*0.19,0.70,0),Vector3(side*0.19,0.42,0),Vector3(side*0.19,0.14,0),0.175,skin))
+		skinned_limbs.append(CharacterGeometry.limb(pivot,rig,bones["arm"+suffix],bones["forearm"+suffix],Vector3(side*0.39,1.77,0),Vector3(side*0.435,1.38,0),Vector3(side*0.435,1.04,0.015),0.155,skin))
+		skinned_limbs.append(CharacterGeometry.limb(pivot,rig,bones["thigh"+suffix],bones["shin"+suffix],Vector3(side*0.19,0.98,0),Vector3(side*0.19,0.56,0),Vector3(side*0.19,0.14,0),0.175,skin))
 		mesh_count += 2
 	batch_static(rig)
 

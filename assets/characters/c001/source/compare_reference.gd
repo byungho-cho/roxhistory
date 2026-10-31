@@ -6,8 +6,8 @@ func run():
 	var reference:=TextureRect.new();reference.expand_mode=TextureRect.EXPAND_IGNORE_SIZE;reference.stretch_mode=TextureRect.STRETCH_KEEP_ASPECT_CENTERED;reference.texture=ImageTexture.create_from_image(Image.load_from_file(path));reference.size=Vector2(1024,512);root.add_child(reference)
 	for i in 4:
 		var hero:=HybridCharacter.new();root.add_child(hero);hero.set_enabled(true)
-		hero.viewport.size=Vector2i(256,500);hero.camera.size=3.0
-		hero.camera.position=Vector3(0,1.35,7);hero.camera.look_at(Vector3(0,1.35,0))
+		hero.viewport.size=Vector2i(256,500);hero.camera.size=3.35
+		hero.camera.position=Vector3(0,1.5,7);hero.camera.look_at(Vector3(0,1.5,0))
 		hero.pivot.rotation.y=[0.0,PI,-PI/2,PI/2][i];hero.tool_3d.visible=false
 		hero.display.scale=Vector2.ONE;hero.display.position=Vector2.ZERO;hero.position=Vector2(i*256,520)
 		for side in [-1.0,1.0]:hero.rotate_bone("arm"+("L" if side<0 else "R"),Vector3(0,0,side*.22))
