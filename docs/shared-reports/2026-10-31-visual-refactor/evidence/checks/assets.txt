@@ -1,0 +1,1 @@
+Verified 32 bundled assets (size and SHA-256).
