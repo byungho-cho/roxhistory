@@ -17,7 +17,7 @@ func run() -> void:
 	p.set_character_3d(true)
 	await frames(4)
 	check(p.hybrid.rig.get_bone_count() == 15,"Real 15-bone skeleton")
-	check(p.hybrid.mesh_count > 40,"Volumetric meshes built")
+	check(p.hybrid.skinned_limbs.size()==1 and p.hybrid.skinned_limbs[0].mesh.surface_get_array_len(0)>20000,"Optimized volumetric Meshy hero is actually loaded")
 	check(p.hybrid.viewport.own_world_3d and p.hybrid.viewport.transparent_bg,"Isolated transparent 3D render")
 	var foot_anchor: Vector2 = p.hybrid.display.position
 	for a in [0.0,0.4,0.785,1.57,2.4,3.14,-2.4,-1.57,-0.4]:

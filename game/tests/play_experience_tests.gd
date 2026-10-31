@@ -88,7 +88,7 @@ func run() -> void:
 	check(app.gestures.touches.is_empty() and not app.gestures.blocked and app.joystick.finger==-1,"Pause clears pinch and joystick ownership")
 	app._notification(MainLoop.NOTIFICATION_APPLICATION_RESUMED)
 	check(app.application_active and p.direction==Vector2.ZERO,"Resume has no retained movement")
-	p.position=Vector2(1360,830);p.zoom_factor=1;p.fit_camera();await frames(4)
+	p.position=Vector2(1360,830);p.position=app.world.gather_stand(Vector2(1420,830),"wood");p.zoom_factor=1;p.fit_camera();await frames(4)
 	app.gather_action();await frames(76)
 	check(app.model.state.wood==1,"One completed 1.2-second gather awards exactly one wood")
 	check(app.chrome.flights.size()==1 and app.chrome.flights[0].kind=="wood","Successful gather sends the matching icon toward the resource slot")

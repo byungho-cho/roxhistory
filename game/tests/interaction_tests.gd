@@ -28,6 +28,7 @@ func run() -> void:
 	p.set_character_3d(true)
 	var fx: WorldFeedback = app.world.feedback
 	p.position = Vector2(1360,830)
+	p.position=app.world.gather_stand(Vector2(1420,830),"wood")
 	await frames(4)
 	check(app.world.selected == "wood_3","Nearby target is selected")
 	app.gather_action(); await frames(20)

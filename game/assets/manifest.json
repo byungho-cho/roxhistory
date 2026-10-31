@@ -125,6 +125,21 @@
     "sha256": "d1049c82332afda70e43a47f6051ae0467bcf387f5e4b0c0c4f17bee163d0c92"
   },
   {
+    "path": "game/assets/characters/meshy01/hero.glb",
+    "bytes": 17153260,
+    "sha256": "44c5c760d84b48d73a011a1e442f3eec9c8a5c37a5a11031c854375f4f959785"
+  },
+  {
+    "path": "game/assets/characters/meshy01/hero_Image_0.jpg",
+    "bytes": 7664323,
+    "sha256": "8b19b84aba0caf4172b7843be6122211da456271bdf4ec2ca6ed17605a05078b"
+  },
+  {
+    "path": "game/assets/characters/meshy01/hero_Image_2.jpg",
+    "bytes": 6248575,
+    "sha256": "898dbd8d1029ae47879a5a89106b4bc500fb85bb0077fa0abe679c497f98a771"
+  },
+  {
     "path": "game/assets/characters/villager.png",
     "bytes": 929060,
     "sha256": "540317f691c7d42dfde9d5d736b8c653352997a2f89cdb4b5dc6f21cb6411762"
@@ -275,6 +290,61 @@
     "sha256": "11286814b359fa5c00e19d831ae29766c67bb8603b7faca88d934d7eec8035d3"
   },
   {
+    "path": "game/assets/region-selection/10e90.svg",
+    "bytes": 395,
+    "sha256": "2eb48d653708933f870c012fad07c7765db0b009c8f4fc2c191190de83ceaa5f"
+  },
+  {
+    "path": "game/assets/region-selection/159ba.svg",
+    "bytes": 451,
+    "sha256": "8851f15685aebd1d1749001b859fb6f70347971449c63085f2a0bfc092fc9229"
+  },
+  {
+    "path": "game/assets/region-selection/2f8a0.png",
+    "bytes": 2118946,
+    "sha256": "99372eefa0319d32f5158e524cfcf899108a41a30b339d9e27a261859f693bf2"
+  },
+  {
+    "path": "game/assets/region-selection/663c6.png",
+    "bytes": 1694678,
+    "sha256": "ca749f2ef6ed998b775bbd69dcc4c174a48126f30b1edaa8244a4c8492a31b7d"
+  },
+  {
+    "path": "game/assets/region-selection/8b5a2.svg",
+    "bytes": 720,
+    "sha256": "a0272ff21b4714176922153dccbe62cd0080b25b96b71215990491df4bd69a4d"
+  },
+  {
+    "path": "game/assets/region-selection/8f28a.png",
+    "bytes": 1627589,
+    "sha256": "9157f63c6e7262f8906b1e6becdd4d3ce530ff93ce67952c2621a39a50ca3dca"
+  },
+  {
+    "path": "game/assets/region-selection/90ccd.svg",
+    "bytes": 395,
+    "sha256": "aec95ca73ce2440744e0eaafef694e5ef2bd7c88da7fa6230ebfea77a1d4947d"
+  },
+  {
+    "path": "game/assets/region-selection/a211f.svg",
+    "bytes": 398,
+    "sha256": "01125c0f38c1241167dd97e1756ad8de32fd720e897de9a5a52e3d6808ef6bf3"
+  },
+  {
+    "path": "game/assets/region-selection/ba95c.svg",
+    "bytes": 10930,
+    "sha256": "cacef5d68f9b9329cf00dabe50034c09668910d05175cd6ecd03ed388658f298"
+  },
+  {
+    "path": "game/assets/region-selection/fac42.svg",
+    "bytes": 1600,
+    "sha256": "1bc32c875cf4ce9c98a988c26093cadd8c60dd4787af5a1b4b4deb398baadc57"
+  },
+  {
+    "path": "game/assets/region-selection/fc6ce.svg",
+    "bytes": 720,
+    "sha256": "f99323eaa4503570fd52373717b9476af72588ffc22893413912aab67124199b"
+  },
+  {
     "path": "game/assets/ui/design/dark.svg",
     "bytes": 498,
     "sha256": "6b4b1b0c446d97bfdf07031e6362460ed5bc8cf2ef3cf0b1329b264747a2713f"
@@ -296,8 +366,8 @@
   },
   {
     "path": "game/assets/ui/hero_portrait.png",
-    "bytes": 52610,
-    "sha256": "1963b2bca1334cec7dd84195294d0735b7d64a49ed2ddb6ed775a25eee6c609e"
+    "bytes": 57065,
+    "sha256": "bb8d46731303116f1b4840d725a4fb29d492eed1a75c6859aeffa8b0fed198e6"
   },
   {
     "path": "game/assets/ui/seed.svg",

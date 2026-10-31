@@ -21,4 +21,5 @@ func run() -> void:
 	root.get_texture().get_image().save_png("res://reports/hero-build-contact.png");await frames(125)
 	assert(app.model.state.built and app.model.state.wood==0 and app.model.state.stone==0)
 	app.audio.configure(false,false,false,false)
+	app.queue_free();await process_frame;await RenderingServer.frame_post_draw
 	quit()
