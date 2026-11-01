@@ -5,6 +5,14 @@ signal unavailable(reason: String)
 var hint_text := "지금은 사용할 수 없어요"
 var finger := -1
 var working:=false
+var art_feedback:Control
+
+func enable_art_feedback() -> void:
+	if art_feedback:return
+	art_feedback=Control.new();art_feedback.name="PressVisuals";art_feedback.mouse_filter=Control.MOUSE_FILTER_IGNORE
+	var visuals:=get_children();add_child(art_feedback)
+	for child in visuals:child.reparent(art_feedback)
+
 
 func set_working(value: bool) -> void:
 	if working==value: return
@@ -17,8 +25,16 @@ func set_working(value: bool) -> void:
 	else: remove_theme_stylebox_override("disabled")
 
 func _process(delta: float) -> void:
+	var down:=is_pressed() or (finger>=0 and not disabled)
+	if art_feedback:
+		pivot_offset=Vector2.ZERO;scale=Vector2.ONE
+		art_feedback.pivot_offset=size*.5
+		art_feedback.scale=art_feedback.scale.lerp(Vector2.ONE*(.945 if down else 1.0),1-exp(-delta*28))
+		art_feedback.position.y=lerpf(art_feedback.position.y,3 if down else 0,1-exp(-delta*28))
+		art_feedback.modulate=Color(.72,.70,.66,.86) if disabled else (Color(.91,.86,.75) if down else Color.WHITE)
+		return
 	pivot_offset=size*0.5
-	scale=scale.lerp(Vector2.ONE*(0.965 if is_pressed() else 1.0),1-exp(-delta*28))
+	scale=scale.lerp(Vector2.ONE*(0.965 if down else 1.0),1-exp(-delta*28))
 
 func _gui_input(event: InputEvent) -> void:
 	if event is InputEventScreenTouch:
@@ -40,3 +56,4 @@ func _gui_input(event: InputEvent) -> void:
 func clear() -> void:
 	finger = -1
 	set_pressed_no_signal(false)
+	if art_feedback:art_feedback.scale=Vector2.ONE;art_feedback.position=Vector2.ZERO

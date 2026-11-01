@@ -24,7 +24,9 @@ func run() -> void:
 				check(is_equal_approx(maxf(base.x,base.y),86),"Other icon stays at shared base size: "+other)
 	var empty:=map.size*Vector2(.22,.65)
 	map.begin_pointer(0,empty);map.end_pointer(0,empty)
-	check(not map.panel_visible and not map.details.visible,"Empty map tap hides entire information panel")
+	check(not map.panel_visible and not map.ui_hit(map.start_button.get_global_rect().get_center()),"Dismissal releases panel input immediately")
+	await create_timer(.25).timeout
+	check(not map.panel_visible and not map.details.visible,"Empty map tap hides entire information panel after close animation")
 	var previous:=map.selected
 	check(not map.ui_hit(map.start_button.get_global_rect().get_center()),"Hidden start button cannot capture map touches")
 	var snap:=map.snapshot();app.relayout();map=app.region_selection
