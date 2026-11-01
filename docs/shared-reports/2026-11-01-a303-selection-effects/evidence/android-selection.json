@@ -1,5 +1,5 @@
 {
-  "utc": "2026-11-01T08:42:49Z",
+  "utc": "2026-11-01T09:05:55Z",
   "version": "0.1.12-selection",
   "environment": "Android 15 API35 x86_64 emulator-5580, 1280x720; ADB taps/drags and Android MotionEvent two-pointer injection",
   "checks": [
@@ -18,19 +18,21 @@
   ],
   "events": [
     {
-      "seconds": 3.73,
+      "seconds": 3.74,
       "action": "select jeongok"
     },
     {
-      "seconds": 5.34,
+      "seconds": 5.38,
       "action": "select amsa"
     },
     {
-      "seconds": 6.93,
+      "seconds": 6.96,
       "action": "select dongsam"
     }
   ],
   "normal_and_test_save_preserved": true,
   "failed": [],
-  "physical_device_verified": false
+  "physical_device_verified": false,
+  "source_commit": "4d23753c91ba1b55f687e4dee09810b54556e039",
+  "resume_surface_wait_seconds": 0.72
 }

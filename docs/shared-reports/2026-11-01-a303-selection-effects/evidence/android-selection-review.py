@@ -64,12 +64,16 @@ time.sleep(.7);checks.append('Rapid and repeated selection settles correctly')
 rec.wait(timeout=45);log.close();assert rec.returncode==0
 old=state();task_id=re.search(r'mFocusedApp=.*com.roxhistory.demo.* t(\d+)',run('shell','dumpsys','window')).group(1)
 run('shell','input','keyevent','3');time.sleep(1);run('shell','am','task','focus',task_id);time.sleep(2)
-tap(640,400);wait(lambda s:s['ticks_ms']>old['ticks_ms'] and not s['panel_visible'])
+resume_started=time.monotonic()
+while state()['ticks_ms']<=old['ticks_ms'] and time.monotonic()-resume_started<15:
+ tap(640,400);time.sleep(.5)
+assert state()['ticks_ms']>old['ticks_ms'] and not state()['panel_visible'], 'Resumed surface did not accept a fresh touch'
+resume_wait=round(time.monotonic()-resume_started,2)
 select('amsa');old=state();pinch();s=wait(lambda s:s['ticks_ms']>old['ticks_ms'] and s['reason']=='gesture_end')
 assert s['zoom']>1.4 and s['touches']==0;checks.append('Background/resume accepts fresh pinch without retained touches');reset()
 assert normal==run('shell','run-as','com.roxhistory.demo','cat','files/save.json')
 assert test_save==run('shell','run-as','com.roxhistory.demo','cat','files/tests/session/save.json')
 logs=run('logcat','-d','-s','godot:V','AndroidRuntime:E');assert 'SCRIPT ERROR' not in logs and 'FATAL EXCEPTION' not in logs
 (out/'android-logcat.txt').write_text(logs,encoding='utf-8')
-report={'utc':time.strftime('%Y-%m-%dT%H:%M:%SZ',time.gmtime()),'version':'0.1.12-selection','environment':'Android 15 API35 x86_64 emulator-5580, 1280x720; ADB taps/drags and Android MotionEvent two-pointer injection','checks':checks,'events':events,'normal_and_test_save_preserved':True,'failed':[],'physical_device_verified':False}
+report={'utc':time.strftime('%Y-%m-%dT%H:%M:%SZ',time.gmtime()),'version':'0.1.12-selection','environment':'Android 15 API35 x86_64 emulator-5580, 1280x720; ADB taps/drags and Android MotionEvent two-pointer injection','checks':checks,'events':events,'normal_and_test_save_preserved':True,'failed':[],'physical_device_verified':False,'source_commit':'4d23753c91ba1b55f687e4dee09810b54556e039','resume_surface_wait_seconds':resume_wait}
 (out/'android-selection.json').write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding='utf-8');print(json.dumps(report,ensure_ascii=False),flush=True)
