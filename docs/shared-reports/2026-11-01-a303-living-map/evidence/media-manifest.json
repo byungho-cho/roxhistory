@@ -1,0 +1,66 @@
+{
+  "screenshots/android-amsa.png": {
+    "bytes": 1797126,
+    "sha256": "684bc2925b47861b72f9e4ca00addc1a00cd688bac1fb330a70dbf67a806847b"
+  },
+  "screenshots/android-button-pressed.png": {
+    "bytes": 1798127,
+    "sha256": "0c9c9fe1b9e3a9c6066d33689e0a492ece631344efc214139ced1117d337cb96"
+  },
+  "screenshots/android-button-released.png": {
+    "bytes": 1798848,
+    "sha256": "e18b1efb67a9918fd46f6f271d9e9cf6a234a766a8381fc970ea5f242b8cb704"
+  },
+  "screenshots/android-completed.png": {
+    "bytes": 1799111,
+    "sha256": "c0f70e88c7b453ecf27cbb64344017da8f158e06158653c972c886c650376b33"
+  },
+  "screenshots/android-continued.png": {
+    "bytes": 1799612,
+    "sha256": "5b4a8134be4193e3d2b011adf30cbebf4d056a55475345b38059148ed20a0915"
+  },
+  "screenshots/android-cover-final.png": {
+    "bytes": 707160,
+    "sha256": "d9444df870f59d41bde59f79e50f641b984421aa8ce25ca598c1b288f945d667"
+  },
+  "screenshots/android-dongsam.png": {
+    "bytes": 1797075,
+    "sha256": "bddb114e581cb58c7c13f51b954d66052e003040687fa2635bf883efefad2e09"
+  },
+  "screenshots/android-held-pinch-resumed.png": {
+    "bytes": 1797473,
+    "sha256": "f5127d82651996227b298566b1f2548368fac2acbc8fdd7749fad5e97592ff67"
+  },
+  "screenshots/android-jeongok.png": {
+    "bytes": 1785465,
+    "sha256": "9adc6cd6893142f49c02faa66bbb49c3499fd8e83d5e5f152562713700fcf7c7"
+  },
+  "screenshots/android-manual-zoom.png": {
+    "bytes": 1798019,
+    "sha256": "297b12a9b9b9e1ac82ff588b88da12e497455495e59d52afe556b6f69b4e7621"
+  },
+  "screenshots/android-panel-hidden.png": {
+    "bytes": 1730628,
+    "sha256": "8049b96b9f97eba2b69c5127a81b60d301d474d48aa50a6914b475ded91f0ab9"
+  },
+  "screenshots/android-unfolded-final.png": {
+    "bytes": 1013393,
+    "sha256": "5507fa104b9da799a8f586650c837222532033e378782360a5fa173319473493"
+  },
+  "screenshots/final-main-installed.png": {
+    "bytes": 1801296,
+    "sha256": "8243f357d3dbbbf1bbf8cb36a45f3b0a222401696841dd5b0d58ca148e8ccea2"
+  },
+  "clips/demo-loop.mp4": {
+    "bytes": 6169561,
+    "sha256": "d479ea70e2102c8386b0d72b8a67f5b2fec369f2ce9e5d5130a2f75a8bb05b8d"
+  },
+  "clips/map-environment-sound.mp4": {
+    "bytes": 1065924,
+    "sha256": "5522e3d51b400ef83359f7e6f22bf4474dc070dd74dcbad4980643ab8c7ea7c8"
+  },
+  "clips/map-selection-gestures.mp4": {
+    "bytes": 2449702,
+    "sha256": "587e0c396a5aecb25b6931551b44e0edbfe98d43373d0e03852337d7df991897"
+  }
+}

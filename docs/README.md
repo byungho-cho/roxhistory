@@ -1,3 +1,5 @@
+> 2026-11-01 최신 작업: **A303 선택 모션·새·물고기 환경 효과 v0.1.13**. [실행 화면·영상·검증 보고서](shared-reports/2026-11-01-a303-living-map/report.md). 지역 선택은 고정 지도·수동 카메라를 유지합니다. 새·물고기는 지도 장식이며 주민·동물 게임 시스템 완료가 아닙니다. 사용자 체감 승인·실기기 검증은 후속입니다. 아래는 이전 개발 이력입니다.
+
 # 최신 구현·검토 자료 — 2026-10-31
 
 [대표 정착지 아트·공간 v0.1.8 보고서](shared-reports/2026-10-31-visual-refactor/report.md)에서 전후 화면, Android 영상, APK와 검증 범위를 확인합니다. [공유 보고서 목록](shared-reports/README.md), [현재 진행](quality-progress.md), [CQ1 이후 계획](character-quality-roadmap.md)을 최신 기준으로 사용합니다. 기존 PDF는 과거 기록이며 이번에는 새로 만들지 않았습니다.
