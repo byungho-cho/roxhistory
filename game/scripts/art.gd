@@ -6,6 +6,8 @@ static var cache := {}
 static var shared_theme: Theme
 
 static func icon(key: String) -> Texture2D:
+	if FigmaArt.CROPS.has(key) or FigmaArt.CONTROL_CROPS.has(key):return FigmaArt.texture(key)
+	if key=="meat":return FigmaArt.texture("meat.png")
 	if cache.has(key):
 		return cache[key]
 	var boxes := {"spear":Rect2(30,16,369,348),"hammer":Rect2(790,16,354,344),"meat":Rect2(8,690,380,310),"hut":Rect2(1143,12,378,355),"wood":Rect2(777,389,375,287),

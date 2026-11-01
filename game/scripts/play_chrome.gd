@@ -8,6 +8,7 @@ var portrait: Texture2D
 var last_map_position := Vector2.INF
 func _init(owner_app: Node) -> void: app=owner_app
 func _ready() -> void:
+	texture_filter=CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	app.model.changed.connect(queue_redraw)
 	resized.connect(queue_redraw)
 	mouse_filter=Control.MOUSE_FILTER_IGNORE
@@ -54,7 +55,9 @@ func _draw() -> void:
 	frame(Rect2(origin+Vector2(74,53),Vector2(145,15)),Color("bd2d17"),Color("a77942"))
 	draw_string(font,origin+Vector2(121,65),"— / —",HORIZONTAL_ALIGNMENT_LEFT,75,12,Color("fff4da"))
 	frame(Rect2(origin+Vector2(74,74),Vector2(122,9)),Color("4b8a32"),Color("a77942"))
-	draw_style_box(DesignSkin.style("ivory"),Rect2(app.w-app.safe.x-394,app.safe.y,280,44))
+	draw_set_transform(Vector2(app.w-app.safe.x-394,app.safe.y))
+	FigmaSlice.paint(self,FigmaArt.texture("paper"),Vector2(280,44),"paper",10)
+	draw_set_transform(Vector2.ZERO)
 	for key in ["wood","stone","meat","berries"]:
 		var rect:=slot(key);var beat: float=pulse.get(key,0.0)
 		var tex:=DemoArt.icon(key)

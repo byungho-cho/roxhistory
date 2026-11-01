@@ -12,16 +12,16 @@ func run() -> void:
 	check(map.selected=="amsa" and not map.start_button.disabled,"Playable Amsa is initial detail")
 	var fixed_panel:=map.details.get_global_rect()
 	for key in RegionSelection.REGIONS:
-		var icon:=map.marker_rect(key).position+Vector2(25,25)*map.factor
+		var icon:=map.markers.artifact_rect(key).get_center()
 		map.begin_pointer(0,icon);map.end_pointer(0,icon);await create_timer(.65).timeout
 		check(map.selected==key and map.title_label.text==RegionSelection.REGIONS[key].name,"Icon selects and updates "+key)
 		check(is_equal_approx(map.zoom,2),"Selection smoothly reaches maximum zoom")
 		check(not map.details.get_global_rect().has_point(map.map_point(key)),"Selected region is not hidden by panel")
 		check(map.start_button.disabled==(key!="amsa"),"Start reflects real playable support")
-		check(map.food.texture.region.position.x==RegionSelection.REGIONS[key].food*map.food.texture.region.size.x,"Fourth food matches selected region")
+		check(map.food.texture==FigmaArt.texture("meat.png" if key=="jeongok" else RegionSelection.REGIONS[key].food),"Fourth food matches selected region")
 		var before:=map.selected;map.restore();await create_timer(.55).timeout
 		check(map.selected==before and is_equal_approx(map.zoom,1),"Restore keeps selection and returns overview")
-		var label:=map.marker_rect(key).position+Vector2(150,35)*map.factor
+		var label:=map.markers.name_rect(key).get_center()
 		map.begin_pointer(1,label);map.end_pointer(1,label)
 		check(map.selected==key,"Name is selectable")
 		map.restore();await create_timer(.55).timeout

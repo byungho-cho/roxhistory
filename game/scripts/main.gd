@@ -116,7 +116,7 @@ func show_screen(next: String) -> void:
 	var notice_rect := Rect2(safe.x+76,safe.y+56,minf(300,w-safe.x*2-420),48) if screen == "play" else Rect2(safe.x,h-160,minf(480,w*0.48),76)
 	toast_panel = box(stage,notice_rect)
 	toast_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	toast_label = label(toast_panel,"",17,Color("fff3d6"))
+	toast_label = label(toast_panel,"",17,Color("47240e"))
 	toast_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	toast_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	toast_panel.visible = false
@@ -134,8 +134,7 @@ func show_screen(next: String) -> void:
 		toast(model.store.message,8)
 
 func box(parent: Node, rect: Rect2, dark: bool = true) -> PanelContainer:
-	var p := PanelContainer.new()
-	p.add_theme_stylebox_override("panel",DemoArt.panel(dark))
+	var p := FigmaPanelContainer.new()
 	parent.add_child(p)
 	p.position = rect.position
 	p.size = rect.size
@@ -156,7 +155,7 @@ func label(parent: Node, text: String, font_size: int = 20, color: Color = Color
 	parent.add_child(l)
 	return l
 
-func paragraph(parent: Node, text: String, font_size: int = 19, color: Color = Color("eee5d5")) -> Label:
+func paragraph(parent: Node, text: String, font_size: int = 19, color: Color = Color("47240e")) -> Label:
 	var l := label(parent,text,font_size,color)
 	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -164,6 +163,7 @@ func paragraph(parent: Node, text: String, font_size: int = 19, color: Color = C
 
 func button(parent: Node, text: String, callback: Callable, primary: bool = false, icon_key: String = "") -> DemoButton:
 	var b := DemoButton.new()
+	b.texture_filter=CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	b.text = text
 	b.custom_minimum_size = Vector2(80,68)
 	b.focus_mode = Control.FOCUS_NONE
@@ -190,14 +190,15 @@ func back_button(callback: Callable) -> DemoButton:
 	style.bg_color = Color(0.15,0.15,0.15,0.8)
 	style.set_corner_radius_all(28)
 	style.set_content_margin_all(8)
-	b.add_theme_stylebox_override("normal",style)
-	b.icon = preload("res://assets/figma/fac42.svg")
+	for state in ["normal","hover","pressed","disabled","focus"]:b.add_theme_stylebox_override(state,StyleBoxEmpty.new())
+	b.icon = FigmaArt.texture("back")
 	b.expand_icon = true
-	b.add_theme_constant_override("icon_max_width",30)
+	b.add_theme_constant_override("icon_max_width",56)
 	return b
 
 func picture(parent: Node, texture: Texture2D, rect: Rect2) -> TextureRect:
 	var t := TextureRect.new()
+	t.texture_filter=CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	t.texture = texture
 	t.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	t.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
@@ -230,12 +231,14 @@ func design_label(parent: Node,text: String,rect: Rect2,font_size: int,color:=Co
 func design_button(parent: Node,text: String,rect: Rect2,callback: Callable,primary:=false,key:="") -> DemoButton:
 	var b:=button(parent,text,callback,primary,key)
 	b.custom_minimum_size=Vector2.ZERO;b.position=rect.position;b.size=rect.size
-	b.add_theme_stylebox_override("normal",DesignSkin.style("gold" if primary else "ivory"))
-	b.add_theme_stylebox_override("hover",DesignSkin.style("gold"))
-	b.add_theme_stylebox_override("pressed",DesignSkin.style("pressed"))
+	for state in ["normal","hover","pressed","disabled","focus"]:b.add_theme_stylebox_override(state,StyleBoxEmpty.new())
+	var skin:=FigmaSlice.new("gold",minf(w/1600,h/900)*72)
+	skin.name="FigmaSkin";skin.show_behind_parent=true;b.add_child(skin);b.move_child(skin,0);skin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	b.add_theme_font_override("font",FigmaArt.BODY)
 	b.add_theme_color_override("font_color",Color("49321e"))
 	b.add_theme_color_override("font_hover_color",Color("49321e"))
 	b.add_theme_color_override("font_pressed_color",Color("49321e"))
+	b.add_theme_color_override("font_disabled_color",Color("49321e"))
 	b.add_theme_font_size_override("font_size",maxi(14,int(rect.size.y*.28)))
 	b.add_theme_constant_override("icon_max_width",int(rect.size.y*.58))
 	b.expand_icon=false
@@ -243,7 +246,7 @@ func design_button(parent: Node,text: String,rect: Rect2,callback: Callable,prim
 		var tex:=b.icon
 		b.icon=null
 		var font_color:=Color("49321e")
-		var font:=DemoArt.theme().default_font
+		var font:Font=FigmaArt.BODY
 		var fs:=maxi(14,int(rect.size.y*.28))
 		var iw:=rect.size.y*.54
 		var tw:=font.get_string_size(text,HORIZONTAL_ALIGNMENT_LEFT,-1,fs).x
@@ -254,12 +257,14 @@ func design_button(parent: Node,text: String,rect: Rect2,callback: Callable,prim
 			b.add_theme_color_override("font_hover_color",Color.TRANSPARENT)
 			b.add_theme_color_override("font_pressed_color",Color.TRANSPARENT)
 			b.add_theme_color_override("font_disabled_color",Color.TRANSPARENT)
-			design_label(b,text,Rect2(x+iw+8,0,tw,rect.size.y),fs,font_color)
+			var caption:=design_label(b,text,Rect2(x+iw+8,0,tw,rect.size.y),fs,font_color)
+			caption.add_theme_font_override("font",FigmaArt.BODY)
 	return b
 
 func design_panel(rect: Rect2,dark:=true) -> Control:
 	var p:=Panel.new();stage.add_child(p);p.position=rect.position;p.size=rect.size
-	p.add_theme_stylebox_override("panel",DesignSkin.style("dark" if dark else "ivory"))
+	p.add_theme_stylebox_override("panel",StyleBoxEmpty.new())
+	var skin:=FigmaSlice.new("paper",24*minf(w/1600,h/900));p.add_child(skin);skin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	p.mouse_filter=Control.MOUSE_FILTER_IGNORE
 	return p
 
@@ -267,17 +272,15 @@ func onboarding() -> void:
 	var k:=minf(w/1600,h/900)
 	design_label(stage,"RoxHistory",design_rect(54,28,400,64),int(48*k),Color("fff0d2"))
 	var panel:=design_panel(design_rect(300,154,1000,626));panel.clip_contents=true
-	var pattern:=picture(panel,preload("res://assets/figma/2a735.svg"),Rect2(Vector2.ZERO,panel.size));pattern.stretch_mode=TextureRect.STRETCH_SCALE
-	for item in [["4c704",Rect2(-25,-23,338,371),38.27],["02422",Rect2(669,-47,331,385),-30.52],["f1627",Rect2(40,56,903,541),0.0],["75484",Rect2(158,118,641,139),0.0]]:
-		var r: Rect2=item[1];var pic:=picture(panel,load("res://assets/figma/"+item[0]+".svg"),Rect2(r.position*k,r.size*k));pic.modulate.a=.29;pic.rotation=deg_to_rad(item[2]);pic.pivot_offset=pic.size*.5
 	picture(stage,DemoArt.icon("hut"),design_rect(747,196,106,97))
-	design_label(stage,"나의 첫 역사",design_rect(342,309,916,32),int(21*k),Color("bbbbbb"),true)
-	design_label(stage,"당신의 여정이 시작됩니다",design_rect(342,357,916,64),int(48*k),Color("eeeeee"),true)
-	design_label(stage,"강가의 작은 터전에서\n나만의 이야기를 만들어 보세요.",design_rect(342,437,916,80),int(26*k),Color("eeeeee"),true)
-	design_label(stage,"어떤 소리로 시작할까요?",design_rect(342,550,916,32),int(21*k),Color("bbbbbb"),true)
+	design_label(stage,"나의 첫 역사",design_rect(342,309,916,32),int(21*k),Color("47240e"),true)
+	var welcome_title:=design_label(stage,"당신의 여정이 시작됩니다",design_rect(342,357,916,64),int(44*k),Color("47240e"),true)
+	welcome_title.add_theme_font_override("font",FigmaArt.TITLE)
+	design_label(stage,"강가의 작은 터전에서\n나만의 이야기를 만들어 보세요.",design_rect(342,437,916,80),int(26*k),Color("47240e"),true)
+	design_label(stage,"어떤 소리로 시작할까요?",design_rect(342,550,916,32),int(21*k),Color("47240e"),true)
 	design_button(stage,"소리 없이 시작",design_rect(342,598,448,88),func():welcome(false),false,"horn")
 	design_button(stage,"소리 켜고 시작",design_rect(810,598,448,88),func():welcome(true),true,"horn")
-	design_label(stage,"소리 설정은 게임 안에서 언제든 바꿀 수 있습니다.",design_rect(342,702,916,32),int(21*k),Color("bbbbbb"),true)
+	design_label(stage,"소리 설정은 게임 안에서 언제든 바꿀 수 있습니다.",design_rect(342,702,916,32),int(21*k),Color("47240e"),true)
 
 func welcome(sound: bool) -> void:
 	settings.set_value("app","welcomed",true)
@@ -293,11 +296,11 @@ func title_screen() -> void:
 	design_label(stage,"작은 불씨에서 시작되는 우리의 역사",design_rect(78,175,970,48),int(34*k),Color("ffedc7"))
 	design_panel(design_rect(1082,300,440,430))
 	picture(stage,DemoArt.icon("scroll"),design_rect(1108,326,58,53))
-	design_label(stage,"당신의 여정",design_rect(1178,334,260,36),int(25*k))
+	design_label(stage,"당신의 여정",design_rect(1178,334,260,36),int(25*k),Color("47240e"))
 	var continue_btn:=design_button(stage,"이어서 하기",design_rect(1108,401,388,90),enter_game,true,"hut");continue_btn.disabled=model.state.is_empty();continue_btn.hint_text="먼저 새 여정을 시작해 주세요."
 	design_button(stage,"새로 시작",design_rect(1108,513,388,82),new_game_prompt,false,"spear")
 	design_button(stage,"장 선택",design_rect(1108,617,388,82),chapter_menu,false,"compass")
-	var horn:=design_button(stage,"",design_rect(1445,44,88,88),toggle_sound,false,"horn");horn.tooltip_text="소리 켜기 / 끄기";horn.add_theme_stylebox_override("normal",DesignSkin.round_style("ivory"))
+	var horn:=design_button(stage,"",design_rect(1445,44,88,88),toggle_sound,false,"horn");horn.tooltip_text="소리 켜기 / 끄기";horn.add_theme_stylebox_override("normal",DesignSkin.round_style("ivory"));horn.get_node("FigmaSkin").hide()
 	design_panel(design_rect(76,744,360,78),false)
 	picture(stage,DemoArt.icon("hut"),design_rect(95,760,50,46))
 	design_label(stage,"1장 · 선사시대의 첫 불씨",design_rect(157,767,270,32),int(21*k),Color("49321e"))
@@ -355,6 +358,7 @@ func play_hud() -> void:
 	var back:=back_button(pause_game);back.position=Vector2(safe.x,h-safe.y-56);back.visible=false
 	var quest_panel:=design_button(stage,"",Rect2(w-safe.x-192,safe.y+120,192,78),focus_objective,false,"")
 	quest_panel.name="QuestPanel"
+	quest_panel.get_node("FigmaSkin").kind="paper";quest_panel.get_node("FigmaSkin").source=FigmaArt.texture("paper");quest_panel.get_node("FigmaSkin").corner=12;quest_panel.get_node("FigmaSkin").queue_redraw()
 	picture(quest_panel,DemoArt.icon("hut"),Rect2(10,8,22,20))
 	objective=label(quest_panel,"",14,Color("49321e"));objective.position=Vector2(14,10);objective.size=Vector2(166,58)
 	joystick=DemoJoystick.new();stage.add_child(joystick);joystick.position=Vector2(safe.x+14,h-safe.y-154)
@@ -364,6 +368,7 @@ func play_hud() -> void:
 		var caption: String=data[0]
 		var callback: Callable=gather_action if caption=="채집" else build_action if caption=="건설" else func():show_modal(caption+" 준비 중","이번 데모에서는 나무와 돌을 모아 움막을 지을 수 있습니다.",[{"text":"돌아가기","action":close_modal}])
 		var b:=design_button(row,caption,Rect2(0,0,74,72),callback,caption=="채집","")
+		var action_skin:=b.get_node("FigmaSkin") as FigmaSlice;action_skin.kind="paper";action_skin.source=FigmaArt.texture("paper");action_skin.corner=13.2;action_skin.queue_redraw()
 		b.custom_minimum_size=Vector2(74,72);b.expand_icon=true;b.icon=DemoArt.icon(data[1]);b.vertical_icon_alignment=VERTICAL_ALIGNMENT_TOP;b.icon_alignment=HORIZONTAL_ALIGNMENT_CENTER
 		b.add_theme_constant_override("icon_max_width",38);b.add_theme_font_size_override("font_size",14)
 		if caption=="채집":gather_button=b
@@ -371,13 +376,15 @@ func play_hud() -> void:
 		else:b.modulate=Color(.85,.85,.85,1);b.tooltip_text="준비 중"
 	var journal:=design_button(stage,"",Rect2(w-safe.x-140,h-safe.y-62,56,56),quest_details,false,"scroll");journal.name="JournalButton"
 	var bag:=design_button(stage,"",Rect2(w-safe.x-64,h-safe.y-66,62,62),inventory_summary,false,"bag");bag.name="InventoryButton"
-	for b in [journal,bag]:b.add_theme_stylebox_override("normal",DesignSkin.round_style("dark"))
+	for b in [journal,bag]:
+		b.add_theme_stylebox_override("normal",DesignSkin.round_style("dark"));b.get_node("FigmaSkin").hide()
 	context_panel=box(stage,Rect2(safe.x+76,safe.y+106,minf(300,w-safe.x*2-420),48));context_panel.mouse_filter=Control.MOUSE_FILTER_IGNORE;context_panel.visible=false
-	context=label(context_panel,"",15,Color("fff0d1"));context.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART;context.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
+	context=label(context_panel,"",15,Color("47240e"));context.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART;context.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
 	task_bar=ProgressBar.new();task_bar.mouse_filter=Control.MOUSE_FILTER_IGNORE;task_bar.show_percentage=false;task_bar.position=Vector2(w*.5-145,h-safe.y-89);task_bar.size=Vector2(290,8);stage.add_child(task_bar);task_bar.visible=false
 	chrome=PlayChrome.new(self);stage.add_child(chrome);chrome.size=Vector2(w,h)
 	var portrait_hit:=design_button(stage,"",Rect2(safe.x,safe.y+26,62,62),pause_game,false,"");portrait_hit.name="PortraitPause"
 	for state in ["normal","hover","pressed"]:portrait_hit.add_theme_stylebox_override(state,StyleBoxEmpty.new())
+	portrait_hit.get_node("FigmaSkin").hide()
 	portrait_hit.tooltip_text="일시 정지 · 소리 설정"
 	update_hud()
 
@@ -449,7 +456,7 @@ func _process(delta: float) -> void:
 	var build_ready: bool=model.can_build() and world.near_site()
 	if build_button.get_meta("ready",false)!=build_ready:
 		build_button.set_meta("ready",build_ready)
-		build_button.add_theme_stylebox_override("normal",DemoArt.button_style(build_ready))
+		build_button.get_node("FigmaSkin").modulate=Color(1.1,1.05,.9) if build_ready else Color.WHITE
 	gather_button.text="채집 중" if task=="gather" else "채집"
 	build_button.text="건설 중" if task=="build" else "건설"
 	gather_button.disabled = modal or task != "" or near.is_empty()
@@ -607,7 +614,7 @@ func show_modal(title: String, body: String, actions: Array, compact: bool = fal
 	var at := Vector2(w-safe.x-width,safe.y) if compact else Vector2((w-width)/2,(h-height)/2)
 	var p := box(overlay,Rect2(at,Vector2(width,height)))
 	var v := column(p,12)
-	label(v,title,28,Color("fff1d6"))
+	var modal_title:=label(v,title,28,Color("47240e"));modal_title.add_theme_font_override("font",FigmaArt.TITLE)
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -619,6 +626,10 @@ func show_modal(title: String, body: String, actions: Array, compact: bool = fal
 	v.add_child(row)
 	for a in actions:
 		var b := button(row,a.text,a.action,a.get("primary",false))
+		for state in ["normal","hover","pressed","disabled","focus"]:b.add_theme_stylebox_override(state,StyleBoxEmpty.new())
+		for color_key in ["font_color","font_hover_color","font_pressed_color","font_disabled_color"]:b.add_theme_color_override(color_key,Color("47240e"))
+		b.add_theme_font_override("font",FigmaArt.BODY)
+		var skin:=FigmaSlice.new("gold",42);skin.name="FigmaSkin";skin.show_behind_parent=true;b.add_child(skin);skin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		b.add_theme_font_size_override("font_size",17)
 
