@@ -1,9 +1,9 @@
 {
   "version": "0.1.12-selection",
-  "source_commit": "fa771566bc5b4d14284912a09dc573eaf1800b9a",
-  "utc": "2026-11-01T08:47:38Z",
-  "elapsed_seconds": 42.38,
-  "resume_input_ready_wait_seconds": 0.64,
+  "source_commit": "4d23753c91ba1b55f687e4dee09810b54556e039",
+  "utc": "2026-11-01T09:09:59Z",
+  "elapsed_seconds": 43.16,
+  "resume_input_ready_wait_seconds": 0.66,
   "environment": "Android15/API35 x86_64 emulator, RTX5060 host,1280x720; actual ADB touch input",
   "checks": [
     "onboarding sound choice persisted",
@@ -26,8 +26,8 @@
     },
     "intro_seen": true,
     "position": [
-      796.355102539062,
-      1077.93933105469
+      797.77685546875,
+      1078.03930664062
     ],
     "region": "amsa",
     "reward_claimed": true,
