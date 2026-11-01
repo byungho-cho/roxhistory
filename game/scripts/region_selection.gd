@@ -78,6 +78,7 @@ func _ready() -> void:
 		panel_visible=saved.get("panel_visible",true)
 		if not REGIONS.has(selected):selected="amsa"
 		zoom=clampf(saved.get("zoom",1.0),1,2);pan=bounded(size*.5-saved.get("center",BASE*.5)*factor*zoom,zoom)
+		if saved.get("overview",false) and is_equal_approx(zoom,1):pan=camera.overview_pan()
 	refresh();trace_state("ready")
 
 func update_markers() -> void:
@@ -116,7 +117,7 @@ func select_region(key:String) -> void:
 func restore() -> void:
 	cancel_input();animate_to(1.0,camera.overview_pan(),0.5)
 
-func snapshot() -> Dictionary:return {"selected":selected,"zoom":zoom,"center":(size*.5-pan)/(factor*zoom),"panel_visible":panel_visible}
+func snapshot() -> Dictionary:return {"selected":selected,"zoom":zoom,"center":(size*.5-pan)/(factor*zoom),"panel_visible":panel_visible,"overview":is_equal_approx(zoom,1) and pan.is_equal_approx(camera.overview_pan())}
 
 func cancel_input() -> void:
 	fingers.clear();moved=false;multi=false

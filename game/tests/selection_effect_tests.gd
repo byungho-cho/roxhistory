@@ -31,6 +31,15 @@ func run() -> void:
 	check(not map.details.visible and map.selected==previous,"Hidden panel and selection survive relayout")
 	map.restore();await create_timer(.55).timeout
 	check(not map.details.visible and map.selected==previous and map.zoom==1,"Explicit reset keeps hidden panel and selected region")
+	var dimensions_before:=Vector2(app.w,app.h)
+	for dimensions in [Vector2(1307,540),Vector2(960,724)]:
+		app.w=dimensions.x;app.h=dimensions.y
+		var resized:=RegionSelection.new(app,map.snapshot());root.add_child(resized);await process_frame
+		check(resized.pan.is_equal_approx(resized.camera.overview_pan()) and not resized.details.visible,"Overview and hidden panel survive aspect-ratio change")
+		for key in RegionCatalog.REGIONS:
+			check(Rect2(Vector2.ZERO,dimensions).encloses(resized.markers.artifact_rect(key)),"All anchored icons remain visible after resize: "+key)
+		resized.queue_free();await process_frame
+	app.w=dimensions_before.x;app.h=dimensions_before.y
 	var label:=map.markers.name_rect("amsa").get_center()
 	map.begin_pointer(0,label);map.end_pointer(0,label)
 	check(map.details.visible and map.selected=="amsa","Name tap restores correct information panel")
