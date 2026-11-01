@@ -1,0 +1,12 @@
+{
+  "version": "0.1.15-panel-fade",
+  "commit": "89086934bded85d0fd12d350550d302b12a10f73",
+  "game_tree": "a0ef8d7a9d14873eace088702a5af929b6119035",
+  "sha256": "59dcd0b0bacbe1f4384389dea08ddfcd881306e8a2f98d6a4816221228245c22",
+  "size": 129583235,
+  "utc": "2026-11-01T11:41:08Z",
+  "installed": true,
+  "update_preserved_save": true,
+  "continue_completed_demo": true,
+  "physical_device_tested": false
+}

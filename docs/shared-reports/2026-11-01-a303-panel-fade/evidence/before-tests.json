@@ -1,0 +1,8 @@
+{
+  "checks": 16,
+  "failed": [
+    "Near-transparent panel leaves no opaque shadow or icon residue"
+  ],
+  "near_zero_alpha_residual_pixels": 27008,
+  "utc": "2026-11-01T11:18:45"
+}
