@@ -92,7 +92,8 @@ jobs:
           ! grep -E 'SCRIPT ERROR:|ERROR:' living-map-tests.log
           timeout 150 xvfb-run -a godot --fixed-fps 60 --audio-driver Dummy --path game --resolution 1280x720 --script res://tests/panel_transition_tests.gd -- --test-ui 2>&1 | tee panel-transition-tests.log
           ! grep -E 'SCRIPT ERROR:|ERROR:' panel-transition-tests.log
-          timeout 150 xvfb-run -a godot --fixed-fps 60 --audio-driver Dummy --path game --resolution 1280x720 --script res://tests/a303_audio_tests.gd -- --test-ui 2>&1 | tee a303-audio-tests.log
+          # Playback uses the audio driver's real clock, unlike fixed-tick animation tests.
+          timeout 150 xvfb-run -a godot --max-fps 60 --audio-driver Dummy --path game --resolution 1280x720 --script res://tests/a303_audio_tests.gd -- --test-ui 2>&1 | tee a303-audio-tests.log
           ! grep -E 'SCRIPT ERROR:|ERROR:' a303-audio-tests.log
       - name: Export signed debug APK
         run: |
