@@ -70,6 +70,21 @@ func run() -> void:
 	check(JSON.stringify(app.model.state)==initial_save,"Map effects never mutate game progress or inventory")
 	ambience.refresh_exclusions()
 	for key in RegionCatalog.REGIONS:check(ambience.visibility_at(RegionCatalog.REGIONS[key].point)==0,"Environment avoids marker and label: "+key)
+	for key in RegionCatalog.REGIONS:
+		check(is_equal_approx(map.markers.name_rect(key).get_center().x,map.markers.bottom(key).x),"Name centered beneath its artifact: "+key)
+		for other in RegionCatalog.REGIONS:
+			if key!=other:check(not map.markers.name_rect(key).intersects(map.markers.artifact_rect(other)),"Name avoids neighboring artifact: "+key+"/"+other)
+	for flock in 2:
+		for bird in 3:
+			for t in [.1,.4,.8]:
+				var pose:=ambience.bird_pose(flock,bird,t)
+				var next:=ambience.bird_pose(flock,bird,t+.001)
+				var direction:Vector2=(next.point-pose.point).normalized()
+				check(Vector2.UP.rotated(pose.heading).dot(direction)>.995,"Bird faces actual flight tangent")
+	for bank in 3:
+		var begin:=ambience.cloud_pose(bank,3)
+		var later:=ambience.cloud_pose(bank,13)
+		check(begin.point.distance_to(later.point)>20 and begin.alpha>0,"Cloud bank drifts visibly and starts without a pop")
 	ambience.clock=3;ambience.queue_redraw();await snap("living-overview")
 	map.pose(1.7,Vector2(-330,-180)*map.factor);ambience.clock=6;ambience.queue_redraw();await snap("living-zoom")
 	check(map.zoom==1.7,"Environment retains manual camera zoom")
