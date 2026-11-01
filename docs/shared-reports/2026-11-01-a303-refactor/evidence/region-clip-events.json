@@ -1,0 +1,22 @@
+[
+  {
+    "seconds": 2.0,
+    "action": "select jeongok"
+  },
+  {
+    "seconds": 5.8,
+    "action": "select amsa"
+  },
+  {
+    "seconds": 9.5,
+    "action": "select dongsam"
+  },
+  {
+    "seconds": 13.3,
+    "action": "pinch and pan"
+  },
+  {
+    "seconds": 20.0,
+    "action": "restored; selection preserved"
+  }
+]

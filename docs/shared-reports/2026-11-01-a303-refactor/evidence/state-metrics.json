@@ -1,0 +1,22 @@
+{
+  "amsa-full": {
+    "mean_absolute_rgb_0_255": 2.002,
+    "pixels_over_24_any_channel_percent": 2.51
+  },
+  "amsa-max": {
+    "mean_absolute_rgb_0_255": 3.254,
+    "pixels_over_24_any_channel_percent": 3.061
+  },
+  "amsa-mid": {
+    "mean_absolute_rgb_0_255": 6.124,
+    "pixels_over_24_any_channel_percent": 9.682
+  },
+  "dongsam-selected": {
+    "mean_absolute_rgb_0_255": 3.633,
+    "pixels_over_24_any_channel_percent": 5.031
+  },
+  "jeongok-selected": {
+    "mean_absolute_rgb_0_255": 2.218,
+    "pixels_over_24_any_channel_percent": 1.882
+  }
+}

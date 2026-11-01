@@ -1,0 +1,18 @@
+{
+  "whole": {
+    "mean_absolute_rgb_0_255": 1.951,
+    "pixels_over_24_any_channel_percent": 2.271
+  },
+  "map": {
+    "mean_absolute_rgb_0_255": 1.484,
+    "pixels_over_24_any_channel_percent": 1.18
+  },
+  "panel": {
+    "mean_absolute_rgb_0_255": 4.735,
+    "pixels_over_24_any_channel_percent": 6.845
+  },
+  "header": {
+    "mean_absolute_rgb_0_255": 3.838,
+    "pixels_over_24_any_channel_percent": 6.121
+  }
+}
