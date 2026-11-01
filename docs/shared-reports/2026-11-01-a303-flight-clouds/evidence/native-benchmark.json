@@ -1,0 +1,96 @@
+{
+  "engine": "4.5.1-stable (official)",
+  "fixed_fps": false,
+  "fps_limit": 60,
+  "os": "Windows",
+  "renderer": "NVIDIA GeForce RTX 5060",
+  "runs": [
+    {
+      "draw_calls": {
+        "mean": 84.0,
+        "median": 84.0,
+        "p95": 84.0,
+        "samples": 180
+      },
+      "environment_enabled": false,
+      "frame_ms": {
+        "mean": 16.6659722222222,
+        "median": 16.665,
+        "p95": 16.686,
+        "samples": 180
+      },
+      "main_process_ms": {
+        "mean": 1.91041666666667,
+        "median": 1.728,
+        "p95": 2.569,
+        "samples": 180
+      }
+    },
+    {
+      "draw_calls": {
+        "mean": 151.666666666667,
+        "median": 142.0,
+        "p95": 162.0,
+        "samples": 180
+      },
+      "environment_enabled": true,
+      "frame_ms": {
+        "mean": 16.6660333333333,
+        "median": 16.666,
+        "p95": 16.679,
+        "samples": 180
+      },
+      "main_process_ms": {
+        "mean": 4.15282222222223,
+        "median": 2.894,
+        "p95": 10.159,
+        "samples": 180
+      }
+    },
+    {
+      "draw_calls": {
+        "mean": 151.666666666667,
+        "median": 142.0,
+        "p95": 162.0,
+        "samples": 180
+      },
+      "environment_enabled": true,
+      "frame_ms": {
+        "mean": 16.6659888888889,
+        "median": 16.666,
+        "p95": 16.685,
+        "samples": 180
+      },
+      "main_process_ms": {
+        "mean": 2.86953888888889,
+        "median": 2.825,
+        "p95": 3.854,
+        "samples": 180
+      }
+    },
+    {
+      "draw_calls": {
+        "mean": 84.0,
+        "median": 84.0,
+        "p95": 84.0,
+        "samples": 180
+      },
+      "environment_enabled": false,
+      "frame_ms": {
+        "mean": 16.6659777777778,
+        "median": 16.666,
+        "p95": 16.684,
+        "samples": 180
+      },
+      "main_process_ms": {
+        "mean": 2.13752777777779,
+        "median": 2.377,
+        "p95": 2.594,
+        "samples": 180
+      }
+    }
+  ],
+  "scope": "Paired native environment-decoration comparison, not Android hardware benchmark",
+  "utc": "2026-11-01T10:57:53",
+  "viewport": "(1280, 720)"
+}
