@@ -1,0 +1,40 @@
+{
+  "version": "0.1.13-map-effects",
+  "source_commit": "ccb6ed6a6e67c360d1736622b4f433d1dbe434fa",
+  "utc": "2026-11-01T10:17:35Z",
+  "elapsed_seconds": 44.8,
+  "resume_input_ready_wait_seconds": 0.66,
+  "environment": "Android15/API35 x86_64 emulator, RTX5060 host,1280x720; actual ADB touch input",
+  "checks": [
+    "onboarding sound choice persisted",
+    "legacy 2D setting ignored",
+    "fresh test session",
+    "wood once with repeat tap",
+    "stone once with repeat tap",
+    "build once costs 1+1",
+    "reward once grants10",
+    "force-stop/continue exact save",
+    "popup/back",
+    "home/resume center-to-edge joystick drag",
+    "normal save unchanged"
+  ],
+  "state": {
+    "built": true,
+    "depleted": {
+      "stone_2": 1,
+      "wood_3": 1
+    },
+    "intro_seen": true,
+    "position": [
+      797.334594726562,
+      1077.96655273438
+    ],
+    "region": "amsa",
+    "reward_claimed": true,
+    "schema": 1,
+    "stone": 0,
+    "tokens": 10,
+    "wood": 0
+  },
+  "failed": []
+}
