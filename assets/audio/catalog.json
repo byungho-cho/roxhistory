@@ -1,0 +1,132 @@
+{
+  "schema_version": 1,
+  "updated_date": "2026-11-01",
+  "default_bgm_by_screen": {
+    "A303": "bgm.a303.starlight.v001"
+  },
+  "backup_bgm_by_screen": {
+    "A303": "bgm.a303.sunlight.v001"
+  },
+  "status_definitions": {
+    "approved": "사용자가 채택한 파일",
+    "backup": "보존용 대안, 자동 재생 대상 아님",
+    "review": "제작/교정했으나 별도 청음 승인 대기",
+    "archived": "대체된 과거 버전"
+  },
+  "assets": [
+    {
+      "id": "bgm.a303.starlight.v001",
+      "title": "새로운 터전으로 · 별빛의 환상",
+      "status": "approved",
+      "path": "assets/audio/bgm/approved/a303_starlight/v001/loop.wav",
+      "version": 1,
+      "decision_date": "2026-11-01",
+      "format": "WAV PCM16",
+      "sample_rate_hz": 44100,
+      "channels": 2,
+      "frames": 2268000,
+      "duration_seconds": 51.42857142857143,
+      "bytes": 9072044,
+      "sha256": "999220448d935874ce424b89254062167f7ea9c598c7d87426724ef7bf16f6aa",
+      "peak_dbfs": -3.47,
+      "rms_dbfs": -17.72,
+      "clipped_samples": 0,
+      "loop": {
+        "enabled": true,
+        "begin_sample": 0,
+        "end_sample_exclusive": 2268000
+      },
+      "provenance": {
+        "method": "Original composition and additive/modal synthesis",
+        "third_party_samples": false
+      },
+      "runtime_integration": "not_included_in_this_asset_handoff",
+      "bpm": 112,
+      "bars": 24,
+      "intended_screen": "A303 region selection",
+      "loop_quality": {
+        "join_step": 0.00219727,
+        "adjacent_step_95pct": 0.02658081,
+        "within_ordinary_step_range": true
+      },
+      "selection_note": "사용자가 1안을 채택함."
+    },
+    {
+      "id": "bgm.a303.sunlight.v001",
+      "title": "새로운 터전으로 · 햇살의 모험",
+      "status": "backup",
+      "path": "assets/audio/bgm/backup/a303_sunlight/v001/loop.wav",
+      "version": 1,
+      "decision_date": "2026-11-01",
+      "format": "WAV PCM16",
+      "sample_rate_hz": 44100,
+      "channels": 2,
+      "frames": 2268000,
+      "duration_seconds": 51.42857142857143,
+      "bytes": 9072044,
+      "sha256": "74756cc126c99b220a45d9e6a1c8c366ca8b6fd2dd7850108466821a2a372069",
+      "peak_dbfs": -2.26,
+      "rms_dbfs": -17.72,
+      "clipped_samples": 0,
+      "loop": {
+        "enabled": true,
+        "begin_sample": 0,
+        "end_sample_exclusive": 2268000
+      },
+      "provenance": {
+        "method": "Original composition and additive/modal synthesis",
+        "third_party_samples": false
+      },
+      "runtime_integration": "not_included_in_this_asset_handoff",
+      "bpm": 112,
+      "bars": 24,
+      "intended_screen": "A303 region selection",
+      "loop_quality": {
+        "join_step": 0.00152588,
+        "adjacent_step_95pct": 0.03497314,
+        "within_ordinary_step_range": true
+      },
+      "selection_note": "사용자가 2안을 백업으로 보관하도록 지정함. 기본 재생 대상 아님."
+    },
+    {
+      "id": "sfx.ui.soft_tap.v001",
+      "title": "UI 터치음 교정본",
+      "status": "review",
+      "path": "assets/audio/sfx/review/ui_soft_tap/v001/tap.wav",
+      "version": 1,
+      "decision_date": "2026-11-01",
+      "format": "WAV PCM16",
+      "sample_rate_hz": 44100,
+      "channels": 2,
+      "frames": 4189,
+      "duration_seconds": 0.09498866213151927,
+      "bytes": 16800,
+      "sha256": "13cccb57b66833ca37c9cd39bed1bbd1ec000b9614f0739f3e7095336f1b7c84",
+      "peak_dbfs": -21.94,
+      "rms_dbfs": -32.91,
+      "clipped_samples": 0,
+      "loop": {
+        "enabled": false
+      },
+      "provenance": {
+        "method": "Original composition and additive/modal synthesis",
+        "third_party_samples": false
+      },
+      "runtime_integration": "not_included_in_this_asset_handoff",
+      "selection_note": "이 대화에서 제작한 교정 후보. 별도 청음 승인은 받지 않음. 오래된 로컬 데모에만 적용·시작 확인했고 최신 main의 ui.wav와는 다른 파일.",
+      "current_runtime_reference": "game/assets/audio/ui.wav via DemoSoundscape.cue(\"ui\")"
+    }
+  ],
+  "integration_plan": {
+    "status": "deferred_by_user",
+    "planned_date": "2026-11-02",
+    "instructions": "assets/audio/handoff-2026-11-02.md",
+    "scope": [
+      "approved BGM",
+      "selection sound correction",
+      "selection effects",
+      "birds and fish presentation",
+      "quiet bird/wind-or-water ambience beneath BGM"
+    ]
+  }
+}
