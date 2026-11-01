@@ -1,0 +1,6 @@
+{
+  "checks": 88,
+  "failed": [],
+  "scope": "Native Godot; visual captures require separate review; not Android hardware",
+  "utc": "2026-11-01T21:27:32"
+}

@@ -107,6 +107,17 @@ func _draw() -> void:
 			var progress:=selection_age/RIPPLE_SECONDS
 			ellipse(contact,radius*(1+progress*.55),Color(1,.79,.3,.48*(1-progress)),1.7*k)
 		if key!=owner_map.selected:continue
+		# A short, bounded glint reinforces the selection without enlarging the
+		# approved icon/pedestal or drawing across the title and neighboring names.
+		if selection_age<.62:
+			var progress:=selection_age/.62
+			for i in 4:
+				var angle:float=PI*1.15+i*.65
+				var at:=contact+Vector2(cos(angle)*(31+progress*10),-29+sin(angle)*(19+progress*5))*k
+				var glint_radius:float=sin(PI*progress)*(2.8+i*.28)*k
+				var color:=Color(1,.93,.68,sin(PI*progress)*.62)
+				draw_line(at-Vector2(glint_radius,0),at+Vector2(glint_radius,0),color,1.1*k,true)
+				draw_line(at-Vector2(0,glint_radius),at+Vector2(0,glint_radius),color,1.1*k,true)
 		var spark:=contact+Vector2(43,-16)*k
 		draw_circle(spark,(1.2+.5*breath)*k,Color(1,.88,.5,(.4+.25*breath)*weight),true,-1,true)
 		for i in 3:

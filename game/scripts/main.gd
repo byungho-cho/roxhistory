@@ -580,7 +580,7 @@ func pause_game() -> void:
 func show_about() -> void:
 	var c := DemoConfig.get_data()
 	var sound: bool = settings.get_value("app","sound",false)
-	show_modal("RoxHistory · v"+str(ProjectSettings.get_setting("application/config/version")),c.history.fact+"\n\n"+c.history.fiction+"\n\n강물·바람과 채집·건설 효과음을 제공합니다. 씨앗은 완료 기념 보상입니다.",[
+	show_modal("RoxHistory · v"+str(ProjectSettings.get_setting("application/config/version")),c.history.fact+"\n\n"+c.history.fiction+"\n\n지역 선택 음악과 자연음, 채집·건설 효과음을 제공합니다. 씨앗은 완료 기념 보상입니다.",[
 		{"text":"소리 끄기" if sound else "소리 켜기","action":func():
 			settings.set_value("app","sound",not sound)
 			if settings.save(prefs_path) != OK: show_error("소리 설정을 저장하지 못했습니다.")
@@ -644,7 +644,7 @@ func close_modal() -> void:
 	sync_audio()
 
 func sync_audio() -> void:
-	if is_instance_valid(audio): audio.configure(settings.get_value("app","sound",false),application_active,screen == "play",modal)
+	if is_instance_valid(audio): audio.configure(settings.get_value("app","sound",false),application_active,screen == "play",modal,screen == "region")
 
 func toast(message: String, seconds: float = 3.0) -> void:
 	if is_instance_valid(toast_label): toast_label.text = message

@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_date": "2026-11-01",
+  "updated_date": "2026-11-02",
   "default_bgm_by_screen": {
     "A303": "bgm.a303.starlight.v001"
   },
@@ -11,7 +11,8 @@
     "approved": "사용자가 채택한 파일",
     "backup": "보존용 대안, 자동 재생 대상 아님",
     "review": "제작/교정했으나 별도 청음 승인 대기",
-    "archived": "대체된 과거 버전"
+    "archived": "대체된 과거 버전",
+    "implemented": "게임에 연결했으며 실제 출력의 사용자 확인은 별도"
   },
   "assets": [
     {
@@ -40,7 +41,7 @@
         "method": "Original composition and additive/modal synthesis",
         "third_party_samples": false
       },
-      "runtime_integration": "not_included_in_this_asset_handoff",
+      "runtime_integration": "game/assets/audio/a303_bgm.wav",
       "bpm": 112,
       "bars": 24,
       "intended_screen": "A303 region selection",
@@ -77,7 +78,7 @@
         "method": "Original composition and additive/modal synthesis",
         "third_party_samples": false
       },
-      "runtime_integration": "not_included_in_this_asset_handoff",
+      "runtime_integration": "backup_only",
       "bpm": 112,
       "bars": 24,
       "intended_screen": "A303 region selection",
@@ -115,10 +116,82 @@
       "runtime_integration": "not_included_in_this_asset_handoff",
       "selection_note": "이 대화에서 제작한 교정 후보. 별도 청음 승인은 받지 않음. 오래된 로컬 데모에만 적용·시작 확인했고 최신 main의 ui.wav와는 다른 파일.",
       "current_runtime_reference": "game/assets/audio/ui.wav via DemoSoundscape.cue(\"ui\")"
+    },
+    {
+      "sample_rate": 22050,
+      "channels": 1,
+      "frames": 1984,
+      "seconds": 0.089977,
+      "peak_dbfs": -11.06,
+      "rms_dbfs": -24.09,
+      "sha256": "77d3209608ad5d38cae44b99ae00bdcefd398861a6788c45608dbc6a222c9a0a",
+      "id": "sfx.ui.legacy.v001",
+      "path": "assets/audio/sfx/archived/ui_legacy/v001/ui.wav",
+      "status": "archived",
+      "decision_date": "2026-11-02",
+      "listening_approval": false,
+      "provenance": {
+        "method": "Original additive/modal synthesis",
+        "third_party_samples": false
+      }
+    },
+    {
+      "sample_rate": 22050,
+      "channels": 2,
+      "frames": 2095,
+      "seconds": 0.095011,
+      "peak_dbfs": -13.15,
+      "rms_dbfs": -24.13,
+      "sha256": "f44aab47a02b2db59fc55f82929a3b4edae7674b5724ec0092d4f00feda9c5be",
+      "id": "sfx.ui.soft_tap.v002",
+      "path": "assets/audio/sfx/implemented/ui_soft_tap/v002/ui.wav",
+      "status": "implemented",
+      "decision_date": "2026-11-02",
+      "listening_approval": false,
+      "provenance": {
+        "method": "Original additive/modal synthesis",
+        "third_party_samples": false
+      }
+    },
+    {
+      "sample_rate": 22050,
+      "channels": 2,
+      "frames": 5512,
+      "seconds": 0.249977,
+      "peak_dbfs": -12.4,
+      "rms_dbfs": -27.42,
+      "sha256": "be599019666951074c08b62b4a79bbe058cea459c5c206cbda01238198be9d64",
+      "id": "sfx.region.select.v001",
+      "path": "assets/audio/sfx/implemented/region_select/v001/select.wav",
+      "status": "implemented",
+      "decision_date": "2026-11-02",
+      "listening_approval": false,
+      "provenance": {
+        "method": "Original additive/modal synthesis",
+        "third_party_samples": false
+      }
+    },
+    {
+      "sample_rate": 22050,
+      "channels": 1,
+      "frames": 15876,
+      "seconds": 0.72,
+      "peak_dbfs": -14.89,
+      "rms_dbfs": -27.37,
+      "sha256": "ca3cd35736c032d3dd974526574f3e0b3354a79103044187f364d28cf9176b9b",
+      "id": "ambience.soft_bird.v001",
+      "path": "assets/audio/ambience/implemented/soft_bird/v001/bird.wav",
+      "status": "implemented",
+      "decision_date": "2026-11-02",
+      "listening_approval": false,
+      "provenance": {
+        "method": "Original additive/modal synthesis",
+        "third_party_samples": false
+      }
     }
   ],
   "integration_plan": {
-    "status": "deferred_by_user",
+    "status": "implemented_native_and_android_emulator_validated",
     "planned_date": "2026-11-02",
     "instructions": "assets/audio/handoff-2026-11-02.md",
     "scope": [
@@ -127,6 +200,8 @@
       "selection effects",
       "birds and fish presentation",
       "quiet bird/wind-or-water ambience beneath BGM"
-    ]
+    ],
+    "version": "0.1.16-a303-audio",
+    "validation_report": "docs/shared-reports/2026-11-02-a303-audio/report.md"
   }
 }
