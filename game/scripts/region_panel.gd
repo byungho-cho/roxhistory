@@ -73,7 +73,9 @@ func show_region(key:String) -> void:
 		ghost=content.duplicate(0)
 		for visual in ghost.find_children("*","CanvasItem",true,false):
 			if visual.material:visual.material=visual.material.duplicate()
-		ghost.name="PreviousRegionVisuals";ghost.modulate.a=1;ghost.position=Vector2.ZERO
+		ghost.name="PreviousRegionVisuals"
+		# Preserve the visible blend when a new selection interrupts the transition.
+		# Resetting this copy to opaque makes the outgoing image flash back in.
 		surface.add_child(ghost);surface.move_child(ghost,content.get_index())
 	current_key=key
 	content.modulate.a=1;content.position=Vector2.ZERO
