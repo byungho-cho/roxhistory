@@ -1,0 +1,16 @@
+shader_type canvas_item;
+render_mode unshaded;
+uniform vec2 blur_step=vec2(.001);
+uniform vec4 shadow_color:source_color=vec4(.1294,.0667,.0235,.30);
+void fragment(){
+ float a=texture(TEXTURE,UV).a*4.0;
+ a+=texture(TEXTURE,UV+vec2(blur_step.x,0)).a*2.0;
+ a+=texture(TEXTURE,UV-vec2(blur_step.x,0)).a*2.0;
+ a+=texture(TEXTURE,UV+vec2(0,blur_step.y)).a*2.0;
+ a+=texture(TEXTURE,UV-vec2(0,blur_step.y)).a*2.0;
+ a+=texture(TEXTURE,UV+blur_step).a;
+ a+=texture(TEXTURE,UV-blur_step).a;
+ a+=texture(TEXTURE,UV+vec2(blur_step.x,-blur_step.y)).a;
+ a+=texture(TEXTURE,UV+vec2(-blur_step.x,blur_step.y)).a;
+ COLOR=vec4(shadow_color.rgb,shadow_color.a*a/16.0);
+}

@@ -13,7 +13,7 @@ static func style(kind: String) -> StyleBoxTexture:
 
 static func round_style(kind: String) -> StyleBoxFlat:
 	var skin:=StyleBoxFlat.new()
-	skin.bg_color=Color("fff3da") if kind=="ivory" else Color("3c3c3cbb")
-	skin.border_color=Color("a77942") if kind=="ivory" else Color("171717")
+	skin.bg_color=Color("0e1a45e0")
+	skin.border_color=Color("ffbd1a")
 	skin.set_border_width_all(2);skin.set_corner_radius_all(64);skin.set_content_margin_all(8)
 	return skin

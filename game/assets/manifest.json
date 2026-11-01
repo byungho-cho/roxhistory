@@ -205,6 +205,146 @@
     "sha256": "ccd087cf13afdd5a7ed7d83988dbcf7faea0deb2775d2dbacd50b2e872254bbc"
   },
   {
+    "path": "game/assets/figma-latest/023a3.png",
+    "bytes": 2163362,
+    "sha256": "c587de9aef68488b9cc9efa1825ada57ee0860a710bb3ed03cc392afc6037c87"
+  },
+  {
+    "path": "game/assets/figma-latest/0e025.svg",
+    "bytes": 870,
+    "sha256": "c9bc4fbaf8c91ebc7a455774cae4bd451a4c50d55162c3ffd8c61041365f584a"
+  },
+  {
+    "path": "game/assets/figma-latest/246e1.svg",
+    "bytes": 606,
+    "sha256": "a06e38df509a2b282796a2a67699fc6418e1aa5460feb045c993e071b4413527"
+  },
+  {
+    "path": "game/assets/figma-latest/3135e.png",
+    "bytes": 1264444,
+    "sha256": "f7232bcd97812457703fcff4ead478a3c93c83109d379b090cc9f556f63d7be8"
+  },
+  {
+    "path": "game/assets/figma-latest/513aa.png",
+    "bytes": 2279496,
+    "sha256": "cc1e8e7c5ba4103851665df6c8ae8e20cc34c57b58d391ce1c262e67dc812520"
+  },
+  {
+    "path": "game/assets/figma-latest/51dfb.svg",
+    "bytes": 789,
+    "sha256": "0bbb2878f69e05711b3e1907e23eb11fe70a9a0b5d456532266b86057729971e"
+  },
+  {
+    "path": "game/assets/figma-latest/57eed.svg",
+    "bytes": 678,
+    "sha256": "21e087d4a0dd54269a602b87b9c8ae98a1023b0937427b37fd73046fcd958247"
+  },
+  {
+    "path": "game/assets/figma-latest/6661f.svg",
+    "bytes": 383,
+    "sha256": "5e9cfe9e52bb1cb2cd04cf07162c2aeabf6016d3adff129190d2b792d8d5249d"
+  },
+  {
+    "path": "game/assets/figma-latest/72cce.svg",
+    "bytes": 839,
+    "sha256": "8c1052d52ed14a7be4ec2d822976f13f9663e5aed5860f8a7e1114e6a36a5b02"
+  },
+  {
+    "path": "game/assets/figma-latest/772af.png",
+    "bytes": 1686310,
+    "sha256": "2d2a2ad14c5d7cf444e3ab0a2b4cac14c2f67da4ba2d739db68f3f652fcc206d"
+  },
+  {
+    "path": "game/assets/figma-latest/94b86.png",
+    "bytes": 2732114,
+    "sha256": "64170ffb72632d32dc93d6a560dae0432dfd4e4699a6d8ea7afe09a1be87a033"
+  },
+  {
+    "path": "game/assets/figma-latest/94e05.png",
+    "bytes": 2322516,
+    "sha256": "ff525d7e5fbbdd54f94119cd300c6c82c18be4e8805cf9136f0ce3518272968c"
+  },
+  {
+    "path": "game/assets/figma-latest/96c7f.svg",
+    "bytes": 499,
+    "sha256": "ec6d76a044c70584f1a4f47d8b43fa931bbcf9bbe5a1f5d979bec15380e9e4a0"
+  },
+  {
+    "path": "game/assets/figma-latest/a82bb.svg",
+    "bytes": 383,
+    "sha256": "766e7bb20933d5b59037265b7f9a2152df94e835f7b6fada30c6192612449e75"
+  },
+  {
+    "path": "game/assets/figma-latest/abefa.svg",
+    "bytes": 863,
+    "sha256": "4068f875790ff83ac99349765915983f774f0c5fcd4b378ae7fb315dbf5cc02f"
+  },
+  {
+    "path": "game/assets/figma-latest/ad8e3.svg",
+    "bytes": 781,
+    "sha256": "6ccdfbbfb8a7e19e909f969f9c5da8a802531dd68fd5e437968aa4ca9ef8d17e"
+  },
+  {
+    "path": "game/assets/figma-latest/b7632.png",
+    "bytes": 1164184,
+    "sha256": "e89434ca2768cd463d38ecee9bfb15e5c2ea8455536fb45f5bfa55c295732a60"
+  },
+  {
+    "path": "game/assets/figma-latest/b91e1.svg",
+    "bytes": 869,
+    "sha256": "43e8bf7ad9b32d13458c32cfb07d930db847c656139cbd0a9812a426bc7c3f66"
+  },
+  {
+    "path": "game/assets/figma-latest/be529.png",
+    "bytes": 856297,
+    "sha256": "cb3e803104eff7355f5566c7d38061554330defbb9fb97bbcf3c1e6e324bbc62"
+  },
+  {
+    "path": "game/assets/figma-latest/c110f.svg",
+    "bytes": 870,
+    "sha256": "2e2641430174001a64e6964c3e1f6873f448ff413d8ae3125094ac7d678a6417"
+  },
+  {
+    "path": "game/assets/figma-latest/f88c0.svg",
+    "bytes": 908,
+    "sha256": "f0dd42e274fcafbf87aac7c253000b792c46696b5dfdf0c03756929cab363f97"
+  },
+  {
+    "path": "game/assets/figma-latest/map-jeongok-detail.png",
+    "bytes": 3020503,
+    "sha256": "fa6baa4b20f357a69fd2b5238f5142024d613c3abe6dec72460b0673064526b5"
+  },
+  {
+    "path": "game/assets/figma-latest/meat.png",
+    "bytes": 40229,
+    "sha256": "575328d7edf82a8f393d02cf02a6ee81553144d0495f1665e6dde601b1b9f25d"
+  },
+  {
+    "path": "game/assets/figma-latest/stone-title-surface.png",
+    "bytes": 2225870,
+    "sha256": "520f5db2ca7f0498bfb64f999ca7a462bf96a18c0120e518db20f66bc2841241"
+  },
+  {
+    "path": "game/assets/figma-latest/title-amsa.png",
+    "bytes": 14903,
+    "sha256": "1b1159a4b52595cf7f12f50c26fb796275bd39a91ad01a6e112ba06ecbf33450"
+  },
+  {
+    "path": "game/assets/figma-latest/title-dongsam.png",
+    "bytes": 14728,
+    "sha256": "17141a2dd76be44c6d962cc0fa5a7febb6710c4b925b9b24add3460deb4ba6d1"
+  },
+  {
+    "path": "game/assets/figma-latest/title-jeongok.png",
+    "bytes": 12693,
+    "sha256": "30670a5706e5b31c39976aa693a6fdc60acf857daf5ed715c6692437657dd9d8"
+  },
+  {
+    "path": "game/assets/figma-latest/title-region.png",
+    "bytes": 15855,
+    "sha256": "71896baab311abcc6214b18bf981d1dcf34c228d2bfe39246f1231aaa42a2cb9"
+  },
+  {
     "path": "game/assets/figma/02422.svg",
     "bytes": 2989,
     "sha256": "e73b2ce4292ca69674af51580584b582995c83aaf0d4d3f7947e7cdd5e13d2a8"
@@ -273,6 +413,26 @@
     "path": "game/assets/figma/fbe0a.svg",
     "bytes": 422,
     "sha256": "cec75fa0fe7fa9ef7b29ea3d5c113b91ffb4e385960e0aad178310015fd50945"
+  },
+  {
+    "path": "game/assets/fonts/BlackHanSans-OFL.txt",
+    "bytes": 4399,
+    "sha256": "c324192c8b3a988bae45a9a7e4ac1258b684739003bda114e0523423440457c9"
+  },
+  {
+    "path": "game/assets/fonts/BlackHanSans-Regular.ttf",
+    "bytes": 998424,
+    "sha256": "31960809284026681774a8e52dc19ebcad26cf69b0ad9d560f288296fbb52739"
+  },
+  {
+    "path": "game/assets/fonts/DoHyeon-OFL.txt",
+    "bytes": 4347,
+    "sha256": "de5ff32211a4340b01477af39ee339d639438955e409f79b666d4b9207f3c92c"
+  },
+  {
+    "path": "game/assets/fonts/DoHyeon-Regular.ttf",
+    "bytes": 879764,
+    "sha256": "35644be7f28e0a68a447b1f7af351dcde5674b870f24f7b5f43e26d00b4ab653"
   },
   {
     "path": "game/assets/fonts/NotoSansKR.ttf",

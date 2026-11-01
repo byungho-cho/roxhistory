@@ -9,6 +9,7 @@ var working:=false
 func set_working(value: bool) -> void:
 	if working==value: return
 	working=value
+	if has_node("FigmaSkin"):return
 	if value:
 		var style:=DemoArt.button_style(true)
 		style.bg_color=Color("70592f")
