@@ -1,0 +1,38 @@
+{
+  "utc": "2026-11-01T09:05:55Z",
+  "version": "0.1.12-selection",
+  "environment": "Android 15 API35 x86_64 emulator-5580, 1280x720; ADB taps/drags and Android MotionEvent two-pointer injection",
+  "checks": [
+    "Signed update preserves normal and test saves",
+    "jeongok selection keeps camera and correct start support",
+    "amsa selection keeps camera and correct start support",
+    "dongsam selection keeps camera and correct start support",
+    "Empty background hides full panel",
+    "Region tap restores correct panel",
+    "Actual two-pointer manual pinch retains panel",
+    "Manual pan does not hide panel or select",
+    "Panel-origin drag cannot move map",
+    "Reset retains selection and restores overview",
+    "Rapid and repeated selection settles correctly",
+    "Background/resume accepts fresh pinch without retained touches"
+  ],
+  "events": [
+    {
+      "seconds": 3.74,
+      "action": "select jeongok"
+    },
+    {
+      "seconds": 5.38,
+      "action": "select amsa"
+    },
+    {
+      "seconds": 6.96,
+      "action": "select dongsam"
+    }
+  ],
+  "normal_and_test_save_preserved": true,
+  "failed": [],
+  "physical_device_verified": false,
+  "source_commit": "4d23753c91ba1b55f687e4dee09810b54556e039",
+  "resume_surface_wait_seconds": 0.72
+}

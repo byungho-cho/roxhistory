@@ -86,6 +86,8 @@ jobs:
           ! grep -E 'SCRIPT ERROR:|ERROR:' region-tests.log
           timeout 150 xvfb-run -a godot --fixed-fps 60 --audio-driver Dummy --path game --resolution 1280x720 --script res://tests/a303_art_tests.gd -- --test-ui 2>&1 | tee a303-art-tests.log
           ! grep -E 'SCRIPT ERROR:|ERROR:' a303-art-tests.log
+          timeout 150 xvfb-run -a godot --fixed-fps 60 --audio-driver Dummy --path game --resolution 1280x720 --script res://tests/selection_effect_tests.gd -- --test-ui 2>&1 | tee selection-effect-tests.log
+          ! grep -E 'SCRIPT ERROR:|ERROR:' selection-effect-tests.log
       - name: Export signed debug APK
         run: |
           set -euo pipefail
@@ -94,20 +96,20 @@ jobs:
           export GODOT_ANDROID_KEYSTORE_DEBUG_PATH="$RUNNER_TEMP/debug.keystore"
           export GODOT_ANDROID_KEYSTORE_DEBUG_USER=androiddebugkey
           export GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD=android
-          godot --headless --path game --export-debug Android "$PWD/build/RoxHistory-0.1.11-a303-debug.apk" 2>&1 | tee build/export.log
-          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose build/RoxHistory-0.1.11-a303-debug.apk | tee build/signature.txt
-          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging build/RoxHistory-0.1.11-a303-debug.apk > build/package.txt
-          sha256sum build/RoxHistory-0.1.11-a303-debug.apk > build/SHA256SUMS
+          godot --headless --path game --export-debug Android "$PWD/build/RoxHistory-0.1.12-selection-debug.apk" 2>&1 | tee build/export.log
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose build/RoxHistory-0.1.12-selection-debug.apk | tee build/signature.txt
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging build/RoxHistory-0.1.12-selection-debug.apk > build/package.txt
+          sha256sum build/RoxHistory-0.1.12-selection-debug.apk > build/SHA256SUMS
           git rev-parse HEAD > build/SOURCE_COMMIT
       - name: Complete source package
         if: always()
         run: |
           mkdir -p build
-          git archive HEAD -o build/RoxHistory-0.1.11-a303-source.zip
+          git archive HEAD -o build/RoxHistory-0.1.12-selection-source.zip
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: RoxHistory-0.1.11-a303-validation
+          name: RoxHistory-0.1.12-selection-validation
           path: |
             build/
             game/reports/
@@ -117,6 +119,6 @@ jobs:
           retention-days: 30
       - uses: actions/upload-artifact@v4
         with:
-          name: RoxHistory-0.1.11-a303-APK
-          path: build/RoxHistory-0.1.11-a303-debug.apk
+          name: RoxHistory-0.1.12-selection-APK
+          path: build/RoxHistory-0.1.12-selection-debug.apk
           retention-days: 30
