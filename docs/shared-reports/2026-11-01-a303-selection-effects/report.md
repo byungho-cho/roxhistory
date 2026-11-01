@@ -49,9 +49,9 @@ Godot 4.5.1, Windows, 실제 렌더링을 사용하는 자동/합성 입력 검�
 
 Android 15/API 35 x86_64 에뮬레이터, 1280×720, RTX 5060 호스트. 최종 지도 검사는 18:05 KST 실행했다. 실제 Android 탭·드래그와 두 포인터 MotionEvent 입력으로 [12개 시나리오](evidence/android-selection.json)를 확인했다. 세 지역 선택, 패널 숨김·복원, 핀치, 드래그, UI 터치 소유권, 전체 지도 복원, 연속 선택, Home 복귀 후 핀치, 업데이트 전후 일반/테스트 저장 보존을 포함한다. 지도/패널 스크린샷과 영상을 직접 시각 검토했다.
 
-플레이 로직이 동일한 첫 구현 커밋 `fa771566`에서 추가로 17:47 KST [Android 전체 흐름 11개 항목](evidence/android-loop.json)을 확인했다. 나무·돌 각 한 번 → 건설 → 보상 1회 → 강제 종료/이어하기 → 팝업/뒤로가기 → Home 복귀 후 이동을 통과했다. 자동 터치 입력 기준 채집 시작부터 완료까지 42.38초이며 사람의 플레이 시간 측정값이 아니다. [완료 화면](evidence/android-completed.png), [이어하기 화면](evidence/android-continued.png). 최초 전체 흐름 시도는 예전 조이스틱 좌표를 사용한 검사 도구 때문에 서쪽 이동이 실패했으며, 화면에서 현재 중심을 확인하고 중심에서 바깥으로 드래그하도록 도구를 수정한 뒤 통과했다. 게임 이동 코드는 변경하지 않았다.
+최종 게임 소스 `4d23753c`에서 추가로 18:09 KST [Android 전체 흐름 11개 항목](evidence/android-loop.json)을 확인했다. 나무·돌 각 한 번 → 건설 → 보상 1회 → 강제 종료/이어하기 → 팝업/뒤로가기 → Home 복귀 후 이동을 통과했다. 자동 터치 입력 기준 채집 시작부터 완료까지 43.16초이며 사람의 플레이 시간 측정값이 아니다. [완료 화면](evidence/android-completed.png), [이어하기 화면](evidence/android-continued.png). 최초 전체 흐름 시도는 예전 조이스틱 좌표를 사용한 검사 도구 때문에 서쪽 이동이 실패했으며, 화면에서 현재 중심을 확인하고 중심에서 바깥으로 드래그하도록 도구를 수정한 뒤 통과했다. 게임 이동 코드는 변경하지 않았다.
 
-원격 CI는 별도 PR의 Checks에서 기준 SHA와 최종 결과를 확인한다. 위 로컬 결과를 원격 CI 성공으로 대체하지 않는다.
+최종 원격 검사는 [CI #42](https://github.com/byungho-cho/roxhistory/actions/runs/41291661618), PR HEAD `25753e9173705888359d36f313b879a78f5bfad5` 기준이다. 2026-11-01 18:08–18:20 KST에 상태·화면/입력 1,257개 검사를 통과했고 이후 APK 빌드·업로드까지 성공했다. [원격 결과 요약](evidence/remote-ci.json). 코드 PR #23은 main 커밋 `23607f6a82ba59d8b2346022665d47711d6867bf`로 병합했다. 로컬 결과와 원격 결과는 별도로 기록했다.
 
 ## 자산·구현과 남은 확인
 
@@ -67,3 +67,6 @@ Android 15/API 35 x86_64 에뮬레이터, 1280×720, RTX 5060 호스트. 최종 
 
 `0.1.12-selection`, versionCode 13, `com.roxhistory.demo`, arm64-v8a/x86_64 서명 디버그 APK.
 기존 서명 SHA-256 `cf65aeecb4e399ba9e2e6b9fa947f34f8c31bd75c8e3b686ad29d8431bb1695f`와 동일하며 Android 업데이트 설치로 저장 보존을 확인했다. 최종 main의 게임 소스 트리가 위 트리와 같은지 확인한 후 배포한다. 다운로드는 ZIP이 아닌 APK 단일 파일로 제공한다.
+
+
+최종 APK와 main 빌드 정보: [v0.1.12 배포](https://github.com/byungho-cho/roxhistory/releases/tag/v0.1.12-selection). [서명 APK 단일 파일 다운로드](https://github.com/byungho-cho/roxhistory/releases/download/v0.1.12-selection/RoxHistory-0.1.12-selection-debug.apk).
