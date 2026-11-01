@@ -27,6 +27,7 @@ var start_button:DemoButton
 var markers:RegionMarkers
 var map_surface:TextureRect
 var panel_visible:=true
+var ambience:RegionAmbience
 var motion:Tween
 var fingers:={}
 var moved:=false
@@ -47,6 +48,7 @@ func _ready() -> void:
 	map_surface=FigmaArt.picture(self,"94b86.png",Rect2(camera.pan,BASE*factor))
 	# Figma uses cover, retaining the source aspect ratio (1672 x 941).
 	map_surface.stretch_mode=TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	ambience=RegionAmbience.new(self);add_child(ambience)
 	markers=RegionMarkers.new(self);add_child(markers)
 	ui_root=Control.new();ui_root.name="FixedMapUI";ui_root.mouse_filter=Control.MOUSE_FILTER_IGNORE
 	ui_root.position=origin;ui_root.scale=Vector2.ONE*ui_factor;add_child(ui_root)
@@ -79,14 +81,16 @@ func _ready() -> void:
 		if not REGIONS.has(selected):selected="amsa"
 		zoom=clampf(saved.get("zoom",1.0),1,2);pan=bounded(size*.5-saved.get("center",BASE*.5)*factor*zoom,zoom)
 		if saved.get("overview",false) and is_equal_approx(zoom,1):pan=camera.overview_pan()
-	refresh();trace_state("ready")
+	refresh();details.set_shown(panel_visible,false)
+	for button in [back,bag,reset]:button.enable_art_feedback()
+	trace_state("ready")
 
 func update_markers() -> void:
 	map_surface.position=pan;map_surface.size=BASE*factor*zoom
 	markers.refresh()
 
 func refresh() -> void:
-	details.show_region(selected);details.visible=panel_visible;food=details.food;update_markers()
+	details.show_region(selected);food=details.food;update_markers()
 
 func map_point(key:String) -> Vector2:return camera.project(REGIONS[key].point)
 func marker_rect(key:String) -> Rect2:return markers.hit_rect(key)
@@ -112,7 +116,7 @@ func animate_to(value:float,position_value:Vector2,seconds:float) -> void:
 func select_region(key:String) -> void:
 	if not REGIONS.has(key):return
 	if motion and motion.is_valid():motion.kill()
-	selected=key;selection_count+=1;panel_visible=true;markers.trigger_selection();refresh();app.audio.cue("ui");trace_state("selected")
+	selected=key;selection_count+=1;panel_visible=true;markers.trigger_selection();refresh();details.set_shown(true);app.audio.cue("ui");trace_state("selected")
 
 func restore() -> void:
 	cancel_input();animate_to(1.0,camera.overview_pan(),0.5)
@@ -121,6 +125,8 @@ func snapshot() -> Dictionary:return {"selected":selected,"zoom":zoom,"center":(
 
 func cancel_input() -> void:
 	fingers.clear();moved=false;multi=false
+	if is_instance_valid(details):details.finish_motion()
+	if is_instance_valid(markers):markers.settle()
 	if is_instance_valid(ui_root):
 		for button in ui_root.find_children("*","Button",true,false):
 			if button is DemoButton:button.clear()
@@ -128,8 +134,9 @@ func cancel_input() -> void:
 
 func ui_hit(at:Vector2) -> bool:
 	if app.modal:return true
-	if details.visible and details.get_global_rect().has_point(at):return true
+	if panel_visible and details.get_global_rect().has_point(at):return true
 	for control in ui_root.find_children("*","Button",true,false):
+		if not panel_visible and details.is_ancestor_of(control):continue
 		if control.is_visible_in_tree() and control.get_global_rect().has_point(at):return true
 	return ui_root.get_node("RegionHeading").get_global_rect().grow(12*ui_factor).has_point(at)
 
@@ -166,7 +173,7 @@ func end_pointer(index:int,at:Vector2) -> void:
 		for key in REGIONS:
 			if markers.contains(key,at):select_region(key);found=true;break
 		if not found:
-			panel_visible=false;details.hide()
+			panel_visible=false;details.set_shown(false)
 	for id in fingers:fingers[id].start=fingers[id].at;fingers[id].pan=pan
 	if fingers.size()==2:
 		var pair=fingers.values()
