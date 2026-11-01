@@ -1,0 +1,100 @@
+{
+  "utc": "2026-11-01T11:22:47Z",
+  "version": "0.1.15-panel-fade",
+  "commit": "7a9b9713fbce259f9c28b896132265701be03e1a",
+  "environment": "Android15/API35 x86_64 emulator-5580,1280x720",
+  "checks": [
+    "Signed update preserves both normal and test saves",
+    "Three regions hide/reopen through Android touch events",
+    "Rapid selection settles on Amsa; scripted pauses 55ms, measured tap-completion intervals 77/79/78ms",
+    "Close interrupted by reopening; scripted pauses 60/80ms, measured tap-completion intervals 88/105ms",
+    "All fingers released after transition sequence",
+    "Fully closed popup leaves map visible",
+    "Background/resume accepts fresh close/reopen input",
+    "Map review leaves both saved games unchanged"
+  ],
+  "failed": [],
+  "sequence": [
+    [
+      "jeongok",
+      700
+    ],
+    [
+      "background",
+      350
+    ],
+    [
+      "jeongok",
+      700
+    ],
+    [
+      "amsa",
+      700
+    ],
+    [
+      "background",
+      350
+    ],
+    [
+      "amsa",
+      700
+    ],
+    [
+      "dongsam",
+      700
+    ],
+    [
+      "background",
+      350
+    ],
+    [
+      "dongsam",
+      700
+    ],
+    [
+      "amsa",
+      55
+    ],
+    [
+      "jeongok",
+      55
+    ],
+    [
+      "dongsam",
+      55
+    ],
+    [
+      "amsa",
+      500
+    ],
+    [
+      "background",
+      60
+    ],
+    [
+      "dongsam",
+      500
+    ],
+    [
+      "background",
+      80
+    ],
+    [
+      "amsa",
+      700
+    ]
+  ],
+  "actual_input_timing": "tap-timing.txt",
+  "resume_surface_wait_seconds": 0.69,
+  "physical_device_verified": false,
+  "rapid_selection_log_intervals_ms": [
+    77,
+    79,
+    78
+  ],
+  "close_reopen_log_intervals_ms": [
+    88,
+    105
+  ],
+  "input_to_display_latency_measured": false
+}

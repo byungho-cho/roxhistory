@@ -1,0 +1,78 @@
+{
+  "utc": "2026-11-01T11:20:33Z",
+  "commit": "7a9b9713fbce259f9c28b896132265701be03e1a",
+  "results": [
+    {
+      "test": "state_tests",
+      "checks": 345,
+      "engine": "4.5.1-stable (official)",
+      "failed": [],
+      "utc": "2026-11-01T11:20:05"
+    },
+    {
+      "test": "ui_smoke",
+      "checks": 93,
+      "failed": [],
+      "runtime": "Native Godot synthetic touch; not Android device validation",
+      "screenshots": [
+        "res://reports/01-onboarding.png",
+        "res://reports/02-title.png",
+        "res://reports/03-region.png",
+        "res://reports/04-quest-intro.png",
+        "res://reports/05-gameplay.png",
+        "res://reports/06-complete.png",
+        "res://reports/07-home.png",
+        "res://reports/viewport-1280x720-onboarding.png",
+        "res://reports/viewport-1280x720-title.png",
+        "res://reports/viewport-1280x720-region.png",
+        "res://reports/viewport-1280x720-play.png",
+        "res://reports/viewport-896x370-onboarding.png",
+        "res://reports/viewport-896x370-title.png",
+        "res://reports/viewport-896x370-region.png",
+        "res://reports/viewport-896x370-play.png",
+        "res://reports/viewport-725x396-onboarding.png",
+        "res://reports/viewport-725x396-title.png",
+        "res://reports/viewport-725x396-region.png",
+        "res://reports/viewport-725x396-play.png",
+        "res://reports/viewport-816x616-onboarding.png",
+        "res://reports/viewport-816x616-title.png",
+        "res://reports/viewport-816x616-region.png",
+        "res://reports/viewport-816x616-play.png"
+      ]
+    },
+    {
+      "test": "region_tests",
+      "checks": 82,
+      "failed": [],
+      "utc": "2026-11-01T11:20:20"
+    },
+    {
+      "test": "a303_art_tests",
+      "checks": 157,
+      "failed": [],
+      "utc": "2026-11-01T11:20:22"
+    },
+    {
+      "test": "selection_effect_tests",
+      "checks": 36,
+      "failed": [],
+      "utc": "2026-11-01T11:20:25"
+    },
+    {
+      "test": "living_map_tests",
+      "checks": 88,
+      "failed": [],
+      "scope": "Native Godot; visual captures require separate review; not Android hardware",
+      "utc": "2026-11-01T11:20:29"
+    },
+    {
+      "test": "panel_transition_tests",
+      "checks": 18,
+      "failed": [],
+      "near_zero_alpha_residual_pixels": 0,
+      "utc": "2026-11-01T11:20:32"
+    }
+  ],
+  "checks": 819,
+  "failed": []
+}
