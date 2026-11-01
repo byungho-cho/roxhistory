@@ -1,0 +1,12 @@
+{
+  "source_commit": "e2d5359e2684e7a637e7a964a2b926b3fe900af5",
+  "utc": "2026-11-01T10:56:46Z",
+  "checks": [
+    "Sound-enabled map clip captured",
+    "Button hold and release screenshots captured",
+    "Home interrupts actual two-pointer gesture, fresh region touch succeeds with zero retained touches"
+  ],
+  "failed": [],
+  "human_listening": false,
+  "physical_device": false
+}

@@ -1,0 +1,12 @@
+{
+  "version": "0.1.14-map-polish",
+  "commit": "e964e8a27cd5e0883c045a3328d51d878e92eb20",
+  "game_tree": "e037d54c36576fb78a11cc05481c7595a2b12179",
+  "sha256": "7715c954294d977868f56077a164fc84c75e1fa6f4c4b292a95f78549daf608e",
+  "size": 129583235,
+  "utc": "2026-11-01T11:10:48Z",
+  "installed": true,
+  "update_preserved_save": true,
+  "continue_completed_demo": true,
+  "physical_device_tested": false
+}

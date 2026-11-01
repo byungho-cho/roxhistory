@@ -1,0 +1,34 @@
+{
+  "android-amsa.png": {
+    "bytes": 1797812,
+    "sha256": "529273e54edb3284373cc8da519af4e999afa90ffa7d356514bf73430c589427"
+  },
+  "android-cover-final.png": {
+    "bytes": 708508,
+    "sha256": "693a40840fde7861da5a767361facdb36f96d2481f40eb1ed4ef806811e6dfa1"
+  },
+  "android-dongsam.png": {
+    "bytes": 1798114,
+    "sha256": "a06110132407e8a2fbe6d7b39aa25613cd12efcc142d70c9424d8a9bd7bb88c6"
+  },
+  "android-jeongok.png": {
+    "bytes": 1785572,
+    "sha256": "647e15f4e30f6c507331308e59e0d5b0ebad0ed7e190b7090e6d5a89cd16aa4f"
+  },
+  "android-manual-zoom.png": {
+    "bytes": 1799322,
+    "sha256": "be57b43e68617e8beaf99328865f9eacd741cfde3cef91ceee92ff9f627faa2c"
+  },
+  "android-unfolded-final.png": {
+    "bytes": 1014569,
+    "sha256": "3b584af94ae3b576173b369e5169a4505eedb22077795bf80912da6ca031447d"
+  },
+  "final-main-installed.png": {
+    "bytes": 1801083,
+    "sha256": "e78bba6c6bf8fe6dfed88bfd3518b1f1d30d6a4e50bdb3aa591241e454f706ef"
+  },
+  "flight-clouds.mp4": {
+    "bytes": 1053748,
+    "sha256": "add675dd8507b790945b907399c081b1774e1f1f6265ba0646293a6b9f10744f"
+  }
+}
