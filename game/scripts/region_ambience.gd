@@ -21,7 +21,7 @@ func _ready() -> void:
 	for i in 180:
 		var at:=Vector2(rng.randf_range(120,1450),rng.randf_range(140,850))
 		if is_water(at) and glints.size()<34:glints.append(at)
-	var gradient:=Gradient.new();gradient.colors=PackedColorArray([Color(.94,.98,1,.18),Color(.94,.98,1,0)])
+	var gradient:=Gradient.new();gradient.offsets=PackedFloat32Array([0,.4,.78,1]);gradient.colors=PackedColorArray([Color(.99,1,1,.46),Color(.97,.99,1,.34),Color(.94,.98,1,.07),Color(.94,.98,1,0)])
 	mist=GradientTexture2D.new();mist.gradient=gradient;mist.width=128;mist.height=128
 	mist.fill=GradientTexture2D.FILL_RADIAL;mist.fill_from=Vector2(.5,.5);mist.fill_to=Vector2(1,.5)
 	queue_redraw()
@@ -77,10 +77,23 @@ func draw_fish(point:Vector2,phase:float,alpha:float,k:float) -> void:
 	draw_circle(Vector2(7,0),.8,Color(.02,.12,.18,alpha))
 	ring(Vector2(-8,2),Vector2(19,5),Color(.7,.94,1,alpha*.25),.8)
 	draw_set_transform(Vector2.ZERO)
-func draw_bird(point:Vector2,phase:float,alpha:float,k:float) -> void:
+func bird_pose(flock:int,index:int,progress:float) -> Dictionary:
+	var start:=Vector2(1000,270) if flock==0 else Vector2(420,440)
+	var finish:=Vector2(1430,250) if flock==0 else Vector2(140,420)
+	var velocity:=finish-start+Vector2(0,cos(progress*PI)*PI*10)
+	var forward:=velocity.normalized();var side:=Vector2(-forward.y,forward.x)
+	var offset:float=[0.0,-16.0,13.0][index]
+	var point:=start.lerp(finish,progress)+Vector2(0,sin(progress*PI)*10)-forward*index*30+side*offset
+	return {"point":point,"heading":velocity.angle()+PI/2}
+func cloud_pose(index:int,time_value:float) -> Dictionary:
+	var duration:=75.0+index*13
+	var phase:=fposmod(time_value/duration+.18+index*.27,1)
+	var origin:Vector2=[Vector2(240,330),Vector2(1200,100),Vector2(1000,760)][index]
+	return {"point":origin+Vector2((phase-.5)*240,sin(phase*TAU)*7),"alpha":smoothstep(0,.12,phase)*(1-smoothstep(.86,1,phase))}
+func draw_bird(point:Vector2,heading:float,phase:float,alpha:float,k:float) -> void:
 	var at:Vector2=map.camera.project(point)
 	var flap:=sin(phase)*7
-	draw_set_transform(at,-.22,Vector2.ONE*k)
+	draw_set_transform(at,heading,Vector2.ONE*k)
 	var left:=PackedVector2Array([Vector2(0,1),Vector2(-6,-3),Vector2(-16,-3-flap),Vector2(-10,2),Vector2(-3,4)])
 	var right:=PackedVector2Array([Vector2(0,1),Vector2(6,-3),Vector2(16,-3-flap),Vector2(10,2),Vector2(3,4)])
 	for wing in [left,right]:
@@ -113,17 +126,17 @@ func _draw() -> void:
 		if phase>8:continue
 		var progress:=phase/8
 		var alpha:=smoothstep(0,.12,progress)*(1-smoothstep(.85,1,progress))*.84
-		var from:=Vector2(950,200) if flock==0 else Vector2(180,360)
-		var to:=Vector2(1370,290) if flock==0 else Vector2(390,620)
 		for j in 3:
-			var point:=from.lerp(to,progress)+Vector2(-j*26,sin(progress*PI)*14+j*14)
-			draw_bird(point,clock*5.5+j*.9,alpha*visibility_at(point,48),k*(.75+j*.07))
-	# Slow, translucent edge clouds. No full-screen fog or camera motion.
-	for i in 2:
-		var center:=Vector2(90,260) if i==0 else Vector2(1430,70)
-		center+=Vector2(sin(clock*(.045+i*.013)+i)*35,cos(clock*.031+i)*12)
-		if not unobstructed(center,65):continue
+			var pose:=bird_pose(flock,j,progress)
+			draw_bird(pose.point,pose.heading,clock*(5.2+j*.25)+j*1.4,alpha*visibility_at(pose.point,48),k*(.75+j*.07))
+	# Slow wind-driven cloud banks, with soft shaded undersides and white lobes.
+	for i in 3:
+		var pose:=cloud_pose(i,clock)
+		var opacity:float=pose.alpha*visibility_at(pose.point,150)
+		if opacity<.01:continue
 		for j in 5:
-			var extent:=Vector2(150-j*9,90+j*3)*k
-			var at:Vector2=map.camera.project(center+Vector2(j*27-55,sin(j*1.7)*13))
-			draw_texture_rect(mist,Rect2(at-extent*.5,extent),false)
+			var offset:Vector2=[Vector2(-65,8),Vector2(-30,-15),Vector2(16,-22),Vector2(58,-4),Vector2(88,15)][j]
+			var extent:Vector2=Vector2([145,155,165,140,115][j],[85,110,120,95,65][j])*k
+			var at:Vector2=map.camera.project(pose.point+offset)
+			draw_texture_rect(mist,Rect2(at-extent*.5+Vector2(5,12)*k,extent),false,Color(.48,.64,.75,opacity*.32))
+			draw_texture_rect(mist,Rect2(at-extent*.5,extent),false,Color(1,1,1,opacity*.85))

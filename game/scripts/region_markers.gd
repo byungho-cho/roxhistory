@@ -56,8 +56,8 @@ func settle() -> void:
 
 func name_rect(key:String) -> Rect2:
 	var width:float=RegionCatalog.REGIONS[key].label_width
-	# Separate the two northern labels without moving geographic anchors.
-	var offset:=Vector2(-width-38,-22) if key=="jeongok" else Vector2(-width*.5,9)
+	# Center every name below its artifact; northern markers have room for both labels.
+	var offset:=Vector2(-width*.5,9)
 	return Rect2(bottom(key)+offset*owner_map.ui_factor,Vector2(width,30)*owner_map.ui_factor)
 func hit_rect(key:String) -> Rect2:return artifact_rect(key).merge(name_rect(key))
 func contains(key:String,at:Vector2) -> bool:
