@@ -94,4 +94,6 @@ Android 15 / API 35 / x86_64 / emulator-5580, 같은 Windows 호스트. 일반 �
 
 버전 **0.1.13-map-effects**, versionCode **14**, 서명된 debug APK, arm64-v8a + x86_64. 기존 인증서 SHA-256 `cf65aeecb4e399ba9e2e6b9fa947f34f8c31bd75c8e3b686ad29d8431bb1695f`와 일치한다. 최종 APK 기준 main: `0384ef46ba49781cfe25abb9648364715610b3d7`. 파일 크기: **129,583,235 bytes (약 129.58MB)**. SHA-256: `f5bcfcd52468c276b010ef6671c1038bd2e749fcb2381346b1330940dbd941f2`. [최종 빌드·설치 증거](evidence/final-build.json). 이후 공유 문서 반영은 이 게임 소스 트리를 변경하지 않는다.
 
+공개 링크에서 실제 APK를 내려받아 크기와 SHA-256이 원본과 같은지 확인했다. [다운로드 검증](evidence/download-verification.json).
+
 [APK 단일 파일 직접 다운로드](https://github.com/byungho-cho/roxhistory/releases/download/v0.1.13-map-effects/RoxHistory-0.1.13-map-effects-debug.apk)
