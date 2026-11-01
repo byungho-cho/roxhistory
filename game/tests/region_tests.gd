@@ -15,7 +15,7 @@ func run() -> void:
 		var icon:=map.markers.artifact_rect(key).get_center()
 		map.begin_pointer(0,icon);map.end_pointer(0,icon);await create_timer(.65).timeout
 		check(map.selected==key and map.title_label.text==RegionSelection.REGIONS[key].name,"Icon selects and updates "+key)
-		check(is_equal_approx(map.zoom,2),"Selection smoothly reaches maximum zoom")
+		check(is_equal_approx(map.zoom,1),"Selection preserves manual overview zoom")
 		check(not map.details.get_global_rect().has_point(map.map_point(key)),"Selected region is not hidden by panel")
 		check(map.start_button.disabled==(key!="amsa"),"Start reflects real playable support")
 		check(map.food.texture==FigmaArt.texture("meat.png" if key=="jeongok" else RegionSelection.REGIONS[key].food),"Fourth food matches selected region")
@@ -60,6 +60,9 @@ func run() -> void:
 	for dimensions in [Vector2(960,540),Vector2(960,396),Vector2(960,724)]:
 		app.w=dimensions.x;app.h=dimensions.y;app.safe=Vector2(70,24)
 		var layout:=RegionSelection.new(app);root.add_child(layout);await process_frame
+		for region_key in RegionCatalog.REGIONS:
+			layout.select_region(region_key);await create_timer(.3).timeout
+			check(Rect2(Vector2.ZERO,dimensions).encloses(layout.markers.artifact_rect(region_key)),"Overview artifact visible at ratio: "+region_key+str(dimensions))
 		var back:Rect2=layout.ui_root.get_node("RegionBack").get_global_rect()
 		var heading:Rect2=layout.ui_root.get_node("RegionHeading").get_global_rect()
 		var reset_button:Rect2=layout.ui_root.get_node("MapReset").get_global_rect()

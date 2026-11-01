@@ -26,8 +26,7 @@ var food:TextureRect
 var start_button:DemoButton
 var markers:RegionMarkers
 var map_surface:TextureRect
-var detail_surface:TextureRect
-var detail_weight:=0.0
+var panel_visible:=true
 var motion:Tween
 var fingers:={}
 var moved:=false
@@ -48,11 +47,6 @@ func _ready() -> void:
 	map_surface=FigmaArt.picture(self,"94b86.png",Rect2(camera.pan,BASE*factor))
 	# Figma uses cover, retaining the source aspect ratio (1672 x 941).
 	map_surface.stretch_mode=TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	# The approved Jeongok focus is a distinct, higher-detail source painting.
-	# Georeference it as a map layer, not as a fixed screen or flattened UI.
-	detail_surface=FigmaArt.picture(self,"map-jeongok-detail.png",Rect2())
-	detail_surface.material=ShaderMaterial.new();detail_surface.material.shader=preload("res://scripts/map_detail.gdshader")
-	detail_surface.modulate.a=0
 	markers=RegionMarkers.new(self);add_child(markers)
 	ui_root=Control.new();ui_root.name="FixedMapUI";ui_root.mouse_filter=Control.MOUSE_FILTER_IGNORE
 	ui_root.position=origin;ui_root.scale=Vector2.ONE*ui_factor;add_child(ui_root)
@@ -81,25 +75,17 @@ func _ready() -> void:
 	details.position.y=(size.y-maxf(inset.y,45*ui_factor)-origin.y)/ui_factor-483
 	if not saved.is_empty():
 		selected=saved.get("selected","amsa")
+		panel_visible=saved.get("panel_visible",true)
 		if not REGIONS.has(selected):selected="amsa"
 		zoom=clampf(saved.get("zoom",1.0),1,2);pan=bounded(size*.5-saved.get("center",BASE*.5)*factor*zoom,zoom)
 	refresh();trace_state("ready")
 
 func update_markers() -> void:
 	map_surface.position=pan;map_surface.size=BASE*factor*zoom
-	detail_surface.position=camera.project(Vector2(275,8));detail_surface.size=Vector2(800,450)*factor*zoom
-	var fit_error:float=detail_surface.position.length()+(detail_surface.size-size).length()
-	detail_surface.material.set_shader_parameter("edge_blend",smoothstep(0,80*factor,fit_error))
 	markers.refresh()
 
-func _process(delta:float) -> void:
-	var target:float=smoothstep(1.05,1.95,zoom) if selected=="jeongok" else 0.0
-	detail_weight=lerpf(detail_weight,target,1-exp(-delta*12))
-	if absf(detail_weight-target)<.001:detail_weight=target
-	detail_surface.modulate.a=detail_weight
-
 func refresh() -> void:
-	details.show_region(selected);food=details.food;update_markers()
+	details.show_region(selected);details.visible=panel_visible;food=details.food;update_markers()
 
 func map_point(key:String) -> Vector2:return camera.project(REGIONS[key].point)
 func marker_rect(key:String) -> Rect2:return markers.hit_rect(key)
@@ -113,7 +99,7 @@ func trace_state(reason:String) -> void:
 	for key in REGIONS:
 		var rect=marker_rect(key);markers[key]=[rect.position.x,rect.position.y,rect.size.x,rect.size.y]
 	var reset=ui_root.get_node("MapReset").get_global_rect();var start=start_button.get_global_rect()
-	print("REGION_STATE "+JSON.stringify({"reason":reason,"selected":selected,"zoom":zoom,"pan":[pan.x,pan.y],"size":[size.x,size.y],"markers":markers,"reset":[reset.position.x,reset.position.y,reset.size.x,reset.size.y],"start":[start.position.x,start.position.y,start.size.x,start.size.y],"playable":not start_button.disabled,"touches":fingers.size(),"ticks_ms":Time.get_ticks_msec()}))
+	print("REGION_STATE "+JSON.stringify({"reason":reason,"selected":selected,"zoom":zoom,"pan":[pan.x,pan.y],"size":[size.x,size.y],"markers":markers,"reset":[reset.position.x,reset.position.y,reset.size.x,reset.size.y],"start":[start.position.x,start.position.y,start.size.x,start.size.y],"playable":not start_button.disabled,"panel_visible":panel_visible,"touches":fingers.size(),"ticks_ms":Time.get_ticks_msec()}))
 
 func animate_to(value:float,position_value:Vector2,seconds:float) -> void:
 	if motion and motion.is_valid():motion.kill()
@@ -124,13 +110,13 @@ func animate_to(value:float,position_value:Vector2,seconds:float) -> void:
 
 func select_region(key:String) -> void:
 	if not REGIONS.has(key):return
-	selected=key;selection_count+=1;refresh();app.audio.cue("ui")
-	animate_to(2.0,(size-BASE*factor)*.5+REGIONS[key].focus_pan*factor,0.6)
+	if motion and motion.is_valid():motion.kill()
+	selected=key;selection_count+=1;panel_visible=true;markers.trigger_selection();refresh();app.audio.cue("ui");trace_state("selected")
 
 func restore() -> void:
-	cancel_input();animate_to(1.0,(size-BASE*factor)*.5,0.5)
+	cancel_input();animate_to(1.0,camera.overview_pan(),0.5)
 
-func snapshot() -> Dictionary:return {"selected":selected,"zoom":zoom,"center":(size*.5-pan)/(factor*zoom)}
+func snapshot() -> Dictionary:return {"selected":selected,"zoom":zoom,"center":(size*.5-pan)/(factor*zoom),"panel_visible":panel_visible}
 
 func cancel_input() -> void:
 	fingers.clear();moved=false;multi=false
@@ -141,9 +127,9 @@ func cancel_input() -> void:
 
 func ui_hit(at:Vector2) -> bool:
 	if app.modal:return true
-	if details.get_global_rect().has_point(at):return true
+	if details.visible and details.get_global_rect().has_point(at):return true
 	for control in ui_root.find_children("*","Button",true,false):
-		if control.get_global_rect().has_point(at):return true
+		if control.is_visible_in_tree() and control.get_global_rect().has_point(at):return true
 	return ui_root.get_node("RegionHeading").get_global_rect().grow(12*ui_factor).has_point(at)
 
 func begin_pointer(index:int,at:Vector2) -> void:
@@ -175,8 +161,11 @@ func end_pointer(index:int,at:Vector2) -> void:
 	var tap:bool=fingers[index].owned and not moved and not multi and at.distance_to(fingers[index].start)<=8
 	fingers.erase(index)
 	if tap:
+		var found:=false
 		for key in REGIONS:
-			if marker_rect(key).has_point(at):select_region(key);break
+			if markers.contains(key,at):select_region(key);found=true;break
+		if not found:
+			panel_visible=false;details.hide()
 	for id in fingers:fingers[id].start=fingers[id].at;fingers[id].pan=pan
 	if fingers.size()==2:
 		var pair=fingers.values()
