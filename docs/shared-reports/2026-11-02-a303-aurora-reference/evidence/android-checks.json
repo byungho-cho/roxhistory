@@ -1,0 +1,17 @@
+{
+  "utc": "2026-11-02T03:07:56Z",
+  "source": "15945eec70a7d9cb156591e57f66be5c79bfa3de",
+  "environment": "Android15 API35 x86_64 emulator-5554, host GPU; 1280x720 and 1280x810",
+  "checks": [
+    "Signed code19 update preserves existing valid test save and normal file",
+    "All three persistent auras render with unchanged camera and readable labels",
+    "Real two-finger zoom/reset keeps aura anchored and clears fingers",
+    "Rapid selection and popup close/reopen leave only latest selection",
+    "1280x810 viewport captured; emulator size restored",
+    "Home/resume accepts fresh selection input",
+    "Map-only review preserves existing saved progress"
+  ],
+  "failed": [],
+  "physical_device_verified": false,
+  "saved_sha256": "b42db0c94fbf33d9e6a704bb772f9d62f17d5c1a4078f50bfd26b040b813f414"
+}
