@@ -1,0 +1,182 @@
+[
+  {
+    "name": "hunt-spear",
+    "source": "C:/Users/sentr/.codex/generated_images/01a18ae7-5d65-7780-996c-4e7e4f05940d/exec-862cc9b4-ea69-42db-ace0-323c23ba7a52.png",
+    "prompt": "Use case: background-extraction. Create one production-oriented transparent PNG game asset extracted faithfully from the attached approved RoxHistory concept art. Image 1 is the expanded UI source; image 2 is the enlarged world/button source. Extract ONLY the small hunting spear icon above 사냥 at the bottom expanded toolbar. Diagonal brown wooden shaft pointing to upper right, simple pale stone spearhead, binding. No text or button. Keep source colors, proportions, dimensional painterly cartoon shading, highlights and material texture as closely as possible. Enlarge cleanly without introducing a new art direction. One isolated asset centered, complete uncropped silhouette, about 12% clear padding, genuine alpha transparency outside object, clean antialiased edge without white halo. No checkerboard painted into image, no backdrop, no labels, no extra objects, no presentation sheet. Output square PNG.",
+    "method": "built-in imagegen, reference-guided background extraction; not pixel-identical crop",
+    "status": "preview; engine import not tested",
+    "dimensions": [
+      1254,
+      1254
+    ],
+    "alphaSampleCounts": {
+      "stride": 8,
+      "transparent": 22191,
+      "opaque": 2,
+      "partial": 2456
+    },
+    "file": "hunt-spear-v001.png",
+    "sha256": "49652E6281F2DB723AD83435C7644CFCDEE721C33D9F81F365A3D4DBB7C3F76F",
+    "gameSize": 256
+  },
+  {
+    "name": "gather-berries",
+    "source": "C:/Users/sentr/.codex/generated_images/01a18ae7-5d65-7780-996c-4e7e4f05940d/exec-f3709a8f-52d4-4fb5-933e-20cdebc2c4c9.png",
+    "prompt": "Use case: background-extraction. Create one production-oriented transparent PNG game asset extracted faithfully from the attached approved RoxHistory concept art. Image 1 is the expanded UI source; image 2 is the enlarged world/button source. Extract ONLY the red berries and green leaves icon above 채집 at the bottom expanded toolbar. Preserve exact berry cluster silhouette, warm glossy red fruits, leafy greens. No text or button. Keep source colors, proportions, dimensional painterly cartoon shading, highlights and material texture as closely as possible. Enlarge cleanly without introducing a new art direction. One isolated asset centered, complete uncropped silhouette, about 12% clear padding, genuine alpha transparency outside object, clean antialiased edge without white halo. No checkerboard painted into image, no backdrop, no labels, no extra objects, no presentation sheet. Output square PNG.",
+    "method": "built-in imagegen, reference-guided background extraction; not pixel-identical crop",
+    "status": "preview; engine import not tested",
+    "dimensions": [
+      1254,
+      1254
+    ],
+    "alphaSampleCounts": {
+      "stride": 8,
+      "transparent": 16163,
+      "opaque": 11,
+      "partial": 8475
+    },
+    "file": "gather-berries-v001.png",
+    "sha256": "66A3B33504FADE712BA9C5B87C30B04EF65685195CB57FDD04B4A20EDF5CC121",
+    "gameSize": 256
+  },
+  {
+    "name": "craft-axe",
+    "source": "C:/Users/sentr/.codex/generated_images/01a18ae7-5d65-7780-996c-4e7e4f05940d/exec-e540456a-2559-45a6-b324-bfbca2f53b6e.png",
+    "prompt": "Use case: background-extraction. Create one production-oriented transparent PNG game asset extracted faithfully from the attached approved RoxHistory concept art. Image 1 is the expanded UI source; image 2 is the enlarged world/button source. Extract ONLY the small stone axe icon above 제작 at the bottom expanded toolbar. Brown handle diagonally up-right, gray stone axe head bound with cord. Preserve source shape. No text or button. Keep source colors, proportions, dimensional painterly cartoon shading, highlights and material texture as closely as possible. Enlarge cleanly without introducing a new art direction. One isolated asset centered, complete uncropped silhouette, about 12% clear padding, genuine alpha transparency outside object, clean antialiased edge without white halo. No checkerboard painted into image, no backdrop, no labels, no extra objects, no presentation sheet. Output square PNG.",
+    "method": "built-in imagegen, reference-guided background extraction; not pixel-identical crop",
+    "status": "preview; engine import not tested",
+    "dimensions": [
+      1254,
+      1254
+    ],
+    "alphaSampleCounts": {
+      "stride": 8,
+      "transparent": 19754,
+      "opaque": 4,
+      "partial": 4891
+    },
+    "file": "craft-axe-v001.png",
+    "sha256": "00D2820A5E1802AE4D1DC1C27D5B75A29CC3D9ABE34609758A4A29DE511A795C",
+    "gameSize": 256
+  },
+  {
+    "name": "build-hut-icon",
+    "source": "C:/Users/sentr/.codex/generated_images/01a18ae7-5d65-7780-996c-4e7e4f05940d/exec-c88267cb-7bca-4bab-833e-2ec1230ee09c.png",
+    "prompt": "Use case: background-extraction. Create one production-oriented transparent PNG game asset extracted faithfully from the attached approved RoxHistory concept art. Image 1 is the expanded UI source; image 2 is the enlarged world/button source. Extract ONLY the tiny rounded golden straw hut icon above 건설 in the bottom expanded toolbar. Preserve miniature thatch tiers and dark doorway. No text or button. Keep source colors, proportions, dimensional painterly cartoon shading, highlights and material texture as closely as possible. Enlarge cleanly without introducing a new art direction. One isolated asset centered, complete uncropped silhouette, about 12% clear padding, genuine alpha transparency outside object, clean antialiased edge without white halo. No checkerboard painted into image, no backdrop, no labels, no extra objects, no presentation sheet. Output square PNG.",
+    "method": "built-in imagegen, reference-guided background extraction; not pixel-identical crop",
+    "status": "preview; engine import not tested",
+    "dimensions": [
+      1254,
+      1254
+    ],
+    "alphaSampleCounts": {
+      "stride": 8,
+      "transparent": 17160,
+      "opaque": 0,
+      "partial": 7489
+    },
+    "file": "build-hut-icon-v001.png",
+    "sha256": "D87B48C70EA7BBFAA5004E250224D201F0E7DE28B5037862EA341B978CC85A39",
+    "gameSize": 256
+  },
+  {
+    "name": "quest-scroll",
+    "source": "C:/Users/sentr/.codex/generated_images/01a18ae7-5d65-7780-996c-4e7e4f05940d/exec-2e54502d-cc15-48e8-beb7-e8bcc37c4f0b.png",
+    "prompt": "Use case: background-extraction. Create one production-oriented transparent PNG game asset extracted faithfully from the attached approved RoxHistory concept art. Image 1 is the expanded UI source; image 2 is the enlarged world/button source. Extract ONLY the parchment scroll icon above 임무 in the bottom expanded toolbar. Cream curled parchment with small warm red seal and simple red markings. No text label or button. Keep source colors, proportions, dimensional painterly cartoon shading, highlights and material texture as closely as possible. Enlarge cleanly without introducing a new art direction. One isolated asset centered, complete uncropped silhouette, about 12% clear padding, genuine alpha transparency outside object, clean antialiased edge without white halo. No checkerboard painted into image, no backdrop, no labels, no extra objects, no presentation sheet. Output square PNG.",
+    "method": "built-in imagegen, reference-guided background extraction; not pixel-identical crop",
+    "status": "preview; engine import not tested",
+    "dimensions": [
+      1254,
+      1254
+    ],
+    "alphaSampleCounts": {
+      "stride": 8,
+      "transparent": 16258,
+      "opaque": 5,
+      "partial": 8386
+    },
+    "file": "quest-scroll-v001.png",
+    "sha256": "8317A2FDC8182FAA5BCA75853E96E58D29BE9F2B7F5C76635FBB038F90D17471",
+    "gameSize": 256
+  },
+  {
+    "name": "inventory-bag",
+    "source": "C:/Users/sentr/.codex/generated_images/01a18ae7-5d65-7780-996c-4e7e4f05940d/exec-915f6da1-25bc-46dd-aaa9-7c0ed42ce842.png",
+    "prompt": "Use case: background-extraction. Create one production-oriented transparent PNG game asset extracted faithfully from the attached approved RoxHistory concept art. Image 1 is the expanded UI source; image 2 is the enlarged world/button source. Extract ONLY the brown leather satchel icon above 가방 in the bottom expanded toolbar. Preserve square rounded silhouette, flap, strap and buckle. No text or button. Keep source colors, proportions, dimensional painterly cartoon shading, highlights and material texture as closely as possible. Enlarge cleanly without introducing a new art direction. One isolated asset centered, complete uncropped silhouette, about 12% clear padding, genuine alpha transparency outside object, clean antialiased edge without white halo. No checkerboard painted into image, no backdrop, no labels, no extra objects, no presentation sheet. Output square PNG.",
+    "method": "built-in imagegen, reference-guided background extraction; not pixel-identical crop",
+    "status": "preview; engine import not tested",
+    "dimensions": [
+      1254,
+      1254
+    ],
+    "alphaSampleCounts": {
+      "stride": 8,
+      "transparent": 14186,
+      "opaque": 0,
+      "partial": 10463
+    },
+    "file": "inventory-bag-v001.png",
+    "sha256": "D26E256AA8BC0BC0B4D0E88B2013F6411D37F3D1F7403E83EA6D8FC3AAAF54B5",
+    "gameSize": 256
+  },
+  {
+    "name": "menu-button",
+    "source": "C:/Users/sentr/.codex/generated_images/01a18ae7-5d65-7780-996c-4e7e4f05940d/exec-9de00045-af19-4081-ab69-932e1195544a.png",
+    "prompt": "Use case: background-extraction. Create one production-oriented transparent PNG game asset extracted faithfully from the attached approved RoxHistory concept art. Image 1 is the expanded UI source; image 2 is the enlarged world/button source. Extract ONLY the large circular menu button at bottom right of image 2. Preserve thin luminous cream-gold rim, warm brown shaded interior and three cream-gold horizontal menu bars. Remove Korean text 메뉴 entirely, leave that lower portion plain brown. No surrounding scenery, no adjacent chevron button. Keep source colors, proportions, dimensional painterly cartoon shading, highlights and material texture as closely as possible. Enlarge cleanly without introducing a new art direction. One isolated asset centered, complete uncropped silhouette, about 12% clear padding, genuine alpha transparency outside object, clean antialiased edge without white halo. No checkerboard painted into image, no backdrop, no labels, no extra objects, no presentation sheet. Output square PNG.",
+    "method": "built-in imagegen, reference-guided background extraction; not pixel-identical crop",
+    "status": "preview; engine import not tested",
+    "dimensions": [
+      1254,
+      1254
+    ],
+    "alphaSampleCounts": {
+      "stride": 8,
+      "transparent": 13463,
+      "opaque": 0,
+      "partial": 11186
+    },
+    "file": "menu-button-v001.png",
+    "sha256": "575B3259E3B127D00BD2B73326387C2127BDF099FE45CA6AE60DFA1ADE192263",
+    "gameSize": 512
+  },
+  {
+    "name": "expand-button",
+    "source": "C:/Users/sentr/.codex/generated_images/01a18ae7-5d65-7780-996c-4e7e4f05940d/exec-bf79e242-d2d4-46a2-ade8-039ee27f466a.png",
+    "prompt": "Use case: background-extraction. Create one production-oriented transparent PNG game asset extracted faithfully from the attached approved RoxHistory concept art. Image 1 is the expanded UI source; image 2 is the enlarged world/button source. Extract ONLY the small circular right-chevron button at far bottom right of image 2, next to the large menu button. Preserve warm brown gradient, thin bright cream gold beveled rim and single cream right-chevron. Reconstruct the tiny portion of circle occluded by large button so it is an independent complete circular button. No text, no large button. Keep source colors, proportions, dimensional painterly cartoon shading, highlights and material texture as closely as possible. Enlarge cleanly without introducing a new art direction. One isolated asset centered, complete uncropped silhouette, about 12% clear padding, genuine alpha transparency outside object, clean antialiased edge without white halo. No checkerboard painted into image, no backdrop, no labels, no extra objects, no presentation sheet. Output square PNG.",
+    "method": "built-in imagegen, reference-guided background extraction; not pixel-identical crop",
+    "status": "preview; engine import not tested",
+    "dimensions": [
+      1254,
+      1254
+    ],
+    "alphaSampleCounts": {
+      "stride": 8,
+      "transparent": 15920,
+      "opaque": 1,
+      "partial": 8728
+    },
+    "file": "expand-button-v001.png",
+    "sha256": "B5DCCD33B2E7A75B0D4BC72BC4EA1FBC54E8C357CB3129B44F458A98BF6BBD56",
+    "gameSize": 256
+  },
+  {
+    "name": "hut-world",
+    "source": "C:/Users/sentr/.codex/generated_images/01a18ae7-5d65-7780-996c-4e7e4f05940d/exec-c665ac7c-0a2e-4a22-875c-39937cea77ea.png",
+    "prompt": "Use case: background-extraction. Create one production-oriented transparent PNG game asset extracted faithfully from the attached approved RoxHistory concept art. Image 1 is the expanded UI source; image 2 is the enlarged world/button source. Extract ONLY the large upper-center straw hut in image 2, centered near x850 y170. This is a world building sprite, NOT the tiny UI hut. Preserve its exact rounded conical silhouette, layered honey-gold straw bundles, radial wooden poles and rope bindings, dark open doorway facing lower-right, top-down oblique game camera and warm upper-left sunlight. Isolate the building with minimal tight soft contact shadow, remove all grass, terrain, stones, pots, river, other huts and UI. Fill no scenery behind it. No redesign, no extra building details. Keep source colors, proportions, dimensional painterly cartoon shading, highlights and material texture as closely as possible. Enlarge cleanly without introducing a new art direction. One isolated asset centered, complete uncropped silhouette, about 12% clear padding, genuine alpha transparency outside object, clean antialiased edge without white halo. No checkerboard painted into image, no backdrop, no labels, no extra objects, no presentation sheet. Output square PNG.",
+    "method": "built-in imagegen, reference-guided background extraction; not pixel-identical crop",
+    "status": "preview; engine import not tested",
+    "dimensions": [
+      1254,
+      1254
+    ],
+    "alphaSampleCounts": {
+      "stride": 8,
+      "transparent": 14450,
+      "opaque": 0,
+      "partial": 10199
+    },
+    "file": "hut-world-v001.png",
+    "sha256": "C37E27A8FD44DEE2DEA9291EBD7C38E4F24B6D90A889130F0C7E81C06EE5B465",
+    "gameSize": 1024
+  }
+]
