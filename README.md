@@ -1,4 +1,4 @@
-> 2026-11-02 최신: **A303 음악·선택음·잔잔한 지도 연출 v0.1.16**. [실행 자료와 검증](docs/shared-reports/2026-11-02-a303-audio/report.md) · [팀장·개발 담당 역할 분담](docs/team-workflow.md).
+> 2026-11-02 최신: **금빛 오로라 B·채택 앱 아이콘·선택음 수정 v0.1.17**. [실행·설치·검증 보고서](docs/shared-reports/2026-11-02-a303-aurora-icon/report.md) · [APK 직접 다운로드](https://github.com/byungho-cho/roxhistory/releases/download/v0.1.17-aurora-icon/RoxHistory-0.1.17-aurora-icon-debug.apk).
 
 # 현재 개발 상태 — v0.1.8 대표 정착지 아트·공간 리팩토링
 

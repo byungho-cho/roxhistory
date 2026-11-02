@@ -20,3 +20,7 @@ Android 원형·둥근 사각형 등 실제 런처 마스크와 작은 표시 �
 - [I100 · 10 · 앱 아이콘 / 채택 1안](https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS/RoxHistory-V1.0?node-id=402-120).
 - 채택 원본 1254px와 256·128·64px 미리보기를 함께 배치했습니다.
 - 기존 I100 서체·색상과 용도별 정리 체계를 유지했습니다. [노드 위치 기록](figma-location.json).
+
+## 2026-11-02 실제 적용 확인
+
+v0.1.17-aurora-icon에 동일 PNG를 연결했다. Android 에뮬레이터의 홈·앱 목록, 원형·둥근 사각형·작은 크기 표시와 기존 인증서 업데이트 설치를 확인했다. 원형 마스크의 주변 배경 잘림과 실기기 검토 범위는 [개발 보고서](../../../docs/shared-reports/2026-11-02-a303-aurora-icon/report.md)에 기록했다.

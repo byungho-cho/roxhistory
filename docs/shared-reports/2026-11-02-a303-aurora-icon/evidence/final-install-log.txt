@@ -1,0 +1,20 @@
+--------- beginning of main
+11-02 02:05:18.722  9702  9733 I godot   : Godot Engine v4.5.1.stable.official.f62fdbde1 - https://godotengine.org
+11-02 02:05:18.871  9702  9733 E godot   : WARNING: Failed to load cached shader, recompiling.
+11-02 02:05:18.871  9702  9733 E godot   :    at: _load_from_cache (drivers/gles3/shader_gles3.cpp:612)
+11-02 02:05:19.382  9702  9733 I godot   : OpenGL API OpenGL ES 3.1 (4.5.0 NVIDIA 610.88) - Compatibility - Using Device: Google (NVIDIA Corporation) - Android Emulator OpenGL ES Translator (NVIDIA GeForce RTX 5060/PCIe/SSE2)
+11-02 02:05:19.397  9702  9733 I godot   : 
+11-02 02:05:20.949  9702  9733 I godot   : A303_AUDIO_STATE {"active":true,"bgm":false,"enabled":true,"events":[],"music_db":-60.0,"paused":false,"position":0.0,"reason":"configure","region":false,"ticks_ms":2652,"water":false,"wind":false}
+11-02 02:05:20.950  9702  9733 I godot   : PLAY_TOUCH Screen touched at ((480.0, 66.56835)) with 0 touch points active=true screen=title
+11-02 02:05:20.951  9702  9733 I godot   : PLAY_TOUCH Screen released at ((480.0, 66.56835)) with 0 touch points active=true screen=title
+11-02 02:05:20.992  9702  9733 I godot   : PLAY_TOUCH Screen touched at ((480.0, 67.49999)) with 0 touch points active=true screen=title
+11-02 02:05:20.992  9702  9733 I godot   : PLAY_TOUCH Screen released at ((480.0, 67.49999)) with 0 touch points active=true screen=title
+11-02 02:05:20.992  9702  9733 I godot   : PLAY_TOUCH Screen touched at ((480.0, 67.49999)) with 0 touch points active=true screen=title
+11-02 02:05:20.993  9702  9733 I godot   : PLAY_TOUCH Screen released at ((480.0, 67.49999)) with 0 touch points active=true screen=title
+11-02 02:05:20.993  9702  9733 I godot   : PLAY_TOUCH Screen touched at ((480.0, 67.49999)) with 0 touch points active=true screen=title
+11-02 02:05:20.993  9702  9733 I godot   : PLAY_TOUCH Screen released at ((480.0, 67.49999)) with 0 touch points active=true screen=title
+11-02 02:05:22.480  9702  9733 I godot   : PLAY_TOUCH Screen touched at ((783.7499, 265.5)) with 0 touch points active=true screen=title
+11-02 02:05:22.480  9702  9733 I godot   : PLAY_TOUCH Screen released at ((783.7499, 265.5)) with 0 touch points active=true screen=title
+11-02 02:05:22.736  9702  9733 I godot   : A303_AUDIO_STATE {"active":true,"bgm":false,"enabled":true,"events":[],"music_db":-60.0,"paused":false,"position":0.0,"reason":"configure","region":false,"ticks_ms":4438,"water":true,"wind":true}
+11-02 02:05:22.736  9702  9733 I godot   : A303_AUDIO_STATE {"active":true,"bgm":false,"enabled":true,"events":[],"music_db":-60.0,"paused":false,"position":0.0,"reason":"configure","region":false,"ticks_ms":4438,"water":true,"wind":true}
+11-02 02:05:22.740  9702  9733 I godot   : A303_AUDIO_STATE {"active":true,"bgm":false,"enabled":true,"events":["ui"],"music_db":-60.0,"paused":false,"position":0.0,"reason":"ui","region":false,"ticks_ms":4442,"water":true,"wind":true}
