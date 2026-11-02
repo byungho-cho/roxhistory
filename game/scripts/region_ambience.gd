@@ -60,10 +60,10 @@ func ring(center:Vector2,radius:Vector2,color:Color,width:float) -> void:
 		var angle:=TAU*i/32.0;points.append(center+Vector2(cos(angle),sin(angle))*radius)
 	draw_polyline(points,color,width,true)
 func fish_pose(index:int,time_value:float) -> Dictionary:
-	var cycle:=12.0+index*3.7
+	var cycle:=17.0+index*5.3
 	var phase:=fposmod(time_value+index*4.3,cycle)/cycle
-	var t:=phase/.56
-	return {"at":FISH_CENTERS[index]+Vector2(lerpf(-42,42,t),sin(t*TAU+index)*9),"alpha":sin(PI*clampf(t,0,1))*.70 if phase<.56 else 0.0,"phase":t}
+	var t:=clampf(phase/.44,0,1)
+	return {"at":FISH_CENTERS[index]+Vector2(lerpf(-42,42,t),sin(t*TAU+index)*9),"alpha":sin(PI*t)*.58 if phase<.44 else 0.0,"phase":t,"ripple":(phase-.34)/.13 if phase>=.34 and phase<.47 else -1.0}
 func draw_fish(point:Vector2,phase:float,alpha:float,k:float) -> void:
 	var at:Vector2=map.camera.project(point)
 	draw_set_transform(at,sin(phase*TAU)*.12,Vector2.ONE*k)
@@ -120,12 +120,16 @@ func _draw() -> void:
 		for j in 2:
 			var point:Vector2=pose.at+Vector2(-23*j,12*j)
 			if pose.alpha>.01 and is_water(point):draw_fish(point,pose.phase+j,pose.alpha*(1-.22*j)*visibility_at(point,40),k*(1-.15*j))
+		if pose.ripple>=0 and is_water(pose.at):
+			var r:float=pose.ripple
+			var alpha:float=sin(PI*r)*.16*visibility_at(pose.at,40)
+			ring(map.camera.project(pose.at),Vector2(8+22*r,3+7*r)*k,Color(.7,.94,1,alpha),.9*k)
 	for flock in 2:
-		var duration:=18.0+flock*5
+		var duration:=26.0+flock*7
 		var phase:=fposmod(clock+flock*10,duration)
-		if phase>8:continue
-		var progress:=phase/8
-		var alpha:=smoothstep(0,.12,progress)*(1-smoothstep(.85,1,progress))*.84
+		if phase>9:continue
+		var progress:=phase/9
+		var alpha:=smoothstep(0,.12,progress)*(1-smoothstep(.85,1,progress))*.78
 		for j in 3:
 			var pose:=bird_pose(flock,j,progress)
 			draw_bird(pose.point,pose.heading,clock*(5.2+j*.25)+j*1.4,alpha*visibility_at(pose.point,48),k*(.75+j*.07))

@@ -1,0 +1,88 @@
+{
+  "version": "0.1.16-a303-audio",
+  "date_kst": "2026-11-02",
+  "checks": [
+    "All three regions select with unchanged camera and correct panel",
+    "Music position advances across selection without restarting",
+    "Approved music plus one quiet water bed; wind absent",
+    "Sparse bird cues occur beneath region music",
+    "Android Home pauses music and stops nature bed",
+    "Android resume keeps music playback position and process",
+    "Fresh selection works after Android resume",
+    "No engine or script error on host GPU Android renderer",
+    "Actual sound toggle silences music, water and effects",
+    "Sound toggle resumes the existing music instead of restarting it",
+    "Natural music loop survives beyond a complete 51.43-second period without AudioTrack crash or restart",
+    "Signed update and selection/audio tests preserve existing save-file bytes",
+    "Original test sound preferences restored after verification"
+  ],
+  "samples": [
+    {
+      "key": "amsa",
+      "position": 19.8828125,
+      "music_db": -10.0,
+      "events": [
+        "bird",
+        "bird",
+        "bird",
+        "select"
+      ]
+    },
+    {
+      "key": "jeongok",
+      "position": 21.6243076324463,
+      "music_db": -10.0,
+      "events": [
+        "bird",
+        "bird",
+        "select",
+        "select"
+      ]
+    },
+    {
+      "key": "dongsam",
+      "position": 23.3425846099854,
+      "music_db": -10.0,
+      "events": [
+        "bird",
+        "select",
+        "select",
+        "select"
+      ]
+    },
+    {
+      "key": "amsa",
+      "position": 25.0608615875244,
+      "music_db": -10.0,
+      "events": [
+        "select",
+        "select",
+        "select",
+        "select"
+      ]
+    },
+    {
+      "key": "dongsam",
+      "position": 29.1359634399414,
+      "music_db": -10.0,
+      "events": [
+        "select",
+        "select",
+        "select",
+        "select"
+      ]
+    }
+  ],
+  "paused_position": 26.8720188140869,
+  "resume_position": 26.8836288452148,
+  "failed": [],
+  "physical_device_verified": false,
+  "loop_regression": {
+    "elapsed_seconds": 55.733,
+    "start_position": 22.5443992614746,
+    "end_position": 26.8669395446777,
+    "phase_error_seconds": 0.018111711774533745,
+    "same_process": true,
+    "new_native_crashes": false
+  }
+}

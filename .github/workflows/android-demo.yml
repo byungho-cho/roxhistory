@@ -92,6 +92,11 @@ jobs:
           ! grep -E 'SCRIPT ERROR:|ERROR:' living-map-tests.log
           timeout 150 xvfb-run -a godot --fixed-fps 60 --audio-driver Dummy --path game --resolution 1280x720 --script res://tests/panel_transition_tests.gd -- --test-ui 2>&1 | tee panel-transition-tests.log
           ! grep -E 'SCRIPT ERROR:|ERROR:' panel-transition-tests.log
+          timeout 150 xvfb-run -a godot --fixed-fps 60 --audio-driver Dummy --path game --resolution 1280x720 --script res://tests/aurora_tests.gd -- --test-ui 2>&1 | tee aurora-tests.log
+          ! grep -E 'SCRIPT ERROR:|ERROR:' aurora-tests.log
+          # Playback uses the audio driver's real clock, unlike fixed-tick animation tests.
+          timeout 150 xvfb-run -a godot --max-fps 60 --audio-driver Dummy --path game --resolution 1280x720 --script res://tests/a303_audio_tests.gd -- --test-ui --slow-selection-review 2>&1 | tee a303-audio-tests.log
+          ! grep -E 'SCRIPT ERROR:|ERROR:' a303-audio-tests.log
       - name: Export signed debug APK
         run: |
           set -euo pipefail
@@ -100,20 +105,20 @@ jobs:
           export GODOT_ANDROID_KEYSTORE_DEBUG_PATH="$RUNNER_TEMP/debug.keystore"
           export GODOT_ANDROID_KEYSTORE_DEBUG_USER=androiddebugkey
           export GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD=android
-          godot --headless --path game --export-debug Android "$PWD/build/RoxHistory-0.1.15-panel-fade-debug.apk" 2>&1 | tee build/export.log
-          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose build/RoxHistory-0.1.15-panel-fade-debug.apk | tee build/signature.txt
-          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging build/RoxHistory-0.1.15-panel-fade-debug.apk > build/package.txt
-          sha256sum build/RoxHistory-0.1.15-panel-fade-debug.apk > build/SHA256SUMS
+          godot --headless --path game --export-debug Android "$PWD/build/RoxHistory-0.1.17-aurora-icon-debug.apk" 2>&1 | tee build/export.log
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose build/RoxHistory-0.1.17-aurora-icon-debug.apk | tee build/signature.txt
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging build/RoxHistory-0.1.17-aurora-icon-debug.apk > build/package.txt
+          sha256sum build/RoxHistory-0.1.17-aurora-icon-debug.apk > build/SHA256SUMS
           git rev-parse HEAD > build/SOURCE_COMMIT
       - name: Complete source package
         if: always()
         run: |
           mkdir -p build
-          git archive HEAD -o build/RoxHistory-0.1.15-panel-fade-source.zip
+          git archive HEAD -o build/RoxHistory-0.1.17-aurora-icon-source.zip
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: RoxHistory-0.1.15-panel-fade-validation
+          name: RoxHistory-0.1.17-aurora-icon-validation
           path: |
             build/
             game/reports/
@@ -123,6 +128,6 @@ jobs:
           retention-days: 30
       - uses: actions/upload-artifact@v4
         with:
-          name: RoxHistory-0.1.15-panel-fade-APK
-          path: build/RoxHistory-0.1.15-panel-fade-debug.apk
+          name: RoxHistory-0.1.17-aurora-icon-APK
+          path: build/RoxHistory-0.1.17-aurora-icon-debug.apk
           retention-days: 30

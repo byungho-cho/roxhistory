@@ -51,14 +51,6 @@
       "sha256": "78705582664a1c6ce23976bae896d26dcb23a9d4dbf64030b883bf7c041e7630"
     },
     {
-      "file": "ui.wav",
-      "seconds": 0.09,
-      "peak_dbfs": -11.06,
-      "rms_dbfs": -24.09,
-      "loop": false,
-      "sha256": "77d3209608ad5d38cae44b99ae00bdcefd398861a6788c45608dbc6a222c9a0a"
-    },
-    {
       "file": "gain.wav",
       "seconds": 0.74,
       "peak_dbfs": -7.54,
@@ -117,6 +109,88 @@
       "rms_dbfs": -26.33,
       "loop": true,
       "sha256": "4c4b5fd09a543dfd1cd3752d28a3566d102d12a74f22d78f4a4c771e04306c05"
+    },
+    {
+      "file": "ui.wav",
+      "sample_rate": 22050,
+      "channels": 2,
+      "frames": 2095,
+      "seconds": 0.095011,
+      "peak_dbfs": -13.15,
+      "rms_dbfs": -24.13,
+      "sha256": "f44aab47a02b2db59fc55f82929a3b4edae7674b5724ec0092d4f00feda9c5be",
+      "loop": false,
+      "asset_id": "sfx.ui.soft_tap.v002",
+      "source": {
+        "inputs": [
+          {
+            "path": "assets/audio/sfx/implemented/ui_soft_tap/v002/ui.wav",
+            "sha256": "f44aab47a02b2db59fc55f82929a3b4edae7674b5724ec0092d4f00feda9c5be"
+          }
+        ]
+      }
+    },
+    {
+      "file": "select.wav",
+      "sample_rate": 22050,
+      "channels": 2,
+      "frames": 5512,
+      "seconds": 0.249977,
+      "peak_dbfs": -12.4,
+      "rms_dbfs": -27.42,
+      "sha256": "be599019666951074c08b62b4a79bbe058cea459c5c206cbda01238198be9d64",
+      "loop": false,
+      "asset_id": "sfx.region.select.v001",
+      "source": {
+        "inputs": [
+          {
+            "path": "assets/audio/sfx/implemented/region_select/v001/select.wav",
+            "sha256": "be599019666951074c08b62b4a79bbe058cea459c5c206cbda01238198be9d64"
+          }
+        ]
+      }
+    },
+    {
+      "file": "bird.wav",
+      "sample_rate": 22050,
+      "channels": 1,
+      "frames": 15876,
+      "seconds": 0.72,
+      "peak_dbfs": -14.89,
+      "rms_dbfs": -27.37,
+      "sha256": "ca3cd35736c032d3dd974526574f3e0b3354a79103044187f364d28cf9176b9b",
+      "loop": false,
+      "asset_id": "ambience.soft_bird.v001",
+      "source": {
+        "inputs": [
+          {
+            "path": "assets/audio/ambience/implemented/soft_bird/v001/bird.wav",
+            "sha256": "ca3cd35736c032d3dd974526574f3e0b3354a79103044187f364d28cf9176b9b"
+          }
+        ]
+      }
+    },
+    {
+      "file": "a303_bgm.wav",
+      "sample_rate": 44100,
+      "channels": 2,
+      "frames": 2268000,
+      "seconds": 51.428571,
+      "peak_dbfs": -3.47,
+      "rms_dbfs": -17.72,
+      "sha256": "999220448d935874ce424b89254062167f7ea9c598c7d87426724ef7bf16f6aa",
+      "loop": true,
+      "asset_id": "bgm.a303.starlight.v001",
+      "source": {
+        "inputs": [
+          {
+            "path": "assets/audio/bgm/approved/a303_starlight/v001/loop.wav",
+            "sha256": "999220448d935874ce424b89254062167f7ea9c598c7d87426724ef7bf16f6aa"
+          }
+        ]
+      },
+      "loop_begin": 0,
+      "loop_end": 2268000
     }
   ]
 }

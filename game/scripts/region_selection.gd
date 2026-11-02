@@ -116,7 +116,7 @@ func animate_to(value:float,position_value:Vector2,seconds:float) -> void:
 func select_region(key:String) -> void:
 	if not REGIONS.has(key):return
 	if motion and motion.is_valid():motion.kill()
-	selected=key;selection_count+=1;panel_visible=true;markers.trigger_selection();refresh();details.set_shown(true);app.audio.cue("ui");trace_state("selected")
+	selected=key;selection_count+=1;panel_visible=true;markers.trigger_selection();refresh();details.set_shown(true);app.audio.cue("select");trace_state("selected")
 
 func restore() -> void:
 	cancel_input();animate_to(1.0,camera.overview_pan(),0.5)

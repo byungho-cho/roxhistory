@@ -67,3 +67,5 @@ river_source=json.loads((ROOT/'assets/audio-sources/provenance.json').read_text(
 next(item for item in manifest if item['file']=='river.wav')['source']=river_source
 (OUT/'manifest.json').write_text(json.dumps({'author':'Original Foley/wind synthesis; river: Garuda1982, gentle river flow, CC0-1.0','sample_rate':SR,'assets':manifest},indent=2),encoding='utf-8',newline='\n')
 print(json.dumps(manifest,indent=2))
+from build_a303_audio import build as build_a303_audio
+print(json.dumps(build_a303_audio(),indent=2))

@@ -4,17 +4,26 @@ extends Node
 var enabled := false
 var active := true
 var in_world := false
+var in_region := false
 var ducked := false
 var voices: Array[AudioStreamPlayer] = []
 var river: AudioStreamPlayer
 var wind: AudioStreamPlayer
+var bgm: AudioStreamPlayer
 var streams := {}
 var events: Array[String] = []
 var variant := 0
 var river_proximity := 0.5
+var bird_wait := 11.0
+var nature_random := RandomNumberGenerator.new()
+var last_interface_ms := -1000
+const REGION_MUSIC_DB := -10.0
+const REGION_WATER_DB := -25.0
+const INTERFACE_GAP_MS := 75
 
 func _ready() -> void:
-	for key in ["ui","wood_0","wood_1","stone_0","stone_1","build_0","build_1","gain","complete","reward","river","wind"]:
+	nature_random.randomize()
+	for key in ["ui","select","bird","a303_bgm","wood_0","wood_1","stone_0","stone_1","build_0","build_1","gain","complete","reward","river","wind"]:
 		streams[key] = load("res://assets/audio/"+key+".wav")
 	for i in 6:
 		var voice := AudioStreamPlayer.new()
@@ -22,26 +31,61 @@ func _ready() -> void:
 		add_child(voice); voices.append(voice)
 	river = ambience("river",-30)
 	wind = ambience("wind",-35)
+	bgm = ambience("a303_bgm",-60)
 
 func ambience(key: String, volume: float) -> AudioStreamPlayer:
 	var player := AudioStreamPlayer.new()
 	var stream: AudioStreamWAV = streams[key].duplicate()
+	var loop_frames := roundi(stream.get_length()*stream.mix_rate)
+	# Godot 4.5's WAV mixer may read loop_end inclusively, even though it wraps
+	# at this offset. A head-frame guard makes that read safe and periodic;
+	# the original master and the N-frame loop interval remain unchanged.
+	# https://github.com/godotengine/godot/issues/119778
+	if stream.format in [AudioStreamWAV.FORMAT_8_BITS,AudioStreamWAV.FORMAT_16_BITS]:
+		var frame_bytes := (2 if stream.stereo else 1)*(2 if stream.format==AudioStreamWAV.FORMAT_16_BITS else 1)
+		var guarded := stream.data
+		guarded.append_array(guarded.slice(0,frame_bytes))
+		stream.data = guarded
 	stream.loop_mode = AudioStreamWAV.LOOP_FORWARD
 	stream.loop_begin = 0
-	stream.loop_end = int(stream.get_length()*stream.mix_rate)
+	stream.loop_end = loop_frames
 	player.stream = stream; player.volume_db = volume
 	add_child(player)
 	return player
 
-func configure(sound: bool, foreground: bool, playing: bool, popup: bool) -> void:
-	enabled = sound; active = foreground; in_world = playing; ducked = popup
+func configure(sound: bool, foreground: bool, playing: bool, popup: bool, region: bool = false) -> void:
+	var was_region := in_region
+	var was_audible := enabled and active
+	enabled = sound; active = foreground; in_world = playing; ducked = popup; in_region = region
+	if not was_region and in_region: bird_wait = nature_random.randf_range(9,14)
+	if enabled and active and not was_audible: last_interface_ms = -1000
 	if not enabled or not active:
 		stop_effects()
-	if not enabled or not active or not in_world:
+		if bgm and bgm.playing:
+			bgm.stream_paused = true
+			bgm.volume_db = -60
+		if bgm and not in_region: bgm.stop()
+	elif bgm:
+		if in_region:
+			if bgm.stream_paused: bgm.stream_paused = false
+			elif not bgm.playing:
+				bgm.volume_db = -60
+				bgm.play()
+		elif bgm.stream_paused: bgm.stop()
+	if not enabled or not active or not (in_world or in_region):
 		if river: river.stop(); wind.stop()
 	elif river and not river.playing:
 		river.volume_db = -55; wind.volume_db = -55
-		river.play(); wind.play()
+		river.play()
+	if wind:
+		if enabled and active and in_world:
+			if not wind.playing: wind.volume_db = -55; wind.play()
+		else: wind.stop() # The region map uses one quiet water bed beneath the music.
+	trace_status("configure")
+
+func trace_status(reason: String) -> void:
+	if "--test-ui" not in OS.get_cmdline_user_args(): return
+	print("A303_AUDIO_STATE "+JSON.stringify({"reason":reason,"enabled":enabled,"active":active,"region":in_region,"bgm":bgm.playing,"paused":bgm.stream_paused,"position":bgm.get_playback_position(),"music_db":bgm.volume_db,"water":river.playing,"wind":wind.playing,"events":events,"ticks_ms":Time.get_ticks_msec()}))
 
 func stop_effects() -> void:
 	for voice in voices: voice.stop()
@@ -50,8 +94,19 @@ func stop_work() -> void:
 	for voice in voices:
 		if voice.get_meta("work",false): voice.stop()
 
+func interface_time_ms() -> int:
+	return Time.get_ticks_msec()
+
 func cue(key: String) -> void:
 	if not enabled or not active: return
+	if key in ["ui","select"]:
+		var now := interface_time_ms()
+		if now-last_interface_ms < INTERFACE_GAP_MS: return
+		last_interface_ms = now
+		# UI and region cues share one audible slot, even after the rate gate.
+		# Replace their previous tail instead of stacking up to four 250ms cues.
+		for previous in voices:
+			if previous.stream in [streams.get("ui"),streams.get("select")]:previous.stop()
 	var work := key in ["wood","stone","build"]
 	if work:
 		variant = (variant+1)%2
@@ -63,14 +118,26 @@ func cue(key: String) -> void:
 	if voice == null: return # Bounded pool; never stack unbounded effects.
 	voice.stream = streams[key]
 	voice.set_meta("work",work)
-	voice.volume_db = -8 if work else (-13 if key == "ui" else -12)
-	voice.pitch_scale = 1.0
+	voice.volume_db = -8 if work else (-20 if key == "bird" else -12)
+	voice.pitch_scale = nature_random.randf_range(.96,1.02) if key == "bird" else 1.0
 	voice.play()
 	events.append(key)
 	if events.size()>96: events.pop_front()
+	if key in ["ui","select","bird"]: trace_status(key)
 
 func _process(delta: float) -> void:
+	if not enabled or not active: return
+	if bgm and bgm.playing and not bgm.stream_paused:
+		var target := REGION_MUSIC_DB+(-3.0 if ducked else 0.0) if in_region else -60.0
+		bgm.volume_db = move_toward(bgm.volume_db,target,delta*100)
+		if not in_region and bgm.volume_db <= -59.9: bgm.stop()
 	if river and river.playing:
 		var duck := -8.0 if ducked else 0.0
-		river.volume_db = move_toward(river.volume_db,lerpf(-36.0206,-26.0206,river_proximity)+duck,delta*22)
+		var water_level := REGION_WATER_DB if in_region else lerpf(-36.0206,-26.0206,river_proximity)
+		river.volume_db = move_toward(river.volume_db,water_level+duck,delta*22)
 		wind.volume_db = move_toward(wind.volume_db,-39+duck,delta*22)
+	if in_region and not ducked:
+		bird_wait -= minf(delta,.1)
+		if bird_wait <= 0:
+			cue("bird")
+			bird_wait = nature_random.randf_range(22,36)

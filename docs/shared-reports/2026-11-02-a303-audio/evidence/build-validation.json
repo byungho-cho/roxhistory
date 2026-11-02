@@ -1,0 +1,59 @@
+{
+  "version": "0.1.16-a303-audio",
+  "version_code": 17,
+  "package": "com.roxhistory.demo",
+  "date_kst": "2026-11-02",
+  "apk_sha256": "b3fe008fb86b2d9180e87d11faa16c76f384c208c480df7c450bc689edfcfab7",
+  "apk_bytes": 138050273,
+  "certificate_sha256": "cf65aeecb4e399ba9e2e6b9fa947f34f8c31bd75c8e3b686ad29d8431bb1695f",
+  "native_checks": 808,
+  "native_reports": [
+    {
+      "name": "state-tests",
+      "checks": 345
+    },
+    {
+      "name": "region-tests",
+      "checks": 82
+    },
+    {
+      "name": "a303-art-tests",
+      "checks": 157
+    },
+    {
+      "name": "selection-effect-tests",
+      "checks": 36
+    },
+    {
+      "name": "living-map-tests",
+      "checks": 88
+    },
+    {
+      "name": "panel-transition-tests",
+      "checks": 18
+    },
+    {
+      "name": "presentation-tests",
+      "checks": 56
+    },
+    {
+      "name": "a303-audio-tests",
+      "checks": 26
+    }
+  ],
+  "android_checks": 13,
+  "audio_assets": 15,
+  "art_assets": 107,
+  "physical_device_verified": false,
+  "direct_listening_approval": false,
+  "approved_bgm": "bgm.a303.starlight.v001",
+  "backup_bgm": "bgm.a303.sunlight.v001",
+  "game_mix": {
+    "seconds": 13.44,
+    "sample_rate": 48000,
+    "channels": 2,
+    "peak_dbfs": -13.52,
+    "rms_dbfs": -28.05,
+    "clipped_samples": 0
+  }
+}

@@ -17,11 +17,11 @@ func run() -> void:
 		check(map.map_surface.texture==source,"Selection retains single shared map: "+key)
 		check(map.markers.bottom(key)==map.map_point(key),"Icon anchored directly to geographic point: "+key)
 		var extent:=map.markers.artifact_rect(key).size/map.ui_factor
-		check(is_equal_approx(maxf(extent.x,extent.y),86*1.2),"Selected icon settles at exactly 120 percent: "+key)
+		check(is_equal_approx(maxf(extent.x,extent.y),86*1.1),"Selected icon settles at exactly 110 percent: "+key)
 		for other in RegionCatalog.REGIONS:
 			if other!=key:
 				var base:=map.markers.artifact_rect(other).size/map.ui_factor
-				check(is_equal_approx(maxf(base.x,base.y),86),"Other icon stays at shared base size: "+other)
+				check(is_equal_approx(maxf(base.x,base.y),86*.9),"Other icon stays at 90 percent of shared base size: "+other)
 	var empty:=map.size*Vector2(.22,.65)
 	map.begin_pointer(0,empty);map.end_pointer(0,empty)
 	check(not map.panel_visible and not map.ui_hit(map.start_button.get_global_rect().get_center()),"Dismissal releases panel input immediately")
@@ -51,7 +51,7 @@ func run() -> void:
 	check(map.details.visible and map.selected=="amsa","Pinch release neither hides panel nor selects another region")
 	for i in 12:map.select_region("amsa")
 	await create_timer(.32).timeout
-	check(is_equal_approx(map.markers.artifact_rect("amsa").size.y,86*1.2*map.ui_factor),"Repeated selection cannot accumulate icon scale")
+	check(is_equal_approx(map.markers.artifact_rect("amsa").size.y,86*1.1*map.ui_factor),"Repeated selection cannot accumulate icon scale")
 	map.begin_pointer(0,empty);map.cancel_input();map.end_pointer(0,empty)
 	check(map.details.visible and map.fingers.is_empty(),"Canceled lifecycle touch never dismisses panel")
 	app.queue_free();await process_frame

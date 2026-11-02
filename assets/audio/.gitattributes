@@ -1,0 +1,4 @@
+*.wav -text
+**/*.wav -text
+*.md text eol=lf
+*.json text eol=lf
