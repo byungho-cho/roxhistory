@@ -1,0 +1,28 @@
+{
+  "checks": [
+    "Android native touch movement",
+    "cancel no grant",
+    "rapid gather one wood",
+    "rapid gather one stone",
+    "build costs 1+1 and persists style"
+  ],
+  "state": {
+    "built": true,
+    "depleted": {
+      "stone_2": 1,
+      "wood_3": 1
+    },
+    "hut_style": 1,
+    "intro_seen": true,
+    "position": [
+      818.038818359375,
+      1056.18225097656
+    ],
+    "region": "amsa",
+    "reward_claimed": false,
+    "schema": 1,
+    "stone": 0,
+    "tokens": 0,
+    "wood": 0
+  }
+}

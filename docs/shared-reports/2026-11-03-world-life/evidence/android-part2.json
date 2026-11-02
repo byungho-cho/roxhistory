@@ -1,0 +1,40 @@
+{
+  "environment": "Android 15 API35 x86_64 read-only emulator, host RTX5060, 1280x720 and 1280x960",
+  "checks": [
+    "reward repeat tap grants once",
+    "actual joystick movement to wildlife",
+    "Android two-finger zoom in/out",
+    "Home/resume",
+    "force-stop/continue keeps hut style and inventory",
+    "4:3 layout",
+    "production save hash unchanged",
+    "no script/runtime errors"
+  ],
+  "saved": {
+    "built": true,
+    "depleted": {
+      "stone_2": 1,
+      "wood_3": 1
+    },
+    "hut_style": 1,
+    "intro_seen": true,
+    "position": [
+      1762.44445800781,
+      1136.94592285156
+    ],
+    "region": "amsa",
+    "reward_claimed": true,
+    "schema": 1,
+    "stone": 0,
+    "tokens": 10,
+    "wood": 0
+  },
+  "performance": [
+    "11-02 20:56:41.288  3622  3684 I godot   : HYBRID_PERF {\"draw_calls\":231.0,\"frames\":600,\"gpu\":\"Android Emulator OpenGL ES Translator (NVIDIA GeForce RTX 5060/PCIe/SSE2)\",\"mean_ms\":27.57858,\"mode\":\"3D\",\"p95_ms\":38.107,\"physics_ms\":2.917,\"primitives\":134469.0,\"process_ms\":63.955,\"viewport\":\"(960.0, 540.0)\"}"
+  ],
+  "not_verified": [
+    "physical Android/Fold device",
+    "speaker listening",
+    "animal walk rig"
+  ]
+}

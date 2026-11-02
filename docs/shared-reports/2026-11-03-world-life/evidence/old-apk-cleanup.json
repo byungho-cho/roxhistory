@@ -1,0 +1,110 @@
+[
+  {
+    "id": 700391522,
+    "tag": "v0.1.18-aurora-reference",
+    "name": "RoxHistory-0.1.18-aurora-reference-debug.apk",
+    "bytes": 144722958
+  },
+  {
+    "id": 700198181,
+    "tag": "v0.1.17-aurora-icon",
+    "name": "RoxHistory-0.1.17-aurora-icon-debug.apk",
+    "bytes": 144722958
+  },
+  {
+    "id": 699739817,
+    "tag": "v0.1.16-a303-audio",
+    "name": "RoxHistory-0.1.16-a303-audio-debug.apk",
+    "bytes": 138050273
+  },
+  {
+    "id": 698176523,
+    "tag": "v0.1.15-panel-fade",
+    "name": "RoxHistory-0.1.15-panel-fade-debug.apk",
+    "bytes": 129583235
+  },
+  {
+    "id": 698103458,
+    "tag": "v0.1.14-map-polish",
+    "name": "RoxHistory-0.1.14-map-polish-debug.apk",
+    "bytes": 129583235
+  },
+  {
+    "id": 698026753,
+    "tag": "v0.1.13-map-effects",
+    "name": "RoxHistory-0.1.13-map-effects-debug.apk",
+    "bytes": 129583235
+  },
+  {
+    "id": 697871040,
+    "tag": "v0.1.12-selection",
+    "name": "RoxHistory-0.1.12-selection-debug.apk",
+    "bytes": 129570782
+  },
+  {
+    "id": 697589856,
+    "tag": "v0.1.11-a303",
+    "name": "RoxHistory-0.1.11-a303-debug.apk",
+    "bytes": 129570782
+  },
+  {
+    "id": 696586685,
+    "tag": "v0.1.10-region",
+    "name": "RoxHistory-0.1.10-region-debug.apk",
+    "bytes": 108562673
+  },
+  {
+    "id": 695132702,
+    "tag": "v0.1.9-c001",
+    "name": "RoxHistory-0.1.9-c001-debug.apk",
+    "bytes": 96963524
+  },
+  {
+    "id": 694605785,
+    "tag": "v0.1.8-scene",
+    "name": "RoxHistory-0.1.8-scene-debug.apk",
+    "bytes": 95785633
+  },
+  {
+    "id": 694195788,
+    "tag": "v0.1.7-play",
+    "name": "RoxHistory-0.1.7-play-debug.apk",
+    "bytes": 89415045
+  },
+  {
+    "id": 693804918,
+    "tag": "v0.1.6-hero",
+    "name": "RoxHistory-0.1.6-hero-debug.apk",
+    "bytes": 89352714
+  },
+  {
+    "id": 692252283,
+    "tag": "v0.1.5-stage4",
+    "name": "RoxHistory-0.1.5-stage4-debug.apk",
+    "bytes": 89348461
+  },
+  {
+    "id": 692086282,
+    "tag": "v0.1.4-stage3",
+    "name": "RoxHistory-0.1.4-stage3-debug.apk",
+    "bytes": 88866577
+  },
+  {
+    "id": 691852075,
+    "tag": "v0.1.3-hybrid",
+    "name": "RoxHistory-0.1.3-hybrid-debug.apk",
+    "bytes": 88853873
+  },
+  {
+    "id": 691622206,
+    "tag": "v0.1.2-stage2",
+    "name": "RoxHistory-0.1.2-stage2-debug.apk",
+    "bytes": 88841418
+  },
+  {
+    "id": 691372413,
+    "tag": "v0.1.1-stage1",
+    "name": "RoxHistory-0.1.1-stage1-debug.apk",
+    "bytes": 88837322
+  }
+]

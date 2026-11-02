@@ -1,0 +1,27 @@
+{
+  "apk": "RoxHistory-0.1.19-20261103-062455.apk",
+  "sha256": "76d0d452ba4312fcb81ed7781740ed2f9565648492d23a7e506c778493bf7272",
+  "install": "Performing Incremental Install\nPerforming Streamed Install\nSuccess",
+  "saved": {
+    "built": true,
+    "depleted": {
+      "stone_2": 1.0,
+      "wood_3": 1.0
+    },
+    "hut_style": 1.0,
+    "intro_seen": true,
+    "position": [
+      1762.44445800781,
+      1136.94592285156
+    ],
+    "region": "amsa",
+    "reward_claimed": true,
+    "schema": 1.0,
+    "stone": 0.0,
+    "tokens": 10.0,
+    "wood": 0.0
+  },
+  "production_file_hash_unchanged": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855  files/save.json",
+  "runtime_errors": [],
+  "environment": "Android 15/API35 x86_64 read-only emulator, host RTX5060, 1280x720"
+}
