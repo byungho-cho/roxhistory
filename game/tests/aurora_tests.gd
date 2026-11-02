@@ -18,10 +18,12 @@ func run() -> void:
   check(veil.visible and is_equal_approx(veil.modulate.a,1),"Selected aurora persists: "+key)
   check(veil.mouse_filter==Control.MOUSE_FILTER_IGNORE,"Aura cannot intercept map input: "+key)
   check(veil.get_index()<map.markers.images[key].get_index(),"Aura draws behind artifact and label: "+key)
-  check(veil.position.is_equal_approx(map.map_point(key)-Vector2(68,126)*map.ui_factor),"Aura tracks geographic ground point: "+key)
+  check(veil.position.is_equal_approx(map.map_point(key)-RegionMarkers.AURORA_GROUND*map.ui_factor),"Aura tracks geographic ground point: "+key)
   for other in RegionCatalog.REGIONS:
    if other!=key:check(not map.markers.auroras[other].visible,"Old selection aura disappears: "+other)
   await capture(key)
+  await create_timer(1.0).timeout
+  await capture(key+"-held")
  var phase:float=map.markers.aurora_time;await create_timer(.2).timeout
  check(map.markers.aurora_time>phase,"Selected curtain continues to flow")
  app._notification(MainLoop.NOTIFICATION_APPLICATION_PAUSED);phase=map.markers.aurora_time;await create_timer(.2).timeout
@@ -29,7 +31,7 @@ func run() -> void:
  app._notification(MainLoop.NOTIFICATION_APPLICATION_RESUMED);await create_timer(.2).timeout
  check(map.markers.aurora_time>phase,"Resume continues curtain motion")
  map.select_region("amsa");map.pose(1.6,Vector2(-230,-100));await create_timer(.4).timeout
- check(map.markers.auroras.amsa.position.is_equal_approx(map.map_point("amsa")-Vector2(68,126)*map.ui_factor),"Manual camera keeps aura on selected marker")
+ check(map.markers.auroras.amsa.position.is_equal_approx(map.map_point("amsa")-RegionMarkers.AURORA_GROUND*map.ui_factor),"Manual camera keeps aura on selected marker")
  await capture("zoom")
  check(JSON.stringify(app.model.state)==saved,"Selection decoration preserves game progress")
  app.queue_free();await process_frame
