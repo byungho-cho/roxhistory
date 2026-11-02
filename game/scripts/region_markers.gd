@@ -3,11 +3,14 @@ extends Control
 
 # Equal longest edge; original artifact aspect ratios remain intact.
 const BASE_EXTENT:=86.0
-const SELECTED_SCALE:=1.2
+const SELECTED_SCALE:=1.1
+const UNSELECTED_SCALE:=.9
 const ENTER_SECONDS:=.28
 const RIPPLE_SECONDS:=.55
 var owner_map:Control
 var images:={}
+var auroras:={}
+var aurora_time:=0.0
 var labels:={}
 var shades:={}
 var selection_age:=1.0
@@ -20,6 +23,11 @@ func _init(map:Control) -> void:owner_map=map;mouse_filter=Control.MOUSE_FILTER_
 func _ready() -> void:
 	observed_selection=owner_map.selected
 	for key in RegionCatalog.REGIONS:weights[key]=1.0 if key==owner_map.selected else 0.0
+	# Independent materials keep selection fades local to each anchored artifact.
+	for key in RegionCatalog.REGIONS:
+		var veil:=ColorRect.new();veil.mouse_filter=Control.MOUSE_FILTER_IGNORE
+		var material:=ShaderMaterial.new();material.shader=preload("res://shaders/region_aurora.gdshader")
+		veil.material=material;add_child(veil);auroras[key]=veil
 	for key in RegionCatalog.REGIONS:
 		var data:Dictionary=RegionCatalog.REGIONS[key]
 		images[key]=FigmaArt.picture(self,data.symbol,Rect2())
@@ -35,6 +43,7 @@ func trigger_selection() -> void:
 func _process(delta:float) -> void:
 	if not owner_map.app.application_active or owner_map.app.modal:return
 	selection_age+=delta
+	aurora_time+=delta
 	var t:=1-pow(1-clampf(selection_age/ENTER_SECONDS,0,1),3)
 	for key in weights:weights[key]=lerpf(start_weights.get(key,weights[key]),1.0 if key==owner_map.selected else 0.0,t)
 	refresh()
@@ -43,7 +52,7 @@ func base_size(key:String) -> Vector2:
 	var original:Vector2=RegionCatalog.REGIONS[key].base_size
 	return original*(BASE_EXTENT/maxf(original.x,original.y))
 func artifact_rect(key:String) -> Rect2:
-	var amount:=lerpf(1,SELECTED_SCALE,weights.get(key,1.0 if key==owner_map.selected else 0.0))
+	var amount:=lerpf(UNSELECTED_SCALE,SELECTED_SCALE,weights.get(key,1.0 if key==owner_map.selected else 0.0))
 	var extent:Vector2=base_size(key)*amount*owner_map.ui_factor
 	var lift:=0.0
 	if key==owner_map.selected and selection_age<ENTER_SECONDS:
@@ -68,6 +77,12 @@ func refresh() -> void:
 		for key in RegionCatalog.REGIONS:weights[key]=1.0 if key==owner_map.selected else 0.0
 		start_weights=weights.duplicate()
 	var k:float=owner_map.ui_factor
+	for key in auroras:
+		var veil:ColorRect=auroras[key]
+		veil.position=bottom(key)-Vector2(68,126)*k;veil.size=Vector2(136,140)*k
+		veil.modulate.a=weights.get(key,0.0);veil.visible=veil.modulate.a>.001
+		veil.material.set_shader_parameter("phase",aurora_time)
+		veil.material.set_shader_parameter("arrival",maxf(0,1-selection_age/RIPPLE_SECONDS) if key==owner_map.selected else 0.0)
 	for key in images:
 		var rect:=artifact_rect(key);images[key].position=rect.position;images[key].size=rect.size
 		var nr:=name_rect(key);labels[key].position=nr.position;labels[key].size=nr.size/k;labels[key].scale=Vector2.ONE*k

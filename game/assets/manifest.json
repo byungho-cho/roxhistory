@@ -533,5 +533,10 @@
     "path": "game/assets/ui/seed.svg",
     "bytes": 740,
     "sha256": "70e848935ae620056d539a55a344768d31902764398f8a08d231dad8c1360426"
+  },
+  {
+    "path": "game/assets/app-icon-pioneer.png",
+    "bytes": 3202458,
+    "sha256": "62eee2ff9c5fe4976a1fa12ca6059299248bc711d9799c97b31cad80e91d4e80"
   }
 ]

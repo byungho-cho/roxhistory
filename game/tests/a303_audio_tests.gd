@@ -1,4 +1,8 @@
 extends SceneTree
+class ControlledSoundscape extends DemoSoundscape:
+	var now_ms:=10000
+	func interface_time_ms() -> int:return now_ms
+
 var checks:=0
 var failed:Array[String]=[]
 func _initialize() -> void:call_deferred("run")
@@ -7,6 +11,20 @@ func check(ok:bool,message:String) -> void:
 	if not ok:failed.append(message);push_error(message)
 func run() -> void:
 	DirAccess.make_dir_recursive_absolute("res://reports")
+	var controlled:=ControlledSoundscape.new();root.add_child(controlled);await process_frame
+	controlled.configure(true,true,false,false,true)
+	for i in 18:controlled.cue("select")
+	check(controlled.events.count("select")==1 and not controlled.events.has("ui"),"Rapid region selection makes one soft cue, without duplicate UI cue")
+	controlled.cue("ui")
+	check(controlled.events.size()==1,"Duplicate generic UI cue is rejected in same input window")
+	controlled.now_ms+=74;controlled.cue("select")
+	check(controlled.events.size()==1,"74ms burst remains inside debounce window")
+	controlled.now_ms+=1;controlled.cue("select")
+	check(controlled.events.count("select")==2,"Next valid input is audible at 75ms boundary")
+	check(controlled.voices.filter(func(v):return v.playing).size()==1,"Accepted interface cue replaces previous tail instead of stacking")
+	controlled.now_ms+=75;controlled.cue("ui")
+	check(controlled.events.back()=="ui" and controlled.voices.filter(func(v):return v.playing).size()==1,"UI and region sounds share one audible slot")
+	controlled.queue_free();await process_frame
 	var app=load("res://scenes/main.tscn").instantiate();root.add_child(app);await process_frame
 	app.settings.set_value("app","sound",true);app.show_screen("region")
 	var map:RegionSelection=app.region_selection
@@ -26,8 +44,13 @@ func run() -> void:
 	var position_before:float=audio.bgm.get_playback_position()
 	var stream_before:AudioStream=audio.bgm.stream
 	audio.events.clear();audio.stop_effects()
-	for i in 18:map.select_region(["jeongok","amsa","dongsam"][i%3])
-	check(audio.events.count("select")==1 and not audio.events.has("ui"),"Rapid region selection makes one soft cue, without duplicate UI cue")
+	var burst_started:=Time.get_ticks_msec()
+	for i in 18:
+		map.select_region(["jeongok","amsa","dongsam"][i%3])
+		if "--slow-selection-review" in OS.get_cmdline_user_args():OS.delay_msec(12)
+	var burst_elapsed:=Time.get_ticks_msec()-burst_started
+	check(audio.events.count("select")>=1 and audio.events.count("select")<=1+floori(float(burst_elapsed)/audio.INTERFACE_GAP_MS) and not audio.events.has("ui"),"Real region handler stays rate-limited without duplicate UI cue on slow or fast hosts")
+	check(map.selected=="dongsam" and audio.voices.filter(func(v):return v.playing and v.stream in [audio.streams.ui,audio.streams.select]).size()<=1,"Latest region wins and interface voices never overlap")
 	await create_timer(.35).timeout
 	check(audio.bgm.stream==stream_before and audio.bgm.get_playback_position()>position_before,"Region changes preserve music stream and position")
 	check(not is_instance_valid(map.details.ghost),"Audio-enabled rapid selection leaves no panel ghost")

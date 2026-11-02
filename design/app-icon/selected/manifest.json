@@ -1,0 +1,13 @@
+{
+  "status": "selected-current",
+  "selected_on": "2026-11-02",
+  "selected_option": 1,
+  "name": "시대의 개척자",
+  "source": "../concepts/v002/roxhistory-history-icon-01-civilization-hero.png",
+  "filename": "roxhistory-app-icon-selected-v001.png",
+  "width": 1254,
+  "height": 1254,
+  "sha256": "62eee2ff9c5fe4976a1fa12ca6059299248bc711d9799c97b31cad80e91d4e80",
+  "decision": "사용자: 1안이 좋은 것 같고 이걸로 일단 하자. 현재 채택안으로 보관.",
+  "implementation_status": "개발 담당 적용 대기; 게임 코드 및 APK 아이콘 교체는 이번 작업 범위에 포함하지 않음"
+}

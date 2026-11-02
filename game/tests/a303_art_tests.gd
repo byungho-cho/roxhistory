@@ -16,7 +16,7 @@ func run() -> void:
 			map.selected="dongsam" if key!="dongsam" else "jeongok";map.refresh()
 			var small:=map.markers.artifact_rect(key)
 			check(is_equal_approx(small.end.y,initial.end.y),"Selection keeps artifact ground contact")
-			check(is_equal_approx(small.size.y/initial.size.y,1.0/1.2),"Unselected/selected ratio remains 100/120")
+			check(is_equal_approx(small.size.y/initial.size.y,.9/1.1),"Unselected/selected ratio remains 90/110")
 			map.selected=key;map.refresh()
 		check(map.markers.artifact_rect(key).is_equal_approx(initial),"Repeated selection never accumulates scale: "+key)
 		check(map.markers.bottom(key).is_equal_approx(contact),"Anchor remains stable: "+key)

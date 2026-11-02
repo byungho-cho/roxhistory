@@ -94,12 +94,19 @@ func stop_work() -> void:
 	for voice in voices:
 		if voice.get_meta("work",false): voice.stop()
 
+func interface_time_ms() -> int:
+	return Time.get_ticks_msec()
+
 func cue(key: String) -> void:
 	if not enabled or not active: return
 	if key in ["ui","select"]:
-		var now := Time.get_ticks_msec()
+		var now := interface_time_ms()
 		if now-last_interface_ms < INTERFACE_GAP_MS: return
 		last_interface_ms = now
+		# UI and region cues share one audible slot, even after the rate gate.
+		# Replace their previous tail instead of stacking up to four 250ms cues.
+		for previous in voices:
+			if previous.stream in [streams.get("ui"),streams.get("select")]:previous.stop()
 	var work := key in ["wood","stone","build"]
 	if work:
 		variant = (variant+1)%2
