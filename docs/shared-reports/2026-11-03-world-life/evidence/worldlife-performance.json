@@ -1,0 +1,31 @@
+{
+  "environment": "Windows native Godot, uncapped, same scene/camera; alternate animal render off/on twice; not Android performance",
+  "gpu": "NVIDIA GeForce RTX 5060",
+  "resolution": "(1280, 720)",
+  "samples": [
+    {
+      "frames": 1000,
+      "mean_ms": 1.290115,
+      "p95_ms": 3.874,
+      "wildlife": false
+    },
+    {
+      "frames": 1000,
+      "mean_ms": 1.334268,
+      "p95_ms": 3.637,
+      "wildlife": true
+    },
+    {
+      "frames": 1000,
+      "mean_ms": 1.369272,
+      "p95_ms": 3.325,
+      "wildlife": false
+    },
+    {
+      "frames": 1000,
+      "mean_ms": 1.420086,
+      "p95_ms": 4.522,
+      "wildlife": true
+    }
+  ]
+}

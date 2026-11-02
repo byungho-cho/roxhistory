@@ -1,0 +1,19 @@
+{
+  "before": {
+    "frames": 2000,
+    "gpu": "NVIDIA GeForce RTX 5060",
+    "mean_ms": 1.3695115,
+    "p95_ms": 4.173,
+    "resolution": "(1280, 720)"
+  },
+  "conditions": "Windows native uncapped rendering, same player/camera/zoom, 120 warmup frames, emulator also idle on same host; not physical Android performance",
+  "baseline_commit": "cb848142f6897846d9c40f26521be44e0dc5f2fd",
+  "after_commit": "4fe66ec2826a5a1b83f9b85ed3b78284db084814",
+  "after": {
+    "frames": 2000,
+    "gpu": "NVIDIA GeForce RTX 5060",
+    "mean_ms": 1.4999055,
+    "p95_ms": 2.421,
+    "resolution": "(1280, 720)"
+  }
+}
