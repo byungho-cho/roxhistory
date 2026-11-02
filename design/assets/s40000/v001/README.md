@@ -13,7 +13,7 @@ The background was edited only to remove the three huts and reconstruct sandy gr
 ## Figma
 
 - [I10000 / S40000 assets](https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=528-120)
-- [S40000 / section 02](https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=507-62)
+- [S40000 / section 02](https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=540-229)
 - Original reference section 01 remains preserved. Background-containing crops moved to reference section 91 on I10000.
 
 UI text, counts, energy bar and layout are editable. Shared raster components provide the artwork. Closed/open/minimum/maximum views use the same world and HUD; maximum world scale is 2.5× with fixed HUD size. Existing log and stone components remain linked; previous assets and regional-selection assets are preserved.
@@ -23,3 +23,7 @@ UI text, counts, energy bar and layout are editable. Shared raster components pr
 PNG alpha checked in the previous generation pass; game exports preserve alpha. Figma upload succeeded for all ten files. Screens are 1600×900. Figma visual review is separate from game validation: no Godot import, Android execution or APK build was performed for this design-only change. Buttons' interaction states, navigation and auto-movement are not implemented by this asset package. Generated image detail and terrain repairs differ from the source art in places. Original-art minimap is a static design reference, not a live game map.
 
 Do not treat Figma asset registration as runtime integration. Keep original/ and game/ separately for future updates.
+
+## Current implementation — 2026-11-03
+
+This package remains a concept-art source record. v0.1.19 implements three approved huts, 3D animal placement/breathing, smoke, school-level fish movement and construction effects. Full folding HUD reconstruction remains pending. Eight resident appearances are approved and registered in Figma but not implemented in the game. See [current status](../../../../docs/current-status.md).

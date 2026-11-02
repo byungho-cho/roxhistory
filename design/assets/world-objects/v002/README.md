@@ -7,3 +7,5 @@ original은 built-in image_gen으로 개별 배경 분리한 이미지다. 픽�
 2D 원화 보관 단계이며 3D 모델 제작 및 게임 적용은 수행하지 않았다. Figma는 사용자 별도 반영 요청 전까지 변경하지 않는다.
 
 분리 프롬프트: Extract ONLY the deer on LEFT / rabbit in CENTER / bear on RIGHT from this approved animal sheet as a standalone transparent PNG asset. Preserve its exact approved shape, pose, anatomy, proportions, face, expression, color palette, markings and soft cartoon rendering. Do not redesign or make cuter or more realistic. Remove the other two animals, entire background and floor shadow; no glow or backdrop. Full body including all extremities, centered with modest transparent padding. Faithful background-extraction of the existing animal, no text.
+
+2026-11-03 현재: 위 설명은2D 원화 제작 당시 범위입니다. 별도3D 모델은 v0.1.19에 배치·호흡 구현, 보행은 미구현입니다. [현재 상태](../../../../docs/current-status.md).

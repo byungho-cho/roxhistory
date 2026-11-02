@@ -9,5 +9,7 @@
   "height": 1254,
   "sha256": "62eee2ff9c5fe4976a1fa12ca6059299248bc711d9799c97b31cad80e91d4e80",
   "decision": "사용자: 1안이 좋은 것 같고 이걸로 일단 하자. 현재 채택안으로 보관.",
-  "implementation_status": "개발 담당 적용 대기; 게임 코드 및 APK 아이콘 교체는 이번 작업 범위에 포함하지 않음"
+  "implementation_status": "implemented in v0.1.17, retained in v0.1.19; Android emulator launcher and masks verified",
+  "updated_on": "2026-11-03",
+  "implementation_report": "../../../docs/shared-reports/2026-11-02-a303-aurora-icon/report.md"
 }

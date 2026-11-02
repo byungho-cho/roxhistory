@@ -1,3 +1,5 @@
+> **2026-11-03 반영 결과:** 아래 지시의 REQ-001·FOLLOW-001은 PR #32/v0.1.17에서 완료됐습니다. 현재 기준은 [개발 현황](current-status.md)과 [최신 개발 지시 기준](developer-instructions-current.md)입니다. 아래는 11월2일 전달 당시 원문입니다.
+
 # RoxHistory 개발 지시문
 
 작성일: 2026-11-02

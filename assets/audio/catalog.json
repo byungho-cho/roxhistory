@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_date": "2026-11-02",
+  "updated_date": "2026-11-03",
   "default_bgm_by_screen": {
     "A303": "bgm.a303.starlight.v001"
   },
@@ -203,5 +203,13 @@
     ],
     "version": "0.1.16-a303-audio",
     "validation_report": "docs/shared-reports/2026-11-02-a303-audio/report.md"
+  },
+  "current_integration": {
+    "version": "0.1.19",
+    "region_screen": "S30000 (formerly A303)",
+    "selection_audio_fix": "PR32/v0.1.17, later CI51 passed",
+    "reference": "docs/current-status.md",
+    "source_audio_modified": false,
+    "direct_listening_approved": false
   }
 }
