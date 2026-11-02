@@ -23,4 +23,3 @@
 이전 원격 환경의 막힘과 공식 이미지 조사는 날짜 폴더의 이전 보고서에 보존했다. 계정·인증정보는 공개하지 않는다.
 
 팀장 검토용 추가 자료: [Lordrush 외부 플레이 영상 MP4와 출처](2026-10-31-lordrush-playtest/evidence/external-video/README.md). 다운로드·공유 완료, 장면별 분석 대기.
-

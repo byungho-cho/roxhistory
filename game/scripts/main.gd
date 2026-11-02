@@ -417,7 +417,7 @@ func _process(delta: float) -> void:
 		var closest:=Geometry2D.get_closest_point_to_segment(world.player.position,world.SHORE[i],world.SHORE[i+1])
 		river_distance=minf(river_distance,world.player.position.distance_to(closest))
 	audio.river_proximity=1.0-smoothstep(80,720,river_distance)
-	context_panel.visible = context.text != "" and not modal and not toast_panel.visible
+	context_panel.visible = context.text != "" and task != "build" and not modal and not toast_panel.visible
 	var direction := Vector2.ZERO
 	if not modal and application_active and not gestures.blocked:
 		if is_instance_valid(joystick): direction = joystick.value

@@ -51,7 +51,7 @@ func _draw() -> void:
 		if world.selected==str(targets[key].id):
 			# Actual reach is a world-space circle, not the larger decorative zone.
 			draw_arc(at,float(DemoConfig.get_data().interact_radius),0,TAU,64,Color(.95,.86,.55,.40),2,true)
-	if world.model.can_build() and not world.model.state.built:
+	if world.model.can_build() and not world.model.state.built and (not is_instance_valid(world.feedback) or world.feedback.activity != "build"):
 		draw_texture_rect(DemoArt.icon("hut"),Rect2(world.site.position+Vector2(-26,-168-flash*8),Vector2(52,52)),false)
 
 func draw_markers() -> void:

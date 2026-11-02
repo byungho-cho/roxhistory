@@ -49,6 +49,7 @@ func begin(kind: String, id := "") -> void:
 	preview.visible = kind == "build"
 	roof.modulate.a = 0.0
 	remember("begin:"+kind)
+	world.objectives.redraw()
 
 func update_work(seconds: float, total: float) -> void:
 	elapsed = seconds
@@ -82,6 +83,7 @@ func cancel() -> void:
 	activity = ""; target = ""; impact_strength = 0
 	if is_instance_valid(preview): preview.visible = false
 	preview_progress = 0
+	if is_instance_valid(world.objectives): world.objectives.redraw()
 	queue_redraw()
 
 func clear_transients() -> void:

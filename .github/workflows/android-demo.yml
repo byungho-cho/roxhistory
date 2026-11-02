@@ -133,4 +133,3 @@ jobs:
           name: RoxHistory-0.1.19-APK
           path: build/RoxHistory-0.1.19.apk
           retention-days: 30
-
