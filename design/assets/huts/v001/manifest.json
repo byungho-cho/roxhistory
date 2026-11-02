@@ -5,6 +5,11 @@
     "sha256": "4D0B19EF505BE7C110EABC48E2669D6C0162FFDF59A0FA3EF8B91EAB8B78298C"
   },
   {
+    "file": "design\\assets\\huts\\v001\\original\\BLD-001_world_covered-vent_v002.png",
+    "bytes": 2526712,
+    "sha256": "AEF81267D9061D294BD53C6A9A4DF6B181A49681E6A7748A9224FA7F190F1B4D"
+  },
+  {
     "file": "design\\assets\\huts\\v001\\original\\BLD-001_world_oval_v001.png",
     "bytes": 2193169,
     "sha256": "B4C0C1F2DF0B24AA9A159EF798CB705910C2D9A510D0D470040E3CCE76E7FBE0"
@@ -18,6 +23,11 @@
     "file": "design\\assets\\huts\\v001\\game\\BLD-001_world_covered-vent_v001.png",
     "bytes": 1241494,
     "sha256": "2E3969DDA4F5C20CDD7B2C2F6EB4A298489E728E6E6B4A1DA4357CCB7D38DB11"
+  },
+  {
+    "file": "design\\assets\\huts\\v001\\game\\BLD-001_world_covered-vent_v002.png",
+    "bytes": 1187515,
+    "sha256": "3BF69DDC7E9A99491CF382DC08084787729C0FAC7EF39075EBC86A1BCDC1E3E3"
   },
   {
     "file": "design\\assets\\huts\\v001\\game\\BLD-001_world_oval_v001.png",
