@@ -1,0 +1,5 @@
+{
+  "checks": 26,
+  "failed": [],
+  "runtime": "Windows Godot native render; synthetic lifecycle and state checks"
+}

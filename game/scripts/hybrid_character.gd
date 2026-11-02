@@ -175,7 +175,7 @@ func animate(delta: float, movement: Vector2, phase: float, walking: bool, actio
 	heading = lerp_angle(heading,target_heading,1.0-exp(-delta*12.0))
 	pivot.rotation.y = heading
 	if not paused: clock += delta
-	walk_blend = move_toward(walk_blend,1.0 if walking and not paused else 0.0,delta*8.0)
+	walk_blend = move_toward(walk_blend,1.0 if walking and not paused else 0.0,delta*6.0)
 	action_blend = move_toward(action_blend,1.0 if action != "" and not paused else 0.0,delta*10.0)
 	# Retain the last work pose during release instead of jumping to t=0.
 	if action != "": last_action_time = action_time
@@ -203,8 +203,8 @@ func apply_pose(phase: float, strike: float) -> void:
 	rig.set_bone_pose_position(bones.spine,rests.spine+Vector3(0,breath*0.5,0))
 	var blink := 1.0-0.94*pow(maxf(0.0,cos(clock*TAU/4.7)),80.0)
 	for eye in eye_nodes: eye.scale.y = 0.88*blink
-	rotate_bone("spine",Vector3(strike*0.16,sin(clock)*0.018*(1-walk_blend)+strike*0.10+gait*0.045,-gait*0.045+sin(clock*1.1)*0.012*(1-walk_blend)))
-	rotate_bone("head",Vector3(-strike*0.08,sin(clock*0.7)*0.04*(1-action_blend),gait*0.02))
+	rotate_bone("spine",Vector3(strike*0.16,sin(clock)*0.018*(1-walk_blend)+strike*0.10+gait*0.03,-gait*0.025+sin(clock*1.1)*0.012*(1-walk_blend)))
+	rotate_bone("head",Vector3(-strike*0.08,sin(clock*0.7)*0.04*(1-action_blend),gait*0.01))
 	for side in [-1.0,1.0]:
 		var suffix := "L" if side < 0 else "R"
 		var step: float = gait*side
@@ -233,7 +233,7 @@ func tool_contact_world() -> Vector2:
 
 func stride_world_length() -> float:
 	# Stylized isometric gait: don't speed up the cadence with camera foreshortening.
-	return 64.0
+	return 80.0
 
 func build_villager() -> void:
 	var imported=preload("res://assets/characters/meshy01/hero.glb").instantiate()

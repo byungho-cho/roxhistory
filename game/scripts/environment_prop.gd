@@ -5,8 +5,31 @@ var sprite: Sprite2D
 var shadow_size := Vector2.ZERO
 var ground_size := Vector2.ZERO
 var kind := ""
+var hut_style := 0
 static var textures := {}
 static var stone_material: ShaderMaterial
+const HUTS := ["res://assets/environment/hut-round.png", "res://assets/environment/hut-oval.png", "res://assets/environment/hut-covered.png"]
+# Measured alpha > 0.5 bounds; avoid decoding/scanning three PNGs on mobile startup.
+const HUT_BOUNDS := [Rect2(63,50,901,589),Rect2(62,83,899,551),Rect2(15,72,997,546)]
+
+func set_hut_style(value: int) -> void:
+	hut_style = clampi(value,0,2)
+	var width := sprite.texture.get_width()*sprite.scale.x
+	var key := "hut_style_"+str(hut_style)
+	if not textures.has(key):
+		var texture: Texture2D = load(HUTS[hut_style])
+		var atlas := AtlasTexture.new()
+		atlas.atlas = texture
+		atlas.region = HUT_BOUNDS[hut_style]
+		textures[key] = atlas
+	sprite.texture = textures[key]
+	sprite.scale = Vector2.ONE*width/sprite.texture.get_width()
+	sprite.position.y = -sprite.texture.get_height()*sprite.scale.y*0.5
+
+func chimney_socket() -> Vector2:
+	var dimensions := sprite.texture.get_size()*sprite.scale
+	var sockets := [Vector2(0.0,0.86),Vector2(0.19,0.69),Vector2(0.0,0.86)]
+	return Vector2(dimensions.x*sockets[hut_style].x,-dimensions.y*sockets[hut_style].y)
 static func stone_surface() -> ShaderMaterial:
 	if not stone_material:
 		stone_material=ShaderMaterial.new();stone_material.shader=preload("res://shaders/stone_surface.gdshader")
