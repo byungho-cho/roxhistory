@@ -1,0 +1,38 @@
+[
+  {
+    "id": "bear",
+    "source": "Meshy_AI_Brown_Bear_1102123404_image-to-3d-texture.glb",
+    "source_sha256": "240deafd35c007846e20dbef61279413422444fcaadae99f7d697d801516ea16",
+    "original_triangles": 1052690,
+    "triangles": 16000,
+    "source_bones": 0,
+    "source_actions": 0,
+    "texture_max": 1024,
+    "bytes": 783576,
+    "height": 2.0
+  },
+  {
+    "id": "rabbit",
+    "source": "Meshy_AI_Bunny_Rabbit_1102125159_image-to-3d-texture.glb",
+    "source_sha256": "98db147e56ff21aef66a23e2ef155a7a798a7bb322425319e72e7473bc0ba653",
+    "original_triangles": 459472,
+    "triangles": 16000,
+    "source_bones": 0,
+    "source_actions": 0,
+    "texture_max": 1024,
+    "bytes": 754184,
+    "height": 2.0
+  },
+  {
+    "id": "deer",
+    "source": "Meshy_AI_Spotted_Deer_1102125209_image-to-3d-texture.glb",
+    "source_sha256": "b2a12d3c2890b0a0804050c8c21dd28841e7dc5e2da1432783e9995d2330648b",
+    "original_triangles": 341798,
+    "triangles": 16000,
+    "source_bones": 0,
+    "source_actions": 0,
+    "texture_max": 1024,
+    "bytes": 785268,
+    "height": 2.0
+  }
+]

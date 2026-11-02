@@ -13,6 +13,7 @@ var environment_props: Array[EnvironmentProp] = []
 var effects_enabled := true
 var feedback: WorldFeedback
 var objectives: WorldObjectives
+var animals: Array[WorldAnimal] = []
 # Water visuals and physics share the shoreline traced on terrain.png.
 const SHORE = [Vector2(690,0),Vector2(790,100),Vector2(1000,201),Vector2(1249,287),Vector2(1478,402),Vector2(1722,488),Vector2(1981,552),Vector2(2167,631),Vector2(2400,689)]
 const RIVER_POLYGON = [Vector2(690,0),Vector2(2400,0),Vector2(2400,689),Vector2(2167,631),Vector2(1981,552),Vector2(1722,488),Vector2(1478,402),Vector2(1249,287),Vector2(1000,201),Vector2(790,100)]
@@ -46,6 +47,9 @@ func _ready() -> void:
 	prop("hut",Vector2(700,510),380,Vector2(270,100),"ExistingHut")
 	prop("hut",Vector2(360,720),390,Vector2(285,110),"VillageHut")
 	prop("hut",Vector2(990,740),400,Vector2(260,100),"RiversideHut")
+	get_node("ExistingHut").set_hut_style(0)
+	get_node("VillageHut").set_hut_style(1)
+	get_node("RiversideHut").set_hut_style(2)
 	prop("props",Vector2(1140,790),100,Vector2(60,24),"RiversidePottery")
 	prop("props",Vector2(700,610),108,Vector2(65,28),"PotteryAndGrindingStone")
 	prop("props",Vector2(570,935),100,Vector2(60,24),"FishingNet")
@@ -94,12 +98,24 @@ func _ready() -> void:
 	site.position = DemoConfig.point(DemoConfig.get_data().build_site)
 	add_child(site)
 	home = prop("hut",site.position,340,Vector2.ZERO,"QuestHome")
+	home.set_hut_style(int(model.state.get("hut_style",0)))
 	player = DemoPlayer.new()
 	player.position = DemoConfig.point(model.state.position)
 	add_child(player)
+	# Wildlife stays outside the settlement and clear of the demo resource/build routes.
+	for entry in [["deer",1985,850,122,-0.8],["rabbit",1550,1190,42,0.6],["rabbit",1620,1230,38,-0.4],["bear",2040,1260,112,0.7]]:
+		var animal := WorldAnimal.new()
+		animal.name = "Wildlife_"+str(entry[0])+str(animals.size())
+		animal.species = entry[0]
+		animal.position = Vector2(entry[1],entry[2])
+		animal.world_height = entry[3]
+		animal.heading = entry[4]
+		add_child(animal)
+		animals.append(animal)
 	objectives=WorldObjectives.new(self);add_child(objectives)
 	feedback = WorldFeedback.new(self)
 	add_child(feedback)
+	add_child(WorldAmbient.new(self))
 	model.changed.connect(refresh)
 	refresh()
 	call_deferred("restore_clear_position")
@@ -136,6 +152,7 @@ func set_environment_effects(enabled: bool) -> void:
 	effects_enabled = enabled
 	water.material.set_shader_parameter("animated",enabled)
 	for p in environment_props: p.set_effects_enabled(enabled)
+	for animal in animals: animal.effects_enabled = enabled
 
 func rect_body(rect: Rect2) -> void:
 	var body := StaticBody2D.new()
@@ -160,6 +177,7 @@ func refresh() -> void:
 		art_nodes[n.id].modulate = Color(0.62,0.59,0.48,0.6) if exhausted(n) else Color.WHITE
 		resource_labels[n.id].text = "%s %d/%d" % ["나무" if n.kind == "wood" else "돌",int(n.charges)-int(model.state.depleted.get(n.id,0)),int(n.charges)]
 	home.visible = model.state.built
+	if model.state.built: home.set_hut_style(int(model.state.get("hut_style",0)))
 	if model.state.built and not has_node("HomeCollision"):
 		var body := StaticBody2D.new()
 		body.name = "HomeCollision"
@@ -190,6 +208,7 @@ func near_site() -> bool:
 
 func _process(_delta: float) -> void:
 	if not is_instance_valid(player): return
+	for animal in animals: animal.presentation_paused = player.presentation_paused
 	var id := str(nearest().get("id",""))
 	if id != selected:
 		selected = id

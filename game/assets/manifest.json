@@ -538,5 +538,100 @@
     "path": "game/assets/app-icon-pioneer.png",
     "bytes": 3202458,
     "sha256": "62eee2ff9c5fe4976a1fa12ca6059299248bc711d9799c97b31cad80e91d4e80"
+  },
+  {
+    "path": "game/assets/animals/bear.glb",
+    "bytes": 783576,
+    "sha256": "dcac4da80c38adb8b0e92e0727ab3292f1c4deaf8d35771f4633a2bc9cbe124d"
+  },
+  {
+    "path": "game/assets/animals/deer.glb",
+    "bytes": 785268,
+    "sha256": "3f87a6336258ae725cbe5fb64fd324bf3d7b8e077d69b0ff84bacfe6ff7eb59f"
+  },
+  {
+    "path": "game/assets/animals/rabbit.glb",
+    "bytes": 754184,
+    "sha256": "ccb8cba07d59b2802d916fc838c72e5853554ca5bb952b01f7593475e3947008"
+  },
+  {
+    "path": "game/assets/effects/chimney-smoke.png",
+    "bytes": 1244045,
+    "sha256": "ddff2ae5a0f83bdadbd04949da0444cfee4e6cdc96e6d3bee76fe16a6adb467b"
+  },
+  {
+    "path": "game/assets/effects/construction-hammer.png",
+    "bytes": 903709,
+    "sha256": "6cf6a0ed445b1a5f4a9f59370775df13fc93d215b6b1f67cbb6056a12be978aa"
+  },
+  {
+    "path": "game/assets/effects/fish-school.png",
+    "bytes": 1546769,
+    "sha256": "7391336cf719500c1a499ea60f63212d6d6ad7fa167923b07c59f9cdfd6b54ba"
+  },
+  {
+    "path": "game/assets/environment/hut-covered.png",
+    "bytes": 1187515,
+    "sha256": "3bf69ddc7e9a99491cf382dc08084787729c0fac7ef39075ebc86a1bcdc1e3e3"
+  },
+  {
+    "path": "game/assets/environment/hut-oval.png",
+    "bytes": 1168640,
+    "sha256": "8e5dd247901eadc55100874bfd5e89405f493defa0184df353966f35ea1a7995"
+  },
+  {
+    "path": "game/assets/environment/hut-round.png",
+    "bytes": 1197013,
+    "sha256": "277f188c76c8cbb1aa6812e3fee97428596a4a775d0c57c835ac345cb5548efc"
+  },
+  {
+    "path": "game/assets/effects/construction-scaffold.png",
+    "bytes": 1870020,
+    "sha256": "da4217012989a0e778125669da29f119f8eb16d9ab95f37a569c153b269e8253"
+  },
+  {
+    "path": "game/assets/animals/bear_Image_0.jpg",
+    "bytes": 78632,
+    "sha256": "6de538943977b7b005a2eb3a0ed93fc8980ba83d2173c28b3cfb02a7e7c5c7bb"
+  },
+  {
+    "path": "game/assets/animals/bear_Image_1.jpg",
+    "bytes": 29857,
+    "sha256": "f59251c7ec1e1557fd0e47f4b5c551cacfad8cdd552a690fd477ed653ec048fe"
+  },
+  {
+    "path": "game/assets/animals/bear_Image_2.jpg",
+    "bytes": 28079,
+    "sha256": "a5737aa1c11e5021a7fcfef9a0a759549867edebf7ea4b9d6d9c4be9fbac59b1"
+  },
+  {
+    "path": "game/assets/animals/deer_Image_0.jpg",
+    "bytes": 132554,
+    "sha256": "eb8c88fea99b2b70acc375f313c3b26a6c02ae6d77f1830798bd3463f3d99e44"
+  },
+  {
+    "path": "game/assets/animals/deer_Image_1.jpg",
+    "bytes": 37737,
+    "sha256": "44e6ecb9b16456a0631dc89bc748c917d26e4f975c3f2f2cb3d20bd32b6e1cf0"
+  },
+  {
+    "path": "game/assets/animals/deer_Image_2.jpg",
+    "bytes": 32928,
+    "sha256": "f000ce0d65b11a0e1bc17c365e7a7877c0f5c7f321ca12f69c4607b451f0d147"
+  },
+  {
+    "path": "game/assets/animals/rabbit_Image_0.jpg",
+    "bytes": 96065,
+    "sha256": "9ac99fe4075e6231cd200ad8aab8eac440ae6005cbe69bdd91e5cfed501ac638"
+  },
+  {
+    "path": "game/assets/animals/rabbit_Image_1.jpg",
+    "bytes": 34630,
+    "sha256": "5e3060c5487c4bed65bc5b13fec50a037553dca818d064ae1b6787e575711f12"
+  },
+  {
+    "path": "game/assets/animals/rabbit_Image_2.jpg",
+    "bytes": 25883,
+    "sha256": "f5059aa160961c7378afb54d895d7e0f0dea08654b11aa0c0f5e98ce4984b498"
   }
 ]

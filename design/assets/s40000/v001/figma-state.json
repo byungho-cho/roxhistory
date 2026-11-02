@@ -1,0 +1,77 @@
+{
+  "sessionId": "c3832630-235b-4675-9d97-713b02666d25",
+  "assetPage": "226:6",
+  "assetBoard": "528:120",
+  "screenSection": "507:62",
+  "frames": [
+    "507:65",
+    "509:82",
+    "509:134"
+  ],
+  "assets": [
+    {
+      "key": "hunt-spear",
+      "componentId": "528:124",
+      "imageId": "528:125"
+    },
+    {
+      "key": "gather-berries",
+      "componentId": "528:127",
+      "imageId": "528:128"
+    },
+    {
+      "key": "craft-axe",
+      "componentId": "528:130",
+      "imageId": "528:131"
+    },
+    {
+      "key": "build-hut-icon",
+      "componentId": "528:133",
+      "imageId": "528:134"
+    },
+    {
+      "key": "quest-scroll",
+      "componentId": "528:136",
+      "imageId": "528:137"
+    },
+    {
+      "key": "inventory-bag",
+      "componentId": "528:139",
+      "imageId": "528:140"
+    },
+    {
+      "key": "menu-button",
+      "componentId": "528:142",
+      "imageId": "528:143"
+    },
+    {
+      "key": "expand-button",
+      "componentId": "528:145",
+      "imageId": "528:146"
+    },
+    {
+      "key": "hut-world",
+      "componentId": "528:148",
+      "imageId": "528:149"
+    },
+    {
+      "key": "world-without-huts",
+      "componentId": "528:151",
+      "imageId": "528:152"
+    },
+    {
+      "key": "portrait",
+      "componentId": "528:162"
+    }
+  ],
+  "hud": {
+    "Profile": "529:125",
+    "Quest": "529:132",
+    "Resources": "529:139",
+    "Joystick": "529:149",
+    "Minimap": "529:152",
+    "MainMenu": "529:154",
+    "Expand": "529:158",
+    "ExpandedActions": "529:161"
+  }
+}

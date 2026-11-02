@@ -32,6 +32,8 @@ func valid(s: Variant) -> bool:
 			return false
 	if not s.depleted is Dictionary or (s.reward_claimed and not s.built):
 		return false
+	if s.has("hut_style") and (not (s.hut_style is int or s.hut_style is float) or s.hut_style != int(s.hut_style) or s.hut_style < 0 or s.hut_style > 2):
+		return false
 	var allowed := {}
 	for n in DemoConfig.get_data().nodes:
 		allowed[n.id] = n.charges

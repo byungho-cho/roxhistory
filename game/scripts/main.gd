@@ -382,6 +382,7 @@ func play_hud() -> void:
 	context=label(context_panel,"",15,Color("47240e"));context.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART;context.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
 	task_bar=ProgressBar.new();task_bar.mouse_filter=Control.MOUSE_FILTER_IGNORE;task_bar.show_percentage=false;task_bar.position=Vector2(w*.5-145,h-safe.y-89);task_bar.size=Vector2(290,8);stage.add_child(task_bar);task_bar.visible=false
 	chrome=PlayChrome.new(self);stage.add_child(chrome);chrome.size=Vector2(w,h)
+	stage.add_child(ConstructionProgress.new(self))
 	var portrait_hit:=design_button(stage,"",Rect2(safe.x,safe.y+26,62,62),pause_game,false,"");portrait_hit.name="PortraitPause"
 	for state in ["normal","hover","pressed"]:portrait_hit.add_theme_stylebox_override(state,StyleBoxEmpty.new())
 	portrait_hit.get_node("FigmaSkin").hide()
@@ -416,7 +417,7 @@ func _process(delta: float) -> void:
 		var closest:=Geometry2D.get_closest_point_to_segment(world.player.position,world.SHORE[i],world.SHORE[i+1])
 		river_distance=minf(river_distance,world.player.position.distance_to(closest))
 	audio.river_proximity=1.0-smoothstep(80,720,river_distance)
-	context_panel.visible = context.text != "" and not modal and not toast_panel.visible
+	context_panel.visible = context.text != "" and task != "build" and not modal and not toast_panel.visible
 	var direction := Vector2.ZERO
 	if not modal and application_active and not gestures.blocked:
 		if is_instance_valid(joystick): direction = joystick.value
@@ -513,7 +514,7 @@ func build_action() -> void:
 			world.player.set_activity("build")
 			task_total = float(DemoConfig.get_data().build_seconds)
 			task_remaining = task_total
-			task_bar.visible = true
+			task_bar.visible = false
 			toast("",0)
 			context.text = "보금자리 건설 중…"}])
 

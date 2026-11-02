@@ -65,6 +65,8 @@ func build(pos: Vector2 = Vector2.ZERO) -> bool:
 	next.wood -= int(c.wood_cost)
 	next.stone -= int(c.stone_cost)
 	next.built = true
+	# Choose once at the successful transaction; reload/visual effects never reroll.
+	next.hut_style = randi_range(0,2)
 	if pos != Vector2.ZERO:
 		next.position = [pos.x,pos.y]
 	var ok := commit(next)

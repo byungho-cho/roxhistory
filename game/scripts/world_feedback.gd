@@ -28,12 +28,11 @@ func _ready() -> void:
 	world.add_child.call_deferred(preview)
 	roof = Sprite2D.new()
 	roof.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
-	roof.texture = world.home.sprite.texture
-	roof.scale = world.home.sprite.scale
-	roof.position = world.home.sprite.position
-	var mat := ShaderMaterial.new()
-	mat.shader = preload("res://shaders/construction.gdshader")
-	roof.material = mat
+	roof.texture = preload("res://assets/effects/construction-scaffold.png")
+	roof.scale = Vector2.ONE*310.0/roof.texture.get_width()
+	# Scaffold image includes the back and front of an elliptical footprint.
+	# Its front posts extend below the site's center, unlike a hut's doorway anchor.
+	roof.position.y = -roof.texture.get_height()*roof.scale.y*0.5+55
 	preview.add_child(roof)
 	preview.visible = false
 
@@ -48,8 +47,9 @@ func begin(kind: String, id := "") -> void:
 	world.player.external_work_clock = true
 	preview_progress = 0
 	preview.visible = kind == "build"
-	roof.material.set_shader_parameter("progress",0.0)
+	roof.modulate.a = 0.0
 	remember("begin:"+kind)
+	world.objectives.redraw()
 
 func update_work(seconds: float, total: float) -> void:
 	elapsed = seconds
@@ -57,7 +57,7 @@ func update_work(seconds: float, total: float) -> void:
 	world.player.action_time = seconds
 	if activity == "build":
 		preview_progress = clampf(seconds/total,0,1)
-		roof.material.set_shader_parameter("progress",smoothstep(0.15,1.0,preview_progress))
+		roof.modulate.a = smoothstep(0.0,0.12,preview_progress)
 	while elapsed >= next_hit:
 		var point := world.site.position+Vector2(0,-35)
 		var color := Color("d9ad6b")
@@ -83,6 +83,7 @@ func cancel() -> void:
 	activity = ""; target = ""; impact_strength = 0
 	if is_instance_valid(preview): preview.visible = false
 	preview_progress = 0
+	if is_instance_valid(world.objectives): world.objectives.redraw()
 	queue_redraw()
 
 func clear_transients() -> void:
@@ -136,12 +137,13 @@ func _draw() -> void:
 		draw_colored_polygon(PackedVector2Array([tip,tip+Vector2(-8,-10),tip+Vector2(8,-10)]),Color("ffe5aa"))
 	if activity == "build":
 		var p: Vector2 = world.site.position
-		var alpha := 1.0-smoothstep(0.5,1.0,preview_progress)
-		for x in [-86.0,-43.0,0.0,43.0,86.0]:
-			var base := p+Vector2(x,-12)
-			var top := p+Vector2(x*0.25,-145)
-			draw_line(base,base.lerp(top,minf(1,preview_progress*4)),Color(0.49,0.32,0.16,alpha),7,true)
-		if preview_progress > 0.15: draw_line(p+Vector2(-70,-60),p+Vector2(70,-60),Color(0.78,0.61,0.36,alpha),5,true)
+		for i in 9:
+			var t := fposmod(pulse*0.65+i/9.0,1.0)
+			var at := p+Vector2(sin(i*2.4)*80,-35-t*65)
+			draw_circle(at,12+t*18,Color(0.88,0.70,0.42,sin(t*PI)*0.16))
+		for i in 6:
+			var t := fposmod(pulse*0.6+i/6.0,1.0)
+			draw_circle(p+Vector2(sin(i*2.4)*90,-25-t*110),2.5,Color(1,0.83,0.35,sin(t*PI)*0.65))
 	for p in particles:
 		var color: Color = p.color
 		color.a *= 1.0-p.age/p.life
