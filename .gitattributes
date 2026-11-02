@@ -4,8 +4,7 @@ game/assets/**/*.import text eol=lf
 game/assets/*.md text eol=lf
 game/assets/manifest.json text eol=lf
 game/assets/audio/manifest.json text eol=lf
-
 *.mp3 -text
-
 # Editable character source must retain its original binary bytes.
 art-source/**/*.blend -text
+design/assets/animals-3d/**/*.glb filter=lfs diff=lfs merge=lfs -text
