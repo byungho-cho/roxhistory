@@ -7,6 +7,8 @@ const SELECTED_SCALE:=1.1
 const UNSELECTED_SCALE:=.9
 const ENTER_SECONDS:=.28
 const RIPPLE_SECONDS:=.55
+const AURORA_SIZE:=Vector2(180,220)
+const AURORA_GROUND:=Vector2(90,198)
 var owner_map:Control
 var images:={}
 var auroras:={}
@@ -79,7 +81,7 @@ func refresh() -> void:
 	var k:float=owner_map.ui_factor
 	for key in auroras:
 		var veil:ColorRect=auroras[key]
-		veil.position=bottom(key)-Vector2(68,126)*k;veil.size=Vector2(136,140)*k
+		veil.position=bottom(key)-AURORA_GROUND*k;veil.size=AURORA_SIZE*k
 		veil.modulate.a=weights.get(key,0.0);veil.visible=veil.modulate.a>.001
 		veil.material.set_shader_parameter("phase",aurora_time)
 		veil.material.set_shader_parameter("arrival",maxf(0,1-selection_age/RIPPLE_SECONDS) if key==owner_map.selected else 0.0)

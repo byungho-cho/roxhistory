@@ -105,20 +105,20 @@ jobs:
           export GODOT_ANDROID_KEYSTORE_DEBUG_PATH="$RUNNER_TEMP/debug.keystore"
           export GODOT_ANDROID_KEYSTORE_DEBUG_USER=androiddebugkey
           export GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD=android
-          godot --headless --path game --export-debug Android "$PWD/build/RoxHistory-0.1.17-aurora-icon-debug.apk" 2>&1 | tee build/export.log
-          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose build/RoxHistory-0.1.17-aurora-icon-debug.apk | tee build/signature.txt
-          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging build/RoxHistory-0.1.17-aurora-icon-debug.apk > build/package.txt
-          sha256sum build/RoxHistory-0.1.17-aurora-icon-debug.apk > build/SHA256SUMS
+          godot --headless --path game --export-debug Android "$PWD/build/RoxHistory-0.1.18-aurora-reference-debug.apk" 2>&1 | tee build/export.log
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose build/RoxHistory-0.1.18-aurora-reference-debug.apk | tee build/signature.txt
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging build/RoxHistory-0.1.18-aurora-reference-debug.apk > build/package.txt
+          sha256sum build/RoxHistory-0.1.18-aurora-reference-debug.apk > build/SHA256SUMS
           git rev-parse HEAD > build/SOURCE_COMMIT
       - name: Complete source package
         if: always()
         run: |
           mkdir -p build
-          git archive HEAD -o build/RoxHistory-0.1.17-aurora-icon-source.zip
+          git archive HEAD -o build/RoxHistory-0.1.18-aurora-reference-source.zip
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: RoxHistory-0.1.17-aurora-icon-validation
+          name: RoxHistory-0.1.18-aurora-reference-validation
           path: |
             build/
             game/reports/
@@ -128,6 +128,6 @@ jobs:
           retention-days: 30
       - uses: actions/upload-artifact@v4
         with:
-          name: RoxHistory-0.1.17-aurora-icon-APK
-          path: build/RoxHistory-0.1.17-aurora-icon-debug.apk
+          name: RoxHistory-0.1.18-aurora-reference-APK
+          path: build/RoxHistory-0.1.18-aurora-reference-debug.apk
           retention-days: 30
