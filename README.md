@@ -1,4 +1,4 @@
-> 2026-11-02 최신: **금빛 오로라 B·채택 앱 아이콘·선택음 수정 v0.1.17**. [실행·설치·검증 보고서](docs/shared-reports/2026-11-02-a303-aurora-icon/report.md) · [APK 직접 다운로드](https://github.com/byungho-cho/roxhistory/releases/download/v0.1.17-aurora-icon/RoxHistory-0.1.17-aurora-icon-debug.apk).
+> 2026-11-02 최신: **채택 원화 기준 금빛 오로라 교정 v0.1.18**. [전후 비교·실행 영상·검증 보고서](docs/shared-reports/2026-11-02-a303-aurora-reference/report.md) · [APK 직접 다운로드](https://github.com/byungho-cho/roxhistory/releases/download/v0.1.18-aurora-reference/RoxHistory-0.1.18-aurora-reference-debug.apk).
 
 # 현재 개발 상태 — v0.1.8 대표 정착지 아트·공간 리팩토링
 

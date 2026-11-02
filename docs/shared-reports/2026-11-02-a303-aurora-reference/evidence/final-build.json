@@ -1,0 +1,15 @@
+{
+  "version": "0.1.18-aurora-reference",
+  "versionCode": 19,
+  "commit": "b89db1e4fbb60fa0522d535a5f6982d09b68b999",
+  "game_tree": "8d55d51f9820716dbfbd5fa1ed83085b404388bd",
+  "sha256": "515727877da915ebbb1442ed0556e2678e75f9ab66587de2cd36f9185f8a352c",
+  "size": 144722958,
+  "utc": "2026-11-02T03:32:40Z",
+  "installed_hash_matches": true,
+  "update_preserved_valid_test_save": true,
+  "continue_test_save": true,
+  "normal_empty_save_unchanged": true,
+  "physical_device_tested": false,
+  "speaker_listening_verified": false
+}
