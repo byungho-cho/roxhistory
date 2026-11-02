@@ -1,0 +1,15 @@
+{
+  "version": "0.1.17-aurora-icon",
+  "versionCode": 18,
+  "commit": "d6b23163eab3e32b49faa50a9b2d28c52ef4a394",
+  "game_tree": "ec7959c6bf253dcf1f5688e8a6efd990cd5368d3",
+  "sha256": "aa9c97195eeff2d1947106ab8cb19ed47889d6f98b40677532beff02decedcfe",
+  "size": 144722958,
+  "utc": "2026-11-02T02:05:26Z",
+  "installed_hash_matches": true,
+  "update_preserved_valid_test_save": true,
+  "continue_test_save": true,
+  "normal_empty_save_unchanged": true,
+  "physical_device_tested": false,
+  "speaker_listening_verified": false
+}

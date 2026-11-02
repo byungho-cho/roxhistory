@@ -1,0 +1,14 @@
+{
+  "utc": "2026-11-02T01:41:46Z",
+  "source": "0e9b67695e1b1d4e309a22fe28b371921474d6f7",
+  "from": "0.1.16-a303-audio (17)",
+  "to": "0.1.17-aurora-icon (18)",
+  "package": "com.roxhistory.demo",
+  "note": "adb install -r timed out at 120s, but package version and installed base.apk SHA-256 verify completion. Baseline hashes below were recorded AFTER update; pre-update byte comparison was not retained. Existing saves remain present. No data clearing performed.",
+  "preserved_sha256": {
+    "files/save.json": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "files/save.backup.json": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "files/preferences.cfg": "262743475213f30bb3f56a1720a2a383392850bb4c6bc1071add03ec3326fae5",
+    "files/tests/preferences.cfg": "262743475213f30bb3f56a1720a2a383392850bb4c6bc1071add03ec3326fae5"
+  }
+}
