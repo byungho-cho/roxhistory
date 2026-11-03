@@ -41,6 +41,7 @@ var region_snapshot := {}
 var navigation: AutoTravel
 var actions_expanded := false
 var action_row: HBoxContainer
+var action_backdrop: Panel
 var action_toggle: DemoButton
 
 func _ready() -> void:
@@ -371,25 +372,31 @@ func enter_game() -> void:
 
 func play_hud() -> void:
 	var quest_panel:=button(stage,"",focus_objective);quest_panel.name="QuestPanel";quest_panel.custom_minimum_size=Vector2.ZERO
-	quest_panel.position=Vector2(safe.x,safe.y+68);quest_panel.size=Vector2(215,64)
+	quest_panel.position=Vector2(safe.x,safe.y+68);quest_panel.size=Vector2(240,74)
 	var dark:=StyleBoxFlat.new();dark.bg_color=Color(.15,.13,.09,.78);dark.set_corner_radius_all(10);dark.set_content_margin_all(6)
 	for state in ["normal","hover","pressed"]:quest_panel.add_theme_stylebox_override(state,dark)
+	dark.border_color=Color(.94,.79,.48,.22);dark.set_border_width_all(1)
+	var accent:=ColorRect.new();accent.color=Color(.95,.73,.34,.7);accent.position=Vector2(0,12);accent.size=Vector2(2,48);accent.mouse_filter=Control.MOUSE_FILTER_IGNORE;quest_panel.add_child(accent)
+	var chevron:=label(quest_panel,"⌄",18,Color("f5cf8d"));chevron.position=Vector2(218,7)
 	picture(quest_panel,DemoArt.icon("hut"),Rect2(8,8,26,26))
-	objective=label(quest_panel,"",14,Color("fff0cd"));objective.position=Vector2(38,5);objective.size=Vector2(172,55)
+	objective=label(quest_panel,"",14,Color("fff0cd"));objective.position=Vector2(38,8);objective.size=Vector2(180,58)
 	joystick=DemoJoystick.new();stage.add_child(joystick);joystick.position=Vector2(safe.x,h-safe.y-140)
-	action_row=HBoxContainer.new();action_row.name="Actions";action_row.add_theme_constant_override("separation",3);stage.add_child(action_row)
-	action_row.position=Vector2(w-safe.x-470,h-safe.y-68);action_row.size=Vector2(348,68)
+	action_backdrop=Panel.new();stage.add_child(action_backdrop);action_backdrop.mouse_filter=Control.MOUSE_FILTER_IGNORE
+	action_backdrop.position=Vector2(w-safe.x-492,h-safe.y-78);action_backdrop.size=Vector2(430,74)
+	var capsule:=StyleBoxFlat.new();capsule.bg_color=Color(56/255.0,43/255.0,20/255.0,.78);capsule.border_color=Color("f5cf8d");capsule.set_border_width_all(1);capsule.set_corner_radius_all(37);action_backdrop.add_theme_stylebox_override("panel",capsule)
+	action_row=HBoxContainer.new();action_row.name="Actions";action_row.add_theme_constant_override("separation",5);stage.add_child(action_row)
+	action_row.position=Vector2(w-safe.x-477,h-safe.y-76);action_row.size=Vector2(363,70)
 	for data in [["사냥","spear"],["채집","berries"],["제작","hammer"],["건설","hut"],["임무","scroll"],["가방","bag"]]:
 		var caption:String=data[0]
 		var callback:Callable=gather_action if caption=="채집" else build_action if caption=="건설" else quest_details if caption=="임무" else inventory_summary if caption=="가방" else func():toast("아직 준비 중인 기능입니다")
-		var b:=button(action_row,caption,callback,false,data[1]);b.custom_minimum_size=Vector2(54,68)
+		var b:=button(action_row,caption,callback,false,data[1]);b.custom_minimum_size=Vector2(56,70)
 		b.icon=DemoArt.play_icon(data[1])
 		if caption=="임무":b.name="JournalButton"
 		if caption=="가방":b.name="InventoryButton"
-		var action_style:=dark.duplicate();action_style.bg_color=Color(.24,.17,.09,.72);action_style.border_color=Color(.94,.77,.42,.7);action_style.set_border_width_all(1)
+		var action_style:=StyleBoxFlat.new();action_style.bg_color=Color.TRANSPARENT;action_style.set_content_margin_all(2)
 		for state in ["normal","hover","pressed","disabled"]:b.add_theme_stylebox_override(state,action_style)
-		b.add_theme_font_size_override("font_size",12)
-		b.vertical_icon_alignment=VERTICAL_ALIGNMENT_TOP;b.icon_alignment=HORIZONTAL_ALIGNMENT_CENTER;b.add_theme_constant_override("icon_max_width",42)
+		b.add_theme_font_size_override("font_size",14)
+		b.vertical_icon_alignment=VERTICAL_ALIGNMENT_TOP;b.icon_alignment=HORIZONTAL_ALIGNMENT_CENTER;b.add_theme_constant_override("icon_max_width",48)
 		b.add_theme_color_override("font_color",Color("fff0cd"));b.add_theme_color_override("font_disabled_color",Color("c0b299"))
 		if caption=="채집":gather_button=b
 		if caption=="건설":build_button=b
@@ -466,6 +473,7 @@ func _process(delta: float) -> void:
 			task_bar.value = (1.0-task_remaining/task_total)*100
 			if task_remaining <= 0: finish_task()
 	action_row.visible=actions_expanded
+	action_backdrop.visible=actions_expanded
 	apply_action_skin("접기" if actions_expanded else "건설" if world.near_site() and model.can_build() else "채집" if not world.nearest().is_empty() else "메뉴")
 	var near := world.nearest()
 	var working_hint := "채집 중… 이동하면 멈춥니다" if task=="gather" else "보금자리 건설 중…"
@@ -719,7 +727,7 @@ func _notification(what: int) -> void:
 func apply_action_skin(caption:String)->void:
 	if action_toggle.get_meta("caption","")==caption:return
 	action_toggle.set_meta("caption",caption)
-	action_toggle.text=caption if caption!="접기" else ""
+	action_toggle.text=caption
 	action_toggle.add_theme_font_size_override("font_size",15)
 	action_toggle.add_theme_constant_override("icon_max_width",43)
 	action_toggle.icon_alignment=HORIZONTAL_ALIGNMENT_CENTER

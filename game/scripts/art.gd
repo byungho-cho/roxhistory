@@ -12,8 +12,8 @@ static func play_icon(key:String)->Texture2D:
 	var files:Dictionary={"spear":"hunt-spear","berries":"gather-berries","hammer":"craft-axe","hut":"build-hut-icon","scroll":"quest-scroll","bag":"inventory-bag","menu":"menu-button","expand":"expand-button"}
 	if not files.has(key):return icon(key)
 	var source:Texture2D=load("res://assets/ui/s40000/"+files[key]+"-v001.png")
-	var texture:=AtlasTexture.new();texture.atlas=source;texture.region=source.get_image().get_used_rect();texture.filter_clip=true
-	play_cache[key]=texture;return texture
+	# Preserve the component's transparent padding and original proportions.
+	play_cache[key]=source;return source
 
 static func icon(key: String) -> Texture2D:
 	if key=="tokens":return preload("res://assets/ui/seed.svg")
