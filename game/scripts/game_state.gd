@@ -54,7 +54,18 @@ func gather(node_id: String, pos: Vector2 = Vector2.ZERO) -> bool:
 
 func can_build() -> bool:
 	var c := DemoConfig.get_data()
-	return not state.is_empty() and not state.built and state.wood >= c.wood_cost and state.stone >= c.stone_cost
+	return not state.is_empty() and built_count() < DemoConfig.HOME_GOAL and state.wood >= c.wood_cost and state.stone >= c.stone_cost
+
+func homes() -> Array:
+	if state.has("homes"): return state.homes.duplicate(true)
+	# Migrate the existing one-home save without rerolling or granting again.
+	return [{"style":int(state.get("hut_style",0)),"claimed":bool(state.get("reward_claimed",false))}] if state.get("built",false) else []
+
+func built_count() -> int: return homes().size()
+
+func reward_pending(index: int) -> bool:
+	var list := homes()
+	return index >= 0 and index < list.size() and not list[index].claimed
 
 func build(pos: Vector2 = Vector2.ZERO) -> bool:
 	if busy or not can_build():
@@ -67,18 +78,23 @@ func build(pos: Vector2 = Vector2.ZERO) -> bool:
 	next.built = true
 	# Choose once at the successful transaction; reload/visual effects never reroll.
 	next.hut_style = randi_range(0,2)
+	next.homes = homes()
+	next.homes.append({"style":next.hut_style,"claimed":false})
+	next.hut_style = next.homes[0].style
 	if pos != Vector2.ZERO:
 		next.position = [pos.x,pos.y]
 	var ok := commit(next)
 	busy = false
 	return ok
 
-func claim_reward() -> bool:
-	if busy or state.is_empty() or not state.built or state.reward_claimed:
+func claim_reward(index: int = 0) -> bool:
+	if busy or state.is_empty() or not reward_pending(index):
 		return false
 	busy = true
 	var next := state.duplicate(true)
-	next.reward_claimed = true
+	next.homes = homes()
+	next.homes[index].claimed = true
+	next.reward_claimed = next.homes[0].claimed
 	next.tokens += int(DemoConfig.get_data().reward)
 	var ok := commit(next)
 	busy = false

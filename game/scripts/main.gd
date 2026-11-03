@@ -38,6 +38,10 @@ var gestures: WorldGestures
 var chrome: PlayChrome
 var region_selection: RegionSelection
 var region_snapshot := {}
+var navigation: AutoTravel
+var actions_expanded := false
+var action_row: HBoxContainer
+var action_toggle: DemoButton
 
 func _ready() -> void:
 	gestures=WorldGestures.new(self);add_child(gestures)
@@ -113,13 +117,16 @@ func show_screen(next: String) -> void:
 		"title": title_screen()
 		"region": region_screen()
 		"play": play_hud()
-	var notice_rect := Rect2(safe.x+76,safe.y+56,minf(300,w-safe.x*2-420),48) if screen == "play" else Rect2(safe.x,h-160,minf(480,w*0.48),76)
-	toast_panel = box(stage,notice_rect)
-	toast_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	toast_label = label(toast_panel,"",17,Color("47240e"))
-	toast_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	toast_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	toast_panel.visible = false
+	toast_panel=PanelContainer.new();stage.add_child(toast_panel)
+	toast_panel.position=Vector2(w*.5-120,safe.y+8);toast_panel.size=Vector2(240,38)
+	var toast_style:=StyleBoxFlat.new();toast_style.bg_color=Color(.13,.10,.07,.87);toast_style.set_corner_radius_all(19);toast_style.set_content_margin_all(8)
+	toast_panel.add_theme_stylebox_override("panel",toast_style)
+	toast_panel.mouse_filter=Control.MOUSE_FILTER_IGNORE
+	toast_label=label(toast_panel,"",15,Color("fff0d0"));toast_label.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
+	toast_panel.visible=false
+	if screen in ["onboarding","title"]:
+		var info:=label(stage,"버전 "+str(ProjectSettings.get_setting("application/config/version"))+" · 생성일자 "+str(ProjectSettings.get_setting("application/config/build_date","")),12,Color("fff0d0"))
+		info.position=Vector2(safe.x,h-safe.y-15);info.add_theme_constant_override("outline_size",3);info.add_theme_color_override("font_outline_color",Color("30271b"))
 	sync_audio()
 	if next != previous:
 		var fade := ColorRect.new()
@@ -314,11 +321,18 @@ func chapter_menu() -> void:
 	show_modal("장 선택","1장 · 선사시대의 첫 불씨\n암사동 강변에서 첫 보금자리를 지어 보세요.\n\n다음 장은 준비 중입니다.",[{"text":"돌아가기","action":close_modal},{"text":"1장 선택","primary":true,"action":func():close_modal();new_game_prompt()}])
 
 func new_game_prompt() -> void:
-	if not model.state.is_empty() or model.store.blocked:
-		show_modal("새 여정을 시작할까요?","현재 진행을 초기화합니다. 기존 저장 파일은 별도 보존됩니다.",[
-			{"text":"돌아가기","action":close_modal},{"text":"초기화하고 시작","action":func(): close_modal(); show_screen("region"),"primary":true}])
-	else:
-		show_screen("region")
+	show_modal("새 여정 시작","새로 시작은 진행만 초기화하고 소리 설정을 유지합니다.\n\n완전 초기화는 진행·씨앗·설정을 모두 지우고 첫 실행 안내로 돌아갑니다.",[
+		{"text":"돌아가기","action":close_modal},
+		{"text":"새로 시작","action":func():close_modal();show_screen("region"),"primary":true},
+		{"text":"완전 초기화","action":full_reset}])
+
+func full_reset() -> void:
+	if not model.store.erase_progress():show_error(model.store.message);return
+	settings.clear()
+	if settings.save(prefs_path)!=OK:show_error("설정 초기화를 저장하지 못했습니다.");return
+	model.state.clear();cancel_task()
+	if is_instance_valid(world):remove_child(world);world.queue_free();world=null
+	close_modal();show_screen("onboarding")
 
 func region_screen() -> void:
 	region_selection=RegionSelection.new(self,region_snapshot)
@@ -341,6 +355,8 @@ func enter_game() -> void:
 		world = DemoWorld.new(model)
 		add_child(world)
 		world.feedback.sound_cue.connect(audio.cue)
+	if not is_instance_valid(navigation):
+		navigation=AutoTravel.new(self);add_child(navigation)
 	world.player.set_character_3d(true)
 	world.player.camera.reset_smoothing()
 	show_screen("play")
@@ -351,59 +367,54 @@ func enter_game() -> void:
 				var next := model.state.duplicate(true)
 				next.intro_seen = true
 				if model.commit(next): close_modal()}])
-	elif model.state.built and not model.state.reward_claimed:
-		completion()
+
 
 func play_hud() -> void:
-	var back:=back_button(pause_game);back.position=Vector2(safe.x,h-safe.y-56);back.visible=false
-	var quest_panel:=design_button(stage,"",Rect2(w-safe.x-192,safe.y+120,192,78),focus_objective,false,"")
-	quest_panel.name="QuestPanel"
-	quest_panel.get_node("FigmaSkin").kind="paper";quest_panel.get_node("FigmaSkin").source=FigmaArt.texture("paper");quest_panel.get_node("FigmaSkin").corner=12;quest_panel.get_node("FigmaSkin").queue_redraw()
-	picture(quest_panel,DemoArt.icon("hut"),Rect2(10,8,22,20))
-	objective=label(quest_panel,"",14,Color("49321e"));objective.position=Vector2(14,10);objective.size=Vector2(166,58)
-	joystick=DemoJoystick.new();stage.add_child(joystick);joystick.position=Vector2(safe.x+14,h-safe.y-154)
-	var row:=HBoxContainer.new();row.name="Actions";row.add_theme_constant_override("separation",10);stage.add_child(row)
-	row.position=Vector2(w*.5-163,h-safe.y-72);row.size=Vector2(326,72)
-	for data in [["사냥","spear"],["채집","berries"],["제작","hammer"],["건설","hut"]]:
-		var caption: String=data[0]
-		var callback: Callable=gather_action if caption=="채집" else build_action if caption=="건설" else func():show_modal(caption+" 준비 중","이번 데모에서는 나무와 돌을 모아 움막을 지을 수 있습니다.",[{"text":"돌아가기","action":close_modal}])
-		var b:=design_button(row,caption,Rect2(0,0,74,72),callback,caption=="채집","")
-		var action_skin:=b.get_node("FigmaSkin") as FigmaSlice;action_skin.kind="paper";action_skin.source=FigmaArt.texture("paper");action_skin.corner=13.2;action_skin.queue_redraw()
-		b.custom_minimum_size=Vector2(74,72);b.expand_icon=true;b.icon=DemoArt.icon(data[1]);b.vertical_icon_alignment=VERTICAL_ALIGNMENT_TOP;b.icon_alignment=HORIZONTAL_ALIGNMENT_CENTER
-		b.add_theme_constant_override("icon_max_width",38);b.add_theme_font_size_override("font_size",14)
+	var quest_panel:=button(stage,"",focus_objective);quest_panel.name="QuestPanel";quest_panel.custom_minimum_size=Vector2.ZERO
+	quest_panel.position=Vector2(safe.x,safe.y+68);quest_panel.size=Vector2(215,64)
+	var dark:=StyleBoxFlat.new();dark.bg_color=Color(.15,.13,.09,.78);dark.set_corner_radius_all(10);dark.set_content_margin_all(6)
+	for state in ["normal","hover","pressed"]:quest_panel.add_theme_stylebox_override(state,dark)
+	picture(quest_panel,DemoArt.icon("hut"),Rect2(8,8,26,26))
+	objective=label(quest_panel,"",14,Color("fff0cd"));objective.position=Vector2(38,5);objective.size=Vector2(172,55)
+	joystick=DemoJoystick.new();stage.add_child(joystick);joystick.position=Vector2(safe.x,h-safe.y-140)
+	action_row=HBoxContainer.new();action_row.name="Actions";action_row.add_theme_constant_override("separation",3);stage.add_child(action_row)
+	action_row.position=Vector2(w-safe.x-420,h-safe.y-62);action_row.size=Vector2(348,62)
+	for data in [["사냥","spear"],["채집","berries"],["제작","hammer"],["건설","hut"],["임무","scroll"],["가방","bag"]]:
+		var caption:String=data[0]
+		var callback:Callable=gather_action if caption=="채집" else build_action if caption=="건설" else quest_details if caption=="임무" else inventory_summary if caption=="가방" else func():toast("아직 준비 중인 기능입니다")
+		var b:=button(action_row,caption,callback,false,data[1]);b.custom_minimum_size=Vector2(54,62)
+		b.icon=DemoArt.play_icon(data[1])
+		if caption=="임무":b.name="JournalButton"
+		if caption=="가방":b.name="InventoryButton"
+		b.add_theme_stylebox_override("normal",dark);b.add_theme_stylebox_override("disabled",dark);b.add_theme_font_size_override("font_size",12)
+		b.vertical_icon_alignment=VERTICAL_ALIGNMENT_TOP;b.icon_alignment=HORIZONTAL_ALIGNMENT_CENTER;b.add_theme_constant_override("icon_max_width",34)
+		b.add_theme_color_override("font_color",Color("fff0cd"));b.add_theme_color_override("font_disabled_color",Color("c0b299"))
 		if caption=="채집":gather_button=b
-		elif caption=="건설":build_button=b
-		else:b.modulate=Color(.85,.85,.85,1);b.tooltip_text="준비 중"
-	var journal:=design_button(stage,"",Rect2(w-safe.x-140,h-safe.y-62,56,56),quest_details,false,"scroll");journal.name="JournalButton"
-	var bag:=design_button(stage,"",Rect2(w-safe.x-64,h-safe.y-66,62,62),inventory_summary,false,"bag");bag.name="InventoryButton"
-	for b in [journal,bag]:
-		b.add_theme_stylebox_override("normal",DesignSkin.round_style("dark"));b.get_node("FigmaSkin").hide()
-	context_panel=box(stage,Rect2(safe.x+76,safe.y+106,minf(300,w-safe.x*2-420),48));context_panel.mouse_filter=Control.MOUSE_FILTER_IGNORE;context_panel.visible=false
-	context=label(context_panel,"",15,Color("47240e"));context.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART;context.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
-	task_bar=ProgressBar.new();task_bar.mouse_filter=Control.MOUSE_FILTER_IGNORE;task_bar.show_percentage=false;task_bar.position=Vector2(w*.5-145,h-safe.y-89);task_bar.size=Vector2(290,8);stage.add_child(task_bar);task_bar.visible=false
+		if caption=="건설":build_button=b
+	action_toggle=button(stage,"메뉴",context_action,true,"hut");action_toggle.name="ActionToggle";action_toggle.custom_minimum_size=Vector2.ZERO;action_toggle.position=Vector2(w-safe.x-68,h-safe.y-68);action_toggle.size=Vector2(68,68)
+	action_toggle.add_theme_stylebox_override("normal",DesignSkin.round_style("dark"));action_toggle.add_theme_constant_override("icon_max_width",34);action_toggle.add_theme_font_size_override("font_size",12);action_toggle.vertical_icon_alignment=VERTICAL_ALIGNMENT_TOP;action_toggle.icon_alignment=HORIZONTAL_ALIGNMENT_CENTER
+	var expand:=button(stage,"‹",func():actions_expanded=not actions_expanded);expand.name="ExpandActions";expand.custom_minimum_size=Vector2.ZERO;expand.position=Vector2(w-safe.x-110,h-safe.y-54);expand.size=Vector2(40,44);expand.add_theme_stylebox_override("normal",dark)
+	context_panel=PanelContainer.new();stage.add_child(context_panel);context_panel.position=Vector2(w*.5-145,h-safe.y-108);context_panel.size=Vector2(290,32);context_panel.add_theme_stylebox_override("panel",dark);context_panel.mouse_filter=Control.MOUSE_FILTER_IGNORE
+	context=label(context_panel,"",13,Color("fff0cd"));context.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
+	task_bar=ProgressBar.new();task_bar.mouse_filter=Control.MOUSE_FILTER_IGNORE;task_bar.show_percentage=false;task_bar.position=Vector2(w*.5-100,h-safe.y-120);task_bar.size=Vector2(200,7);stage.add_child(task_bar);task_bar.visible=false
 	chrome=PlayChrome.new(self);stage.add_child(chrome);chrome.size=Vector2(w,h)
 	stage.add_child(ConstructionProgress.new(self))
-	var portrait_hit:=design_button(stage,"",Rect2(safe.x,safe.y+26,62,62),pause_game,false,"");portrait_hit.name="PortraitPause"
+	var portrait_hit:=button(stage,"",pause_game);portrait_hit.name="PortraitPause";portrait_hit.custom_minimum_size=Vector2.ZERO;portrait_hit.position=safe;portrait_hit.size=Vector2(58,58)
 	for state in ["normal","hover","pressed"]:portrait_hit.add_theme_stylebox_override(state,StyleBoxEmpty.new())
-	portrait_hit.get_node("FigmaSkin").hide()
-	portrait_hit.tooltip_text="일시 정지 · 소리 설정"
 	update_hud()
+
+func context_action() -> void:
+	if actions_expanded:actions_expanded=false
+	elif world.near_site() and model.can_build():build_action()
+	elif not world.nearest().is_empty():gather_action()
+	else:actions_expanded=true
 
 func inventory_summary() -> void:
 	show_modal("가진 재료","나무 %d개 · 돌 %d개\n완료 기념 씨앗 %d개"%[model.state.wood,model.state.stone,model.state.tokens],[{"text":"돌아가기","action":close_modal}])
 
 func update_hud() -> void:
-	if screen != "play" or not is_instance_valid(chrome) or model.state.is_empty():
-		return
-	if model.state.built:
-		var goal_panel:Control=objective.get_parent()
-		goal_panel.custom_minimum_size=Vector2(178,48)
-		goal_panel.size=Vector2(178,48);goal_panel.position.x=w-safe.x-178
-		objective.position=Vector2(36,8);objective.size=Vector2(136,32)
-		objective.text = "보금자리 완성 ✓" if model.state.reward_claimed else "완성 · 보상 받기"
-	else:
-		var c := DemoConfig.get_data()
-		objective.text = "       움막을 지어라.\n돌 %d/%d개 · 나무 %d/%d개" % [mini(model.state.stone,c.stone_cost),c.stone_cost,mini(model.state.wood,c.wood_cost),c.wood_cost]
+	if screen!="play" or not is_instance_valid(objective) or model.state.is_empty():return
+	objective.text="움집 3채를 지어라 · %d/3\n나무 %d/1 · 돌 %d/1"%[model.built_count(),mini(model.state.wood,1),mini(model.state.stone,1)] if model.built_count()<3 else "정착지 완성 · 3/3 ✓\n건물 위 씨앗을 받아 주세요"
 
 func _process(delta: float) -> void:
 	if is_instance_valid(toast_panel): toast_panel.visible = toast_time > 0 and toast_label.text != ""
@@ -423,6 +434,7 @@ func _process(delta: float) -> void:
 		if is_instance_valid(joystick): direction = joystick.value
 		var keyboard := Vector2(float(Input.is_physical_key_pressed(KEY_D) or Input.is_physical_key_pressed(KEY_RIGHT))-float(Input.is_physical_key_pressed(KEY_A) or Input.is_physical_key_pressed(KEY_LEFT)),float(Input.is_physical_key_pressed(KEY_S) or Input.is_physical_key_pressed(KEY_DOWN))-float(Input.is_physical_key_pressed(KEY_W) or Input.is_physical_key_pressed(KEY_UP)))
 		if keyboard.length() > 0: direction = keyboard.normalized()
+	if direction.length()>0.12 and is_instance_valid(navigation):navigation.cancel()
 	world.player.direction = direction
 	world.player.presentation_paused = modal or not application_active
 	if task != "":
@@ -449,30 +461,35 @@ func _process(delta: float) -> void:
 			world.feedback.update_work(task_total-task_remaining,task_total)
 			task_bar.value = (1.0-task_remaining/task_total)*100
 			if task_remaining <= 0: finish_task()
+	action_row.visible=actions_expanded
+	stage.get_node("ExpandActions").position.x=w-safe.x-(460 if actions_expanded else 110)
+	action_toggle.text="접기" if actions_expanded else "건설" if world.near_site() and model.can_build() else "채집" if not world.nearest().is_empty() else "메뉴"
+	action_toggle.icon=DemoArt.play_icon("hut" if action_toggle.text=="건설" else "berries" if action_toggle.text=="채집" else "menu")
+	if actions_expanded:action_toggle.icon=null;action_toggle.text="×"
 	var near := world.nearest()
 	var working_hint := "채집 중… 이동하면 멈춥니다" if task=="gather" else "보금자리 건설 중…"
 	gather_button.hint_text=working_hint if task!="" else ("자원 가까이 이동해 주세요" if near.is_empty() else "작업을 마친 뒤 사용할 수 있어요")
-	build_button.hint_text=working_hint if task!="" else ("완성된 보금자리입니다" if model.state.built else ("나무 1개와 돌 1개가 필요해요" if not model.can_build() else "금빛 건설 터 안으로 이동해 주세요"))
+	build_button.hint_text=working_hint if task!="" else ("완성된 보금자리입니다" if (model.built_count()>=DemoConfig.HOME_GOAL) else ("나무 1개와 돌 1개가 필요해요" if not model.can_build() else "금빛 건설 터 안으로 이동해 주세요"))
 	gather_button.set_working(task=="gather");build_button.set_working(task=="build")
 	var build_ready: bool=model.can_build() and world.near_site()
 	if build_button.get_meta("ready",false)!=build_ready:
 		build_button.set_meta("ready",build_ready)
-		build_button.get_node("FigmaSkin").modulate=Color(1.1,1.05,.9) if build_ready else Color.WHITE
+		build_button.modulate=Color(1.1,1.05,.9) if build_ready else Color.WHITE
 	gather_button.text="채집 중" if task=="gather" else "채집"
 	build_button.text="건설 중" if task=="build" else "건설"
 	gather_button.disabled = modal or task != "" or near.is_empty()
-	build_button.disabled = modal or task != "" or model.state.built or not world.near_site() or not model.can_build()
+	build_button.disabled = modal or task != "" or (model.built_count()>=DemoConfig.HOME_GOAL) or not world.near_site() or not model.can_build()
 	if task == "":
 		context.text = ""
-		if world.near_site() and not model.state.built:
+		if world.near_site() and not (model.built_count()>=DemoConfig.HOME_GOAL):
 			context.text = "보금자리 터 · 건설 가능" if model.can_build() else "보금자리 터 · 나무와 돌을 모아 주세요"
-		elif not model.state.built and world.player.position.distance_to(world.site.position) < 150:
+		elif not (model.built_count()>=DemoConfig.HOME_GOAL) and world.player.position.distance_to(world.site.position) < 150:
 			context.text = "보금자리 터 아래쪽 입구로 이동해 주세요"
 		elif model.can_build():
 			context.text = "재료 준비 완료 · 금빛 터에서 건설"
 		elif not near.is_empty():
 			var ready: bool = model.state[near.kind] >= (DemoConfig.get_data().wood_cost if near.kind == "wood" else DemoConfig.get_data().stone_cost)
-			context.text = ("나무 준비 완료 · 돌을 찾아보세요" if near.kind == "wood" else "돌 준비 완료 · 나무를 찾아보세요") if ready and not model.state.built else ("나무" if near.kind == "wood" else "돌")+" · 채집 버튼을 누르세요"
+			context.text = ("나무 준비 완료 · 돌을 찾아보세요" if near.kind == "wood" else "돌 준비 완료 · 나무를 찾아보세요") if ready and not (model.built_count()>=DemoConfig.HOME_GOAL) else ("나무" if near.kind == "wood" else "돌")+" · 채집 버튼을 누르세요"
 	autosave += delta
 	if autosave >= 8 and not modal and task == "":
 		autosave = 0
@@ -500,27 +517,16 @@ func gather_action() -> void:
 	context.text = "자원 옆에 자리 잡는 중" if gather_approach else "채집 중… 이동하면 멈춥니다"
 
 func build_action() -> void:
-	if modal or gestures.blocked or task != "" or model.state.built or not world.near_site(): return
-	var c := DemoConfig.get_data()
-	if not model.can_build():
-		toast("자원이 부족합니다. 나무 %d · 돌 %d가 필요해요." % [c.wood_cost,c.stone_cost])
-		return
-	show_modal("첫 보금자리 건설","나무 %d · 돌 %d를 사용해 이곳에 움집을 짓습니다." % [c.wood_cost,c.stone_cost],[
-		{"text":"돌아가기","action":close_modal},{"text":"건설 시작","primary":true,"action":func():
-			close_modal()
-			task = "build"
-			world.feedback.begin("build")
-			world.player.face_target(world.site.position)
-			world.player.set_activity("build")
-			task_total = float(DemoConfig.get_data().build_seconds)
-			task_remaining = task_total
-			task_bar.visible = false
-			toast("",0)
-			context.text = "보금자리 건설 중…"}])
+	if modal or gestures.blocked or task!="" or model.built_count()>=3:return
+	if not model.can_build():toast("나무 1개와 돌 1개가 필요해요");return
+	if not world.near_site():navigation.start("build", "",world.site.position+Vector2(0,65));return
+	task="build";world.feedback.begin("build");world.player.face_target(world.site.position);world.player.set_activity("build")
+	task_total=float(DemoConfig.get_data().build_seconds);task_remaining=task_total;task_bar.visible=false;toast("",0)
 
 func finish_task() -> void:
 	var kind := task
 	var target := task_target
+	var built_at:=world.site.position
 	cancel_task()
 	if kind == "gather":
 		if model.gather(target,world.player.position):
@@ -530,10 +536,11 @@ func finish_task() -> void:
 			toast("",0)
 
 	elif kind == "build" and model.build(world.player.position):
-		world.feedback.built()
-		completion()
+		world.feedback.built(built_at)
+		toast("건물 위 씨앗을 눌러 보상을 받으세요",2)
 
 func cancel_task() -> void:
+	if is_instance_valid(navigation):navigation.cancel()
 	if is_instance_valid(audio): audio.stop_work()
 	task = ""
 	task_target = ""
@@ -545,30 +552,38 @@ func cancel_task() -> void:
 	if is_instance_valid(task_bar): task_bar.visible = false
 
 func completion() -> void:
-	if model.state.reward_claimed: return
-	var reward: int = DemoConfig.get_data().reward
-	show_modal("첫 보금자리 완성!","강변에 첫 보금자리가 생겼어요!\n씨앗 %d개를 받아 여정을 이어가세요." % reward,[
-		{"text":"보상 받고 계속하기","primary":true,"action":func():
-			if model.claim_reward():
-				close_modal(); world.feedback.rewarded(); toast("보금자리 완성 · 저장됨",2)}],true)
+	toast("완성된 건물 위 씨앗을 눌러 주세요")
+
+func claim_home(index:int) -> void:
+	if model.claim_reward(index):
+		world.feedback.rewarded()
+		for i in 6:chrome.gained("tokens",world.homes[index].position+Vector2((i-3)*8,-180),i*.055)
+
+func world_tap(screen_point:Vector2) -> void:
+	if modal or gestures.blocked:return
+	var at:Vector2=world.get_global_transform_with_canvas().affine_inverse()*screen_point
+	for i in model.built_count():
+		if model.reward_pending(i) and Rect2(world.homes[i].position-Vector2(150,245),Vector2(300,260)).has_point(at):claim_home(i);return
+	for n in DemoConfig.get_data().nodes:
+		var point:=DemoConfig.point(n.position)
+		if Rect2(point-Vector2(60,70),Vector2(120,90)).has_point(at):
+			if world.exhausted(n):toast("이 자원은 모두 채집했어요");return
+			cancel_task();navigation.start("gather",n.id,world.gather_stand(point,n.kind));return
+	if model.built_count()<3 and at.distance_to(world.site.position)<115:
+		cancel_task()
+		if not model.can_build():toast("나무 1개와 돌 1개가 필요해요");return
+		navigation.start("build","",world.site.position+Vector2(0,65))
 
 func focus_objective() -> void:
 	if gestures.blocked or modal: return
-	if model.state.built:
+	if (model.built_count()>=DemoConfig.HOME_GOAL):
 		quest_details();return
 	var point:=world.objectives.focus_point()
 	var screen_point: Vector2=world.get_global_transform_with_canvas()*point
 	if not Rect2(Vector2(80,90),Vector2(w-160,h-190)).has_point(screen_point): world.player.guide_to(point+Vector2(0,-35))
 
 func quest_details() -> void:
-	if model.state.built and not model.state.reward_claimed:
-		completion()
-		return
-	var c := DemoConfig.get_data()
-	var text := "완료한 임무입니다. 씨앗 %d개를 보유하고 있습니다." % model.state.tokens
-	if not model.state.reward_claimed:
-		text = "① 반짝이는 자원 가까이 이동\n② 나무 %d · 돌 %d 채집\n③ 금빛 원 안에서 건설\n④ 보상 받기" % [c.wood_cost,c.stone_cost]
-	show_modal("첫 보금자리",text,[{"text":"돌아가기","action":close_modal}])
+	show_modal("정착지를 만들어요","기존 움집 한 채에 새 움집 세 채를 더 지어 주세요.\n\n진행 %d/3 · 건설마다 나무 1개 + 돌 1개\n자원을 누르면 자동 이동하여 채집합니다.\n건설 터를 누르면 이동한 뒤 건설합니다.\n완성된 건물을 누르면 씨앗 10개를 받습니다."%model.built_count(),[{"text":"돌아가기","action":close_modal}])
 
 func pause_game() -> void:
 	cancel_task()

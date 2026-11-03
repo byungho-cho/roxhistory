@@ -2,6 +2,8 @@ class_name DemoConfig
 extends RefCounted
 
 static var data: Dictionary = {}
+const HOME_SITES := [Vector2(730,1030),Vector2(470,650),Vector2(990,740)]
+const HOME_GOAL := 3
 
 static func get_data() -> Dictionary:
 	if data.is_empty():

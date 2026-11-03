@@ -2,7 +2,8 @@ class_name WorldAnimal
 extends Node2D
 
 # True 3D Meshy wildlife composited into the same feet-sorted 2D world as the hero.
-# These supplied meshes have no walking rig: use grounded idle breathing only.
+# Source meshes have no walking rig: soft head/grazing deformation and breathing.
+# Locomotion stays disabled until feet and joint weights are professionally rigged.
 const MODELS := {
 	"bear": "res://assets/animals/bear.glb",
 	"rabbit": "res://assets/animals/rabbit.glb",
@@ -20,6 +21,7 @@ var presentation_paused := false
 var clock := 0.0
 var frame_clock := 0.0
 var render_size := 256
+var motion_materials:Array[ShaderMaterial]=[]
 
 func _ready() -> void:
 	clock = position.x*0.017+position.y*0.023
@@ -54,6 +56,14 @@ func _ready() -> void:
 	scene.add_child(pivot)
 	var model: Node3D = load(MODELS[species]).instantiate()
 	pivot.add_child(model)
+	for mesh in model.find_children("*","MeshInstance3D",true,false):
+		for surface in mesh.mesh.get_surface_count():
+			var source:Material=mesh.get_active_material(surface)
+			if source is StandardMaterial3D and source.albedo_texture:
+				var material:=ShaderMaterial.new();material.shader=preload("res://shaders/wildlife_motion.gdshader")
+				material.set_shader_parameter("coat",source.albedo_texture)
+				material.set_shader_parameter("top",mesh.mesh.get_aabb().end.y)
+				mesh.set_surface_override_material(surface,material);motion_materials.append(material)
 	camera = Camera3D.new()
 	camera.projection = Camera3D.PROJECTION_ORTHOGONAL
 	camera.size = 4.8
@@ -97,6 +107,12 @@ func _process(delta: float) -> void:
 		clock += delta
 		# Stretch around the ground origin by less than one percent; no sliding feet.
 		pivot.scale.y = 1.0+sin(clock*1.6)*0.006
+		var graze:=smoothstep(.25,.65,sin(clock*.5))
+		for material in motion_materials:
+			material.set_shader_parameter("clock",clock)
+			material.set_shader_parameter("grazing",graze)
+			material.set_shader_parameter("walking",0.0)
+		pivot.rotation.y=heading+sin(clock*.23)*.12
 	frame_clock += delta
 	if frame_clock >= 1.0/20.0:
 		frame_clock = fmod(frame_clock,1.0/20.0)

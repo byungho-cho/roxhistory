@@ -1,0 +1,116 @@
+{
+  "suites": 22,
+  "checks": 1480,
+  "results": [
+    {
+      "suite": "regression-a303_art_tests",
+      "checks": 157,
+      "failed": []
+    },
+    {
+      "suite": "regression-a303_audio_tests",
+      "checks": 33,
+      "failed": []
+    },
+    {
+      "suite": "regression-aurora_tests",
+      "checks": 23,
+      "failed": []
+    },
+    {
+      "suite": "regression-environment_review",
+      "checks": 13,
+      "failed": []
+    },
+    {
+      "suite": "regression-environment_tests",
+      "checks": 17,
+      "failed": []
+    },
+    {
+      "suite": "regression-gather_contact_tests",
+      "checks": 160,
+      "failed": []
+    },
+    {
+      "suite": "regression-hero_tests",
+      "checks": 51,
+      "failed": []
+    },
+    {
+      "suite": "regression-hybrid_occlusion",
+      "checks": 13,
+      "failed": []
+    },
+    {
+      "suite": "regression-hybrid_tests",
+      "checks": 30,
+      "failed": []
+    },
+    {
+      "suite": "regression-interaction_tests",
+      "checks": 27,
+      "failed": []
+    },
+    {
+      "suite": "regression-living_map_tests",
+      "checks": 88,
+      "failed": []
+    },
+    {
+      "suite": "regression-panel_transition_tests",
+      "checks": 18,
+      "failed": []
+    },
+    {
+      "suite": "regression-play_experience_tests",
+      "checks": 45,
+      "failed": []
+    },
+    {
+      "suite": "regression-polish_tests",
+      "checks": 68,
+      "failed": []
+    },
+    {
+      "suite": "regression-presentation_tests",
+      "checks": 56,
+      "failed": []
+    },
+    {
+      "suite": "regression-region_tests",
+      "checks": 82,
+      "failed": []
+    },
+    {
+      "suite": "regression-selection_effect_tests",
+      "checks": 36,
+      "failed": []
+    },
+    {
+      "suite": "regression-world_life_tests",
+      "checks": 26,
+      "failed": []
+    },
+    {
+      "suite": "ui-recheck",
+      "checks": 101,
+      "failed": []
+    },
+    {
+      "suite": "character-recheck",
+      "checks": 68,
+      "failed": []
+    },
+    {
+      "suite": "play-state",
+      "checks": 347,
+      "failed": []
+    },
+    {
+      "suite": "play-flow-final",
+      "checks": 21,
+      "failed": []
+    }
+  ]
+}

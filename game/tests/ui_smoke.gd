@@ -65,7 +65,9 @@ func run_tests() -> void:
 	await create_timer(0.15).timeout
 	check(app.world.player.position.x > before.x,"Touch joystick moves player")
 	check(app.joystick.finger == 0,"Joystick owns first finger")
-	var journal: Control = app.stage.get_node("JournalButton")
+	app.actions_expanded=true
+	for i in 4:await process_frame
+	var journal: Control = app.stage.get_node("Actions/JournalButton")
 	await press(journal,1)
 	check(app.modal,"Second finger opens quest while first is held")
 	check(app.joystick.value == Vector2.ZERO,"Popup clears held movement")
@@ -98,16 +100,13 @@ func run_tests() -> void:
 	for entry in DemoConfig.get_data().nodes:
 		while not app.world.exhausted(entry): app.model.gather(entry.id)
 	app.build_action()
-	check(app.modal,"Sufficient resources ask to build")
-	var confirm: Control = app.overlay.get_child(1).get_child(0).get_child(2).get_child(1)
-	await press(confirm)
+	check(not app.modal,"Construction begins without confirmation")
 	check(app.task == "build","Build confirmation starts construction")
 	app.task_remaining = 0.01
 	await create_timer(0.06).timeout
-	check(app.model.state.built and app.modal,"Construction completes and reward dialog opens")
+	check(app.model.state.built and not app.modal and app.model.reward_pending(0),"Construction completes with world reward")
 	await snap("06-complete")
-	var reward: Control = app.overlay.get_child(1).get_child(0).get_child(2).get_child(0)
-	await press(reward)
+	app.world_tap(app.world.get_global_transform_with_canvas()*(app.world.home.position+Vector2(0,-220)))
 	check(app.model.state.reward_claimed and app.model.state.tokens == 10,"Touch reward claimed once")
 	var saved := GameState.new(SaveStore.new("user://tests/session"))
 	check(saved.state.built and saved.state.reward_claimed,"Completed game persists across instances")

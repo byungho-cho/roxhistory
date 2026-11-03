@@ -8,6 +8,7 @@ var art_nodes := {}
 var resource_labels := {}
 var site: Node2D
 var home: EnvironmentProp
+var homes: Array[EnvironmentProp] = []
 var water: Polygon2D
 var environment_props: Array[EnvironmentProp] = []
 var effects_enabled := true
@@ -45,11 +46,7 @@ func _ready() -> void:
 	add_child(water)
 	polygon_body(PackedVector2Array(RIVER_POLYGON))
 	prop("hut",Vector2(700,510),380,Vector2(270,100),"ExistingHut")
-	prop("hut",Vector2(360,720),390,Vector2(285,110),"VillageHut")
-	prop("hut",Vector2(990,740),400,Vector2(260,100),"RiversideHut")
 	get_node("ExistingHut").set_hut_style(0)
-	get_node("VillageHut").set_hut_style(1)
-	get_node("RiversideHut").set_hut_style(2)
 	prop("props",Vector2(1140,790),100,Vector2(60,24),"RiversidePottery")
 	prop("props",Vector2(700,610),108,Vector2(65,28),"PotteryAndGrindingStone")
 	prop("props",Vector2(570,935),100,Vector2(60,24),"FishingNet")
@@ -97,8 +94,10 @@ func _ready() -> void:
 	site = Node2D.new()
 	site.position = DemoConfig.point(DemoConfig.get_data().build_site)
 	add_child(site)
-	home = prop("hut",site.position,340,Vector2.ZERO,"QuestHome")
-	home.set_hut_style(int(model.state.get("hut_style",0)))
+	for i in DemoConfig.HOME_GOAL:
+		var hut := prop("hut",DemoConfig.HOME_SITES[i],340,Vector2.ZERO,"QuestHome"+str(i))
+		homes.append(hut)
+	home=homes[0]
 	player = DemoPlayer.new()
 	player.position = DemoConfig.point(model.state.position)
 	add_child(player)
@@ -176,18 +175,22 @@ func refresh() -> void:
 	for n in DemoConfig.get_data().nodes:
 		art_nodes[n.id].modulate = Color(0.62,0.59,0.48,0.6) if exhausted(n) else Color.WHITE
 		resource_labels[n.id].text = "%s %d/%d" % ["나무" if n.kind == "wood" else "돌",int(n.charges)-int(model.state.depleted.get(n.id,0)),int(n.charges)]
-	home.visible = model.state.built
-	if model.state.built: home.set_hut_style(int(model.state.get("hut_style",0)))
-	if model.state.built and not has_node("HomeCollision"):
-		var body := StaticBody2D.new()
-		body.name = "HomeCollision"
-		body.position = site.position+Vector2(0,-60)
-		var collision := CollisionShape2D.new()
-		var box := RectangleShape2D.new()
-		box.size = Vector2(220,120)
-		collision.shape = box
-		body.add_child(collision)
-		add_child(body)
+	var saved_homes:=model.homes()
+	for i in homes.size():
+		homes[i].visible=i<saved_homes.size()
+		if i>=saved_homes.size():continue
+		homes[i].set_hut_style(int(saved_homes[i].style))
+		if not has_node("HomeCollision"+str(i)):
+			var body := StaticBody2D.new()
+			body.name = "HomeCollision"+str(i)
+			body.position = homes[i].position+Vector2(0,-60)
+			var collision := CollisionShape2D.new()
+			var shape := RectangleShape2D.new()
+			shape.size = Vector2(220,120)
+			collision.shape = shape
+			body.add_child(collision)
+			add_child(body)
+	site.position=DemoConfig.HOME_SITES[mini(model.built_count(),DemoConfig.HOME_GOAL-1)]
 	queue_redraw()
 
 func exhausted(n: Dictionary) -> bool:
@@ -204,7 +207,7 @@ func nearest() -> Dictionary:
 	return result
 
 func near_site() -> bool:
-	return player.position.distance_to(site.position) < 150 and player.position.y >= site.position.y
+	return model.built_count()<DemoConfig.HOME_GOAL and player.position.distance_to(site.position) < 150 and player.position.y >= site.position.y
 
 func _process(_delta: float) -> void:
 	if not is_instance_valid(player): return
@@ -217,12 +220,13 @@ func _process(_delta: float) -> void:
 
 func _draw() -> void:
 	if not is_instance_valid(player): return
-	for n in DemoConfig.get_data().nodes:
-		var p := DemoConfig.point(n.position)
-		draw_set_transform(p,0,Vector2(1,0.42))
-		draw_arc(Vector2.ZERO,63,0,TAU,48,Color("ffe39b") if n.id == selected else Color(0.95,0.81,0.43,0.45),3,true)
-		draw_set_transform(Vector2.ZERO)
-	if not model.state.built:
+	for i in model.built_count():
+		if model.reward_pending(i):
+			var at:Vector2=homes[i].position+Vector2(0,-220)
+			draw_circle(at,26,Color(.22,.15,.07,.85))
+			draw_arc(at,27,0,TAU,40,Color("ffe6a1"),2,true)
+			draw_texture_rect(DemoArt.icon("tokens"),Rect2(at-Vector2(19,19),Vector2(38,38)),false)
+	if model.built_count()<DemoConfig.HOME_GOAL:
 		draw_set_transform(site.position,0,Vector2(1,0.50))
 		draw_circle(Vector2.ZERO,112,Color(0.43,0.30,0.14,0.18))
 		draw_arc(Vector2.ZERO,110,0,TAU,64,Color("ffe2a5"),4,true)

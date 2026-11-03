@@ -34,6 +34,14 @@ func valid(s: Variant) -> bool:
 		return false
 	if s.has("hut_style") and (not (s.hut_style is int or s.hut_style is float) or s.hut_style != int(s.hut_style) or s.hut_style < 0 or s.hut_style > 2):
 		return false
+	if s.has("homes"):
+		if not s.homes is Array or s.homes.size() > DemoConfig.HOME_GOAL: return false
+		for home in s.homes:
+			if not home is Dictionary or not home.get("claimed") is bool: return false
+			var style: Variant = home.get("style")
+			if not (style is int or style is float) or style != int(style) or style < 0 or style > 2: return false
+		if s.built != (s.homes.size()>0): return false
+		if not s.homes.is_empty() and s.reward_claimed != s.homes[0].claimed: return false
 	var allowed := {}
 	for n in DemoConfig.get_data().nodes:
 		allowed[n.id] = n.charges
@@ -42,6 +50,21 @@ func valid(s: Variant) -> bool:
 			return false
 		if s.depleted[k] < 0 or s.depleted[k] > allowed[k] or s.depleted[k] != int(s.depleted[k]):
 			return false
+	return true
+
+func erase_progress() -> bool:
+	# Only this game's save files, including reset backups; never traverse folders.
+	var absolute:=ProjectSettings.globalize_path(directory)
+	var folder:=DirAccess.open(absolute)
+	if folder==null:
+		message="저장 폴더를 열지 못해 초기화를 중단했습니다."
+		return false
+	for name in folder.get_files():
+		if name == "save.json" or name == "save.backup.json" or name == "save.pending.json" or (name.begins_with("save.") and name.ends_with(".json")):
+			if DirAccess.remove_absolute(absolute.path_join(name)) != OK:
+				message = "진행 초기화를 완료하지 못했습니다. 저장 공간을 확인해 주세요."
+				return false
+	blocked=false;recovered=false;message=""
 	return true
 
 func _read(file: String) -> Dictionary:

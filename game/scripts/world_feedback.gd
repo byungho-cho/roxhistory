@@ -18,6 +18,7 @@ var preview: Node2D
 var roof: Sprite2D
 var preview_progress := 0.0
 var celebration := 0.0
+var celebration_point := Vector2.ZERO
 
 func _init(owner_world: DemoWorld) -> void: world = owner_world
 func _ready() -> void:
@@ -47,6 +48,7 @@ func begin(kind: String, id := "") -> void:
 	world.player.external_work_clock = true
 	preview_progress = 0
 	preview.visible = kind == "build"
+	preview.position = world.site.position
 	roof.modulate.a = 0.0
 	remember("begin:"+kind)
 	world.objectives.redraw()
@@ -102,9 +104,10 @@ func gathered(id: String) -> void:
 	remember("credit:"+kind)
 	sound_cue.emit("gain")
 
-func built() -> void:
+func built(at: Vector2 = Vector2.INF) -> void:
 	celebration = 1.5
-	burst(world.site.position+Vector2(0,-90),Color("ffe2a0"),24,1.1)
+	celebration_point=world.site.position if not at.is_finite() else at
+	burst(celebration_point+Vector2(0,-90),Color("ffe2a0"),24,1.1)
 	remember("built")
 	sound_cue.emit("complete")
 
@@ -131,9 +134,9 @@ func _draw() -> void:
 	if world.selected != "" and world.art_nodes.has(world.selected):
 		var at: Vector2 = world.art_nodes[world.selected].position
 		draw_set_transform(at,0,Vector2(1,0.42))
-		draw_arc(Vector2.ZERO,65+sin(pulse*3)*2,0,TAU,48,Color(1,0.88,0.53,0.85),4,true)
+		draw_arc(Vector2.ZERO,40+sin(pulse*3),0,TAU,48,Color(1,0.88,0.53,0.60),2,true)
 		draw_set_transform(Vector2.ZERO)
-		var tip := at+Vector2(0,-110+sin(pulse*3)*3)
+		var tip := at+Vector2(0,-65+sin(pulse*3)*3)
 		draw_colored_polygon(PackedVector2Array([tip,tip+Vector2(-8,-10),tip+Vector2(8,-10)]),Color("ffe5aa"))
 	if activity == "build":
 		var p: Vector2 = world.site.position
@@ -163,6 +166,6 @@ func _draw() -> void:
 		draw_string_outline(font,at,n.text,HORIZONTAL_ALIGNMENT_LEFT,-1,28,3,Color(0.18,0.12,0.06,alpha))
 		draw_string(font,at,n.text,HORIZONTAL_ALIGNMENT_LEFT,-1,28,Color(1,0.94,0.75,alpha))
 	if celebration > 0:
-		draw_set_transform(world.site.position,0,Vector2(1,0.45))
+		draw_set_transform(celebration_point,0,Vector2(1,0.45))
 		draw_arc(Vector2.ZERO,115+(1.5-celebration)*35,0,TAU,64,Color(1,0.9,0.61,celebration/1.5),5,true)
 		draw_set_transform(Vector2.ZERO)

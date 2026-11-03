@@ -4,8 +4,17 @@ extends RefCounted
 static var sheet: Texture2D = preload("res://assets/figma/20204.png")
 static var cache := {}
 static var shared_theme: Theme
+static var play_cache:Dictionary={}
+static func play_icon(key:String)->Texture2D:
+	if play_cache.has(key):return play_cache[key]
+	var files:Dictionary={"spear":"hunt-spear","berries":"gather-berries","hammer":"craft-axe","hut":"build-hut-icon","scroll":"quest-scroll","bag":"inventory-bag","menu":"menu-button","expand":"expand-button"}
+	if not files.has(key):return icon(key)
+	var source:Texture2D=load("res://assets/ui/s40000/"+files[key]+"-v001.png")
+	var texture:=AtlasTexture.new();texture.atlas=source;texture.region=source.get_image().get_used_rect();texture.filter_clip=true
+	play_cache[key]=texture;return texture
 
 static func icon(key: String) -> Texture2D:
+	if key=="tokens":return preload("res://assets/ui/seed.svg")
 	if FigmaArt.CROPS.has(key) or FigmaArt.CONTROL_CROPS.has(key):return FigmaArt.texture(key)
 	if key=="meat":return FigmaArt.texture("meat.png")
 	if cache.has(key):

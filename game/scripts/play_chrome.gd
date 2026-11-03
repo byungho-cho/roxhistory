@@ -5,34 +5,47 @@ var flights: Array[Dictionary]=[]
 var pulse := {"wood":0.0,"stone":0.0,"tokens":0.0}
 var styles: Dictionary={}
 var portrait: Texture2D
+var reveal := 0.0
+var resource_alpha := .75
+var displayed_tokens := 0.0
+var token_target := 0.0
 var last_map_position := Vector2.INF
 func _init(owner_app: Node) -> void: app=owner_app
 func _ready() -> void:
+	displayed_tokens=float(app.model.state.tokens);token_target=displayed_tokens
 	texture_filter=CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	app.model.changed.connect(queue_redraw)
 	resized.connect(queue_redraw)
 	mouse_filter=Control.MOUSE_FILTER_IGNORE
 	if ResourceLoader.exists("res://assets/ui/hero_portrait.png"): portrait=load("res://assets/ui/hero_portrait.png")
 func slot(kind: String) -> Rect2:
-	var i: int=["wood","stone","meat","berries","tokens"].find(kind)
-	if kind=="tokens":return Rect2(app.w-app.safe.x-62,app.h-app.safe.y-66,62,62)
-	return Rect2(Vector2(app.w-app.safe.x-390+i*68,app.safe.y+5),Vector2(66,36))
-func gained(kind: String, at: Vector2) -> void:
-	flights.append({"kind":kind,"world":at,"age":0.0})
-func clear_effects() -> void: flights.clear();queue_redraw()
+	var i:int=["wood","stone","tokens"].find(kind)
+	return Rect2(Vector2(app.w-app.safe.x-330+i*70,app.safe.y+5),Vector2(68,36))
+func gained(kind:String,at:Vector2,delay:float=0.0) -> void:
+	reveal=5.0
+	flights.append({"kind":kind,"world":at,"age":-delay})
+func clear_effects() -> void:
+	flights.clear();displayed_tokens=float(app.model.state.get("tokens",0));token_target=displayed_tokens;queue_redraw()
 func _process(delta: float) -> void:
+	var previous_alpha:=resource_alpha
+	var previous_tokens:=displayed_tokens
+	reveal=maxf(0,reveal-delta)
+	resource_alpha=move_toward(resource_alpha,1.0 if reveal>0 else .75,delta*.5)
+	displayed_tokens=move_toward(displayed_tokens,token_target,delta*24)
 	var moving_map := false
 	if is_instance_valid(app.world):
 		var p: Vector2=app.world.player.position
 		moving_map=p!=last_map_position
 		last_map_position=p
-	var active := moving_map or not flights.is_empty()
+	var active := moving_map or not flights.is_empty() or previous_alpha!=resource_alpha or previous_tokens!=displayed_tokens
 	for key in pulse: active=active or pulse[key]>0
 	if not active:return
 	for key in pulse: pulse[key]=maxf(0,pulse[key]-delta*2.5)
 	for f in flights:
 		f.age+=delta
-		if f.age>=0.85: pulse[f.kind]=1.0
+		if f.age>=0.85:
+			pulse[f.kind]=1.0
+			if f.kind=="tokens":token_target=float(app.model.state.tokens)
 	flights=flights.filter(func(f): return f.age<0.85)
 	queue_redraw()
 func frame(rect: Rect2, fill: Color, border: Color) -> void:
@@ -47,26 +60,18 @@ func _draw() -> void:
 	if not is_instance_valid(app.world) or app.model.state.is_empty(): return
 	var font:=DemoArt.theme().default_font
 	var origin: Vector2=app.safe
-	draw_string(font,origin+Vector2(0,18),"RoxHistory",HORIZONTAL_ALIGNMENT_LEFT,180,21,Color("fff0d1"))
-	draw_circle(origin+Vector2(31,57),31,Color("221b14"))
-	if portrait:draw_texture_rect(portrait,Rect2(origin+Vector2(4,30),Vector2(54,54)),false)
-	draw_arc(origin+Vector2(31,57),31,0,TAU,64,Color("fff7e0"),3,true)
-	draw_string(font,origin+Vector2(74,44),"새벽 · Lv.—",HORIZONTAL_ALIGNMENT_LEFT,150,15,Color("fff1d4"))
-	frame(Rect2(origin+Vector2(74,53),Vector2(145,15)),Color("bd2d17"),Color("a77942"))
-	draw_string(font,origin+Vector2(121,65),"— / —",HORIZONTAL_ALIGNMENT_LEFT,75,12,Color("fff4da"))
-	frame(Rect2(origin+Vector2(74,74),Vector2(122,9)),Color("4b8a32"),Color("a77942"))
-	draw_set_transform(Vector2(app.w-app.safe.x-394,app.safe.y))
-	FigmaSlice.paint(self,FigmaArt.texture("paper"),Vector2(280,44),"paper",10)
-	draw_set_transform(Vector2.ZERO)
-	for key in ["wood","stone","meat","berries"]:
-		var rect:=slot(key);var beat: float=pulse.get(key,0.0)
-		var tex:=DemoArt.icon(key)
-		draw_texture_rect(tex,Rect2(rect.position+Vector2(6,6),Vector2(28,28)),false)
-		draw_string(font,rect.position+Vector2(36,27),str(int(app.model.state[key])) if app.model.state.has(key) else "—",HORIZONTAL_ALIGNMENT_LEFT,30,16,Color("49321e"))
-		if beat>0:
-			var c:=rect.position+Vector2(65,8)
-			draw_line(c-Vector2(5,0),c+Vector2(5,0),Color(1,.9,.5,beat),2,true)
-			draw_line(c-Vector2(0,5),c+Vector2(0,5),Color(1,.9,.5,beat),2,true)
+	frame(Rect2(origin,Vector2(205,56)),Color(.16,.13,.09,.68),Color(.65,.48,.22,.3))
+	draw_circle(origin+Vector2(27,27),28,Color("221b14"))
+	if portrait:draw_texture_rect(portrait,Rect2(origin+Vector2(2,2),Vector2(50,50)),false)
+	draw_arc(origin+Vector2(27,27),28,0,TAU,64,Color("dfc287"),2,true)
+	draw_string(font,origin+Vector2(64,22),"새벽 · 암사동",HORIZONTAL_ALIGNMENT_LEFT,138,16,Color("fff1d4"))
+	draw_string(font,origin+Vector2(64,43),"정착지  %d / 3"%app.model.built_count(),HORIZONTAL_ALIGNMENT_LEFT,136,12,Color("d6e5ab"))
+	for key in ["wood","stone","tokens"]:
+		var rect:=slot(key);var beat:float=pulse.get(key,0.0)
+		frame(rect,Color(.15,.12,.08,resource_alpha*.66),Color(.65,.48,.22,resource_alpha*.2))
+		var extent:=28.0+beat*4
+		draw_texture_rect(DemoArt.icon(key),Rect2(rect.position+Vector2(3,3),Vector2(extent,extent)),false,Color(1,1,1,resource_alpha))
+		draw_string(font,rect.position+Vector2(34,25),str(int(displayed_tokens)) if key=="tokens" else str(int(app.model.state[key])),HORIZONTAL_ALIGNMENT_LEFT,32,15,Color(1,.96,.85,resource_alpha))
 	var center:=Vector2(app.w-app.safe.x-50,app.safe.y+50)
 	draw_circle(center,51,Color("49321e"))
 	var points:=PackedVector2Array();var uv:=PackedVector2Array()
@@ -80,6 +85,7 @@ func _draw() -> void:
 	draw_circle(dot,4,Color("ffe28b"));draw_arc(dot,5,0,TAU,16,Color("49321e"),1,true)
 	draw_string(font,center+Vector2(-5,-33),"N",HORIZONTAL_ALIGNMENT_LEFT,20,12,Color("fff2cf"))
 	for f in flights:
+		if f.age<0:continue
 		var from: Vector2=app.world.get_global_transform_with_canvas()*f.world
 		var to:=slot(f.kind).get_center()
 		var t: float=clampf(f.age/0.85,0,1)
