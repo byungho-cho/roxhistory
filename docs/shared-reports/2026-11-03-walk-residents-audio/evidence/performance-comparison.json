@@ -1,0 +1,57 @@
+{
+  "before": {
+    "apk": "RoxHistory-0.1.26-20261103-174456.apk",
+    "cold": {
+      "draw_calls": 180.0,
+      "frames": 120,
+      "gpu": "Android Emulator OpenGL ES Translator (NVIDIA GeForce RTX 5060/PCIe/SSE2)",
+      "mean_ms": 33.9145833333333,
+      "mode": "3D",
+      "p95_ms": 67.683,
+      "physics_ms": 6.022,
+      "primitives": 164846.0,
+      "process_ms": 46.078,
+      "viewport": "(960.0, 540.0)"
+    },
+    "warm": {
+      "draw_calls": 180.0,
+      "frames": 120,
+      "gpu": "Android Emulator OpenGL ES Translator (NVIDIA GeForce RTX 5060/PCIe/SSE2)",
+      "mean_ms": 28.2478833333333,
+      "mode": "3D",
+      "p95_ms": 41.168,
+      "physics_ms": 4.459,
+      "primitives": 164846.0,
+      "process_ms": 31.215,
+      "viewport": "(960.0, 540.0)"
+    }
+  },
+  "after": {
+    "apk": "RoxHistory-0.1.27-20261103-210151.apk",
+    "cold": {
+      "draw_calls": 185.0,
+      "frames": 120,
+      "gpu": "Android Emulator OpenGL ES Translator (NVIDIA GeForce RTX 5060/PCIe/SSE2)",
+      "mean_ms": 27.6592833333333,
+      "mode": "3D",
+      "p95_ms": 40.634,
+      "physics_ms": 5.09,
+      "primitives": 100977.0,
+      "process_ms": 39.387,
+      "viewport": "(960.0, 540.0)"
+    },
+    "warm": {
+      "draw_calls": 191.0,
+      "frames": 120,
+      "gpu": "Android Emulator OpenGL ES Translator (NVIDIA GeForce RTX 5060/PCIe/SSE2)",
+      "mean_ms": 28.6142166666667,
+      "mode": "3D",
+      "p95_ms": 42.929,
+      "physics_ms": 5.346,
+      "primitives": 196977.0,
+      "process_ms": 33.816,
+      "viewport": "(960.0, 540.0)"
+    }
+  },
+  "conditions": "Same emulator Android15/API35 RTX5060 host, 1280x720, same saved scene and default zoom; no screen recording; 60 warmup frames +120 measured frames; cold and second scene entry separate. Not a physical-device benchmark."
+}
