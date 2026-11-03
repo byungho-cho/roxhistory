@@ -188,6 +188,66 @@
         "method": "Original additive/modal synthesis",
         "third_party_samples": false
       }
+    },
+    {
+      "id": "bgm.first_embers.lightly_bright.v001",
+      "title": "첫 불씨 · 경쾌 1안 (살짝 경쾌한 버전)",
+      "status": "approved",
+      "path": "assets/audio/bgm/approved/first_embers_lightly_bright/v001/listen.mp3",
+      "version": 1,
+      "decision_date": "2026-11-03",
+      "format": "MP3 192 kbps (lossy listening preview; WAV master pending)",
+      "sample_rate_hz": 48000,
+      "channels": 2,
+      "frames": 3544615,
+      "duration_seconds": 73.84614583333334,
+      "bytes": 1773633,
+      "sha256": "6a3491203c1d87e5946c1a8fe13b43a4185e177d5105454c397d36ecc3f78120",
+      "loop": {
+        "enabled": false,
+        "note": "Runtime MP3 looping is not validated. The original WAV loop region is recorded in the asset manifest."
+      },
+      "provenance": {
+        "method": "Original composition and arrangement with mathematically synthesized instrument timbres, as recorded in the source package",
+        "third_party_samples": false,
+        "soundfont_used": false,
+        "existing_recording_used": false,
+        "scope": "Instrumental demo; no nature sounds, voices, or combat sound effects",
+        "rights_note": "This describes the production record and is not a separate legal review or rights warranty."
+      },
+      "runtime_integration": "not_integrated_asset_handoff_only",
+      "bpm": 104,
+      "bars": 32,
+      "intended_screen": "not_assigned_in_this_handoff",
+      "selection_note": "사용자가 첫 불씨의 살짝 경쾌한 1안을 선택하고 Git 보관 및 개발 담당 URL 전달을 요청함. 시작/지도 음악 교체 또는 게임 적용 완료를 뜻하지 않음.",
+      "manifest": "assets/audio/bgm/approved/first_embers_lightly_bright/v001/manifest.json",
+      "preview": {
+        "path": "assets/audio/bgm/approved/first_embers_lightly_bright/v001/listen.mp3",
+        "bytes": 1773633,
+        "sha256": "6a3491203c1d87e5946c1a8fe13b43a4185e177d5105454c397d36ecc3f78120"
+      },
+      "editable_score": {
+        "path": "assets/audio/bgm/approved/first_embers_lightly_bright/v001/score.mid",
+        "bytes": 7333,
+        "sha256": "c2924ec6ab705e84e221dbb3d15951bfb745a05701521ca3f81a7eb06177aa4d"
+      },
+      "listening_review_performed": false,
+      "game_integration_tested": false,
+      "master_verification": {
+        "peak_dbfs": -6.120001792907715,
+        "clipped_samples": 0
+      },
+      "pending_master": {
+        "path": "assets/audio/bgm/approved/first_embers_lightly_bright/v001/loop.wav",
+        "file": "loop.wav",
+        "source_filename": "SELECTED_First_Embers_Lightly_Bright.wav",
+        "role": "game_master",
+        "bytes": 21267830,
+        "sha256": "36fa8ff5bef566ee42f717531fe2367f4e7bc6da5d766232ccf846b7ca13c29b",
+        "status": "not_uploaded",
+        "reason": "Large-file transfer failed; original WAV and source ZIP retained without alteration"
+      },
+      "distribution_status": "mp3_and_midi_uploaded_wav_pending"
     }
   ],
   "integration_plan": {
