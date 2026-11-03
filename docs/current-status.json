@@ -1,31 +1,31 @@
 {
   "updatedAt": "2026-11-03",
   "timezone": "Asia/Seoul",
-  "sourceMain": "951dded282b256c6b7b90577042d735e4dc8af9f",
+  "sourceMain": "2a70f90893387200d069d2c935d2614d5723fb27",
   "latestRelease": {
-    "tag": "v0.1.21",
-    "url": "https://github.com/byungho-cho/roxhistory/releases/tag/v0.1.21",
-    "source": "951dded282b256c6b7b90577042d735e4dc8af9f",
+    "tag": "v0.1.22",
+    "url": "https://github.com/byungho-cho/roxhistory/releases/tag/v0.1.22",
+    "source": "2a70f90893387200d069d2c935d2614d5723fb27",
     "assets": [
       {
-        "name": "RoxHistory-0.1.21-20261103-112741.apk",
+        "name": "RoxHistory-0.1.22-20261103-114548.apk",
         "size": 166683774,
-        "digest": "sha256:ffcb5c113706d952eb699229d3231e70d9fef9360c59b9dbcf10674b92392874",
-        "url": "https://github.com/byungho-cho/roxhistory/releases/download/v0.1.21/RoxHistory-0.1.21-20261103-112741.apk"
+        "digest": "sha256:edee18ae115a35e7838179d9d91e552d2b96c5be6a08fb216ef9023b0796968e",
+        "url": "https://github.com/byungho-cho/roxhistory/releases/download/v0.1.22/RoxHistory-0.1.22-20261103-114548.apk"
       }
     ]
   },
   "ci": {
-    "run": 55,
-    "sha": "5bca6962a0b54104853751d505011d22c061e969",
+    "run": 57,
+    "sha": "f2aedb05412f1560b1d8d90659c49b4e9093afdb",
     "status": "in_progress",
     "conclusion": null,
-    "url": "https://github.com/byungho-cho/roxhistory/actions/runs/41566022933"
+    "url": "https://github.com/byungho-cho/roxhistory/actions/runs/41567813336"
   },
   "ciChecks": null,
   "localRelatedChecks": 1512,
-  "runtimeVersion": "0.1.21",
-  "versionCode": 22,
+  "runtimeVersion": "0.1.22",
+  "versionCode": 23,
   "residentAppearanceApproved": 8,
   "residentFigmaRegistered": 8,
   "residentRuntimeImplemented": 0,
@@ -37,7 +37,7 @@
     "pixel-exact S40000 and physical Android/fold testing",
     "long-running performance and direct listening"
   ],
-  "verificationBasis": "23 local suites passed; Android emulator touch flow and final main update verified; CI55 in progress at publication.",
+  "verificationBasis": "23 local suites/1512 checks passed; Android final main update verified. CI55 hit150s traversal timeout after UI passed; CI57 reruns same checks with600s bound.",
   "resident3DSourceArchive": {
     "count": 5,
     "path": "design/assets/residents-3d/reference-v001",
