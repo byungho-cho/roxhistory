@@ -1,0 +1,181 @@
+{
+  "before": {
+    "built": true,
+    "depleted": {
+      "stone_2": 1,
+      "wood_3": 0.0
+    },
+    "homes": [
+      {
+        "claimed": true,
+        "style": 0.0
+      },
+      {
+        "claimed": true,
+        "style": 2.0
+      },
+      {
+        "claimed": true,
+        "style": 2.0
+      }
+    ],
+    "hut_style": 0.0,
+    "intro_seen": true,
+    "node_positions": {
+      "stone_2": [
+        1380.0,
+        1060.0
+      ],
+      "wood_3": [
+        260.0,
+        620.0
+      ]
+    },
+    "position": [
+      1427.12646484375,
+      1075.37316894531
+    ],
+    "region": "amsa",
+    "respawn_due": {},
+    "reward_claimed": true,
+    "schema": 1.0,
+    "stone": 2.0,
+    "tokens": 30.0,
+    "wood": 2.0
+  },
+  "depleted": {
+    "built": true,
+    "depleted": {
+      "stone_2": 4,
+      "wood_3": 0.0
+    },
+    "homes": [
+      {
+        "claimed": true,
+        "style": 0.0
+      },
+      {
+        "claimed": true,
+        "style": 2.0
+      },
+      {
+        "claimed": true,
+        "style": 2.0
+      }
+    ],
+    "hut_style": 0.0,
+    "intro_seen": true,
+    "node_positions": {
+      "stone_2": [
+        1380.0,
+        1060.0
+      ],
+      "wood_3": [
+        260.0,
+        620.0
+      ]
+    },
+    "position": [
+      1427.0791015625,
+      1075.36730957031
+    ],
+    "region": "amsa",
+    "respawn_due": {
+      "stone_2": 1793695372.59277
+    },
+    "reward_claimed": true,
+    "schema": 1.0,
+    "stone": 5.0,
+    "tokens": 30.0,
+    "wood": 2.0
+  },
+  "regrown": {
+    "built": true,
+    "depleted": {
+      "stone_2": 0,
+      "wood_3": 0.0
+    },
+    "homes": [
+      {
+        "claimed": true,
+        "style": 0.0
+      },
+      {
+        "claimed": true,
+        "style": 2.0
+      },
+      {
+        "claimed": true,
+        "style": 2.0
+      }
+    ],
+    "hut_style": 0.0,
+    "intro_seen": true,
+    "node_positions": {
+      "stone_2": [
+        1740.0,
+        1060.0
+      ],
+      "wood_3": [
+        260.0,
+        620.0
+      ]
+    },
+    "position": [
+      1427.0791015625,
+      1075.36730957031
+    ],
+    "region": "amsa",
+    "respawn_due": {},
+    "reward_claimed": true,
+    "schema": 1.0,
+    "stone": 5.0,
+    "tokens": 30.0,
+    "wood": 2.0
+  },
+  "reload": {
+    "built": true,
+    "depleted": {
+      "stone_2": 0,
+      "wood_3": 0.0
+    },
+    "homes": [
+      {
+        "claimed": true,
+        "style": 0.0
+      },
+      {
+        "claimed": true,
+        "style": 2.0
+      },
+      {
+        "claimed": true,
+        "style": 2.0
+      }
+    ],
+    "hut_style": 0.0,
+    "intro_seen": true,
+    "node_positions": {
+      "stone_2": [
+        1740.0,
+        1060.0
+      ],
+      "wood_3": [
+        260.0,
+        620.0
+      ]
+    },
+    "position": [
+      1427.0791015625,
+      1075.36730957031
+    ],
+    "region": "amsa",
+    "respawn_due": {},
+    "reward_claimed": true,
+    "schema": 1.0,
+    "stone": 5.0,
+    "tokens": 30.0,
+    "wood": 2.0
+  },
+  "actual_deadline_wait": true
+}

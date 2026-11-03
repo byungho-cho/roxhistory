@@ -1,19 +1,19 @@
 {
   "updatedAt": "2026-11-03",
   "timezone": "Asia/Seoul",
-  "sourceMain": "b71d5c1fc3a3f51fbc0f1a85ab328c2deb8fd0b8",
+  "sourceMain": "511b286c7049fadc0551efc53b2d5b90a351ef07",
   "latestRelease": {
-    "tag": "v0.1.25",
-    "url": "https://github.com/byungho-cho/roxhistory/releases/tag/v0.1.25",
+    "tag": "v0.1.26",
+    "url": "https://github.com/byungho-cho/roxhistory/releases/tag/v0.1.26",
     "artifacts": "Single APK, final source SHA and SHA256 in release metadata"
   },
   "ci": {
     "status": "see PR checks; local validation is separate"
   },
   "ciChecks": null,
-  "localRelatedChecks": 600,
-  "runtimeVersion": "0.1.25",
-  "versionCode": 26,
+  "localRelatedChecks": 700,
+  "runtimeVersion": "0.1.26",
+  "versionCode": 27,
   "residentAppearanceApproved": 8,
   "residentFigmaRegistered": 8,
   "residentRuntimeImplemented": 0,
@@ -25,7 +25,7 @@
     "pixel-exact S40000 and physical Android/fold testing",
     "long-running performance and direct listening"
   ],
-  "verificationBasis": "23 local suites/1512 checks passed; Android final main update verified. CI55 hit150s traversal timeout after UI passed; CI57 reruns same checks with600s bound.",
+  "verificationBasis": "700 related native checks, 127 assets and 15 audio integrity checks; Android emulator input/regrowth/reload; physical device and final art acceptance pending.",
   "resident3DSourceArchive": {
     "count": 5,
     "path": "design/assets/residents-3d/reference-v001",

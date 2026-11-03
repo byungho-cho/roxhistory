@@ -266,3 +266,7 @@ P4 UI·카메라·소리까지 개발 검증을 마쳤으며, 다음 단계는 P
 - [기존 앱 기획](app-plan-v0.3.md)
 - [기존 자동 검사 기록](android-demo-validation-20261030.json)
 - [GitHub 저장소](https://github.com/byungho-cho/roxhistory)
+
+## 2026-11-03 보행·조작·마을 표현 추가
+
+[v0.1.26 비교 및 검증](shared-reports/2026-11-03-village-controls/report.md): 추가 속도10%, 탭 이동·세로 팬, 메뉴, 둥근 경로·움집 접지·외곽 동물2마리. 전문 보행 클립과 실물 폴드·장시간 성능, 원화 대비 최종 시각 승인은 후속이다.

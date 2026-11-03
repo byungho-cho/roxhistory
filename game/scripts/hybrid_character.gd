@@ -232,7 +232,7 @@ func apply_pose(phase: float, strike: float) -> void:
 		rotate_bone("thigh"+suffix,Vector3(thigh,0,0))
 		rotate_bone("shin"+suffix,Vector3(knee,0,0))
 		rotate_bone("foot"+suffix,Vector3(-thigh-knee,0,0))
-		var swing: float = -step*0.30
+		var swing: float = -step*0.34
 		if suffix == "R": swing = lerpf(swing,-1.25+(1.05 if work_kind=="wood" else 1.30 if work_kind=="stone" else 1.45)*strike,action_blend)
 		else: swing = lerpf(swing,-0.32-strike*0.14,action_blend)
 		rotate_bone("arm"+suffix,Vector3(swing,0,side*lerpf(-0.05,-0.30,action_blend)))
@@ -245,7 +245,7 @@ func tool_contact_world() -> Vector2:
 
 func stride_world_length() -> float:
 	# Stylized isometric gait: don't speed up the cadence with camera foreshortening.
-	return 84.0
+	return 92.0
 
 func build_villager() -> void:
 	var imported=preload("res://assets/characters/meshy01/hero.glb").instantiate()

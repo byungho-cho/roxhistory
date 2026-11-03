@@ -36,6 +36,10 @@ var manual_camera:=false
 var camera_center:=Vector2.ZERO
 var idle_elapsed:=0.0
 
+func can_pan()->bool:
+	var visible_world:=get_viewport_rect().size/camera.zoom
+	return visible_world.x<2399 or visible_world.y<1349
+
 func pan_camera(screen_delta:Vector2)->void:
 	cancel_camera_guide()
 	if not manual_camera:camera_center=camera.get_screen_center_position()

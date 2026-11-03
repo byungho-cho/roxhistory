@@ -104,6 +104,8 @@ func clear_children(node: Node) -> void:
 		child.queue_free()
 
 func show_screen(next: String) -> void:
+	var layout_size:=Vector2i(540,960) if get_window().size.x<get_window().size.y else Vector2i(960,540)
+	if get_window().content_scale_size!=layout_size:get_window().content_scale_size=layout_size
 	var previous := screen
 	region_snapshot=region_selection.snapshot() if next=="region" and screen=="region" and is_instance_valid(region_selection) else {}
 	if is_instance_valid(joystick):
@@ -390,7 +392,7 @@ func enter_game() -> void:
 
 func play_hud() -> void:
 	var quest_panel:=button(stage,"",toggle_quest);quest_panel.name="QuestPanel";quest_panel.custom_minimum_size=Vector2.ZERO
-	quest_panel.position=Vector2(safe.x,safe.y+64);quest_panel.size=Vector2(210,64)
+	quest_panel.position=Vector2(safe.x,safe.y+(112 if w<h else 64));quest_panel.size=Vector2(210,64)
 	var dark:=StyleBoxFlat.new();dark.bg_color=Color(.15,.13,.09,.78);dark.set_corner_radius_all(10);dark.set_content_margin_all(6)
 	for state in ["normal","hover","pressed"]:quest_panel.add_theme_stylebox_override(state,dark)
 	dark.border_color=Color(.94,.79,.48,.22);dark.set_border_width_all(1)
@@ -406,6 +408,9 @@ func play_hud() -> void:
 	var capsule:=StyleBoxFlat.new();capsule.bg_color=Color(56/255.0,43/255.0,20/255.0,.78);capsule.border_color=Color("f5cf8d");capsule.set_border_width_all(1);capsule.set_corner_radius_all(37);action_backdrop.add_theme_stylebox_override("panel",capsule)
 	action_row=HBoxContainer.new();action_row.name="Actions";action_row.add_theme_constant_override("separation",5);stage.add_child(action_row)
 	action_row.position=Vector2(w-safe.x-491-cover_extra,h-safe.y-76);action_row.size=Vector2(363+cover_extra,70)
+	if w<h:
+		action_row.position=Vector2(w-safe.x-363,h-safe.y-230)
+		action_backdrop.position=action_row.position-Vector2(15,2);action_backdrop.size=Vector2(393,74)
 	for data in [["사냥","spear"],["채집","berries"],["제작","hammer"],["건설","hut"],["임무","scroll"],["가방","bag"]]:
 		var caption:String=data[0]
 		var callback:Callable=gather_action if caption=="채집" else build_action if caption=="건설" else quest_details if caption=="임무" else inventory_summary if caption=="가방" else func():toast("아직 준비 중인 기능입니다")
@@ -423,7 +428,7 @@ func play_hud() -> void:
 	action_toggle=button(stage,"",context_action);action_toggle.name="ActionToggle";action_toggle.custom_minimum_size=Vector2.ZERO;action_toggle.position=Vector2(w-safe.x-128,h-safe.y-76);action_toggle.size=Vector2(64,64)
 	var expand:=button(stage,"",func():actions_expanded=not actions_expanded);expand.name="ExpandActions";expand.custom_minimum_size=Vector2.ZERO;expand.position=Vector2(w-safe.x-64,h-safe.y-76);expand.size=Vector2(64,64)
 	for state in ["normal","hover","pressed"]:expand.add_theme_stylebox_override(state,StyleBoxEmpty.new())
-	picture(expand,DemoArt.play_icon("expand"),Rect2(12,12,40,40))
+	picture(expand,DemoArt.play_icon("expand"),Rect2(0,8,48,48))
 	apply_action_skin("메뉴")
 	context_panel=PanelContainer.new();stage.add_child(context_panel);context_panel.position=Vector2(w*.5-145,h-safe.y-108);context_panel.size=Vector2(290,32);context_panel.add_theme_stylebox_override("panel",dark);context_panel.mouse_filter=Control.MOUSE_FILTER_IGNORE
 	context=label(context_panel,"",13,Color("fff0cd"));context.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
@@ -607,6 +612,11 @@ func world_tap(screen_point:Vector2) -> void:
 		cancel_task()
 		if not model.can_build():toast("나무 1개와 돌 1개가 필요해요");return
 		navigation.start("build","",world.site.position+Vector2(0,65))
+		return
+	# Building images own their taps even after their reward has been claimed.
+	for prop in world.environment_props:
+		if prop.kind=="hut" and prop.visible and Rect2(prop.position-Vector2(170,245),Vector2(340,260)).has_point(at):return
+	cancel_task();navigation.start("move","",at)
 
 func focus_objective() -> void:
 	if gestures.blocked or modal: return
@@ -752,17 +762,22 @@ func _notification(what: int) -> void:
 func apply_action_skin(caption:String)->void:
 	if action_toggle.get_meta("caption","")==caption:return
 	action_toggle.set_meta("caption",caption)
-	action_toggle.text=caption
-	action_toggle.add_theme_font_size_override("font_size",12)
-	action_toggle.add_theme_constant_override("icon_max_width",32)
-	action_toggle.icon_alignment=HORIZONTAL_ALIGNMENT_CENTER
-	action_toggle.vertical_icon_alignment=VERTICAL_ALIGNMENT_TOP
+	action_toggle.text="";action_toggle.icon=null
+	if action_toggle.has_node("ActionVisual"):action_toggle.get_node("ActionVisual").free()
+	var visual:=Control.new();visual.name="ActionVisual";visual.mouse_filter=Control.MOUSE_FILTER_IGNORE;action_toggle.add_child(visual)
 	if caption in ["메뉴","접기"]:
-		action_toggle.icon=null
-		var skin:=StyleBoxTexture.new();skin.texture=DemoArt.play_icon("menu" if caption=="메뉴" else "collapse")
-		skin.content_margin_top=32;skin.content_margin_bottom=5
+		var source:=DemoArt.play_icon("menu" if caption=="메뉴" else "collapse")
+		var skin:=StyleBoxTexture.new();skin.texture=source;skin.set_content_margin_all(0)
 		for state in ["normal","hover","pressed"]:action_toggle.add_theme_stylebox_override(state,skin)
+		# Reuse the exact approved symbol pixels, enlarged over their own backing.
+		var symbol:=AtlasTexture.new();symbol.atlas=source
+		symbol.region=Rect2(181,157,148,122) if caption=="메뉴" else Rect2(76,42,88,88)
+		picture(visual,symbol,Rect2(16,17,32,26) if caption=="메뉴" else Rect2(16,13,32,32))
 	else:
-		action_toggle.icon=DemoArt.play_icon("hut" if caption=="건설" else "berries")
-		var skin:=StyleBoxFlat.new();skin.bg_color=Color(.32,.21,.10,.82);skin.border_color=Color("ffe0a0");skin.set_border_width_all(2);skin.set_corner_radius_all(44);skin.set_content_margin_all(7)
+		picture(visual,DemoArt.play_icon("hut" if caption=="건설" else "berries"),Rect2(8,4,48,48))
+		var skin:=StyleBoxFlat.new();skin.bg_color=Color(.32,.21,.10,.82);skin.border_color=Color("ffe0a0");skin.set_border_width_all(2);skin.set_corner_radius_all(32);skin.set_content_margin_all(0)
 		for state in ["normal","hover","pressed"]:action_toggle.add_theme_stylebox_override(state,skin)
+	var backing:=Panel.new();backing.position=Vector2(12,35);backing.size=Vector2(40,17);backing.mouse_filter=Control.MOUSE_FILTER_IGNORE
+	var shade:=StyleBoxFlat.new();shade.bg_color=Color(.12,.09,.05,.68);shade.set_corner_radius_all(5);backing.add_theme_stylebox_override("panel",shade);visual.add_child(backing)
+	var title:=label(visual,caption,11,Color("fff0cd"));title.position=Vector2(8,34);title.size=Vector2(48,18);title.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
+	action_toggle.tooltip_text=caption
