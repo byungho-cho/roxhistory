@@ -69,7 +69,7 @@ func _ready() -> void:
 	camera = Camera2D.new()
 	camera.name = "Camera2D"
 	camera.zoom = Vector2(0.5,0.5)
-	camera.position = Vector2(180,-220)
+	camera.position = Vector2(0,-120)
 	camera.limit_left = 0
 	camera.limit_top = 0
 	camera.limit_right = 2400
@@ -110,14 +110,14 @@ func _process(_delta: float) -> void:
 
 func fit_camera() -> void:
 	var viewport_size := get_viewport().get_visible_rect().size
-	var fit := maxf(0.5,maxf(viewport_size.x/2400.0,viewport_size.y/1350.0))
+	var fit := maxf(viewport_size.x/2400.0,viewport_size.y/1350.0)
 	camera.zoom = Vector2.ONE*fit*zoom_factor
 	if is_instance_valid(hybrid):hybrid.set_render_zoom(zoom_factor)
 	camera.reset_smoothing()
 
 func zoom_at(midpoint: Vector2, factor: float, world_anchor: Vector2=Vector2.INF) -> void:
 	var anchor := get_viewport().get_canvas_transform().affine_inverse()*midpoint if not world_anchor.is_finite() else world_anchor
-	zoom_factor=clampf(factor,1.0,3.0)
+	zoom_factor=clampf(factor,1.0,2.0)
 	fit_camera()
 	var half := get_viewport_rect().size*0.5/camera.zoom
 	var center := anchor-(midpoint-get_viewport_rect().size*0.5)/camera.zoom

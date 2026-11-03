@@ -64,7 +64,7 @@ func run() -> void:
 	var phases := {}
 	for p in world.environment_props:
 		if p.sprite.material is ShaderMaterial: phases[p.sprite.material.get_shader_parameter("phase")] = true
-	check(phases.size() > 20,"Wind phases vary across foliage")
+	check(world.get_node("Terrain").texture.resource_path==SceneStyle.TERRAIN,"Approved landscape texture is the world background")
 	check(world.y_sort_enabled,"Character and props share feet-based sorting")
 	check(world.water.polygon == world.get_node("RiverBank").get_child(0).polygon,"Water rendering and river collision use one boundary")
 	for dims in [Vector2i(1280,720),Vector2i(896,370),Vector2i(725,396),Vector2i(816,616)]:

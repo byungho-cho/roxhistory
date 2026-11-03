@@ -68,6 +68,6 @@ func _process(delta: float) -> void:
 	timer.text = "%02d:%02d:%02d" % [seconds/3600,(seconds/60)%60,seconds%60]
 	hammer.rotation = deg_to_rad(8+sin(clock*TAU/0.6)*12)
 	var point: Vector2 = app.world.get_global_transform_with_canvas()*app.world.site.position
-	position = point-Vector2(133,130)
+	position = point-Vector2(133,85)
 	position.x = clampf(position.x,app.safe.x,app.w-app.safe.x-size.x*scale.x)
 	position.y = clampf(position.y,app.safe.y+90,app.h-app.safe.y-100)

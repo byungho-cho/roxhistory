@@ -46,7 +46,7 @@ func update_value(pos: Vector2) -> void:
 	queue_redraw()
 
 func _draw() -> void:
-	draw_circle(center,64,Color("27251f80"))
-	draw_arc(center,64,0,TAU,64,Color("ebd6a58c"),2,true)
-	draw_circle(center+knob,27,Color("dbc69cb3"))
+	draw_circle(center,64,Color("b7ae7066"))
+	draw_arc(center,64,0,TAU,64,Color("ffe5aac9"),2,true)
+	draw_circle(center+knob,27,Color("f7d38cf0"))
 	draw_arc(center+knob,27,0,TAU,40,Color("fff4d6cc"),2,true)

@@ -143,7 +143,7 @@ func _draw() -> void:
 		for i in 9:
 			var t := fposmod(pulse*0.65+i/9.0,1.0)
 			var at := p+Vector2(sin(i*2.4)*80,-35-t*65)
-			draw_circle(at,12+t*18,Color(0.88,0.70,0.42,sin(t*PI)*0.16))
+			draw_circle(at,12+t*18,Color(0.88,0.70,0.42,sin(t*PI)*0.28))
 		for i in 6:
 			var t := fposmod(pulse*0.6+i/6.0,1.0)
 			draw_circle(p+Vector2(sin(i*2.4)*90,-25-t*110),2.5,Color(1,0.83,0.35,sin(t*PI)*0.65))

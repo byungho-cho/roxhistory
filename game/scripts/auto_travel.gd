@@ -7,12 +7,15 @@ var action := ""
 var target := ""
 var stuck := 0.0
 var previous := Vector2.INF
+var trail: TravelTrail
 func _init(owner_app:Node) -> void:app=owner_app
 func cancel() -> void:
 	path.clear();action="";target="";stuck=0
 	if is_instance_valid(app.world):app.world.player.work_destination=Vector2.INF
 func start(kind:String,id:String,destination:Vector2) -> void:
 	cancel()
+	if not is_instance_valid(trail):
+		trail=TravelTrail.new(self);app.world.add_child(trail)
 	if not destination.is_finite():app.toast("이곳으로 이동할 수 없어요");return
 	var player:DemoPlayer=app.world.player
 	var grid:=AStarGrid2D.new();grid.region=Rect2i(0,0,100,56);grid.cell_size=Vector2(24,24);grid.offset=Vector2(12,12);grid.diagonal_mode=AStarGrid2D.DIAGONAL_MODE_ONLY_IF_NO_OBSTACLES;grid.update()

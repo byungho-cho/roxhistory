@@ -45,7 +45,7 @@ func run() -> void:
 	camera.offset = Vector2.ZERO
 	check(world.y_sort_enabled,"Feet-based depth sorting enabled")
 	check(world.water.polygon == world.get_node("RiverBank").get_child(0).polygon,"Visible water and bank collider share boundary")
-	check(world.environment_props.size() >= 60,"Independent environment objects populated")
+	check(world.get_node("Terrain").texture.resource_path==SceneStyle.TERRAIN,"Approved terrain loaded without duplicate scenery")
 	check(world.get_node("ExistingHut").get_node("Footprint") is StaticBody2D,"Hut has ground footprint")
 	app.canvas.visible = false
 	camera.position = Vector2(1550,560)
@@ -67,12 +67,12 @@ func run() -> void:
 	await walk_to(Vector2(1640,1130))
 	await snap("hybrid-tree-front")
 	# Separate inspection segment for the dwelling footprint and roof occlusion.
-	player.position = Vector2(800,820)
-	await walk_to(Vector2(1210,820))
+	player.position = Vector2(690,860)
+	await walk_to(Vector2(1100,860))
 	await snap("hybrid-hut-front")
-	await walk_to(Vector2(1240,550))
-	await walk_to(Vector2(900,550))
-	await walk_to(Vector2(990,600))
+	await walk_to(Vector2(1100,600))
+	await walk_to(Vector2(700,570))
+	await walk_to(Vector2(700,620))
 	await snap("hybrid-hut-behind")
 	await create_timer(2).timeout
 	player.direction = Vector2.ZERO

@@ -7,15 +7,15 @@
   "gather_seconds": 1.2,
   "build_seconds": 2,
   "reward": 10,
-  "move_speed": 165,
+  "move_speed": 110,
   "interact_radius": 110,
   "spawn": [
-    990,
-    1020
+    1150,
+    810
   ],
   "build_site": [
-    730,
-    1030
+    1145,
+    625
   ],
   "world_size": [
     2400,
@@ -26,8 +26,8 @@
       "id": "wood_1",
       "kind": "wood",
       "position": [
-        360,
-        780
+        450,
+        800
       ],
       "charges": 5
     },
@@ -35,8 +35,8 @@
       "id": "wood_2",
       "kind": "wood",
       "position": [
-        660,
-        710
+        680,
+        1100
       ],
       "charges": 5
     },
@@ -44,8 +44,8 @@
       "id": "wood_3",
       "kind": "wood",
       "position": [
-        1420,
-        830
+        1620,
+        960
       ],
       "charges": 5
     },
@@ -53,8 +53,8 @@
       "id": "wood_4",
       "kind": "wood",
       "position": [
-        1830,
-        880
+        1990,
+        1160
       ],
       "charges": 5
     },
@@ -62,8 +62,8 @@
       "id": "stone_1",
       "kind": "stone",
       "position": [
-        250,
-        990
+        410,
+        1080
       ],
       "charges": 4
     },
@@ -71,8 +71,8 @@
       "id": "stone_2",
       "kind": "stone",
       "position": [
-        1340,
-        1070
+        1900,
+        940
       ],
       "charges": 4
     },
@@ -80,8 +80,8 @@
       "id": "stone_3",
       "kind": "stone",
       "position": [
-        1950,
-        1010
+        1500,
+        1210
       ],
       "charges": 4
     }

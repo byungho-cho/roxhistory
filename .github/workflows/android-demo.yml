@@ -101,6 +101,8 @@ jobs:
           ! grep -E 'SCRIPT ERROR:|ERROR:' a303-audio-tests.log
           timeout 600 xvfb-run -a godot --fixed-fps 60 --audio-driver Dummy --path game --resolution 1280x720 --script res://tests/play_flow_tests.gd -- --test-ui 2>&1 | tee play-flow-tests.log
           ! grep -E 'SCRIPT ERROR:|ERROR:' play-flow-tests.log
+          timeout 150 xvfb-run -a godot --fixed-fps 60 --audio-driver Dummy --path game --resolution 1280x720 --script res://tests/s40000_tests.gd -- --test-ui 2>&1 | tee s40000-tests.log
+          ! grep -E 'SCRIPT ERROR:|ERROR:' s40000-tests.log
       - name: Export signed debug APK
         run: |
           set -euo pipefail
@@ -109,20 +111,20 @@ jobs:
           export GODOT_ANDROID_KEYSTORE_DEBUG_PATH="$RUNNER_TEMP/debug.keystore"
           export GODOT_ANDROID_KEYSTORE_DEBUG_USER=androiddebugkey
           export GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD=android
-          godot --headless --path game --export-debug Android "$PWD/build/RoxHistory-0.1.20.apk" 2>&1 | tee build/export.log
-          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose build/RoxHistory-0.1.20.apk | tee build/signature.txt
-          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging build/RoxHistory-0.1.20.apk > build/package.txt
-          sha256sum build/RoxHistory-0.1.20.apk > build/SHA256SUMS
+          godot --headless --path game --export-debug Android "$PWD/build/RoxHistory-0.1.21.apk" 2>&1 | tee build/export.log
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose build/RoxHistory-0.1.21.apk | tee build/signature.txt
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging build/RoxHistory-0.1.21.apk > build/package.txt
+          sha256sum build/RoxHistory-0.1.21.apk > build/SHA256SUMS
           git rev-parse HEAD > build/SOURCE_COMMIT
       - name: Complete source package
         if: always()
         run: |
           mkdir -p build
-          git archive HEAD -o build/RoxHistory-0.1.20-source.zip
+          git archive HEAD -o build/RoxHistory-0.1.21-source.zip
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: RoxHistory-0.1.20-validation
+          name: RoxHistory-0.1.21-validation
           path: |
             build/
             game/reports/
@@ -132,6 +134,6 @@ jobs:
           retention-days: 30
       - uses: actions/upload-artifact@v4
         with:
-          name: RoxHistory-0.1.20-APK
-          path: build/RoxHistory-0.1.20.apk
+          name: RoxHistory-0.1.21-APK
+          path: build/RoxHistory-0.1.21.apk
           retention-days: 30

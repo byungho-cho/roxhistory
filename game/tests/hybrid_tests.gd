@@ -33,7 +33,7 @@ func run() -> void:
 	await frames(50)
 	check(p.hybrid.walk_blend < 0.01,"Wall does not keep playing walk")
 	app.joystick.value = Vector2.ZERO
-	p.position = Vector2(1360,830)
+	p.position = app.world.gather_stand(Vector2(1620,960),"wood")
 	await frames(3); app.gather_action(); await frames(20)
 	check(p.hybrid.tool_3d.visible and p.hybrid.action_blend > 0.9,"Gather drives skeletal action and tool")
 	check(p.hybrid.rig.get_bone_pose_rotation(p.hybrid.bones.armR) != Quaternion.IDENTITY,"Shoulder rotates in 3D")

@@ -16,8 +16,8 @@ var feedback: WorldFeedback
 var objectives: WorldObjectives
 var animals: Array[WorldAnimal] = []
 # Water visuals and physics share the shoreline traced on terrain.png.
-const SHORE = [Vector2(690,0),Vector2(790,100),Vector2(1000,201),Vector2(1249,287),Vector2(1478,402),Vector2(1722,488),Vector2(1981,552),Vector2(2167,631),Vector2(2400,689)]
-const RIVER_POLYGON = [Vector2(690,0),Vector2(2400,0),Vector2(2400,689),Vector2(2167,631),Vector2(1981,552),Vector2(1722,488),Vector2(1478,402),Vector2(1249,287),Vector2(1000,201),Vector2(790,100)]
+const SHORE = [Vector2(0,320),Vector2(600,430),Vector2(1200,575),Vector2(1800,750),Vector2(2400,835)]
+const RIVER_POLYGON = [Vector2(0,175),Vector2(600,270),Vector2(1200,410),Vector2(1800,550),Vector2(2400,680),Vector2(2400,835),Vector2(1800,750),Vector2(1200,575),Vector2(600,430),Vector2(0,320)]
 
 func _init(game: GameState) -> void:
 	model = game
@@ -45,24 +45,21 @@ func _ready() -> void:
 	water.material = water_material
 	add_child(water)
 	polygon_body(PackedVector2Array(RIVER_POLYGON))
-	prop("hut",Vector2(700,510),380,Vector2(270,100),"ExistingHut")
+	prop("hut",Vector2(865,720),300,Vector2(220,80),"ExistingHut")
 	get_node("ExistingHut").set_hut_style(0)
-	prop("props",Vector2(1140,790),100,Vector2(60,24),"RiversidePottery")
-	prop("props",Vector2(700,610),108,Vector2(65,28),"PotteryAndGrindingStone")
-	prop("props",Vector2(570,935),100,Vector2(60,24),"FishingNet")
-	for entry in [[180,680,330],[320,400,310],[530,270,285],[1110,620,260],[1700,1060,290],[2120,1150,320],[80,1190,280],[1150,1350,210],[2290,840,260]]:
-		prop("tree",Vector2(entry[0],entry[1]),entry[2],Vector2(54,38),"SettlementTree" if entry[0]==1700 else "Tree")
-	for entry in [[900,380,108],[1330,410,84],[1570,510,102],[1860,600,90],[2070,700,115],[2300,770,90],[280,1140,95],[1470,1210,80]]:
-		prop("rock",Vector2(entry[0],entry[1]),entry[2],Vector2(entry[2]*0.65,30),"BankStone")
-	for entry in [[800,340,120],[1440,470,130],[1810,620,140],[2200,810,125],[300,1230,145],[1900,1250,155]]:
-		prop("shrub",Vector2(entry[0],entry[1]),entry[2],Vector2(35,24),"WillowShrub")
-	# Deterministic varied sizes and wind phases, leaving quest routes open.
-	for i in 36:
-		var t := float(i)/35.0
-		var p := shore_point(t)+Vector2(-30,68+sin(i*2.2)*22)
-		prop("grass",p,42+fposmod(i*19.0,38),Vector2.ZERO,"BankReeds")
-	for entry in [[290,940,58],[350,1040,50],[610,1170,65],[900,1160,45],[1110,1160,48],[1500,1110,55],[1730,1190,60],[2040,910,50],[400,580,48],[1010,700,42],[1100,1240,58],[2280,1190,65]]:
-		prop("grass",Vector2(entry[0],entry[1]),entry[2],Vector2.ZERO,"MeadowGrass")
+	prop("props",Vector2(1020,795),65,Vector2(40,20),"PotteryAndGrindingStone")
+	# Approved landscape already contains vegetation. Match its trunks with physics;
+	# do not paste a second, unrelated set of trees over the artwork.
+	for p in [Vector2(95,750),Vector2(330,800),Vector2(710,930),Vector2(1780,850),Vector2(2090,930),Vector2(1450,645)]:
+		rect_body(Rect2(p-Vector2(25,20),Vector2(50,30)))
+		if p.x==1780:get_child(get_child_count()-1).name="SettlementTree"
+		# Reuse the exact landscape pixels for depth occlusion, not another tree style.
+		var canopy:=Polygon2D.new();canopy.name="LandscapeCanopy";canopy.position=p
+		canopy.polygon=PackedVector2Array([Vector2(-78,-110),Vector2(-62,-160),Vector2(0,-180),Vector2(70,-145),Vector2(90,-95),Vector2(45,-55),Vector2(-35,-65)])
+		canopy.texture=terrain
+		var canopy_uv:=PackedVector2Array()
+		for point in canopy.polygon:canopy_uv.append((p+point)/background.scale)
+		canopy.uv=canopy_uv;add_child(canopy)
 	for n in DemoConfig.get_data().nodes:
 		var root := Node2D.new()
 		root.name = "Resource_"+str(n.id)
@@ -102,7 +99,7 @@ func _ready() -> void:
 	player.position = DemoConfig.point(model.state.position)
 	add_child(player)
 	# Wildlife stays outside the settlement and clear of the demo resource/build routes.
-	for entry in [["deer",1985,850,122,-0.8],["rabbit",1550,1190,42,0.6],["rabbit",1620,1230,38,-0.4],["bear",2040,1260,112,0.7]]:
+	for entry in [["deer",520,1030,112,-0.8],["rabbit",1660,1040,40,0.6],["rabbit",1730,1090,38,-0.4],["bear",1580,200,95,-0.7]]:
 		var animal := WorldAnimal.new()
 		animal.name = "Wildlife_"+str(entry[0])+str(animals.size())
 		animal.species = entry[0]
@@ -122,6 +119,10 @@ func _ready() -> void:
 func restore_clear_position() -> void:
 	# Existing saves remain valid when new scenery occupies their old position.
 	await get_tree().physics_frame
+	# The artwork changed the shoreline. Preserve progress, but never strand an old
+	# save on the inaccessible northern bank.
+	var bank:=shore_point(clampf(player.position.x/2400.0,0,1))
+	if player.position.y<bank.y+25:player.position=DemoConfig.point(DemoConfig.get_data().spawn)
 	if not player.test_move(player.transform,Vector2.ZERO,null,0.08,true): return
 	var original := player.position
 	for radius in [48,96,160,240,360]:
@@ -240,7 +241,7 @@ func gather_stand(target: Vector2, resource_kind: String="wood") -> Vector2:
 	var side: float=-1.0 if player.position.x<=target.x else 1.0
 	var reach:=47.0 if resource_kind=="stone" else 53.0
 	for x in [side*reach,-side*reach]:
-		for y in ([16,24,32] if resource_kind=="stone" else [12,20,32]):
+		for y in ([16,24,32] if resource_kind=="stone" else [-8,0,8]):
 			var candidate:=target+Vector2(x,y)
 			var at:=player.transform;at.origin=candidate
 			if not player.test_move(at,Vector2.ZERO,null,0.08,true):return candidate
