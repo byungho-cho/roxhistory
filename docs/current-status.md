@@ -1,5 +1,7 @@
 # RoxHistory 현재 개발 현황
 
+**현재 검토본 v0.1.27 / versionCode28** — [보행·주민 시범·음악 통합 보고서](shared-reports/2026-11-03-walk-residents-audio/report.md). 속도181.5(+20%), 실제 보행 클립, 움집 충돌, 가로 고정, 주민2명 시범, 제자리 채집과 선택 플레이 BGM을 반영했습니다. 로컬27검사 묶음·자산134·음원16 통과, Android 에뮬레이터 채집·건설·재생성·저장·입력 검증. 주민 최종 외형·가장자리 도구 접촉·실기기·직접 청취는 미검증/후속입니다. 아래 v26 기록은 이전 이력입니다.
+
 2026-11-03 KST · **v0.1.26 / versionCode27** 검토본. 기준 main `511b286c7049fadc0551efc53b2d5b90a351ef07`. 기존 원화와 확정 에셋, 이전 공간감 보완을 보존했습니다.
 
 - [단일 APK 릴리스·정확한 병합 커밋·SHA256](https://github.com/byungho-cho/roxhistory/releases/tag/v0.1.26)

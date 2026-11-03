@@ -25,10 +25,10 @@ func run() -> void:
 	p.set_character_3d(true);p.set_process(false);p.set_physics_process(false)
 	var hero := p.hybrid
 	hero.walk_blend=1;hero.action_blend=0
-	hero.apply_pose(PI*.5,0)
+	hero.animate(0,Vector2.DOWN,PI*.5,true,"",0,false)
 	var left_up:Vector3=hero.rig.get_bone_global_pose(hero.bones.footL).origin
 	var right_down:Vector3=hero.rig.get_bone_global_pose(hero.bones.footR).origin
-	hero.apply_pose(PI*1.5,0)
+	hero.animate(0,Vector2.DOWN,PI*1.5,true,"",0,false)
 	var left_down:Vector3=hero.rig.get_bone_global_pose(hero.bones.footL).origin
 	var right_up:Vector3=hero.rig.get_bone_global_pose(hero.bones.footR).origin
 	check(left_up.y-left_down.y>.12 and right_up.y-right_down.y>.12,"Rendered skeleton alternates clear foot lift, not just body sway")

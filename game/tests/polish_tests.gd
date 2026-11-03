@@ -59,7 +59,8 @@ func run() -> void:
 		for side in ["L","R"]:
 			var foot: Transform3D = character.rig.get_bone_global_pose(character.bones["foot"+side])
 			var sole := foot.origin.y-character.rig.get_bone_global_rest(character.bones["foot"+side]).origin.y
-			check(sole > -0.003 and sole < 0.105,"Sole stays at or above ground across gait")
+			check(sole > -0.003,"Foot never penetrates ground: phase=%s side=%s lift=%s"%[phase,side,sole])
+			check(sole < HybridCharacter.WALK_MAX_LIFT+.005,"Foot stays within authored clip lift: "+str(sole))
 	for i in 20: character.animate(1.0/60.0,Vector2.ZERO,0,false,"",0,false)
 	await process_frame
 	for side in ["L","R"]:

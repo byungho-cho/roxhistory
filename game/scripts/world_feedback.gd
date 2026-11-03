@@ -14,6 +14,7 @@ var events: Array[String] = []
 var pulse := 0.0
 var impact_strength := 0.0
 var impact_point := Vector2.ZERO
+var resource_impact_point := Vector2.ZERO
 var preview: Node2D
 var roof: Sprite2D
 var preview_progress := 0.0
@@ -73,7 +74,14 @@ func update_work(seconds: float, total: float) -> void:
 			hero.animate(0,Vector2.ZERO,world.player.phase,false,activity,next_hit,false)
 			point = hero.tool_contact_world()
 		impact_point = point; impact_strength = 1.0
-		burst(point,color,6,0.40,("wood" if target.begins_with("wood") else "stone") if activity=="gather" else "wood")
+		burst(point,color,2,0.25)
+		# The target's material response has its own anchor. Never overwrite the
+		# rendered tool contact (which is also used to diagnose reach mismatch).
+		resource_impact_point = point
+		if activity=="gather" and world.art_nodes.has(target):
+			resource_impact_point=world.art_nodes[target].position+Vector2(0,-18)
+		burst(resource_impact_point,color,6,0.40,("wood" if target.begins_with("wood") else "stone") if activity=="gather" else "wood")
+		if activity=="gather":burst(resource_impact_point,Color(.62,.53,.38,.22) if target.begins_with("wood") else Color(.65,.66,.64,.20),3,.30,"dust")
 		remember("impact:"+activity)
 		sound_cue.emit(("wood" if target.begins_with("wood") else "stone") if activity == "gather" else "build")
 		next_hit += HeroMotion.CYCLE
@@ -151,7 +159,8 @@ func _draw() -> void:
 		var color: Color = p.color
 		color.a *= 1.0-p.age/p.life
 		var extent: float=p.size*(1-p.age/p.life*0.4)
-		if p.material=="spark": draw_circle(p.p,extent,color)
+		if p.material=="dust":draw_circle(p.p,extent*(1+p.age*3),color)
+		elif p.material=="spark": draw_circle(p.p,extent,color)
 		else:
 			draw_set_transform(p.p,p.spin+p.age*7)
 			if p.material=="wood": draw_colored_polygon(PackedVector2Array([Vector2(-extent,-2),Vector2(extent,-1),Vector2(extent*0.7,2),Vector2(-extent*0.8,1)]),color)

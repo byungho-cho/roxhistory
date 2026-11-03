@@ -14,7 +14,7 @@ func drag(id:int,p:Vector2)->void:
 	var e:=InputEventScreenDrag.new();e.index=id;e.position=p;app.gestures._input(e)
 func run()->void:
 	app=load("res://scenes/main.tscn").instantiate();root.add_child(app);await frames(3);app.start_region();app.close_modal();await frames(5)
-	check(is_equal_approx(float(DemoConfig.get_data().move_speed),151.25),"Speed is an additional ten percent")
+	check(is_equal_approx(float(DemoConfig.get_data().move_speed),181.5),"Speed is an additional twenty percent over v0.1.26")
 	check(HeroMotion.step(PI*1.5,1).y>.16 and HeroMotion.step(PI*1.5,-1).y==0,"Swing foot lifts while opposite foot supports")
 	var destination:=Vector2(1320,910)
 	var screen:Vector2=app.world.get_global_transform_with_canvas()*destination
@@ -64,7 +64,7 @@ func run()->void:
 	for a in app.world.animals:
 		check(not Geometry2D.is_point_in_polygon(a.position,PackedVector2Array(DemoWorld.RIVER_POLYGON)),"Animal remains outside water: "+a.name)
 	app.set_process(false);app.world.player.position=Vector2(1150,900);app.world.player.direction=Vector2.RIGHT;await frames(3)
-	check(is_equal_approx(app.world.player.velocity.length(),151.25),"Direct movement uses new actual velocity")
+	check(is_equal_approx(app.world.player.velocity.length(),181.5),"Direct movement uses new actual velocity")
 	app.world.player.direction=Vector2.ZERO;app.set_process(true)
 	var report:Dictionary={"checks":checks,"failed":failed,"runtime":"Native Godot actual physics and synthetic input; no physical device claim"}
 	FileAccess.open("res://reports/village-controls-tests.json",FileAccess.WRITE).store_string(JSON.stringify(report,"  "));print(JSON.stringify(report));quit(0 if failed.is_empty() else 1)

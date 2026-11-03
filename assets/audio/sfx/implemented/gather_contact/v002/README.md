@@ -1,0 +1,1 @@
+Original deterministic synthesized contact sounds. Source: scripts/build_gather_contact.py. No third-party recordings. Runtime 22050 Hz mono PCM16. Old runtime cues preserved in archived/gather_contact/v001. Listening approval pending.

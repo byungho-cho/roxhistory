@@ -69,3 +69,6 @@ next(item for item in manifest if item['file']=='river.wav')['source']=river_sou
 print(json.dumps(manifest,indent=2))
 from build_a303_audio import build as build_a303_audio
 print(json.dumps(build_a303_audio(),indent=2))
+import runpy
+runpy.run_path(str(ROOT/'scripts/build_gather_contact.py'))
+runpy.run_path(str(ROOT/'scripts/register_play_music.py'))

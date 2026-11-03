@@ -1,0 +1,74 @@
+Godot Engine v4.5.1.stable.official.f62fdbde1 - https://godotengine.org
+OpenGL API 3.3.0 NVIDIA 610.88 - Compatibility - Using Device: NVIDIA - NVIDIA GeForce RTX 5060
+
+ERROR: Sole bounds phase=0.78539816339745 side=L lift=0.12883588671684 expected=(-.003,.105)
+   at: push_error (core/variant/variant_utility.cpp:1024)
+   GDScript backtrace (most recent call first):
+       [0] check (res://tests/polish_tests.gd:7)
+       [1] run (res://tests/polish_tests.gd:62)
+ERROR: Sole bounds phase=1.0471975511966 side=L lift=0.15152105689049 expected=(-.003,.105)
+   at: push_error (core/variant/variant_utility.cpp:1024)
+   GDScript backtrace (most recent call first):
+       [0] check (res://tests/polish_tests.gd:7)
+       [1] run (res://tests/polish_tests.gd:62)
+ERROR: Sole bounds phase=1.30899693899575 side=L lift=0.1653499007225 expected=(-.003,.105)
+   at: push_error (core/variant/variant_utility.cpp:1024)
+   GDScript backtrace (most recent call first):
+       [0] check (res://tests/polish_tests.gd:7)
+       [1] run (res://tests/polish_tests.gd:62)
+ERROR: Sole bounds phase=1.5707963267949 side=L lift=0.17000004649162 expected=(-.003,.105)
+   at: push_error (core/variant/variant_utility.cpp:1024)
+   GDScript backtrace (most recent call first):
+       [0] check (res://tests/polish_tests.gd:7)
+       [1] run (res://tests/polish_tests.gd:62)
+ERROR: Sole bounds phase=1.83259571459405 side=L lift=0.16534987092018 expected=(-.003,.105)
+   at: push_error (core/variant/variant_utility.cpp:1024)
+   GDScript backtrace (most recent call first):
+       [0] check (res://tests/polish_tests.gd:7)
+       [1] run (res://tests/polish_tests.gd:62)
+ERROR: Sole bounds phase=2.0943951023932 side=L lift=0.1515212059021 expected=(-.003,.105)
+   at: push_error (core/variant/variant_utility.cpp:1024)
+   GDScript backtrace (most recent call first):
+       [0] check (res://tests/polish_tests.gd:7)
+       [1] run (res://tests/polish_tests.gd:62)
+ERROR: Sole bounds phase=2.35619449019234 side=L lift=0.12883573770523 expected=(-.003,.105)
+   at: push_error (core/variant/variant_utility.cpp:1024)
+   GDScript backtrace (most recent call first):
+       [0] check (res://tests/polish_tests.gd:7)
+       [1] run (res://tests/polish_tests.gd:62)
+ERROR: Sole bounds phase=3.92699081698724 side=R lift=0.12883588671684 expected=(-.003,.105)
+   at: push_error (core/variant/variant_utility.cpp:1024)
+   GDScript backtrace (most recent call first):
+       [0] check (res://tests/polish_tests.gd:7)
+       [1] run (res://tests/polish_tests.gd:62)
+ERROR: Sole bounds phase=4.18879020478639 side=R lift=0.15152105689049 expected=(-.003,.105)
+   at: push_error (core/variant/variant_utility.cpp:1024)
+   GDScript backtrace (most recent call first):
+       [0] check (res://tests/polish_tests.gd:7)
+       [1] run (res://tests/polish_tests.gd:62)
+ERROR: Sole bounds phase=4.45058959258554 side=R lift=0.1653499007225 expected=(-.003,.105)
+   at: push_error (core/variant/variant_utility.cpp:1024)
+   GDScript backtrace (most recent call first):
+       [0] check (res://tests/polish_tests.gd:7)
+       [1] run (res://tests/polish_tests.gd:62)
+ERROR: Sole bounds phase=4.71238898038469 side=R lift=0.17000004649162 expected=(-.003,.105)
+   at: push_error (core/variant/variant_utility.cpp:1024)
+   GDScript backtrace (most recent call first):
+       [0] check (res://tests/polish_tests.gd:7)
+       [1] run (res://tests/polish_tests.gd:62)
+ERROR: Sole bounds phase=4.97418836818384 side=R lift=0.16534987092018 expected=(-.003,.105)
+   at: push_error (core/variant/variant_utility.cpp:1024)
+   GDScript backtrace (most recent call first):
+       [0] check (res://tests/polish_tests.gd:7)
+       [1] run (res://tests/polish_tests.gd:62)
+ERROR: Sole bounds phase=5.23598775598299 side=R lift=0.1515212059021 expected=(-.003,.105)
+   at: push_error (core/variant/variant_utility.cpp:1024)
+   GDScript backtrace (most recent call first):
+       [0] check (res://tests/polish_tests.gd:7)
+       [1] run (res://tests/polish_tests.gd:62)
+ERROR: Sole bounds phase=5.49778714378214 side=R lift=0.12883573770523 expected=(-.003,.105)
+   at: push_error (core/variant/variant_utility.cpp:1024)
+   GDScript backtrace (most recent call first):
+       [0] check (res://tests/polish_tests.gd:7)
+       [1] run (res://tests/polish_tests.gd:62)
+{"checks":68,"failed":["Sole bounds phase=0.78539816339745 side=L lift=0.12883588671684 expected=(-.003,.105)","Sole bounds phase=1.0471975511966 side=L lift=0.15152105689049 expected=(-.003,.105)","Sole bounds phase=1.30899693899575 side=L lift=0.1653499007225 expected=(-.003,.105)","Sole bounds phase=1.5707963267949 side=L lift=0.17000004649162 expected=(-.003,.105)","Sole bounds phase=1.83259571459405 side=L lift=0.16534987092018 expected=(-.003,.105)","Sole bounds phase=2.0943951023932 side=L lift=0.1515212059021 expected=(-.003,.105)","Sole bounds phase=2.35619449019234 side=L lift=0.12883573770523 expected=(-.003,.105)","Sole bounds phase=3.92699081698724 side=R lift=0.12883588671684 expected=(-.003,.105)","Sole bounds phase=4.18879020478639 side=R lift=0.15152105689049 expected=(-.003,.105)","Sole bounds phase=4.45058959258554 side=R lift=0.1653499007225 expected=(-.003,.105)","Sole bounds phase=4.71238898038469 side=R lift=0.17000004649162 expected=(-.003,.105)","Sole bounds phase=4.97418836818384 side=R lift=0.16534987092018 expected=(-.003,.105)","Sole bounds phase=5.23598775598299 side=R lift=0.1515212059021 expected=(-.003,.105)","Sole bounds phase=5.49778714378214 side=R lift=0.12883573770523 expected=(-.003,.105)"],"utc":"2026-11-03T11:03:44"}

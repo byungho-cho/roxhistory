@@ -1,0 +1,5 @@
+*.wav -text
+*.mp3 -text
+*.mid -text
+*.md text eol=lf
+*.json text eol=lf

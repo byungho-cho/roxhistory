@@ -14,7 +14,7 @@ func run() -> void:
 	app.model.start_new(); app.start_region(); app.close_modal()
 	await frames(3)
 	var world: DemoWorld = app.world
-	check(world.animals.size()==4,"Four bounded ambient animals, not an unlimited spawn loop")
+	check(world.animals.size()==6,"Six bounded ambient animals: original four plus the two approved village-outskirt animals")
 	var provenance: Array = JSON.parse_string(FileAccess.get_file_as_string("res://assets/animals/provenance.json"))
 	for entry in provenance:
 		check(entry.triangles<=16000 and entry.bytes<1000000,"Mobile mesh/texture budget: "+entry.id)
