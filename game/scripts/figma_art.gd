@@ -58,7 +58,7 @@ static func text(parent:Node,value:String,rect:Rect2,px:int=22,font:Font=BODY,co
 	node.vertical_alignment=VERTICAL_ALIGNMENT_CENTER;parent.add_child(node);return node
 
 static func stone_title(parent:Node,value:String,key:String,rect:Rect2) -> TextureRect:
-	var node:=picture(parent,key,rect);node.name=value;node.tooltip_text=value;node.set_meta("semantic_text",value)
+	var node:=picture(parent,key,rect);node.name=value;node.set_meta("semantic_text",value)
 	for property in node.get_property_list():
 		if property.name=="accessibility_name":node.set("accessibility_name",value)
 	return node

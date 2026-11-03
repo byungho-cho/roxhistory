@@ -61,6 +61,10 @@ func _ready() -> void:
 	era_label=FigmaArt.text(content,"",Rect2(25,268,347,40),30)
 	resources=Control.new();resources.mouse_filter=Control.MOUSE_FILTER_IGNORE;resources.position=Vector2(25,313);resources.size=Vector2(347,76);content.add_child(resources)
 	start_button=FigmaArt.button(surface,"gold",Rect2(0,407,397,76),"이곳에서 시작",app.start_region,app);start_button.name="RegionStart";start_button.enable_art_feedback()
+	var close:=DemoButton.new();close.name="CloseRegionDetails";close.text="×";close.position=Vector2(349,8);close.size=Vector2(44,44);close.set_meta("semantic_text","지역 상세 닫기")
+	for state in ["normal","hover","pressed","disabled","focus"]:close.add_theme_stylebox_override(state,StyleBoxEmpty.new())
+	close.add_theme_font_size_override("font_size",26);close.add_theme_color_override("font_color",Color("705536"));surface.add_child(close)
+	close.pressed.connect(func():app.region_selection.panel_visible=false;set_shown(false))
 	symbol=FigmaArt.picture(content,"mussels",Rect2(90.3565,-46.087,216.287,186.087))
 	var cast:=ArtShadow.new(symbol);content.add_child(cast);content.move_child(cast,symbol.get_index())
 
@@ -81,14 +85,14 @@ func show_region(key:String) -> void:
 	content.modulate.a=1;content.position=Vector2.ZERO
 	var data:Dictionary=RegionCatalog.REGIONS[key]
 	title_label.text=data.name;intro_label.text=data.intro;era_label.text=data.era
-	title_art.texture=FigmaArt.texture("title-"+key+".png");title_art.tooltip_text=data.name;title_art.set_meta("semantic_text",data.name)
+	title_art.texture=FigmaArt.texture("title-"+key+".png");title_art.set_meta("semantic_text",data.name)
 	var title_rects:={"jeongok":Rect2(127.0203,200.24,146.1187,58.96),"amsa":Rect2(128.324,200.24,145.3647,58.96),"dongsam":Rect2(127.5857,200.24,146.8413,58.96)}
 	title_art.position=title_rects[key].position;title_art.size=title_rects[key].size
 	symbol.texture=FigmaArt.texture(data.symbol);symbol.position=data.panel_art.position;symbol.size=data.panel_art.size
 	shadow.size=Vector2(symbol.size.x*.76,symbol.size.y*.15);shadow.position=Vector2((397-shadow.size.x)*.5,140-shadow.size.y*.78)
 	start_button.disabled=not data.playable
 	start_button.hint_text=data.name+"은 지역 소개만 제공됩니다. 현재 데모는 암사동에서 시작할 수 있습니다." if not data.playable else ""
-	start_button.tooltip_text=start_button.hint_text
+	start_button.set_meta("semantic_text",start_button.hint_text)
 	for child in resources.get_children():resources.remove_child(child);child.queue_free()
 	var food_size:Vector2={"jeongok":Vector2(73,64.373),"amsa":Vector2(62.805,72),"dongsam":Vector2(72.769,62.609)}[key]
 	var x:float=(347-72*3-14*3-food_size.x)*.5
@@ -101,7 +105,7 @@ func show_region(key:String) -> void:
 		item.set_meta("resource_kind",item_key)
 		var cast:=ArtShadow.new(item,Vector2(.75,2.5),2.2);resources.add_child(cast);resources.move_child(cast,item.get_index())
 		if i==3:
-			food=item;food.name="RegionalFood";food.tooltip_text="지역의 생활을 소개하는 먹거리입니다. 보유 수량이 아닙니다."
+			food=item;food.name="RegionalFood";food.set_meta("semantic_text","지역 소개 먹거리, 보유 수량 아님")
 			if key=="jeongok":food.position.x-=1.45;food.size=Vector2(77.4,69.073)
 		x+=item_size.x+14
 

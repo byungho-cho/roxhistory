@@ -672,13 +672,19 @@
   {
     "path": "game/assets/ui/s40000/collapse.svg",
     "source": "Locally authored v002 bone animation; existing hero rig reused",
-    "bytes": 844,
-    "sha256": "efc352cedb76be578359ba7539933c951200fdd0883dcdbb980ef60d89801556"
+    "bytes": 846,
+    "sha256": "71f4bffb7d9333fdbcd8639e14454bf4970e32befbc33763b9fb9350b9fdfeb9"
   },
   {
     "path": "game/assets/characters/motion/brisk_walk_v002.tres",
     "source": "Locally authored v002 bone animation; existing hero rig reused",
     "bytes": 97099,
     "sha256": "7b161fc646e61e2e74ee13f9ee501bec546850c3801c24f240cb48a869f8c202"
+  },
+  {
+    "path": "game/assets/ui/seed-pouch-reference-v001.png",
+    "bytes": 2150050,
+    "sha256": "f8618295c9e5ed507ab73d4e3a9391bb37cd4e7f8c09fd63a482723870923bff",
+    "source": "Selected project concept 18; reference branch cd6a2dc59613efd05c9cd15240386f3ba44c68c1. Runtime uses only the pouch rectangle through AtlasTexture; no external-game assets."
   }
 ]

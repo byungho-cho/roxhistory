@@ -1,0 +1,6 @@
+{
+  "checks": 35,
+  "failed": [],
+  "scope": "Engine playback/lifecycle regression; user listening and device checks remain separate",
+  "utc": "2026-11-03T23:23:44"
+}

@@ -1,0 +1,48 @@
+Godot Engine v4.5.1.stable.official.f62fdbde1 - https://godotengine.org
+OpenGL API 3.3.0 NVIDIA 610.88 - Compatibility - Using Device: NVIDIA - NVIDIA GeForce RTX 5060
+
+PLAY_AUDIO_STATE {"active":true,"db":-60.0,"enabled":false,"paused":false,"playing":false,"position":0.0,"reason":"configure","world":false}
+A303_AUDIO_STATE {"active":true,"bgm":false,"enabled":false,"events":[],"music_db":-60.0,"paused":false,"position":0.0,"reason":"configure","region":false,"ticks_ms":1351,"water":false,"wind":false}
+PLAY_AUDIO_STATE {"active":true,"db":-60.0,"enabled":false,"paused":false,"playing":false,"position":0.0,"reason":"configure","world":true}
+A303_AUDIO_STATE {"active":true,"bgm":false,"enabled":false,"events":[],"music_db":-60.0,"paused":false,"position":0.0,"reason":"configure","region":false,"ticks_ms":1832,"water":false,"wind":false}
+PLAY_AUDIO_STATE {"active":true,"db":-60.0,"enabled":false,"paused":false,"playing":false,"position":0.0,"reason":"configure","world":true}
+A303_AUDIO_STATE {"active":true,"bgm":false,"enabled":false,"events":[],"music_db":-60.0,"paused":false,"position":0.0,"reason":"configure","region":false,"ticks_ms":1833,"water":false,"wind":false}
+PLAY_AUDIO_STATE {"active":true,"db":-60.0,"enabled":false,"paused":false,"playing":false,"position":0.0,"reason":"configure","world":true}
+A303_AUDIO_STATE {"active":true,"bgm":false,"enabled":false,"events":[],"music_db":-60.0,"paused":false,"position":0.0,"reason":"configure","region":false,"ticks_ms":1840,"water":false,"wind":false}
+PLAY_AUDIO_STATE {"active":true,"db":-60.0,"enabled":false,"paused":false,"playing":false,"position":0.0,"reason":"configure","world":true}
+A303_AUDIO_STATE {"active":true,"bgm":false,"enabled":false,"events":[],"music_db":-60.0,"paused":false,"position":0.0,"reason":"configure","region":false,"ticks_ms":5404,"water":false,"wind":false}
+PLAY_AUDIO_STATE {"active":true,"db":-60.0,"enabled":false,"paused":false,"playing":false,"position":0.0,"reason":"configure","world":true}
+A303_AUDIO_STATE {"active":true,"bgm":false,"enabled":false,"events":[],"music_db":-60.0,"paused":false,"position":0.0,"reason":"configure","region":false,"ticks_ms":5468,"water":false,"wind":false}
+PLAY_AUDIO_STATE {"active":true,"db":-60.0,"enabled":false,"paused":false,"playing":false,"position":0.0,"reason":"configure","world":true}
+A303_AUDIO_STATE {"active":true,"bgm":false,"enabled":false,"events":[],"music_db":-60.0,"paused":false,"position":0.0,"reason":"configure","region":false,"ticks_ms":7995,"water":false,"wind":false}
+PLAY_AUDIO_STATE {"active":true,"db":-60.0,"enabled":false,"paused":false,"playing":false,"position":0.0,"reason":"configure","world":true}
+A303_AUDIO_STATE {"active":true,"bgm":false,"enabled":false,"events":[],"music_db":-60.0,"paused":false,"position":0.0,"reason":"configure","region":false,"ticks_ms":8007,"water":false,"wind":false}
+PLAY_AUDIO_STATE {"active":false,"db":-60.0,"enabled":false,"paused":false,"playing":false,"position":0.0,"reason":"configure","world":true}
+A303_AUDIO_STATE {"active":false,"bgm":false,"enabled":false,"events":[],"music_db":-60.0,"paused":false,"position":0.0,"reason":"configure","region":false,"ticks_ms":11163,"water":false,"wind":false}
+PLAY_AUDIO_STATE {"active":true,"db":-60.0,"enabled":false,"paused":false,"playing":false,"position":0.0,"reason":"configure","world":true}
+A303_AUDIO_STATE {"active":true,"bgm":false,"enabled":false,"events":[],"music_db":-60.0,"paused":false,"position":0.0,"reason":"configure","region":false,"ticks_ms":11175,"water":false,"wind":false}
+PLAY_AUDIO_STATE {"active":true,"db":-60.0,"enabled":false,"paused":false,"playing":false,"position":0.0,"reason":"configure","world":true}
+A303_AUDIO_STATE {"active":true,"bgm":false,"enabled":false,"events":[],"music_db":-60.0,"paused":false,"position":0.0,"reason":"configure","region":false,"ticks_ms":11537,"water":false,"wind":false}
+PLAY_AUDIO_STATE {"active":true,"db":-60.0,"enabled":false,"paused":false,"playing":false,"position":0.0,"reason":"configure","world":true}
+A303_AUDIO_STATE {"active":true,"bgm":false,"enabled":false,"events":[],"music_db":-60.0,"paused":false,"position":0.0,"reason":"configure","region":false,"ticks_ms":11538,"water":false,"wind":false}
+PLAY_AUDIO_STATE {"active":true,"db":-60.0,"enabled":false,"paused":false,"playing":false,"position":0.0,"reason":"configure","world":true}
+A303_AUDIO_STATE {"active":true,"bgm":false,"enabled":false,"events":[],"music_db":-60.0,"paused":false,"position":0.0,"reason":"configure","region":false,"ticks_ms":11616,"water":false,"wind":false}
+PLAY_AUDIO_STATE {"active":true,"db":-60.0,"enabled":false,"paused":false,"playing":false,"position":0.0,"reason":"configure","world":true}
+A303_AUDIO_STATE {"active":true,"bgm":false,"enabled":false,"events":[],"music_db":-60.0,"paused":false,"position":0.0,"reason":"configure","region":false,"ticks_ms":11627,"water":false,"wind":false}
+PLAY_AUDIO_STATE {"active":true,"db":-60.0,"enabled":false,"paused":false,"playing":false,"position":0.0,"reason":"configure","world":true}
+A303_AUDIO_STATE {"active":true,"bgm":false,"enabled":false,"events":[],"music_db":-60.0,"paused":false,"position":0.0,"reason":"configure","region":false,"ticks_ms":11685,"water":false,"wind":false}
+PLAY_AUDIO_STATE {"active":true,"db":-60.0,"enabled":false,"paused":false,"playing":false,"position":0.0,"reason":"configure","world":true}
+A303_AUDIO_STATE {"active":true,"bgm":false,"enabled":false,"events":[],"music_db":-60.0,"paused":false,"position":0.0,"reason":"configure","region":false,"ticks_ms":11900,"water":false,"wind":false}
+PLAY_AUDIO_STATE {"active":true,"db":-60.0,"enabled":false,"paused":false,"playing":false,"position":0.0,"reason":"configure","world":true}
+A303_AUDIO_STATE {"active":true,"bgm":false,"enabled":false,"events":[],"music_db":-60.0,"paused":false,"position":0.0,"reason":"configure","region":false,"ticks_ms":11919,"water":false,"wind":false}
+PLAY_AUDIO_STATE {"active":true,"db":-60.0,"enabled":false,"paused":false,"playing":false,"position":0.0,"reason":"configure","world":true}
+A303_AUDIO_STATE {"active":true,"bgm":false,"enabled":false,"events":[],"music_db":-60.0,"paused":false,"position":0.0,"reason":"configure","region":false,"ticks_ms":11952,"water":false,"wind":false}
+PLAY_AUDIO_STATE {"active":true,"db":-60.0,"enabled":false,"paused":false,"playing":false,"position":0.0,"reason":"configure","world":true}
+A303_AUDIO_STATE {"active":true,"bgm":false,"enabled":false,"events":[],"music_db":-60.0,"paused":false,"position":0.0,"reason":"configure","region":false,"ticks_ms":12231,"water":false,"wind":false}
+PLAY_AUDIO_STATE {"active":true,"db":-60.0,"enabled":false,"paused":false,"playing":false,"position":0.0,"reason":"configure","world":true}
+A303_AUDIO_STATE {"active":true,"bgm":false,"enabled":false,"events":[],"music_db":-60.0,"paused":false,"position":0.0,"reason":"configure","region":false,"ticks_ms":12247,"water":false,"wind":false}
+PLAY_AUDIO_STATE {"active":true,"db":-60.0,"enabled":false,"paused":false,"playing":false,"position":0.0,"reason":"configure","world":true}
+A303_AUDIO_STATE {"active":true,"bgm":false,"enabled":false,"events":[],"music_db":-60.0,"paused":false,"position":0.0,"reason":"configure","region":false,"ticks_ms":12285,"water":false,"wind":false}
+PLAY_AUDIO_STATE {"active":true,"db":-60.0,"enabled":false,"paused":false,"playing":false,"position":0.0,"reason":"configure","world":true}
+A303_AUDIO_STATE {"active":true,"bgm":false,"enabled":false,"events":[],"music_db":-60.0,"paused":false,"position":0.0,"reason":"configure","region":false,"ticks_ms":12713,"water":false,"wind":false}
+{"checks":27,"failed":[],"runtime":"Native Godot engine timers at fixed 60fps; explicit test positions, not Android wall-time play","utc":"2026-11-03T23:21:55"}

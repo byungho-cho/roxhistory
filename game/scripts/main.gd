@@ -328,7 +328,14 @@ func title_screen() -> void:
 	var continue_btn:=design_button(stage,"이어서 하기",design_rect(1108,401,388,90),enter_game,true,"hut");continue_btn.disabled=model.state.is_empty();continue_btn.hint_text="먼저 새 여정을 시작해 주세요."
 	design_button(stage,"새로 시작",design_rect(1108,513,388,82),new_game_prompt,false,"spear")
 	design_button(stage,"장 선택",design_rect(1108,617,388,82),chapter_menu,false,"compass")
-	var horn:=design_button(stage,"",design_rect(1445,44,88,88),toggle_sound,false,"horn");horn.tooltip_text="소리 켜기 / 끄기";horn.add_theme_stylebox_override("normal",DesignSkin.round_style("ivory"));horn.get_node("FigmaSkin").hide()
+	var horn:=design_button(stage,"",design_rect(1445,44,88,88),toggle_sound,false,"horn")
+	horn.name="SoundToggle";horn.set_meta("semantic_text","소리 켜기 / 끄기")
+	horn.get_node("FigmaSkin").hide()
+	for state in ["normal","hover","pressed","disabled","focus"]:horn.add_theme_stylebox_override(state,StyleBoxEmpty.new())
+	for child in horn.get_children():
+		if child is TextureRect:
+			var cast:=child.duplicate();cast.name="HornShadow";cast.position+=Vector2(1,3);cast.modulate=Color(0.12,0.07,0.02,.35);horn.add_child(cast);horn.move_child(cast,child.get_index())
+	horn.enable_art_feedback()
 	design_panel(design_rect(76,744,360,78),false)
 	picture(stage,DemoArt.icon("hut"),design_rect(95,760,50,46))
 	design_label(stage,"1장 · 선사시대의 첫 불씨",design_rect(157,767,270,32),int(21*k),Color("49321e"))
@@ -400,7 +407,7 @@ func play_hud() -> void:
 	quest_arrow=label(quest_panel,"⌃",16,Color("fff0cd"));quest_arrow.position=Vector2(183,5)
 	picture(quest_panel,DemoArt.icon("hut"),Rect2(8,7,22,22))
 	objective=label(quest_panel,"",12,Color("fff0cd"));objective.position=Vector2(34,6);objective.size=Vector2(153,48)
-	quest_panel.tooltip_text="자원·건설 터를 누르면 자동 이동합니다"
+	quest_panel.set_meta("semantic_text","퀘스트 상세 펼침·접힘")
 	joystick=DemoJoystick.new();stage.add_child(joystick);joystick.position=Vector2(safe.x,h-safe.y-140)
 	var action_width:=64.0 if w/h>2.2 else 56.0
 	var cover_extra:float=(action_width-56.0)*6.0
@@ -421,8 +428,11 @@ func play_hud() -> void:
 		if caption=="가방":b.name="InventoryButton"
 		var action_style:=StyleBoxFlat.new();action_style.bg_color=Color.TRANSPARENT;action_style.set_content_margin_all(2)
 		for state in ["normal","hover","pressed","disabled"]:b.add_theme_stylebox_override(state,action_style)
+		var nameplate:=Panel.new();nameplate.name="ActionNameplate";nameplate.mouse_filter=Control.MOUSE_FILTER_IGNORE;nameplate.show_behind_parent=true;b.add_child(nameplate)
+		nameplate.position=Vector2(2,46);nameplate.size=Vector2(action_width-4,19)
+		var plate:=StyleBoxFlat.new();plate.bg_color=Color(.19,.12,.055,.86);plate.border_color=Color(.76,.58,.30,.6);plate.set_border_width_all(1);plate.set_corner_radius_all(4);plate.shadow_color=Color(0,0,0,.25);plate.shadow_size=2;plate.shadow_offset=Vector2(0,2);nameplate.add_theme_stylebox_override("panel",plate)
 		b.add_theme_font_size_override("font_size",13)
-		b.vertical_icon_alignment=VERTICAL_ALIGNMENT_TOP;b.icon_alignment=HORIZONTAL_ALIGNMENT_CENTER;b.add_theme_constant_override("icon_max_width",40)
+		b.vertical_icon_alignment=VERTICAL_ALIGNMENT_TOP;b.icon_alignment=HORIZONTAL_ALIGNMENT_CENTER;b.add_theme_constant_override("icon_max_width",44)
 		b.add_theme_color_override("font_color",Color("fff0cd"));b.add_theme_color_override("font_disabled_color",Color("c0b299"))
 		if caption=="채집":gather_button=b
 		if caption=="건설":build_button=b
@@ -597,13 +607,13 @@ func completion() -> void:
 func claim_home(index:int) -> void:
 	if model.claim_reward(index):
 		world.feedback.rewarded()
-		for i in 6:chrome.gained("tokens",world.homes[index].position+Vector2((i-3)*8,-180),i*.055)
+		for i in 6:chrome.gained("tokens",world.reward_marker_rect(index).get_center()+Vector2((i-3)*8,0),i*.055)
 
 func world_tap(screen_point:Vector2) -> void:
 	if modal or gestures.blocked:return
 	var at:Vector2=world.get_global_transform_with_canvas().affine_inverse()*screen_point
 	for i in model.built_count():
-		if model.reward_pending(i) and Rect2(world.homes[i].position-Vector2(150,245),Vector2(300,260)).has_point(at):claim_home(i);return
+		if model.reward_pending(i) and world.reward_hit(i,at):claim_home(i);return
 	for n in model.nodes():
 		if world.exhausted(n):continue
 		var point:=DemoConfig.point(n.position)
@@ -709,7 +719,7 @@ func close_modal() -> void:
 	sync_audio()
 
 func sync_audio() -> void:
-	if is_instance_valid(audio): audio.configure(settings.get_value("app","sound",false),application_active,screen == "play",modal,screen == "region")
+	if is_instance_valid(audio): audio.configure(settings.get_value("app","sound",false),application_active,screen == "play",modal,screen == "region",screen == "title")
 
 func toast(message: String, seconds: float = 3.0) -> void:
 	if is_instance_valid(toast_label): toast_label.text = message
@@ -781,4 +791,4 @@ func apply_action_skin(caption:String)->void:
 		var skin:=StyleBoxFlat.new();skin.bg_color=Color(.32,.21,.10,.82);skin.border_color=Color("ffe0a0");skin.set_border_width_all(2);skin.set_corner_radius_all(32);skin.set_content_margin_all(0)
 		for state in ["normal","hover","pressed"]:action_toggle.add_theme_stylebox_override(state,skin)
 	var title:=label(visual,caption,15,Color("fff0cd"));title.position=Vector2(10,54);title.size=Vector2(62,22);title.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
-	action_toggle.tooltip_text=caption
+	action_toggle.set_meta("semantic_text",caption)

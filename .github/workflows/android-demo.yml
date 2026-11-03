@@ -117,6 +117,8 @@ jobs:
           ! grep -E 'SCRIPT ERROR:|ERROR:' approved-polish-tests.log
           timeout 150 xvfb-run -a godot --fixed-fps 60 --audio-driver Dummy --path game --resolution 1280x720 --script res://tests/walk_contact_tests.gd -- --test-ui 2>&1 | tee walk-contact-tests.log
           ! grep -E 'SCRIPT ERROR:|ERROR:' walk-contact-tests.log
+          timeout 150 xvfb-run -a godot --max-fps 60 --audio-driver Dummy --path game --resolution 1280x720 --script res://tests/release_review_tests.gd -- --test-ui 2>&1 | tee release-review-tests.log
+          ! grep -E 'SCRIPT ERROR:|ERROR:' release-review-tests.log
       - name: Export signed debug APK
         run: |
           set -euo pipefail

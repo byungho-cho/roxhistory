@@ -24,9 +24,11 @@ func run() -> void:
 				check(is_equal_approx(maxf(base.x,base.y),86*.9),"Other icon stays at 90 percent of shared base size: "+other)
 	var empty:=map.size*Vector2(.22,.65)
 	map.begin_pointer(0,empty);map.end_pointer(0,empty)
-	check(not map.panel_visible and not map.ui_hit(map.start_button.get_global_rect().get_center()),"Dismissal releases panel input immediately")
+	check(map.panel_visible and map.details.visible,"Background tap retains selected region card")
+	map.details.surface.get_node("CloseRegionDetails").pressed.emit()
+	check(not map.panel_visible and not map.ui_hit(map.start_button.get_global_rect().get_center()),"Explicit dismissal releases panel input immediately")
 	await create_timer(.25).timeout
-	check(not map.panel_visible and not map.details.visible,"Empty map tap hides entire information panel after close animation")
+	check(not map.panel_visible and not map.details.visible,"Explicit close hides entire information panel after close animation")
 	var previous:=map.selected
 	check(not map.ui_hit(map.start_button.get_global_rect().get_center()),"Hidden start button cannot capture map touches")
 	var snap:=map.snapshot();app.relayout();map=app.region_selection

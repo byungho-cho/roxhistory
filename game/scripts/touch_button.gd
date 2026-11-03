@@ -19,10 +19,11 @@ func set_working(value: bool) -> void:
 	working=value
 	if has_node("FigmaSkin"):return
 	if value:
+		set_meta("resting_disabled_style",get_theme_stylebox("disabled"))
 		var style:=DemoArt.button_style(true)
 		style.bg_color=Color("70592f")
 		add_theme_stylebox_override("disabled",style)
-	else: remove_theme_stylebox_override("disabled")
+	elif has_meta("resting_disabled_style"): add_theme_stylebox_override("disabled",get_meta("resting_disabled_style"))
 
 func _process(delta: float) -> void:
 	var down:=is_pressed() or (finger>=0 and not disabled)

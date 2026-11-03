@@ -72,12 +72,13 @@ func _draw() -> void:
 	draw_string(font,origin+Vector2(62,41),"정착",HORIZONTAL_ALIGNMENT_LEFT,32,12,Color("fff1d4"))
 	frame(Rect2(origin+Vector2(100,32),Vector2(97,10)),Color(.07,.08,.035,.85),Color(.9,.75,.44,.2))
 	if app.model.built_count()>0:frame(Rect2(origin+Vector2(101,33),Vector2(95*app.model.built_count()/3.0,8)),Color("8ac644"),Color(0,0,0,0))
-	frame(Rect2(slot("wood").position,Vector2(208,36)),Color(.12,.15,.09,resource_alpha*.4),Color.TRANSPARENT)
 	for key in ["wood","stone","tokens"]:
 		var rect:=slot(key);var beat:float=pulse.get(key,0.0)
+		frame(Rect2(rect.position+Vector2(11,5),Vector2(55,27)),Color(.10,.12,.07,resource_alpha*.83),Color(.85,.71,.44,resource_alpha*.18))
+		draw_line(rect.position+Vector2(23,7),rect.position+Vector2(57,7),Color(1,.93,.71,.22*resource_alpha),1,true)
 		var extent:=28.0+beat*4
 		draw_texture_rect(DemoArt.icon(key),Rect2(rect.position+Vector2(3,3),Vector2(extent,extent)),false,Color(1,1,1,resource_alpha))
-		draw_string(font,rect.position+Vector2(34,25),str(int(displayed_tokens)) if key=="tokens" else str(int(app.model.state[key])),HORIZONTAL_ALIGNMENT_LEFT,32,15,Color(1,.96,.85,resource_alpha))
+		draw_string(font,rect.position+Vector2(34,25),str(int(displayed_tokens)) if key=="tokens" else str(int(app.model.state[key])),HORIZONTAL_ALIGNMENT_LEFT,32,16,Color(1,.98,.90,resource_alpha))
 	var center:=Vector2(app.w-app.safe.x-50,app.safe.y+50)
 	draw_circle(center+Vector2(1,3),53,Color(.15,.10,.04,.20))
 	draw_circle(center,51,Color("49321e"))

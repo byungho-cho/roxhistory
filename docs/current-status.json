@@ -51,15 +51,15 @@
     "nativeSuitesPassed": 28,
     "nativeSuitesFailed": 0,
     "finalDirectInput": "Interrupted by physical Escape; pending",
-    "androidFinal": "Not performed; waits for PC acceptance",
+    "androidFinal": "Superseded by v0.1.30 Android validation; PC approval not required",
     "merged": false
   },
   "activeWork": {
     "branch": "feat/apk-motion-boundary-20261104",
-    "report": "docs/shared-reports/2026-11-04-apk-motion-boundary/report.md",
+    "report": "docs/shared-reports/2026-11-04-release-review/report.md",
     "pcReviewRequired": false,
-    "version": "0.1.29",
-    "versionCode": 30,
-    "status": "Independent motion/boundary/PC hint changes tested; image-dependent work pending; not final release"
+    "version": "0.1.30",
+    "versionCode": 31,
+    "status": "30/30 suites and Android candidate passed; merge and public APK pending"
   }
 }

@@ -1,0 +1,2 @@
+2e9ca3affcbedbefd34e184e9562e9f54dbfeaa598ff57ba9a98d70e7d883d4b  files/save.json
+68bfc6bcc2acab6923389853c56ae32dc3b58e5fbfd50148be7441936287c649  files/preferences.cfg
