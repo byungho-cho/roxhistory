@@ -60,7 +60,7 @@ func _ready() -> void:
 		var canopy_uv:=PackedVector2Array()
 		for point in canopy.polygon:canopy_uv.append((p+point)/background.scale)
 		canopy.uv=canopy_uv;add_child(canopy)
-	for n in DemoConfig.get_data().nodes:
+	for n in model.nodes():
 		var root := Node2D.new()
 		root.name = "Resource_"+str(n.id)
 		root.position = DemoConfig.point(n.position)
@@ -88,6 +88,8 @@ func _ready() -> void:
 		art_nodes[n.id] = root
 		resource_labels[n.id] = text
 		rect_body(Rect2(root.position-Vector2(28,24),Vector2(56,24)))
+		var resource_body:=get_child(get_child_count()-1)
+		resource_body.name="ResourceCollision";resource_body.reparent(root)
 	site = Node2D.new()
 	site.position = DemoConfig.point(DemoConfig.get_data().build_site)
 	add_child(site)
@@ -112,6 +114,7 @@ func _ready() -> void:
 	feedback = WorldFeedback.new(self)
 	add_child(feedback)
 	add_child(WorldAmbient.new(self))
+	add_child(ResourceRegrowth.new(self))
 	model.changed.connect(refresh)
 	refresh()
 	call_deferred("restore_clear_position")
@@ -173,8 +176,12 @@ func polygon_body(points: PackedVector2Array) -> void:
 	add_child(body)
 
 func refresh() -> void:
-	for n in DemoConfig.get_data().nodes:
-		art_nodes[n.id].modulate = Color(0.62,0.59,0.48,0.6) if exhausted(n) else Color.WHITE
+	for n in model.nodes():
+		art_nodes[n.id].position=DemoConfig.point(n.position)
+		art_nodes[n.id].visible=not exhausted(n)
+		art_nodes[n.id].modulate=Color.WHITE
+		art_nodes[n.id].get_node("ResourceCollision").get_child(0).set_deferred("disabled",exhausted(n))
+		if exhausted(n) and selected==str(n.id):selected=""
 		resource_labels[n.id].text = "%s %d/%d" % ["나무" if n.kind == "wood" else "돌",int(n.charges)-int(model.state.depleted.get(n.id,0)),int(n.charges)]
 	var saved_homes:=model.homes()
 	for i in homes.size():
@@ -200,7 +207,7 @@ func exhausted(n: Dictionary) -> bool:
 func nearest() -> Dictionary:
 	var result := {}
 	var distance := float(DemoConfig.get_data().interact_radius)
-	for n in DemoConfig.get_data().nodes:
+	for n in model.nodes():
 		var d := player.position.distance_to(DemoConfig.point(n.position))
 		if not exhausted(n) and d < distance:
 			distance = d
@@ -209,6 +216,15 @@ func nearest() -> Dictionary:
 
 func near_site() -> bool:
 	return model.built_count()<DemoConfig.HOME_GOAL and player.position.distance_to(site.position) < 150 and player.position.y >= site.position.y
+
+func interaction_at(screen_point:Vector2)->bool:
+	var at:=get_global_transform_with_canvas().affine_inverse()*screen_point
+	for n in model.nodes():
+		if not exhausted(n) and Rect2(DemoConfig.point(n.position)-Vector2(60,70),Vector2(120,90)).has_point(at):return true
+	if model.built_count()<3 and at.distance_to(site.position)<115:return true
+	for i in model.built_count():
+		if model.reward_pending(i) and Rect2(homes[i].position-Vector2(150,245),Vector2(300,260)).has_point(at):return true
+	return false
 
 func _process(_delta: float) -> void:
 	if not is_instance_valid(player): return
@@ -228,12 +244,15 @@ func _draw() -> void:
 			draw_arc(at,27,0,TAU,40,Color("ffe6a1"),2,true)
 			draw_texture_rect(DemoArt.icon("tokens"),Rect2(at-Vector2(19,19),Vector2(38,38)),false)
 	if model.built_count()<DemoConfig.HOME_GOAL:
-		draw_set_transform(site.position,0,Vector2(1,0.50))
-		draw_circle(Vector2.ZERO,112,Color(0.43,0.30,0.14,0.18))
-		draw_arc(Vector2.ZERO,110,0,TAU,64,Color("ffe2a5"),4,true)
-		for i in 8:
-			var post := Vector2.from_angle(i*TAU/8)*108
-			draw_line(post,post-Vector2(0,20),Color("9c703d"),7,true)
+		draw_set_transform(site.position)
+		var corners:=PackedVector2Array([Vector2(-100,-40),Vector2(90,-40),Vector2(115,40),Vector2(-90,52)])
+		draw_colored_polygon(corners,Color(.48,.34,.17,.10))
+		for i in 4:
+			var post:=corners[i];var next:=corners[(i+1)%4]
+			draw_polyline(PackedVector2Array([post-Vector2(0,17),post.lerp(next,.5)-Vector2(0,10),next-Vector2(0,17)]),Color("b49a67"),2.8,true)
+			draw_line(post,post-Vector2(1,26),Color("684827"),6,true)
+			draw_line(post-Vector2(1,2),post-Vector2(2,25),Color("b98e52"),2,true)
+			draw_circle(post-Vector2(1,26),3,Color("d6b477"))
 		draw_set_transform(Vector2.ZERO)
 
 func gather_stand(target: Vector2, resource_kind: String="wood") -> Vector2:

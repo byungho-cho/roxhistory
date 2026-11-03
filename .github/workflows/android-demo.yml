@@ -105,6 +105,8 @@ jobs:
           ! grep -E 'SCRIPT ERROR:|ERROR:' play-flow-tests.log
           timeout 600 xvfb-run -a godot --fixed-fps 60 --audio-driver Dummy --path game --resolution 1280x720 --script res://tests/s40000_tests.gd -- --test-ui 2>&1 | tee s40000-tests.log
           ! grep -E 'SCRIPT ERROR:|ERROR:' s40000-tests.log
+          timeout 600 xvfb-run -a godot --fixed-fps 60 --audio-driver Dummy --path game --resolution 1280x720 --script res://tests/interaction_polish_tests.gd -- --test-ui 2>&1 | tee interaction-polish-tests.log
+          ! grep -E 'SCRIPT ERROR:|ERROR:' interaction-polish-tests.log
       - name: Export signed debug APK
         run: |
           set -euo pipefail

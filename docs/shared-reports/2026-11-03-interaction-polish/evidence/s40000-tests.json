@@ -1,0 +1,5 @@
+{
+  "checks": 39,
+  "failed": [],
+  "runtime": "Windows native Godot; actual physics, skeleton transforms and lifecycle"
+}

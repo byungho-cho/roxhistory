@@ -18,6 +18,7 @@ func _process(delta:float)->void:
 	else:previous=Vector2.INF
 	queue_redraw()
 func _draw()->void:
+	var zoom:=maxf(.3,get_canvas_transform().get_scale().x)
 	for c in crumbs:draw_line(c.a,c.b,Color(1,.92,.65,.32*(1-c.age/.5)),2,true)
 	if navigation.action=="":return
 	var points:=PackedVector2Array([navigation.app.world.player.position]);points.append_array(navigation.path)
@@ -30,7 +31,7 @@ func _draw()->void:
 			var end:=minf(at+6,length)
 			var a:=points[i].lerp(points[i+1],at/length)
 			var b:=points[i].lerp(points[i+1],end/length)
-			draw_line(a,b,Color(.35,.23,.08,.28),5.5,true)
-			draw_line(a,b,Color(1,.95,.75,.60),3.5,true)
+			draw_line(a,b,Color(.25,.18,.09,.48),4.0/zoom,true)
+			draw_line(a,b,Color(1,.94,.72,.78),2.2/zoom,true)
 			at+=15
 		offset=at-length

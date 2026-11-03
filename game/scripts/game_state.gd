@@ -7,6 +7,24 @@ signal failed(message: String)
 var state: Dictionary = {}
 var store: SaveStore
 var busy := false
+const RESPAWN_SECONDS := 30.0
+
+func nodes() -> Array:
+	var result:Array=DemoConfig.get_data().nodes.duplicate(true)
+	for n in result:
+		if state.get("node_positions",{}).has(n.id):n.position=state.node_positions[n.id].duplicate()
+	return result
+
+func respawn(id:String, at:Vector2, now:float) -> bool:
+	if busy or float(state.get("respawn_due",{}).get(id,INF))>now:return false
+	for n in nodes():
+		if n.id!=id or int(state.depleted.get(id,0))<int(n.charges):continue
+		var next:=state.duplicate(true)
+		next.depleted[id]=0;next.respawn_due.erase(id)
+		if not next.has("node_positions"):next.node_positions={}
+		next.node_positions[id]=[at.x,at.y]
+		return commit(next)
+	return false
 
 func _init(save_store: SaveStore) -> void:
 	store = save_store
@@ -43,6 +61,9 @@ func gather(node_id: String, pos: Vector2 = Vector2.ZERO) -> bool:
 			busy = false
 			return false
 		next.depleted[node_id] = count+1
+		if count+1>=int(n.charges):
+			if not next.has("respawn_due"):next.respawn_due={}
+			next.respawn_due[node_id]=Time.get_unix_time_from_system()+RESPAWN_SECONDS
 		next[n.kind] += int(DemoConfig.get_data().gather_yield)
 		if pos != Vector2.ZERO:
 			next.position = [pos.x,pos.y]

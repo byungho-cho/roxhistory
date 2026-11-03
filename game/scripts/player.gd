@@ -32,6 +32,22 @@ var guide_tween: Tween
 var guide_generation := 0
 var rest_points := PackedVector2Array()
 var tool: Node2D
+var manual_camera:=false
+var camera_center:=Vector2.ZERO
+var idle_elapsed:=0.0
+
+func pan_camera(screen_delta:Vector2)->void:
+	cancel_camera_guide()
+	if not manual_camera:camera_center=camera.get_screen_center_position()
+	manual_camera=true
+	var half:=get_viewport_rect().size*.5/camera.zoom
+	camera_center-=screen_delta/camera.zoom
+	camera_center=camera_center.clamp(half,Vector2(2400,1350)-half)
+	camera.position=camera_center-global_position
+	camera.reset_smoothing();camera.force_update_scroll()
+
+func resume_camera()->void:
+	manual_camera=false;camera.position=Vector2.ZERO;camera.reset_smoothing()
 
 func _ready() -> void:
 	var shape := CollisionShape2D.new()
@@ -124,6 +140,7 @@ func zoom_at(midpoint: Vector2, factor: float, world_anchor: Vector2=Vector2.INF
 	center.x=clampf(center.x,half.x,2400-half.x)
 	center.y=clampf(center.y,half.y,1350-half.y)
 	camera.position=center-global_position
+	if manual_camera:camera_center=center
 	camera.reset_smoothing();camera.force_update_scroll()
 
 func cancel_camera_guide() -> void:
@@ -162,6 +179,7 @@ func _physics_process(delta: float) -> void:
 	position.x = clampf(position.x,40,2360)
 	position.y = clampf(position.y,40,1310)
 	var travelled := position.distance_to(before)
+	if manual_camera:camera.position=camera_center-global_position
 	if movement.length() > 0.1: face_target(position+movement)
 	motion_state = "paused" if presentation_paused else (activity if activity != "" else ("walk" if travelled > 0.05 else "idle"))
 	if motion_state == "walk":
@@ -174,6 +192,8 @@ func _physics_process(delta: float) -> void:
 	if not use_3d: update_rig()
 	if use_3d:
 		tool.visible = false
+		idle_elapsed=idle_elapsed+delta if motion_state=="idle" and not work_destination.is_finite() and not presentation_paused and direction.length()<.01 else 0.0
+		hybrid.idle_elapsed=idle_elapsed
 		hybrid.animate(delta,movement,phase,motion_state == "walk",activity,action_time,presentation_paused)
 
 func update_rig() -> void:

@@ -43,6 +43,24 @@ var actions_expanded := false
 var action_row: HBoxContainer
 var action_backdrop: Panel
 var action_toggle: DemoButton
+var quest_expanded:=true
+var quest_arrow:Label
+var quest_accent:ColorRect
+
+func toggle_quest()->void:
+	quest_expanded=not quest_expanded
+	update_quest()
+
+func update_quest()->void:
+	if not is_instance_valid(objective):return
+	var count:=model.built_count()
+	objective.text=("움막을 지어라 · %d/3채"%count) if count<3 else "정착지 완성 · 3/3채"
+	if quest_expanded:
+		objective.text+=("\n나무 %d/1 · 돌 %d/1\n자원·건설 터를 눌러 이동"%[mini(model.state.wood,1),mini(model.state.stone,1)]) if count<3 else "\n건물 위 씨앗을 받아 주세요"
+	objective.size=Vector2(158,74 if quest_expanded else 28)
+	objective.get_parent().size=Vector2(220,88 if quest_expanded else 42)
+	if is_instance_valid(quest_arrow):quest_arrow.text="⌃" if quest_expanded else "⌄"
+	if is_instance_valid(quest_accent):quest_accent.size.y=64 if quest_expanded else 18
 
 func _ready() -> void:
 	gestures=WorldGestures.new(self);add_child(gestures)
@@ -371,13 +389,13 @@ func enter_game() -> void:
 
 
 func play_hud() -> void:
-	var quest_panel:=button(stage,"",focus_objective);quest_panel.name="QuestPanel";quest_panel.custom_minimum_size=Vector2.ZERO
+	var quest_panel:=button(stage,"",toggle_quest);quest_panel.name="QuestPanel";quest_panel.custom_minimum_size=Vector2.ZERO
 	quest_panel.position=Vector2(safe.x,safe.y+64);quest_panel.size=Vector2(210,64)
 	var dark:=StyleBoxFlat.new();dark.bg_color=Color(.15,.13,.09,.78);dark.set_corner_radius_all(10);dark.set_content_margin_all(6)
 	for state in ["normal","hover","pressed"]:quest_panel.add_theme_stylebox_override(state,dark)
 	dark.border_color=Color(.94,.79,.48,.22);dark.set_border_width_all(1)
-	var accent:=ColorRect.new();accent.color=Color(.95,.73,.34,.7);accent.position=Vector2(0,12);accent.size=Vector2(2,40);accent.mouse_filter=Control.MOUSE_FILTER_IGNORE;quest_panel.add_child(accent)
-	var chevron:=label(quest_panel,"⌄",16,Color("f5cf8d"));chevron.position=Vector2(191,6)
+	quest_accent=ColorRect.new();quest_accent.color=Color(.95,.73,.34,.7);quest_accent.position=Vector2(0,12);quest_accent.size=Vector2(2,64);quest_accent.mouse_filter=Control.MOUSE_FILTER_IGNORE;quest_panel.add_child(quest_accent)
+	quest_arrow=label(quest_panel,"⌃",16,Color("f5cf8d"));quest_arrow.position=Vector2(201,6)
 	picture(quest_panel,DemoArt.icon("hut"),Rect2(8,8,26,26))
 	objective=label(quest_panel,"",13,Color("fff0cd"));objective.position=Vector2(38,6);objective.size=Vector2(150,52)
 	joystick=DemoJoystick.new();stage.add_child(joystick);joystick.position=Vector2(safe.x,h-safe.y-140)
@@ -412,6 +430,8 @@ func play_hud() -> void:
 	task_bar=ProgressBar.new();task_bar.mouse_filter=Control.MOUSE_FILTER_IGNORE;task_bar.show_percentage=false;task_bar.position=Vector2(w*.5-100,h-safe.y-120);task_bar.size=Vector2(200,7);stage.add_child(task_bar);task_bar.visible=false
 	chrome=PlayChrome.new(self);stage.add_child(chrome);chrome.size=Vector2(w,h)
 	stage.add_child(ConstructionProgress.new(self))
+	var map_hit:=button(stage,"",func():world.player.resume_camera());map_hit.name="RecenterCamera";map_hit.custom_minimum_size=Vector2.ZERO;map_hit.position=Vector2(w-safe.x-100,safe.y);map_hit.size=Vector2(100,100)
+	for state in ["normal","hover","pressed"]:map_hit.add_theme_stylebox_override(state,StyleBoxEmpty.new())
 	var portrait_hit:=button(stage,"",pause_game);portrait_hit.name="PortraitPause";portrait_hit.custom_minimum_size=Vector2.ZERO;portrait_hit.position=safe;portrait_hit.size=Vector2(58,58)
 	for state in ["normal","hover","pressed"]:portrait_hit.add_theme_stylebox_override(state,StyleBoxEmpty.new())
 	update_hud()
@@ -427,7 +447,7 @@ func inventory_summary() -> void:
 
 func update_hud() -> void:
 	if screen!="play" or not is_instance_valid(objective) or model.state.is_empty():return
-	objective.text="움막을 지어라 · %d/3\n나무 %d/1 · 돌 %d/1"%[model.built_count(),mini(model.state.wood,1),mini(model.state.stone,1)] if model.built_count()<3 else "정착지 완성 · 3/3 ✓\n건물 위 씨앗을 받아 주세요"
+	update_quest()
 
 func _process(delta: float) -> void:
 	if is_instance_valid(toast_panel): toast_panel.visible = toast_time > 0 and toast_label.text != ""
@@ -447,7 +467,9 @@ func _process(delta: float) -> void:
 		if is_instance_valid(joystick): direction = joystick.value
 		var keyboard := Vector2(float(Input.is_physical_key_pressed(KEY_D) or Input.is_physical_key_pressed(KEY_RIGHT))-float(Input.is_physical_key_pressed(KEY_A) or Input.is_physical_key_pressed(KEY_LEFT)),float(Input.is_physical_key_pressed(KEY_S) or Input.is_physical_key_pressed(KEY_DOWN))-float(Input.is_physical_key_pressed(KEY_W) or Input.is_physical_key_pressed(KEY_UP)))
 		if keyboard.length() > 0: direction = keyboard.normalized()
-	if direction.length()>0.12 and is_instance_valid(navigation):navigation.cancel()
+	if direction.length()>0.12 and is_instance_valid(navigation):
+		navigation.cancel()
+		if world.player.manual_camera:world.player.resume_camera()
 	world.player.direction = direction
 	world.player.presentation_paused = modal or not application_active
 	if task != "":
@@ -575,7 +597,8 @@ func world_tap(screen_point:Vector2) -> void:
 	var at:Vector2=world.get_global_transform_with_canvas().affine_inverse()*screen_point
 	for i in model.built_count():
 		if model.reward_pending(i) and Rect2(world.homes[i].position-Vector2(150,245),Vector2(300,260)).has_point(at):claim_home(i);return
-	for n in DemoConfig.get_data().nodes:
+	for n in model.nodes():
+		if world.exhausted(n):continue
 		var point:=DemoConfig.point(n.position)
 		if Rect2(point-Vector2(60,70),Vector2(120,90)).has_point(at):
 			if world.exhausted(n):toast("이 자원은 모두 채집했어요");return

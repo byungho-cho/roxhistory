@@ -14,6 +14,7 @@ func cancel() -> void:
 	if is_instance_valid(app.world):app.world.player.work_destination=Vector2.INF
 func start(kind:String,id:String,destination:Vector2) -> void:
 	cancel()
+	app.world.player.resume_camera()
 	if not is_instance_valid(trail):
 		trail=TravelTrail.new(self);app.world.add_child(trail)
 	if not destination.is_finite():app.toast("이곳으로 이동할 수 없어요");return
