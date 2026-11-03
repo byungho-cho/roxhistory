@@ -10,6 +10,7 @@ var resource_alpha := .75
 var displayed_tokens := 0.0
 var token_target := 0.0
 var last_map_position := Vector2.INF
+var profile_fade: GradientTexture2D
 func _init(owner_app: Node) -> void: app=owner_app
 func _ready() -> void:
 	displayed_tokens=float(app.model.state.tokens);token_target=displayed_tokens
@@ -17,6 +18,8 @@ func _ready() -> void:
 	app.model.changed.connect(queue_redraw)
 	resized.connect(queue_redraw)
 	mouse_filter=Control.MOUSE_FILTER_IGNORE
+	profile_fade=GradientTexture2D.new();profile_fade.width=304;profile_fade.height=82
+	profile_fade.gradient=Gradient.new();profile_fade.gradient.offsets=PackedFloat32Array([0,.7,1]);profile_fade.gradient.colors=PackedColorArray([Color(.141,.114,.075,.85),Color(.141,.114,.075,.72),Color(.141,.114,.075,0)])
 	if ResourceLoader.exists("res://assets/ui/s40000/portrait.png"): portrait=load("res://assets/ui/s40000/portrait.png")
 func slot(kind: String) -> Rect2:
 	var i:int=["wood","stone","tokens"].find(kind)
@@ -60,17 +63,17 @@ func _draw() -> void:
 	if not is_instance_valid(app.world) or app.model.state.is_empty(): return
 	var font:=DemoArt.theme().default_font
 	var origin: Vector2=app.safe
-	frame(Rect2(origin,Vector2(205,56)),Color(.16,.13,.09,.68),Color(.65,.48,.22,0))
+	draw_texture_rect(profile_fade,Rect2(origin+Vector2(37,4),Vector2(190,51)),false)
 
 	if portrait:draw_texture_rect(portrait,Rect2(origin+Vector2(-2,-2),Vector2(58,58)),false)
 
-	draw_string(font,origin+Vector2(64,22),"새벽",HORIZONTAL_ALIGNMENT_LEFT,138,16,Color("fff1d4"))
-	draw_string(font,origin+Vector2(64,43),"정착",HORIZONTAL_ALIGNMENT_LEFT,32,12,Color("d6e5ab"))
-	frame(Rect2(origin+Vector2(98,33),Vector2(94,9)),Color(.14,.16,.08,.75),Color(0,0,0,0))
-	if app.model.built_count()>0:frame(Rect2(origin+Vector2(99,34),Vector2(92*app.model.built_count()/3.0,7)),Color("8ac644"),Color(0,0,0,0))
+	draw_string(font,origin+Vector2(68,23),"새벽",HORIZONTAL_ALIGNMENT_LEFT,138,17,Color("fff1d4"))
+	draw_string(font,origin+Vector2(68,43),"정착",HORIZONTAL_ALIGNMENT_LEFT,32,12,Color("fff1d4"))
+	frame(Rect2(origin+Vector2(110,36),Vector2(97,8)),Color(.07,.08,.035,.85),Color(.9,.75,.44,.2))
+	if app.model.built_count()>0:frame(Rect2(origin+Vector2(111,37),Vector2(95*app.model.built_count()/3.0,6)),Color("8ac644"),Color(0,0,0,0))
+	frame(Rect2(slot("wood").position,Vector2(208,36)),Color(.12,.15,.09,resource_alpha*.4),Color.TRANSPARENT)
 	for key in ["wood","stone","tokens"]:
 		var rect:=slot(key);var beat:float=pulse.get(key,0.0)
-		frame(rect,Color(.15,.12,.08,resource_alpha*.32),Color(.65,.48,.22,0.0))
 		var extent:=28.0+beat*4
 		draw_texture_rect(DemoArt.icon(key),Rect2(rect.position+Vector2(3,3),Vector2(extent,extent)),false,Color(1,1,1,resource_alpha))
 		draw_string(font,rect.position+Vector2(34,25),str(int(displayed_tokens)) if key=="tokens" else str(int(app.model.state[key])),HORIZONTAL_ALIGNMENT_LEFT,32,15,Color(1,.96,.85,resource_alpha))
