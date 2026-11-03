@@ -1,6 +1,6 @@
-# S40000 원화 기준 구현 교정 · v0.1.21
+# S40000 원화 기준 구현 교정 · v0.1.22
 
-2026-11-03 KST. 기준 main `e23e8168170a2624868fdfde91ef8ef9c036b556`, 작업 브랜치 `feat/s40000-faithful-world-20261103`. Android versionCode 22, 패키지 `com.roxhistory.demo`. 변경 커밋 `011d0f8`, [PR #42](https://github.com/byungho-cho/roxhistory/pull/42) 병합 main `951dded282b256c6b7b90577042d735e4dc8af9f`. 최신 main의 PR #41 주민 3D 원본도 보존했다.
+2026-11-03 KST. 기준 main `e23e8168170a2624868fdfde91ef8ef9c036b556`, 작업 브랜치 `feat/s40000-faithful-world-20261103`. Android versionCode 23, 패키지 `com.roxhistory.demo`. 변경 커밋 `011d0f8`, [PR #42](https://github.com/byungho-cho/roxhistory/pull/42) 병합 main `2a70f90893387200d069d2c935d2614d5723fb27`. 최신 main의 PR #41 주민 3D 원본도 보존했다.
 
 ## 무엇이 달라졌나
 
@@ -50,13 +50,13 @@
 
 ## 최종 전달
 
-- 버전 **0.1.21 / code22**, 생성 2026-11-03 11:27:41 KST.
-- main `951dded282b256c6b7b90577042d735e4dc8af9f`에서 다시 빌드하고 Android 에뮬레이터 업데이트 설치·이어하기 확인. [최종 설치 화면](android-final-main.png): 기존 건물1·씨앗10 보존.
-- [APK 한 파일 직접 다운로드](https://github.com/byungho-cho/roxhistory/releases/download/v0.1.21/RoxHistory-0.1.21-20261103-112741.apk) · 166,683,774 bytes. 공개 URL 재다운로드 후 해시 동일 확인.
-- SHA256 `ffcb5c113706d952eb699229d3231e70d9fef9360c59b9dbcf10674b92392874`
-- 새 APK 검증 후 기존 v0.1.20 릴리스 APK만 삭제. 소스·태그·원본·과거 보고서 보존.
-- [원격 CI #55](https://github.com/byungho-cho/roxhistory/actions/runs/41566022933): 보고 시 import/state 성공, native/render 검사 진행 중. **원격 전체 통과로 표기하지 않는다.** 로컬1512 통과와 별도다.
-- 영상은 같은 변경의 검토 빌드에서 기록했으며 최종본에는 밝은 지형의 점선 대비 보강만 추가됐다. 최종 점선은 최신 캡처 참고.
+- 버전 **0.1.22 / code23**, 생성 2026-11-03 11:45:48 KST.
+- main `2a70f90893387200d069d2c935d2614d5723fb27`에서 다시 빌드하고 Android 에뮬레이터 업데이트 설치·이어하기 확인. [최종 설치 화면](android-final-main.png): 기존 건물1·씨앗10 보존.
+- [APK 한 파일 직접 다운로드](https://github.com/byungho-cho/roxhistory/releases/download/v0.1.22/RoxHistory-0.1.22-20261103-114548.apk) · 166,683,774 bytes. 공개 URL 재다운로드 후 해시 동일 확인.
+- SHA256 `edee18ae115a35e7838179d9d91e552d2b96c5be6a08fb216ef9023b0796968e`
+- 최종0.1.22 공개 다운로드 검증 후 이전0.1.21 APK 삭제. 앞서0.1.20 APK도 교체했다. 소스·태그·원본·과거 보고서 보존.
+- [원격 CI #55](https://github.com/byungho-cho/roxhistory/actions/runs/41566022933): UI101 통과 후 환경 이동 검사150초 제한으로 종료(exit124). 제한을600초로 늘린 [CI57](https://github.com/byungho-cho/roxhistory/actions/runs/41567813336) 재검증 중. **원격 전체 통과로 표기하지 않는다.** 로컬1512 통과와 별도다.
+- 영상은 같은 변경의 검토 빌드에서 기록했으며 최종본에는 밝은 지형의 점선 대비와 최소 배율 건설바 크기 보강이 추가됐다. 최종 점선은 최신 캡처 참고.
 
 ## 원격 검사 후속
 
@@ -65,3 +65,5 @@ CI55는 UI101개 통과 뒤 `environment_review.gd`의 소프트웨어 렌더 �
 ## 최소 배율 건설바 보완 · v0.1.22
 
 최소 배율에서 진행바가 발판에 비해 너무 컸다. 승인된 망치/진행바의 내부 비율은 유지하고 건물과 함께 확대·축소하되 글자가 읽히는 최소 크기를 둔다. world_life26·play_flow21 재검증 통과. 이 후속 실행 변경을 구분하기 위해 최종 버전0.1.22/code23으로 올린다.
+
+최종 후속 [PR #44](https://github.com/byungho-cho/roxhistory/pull/44) main `2a70f90893387200d069d2c935d2614d5723fb27`. [버전/생성일자 시작 화면](android-title-final.png). 공개 다운로드 해시와 같은 서명 확인 후 최종0.1.22를 설치·실행했고 건물1채/씨앗10 저장을 재확인했다.

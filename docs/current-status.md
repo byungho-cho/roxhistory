@@ -1,12 +1,12 @@
 # RoxHistory 현재 개발 현황
 
-2026-11-03 KST · **v0.1.21 / versionCode22** 배포. [PR #42](https://github.com/byungho-cho/roxhistory/pull/42) 병합 main `951dded282b256c6b7b90577042d735e4dc8af9f`. PR #41 주민 3D 원본 보관 작업을 보존했습니다.
+2026-11-03 KST · **v0.1.22 / versionCode23** 배포. [PR #42](https://github.com/byungho-cho/roxhistory/pull/42) 및 [#44](https://github.com/byungho-cho/roxhistory/pull/44) 병합 main `2a70f90893387200d069d2c935d2614d5723fb27`. PR #41 주민 3D 원본 보관 작업을 보존했습니다.
 
-- [APK 한 파일 다운로드](https://github.com/byungho-cho/roxhistory/releases/download/v0.1.21/RoxHistory-0.1.21-20261103-112741.apk)
-- SHA256 `ffcb5c113706d952eb699229d3231e70d9fef9360c59b9dbcf10674b92392874`
+- [APK 한 파일 다운로드](https://github.com/byungho-cho/roxhistory/releases/download/v0.1.22/RoxHistory-0.1.22-20261103-114548.apk)
+- SHA256 `edee18ae115a35e7838179d9d91e552d2b96c5be6a08fb216ef9023b0796968e`
 - [원화 비교·실행 영상·검증·자산 출처](shared-reports/2026-11-03-s40000-faithful/report.md)
 - 로컬23묶음1512 검사, 기존 자산127개·음원15개 통과. Android15 에뮬레이터 실제 터치 채집→건설→보상, 중복 방지, 핀치, 복귀·저장 및 최종 main 업데이트 확인. 기존 서명·생산 저장 해시 유지.
-- [CI #55](https://github.com/byungho-cho/roxhistory/actions/runs/41566022933)는 보고 시 진행 중입니다.
+- CI55는 UI 통과 후 소프트웨어 렌더 시간 제한으로 종료됐습니다. 검사/프레임은 유지하고 제한만 늘린 [CI #57](https://github.com/byungho-cho/roxhistory/actions/runs/41567813336)은 보고 시 재검증 중입니다.
 
 ## 현재 구현
 
