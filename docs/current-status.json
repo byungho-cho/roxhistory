@@ -37,5 +37,16 @@
     "pixel-exact S40000 and cloud boundary",
     "physical Android/fold testing and direct listening"
   ],
-  "verificationBasis": "22 local native/state suites passed; Android emulator touch flow and final main update verified; CI52 still in progress at publication."
+  "verificationBasis": "22 local native/state suites passed; Android emulator touch flow and final main update verified; CI52 still in progress at publication.",
+  "resident3DSourceArchive": {
+    "count": 5,
+    "path": "design/assets/residents-3d/reference-v001",
+    "storage": "Git LFS",
+    "source_preserved": true,
+    "skins": 0,
+    "animations": 0,
+    "mapping_to_approved_2d": "unassigned",
+    "runtime_integrated": false,
+    "inspection": "GLB header/JSON and source/copy hashes; not rendered or imported in game"
+  }
 }
