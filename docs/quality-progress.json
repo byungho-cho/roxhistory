@@ -1,12 +1,12 @@
 {
   "title": "RoxHistory 품질 로드맵과 진행 현황",
   "version": "0.1",
-  "updatedAt": "2026-11-01",
+  "updatedAt": "2026-11-03",
   "timezone": "Asia/Seoul",
   "goal": "암사동 한 지역에서 1~2분만 플레이해도, 완성된 게임의 매력과 확장 가능성을 느끼는 데모",
   "scope": "지역 하나 · 첫 보금자리 퀘스트 하나 · 움집 하나. 세계·캐릭터·상호작용·연출·보상·저장이 연결된 경험.",
   "qualityStatement": "캐릭터를 잠시 세워두어도 살아 있는 장소처럼 보이고, 움직이고 행동하면 소리와 연출이 즉시 반응한다.",
-  "currentFocus": "A303 최신 Figma 원본 재현·공통 UI v0.1.11 / 사용자 시각 승인·실기기 후속",
+  "currentFocus": "v0.1.19 구현·배포 / 주민 8종 외형 승인·Figma 등록 / 보행·배회·전체 HUD 후속",
   "baseline": {
     "id": "B0",
     "status": "기본 실행 사용자 확인",
@@ -25,11 +25,18 @@
     }
   },
   "design": {
-    "style": "2D 강변 배경 + 실제 3D 주인공 전용. 둥근 비율·묶은 머리·갈색 가죽옷과 밝은 마감·따뜻한 자연광.",
+    "style": "밝은 원색 입체 만화풍. 실제 3D 주인공·동물과 2D 월드/승인 원화를 구분. 주민은 원시 털가죽·끈 매듭·맨발 외형 8종 승인.",
     "fileUrl": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS",
     "specStatus": "현재 Figma 연결에서 Specs API 미지원",
     "roadmapUrl": "https://www.figma.com/board/60HqJ7ggIuvs9OLva8ZIx2",
-    "roadmapStatus": "FigJam CQ1/CQ5에 대표 구역 선행 범위·검증과 남은 품질 작업 기록"
+    "roadmapStatus": "FigJam CQ1/CQ5에 대표 구역 선행 범위·검증과 남은 품질 작업 기록",
+    "pageMap": {
+      "region": "S30000 (formerly A303)",
+      "play": "S40000",
+      "assets": "I10000",
+      "archive": "I10999",
+      "residents": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS/RoxHistory-V1.0?node-id=595-36"
+    }
   },
   "schedulePolicy": "단계별 구현·실행 화면·회귀 검증을 먼저 완료한다. 일정 단축을 위해 범위나 검사를 생략하지 않으며 근거 없는 완료일을 약속하지 않는다.",
   "progressPolicy": "P1~P4는 구현·검증 이력으로 보존. 캐릭터 중심 CQ1~CQ6는 별도 품질 트랙이며 구현, 실행 검증, 체감 품질 승인을 구분한다. 검사 수를 완성도 백분율로 환산하지 않는다.",
@@ -401,6 +408,10 @@
       "date": "2026-10-30",
       "stage": "P4",
       "event": "글꼴 굵기 설정 오류 수정, 행동/환경음과 카메라·안내 배치 보완. 실제 Android 출력 녹음·백그라운드/음소거와 전체 루프 검증."
+    },
+    {
+      "date": "2026-11-03",
+      "summary": "v0.1.19 소스·CI·릴리스 기준 재대조. 승인 주민8종 Figma 등록, 문서와 상태 분리 현행화."
     }
   ],
   "references": [
@@ -421,7 +432,7 @@
       "url": "https://github.com/byungho-cho/roxhistory"
     }
   ],
-  "revision": 6,
+  "revision": 7,
   "operatingPolicy": "2D 배경+3D 캐릭터와 기존 분위기 유지. 속도보다 완성도 우선. P4 구현·회귀·시각·오디오 출력 검증 후 main 병합, 서명 APK 단일 파일 전달.",
   "testBuildGoal": "단순 기능 데모를 넘어, 첫 진입부터 채집·건설·보상·저장·이어하기까지 연결되고 캐릭터·환경·소리·UI가 반응하는 소규모 테스트 빌드. 정식 베타 완료를 선언하는 것은 아니다.",
   "demoBalance": {
@@ -434,7 +445,7 @@
   },
   "characterQualityTrack": {
     "basis": "2026-10-31 최신 지시: 주인공과 대표 구역의 장면 조화를 먼저 완성; 주민·동물은 후속",
-    "scheduleBasis": "CQ1은 기존 15본 리그·모델 생성기 재사용으로 1~2일. CQ2는 리그 재사용과 간단한 경로로 3일. CQ3·4는 서로 다른 사족 체형·리깅·행동을 각 4일로 잠정 산정. CQ5·6 각 2일. 후속 자산 미확정으로 약속된 완료일이 아니며 선행 검토·모델 확보 시 재산정한다.",
+    "scheduleBasis": "이전 날짜 추정은 이력이며 현재 완료 약속이 아님. 승인 에셋·리깅·실기기 준비에 따라 재산정.",
     "scheduleChanges": [
       {
         "date": "2026-10-31",
@@ -475,12 +486,12 @@
         "targetCompletion": null,
         "actualStart": "2026-10-31",
         "actualCompletion": null,
-        "status": "v0.1.8 대표 구역 개발 검증 / 체감 승인 대기",
-        "implementation": "대표 구역의 배경·독립 오브젝트·크기·그림자·UI 강약 선행. 주민·동물 포함 전체 조화는 후속.",
+        "status": "대표 정착지 0.1.19 반영 / 전체 HUD 후속",
+        "implementation": "움집3종·동물3D·연기·어군·건설 효과 연결",
         "runtimeVerification": "최종 소스 로컬965, Android 통합·핀치·취소·가림·출력·동일 조건 성능; 실기기/직접 청취 미검증",
         "perceivedQuality": "팀장·사용자 검토 대기",
-        "resultLink": "shared-reports/2026-10-31-visual-refactor/report.md",
-        "blockers": "인물·동물 자산 선행",
+        "resultLink": "shared-reports/2026-11-03-world-life/report.md",
+        "blockers": "전체 접힘 HUD·구름 경계·주민 미반영",
         "nextAction": "대표 구역의 실제 플레이 비교·청감·실기기 검토 후 후속 범위 판단",
         "previousSchedule": {
           "plannedStart": "2026-11-13",
@@ -490,21 +501,21 @@
       },
       {
         "id": "CQ2",
-        "title": "주변 주민 1~2명",
+        "title": "주변 주민 8종 승인·생활 연출",
         "owner": "개발 담당",
         "reviewer": "팀장·사용자",
-        "scope": "목적지 이동·멈춤·살피기·간단한 작업",
+        "scope": "성인4·노인2·어린이2 정적 원화 승인. 실제 모델·보행·배회는 미구현.",
         "plannedStart": null,
         "targetCompletion": null,
         "actualStart": null,
         "actualCompletion": null,
-        "status": "대기",
-        "implementation": "미착수",
-        "runtimeVerification": "미수행",
-        "perceivedQuality": "팀장·사용자 검토 대기",
-        "resultLink": null,
-        "blockers": "주인공 체감 검토와 주민 원본 확인",
-        "nextAction": "선행 단계 검토 후 자산·범위 재산정",
+        "status": "외형 승인 / 구현 대기",
+        "implementation": "정적 원화·Figma 등록 완료 / 게임 구현 미착수",
+        "runtimeVerification": "주민 런타임 미검증",
+        "perceivedQuality": "원시 복장과 노인·어린이 색상 사용자 승인",
+        "resultLink": "../design/assets/residents/v001/README.md",
+        "blockers": "실제 표시 방식·리깅/보행·이동 경로 준비",
+        "nextAction": "승인 원본을 기준으로 개발 담당 구현 범위 정리",
         "previousSchedule": {
           "plannedStart": "2026-11-02",
           "targetCompletion": "2026-11-04"
@@ -520,12 +531,12 @@
         "targetCompletion": null,
         "actualStart": null,
         "actualCompletion": null,
-        "status": "대기",
-        "implementation": "미착수",
-        "runtimeVerification": "미수행",
+        "status": "3D 배치·호흡 구현 / 행동 후속",
+        "implementation": "v0.1.19 사슴 모델·호흡·채집 접근 경로 검증",
+        "runtimeVerification": "CI #51·Android 에뮬레이터",
         "perceivedQuality": "팀장·사용자 검토 대기",
-        "resultLink": null,
-        "blockers": "사족 원본·리깅 제작량 미확정",
+        "resultLink": "shared-reports/2026-11-03-world-life/report.md",
+        "blockers": "원본 모델 무리깅; 보행·먹이 찾기 미구현",
         "nextAction": "선행 단계 검토 후 자산·범위 재산정",
         "previousSchedule": {
           "plannedStart": "2026-11-05",
@@ -542,12 +553,12 @@
         "targetCompletion": null,
         "actualStart": null,
         "actualCompletion": null,
-        "status": "대기",
-        "implementation": "미착수",
+        "status": "기존 멧돼지 계획 대기",
+        "implementation": "멧돼지 미구현. v0.1.19의 곰·토끼는 별도 모델임.",
         "runtimeVerification": "미수행",
         "perceivedQuality": "팀장·사용자 검토 대기",
         "resultLink": null,
-        "blockers": "별도 멧돼지 체형·행동 제작량 미확정",
+        "blockers": "별도 멧돼지 원본·리깅·행동 필요",
         "nextAction": "선행 단계 검토 후 자산·범위 재산정",
         "previousSchedule": {
           "plannedStart": "2026-11-09",
@@ -564,19 +575,20 @@
         "targetCompletion": null,
         "actualStart": null,
         "actualCompletion": null,
-        "status": "대기",
-        "implementation": "미착수",
-        "runtimeVerification": "미수행",
+        "status": "에뮬레이터 검증 / 실물 기기 후속",
+        "implementation": "v0.1.19 검토용 APK 배포",
+        "runtimeVerification": "CI1449·Android15/API35·테스트 저장/복귀",
         "perceivedQuality": "팀장·사용자 검토 대기",
-        "resultLink": null,
-        "blockers": "실기기·청감·장시간 검증 환경 확보",
+        "resultLink": "shared-reports/2026-11-03-world-life/report.md",
+        "blockers": "실물 Android/폴드·청취·장시간 검증",
         "nextAction": "선행 단계 검토 후 자산·범위 재산정",
         "previousSchedule": {
           "plannedStart": "2026-11-15",
           "targetCompletion": "2026-11-16"
         }
       }
-    ]
+    ],
+    "updatedAt": "2026-11-03"
   },
   "playExperienceIteration": {
     "date": "2026-10-31",
@@ -646,5 +658,48 @@
     "actualListeningVerified": false,
     "remaining": "원화 비율·머리·털·의상 디테일, 실기기 성능, 실제 청감"
   },
-  "latestReport": "shared-reports/2026-11-01-a303-refactor/report.md"
+  "latestReport": "shared-reports/2026-11-03-world-life/report.md",
+  "currentStatusDocument": "current-status.md",
+  "currentImplementation": {
+    "updatedAt": "2026-11-03",
+    "timezone": "Asia/Seoul",
+    "sourceMain": "7d7b8c007cff80f1e06f657b253a98db3ce316e2",
+    "latestRelease": {
+      "tag": "v0.1.19",
+      "url": "https://github.com/byungho-cho/roxhistory/releases/tag/v0.1.19",
+      "source": "aad00f9affde32ac66e3b192ad58d2ef044de4c2",
+      "assets": [
+        {
+          "name": "RoxHistory-0.1.19-20261103-062455.apk",
+          "size": 157302401,
+          "digest": "sha256:76d0d452ba4312fcb81ed7781740ed2f9565648492d23a7e506c778493bf7272",
+          "url": "https://github.com/byungho-cho/roxhistory/releases/download/v0.1.19/RoxHistory-0.1.19-20261103-062455.apk"
+        }
+      ]
+    },
+    "ci": {
+      "run": 51,
+      "sha": "4fe66ec2826a5a1b83f9b85ed3b78284db084814",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/byungho-cho/roxhistory/actions/runs/41524086376"
+    },
+    "ciChecks": 1449,
+    "localRelatedChecks": 757,
+    "runtimeVersion": "0.1.19",
+    "versionCode": 20,
+    "residentAppearanceApproved": 8,
+    "residentFigmaRegistered": 8,
+    "residentRuntimeImplemented": 0,
+    "residentConceptTarget": 10,
+    "residentConceptRemaining": 2,
+    "pending": [
+      "resident model/walk/wandering/runtime integration",
+      "animal walking rig",
+      "individual fish-tail motion",
+      "full S40000 folding HUD and cloud boundary",
+      "physical Android/fold testing and direct listening"
+    ],
+    "verificationBasis": "Existing developer reports and remote metadata checked; no game tests rerun in this documentation update."
+  }
 }

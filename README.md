@@ -1,159 +1,24 @@
-> 2026-11-03 최신: **동물 3D·움집 3종·공통 건설 연출 v0.1.19**. [전후 비교·실행 영상·검증 보고서](docs/shared-reports/2026-11-03-world-life/report.md) · [APK 직접 다운로드](https://github.com/byungho-cho/roxhistory/releases/download/v0.1.19/RoxHistory-0.1.19-20261103-062455.apk).
-
-# 현재 개발 상태 — v0.1.8 대표 정착지 아트·공간 리팩토링
-
-2D 강변과 실제 3D 주인공을 유지하면서 바닥·강물의 대비, 독립 움집·나무·돌·통나무의 크기와 접지, 주인공 재질·작업 접점, UI 점유를 정리했습니다. 로컬 965개 검사와 Android 에뮬레이터 통합 검증을 수행했습니다. 실제 기기·직접 청취·최종 체감 품질 승인은 별도입니다. 주민·동물과 전체 베타 완료가 아닙니다.
-
-- [같은 구도 전후·원속도 영상·검증 보고서](docs/shared-reports/2026-10-31-visual-refactor/report.md)
-- [v0.1.8 기존 서명 APK 한 파일](https://github.com/byungho-cho/roxhistory/releases/download/v0.1.8-scene/RoxHistory-0.1.8-scene-debug.apk)
-- [최신 진행 현황](docs/quality-progress.md) · [주인공·대표 정착지 품질 로드맵](docs/character-quality-roadmap.md)
-- [이전 v0.1.7 기록](docs/shared-reports/2026-10-31-play-experience/report.md) · [이전 P4 기록](docs/stage4-review.md)
-
-아래는 기존 기록입니다. 일부 과거 한글 텍스트의 인코딩 손상이 남아 있습니다.
-
----
-
-# ǰ�� ���� �ε�� �� 2026-10-30
-
-���� ��ǥ�� �ϻ絿 �� �������� **ª���� �ϼ��� ���� ����**�� ����� ���Դϴ�. ���� ���� �۾��� **P2 ĳ���� �ִϸ��̼�**�̸�, �ܰ躰 ������ ���� �Ǵ����� ���� �ܰ�� �����ϸ� ����� �ǵ���� ���� �ݿ��մϴ�.
-
-- [5�ܰ� ǰ�� �ε�ʰ� �Ϸ� ����](docs/quality-roadmap-v0.1.md)
-- [���� ���� ��Ȳ�� ����](docs/quality-progress.md)
-- [ǰ�� �ε�� PDF](presentations/RoxHistory_QualityRoadmap_v0.1.pdf)
-- [Figma / FigJam �ε��](https://www.figma.com/board/60HqJ7ggIuvs9OLva8ZIx2)
-
-���� ǰ�� �ܰ�: **P1 �ܰ� �Ϸ� / P2 ���� �غ� / ���� �ܰ� ���� 1/5**. ��ǥ���� ���� ���� ���̸�, ��� ������ ���� Ȯ���� ǰ�� �ܰ� �Ϸ�� �����Դϴ�.
-
-# Android ù ���� �� 2026-10-30
-
-Godot 4.5.1 ��� �������� ���� v0.1.0 �ҽ��� `game/`�� �ֽ��ϴ�. `game/project.godot`�� ���� �����մϴ�.
-�̵� �� �������� ä�� �� ù ���� �Ǽ� �� ���� ���ɡ����塤�̾��ϱ⸦ �����մϴ�.
-
-- [���ࡤ���塤���� ����](docs/android-demo-v0.1.0.md)
-- [���� ���°� ���Ἲ Ȯ��](game/assets/RESTORE.md)
-- Android ����� �ڵ� �˻�� `.github/workflows/android-demo.yml`���� �����մϴ�.
-
-# ���� ��ȹ ���� �� 2026-10-29
-
-RoxHistory�� **�ȵ���̵� ��ġ�� �۰���**���� ��ȹ�� ��ȯ�߽��ϴ�. Godot�� �켱 �����ϸ�, ���� 1�� ��� ���� �þ��� �׸�ü�� �����⸦ �����մϴ�. ù ȭ���� ��ü �������� �ĺ����� �����ϰ� ���� �÷��̷� �����ϴ� �帧�Դϴ�.
-
-- [�ȵ���̵� �� ��ȹ�� ���� ���� v0.3](docs/app-plan-v0.3.md)
-- [PDF �þ� ����](https://chatgpt.com/library?file_id=libfile_00be5e24f14481919eda290254ec4766&account_id=personal)
-
-���� ������ ���� ����Դϴ�. �÷������������Ʈ��ù ���Կ� ���̰� ������ �� v0.3 ������ �켱�մϴ�.
-
----
-
-# �ֽ� ���� ���� �ȳ�
-
-2026-10-28 �μ��ΰ� �۾��� ���� ������ [���� ���� �ȳ�](docs/README.md)�� [�ó�ý� ���պ�](docs/synopsis-v0.1-handover.md)�Դϴ�. �Ʒ��� ������ ���� README�̸�, ���� �̿��� �ȳ��� �󼼾��� ���� ���´� ���� ����Դϴ�.
-
----
-
 # RoxHistory
 
-�ѱ���� �ѱ� ������ ū �帧�� ���, Ž��, �Ĺְ� ���� �������� �����ϴ� ������.
+선사시대에서 시작해 조선·현대사까지 아우르는 한국사 게임입니다. 현재 개발 대상은 Godot 기반 Android 초기 정착지 데모입니다.
 
-���� �ܰ�� �ʱ� �ó�ý� v0.1�̴�. ���� �ڵ�� ���� �������� �ʴ´�.
+**2026-11-03 현재: v0.1.19 구현·배포, 주민 외형 8종 승인·Figma 등록 완료. 주민 배회·보행은 개발 대기입니다.**
 
-## ���� ����
+- [현재 개발 현황과 남은 범위](docs/current-status.md)
+- [최신 APK 한 파일](https://github.com/byungho-cho/roxhistory/releases/download/v0.1.19/RoxHistory-0.1.19-20261103-062455.apk) · [실행·검증 보고서](docs/shared-reports/2026-11-03-world-life/report.md)
+- [문서 목록](docs/README.md) · [Figma·디자인 에셋](design/README.md)
+- [승인 주민 8종](design/assets/residents/v001/README.md) · [개발 지시 기준](docs/developer-instructions-current.md)
 
-- [�ʱ� �ó�ý�](docs/synopsis-v0.1.md)
-- [���� ���](docs/decisions.md)
-- `docs/RoxHistory_Synopsis_v0.1.docx` ���� ������
-- `presentations/RoxHistory_Overview_v0.1.pptx` �Ѵ��� ���� ��ǥ �ڷ�
-- [������ �۾� ����](design/README.md)
+이번까지 반영된 사항은 앱 아이콘·선택음·금빛 오로라, 동물 3D 배치와 호흡, 움집 3종과 저장되는 스타일, 연기·물고기 떼·공통 건설 연출·주인공 보행 조정입니다. 동물 보행 리깅·전체 HUD·실물 기기와 직접 청취 확인은 후속입니다.
 
-�������� ������ Markdown �ó�ý���. Word ������ ��ǥ �ڷ�� �̸� �������� ���� �������̸�, ���� ���� �� �Բ� �����Ѵ�.
+팀장은 요구사항·Figma·문서를, 개발 담당은 구현·검증·빌드를 담당합니다. [역할 분담](docs/team-workflow.md).
 
-## ����� ����
+## 저장소 자료
 
-- `docs/` �ó�ý�, ���� ��ϰ� ���� �ڷ�
-- `presentations/` ��ǥ �ڷ�
-- `design/` Figma ��ũ�� ���� �۾� ����
-- `assets/` ���־� ���� ����� �̹���
-- `scripts/` ������ ��ǥ �ڷ� ���� �ҽ�
+- game/: 실제 게임 소스. 이번 문서·원화 갱신에서 수정하지 않았습니다.
+- design/: 승인 원화·원본과 Figma 연결 정보.
+- assets/: 원본 음악·참고 에셋. [오디오 카탈로그](assets/audio/README.md).
+- docs/: 현황·개발 기준·날짜별 증거 보고서.
+- presentations/: 작성 당시 기획·로드맵 발표 자료.
 
-## ���� ����� ����
-
-���� Git �̷��� ������ ���޺��̴�. ���� ����Ҵ� ���� �������� �ʾҴ�. �� ����� ����Ҹ� ������ �� ���� �������� ������ �� �ִ�.
-
-```bash
-git remote add origin <��_�����_URL>
-git push -u origin main
-```
-
-�� ����Ҹ� ���� �� README, ���̼���, gitignore �ʱ�ȭ�� �����ϸ� ���� �̷°� �浹�� ���� �� �ִ�. �Ǵ� ���� ZIP�� `roxhistory-v0.1.bundle`�� Git �̷��� �����Ѵ�.
-
-```bash
-git clone roxhistory-v0.1.bundle roxhistory
-```
-
-�Ǹ��� ���̼����� ���� ���� ������ �ܺ� ���� �㰡�� �ο����� �ʴ´�. ����� ���� �̹����� ���� ���� �ڷ�� ������� �ʴ´�.
-# Android 첫 데모 · 2026-10-30
-
-Godot 4.5.1 기반 오프라인 데모 v0.1.1-stage1 소스는 `game/`에 있습니다. `game/project.godot`을 열어 실행합니다.
-이동 → 나무·돌 채집 → 첫 움집 건설 → 보상 수령·저장·이어하기를 제공합니다.
-
-- [1단계 배경·오브젝트: 전후 캡처·영상·검증](docs/stage1/README.md)
-- [기존 v0.1.0 실행·빌드 기록](docs/android-demo-v0.1.0.md)
-- [원본 에셋과 무결성 확인](game/assets/RESTORE.md)
-- Android 빌드와 자동 검사는 `.github/workflows/android-demo.yml`에서 실행합니다.
-
-# 현재 기획 기준 · 2026-10-29
-
-RoxHistory는 **안드로이드 설치형 앱게임**으로 기획을 전환했습니다. Godot를 우선 검증하며, 기존 1안 기반 보강 시안의 그림체와 분위기를 유지합니다. 첫 화면은 전체 지도에서 후보지를 선택하고 지역 플레이로 진입하는 흐름입니다.
-
-- [안드로이드 앱 기획과 시작 지도 v0.3](docs/app-plan-v0.3.md)
-- [PDF 시안 보기](https://chatgpt.com/library?file_id=libfile_00be5e24f14481919eda290254ec4766&account_id=personal)
-
-이하 내용은 이전 기록입니다. 플랫폼·기술·아트·첫 진입에 차이가 있으면 위 v0.3 기준을 우선합니다.
-
----
-
-# 최신 설계 기준 안내
-
-2026-10-28 인수인계 작업의 현재 기준은 [설계 문서 안내](docs/README.md)와 [시놉시스 정합본](docs/synopsis-v0.1-handover.md)입니다. 아래는 복원한 이전 README이며, 원격 미연결 안내와 상세안의 합의 상태는 과거 기록입니다.
-
----
-
-# RoxHistory
-
-한국사와 한국 지리의 큰 흐름을 사냥, 탐험, 파밍과 도시 성장으로 경험하는 웹게임.
-
-현재 단계는 초기 시놉시스 v0.1이다. 게임 코드는 아직 포함하지 않는다.
-
-## 기준 문서
-
-- [초기 시놉시스](docs/synopsis-v0.1.md)
-- [결정 기록](docs/decisions.md)
-- `docs/RoxHistory_Synopsis_v0.1.docx` 문서 배포본
-- `presentations/RoxHistory_Overview_v0.1.pptx` 한눈에 보는 발표 자료
-- [디자인 작업 연결](design/README.md)
-
-콘텐츠의 기준은 Markdown 시놉시스다. Word 문서와 발표 자료는 이를 바탕으로 만든 배포본이며, 내용 변경 시 함께 갱신한다.
-
-## 저장소 구성
-
-- `docs/` 시놉시스, 결정 기록과 참고 자료
-- `presentations/` 발표 자료
-- `design/` Figma 링크와 다음 작업 범위
-- `assets/` 비주얼 방향 검토용 이미지
-- `scripts/` 문서와 발표 자료 생성 소스
-
-## 원격 저장소 연결
-
-로컬 Git 이력을 포함한 전달본이다. 원격 저장소는 아직 연결하지 않았다. 빈 비공개 저장소를 생성한 뒤 다음 명령으로 연결할 수 있다.
-
-```bash
-git remote add origin <새_저장소_URL>
-git push -u origin main
-```
-
-새 저장소를 만들 때 README, 라이선스, gitignore 초기화를 생략하면 기존 이력과 충돌을 피할 수 있다. 또는 전달 ZIP의 `roxhistory-v0.1.bundle`로 Git 이력을 복원한다.
-
-```bash
-git clone roxhistory-v0.1.bundle roxhistory
-```
-
-권리와 라이선스는 별도 결정 전까지 외부 배포 허가를 부여하지 않는다. 검토용 생성 이미지를 역사 복원 자료로 사용하지 않는다.
+예전 기획·검증 자료와 태그는 이력으로 보존합니다. 과거 APK는 정리돼 기존 다운로드 링크가 유효하지 않을 수 있습니다. 현재 상태와 다운로드는 위 현황 문서를 기준으로 확인합니다.

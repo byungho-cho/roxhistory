@@ -1,0 +1,100 @@
+{
+  "file_key": "zkbflw9fCdAlWbphhw5pSS",
+  "page_id": "226:6",
+  "page_name": "I10000. 아이콘·에셋",
+  "section_id": "595:36",
+  "review_frame_id": "595:38",
+  "section_name": "CHR-002–009 · 주변 주민 / 승인 8종",
+  "url": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS/RoxHistory-V1.0?node-id=595-36",
+  "entries": [
+    {
+      "code": "CHR-002",
+      "local": "NPC-001",
+      "key": "young-male",
+      "name": "청년 남성 · 채집꾼",
+      "file": "NPC-001_male-young-gatherer_primitive_v003.png",
+      "componentId": "595:46",
+      "imageNodeId": "595:47",
+      "instanceId": "595:50"
+    },
+    {
+      "code": "CHR-003",
+      "local": "NPC-002",
+      "key": "sturdy-male",
+      "name": "중년 남성 · 건축 일꾼",
+      "file": "NPC-002_male-sturdy-builder_primitive_v002.png",
+      "componentId": "595:53",
+      "imageNodeId": "595:54",
+      "instanceId": "595:57"
+    },
+    {
+      "code": "CHR-004",
+      "local": "NPC-003",
+      "key": "young-female",
+      "name": "성인 여성 · 채집꾼",
+      "file": "NPC-003_female-young-forager_primitive_v002.png",
+      "componentId": "595:60",
+      "imageNodeId": "595:61",
+      "instanceId": "595:64"
+    },
+    {
+      "code": "CHR-005",
+      "local": "NPC-004",
+      "key": "mature-female",
+      "name": "중년 여성 · 토기 장인",
+      "file": "NPC-004_female-mature-potter_primitive_v002.png",
+      "componentId": "595:67",
+      "imageNodeId": "595:68",
+      "instanceId": "595:71"
+    },
+    {
+      "code": "CHR-006",
+      "local": "NPC-005",
+      "key": "elder-male",
+      "name": "할아버지 · 회청록",
+      "file": "NPC-005_elder-man_primitive_concept_color_v002.png",
+      "componentId": "599:42",
+      "imageNodeId": "599:43",
+      "instanceId": "599:46"
+    },
+    {
+      "code": "CHR-007",
+      "local": "NPC-006",
+      "key": "elder-female",
+      "name": "할머니 · 자주·적갈색",
+      "file": "NPC-006_elder-woman_primitive_concept_color_v002.png",
+      "componentId": "599:49",
+      "imageNodeId": "599:50",
+      "instanceId": "599:53"
+    },
+    {
+      "code": "CHR-008",
+      "local": "NPC-007",
+      "key": "child-male",
+      "name": "남자아이 · 초록",
+      "file": "NPC-007_child-boy_primitive_concept_color_v003.png",
+      "componentId": "599:56",
+      "imageNodeId": "599:57",
+      "instanceId": "599:60"
+    },
+    {
+      "code": "CHR-009",
+      "local": "NPC-008",
+      "key": "child-female",
+      "name": "여자아이 · 황토·노랑",
+      "file": "NPC-008_child-girl_primitive_concept_color_v002.png",
+      "componentId": "599:63",
+      "imageNodeId": "599:64",
+      "instanceId": "599:67"
+    }
+  ],
+  "validation": {
+    "component_count": 8,
+    "instance_count": 8,
+    "fonts": [
+      "Noto Sans KR"
+    ],
+    "screenshot": "evidence/figma-approved-eight.png",
+    "visual_check": "passed"
+  }
+}

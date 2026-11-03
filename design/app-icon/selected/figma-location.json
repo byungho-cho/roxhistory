@@ -1,10 +1,10 @@
 {
-  "updated_on": "2026-11-02",
+  "updated_on": "2026-11-03",
   "file_key": "zkbflw9fCdAlWbphhw5pSS",
   "page_id": "226:6",
-  "page_name": "I100. 아이콘과 에셋",
+  "page_name": "I10000. 아이콘·에셋",
   "section_id": "402:120",
-  "section_name": "10 · 앱 아이콘 / 채택 1안",
+  "section_name": "APP-001 · 앱 아이콘",
   "url": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS/RoxHistory-V1.0?node-id=402-120",
   "source_node_id": "402:127",
   "source_size": [
@@ -18,5 +18,5 @@
   },
   "image_hash": "1ec052d5dbd3ee4e9e376e9e3f0b81e68ef50be3",
   "validation": "Visual screenshot checked after line-height fix; same image hash on original and all previews; Black Han Sans and Do Hyeon fonts match I100.",
-  "game_implementation": "개발 담당 적용 대기"
+  "game_implementation": "v0.1.17에 적용·Android 검증, v0.1.19 유지"
 }

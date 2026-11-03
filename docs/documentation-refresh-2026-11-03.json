@@ -1,0 +1,169 @@
+{
+  "date": "2026-11-03",
+  "baseline_main": "7d7b8c007cff80f1e06f657b253a98db3ce316e2",
+  "apk_source": "aad00f9affde32ac66e3b192ad58d2ef044de4c2",
+  "evidence": {
+    "mainSha": "7d7b8c007cff80f1e06f657b253a98db3ce316e2",
+    "prs": [
+      {
+        "number": 37,
+        "title": "docs: 0.1.19 전후 비교·Android 검증·APK 배포 기록",
+        "state": "closed",
+        "merged_at": "2026-11-02T21:30:05Z",
+        "head": "docs/worldlife-verification-20261103",
+        "sha": "e6305b00e1cd486f4237e95a3a45dc7283990dac"
+      },
+      {
+        "number": 36,
+        "title": "S40000: 동물 3D·움집 3종·공통 건설 연출과 보행 개선",
+        "state": "closed",
+        "merged_at": "2026-11-02T21:24:21Z",
+        "head": "feat/s40000-world-life-20261103",
+        "sha": "4fe66ec2826a5a1b83f9b85ed3b78284db084814"
+      },
+      {
+        "number": 35,
+        "title": "오로라 원화 교정 전후 비교·Android 실행·v0.1.18 전달 기록",
+        "state": "closed",
+        "merged_at": "2026-11-02T03:36:54Z",
+        "head": "docs/a303-aurora-reference-delivery",
+        "sha": "de98631c319c7b291a42771f5c755b933542430b"
+      },
+      {
+        "number": 34,
+        "title": "A303 금빛 오로라를 채택 원화의 높이·광량·형태로 교정",
+        "state": "closed",
+        "merged_at": "2026-11-02T03:30:44Z",
+        "head": "fix/a303-aurora-reference",
+        "sha": "15945eec70a7d9cb156591e57f66be5c79bfa3de"
+      },
+      {
+        "number": 33,
+        "title": "v0.1.17 설치 아이콘·오로라·Android 음향 검증 보고서",
+        "state": "closed",
+        "merged_at": "2026-11-02T02:16:54Z",
+        "head": "docs/a303-aurora-release-review",
+        "sha": "cdcb138a13f5c0cdbfd0f505595e6f6453825766"
+      },
+      {
+        "number": 32,
+        "title": "A303 금빛 오로라·채택 앱 아이콘·연속 선택음 수정 v0.1.17",
+        "state": "closed",
+        "merged_at": "2026-11-02T01:57:53Z",
+        "head": "feat/a303-aurora-icon",
+        "sha": "0e9b67695e1b1d4e309a22fe28b371921474d6f7"
+      }
+    ],
+    "releases": [
+      {
+        "tag": "v0.1.19",
+        "url": "https://github.com/byungho-cho/roxhistory/releases/tag/v0.1.19",
+        "source": "aad00f9affde32ac66e3b192ad58d2ef044de4c2",
+        "assets": [
+          {
+            "name": "RoxHistory-0.1.19-20261103-062455.apk",
+            "size": 157302401,
+            "digest": "sha256:76d0d452ba4312fcb81ed7781740ed2f9565648492d23a7e506c778493bf7272",
+            "url": "https://github.com/byungho-cho/roxhistory/releases/download/v0.1.19/RoxHistory-0.1.19-20261103-062455.apk"
+          }
+        ]
+      },
+      {
+        "tag": "v0.1.18-aurora-reference",
+        "url": "https://github.com/byungho-cho/roxhistory/releases/tag/v0.1.18-aurora-reference",
+        "source": "b89db1e4fbb60fa0522d535a5f6982d09b68b999",
+        "assets": []
+      },
+      {
+        "tag": "v0.1.17-aurora-icon",
+        "url": "https://github.com/byungho-cho/roxhistory/releases/tag/v0.1.17-aurora-icon",
+        "source": "d6b23163eab3e32b49faa50a9b2d28c52ef4a394",
+        "assets": []
+      },
+      {
+        "tag": "v0.1.16-a303-audio",
+        "url": "https://github.com/byungho-cho/roxhistory/releases/tag/v0.1.16-a303-audio",
+        "source": "b578cffab38fb435b6d96a808d95748372a5c206",
+        "assets": [
+          {
+            "name": "SHA256SUMS.txt",
+            "size": 105,
+            "digest": "sha256:2bf771c5ec87d94234ba27375dcaf828b5355922105db26982371b23ce328c87",
+            "url": "https://github.com/byungho-cho/roxhistory/releases/download/v0.1.16-a303-audio/SHA256SUMS.txt"
+          },
+          {
+            "name": "SOURCE_COMMIT.txt",
+            "size": 41,
+            "digest": "sha256:a36be19399f5a255a8a5637b1c60a703de4162602925c01da5537ba0cb48dacb",
+            "url": "https://github.com/byungho-cho/roxhistory/releases/download/v0.1.16-a303-audio/SOURCE_COMMIT.txt"
+          }
+        ]
+      }
+    ],
+    "ci": {
+      "run": 51,
+      "sha": "4fe66ec2826a5a1b83f9b85ed3b78284db084814",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/byungho-cho/roxhistory/actions/runs/41524086376"
+    }
+  },
+  "changed_documents": [
+    "design/assets/residents/v001/manifest.json",
+    "design/assets/residents/v001/figma-state.json",
+    "design/assets/residents/v001/prompts.txt",
+    "design/assets/residents/.gitattributes",
+    "design/assets/residents/v001/README.md",
+    "docs/current-status.md",
+    "README.md",
+    "docs/README.md",
+    "design/README.md",
+    "docs/current-status.json",
+    "docs/quality-progress.json",
+    "docs/quality-progress.md",
+    "docs/character-quality-roadmap.md",
+    "docs/developer-instructions-current.md",
+    "docs/team-lead-change-register.md",
+    "docs/developer-instructions-2026-11-02.md",
+    "docs/stage2-review.md",
+    "docs/decision-register-v0.1.md",
+    "docs/stage3-review.md",
+    "docs/stage2-character-instructions.md",
+    "docs/synopsis-v0.1.md",
+    "docs/app-plan-v0.3.md",
+    "docs/development-design-v0.1.md",
+    "docs/hybrid-review.md",
+    "docs/stage4-review.md",
+    "docs/quality-roadmap-v0.1.md",
+    "docs/handover-audit-2026-10-28.md",
+    "docs/synopsis-v0.1-handover.md",
+    "docs/android-demo-v0.1.0.md",
+    "docs/team-workflow.md",
+    "docs/decisions.md",
+    "docs/shared-reports/README.md",
+    "design/figma-sync-v0.1.md",
+    "design/app-icon/README.md",
+    "design/app-icon/selected/README.md",
+    "design/app-icon/selected/manifest.json",
+    "design/assets/huts/v001/README.md",
+    "design/assets/effects/FX-001/README.md",
+    "design/assets/effects/FX-002/README.md",
+    "design/assets/effects/FX-003/README.md",
+    "design/assets/world-objects/v001/README.md",
+    "design/assets/world-objects/v002/README.md",
+    "design/assets/s40000/v001/README.md",
+    "assets/audio/README.md",
+    "assets/audio/handoff-2026-11-02.md",
+    "assets/audio/decisions.md",
+    "assets/audio/catalog.json",
+    "docs/documentation-refresh-2026-11-03.md",
+    "design/app-icon/concepts/v003/README.md",
+    "design/app-icon/selected/figma-location.json",
+    "design/ui-ux-review-v0.1.md"
+  ],
+  "figma_resident_section": "595:36",
+  "approved_residents": 8,
+  "remaining_concepts": 2,
+  "game_code_changed": false,
+  "tests_rerun": false
+}

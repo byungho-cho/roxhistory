@@ -1,3 +1,5 @@
+> **2026-11-03 현재:** 페이지는 P/S/C/I/U 코드 체계로 정리됐습니다. [현재 페이지·개발 현황](../docs/current-status.md), [주민 8종 승인 등록](https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS/RoxHistory-V1.0?node-id=595-36), [노드 매핑](assets/residents/v001/figma-state.json)을 사용합니다. 아래는 2026-10-28 동기화 이력입니다.
+
 # Figma 동기화 기록 v0.1
 
 기준일: 2026-10-28 · 상태: 화면 배치 검토안

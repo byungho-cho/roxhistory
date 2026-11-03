@@ -1,46 +1,27 @@
-> 2026-11-02 최신: **A303 음악·선택음·잔잔한 지도 연출 v0.1.16**. [실행 자료와 검증](shared-reports/2026-11-02-a303-audio/report.md) · [팀장·개발 담당 역할 분담](team-workflow.md).
+# RoxHistory 문서 안내
 
-> 2026-11-01 최신: **A303 새 비행 방향·전곡리 이름 중앙 정렬·흐르는 구름 v0.1.14**. [수정 화면·영상·검증](shared-reports/2026-11-01-a303-flight-clouds/report.md). 이전 v0.1.13 피드백 보완이며 기존 지도·게임 흐름을 유지합니다. 아래는 이전 이력입니다.
+2026-11-03 KST. **현재 개발 현황은 v0.1.19, 주민 8종은 외형 승인·Figma 등록 완료 / 게임 반영 대기**입니다.
 
-> 2026-11-01 최신 작업: **A303 선택 모션·새·물고기 환경 효과 v0.1.13**. [실행 화면·영상·검증 보고서](shared-reports/2026-11-01-a303-living-map/report.md). 지역 선택은 고정 지도·수동 카메라를 유지합니다. 새·물고기는 지도 장식이며 주민·동물 게임 시스템 완료가 아닙니다. 사용자 체감 승인·실기기 검증은 후속입니다. 아래는 이전 개발 이력입니다.
+| 문서 | 용도 |
+| --- | --- |
+| [현재 개발 현황](current-status.md) | 구현·승인·미완료·최신 다운로드 기준 |
+| [품질 진행](quality-progress.md) · [JSON](quality-progress.json) | 상태와 증거 연결 |
+| [수정사항 대장](team-lead-change-register.md) | 완료 요청과 새 주민 요청 구분 |
+| [최신 개발 지시 기준](developer-instructions-current.md) | 개발 담당의 잔여 범위 |
+| [캐릭터 품질 로드맵](character-quality-roadmap.md) | 주민·동물·실기기 품질 상태 |
+| [역할 분담](team-workflow.md) | 팀장과 개발 담당 범위 |
+| [공유 보고서](shared-reports/README.md) | 날짜별 구현·실행·검증 증거 |
+| [디자인 에셋](../design/README.md) | 최신 Figma·원본·아카이브 |
+| [음악·효과음](../assets/audio/README.md) | 채택곡·백업·런타임 상태 |
 
-# 최신 구현·검토 자료 — 2026-10-31
+[v0.1.19 APK](https://github.com/byungho-cho/roxhistory/releases/download/v0.1.19/RoxHistory-0.1.19-20261103-062455.apk) · [최신 검증 보고서](shared-reports/2026-11-03-world-life/report.md).
 
-[대표 정착지 아트·공간 v0.1.8 보고서](shared-reports/2026-10-31-visual-refactor/report.md)에서 전후 화면, Android 영상, APK와 검증 범위를 확인합니다. [공유 보고서 목록](shared-reports/README.md), [현재 진행](quality-progress.md), [CQ1 이후 계획](character-quality-roadmap.md)을 최신 기준으로 사용합니다. 기존 PDF는 과거 기록이며 이번에는 새로 만들지 않았습니다.
+## 이전 기획과 검증 기록
 
-아래는 기존 기획 문서 안내 이력입니다.
+시놉시스 v0.1, 앱 계획 v0.3, 초기 개발 설계, P1~P4·하이브리드 검토와 날짜가 붙은 지시문은 작성 당시의 기획·구현 이력입니다. 현재 전체 제품 구현이나 품질 승인을 뜻하지 않습니다. 과거 내용과 현재 상태가 충돌하면 current-status.md를 먼저 확인합니다.
 
----
+- [앱 계획](app-plan-v0.3.md) · [시놉시스](synopsis-v0.1-handover.md) · [초기 결정 기록](decision-register-v0.1.md)
+- [이전 개발 지시문과 반영 결과](developer-instructions-2026-11-02.md) · [초기 개발 설계](development-design-v0.1.md)
+- Word/PPT/PDF는 작성 당시 산출물로 보존합니다. 최신 구현 상태는 현행 Markdown·JSON과 실행 보고서에 기록합니다.
 
-# RoxHistory ���� ���� �ȳ�
-
-������: 2026-10-30. ���� ���� ǰ�� ������ �������������Ϸ� ������ **[ǰ�� �ε�� v0.1](quality-roadmap-v0.1.md)**�� �����ϴ�. [���� ��Ȳ�� ����](quality-progress.md), [PDF](../presentations/RoxHistory_QualityRoadmap_v0.1.pdf), [FigJam](https://www.figma.com/board/60HqJ7ggIuvs9OLva8ZIx2)�� �Բ� �����մϴ�.
-
-����� P1 �ܰ� �Ϸ�, P2 ĳ���� �ִϸ��̼� ���� �غ��Դϴ�. �̹� �ܰ��� ���� �Ϸᡤ���� �Ϸᡤ����� Ȯ�� �ϷḦ ������ ����մϴ�. ��ǥ���� ������ �����Դϴ�.
-
-�Ʒ��� 2026-10-28�� **�ʱ� �ó�ý� v0.1 �μ��ΰ� ���պ�** �ȳ��Դϴ�. ��ü ��ǰ�� ������ ������ �����ϸ�, �ϻ絿 ������ ������ ���� ������ �ֽ� �ε���� �켱�մϴ�.
-
-## ���� ���� ����
-
-1. [�ó�ý� v0.1 ���պ�](synopsis-v0.1-handover.md)
-2. [Ȯ�������䡤��Ȯ�� ����](decision-register-v0.1.md)
-3. [���� �۾� Ȯ�� �� ���� ���](handover-audit-2026-10-28.md)
-4. [UI/UX �����](../design/ui-ux-review-v0.1.md)
-5. [React��TypeScript ���� ���� �����](development-design-v0.1.md)
-6. [�Ұ� PPT ���պ�](../presentations/RoxHistory_Overview_v0.1-handover.pptx)
-
-## ������ �켱����
-
-���� ����ڰ� ������ �μ��ΰ� ���ø� �ֽ� �۾� �������� ����Ѵ�. ���� ������ �󼼾Ȱ� �浹�ϴ� ������ �������� �ʰ� **���� �󼼾ȡ���Ȯ�� �ʿ�**�� ����Ѵ�. �̴� ���� ���ǰ� �����ٴ� �浵, �󼼾��� ����ߴٴ� �浵 �ƴϴ�.
-
-���� �߽�, ����ô� ����, �ô� ��ȭ�� �ѱ� ������ �ڿ������� �н��� Ȯ�� �����̴�. ��ü���� ���� �帣���ݺ� �ൿ�����С��ڿ������塤���� �б�� ���� Ȯ������ �ʴ´�.
-
-## ������ ���� ���⹰
-
-- [���� �ó�ý� Markdown](synopsis-v0.1.md)
-- [���� ���� ���](decisions.md)
-- [���� Word �ó�ý�](RoxHistory_Synopsis_v0.1.docx)
-- [���� 10�� �Ұ� PPT](../presentations/RoxHistory_Overview_v0.1.pptx)
-- [���� Figma �۾� ����](../design/README.md)
-
-���� �ڷῡ�� ���� RPG��3�� ���� ��Ρ��� 40�塤�ô� ����� ���� �������� ����Ǿ� �ִ�. ���� Ȯ�� ������� �״�� �ο����� ���� ���� ����� ���� Ȯ���Ѵ�.
+이전 릴리스의 APK 18개는 기존 배포 정리에서 삭제됐으며, 과거 보고서의 다운로드 링크는 현재 설치 안내가 아닙니다.
