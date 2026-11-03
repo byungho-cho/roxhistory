@@ -1,7 +1,7 @@
 class_name ConstructionProgress
 extends Control
 
-# Figma 582:83: retain the approved geometry, scaled as one fixed-size HUD unit.
+# Figma 582:83 geometry follows its building, with a minimum readable size.
 var app: Node
 var fill: TextureRect
 var timer: Label
@@ -68,6 +68,8 @@ func _process(delta: float) -> void:
 	timer.text = "%02d:%02d:%02d" % [seconds/3600,(seconds/60)%60,seconds%60]
 	hammer.rotation = deg_to_rad(8+sin(clock*TAU/0.6)*12)
 	var point: Vector2 = app.world.get_global_transform_with_canvas()*app.world.site.position
-	position = point-Vector2(133,85)
+	var world_zoom:float=app.world.get_global_transform_with_canvas().get_scale().x
+	scale=Vector2.ONE*clampf(world_zoom*.85,.34,.68)
+	position = point-Vector2(size.x*scale.x*.5,150*world_zoom+size.y*scale.y)
 	position.x = clampf(position.x,app.safe.x,app.w-app.safe.x-size.x*scale.x)
 	position.y = clampf(position.y,app.safe.y+90,app.h-app.safe.y-100)
