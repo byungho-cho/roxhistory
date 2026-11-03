@@ -636,13 +636,13 @@
   },
   {
     "path": "game/assets/characters/residents/female.glb",
-    "bytes": 1331376,
-    "sha256": "54ada8a718fea651e7f651435615b78fa1886166f4d0e97983a3ed1823e75579"
+    "bytes": 1301648,
+    "sha256": "9c2bb747a2231210435c6cf9c8bd1b4d5b525a7ca854814f2267ef3411632f02"
   },
   {
     "path": "game/assets/characters/residents/sturdy_male.glb",
-    "bytes": 1308000,
-    "sha256": "e4cd666bbe97a340094af1b359054e07dadba4cb0b289ad3141e4557707e55d4"
+    "bytes": 1303360,
+    "sha256": "cc2ab8f43acd80c6eb9215252f8641510f915b616fc387cf231a3be4052d0feb"
   },
   {
     "path": "game/assets/characters/residents/female_Image_0.jpg",
@@ -668,5 +668,17 @@
     "path": "game/assets/characters/motion/brisk_walk_v001.tres",
     "bytes": 96921,
     "sha256": "350782703b6bd45c45acbf21e37781ab5d8c70292f33ae4140cf9b83948db4d8"
+  },
+  {
+    "path": "game/assets/ui/s40000/collapse.svg",
+    "source": "Locally authored v002 bone animation; existing hero rig reused",
+    "bytes": 844,
+    "sha256": "efc352cedb76be578359ba7539933c951200fdd0883dcdbb980ef60d89801556"
+  },
+  {
+    "path": "game/assets/characters/motion/brisk_walk_v002.tres",
+    "source": "Locally authored v002 bone animation; existing hero rig reused",
+    "bytes": 97099,
+    "sha256": "7b161fc646e61e2e74ee13f9ee501bec546850c3801c24f240cb48a869f8c202"
   }
 ]

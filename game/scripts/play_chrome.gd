@@ -64,14 +64,14 @@ func _draw() -> void:
 	if not is_instance_valid(app.world) or app.model.state.is_empty(): return
 	var font:=DemoArt.theme().default_font
 	var origin: Vector2=app.safe
-	draw_texture_rect(profile_fade,Rect2(origin+Vector2(37,4),Vector2(190,51)),false)
+	draw_texture_rect(profile_fade,Rect2(origin+Vector2(32,3),Vector2(178,48)),false)
 
 	if portrait:draw_texture_rect(portrait,Rect2(origin+Vector2(-2,-2),Vector2(58,58)),false)
 
-	draw_string(font,origin+Vector2(68,23),"새벽",HORIZONTAL_ALIGNMENT_LEFT,138,17,Color("fff1d4"))
-	draw_string(font,origin+Vector2(68,43),"정착",HORIZONTAL_ALIGNMENT_LEFT,32,12,Color("fff1d4"))
-	frame(Rect2(origin+Vector2(110,36),Vector2(97,8)),Color(.07,.08,.035,.85),Color(.9,.75,.44,.2))
-	if app.model.built_count()>0:frame(Rect2(origin+Vector2(111,37),Vector2(95*app.model.built_count()/3.0,6)),Color("8ac644"),Color(0,0,0,0))
+	draw_string(font,origin+Vector2(62,22),"새벽",HORIZONTAL_ALIGNMENT_LEFT,138,17,Color("fff1d4"))
+	draw_string(font,origin+Vector2(62,41),"정착",HORIZONTAL_ALIGNMENT_LEFT,32,12,Color("fff1d4"))
+	frame(Rect2(origin+Vector2(100,32),Vector2(97,10)),Color(.07,.08,.035,.85),Color(.9,.75,.44,.2))
+	if app.model.built_count()>0:frame(Rect2(origin+Vector2(101,33),Vector2(95*app.model.built_count()/3.0,8)),Color("8ac644"),Color(0,0,0,0))
 	frame(Rect2(slot("wood").position,Vector2(208,36)),Color(.12,.15,.09,resource_alpha*.4),Color.TRANSPARENT)
 	for key in ["wood","stone","tokens"]:
 		var rect:=slot(key);var beat:float=pulse.get(key,0.0)
@@ -79,6 +79,7 @@ func _draw() -> void:
 		draw_texture_rect(DemoArt.icon(key),Rect2(rect.position+Vector2(3,3),Vector2(extent,extent)),false,Color(1,1,1,resource_alpha))
 		draw_string(font,rect.position+Vector2(34,25),str(int(displayed_tokens)) if key=="tokens" else str(int(app.model.state[key])),HORIZONTAL_ALIGNMENT_LEFT,32,15,Color(1,.96,.85,resource_alpha))
 	var center:=Vector2(app.w-app.safe.x-50,app.safe.y+50)
+	draw_circle(center+Vector2(1,3),53,Color(.15,.10,.04,.20))
 	draw_circle(center,51,Color("49321e"))
 	var points:=PackedVector2Array();var uv:=PackedVector2Array()
 	for i in 64:
@@ -86,9 +87,13 @@ func _draw() -> void:
 		points.append(center+d*48);uv.append(Vector2(.5,.5)+d*.5)
 	draw_colored_polygon(points,Color.WHITE,uv,preload(SceneStyle.TERRAIN))
 	draw_arc(center,50,0,TAU,64,Color("c8a15e"),3,true)
+	draw_arc(center,49,-PI,-PI*.12,40,Color("fff0bb"),1,true)
 	var normalized: Vector2=app.world.player.position/Vector2(2400,1350)-Vector2(.5,.5)
 	var dot:=center+(normalized*96).limit_length(45)
-	draw_circle(dot,4,Color("ffe28b"));draw_arc(dot,5,0,TAU,16,Color("49321e"),1,true)
+	var marker:=PackedVector2Array([Vector2(0,-7),Vector2(5,5),Vector2(0,2),Vector2(-5,5)])
+	for i in marker.size():marker[i]=dot+marker[i].rotated(-app.world.player.hybrid.heading)
+	draw_colored_polygon(marker,Color("ffe6a5"))
+	var edge:=marker.duplicate();edge.append(marker[0]);draw_polyline(edge,Color("80552c"),1.5,true)
 	draw_string(font,center+Vector2(-5,-33),"N",HORIZONTAL_ALIGNMENT_LEFT,20,12,Color("fff2cf"))
 	for f in flights:
 		if f.age<0:continue

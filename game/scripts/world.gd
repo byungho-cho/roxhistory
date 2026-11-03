@@ -33,6 +33,9 @@ func _ready() -> void:
 	background.scale = Vector2(2400.0/terrain.get_width(),1350.0/terrain.get_height())
 	background.z_index = -20
 	add_child(background)
+	var margin:=Sprite2D.new();margin.name="OverviewMargin";margin.texture=terrain; margin.centered=false
+	margin.position=Vector2(-240,-135);margin.scale=background.scale*1.2;margin.z_index=-18
+	var margin_material:=ShaderMaterial.new();margin_material.shader=preload("res://shaders/overview_margin.gdshader");margin.material=margin_material;add_child(margin)
 	water = Polygon2D.new()
 	water.name = "LivingWater"
 	water.polygon = PackedVector2Array(RIVER_POLYGON)
@@ -56,7 +59,9 @@ func _ready() -> void:
 		if p.x==1780:get_child(get_child_count()-1).name="SettlementTree"
 		# Reuse the exact landscape pixels for depth occlusion, not another tree style.
 		var canopy:=Polygon2D.new();canopy.name="LandscapeCanopy";canopy.position=p
-		canopy.polygon=PackedVector2Array([Vector2(-78,-110),Vector2(-62,-160),Vector2(0,-180),Vector2(70,-145),Vector2(90,-95),Vector2(45,-55),Vector2(-35,-65)])
+		# Trace the crown and narrow trunk, excluding the broad soil/water wedge
+		# from the previous polygon that incorrectly covered nearby stones/walkers.
+		canopy.polygon=PackedVector2Array([Vector2(-17,0),Vector2(-8,-20),Vector2(-12,-55),Vector2(-42,-59),Vector2(-65,-76),Vector2(-59,-100),Vector2(-38,-114),Vector2(-13,-129),Vector2(12,-125),Vector2(34,-111),Vector2(52,-109),Vector2(66,-89),Vector2(55,-68),Vector2(24,-57),Vector2(12,-48),Vector2(9,-18),Vector2(24,0),Vector2(4,-6)])
 		canopy.texture=terrain
 		var canopy_uv:=PackedVector2Array()
 		for point in canopy.polygon:canopy_uv.append((p+point)/background.scale)

@@ -46,7 +46,7 @@ func run() -> void:
 	check(app.model.state.wood == 1 and fx.events.count("credit:wood") == 1,"Failed save never emits a second credit effect")
 	check(app.modal,"Save failure remains visible to the player")
 	app.model.store.blocked = false; app.close_modal()
-	p.position = Vector2(1920,960); await frames(4)
+	p.position = app.world.gather_stand(app.world.art_nodes.stone_2.position,"stone"); await frames(4)
 	check(app.world.selected == "stone_2","Stone target selected: "+app.world.selected)
 	app.gather_action(); await wait_work(); await frames(2)
 	check(app.model.state.stone == 1 and fx.events.count("credit:stone") == 1,"Stone credits once")

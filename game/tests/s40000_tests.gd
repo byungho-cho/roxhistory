@@ -50,7 +50,7 @@ func run()->void:
 	check(app.navigation.trail.crumbs.is_empty() and app.navigation.path.is_empty(),"Cancelled route and travelled dots clear")
 	var joy:Vector2=app.joystick.size
 	w.player.zoom_at(Vector2(480,270),99);check(w.player.zoom_factor==2 and app.joystick.size==joy,"Measured artwork zoom limit, HUD fixed")
-	w.player.zoom_at(Vector2(480,270),.1);check(w.player.zoom_factor==1,"Minimum fits the complete landscape")
+	w.player.zoom_at(Vector2(480,270),.1);check(is_equal_approx(w.player.zoom_factor,DemoPlayer.MIN_ZOOM),"Minimum includes the complete landscape and mist margin")
 	w.player.position=Vector2(1500,180);w.restore_clear_position();await frames(3)
 	check(w.player.position.y>600,"Old north-bank saves return to accessible ground without erasing progress")
 	var report:Dictionary={"checks":checks,"failed":failed,"runtime":"Windows native Godot; actual physics, skeleton transforms and lifecycle"}
