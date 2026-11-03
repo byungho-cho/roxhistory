@@ -99,6 +99,7 @@ func configure(sound: bool, foreground: bool, playing: bool, popup: bool, region
 
 func trace_status(reason: String) -> void:
 	if "--test-ui" not in OS.get_cmdline_user_args(): return
+	print("PLAY_AUDIO_STATE "+JSON.stringify({"reason":reason,"enabled":enabled,"active":active,"world":in_world,"playing":play_bgm.playing,"paused":play_bgm.stream_paused,"position":play_bgm.get_playback_position(),"db":play_bgm.volume_db}))
 	print("A303_AUDIO_STATE "+JSON.stringify({"reason":reason,"enabled":enabled,"active":active,"region":in_region,"bgm":bgm.playing,"paused":bgm.stream_paused,"position":bgm.get_playback_position(),"music_db":bgm.volume_db,"water":river.playing,"wind":wind.playing,"events":events,"ticks_ms":Time.get_ticks_msec()}))
 
 func stop_effects() -> void:
