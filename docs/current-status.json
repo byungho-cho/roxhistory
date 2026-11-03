@@ -1,31 +1,31 @@
 {
   "updatedAt": "2026-11-03",
   "timezone": "Asia/Seoul",
-  "sourceMain": "7d7b8c007cff80f1e06f657b253a98db3ce316e2",
+  "sourceMain": "a0e5e0d9b9fef89e089efd3e39f2b24ed427d53e",
   "latestRelease": {
-    "tag": "v0.1.19",
-    "url": "https://github.com/byungho-cho/roxhistory/releases/tag/v0.1.19",
-    "source": "aad00f9affde32ac66e3b192ad58d2ef044de4c2",
+    "tag": "v0.1.20",
+    "url": "https://github.com/byungho-cho/roxhistory/releases/tag/v0.1.20",
+    "source": "a0e5e0d9b9fef89e089efd3e39f2b24ed427d53e",
     "assets": [
       {
-        "name": "RoxHistory-0.1.19-20261103-062455.apk",
-        "size": 157302401,
-        "digest": "sha256:76d0d452ba4312fcb81ed7781740ed2f9565648492d23a7e506c778493bf7272",
-        "url": "https://github.com/byungho-cho/roxhistory/releases/download/v0.1.19/RoxHistory-0.1.19-20261103-062455.apk"
+        "name": "RoxHistory-0.1.20-20261103-092003.apk",
+        "size": 157701844,
+        "digest": "sha256:e66ba231d1b6de94e70ff96a6c99754373465456d8b1a9cc27ad8aa487b6f093",
+        "url": "https://github.com/byungho-cho/roxhistory/releases/download/v0.1.20/RoxHistory-0.1.20-20261103-092003.apk"
       }
     ]
   },
   "ci": {
-    "run": 51,
-    "sha": "4fe66ec2826a5a1b83f9b85ed3b78284db084814",
-    "status": "completed",
-    "conclusion": "success",
-    "url": "https://github.com/byungho-cho/roxhistory/actions/runs/41524086376"
+    "run": 52,
+    "sha": "efafc60ef6e6f8a47072a786d50935ce4e9eef8a",
+    "status": "in_progress",
+    "conclusion": null,
+    "url": "https://github.com/byungho-cho/roxhistory/actions/runs/41551821636"
   },
-  "ciChecks": 1449,
-  "localRelatedChecks": 757,
-  "runtimeVersion": "0.1.19",
-  "versionCode": 20,
+  "ciChecks": null,
+  "localRelatedChecks": 1480,
+  "runtimeVersion": "0.1.20",
+  "versionCode": 21,
   "residentAppearanceApproved": 8,
   "residentFigmaRegistered": 8,
   "residentRuntimeImplemented": 0,
@@ -33,10 +33,9 @@
   "residentConceptRemaining": 2,
   "pending": [
     "resident model/walk/wandering/runtime integration",
-    "animal walking rig",
-    "individual fish-tail motion",
-    "full S40000 folding HUD and cloud boundary",
+    "animal walking rig and roaming",
+    "pixel-exact S40000 and cloud boundary",
     "physical Android/fold testing and direct listening"
   ],
-  "verificationBasis": "Existing developer reports and remote metadata checked; no game tests rerun in this documentation update."
+  "verificationBasis": "22 local native/state suites passed; Android emulator touch flow and final main update verified; CI52 still in progress at publication."
 }

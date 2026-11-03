@@ -4,9 +4,9 @@
   "updatedAt": "2026-11-03",
   "timezone": "Asia/Seoul",
   "goal": "암사동 한 지역에서 1~2분만 플레이해도, 완성된 게임의 매력과 확장 가능성을 느끼는 데모",
-  "scope": "지역 하나 · 첫 보금자리 퀘스트 하나 · 움집 하나. 세계·캐릭터·상호작용·연출·보상·저장이 연결된 경험.",
+  "scope": "암사동 한 지역, 기존 움집1+신규3채, 나무1+돌1/채집1.2초/건설2초/건물별 씨앗10",
   "qualityStatement": "캐릭터를 잠시 세워두어도 살아 있는 장소처럼 보이고, 움직이고 행동하면 소리와 연출이 즉시 반응한다.",
-  "currentFocus": "v0.1.19 구현·배포 / 주민 8종 외형 승인·Figma 등록 / 보행·배회·전체 HUD 후속",
+  "currentFocus": "v0.1.20 플레이 흐름·HUD 배포 / 주민 8종 원화 보존 / 동물 리그·구름 경계·실기기 후속",
   "baseline": {
     "id": "B0",
     "status": "기본 실행 사용자 확인",
@@ -701,5 +701,11 @@
       "physical Android/fold testing and direct listening"
     ],
     "verificationBasis": "Existing developer reports and remote metadata checked; no game tests rerun in this documentation update."
+  },
+  "playFlow0120": {
+    "source": "a0e5e0d9b9fef89e089efd3e39f2b24ed427d53e",
+    "localChecks": 1480,
+    "androidEmulator": "passed",
+    "report": "shared-reports/2026-11-03-play-flow/report.md"
   }
 }

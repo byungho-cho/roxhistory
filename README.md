@@ -2,10 +2,10 @@
 
 선사시대에서 시작해 조선·현대사까지 아우르는 한국사 게임입니다. 현재 개발 대상은 Godot 기반 Android 초기 정착지 데모입니다.
 
-**2026-11-03 현재: v0.1.19 구현·배포, 주민 외형 8종 승인·Figma 등록 완료. 주민 배회·보행은 개발 대기입니다.**
+**2026-11-03 현재: v0.1.20 자동 이동·채집·3채 건설·월드 보상·접이식 HUD 배포, 주민 외형 8종 승인·Figma 등록 완료. 주민 배회·보행은 개발 대기입니다.**
 
 - [현재 개발 현황과 남은 범위](docs/current-status.md)
-- [최신 APK 한 파일](https://github.com/byungho-cho/roxhistory/releases/download/v0.1.19/RoxHistory-0.1.19-20261103-062455.apk) · [실행·검증 보고서](docs/shared-reports/2026-11-03-world-life/report.md)
+- [최신 APK 한 파일](https://github.com/byungho-cho/roxhistory/releases/download/v0.1.20/RoxHistory-0.1.20-20261103-092003.apk) · [실행·검증 보고서](docs/shared-reports/2026-11-03-play-flow/report.md)
 - [문서 목록](docs/README.md) · [Figma·디자인 에셋](design/README.md)
 - [승인 주민 8종](design/assets/residents/v001/README.md) · [개발 지시 기준](docs/developer-instructions-current.md)
 
@@ -15,7 +15,7 @@
 
 ## 저장소 자료
 
-- game/: 실제 게임 소스. 이번 문서·원화 갱신에서 수정하지 않았습니다.
+- game/: 실제 게임 소스. v0.1.20 플레이 흐름과 UI를 반영했습니다.
 - design/: 승인 원화·원본과 Figma 연결 정보.
 - assets/: 원본 음악·참고 에셋. [오디오 카탈로그](assets/audio/README.md).
 - docs/: 현황·개발 기준·날짜별 증거 보고서.
