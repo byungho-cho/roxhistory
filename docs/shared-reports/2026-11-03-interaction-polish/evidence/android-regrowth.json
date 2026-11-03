@@ -1,0 +1,91 @@
+{
+  "environment": "Android15 API35 x86_64 emulator, 1280x720",
+  "before": {
+    "built": true,
+    "depleted": {
+      "stone_2": 1.0,
+      "wood_3": 2.0
+    },
+    "homes": [
+      {
+        "claimed": true,
+        "style": 0.0
+      }
+    ],
+    "hut_style": 0.0,
+    "intro_seen": true,
+    "position": [
+      1568.7255859375,
+      949.889343261719
+    ],
+    "region": "amsa",
+    "reward_claimed": true,
+    "schema": 1.0,
+    "stone": 0.0,
+    "tokens": 10.0,
+    "wood": 1.0
+  },
+  "depleted": {
+    "built": true,
+    "depleted": {
+      "stone_2": 1.0,
+      "wood_3": 5
+    },
+    "homes": [
+      {
+        "claimed": true,
+        "style": 0.0
+      }
+    ],
+    "hut_style": 0.0,
+    "intro_seen": true,
+    "position": [
+      1568.7255859375,
+      949.889343261719
+    ],
+    "region": "amsa",
+    "respawn_due": {
+      "wood_3": 1793686133.72041
+    },
+    "reward_claimed": true,
+    "schema": 1.0,
+    "stone": 0.0,
+    "tokens": 10.0,
+    "wood": 4.0
+  },
+  "regrown": {
+    "built": true,
+    "depleted": {
+      "stone_2": 1.0,
+      "wood_3": 0
+    },
+    "homes": [
+      {
+        "claimed": true,
+        "style": 0.0
+      }
+    ],
+    "hut_style": 0.0,
+    "intro_seen": true,
+    "node_positions": {
+      "wood_3": [
+        260.0,
+        620.0
+      ]
+    },
+    "position": [
+      1568.7255859375,
+      949.889343261719
+    ],
+    "region": "amsa",
+    "respawn_due": {},
+    "reward_claimed": true,
+    "schema": 1.0,
+    "stone": 0.0,
+    "tokens": 10.0,
+    "wood": 4.0
+  },
+  "real_deadline_wait_seconds": 27.880556106567383,
+  "production_save_unchanged": true,
+  "resume_saved_position": true
+}

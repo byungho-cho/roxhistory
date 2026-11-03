@@ -1,0 +1,5 @@
+{
+  "checks": 30,
+  "failed": [],
+  "runtime": "Native Godot synthetic input and actual save transactions; cooldown accelerated only in this test"
+}

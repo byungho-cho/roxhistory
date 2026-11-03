@@ -1,0 +1,45 @@
+{
+  "state": {
+    "built": true,
+    "depleted": {
+      "stone_2": 2,
+      "wood_3": 0.0
+    },
+    "homes": [
+      {
+        "claimed": true,
+        "style": 0.0
+      },
+      {
+        "claimed": true,
+        "style": 2
+      }
+    ],
+    "hut_style": 0.0,
+    "intro_seen": true,
+    "node_positions": {
+      "wood_3": [
+        260.0,
+        620.0
+      ]
+    },
+    "position": [
+      1491.30310058594,
+      869.289855957031
+    ],
+    "region": "amsa",
+    "respawn_due": {},
+    "reward_claimed": true,
+    "schema": 1.0,
+    "stone": 0.0,
+    "tokens": 20.0,
+    "wood": 3.0
+  },
+  "cold_reload_preserved": true,
+  "screens": [
+    "1280x720",
+    "896x370",
+    "816x616"
+  ],
+  "physical_fold": false
+}

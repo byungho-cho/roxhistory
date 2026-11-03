@@ -50,6 +50,18 @@ func valid(s: Variant) -> bool:
 			return false
 		if s.depleted[k] < 0 or s.depleted[k] > allowed[k] or s.depleted[k] != int(s.depleted[k]):
 			return false
+	for key in ["node_positions","respawn_due"]:
+		if not s.get(key,{}) is Dictionary:return false
+		for id in s.get(key,{}):
+			if not allowed.has(id):return false
+			var value:Variant=s[key][id]
+			if key=="node_positions":
+				if not value is Array or value.size()!=2:return false
+				for coordinate in value:
+					if not (coordinate is int or coordinate is float) or not is_finite(coordinate):return false
+				if not Rect2(100,100,2200,1150).has_point(DemoConfig.point(value)):return false
+			else:
+				if not (value is int or value is float) or not is_finite(value) or value<0:return false
 	return true
 
 func erase_progress() -> bool:

@@ -27,6 +27,8 @@ var skinned_limbs: Array[MeshInstance3D] = []
 var eye_nodes: Array[Node3D] = []
 var work_kind := "wood"
 var last_action_time := 0.0
+var idle_elapsed:=0.0
+var idle_looking:=false
 
 func material(color: String) -> StandardMaterial3D:
 	var m := StandardMaterial3D.new()
@@ -192,19 +194,28 @@ func animate(delta: float, movement: Vector2, phase: float, walking: bool, actio
 		action_blend = blend_before
 	work_block.visible = action == "build"
 	apply_pose(phase,strike)
+	idle_looking=false
+	if idle_elapsed>=2.5 and not walking and action=="":
+		var t:=fposmod(idle_elapsed-2.5,14.0)
+		if t<3.6:
+			idle_looking=true
+			var side:=1.0 if int((idle_elapsed-2.5)/14.0)%2==0 else -1.0
+			var glance:=sin(t/3.6*PI)*side
+			rotate_bone("head",Vector3(.025,glance*.28,0))
+			rotate_bone("spine",Vector3(0,glance*.055,0))
 	tool_3d.visible = action != "" and not paused
 
 func apply_pose(phase: float, strike: float) -> void:
 	var gait := sin(phase)*walk_blend
 	var breath := sin(clock*2.3)*0.015
-	var hip_drop:=.04+.12*walk_blend
+	var hip_drop:=.04+.07*walk_blend
 	var weight_shift:=maxf(0,strike)*(0.32 if work_kind=="wood" else 0.40 if work_kind=="stone" else 0.025)
 	tool_3d.rotation.x=1.15*strike if work_kind=="wood" else (0.35*strike if work_kind=="stone" else 0.0)
 	rig.set_bone_pose_position(bones.hips,rests.hips+Vector3(0,-hip_drop-weight_shift,weight_shift))
 	rig.set_bone_pose_position(bones.spine,rests.spine+Vector3(0,breath*0.5,0))
 	var blink := 1.0-0.94*pow(maxf(0.0,cos(clock*TAU/4.7)),80.0)
 	for eye in eye_nodes: eye.scale.y = 0.88*blink
-	rotate_bone("spine",Vector3(strike*0.16,sin(clock)*0.018*(1-walk_blend)+strike*0.10+gait*0.055,-gait*0.012+sin(clock*1.1)*0.012*(1-walk_blend)))
+	rotate_bone("spine",Vector3(strike*0.16,sin(clock)*0.018*(1-walk_blend)+strike*0.10+gait*0.025,-gait*0.006+sin(clock*1.1)*0.009*(1-walk_blend)))
 	rotate_bone("head",Vector3(-strike*0.08,sin(clock*0.7)*0.04*(1-action_blend),gait*0.01))
 	for side in [-1.0,1.0]:
 		var suffix := "L" if side < 0 else "R"

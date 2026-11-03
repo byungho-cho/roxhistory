@@ -15,13 +15,13 @@ func refresh() -> void:
 	if (world.model.built_count()>=3): targets.clear();redraw();return
 	for kind in ["wood","stone"]:
 		if world.model.state[kind]>=1: targets.erase(kind);continue
-		if targets.has(kind) and not world.exhausted(targets[kind]): continue
+		targets.erase(kind)
 		var best: Dictionary={};var distance:=INF
-		for n in DemoConfig.get_data().nodes:
+		for n in world.model.nodes():
 			if n.kind!=kind or world.exhausted(n): continue
 			var d: float=world.player.position.distance_to(DemoConfig.point(n.position))
 			var other_distance:=INF
-			for other in DemoConfig.get_data().nodes:
+			for other in world.model.nodes():
 				if other.kind!=kind and not world.exhausted(other) and world.model.state[other.kind]<1:
 					other_distance=minf(other_distance,DemoConfig.point(n.position).distance_to(DemoConfig.point(other.position)))
 			if is_finite(other_distance): d+=other_distance*0.65

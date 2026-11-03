@@ -22,8 +22,8 @@ func _ready() -> void:
 	for i in 5:
 		var individual:=Sprite2D.new()
 		var atlas:=AtlasTexture.new();atlas.atlas=preload("res://assets/effects/fish-school.png");atlas.region=Rect2(65,25,450,320);atlas.filter_clip=true
-		individual.texture=atlas;individual.scale=Vector2.ONE*(42+i*3)/450.0
-		individual.modulate=Color(.65,.85,.87,.72);individual.z_index=-18
+		individual.texture=atlas;individual.scale=Vector2.ONE*float([33,42,28,36,39][i])/450.0
+		individual.modulate=Color(.48,.68,.65,.52);individual.z_index=-18
 		var material:=ShaderMaterial.new();material.shader=preload("res://shaders/fish_motion.gdshader");material.set_shader_parameter("phase",i*1.7);individual.material=material
 		world.add_child(individual);school.append(individual)
 	fish=school[0]
@@ -43,8 +43,9 @@ func _process(delta: float) -> void:
 	for i in school.size():
 		var individual:=school[i]
 		individual.material.set_shader_parameter("clock",clock)
-		var drift:=sin(clock*.09)*180
-		individual.position=Vector2(1240+i*42+drift,470+i*10+drift*.24+sin(clock*.5+i)*6)
-		individual.flip_h=cos(clock*.09)<0
-		individual.rotation=.22+sin(clock*.7+i)*.04
+		var phase:=clock*.09+i*.65
+		var x:=1240+i*37+sin(phase)*150
+		individual.position=Vector2(x,x*.24+172+sin(clock*.19+i*.9)*13+i*3)
+		individual.flip_h=cos(phase)<0
+		individual.rotation=.22+sin(clock*.35+i)*.12
 		individual.visible=world.effects_enabled
