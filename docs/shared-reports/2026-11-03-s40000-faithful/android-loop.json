@@ -1,0 +1,94 @@
+{
+  "environment": "Android15 API35 x86_64 emulator 1280x720",
+  "states": [
+    {
+      "built": false,
+      "depleted": {
+        "wood_3": 1
+      },
+      "intro_seen": true,
+      "position": [
+        1567.85327148438,
+        950.833190917969
+      ],
+      "region": "amsa",
+      "reward_claimed": false,
+      "schema": 1,
+      "stone": 0,
+      "tokens": 0,
+      "wood": 1
+    },
+    {
+      "built": false,
+      "depleted": {
+        "stone_2": 1,
+        "wood_3": 1
+      },
+      "intro_seen": true,
+      "position": [
+        1853.69287109375,
+        958.147094726562
+      ],
+      "region": "amsa",
+      "reward_claimed": false,
+      "schema": 1,
+      "stone": 1,
+      "tokens": 0,
+      "wood": 1
+    },
+    {
+      "built": true,
+      "depleted": {
+        "stone_2": 1,
+        "wood_3": 1
+      },
+      "homes": [
+        {
+          "claimed": false,
+          "style": 0
+        }
+      ],
+      "hut_style": 0,
+      "intro_seen": true,
+      "position": [
+        1144.24731445312,
+        688.732360839844
+      ],
+      "region": "amsa",
+      "reward_claimed": false,
+      "schema": 1,
+      "stone": 0,
+      "tokens": 0,
+      "wood": 0
+    },
+    {
+      "built": true,
+      "depleted": {
+        "stone_2": 1,
+        "wood_3": 1
+      },
+      "homes": [
+        {
+          "claimed": true,
+          "style": 0
+        }
+      ],
+      "hut_style": 0,
+      "intro_seen": true,
+      "position": [
+        1144.24731445312,
+        688.732360839844
+      ],
+      "region": "amsa",
+      "reward_claimed": true,
+      "schema": 1,
+      "stone": 0,
+      "tokens": 10,
+      "wood": 0
+    }
+  ],
+  "production_save_unchanged": true,
+  "duplicate_reward": true,
+  "background_resume": true,
+  "pinch_injected": true
+}

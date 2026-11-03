@@ -1,0 +1,7 @@
+<!doctype html><html lang="ko"><meta charset="utf-8"><title>S40000 원화·실행 비교</title>
+<style>body{background:#202321;color:#f5e6c5;font:16px sans-serif;margin:24px}button,label{margin:8px}main{position:relative;aspect-ratio:16/9;max-width:1280px}img{position:absolute;width:100%;height:100%;object-fit:contain}input{width:240px}</style>
+<h1>S40000 원화와 실제 실행</h1><p>최소 화면은 기존 1채+건설 2채의 비교 상태입니다. 두 원화가 별도로 그려져 위치 차이가 남습니다.</p>
+<button onclick="choose(false)">최소 배율</button><button onclick="choose(true)">최대 배율</button>
+<label>실행 화면 불투명도 <input type="range" min="0" max="100" value="50" oninput="runtime.style.opacity=this.value/100"></label>
+<main><img id="reference" src="figma-min.png" alt="Figma 기준"><img id="runtime" src="s40000-overview.png" alt="실제 Godot 실행" style="opacity:.5"></main>
+<script>function choose(max){reference.src=max?'figma-max.png':'figma-min.png';runtime.src=max?'s40000-maximum.png':'s40000-overview.png'}</script></html>

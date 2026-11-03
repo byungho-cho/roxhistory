@@ -125,12 +125,12 @@ func run_tests() -> void:
 		entered_water = entered_water or Geometry2D.is_point_in_polygon(app.world.player.position,PackedVector2Array(DemoWorld.RIVER_POLYGON))
 	check(river_collision,"Moving player physically collides with river bank")
 	check(not entered_water,"Sliding along the bank never enters water")
-	app.world.player.position = Vector2(700,580)
+	app.world.player.position = app.world.get_node("ExistingHut").position+Vector2(0,70)
 	for i in 90:
 		await physics_frame
 		app.world.player.velocity = Vector2.UP * 165.0
 		app.world.player.move_and_slide()
-	check(app.world.player.position.y >= 527 and app.world.player.position.y < 580,"Existing hut blocks actual physics movement")
+	check(app.world.player.position.y >= app.world.get_node("ExistingHut").position.y+17 and app.world.player.position.y < app.world.get_node("ExistingHut").position.y+70,"Existing hut blocks actual physics movement")
 	app.world.player.velocity = Vector2.ZERO
 	app.world.player.set_physics_process(true)
 	for dims in [Vector2i(1280,720),Vector2i(896,370),Vector2i(725,396),Vector2i(816,616)]:

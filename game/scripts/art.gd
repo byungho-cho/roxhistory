@@ -6,6 +6,8 @@ static var cache := {}
 static var shared_theme: Theme
 static var play_cache:Dictionary={}
 static func play_icon(key:String)->Texture2D:
+	if key=="hut":return icon("hut") # BLD-001_icon_play uses the approved I10000 atlas.
+	if key=="collapse":return preload("res://assets/ui/s40000/collapse.svg")
 	if play_cache.has(key):return play_cache[key]
 	var files:Dictionary={"spear":"hunt-spear","berries":"gather-berries","hammer":"craft-axe","hut":"build-hut-icon","scroll":"quest-scroll","bag":"inventory-bag","menu":"menu-button","expand":"expand-button"}
 	if not files.has(key):return icon(key)

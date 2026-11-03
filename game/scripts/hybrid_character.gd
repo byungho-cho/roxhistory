@@ -137,7 +137,7 @@ func _ready() -> void:
 	display.texture = viewport.get_texture()
 	display.centered = false
 	display.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
-	display.scale = Vector2.ONE*(0.70/1.5)*(384.0/viewport.size.x)
+	display.scale = Vector2.ONE*(0.46/1.5)*(384.0/viewport.size.x)
 	add_child(display)
 	# Project the shared ground origin: rotation never changes the 2D foot anchor.
 	display.position = -camera.unproject_position(Vector3.ZERO)*display.scale
@@ -152,7 +152,7 @@ func set_render_zoom(factor: float) -> void:
 	elif factor<=1.25:width=384
 	if viewport.size.x==width:return
 	viewport.size=Vector2i(width,width*5/4)
-	display.scale=Vector2.ONE*(0.70/1.5)*(384.0/width)
+	display.scale=Vector2.ONE*(0.46/1.5)*(384.0/width)
 	display.position=-camera.unproject_position(Vector3.ZERO)*display.scale
 
 func set_enabled(value: bool) -> void:
@@ -197,13 +197,14 @@ func animate(delta: float, movement: Vector2, phase: float, walking: bool, actio
 func apply_pose(phase: float, strike: float) -> void:
 	var gait := sin(phase)*walk_blend
 	var breath := sin(clock*2.3)*0.015
+	var hip_drop:=.04+.12*walk_blend
 	var weight_shift:=maxf(0,strike)*(0.32 if work_kind=="wood" else 0.40 if work_kind=="stone" else 0.025)
 	tool_3d.rotation.x=1.15*strike if work_kind=="wood" else (0.35*strike if work_kind=="stone" else 0.0)
-	rig.set_bone_pose_position(bones.hips,rests.hips+Vector3(0,-0.04-weight_shift,weight_shift))
+	rig.set_bone_pose_position(bones.hips,rests.hips+Vector3(0,-hip_drop-weight_shift,weight_shift))
 	rig.set_bone_pose_position(bones.spine,rests.spine+Vector3(0,breath*0.5,0))
 	var blink := 1.0-0.94*pow(maxf(0.0,cos(clock*TAU/4.7)),80.0)
 	for eye in eye_nodes: eye.scale.y = 0.88*blink
-	rotate_bone("spine",Vector3(strike*0.16,sin(clock)*0.018*(1-walk_blend)+strike*0.10+gait*0.03,-gait*0.025+sin(clock*1.1)*0.012*(1-walk_blend)))
+	rotate_bone("spine",Vector3(strike*0.16,sin(clock)*0.018*(1-walk_blend)+strike*0.10+gait*0.055,-gait*0.012+sin(clock*1.1)*0.012*(1-walk_blend)))
 	rotate_bone("head",Vector3(-strike*0.08,sin(clock*0.7)*0.04*(1-action_blend),gait*0.01))
 	for side in [-1.0,1.0]:
 		var suffix := "L" if side < 0 else "R"
@@ -213,14 +214,14 @@ func apply_pose(phase: float, strike: float) -> void:
 		var lift := stride.y*walk_blend
 		var upper:float=rests["shin"+suffix].length()
 		var lower:float=rests["foot"+suffix].length()
-		var foot_y := -(upper+lower-.04)+lift+weight_shift
+		var foot_y := -(upper+lower-hip_drop)+lift+weight_shift
 		var distance := minf(upper+lower-.001,sqrt(foot_y*foot_y+foot_z*foot_z))
 		var knee := acos(clampf((distance*distance-upper*upper-lower*lower)/(2*upper*lower),-1,1))
 		var thigh := atan2(-foot_z,-foot_y)-atan2(lower*sin(knee),upper+lower*cos(knee))
 		rotate_bone("thigh"+suffix,Vector3(thigh,0,0))
 		rotate_bone("shin"+suffix,Vector3(knee,0,0))
 		rotate_bone("foot"+suffix,Vector3(-thigh-knee,0,0))
-		var swing: float = -step*0.45
+		var swing: float = -step*0.30
 		if suffix == "R": swing = lerpf(swing,-1.25+(1.05 if work_kind=="wood" else 1.30 if work_kind=="stone" else 1.45)*strike,action_blend)
 		else: swing = lerpf(swing,-0.32-strike*0.14,action_blend)
 		rotate_bone("arm"+suffix,Vector3(swing,0,side*lerpf(-0.05,-0.30,action_blend)))
@@ -233,7 +234,7 @@ func tool_contact_world() -> Vector2:
 
 func stride_world_length() -> float:
 	# Stylized isometric gait: don't speed up the cadence with camera foreshortening.
-	return 80.0
+	return 84.0
 
 func build_villager() -> void:
 	var imported=preload("res://assets/characters/meshy01/hero.glb").instantiate()

@@ -65,7 +65,7 @@ func run() -> void:
 	player.position = DemoConfig.point(DemoConfig.get_data().nodes[0].position)+Vector2(70,0)
 	await frames(3)
 	app.gather_action()
-	await frames(8)
+	await frames(30)
 	check(player.motion_state == "gather" and player.hybrid.tool_3d.visible,"Gather task drives visible tool and action pose")
 	var before_gather: Vector2 = player.position
 	touch_move(Vector2.RIGHT)

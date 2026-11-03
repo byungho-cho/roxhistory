@@ -17,7 +17,7 @@ func _ready() -> void:
 	app.model.changed.connect(queue_redraw)
 	resized.connect(queue_redraw)
 	mouse_filter=Control.MOUSE_FILTER_IGNORE
-	if ResourceLoader.exists("res://assets/ui/hero_portrait.png"): portrait=load("res://assets/ui/hero_portrait.png")
+	if ResourceLoader.exists("res://assets/ui/s40000/portrait.png"): portrait=load("res://assets/ui/s40000/portrait.png")
 func slot(kind: String) -> Rect2:
 	var i:int=["wood","stone","tokens"].find(kind)
 	return Rect2(Vector2(app.w-app.safe.x-330+i*70,app.safe.y+5),Vector2(68,36))
@@ -60,15 +60,17 @@ func _draw() -> void:
 	if not is_instance_valid(app.world) or app.model.state.is_empty(): return
 	var font:=DemoArt.theme().default_font
 	var origin: Vector2=app.safe
-	frame(Rect2(origin,Vector2(205,56)),Color(.16,.13,.09,.68),Color(.65,.48,.22,.3))
-	draw_circle(origin+Vector2(27,27),28,Color("221b14"))
-	if portrait:draw_texture_rect(portrait,Rect2(origin+Vector2(2,2),Vector2(50,50)),false)
-	draw_arc(origin+Vector2(27,27),28,0,TAU,64,Color("dfc287"),2,true)
-	draw_string(font,origin+Vector2(64,22),"새벽 · 암사동",HORIZONTAL_ALIGNMENT_LEFT,138,16,Color("fff1d4"))
-	draw_string(font,origin+Vector2(64,43),"정착지  %d / 3"%app.model.built_count(),HORIZONTAL_ALIGNMENT_LEFT,136,12,Color("d6e5ab"))
+	frame(Rect2(origin,Vector2(205,56)),Color(.16,.13,.09,.68),Color(.65,.48,.22,0))
+
+	if portrait:draw_texture_rect(portrait,Rect2(origin+Vector2(-2,-2),Vector2(58,58)),false)
+
+	draw_string(font,origin+Vector2(64,22),"새벽",HORIZONTAL_ALIGNMENT_LEFT,138,16,Color("fff1d4"))
+	draw_string(font,origin+Vector2(64,43),"정착",HORIZONTAL_ALIGNMENT_LEFT,32,12,Color("d6e5ab"))
+	frame(Rect2(origin+Vector2(98,33),Vector2(94,9)),Color(.14,.16,.08,.75),Color(0,0,0,0))
+	if app.model.built_count()>0:frame(Rect2(origin+Vector2(99,34),Vector2(92*app.model.built_count()/3.0,7)),Color("8ac644"),Color(0,0,0,0))
 	for key in ["wood","stone","tokens"]:
 		var rect:=slot(key);var beat:float=pulse.get(key,0.0)
-		frame(rect,Color(.15,.12,.08,resource_alpha*.66),Color(.65,.48,.22,resource_alpha*.2))
+		frame(rect,Color(.15,.12,.08,resource_alpha*.32),Color(.65,.48,.22,0.0))
 		var extent:=28.0+beat*4
 		draw_texture_rect(DemoArt.icon(key),Rect2(rect.position+Vector2(3,3),Vector2(extent,extent)),false,Color(1,1,1,resource_alpha))
 		draw_string(font,rect.position+Vector2(34,25),str(int(displayed_tokens)) if key=="tokens" else str(int(app.model.state[key])),HORIZONTAL_ALIGNMENT_LEFT,32,15,Color(1,.96,.85,resource_alpha))

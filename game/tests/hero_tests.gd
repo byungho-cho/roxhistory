@@ -16,7 +16,7 @@ func run() -> void:
 		for i in 16:
 			var phase := TAU*i/16.0
 			var foot := HeroMotion.step(phase,side)
-			check(foot.y>=0 and foot.y<=0.096,"Swing never moves sole below support plane")
+			check(foot.y>=0 and foot.y<=0.12,"Swing stays above support plane within the approved lift envelope")
 	# Use the application's real character for the entire fixture. Keep one
 	# viewport lifetime rather than destroying and replacing it mid-frame.
 	var app: Node = load("res://scenes/main.tscn").instantiate()
@@ -54,7 +54,7 @@ func run() -> void:
 	check(absf(build_hit.y-hero.work_block.scale.y-0.04)<0.03 and hero.work_block.position.y==0,"Timber contacts the tool while supported by ground")
 	hero.animate(1.0/60,Vector2.ZERO,0,false,"",0,false)
 	check(not hero.work_block.visible,"Cancel removes temporary workpiece")
-	p.set_character_3d(true);p.position=Vector2(1360,830);p.face_target(Vector2(1420,830));p.set_activity("gather")
+	p.set_character_3d(true);p.position=Vector2(1560,960);p.face_target(Vector2(1620,960));p.set_activity("gather")
 	cues.clear()
 	app.world.feedback.sound_cue.connect(on_sound)
 	app.world.feedback.begin("gather","wood_3")

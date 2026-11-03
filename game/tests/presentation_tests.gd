@@ -36,8 +36,8 @@ func run() -> void:
 	for i in 8: app.sync_audio()
 	check(audio.get_child_count() == count,"Repeated sync does not create duplicate players")
 	var p: DemoPlayer = app.world.player
-	p.position = Vector2(1360,830)
-	p.position=app.world.gather_stand(Vector2(1420,830),"wood"); p.camera.reset_smoothing(); await frames(30)
+	p.position = Vector2(1560,960)
+	p.position=app.world.gather_stand(Vector2(1620,960),"wood"); p.camera.reset_smoothing(); await frames(30)
 	await snap("gather-ready")
 	app.gather_action(); await frames(20)
 	check(audio.events.any(func(e): return e.begins_with("wood_")),"Wood impact is synchronized to work phase")
@@ -49,10 +49,10 @@ func run() -> void:
 	check(audio.events.size() == after_cancel,"Cancelled work schedules no late sounds")
 	audio.stop_effects(); app.gather_action(); await wait_positioning(); await frames(80)
 	check(app.model.state.wood == 1 and audio.events.count("gain") == 1,"Successful committed gather cues once")
-	p.position = Vector2(1360,1080); await frames(4); audio.stop_effects(); app.gather_action(); await wait_positioning(); await frames(80)
+	p.position = Vector2(1920,960); await frames(4); audio.stop_effects(); app.gather_action(); await wait_positioning(); await frames(80)
 	check(audio.events.any(func(e): return e.begins_with("stone_")),"Stone has separate impact sound")
 	check(app.model.state.stone == 1,"Stone commit remains one")
-	p.position = Vector2(820,1060); await frames(4); app.build_action()
+	p.position = Vector2(1145,695); await frames(4); app.build_action()
 	audio.stop_effects(); await frames(130)
 	check(audio.events.any(func(e): return e.begins_with("build_")),"Construction has separate impact sound")
 	check(app.model.state.built and audio.events.count("complete") == 1,"Completion sound follows one committed building")
@@ -71,7 +71,7 @@ func run() -> void:
 	var restored := ConfigFile.new(); restored.load(app.prefs_path)
 	check(not restored.get_value("app","sound",true),"Mute persists in preferences")
 	# Physics camera follow, stop convergence and safe world framing.
-	p.position = Vector2(1000,900); p.camera.reset_smoothing(); await frames(5)
+	p.zoom_factor=1.5;p.fit_camera();p.position = Vector2(1000,900); p.camera.reset_smoothing(); await frames(5)
 	app.joystick.value = Vector2.RIGHT; await frames(18); app.joystick.clear()
 	var target := p.position+p.camera.position
 	var lag := p.camera.get_screen_center_position().distance_to(target)

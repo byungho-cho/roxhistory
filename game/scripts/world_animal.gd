@@ -2,12 +2,11 @@ class_name WorldAnimal
 extends Node2D
 
 # True 3D Meshy wildlife composited into the same feet-sorted 2D world as the hero.
-# Source meshes have no walking rig: soft head/grazing deformation and breathing.
-# Locomotion stays disabled until feet and joint weights are professionally rigged.
+# Derived meshes retain the original coat and silhouette, with editable limb skins.
 const MODELS := {
-	"bear": "res://assets/animals/bear.glb",
-	"rabbit": "res://assets/animals/rabbit.glb",
-	"deer": "res://assets/animals/deer.glb"
+	"bear": "res://assets/animals/bear-rigged.glb",
+	"rabbit": "res://assets/animals/rabbit-rigged.glb",
+	"deer": "res://assets/animals/deer-rigged.glb"
 }
 var species := "deer"
 var world_height := 120.0
@@ -21,9 +20,19 @@ var presentation_paused := false
 var clock := 0.0
 var frame_clock := 0.0
 var render_size := 256
-var motion_materials:Array[ShaderMaterial]=[]
+var rig:Skeleton3D
+var bones:Dictionary={}
+var rest_rotations:Dictionary={}
+var home_position:=Vector2.ZERO
+var destination:=Vector2.ZERO
+var resting:=1.0
+var gait_phase:=0.0
+var walking:=0.0
+var random:=RandomNumberGenerator.new()
+var walked_distance:=0.0
 
 func _ready() -> void:
+	home_position=position;destination=position;random.seed=int(position.x*100+position.y);resting=random.randf_range(.4,2.0)
 	clock = position.x*0.017+position.y*0.023
 	viewport = SubViewport.new()
 	viewport.size = Vector2i(render_size,render_size)
@@ -56,14 +65,10 @@ func _ready() -> void:
 	scene.add_child(pivot)
 	var model: Node3D = load(MODELS[species]).instantiate()
 	pivot.add_child(model)
-	for mesh in model.find_children("*","MeshInstance3D",true,false):
-		for surface in mesh.mesh.get_surface_count():
-			var source:Material=mesh.get_active_material(surface)
-			if source is StandardMaterial3D and source.albedo_texture:
-				var material:=ShaderMaterial.new();material.shader=preload("res://shaders/wildlife_motion.gdshader")
-				material.set_shader_parameter("coat",source.albedo_texture)
-				material.set_shader_parameter("top",mesh.mesh.get_aabb().end.y)
-				mesh.set_surface_override_material(surface,material);motion_materials.append(material)
+	rig=model.find_children("*","Skeleton3D",true,false)[0]
+	for i in rig.get_bone_count():
+		bones[rig.get_bone_name(i)]=i
+		rest_rotations[i]=rig.get_bone_rest(i).basis.get_rotation_quaternion()
 	camera = Camera3D.new()
 	camera.projection = Camera3D.PROJECTION_ORTHOGONAL
 	camera.size = 4.8
@@ -105,14 +110,7 @@ func _process(delta: float) -> void:
 		update_geometry()
 	if effects_enabled and not presentation_paused:
 		clock += delta
-		# Stretch around the ground origin by less than one percent; no sliding feet.
-		pivot.scale.y = 1.0+sin(clock*1.6)*0.006
-		var graze:=smoothstep(.25,.65,sin(clock*.5))
-		for material in motion_materials:
-			material.set_shader_parameter("clock",clock)
-			material.set_shader_parameter("grazing",graze)
-			material.set_shader_parameter("walking",0.0)
-		pivot.rotation.y=heading+sin(clock*.23)*.12
+		animate_rig(delta)
 	frame_clock += delta
 	if frame_clock >= 1.0/20.0:
 		frame_clock = fmod(frame_clock,1.0/20.0)
@@ -122,3 +120,55 @@ func _draw() -> void:
 	draw_set_transform(Vector2(3,-3),0,Vector2(1,0.28))
 	draw_circle(Vector2.ZERO,world_height*0.40,Color(0.17,0.14,0.10,0.17))
 	draw_set_transform(Vector2.ZERO)
+
+func turn_bone(label:String,angle:Vector3)->void:
+	var index:int=bones[label]
+	rig.set_bone_pose_rotation(index,rest_rotations[index]*Quaternion.from_euler(angle))
+
+func safe_ground(point:Vector2)->bool:
+	if point.x<100 or point.x>2300 or point.y<100 or point.y>1250:return false
+	if Geometry2D.is_point_in_polygon(point,PackedVector2Array(DemoWorld.RIVER_POLYGON)):return false
+	var world:DemoWorld=get_parent()
+	if world.player and point.distance_to(world.player.position)<65:return false
+	for hut in world.environment_props:
+		if hut.kind=="hut" and hut.visible and point.distance_to(hut.position+Vector2(0,-40))<180:return false
+	return true
+
+func _physics_process(delta:float)->void:
+	if not effects_enabled or presentation_paused:return
+	if resting>0:
+		resting-=delta;walking=move_toward(walking,0,delta*4)
+		if resting<=0:
+			for attempt in 12:
+				var next:=home_position+Vector2.from_angle(random.randf()*TAU)*random.randf_range(25,100)
+				if safe_ground(next):destination=next;break
+		return
+	var direction:=destination-position
+	if direction.length()<4:
+		resting=random.randf_range(2,5);return
+	var speed:=30.0 if species=="rabbit" else 22.0
+	var next:=position+direction.normalized()*speed*delta
+	if not safe_ground(next):resting=1;return
+	var distance:=position.distance_to(next);position=next;walked_distance+=distance
+	gait_phase+=distance/maxf(20,world_height*.45)*TAU
+	walking=move_toward(walking,1,delta*3)
+	heading=lerp_angle(heading,atan2(direction.x,direction.y),1-exp(-delta*3))
+
+func animate_rig(_delta:float)->void:
+	pivot.rotation.y=heading
+	var graze:float=smoothstep(.1,.8,sin(clock*.7))*(1-walking)
+	turn_bone("neck",Vector3(graze*.40,0,0))
+	turn_bone("head",Vector3(graze*.22,sin(clock*.6)*.055*(1-walking),0))
+	for side in ["L","R"]:
+		for end in ["F","B"]:
+			var offset:=0.0 if (side=="L")== (end=="F") else PI
+			if species=="rabbit":offset=0.0 if end=="F" else PI*.6
+			var phase:=gait_phase+offset
+			var swing:=sin(phase)*.27*walking
+			var bend:=maxf(0,cos(phase))*.30*walking
+			turn_bone("upper"+end+side,Vector3(swing,0,0))
+			turn_bone("lower"+end+side,Vector3(-bend,0,0))
+			turn_bone("foot"+end+side,Vector3(-swing+bend,0,0))
+	var body:int=bones.body
+	var rest:Vector3=rig.get_bone_rest(body).origin
+	rig.set_bone_pose_position(body,rest+Vector3(0,(maxf(0,sin(gait_phase))*.045 if species=="rabbit" else sin(gait_phase*2)*.012)*walking,0))
