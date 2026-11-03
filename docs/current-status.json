@@ -1,14 +1,17 @@
 {
   "updatedAt": "2026-11-03",
   "timezone": "Asia/Seoul",
-  "sourceMain": "82677eff251594973bde17ed6e1989890ce2b7a1",
+  "sourceMain": "54fef1878bffec564bd02d1bcc1011b181e6738f",
   "latestRelease": {
     "tag": "v0.1.27",
     "url": "https://github.com/byungho-cho/roxhistory/releases/tag/v0.1.27",
     "artifacts": "Single APK, final source SHA and SHA256 in release metadata"
   },
   "ci": {
-    "status": "see PR checks; local validation is separate"
+    "testedSha": "8bcb9c59759daec1c5593081d7d52c1d8b440f23",
+    "url": "https://github.com/byungho-cho/roxhistory/actions/runs/41633404866",
+    "status": "success",
+    "run": 41633404866
   },
   "ciChecks": null,
   "localRelatedChecks": null,
@@ -37,8 +40,8 @@
     "inspection": "GLB header/JSON and source/copy hashes; not rendered or imported in game"
   },
   "interactionReport": "docs/shared-reports/2026-11-03-interaction-polish/report.md",
-  "release": "https://github.com/byungho-cho/roxhistory/releases/tag/v0.1.25",
-  "sourceMainMeaning": "baseline before v0.1.25; exact merged source is in release metadata",
+  "release": "https://github.com/byungho-cho/roxhistory/releases/tag/v0.1.27",
+  "sourceMainMeaning": "v0.1.27 code merge; final docs-inclusive build commit is in release metadata",
   "localSuitesPassed": 27,
   "walkResidentsReport": "docs/shared-reports/2026-11-03-walk-residents-audio/report.md"
 }

@@ -1,0 +1,45 @@
+{
+  "natural_loop_after_78_seconds": {
+    "active": true,
+    "db": -12.0,
+    "enabled": true,
+    "paused": false,
+    "playing": true,
+    "position": 3.26852083206177,
+    "reason": "ui",
+    "world": true
+  },
+  "background": {
+    "active": false,
+    "db": -60.0,
+    "enabled": true,
+    "paused": true,
+    "playing": false,
+    "position": 4.42852067947388,
+    "reason": "configure",
+    "world": true
+  },
+  "resume": {
+    "active": true,
+    "db": -60.0,
+    "enabled": true,
+    "paused": false,
+    "playing": true,
+    "position": 4.43918752670288,
+    "reason": "configure",
+    "world": true
+  },
+  "mute": {
+    "active": true,
+    "db": -60.0,
+    "enabled": false,
+    "paused": false,
+    "playing": false,
+    "position": 0.0,
+    "reason": "configure",
+    "world": true
+  },
+  "physical_listening": false,
+  "WAV_master_received": false,
+  "runtime_source": "approved MP3 decoded to PCM16"
+}

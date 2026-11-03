@@ -44,7 +44,7 @@ Godot 자동 가져오기의 QOA 압축이 반복 경계 가드 검사를 실패
 - 신규48검사: 속도·가로 고정·보행 키, 움집 양옆 충돌과 우회 경로, 제자리/원거리 채집, 주민2명 리깅 확인. [결과](evidence/walk-residents-tests.json).
 - 플레이 음악13검사: 실제 믹서의 반복 경계 통과, 전환, 효과음 공존, 중단·복귀, 음소거·팝업·종료. [결과](evidence/play-music-tests.json).
 - Android15/API35 x86_64 에뮬레이터: 기존3채·씨앗30 저장을 업데이트 후 보존함을 먼저 확인. 승인된 **테스트 세션만 초기화**한 뒤 새 게임, 원거리/근거리 채집, 건설, 씨앗 중복 지급 방지, 실제30초 재생성, 앱 중단·복귀·콜드 재실행을 확인했습니다. 일반 플레이 저장의 SHA-256은 동일합니다. [실제 상태 기록](evidence/android-flow.json).
-- 원격CI 및 최종 main APK 설치 검증 결과는 병합·전달 단계에서 아래에 추가합니다. 로컬 통과를 원격 통과로 간주하지 않습니다.
+- 원격 [CI #62](https://github.com/byungho-cho/roxhistory/actions/runs/41633404866) 전체 통과: 27개 검사 묶음과 Android export 성공. 검사 소스 `8bcb9c59759daec1c5593081d7d52c1d8b440f23`, [PR #52](https://github.com/byungho-cho/roxhistory/pull/52) 병합 `54fef1878bffec564bd02d1bcc1011b181e6738f`. [검사 요약](evidence/ci62.json). 최종 APK의 소스·서명·다운로드 해시는 릴리스에 기록합니다.
 
 Android 핀치→드래그 후 캐릭터 위치가 유지되고 조이스틱이 자동 이동을 취소하는 것을 확인했습니다. [입력 기록](evidence/android-input.json), [확대·팬](evidence/android-zoom-pan.png), [896×370 커버 비율](evidence/android-cover.png), [816×616 펼침 비율](evidence/android-unfolded.png). 세로370×896 디스플레이 요청에도 Activity는 `SCREEN_ORIENTATION_LANDSCAPE`를 유지했습니다. 실제 폴드 장치는 아닙니다.
 
@@ -56,3 +56,10 @@ Android 핀치→드래그 후 캐릭터 위치가 유지되고 조이스틱이 
 - 근거리 채집은 제자리 입력을 우선했습니다. **상호작용 범위 가장자리 및 일부 방향에서는 도구와 자원 사이 간격이 남을 수 있습니다.** 자원 반응 좌표와 도구 좌표를 따로 측정하며 완전한 접촉 해결로 보고하지 않습니다. 손 IK/작업 자세의 후속 아트 조정이 필요합니다.
 - 새 보행은 저장된 키프레임 클립이지만 전문 모션캡처가 아닙니다. 어깨·옷 변형과 발 미끄러짐의 최종 체감 승인은 비교 영상으로 확인해야 합니다.
 - 실물 폴드/휴대폰, 직접 청취, 장시간 발열·배터리·성능은 미검증입니다. 에뮬레이터 화면 비율과 자동 검사 통과는 실기기 사용성·최종 시각 승인을 대신하지 않습니다.
+
+## Android 음악·가로 고정 추가 확인
+
+실제 에뮬레이터에서 약78초 연속 재생 후 루프 위치3.269초와 -12dB 재생을 확인했습니다. 백그라운드에서4.429초에 정지하고 복귀 후4.439초부터 재개, 음소거 시 재생 중단을 확인했습니다. [상태 기록](evidence/android-audio.json). 직접 청취 검증은 아닙니다. [믹서 측정](evidence/mix-measurements.json)은 피크 -13.83dBFS, 클리핑0샘플입니다.
+
+[회전 안정화 후 가로 고정](evidence/android-landscape-lock.png) · [최적화 후 실제 화면](evidence/android-optimized.png). 디스플레이 회전 직후의 일시적인 캡처 대신 회전이 안정화된 화면을 기록했습니다.
+
