@@ -1,0 +1,10 @@
+{
+  "seconds": 9.566621315192744,
+  "sample_rate": 44100,
+  "channels": 2,
+  "peak_dbfs": -13.834298931219735,
+  "clipped_samples": 0,
+  "rms_dbfs": -32.046008772726886,
+  "listened": false,
+  "output": "Godot AudioEffectRecord; Dummy audio driver, no physical output device"
+}
