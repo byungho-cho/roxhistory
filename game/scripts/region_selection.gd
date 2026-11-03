@@ -61,8 +61,7 @@ func _ready() -> void:
 	details=RegionPanel.new(app);ui_root.add_child(details);details.position=Vector2(1178,372)
 	title_label=details.title_label;era_label=details.era_label;intro_label=details.intro_label;symbol=details.symbol;start_button=details.start_button
 	var reset:=FigmaArt.button(ui_root,"reset",Rect2(35,792,73,73),"",restore,app);reset.name="MapReset";reset.tooltip_text="선택을 유지하고 전체 지도로 복원"
-	var hint:=FigmaArt.text(ui_root,"두 손가락 또는 Ctrl + 휠로 확대·축소",Rect2(127,815,520,30),17,FigmaArt.NOTO,Color("fcf4d8"),false);hint.name="GestureHint"
-	for label in [subtitle,hint,north]:
+	for label in [subtitle,north]:
 		label.add_theme_color_override("font_shadow_color",Color(0,0,0,.65));label.add_theme_constant_override("shadow_offset_y",2)
 	# Design padding already covers ordinary displays. Add only real/custom insets.
 	var inset:Vector2=app.safe if app.safe.x>24 or app.safe.y>18 else Vector2.ZERO
@@ -73,7 +72,7 @@ func _ready() -> void:
 	for item in [bag,compass,north,details]:item.position.x+=right_shift
 	for item in [bag,compass,north]:item.position.y+=top_shift
 	var bottom_shift:float=(size.y-maxf(inset.y,35*ui_factor)-origin.y)/ui_factor-865
-	reset.position+=Vector2(left_shift,bottom_shift);hint.position+=Vector2(left_shift,bottom_shift)
+	reset.position+=Vector2(left_shift,bottom_shift)
 	details.position.y=(size.y-maxf(inset.y,45*ui_factor)-origin.y)/ui_factor-483
 	if not saved.is_empty():
 		selected=saved.get("selected","amsa")

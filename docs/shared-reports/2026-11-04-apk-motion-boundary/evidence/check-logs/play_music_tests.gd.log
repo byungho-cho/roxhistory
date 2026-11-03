@@ -1,0 +1,22 @@
+Godot Engine v4.5.1.stable.official.f62fdbde1 - https://godotengine.org
+OpenGL API 3.3.0 NVIDIA 610.88 - Compatibility - Using Device: NVIDIA - NVIDIA GeForce RTX 5060
+
+PLAY_AUDIO_STATE {"active":true,"db":-60.0,"enabled":true,"paused":false,"playing":false,"position":0.0,"reason":"configure","world":false}
+A303_AUDIO_STATE {"active":true,"bgm":true,"enabled":true,"events":[],"music_db":-60.0,"paused":false,"position":0.00290249427780509,"reason":"configure","region":true,"ticks_ms":637,"water":true,"wind":false}
+PLAY_AUDIO_STATE {"active":true,"db":-60.0,"enabled":true,"paused":false,"playing":true,"position":0.00266666663810611,"reason":"configure","world":true}
+A303_AUDIO_STATE {"active":true,"bgm":true,"enabled":true,"events":[],"music_db":-10.0,"paused":false,"position":0.560181379318237,"reason":"configure","region":false,"ticks_ms":1209,"water":true,"wind":true}
+PLAY_AUDIO_STATE {"active":false,"db":-60.0,"enabled":true,"paused":true,"playing":false,"position":0.530645847320557,"reason":"configure","world":true}
+A303_AUDIO_STATE {"active":false,"bgm":false,"enabled":true,"events":["wood_1","stone_0"],"music_db":-60.0,"paused":false,"position":0.0,"reason":"configure","region":false,"ticks_ms":2760,"water":false,"wind":false}
+PLAY_AUDIO_STATE {"active":true,"db":-60.0,"enabled":true,"paused":false,"playing":true,"position":0.541312515735626,"reason":"configure","world":true}
+A303_AUDIO_STATE {"active":true,"bgm":false,"enabled":true,"events":["wood_1","stone_0"],"music_db":-60.0,"paused":false,"position":0.0,"reason":"configure","region":false,"ticks_ms":3076,"water":true,"wind":true}
+PLAY_AUDIO_STATE {"active":true,"db":-60.0,"enabled":false,"paused":true,"playing":false,"position":0.911979138851166,"reason":"configure","world":true}
+A303_AUDIO_STATE {"active":true,"bgm":false,"enabled":false,"events":["wood_1","stone_0"],"music_db":-60.0,"paused":false,"position":0.0,"reason":"configure","region":false,"ticks_ms":3393,"water":false,"wind":false}
+PLAY_AUDIO_STATE {"active":true,"db":-60.0,"enabled":true,"paused":false,"playing":true,"position":0.911979138851166,"reason":"configure","world":true}
+A303_AUDIO_STATE {"active":true,"bgm":false,"enabled":true,"events":["wood_1","stone_0"],"music_db":-60.0,"paused":false,"position":0.0,"reason":"configure","region":false,"ticks_ms":3393,"water":true,"wind":true}
+PLAY_AUDIO_STATE {"active":true,"db":-15.0,"enabled":true,"paused":false,"playing":true,"position":1.56264579296112,"reason":"configure","world":false}
+A303_AUDIO_STATE {"active":true,"bgm":true,"enabled":true,"events":["wood_1","stone_0"],"music_db":-60.0,"paused":false,"position":0.00290249427780509,"reason":"configure","region":true,"ticks_ms":4042,"water":true,"wind":false}
+PLAY_AUDIO_STATE {"active":false,"db":-60.0,"enabled":false,"paused":false,"playing":false,"position":0.0,"reason":"configure","world":false}
+A303_AUDIO_STATE {"active":false,"bgm":false,"enabled":false,"events":["wood_1","stone_0"],"music_db":-60.0,"paused":false,"position":0.0,"reason":"configure","region":false,"ticks_ms":4693,"water":false,"wind":false}
+{"checks":13,"failed":[],"runtime":"Godot mixer; endpoint seek; automated only, not physical speaker listening"}
+WARNING: ObjectDB instances leaked at exit (run with --verbose for details).
+   at: cleanup (core/object/object.cpp:2514)

@@ -1,0 +1,14 @@
+{
+  "android": "API35 x86_64 emulator, read-only AVD, host GPU cold boot with Vulkan disabled",
+  "sha256": "dd4097b2c5845f1b2a56a96e317bf1b5d9ab9021ac29f6e9a7b1d280e18f30be",
+  "version": "0.1.29",
+  "branch": "feat/apk-motion-boundary-20261104",
+  "versionCode": 30,
+  "saveUpdateHashMatched": true,
+  "physicalDeviceVerified": false,
+  "signatureSha256": "cf65aeecb4e399ba9e2e6b9fa947f34f8c31bd75c8e3b686ad29d8431bb1695f",
+  "status": "local intermediate APK; not published; image-dependent scope incomplete",
+  "file": "RoxHistory-0.1.29-20261104-073102.apk",
+  "sourceBase": "fde60b765f953378db66f3d13e21d233c89455c5",
+  "bytes": 185622394
+}

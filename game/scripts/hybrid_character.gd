@@ -31,8 +31,8 @@ var work_kind := "wood"
 var last_action_time := 0.0
 var idle_elapsed:=0.0
 var idle_looking:=false
-const WALK_CLIP: Animation=preload("res://assets/characters/motion/brisk_walk_v002.tres")
-const WALK_MAX_LIFT:=0.16
+const WALK_CLIP: Animation=preload("res://assets/characters/motion/brisk_walk_v003.tres")
+const WALK_MAX_LIFT:=0.19
 
 func material(color: String) -> StandardMaterial3D:
 	var m := StandardMaterial3D.new()

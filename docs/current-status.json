@@ -53,5 +53,13 @@
     "finalDirectInput": "Interrupted by physical Escape; pending",
     "androidFinal": "Not performed; waits for PC acceptance",
     "merged": false
+  },
+  "activeWork": {
+    "branch": "feat/apk-motion-boundary-20261104",
+    "report": "docs/shared-reports/2026-11-04-apk-motion-boundary/report.md",
+    "pcReviewRequired": false,
+    "version": "0.1.29",
+    "versionCode": 30,
+    "status": "Independent motion/boundary/PC hint changes tested; image-dependent work pending; not final release"
   }
 }

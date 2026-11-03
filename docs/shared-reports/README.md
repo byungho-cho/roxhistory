@@ -1,6 +1,6 @@
 # 공유 조사 보고서
 
-PC 확인 대기: [v0.1.28 HUD·보행·가림·주민·최대 축소](2026-11-04-approved-polish/report.md). 로컬28묶음 통과. 사용자 Escape로 최종 직접 입력 검증 미완료; Android/APK·main 병합은 PC 확인 후입니다.
+진행 중: [v0.1.29 APK 보완](2026-11-04-apk-motion-boundary/report.md). PC 대기 해제. 보행·경계·PC 안내 독립 범위 구현, 신규 회귀 검사 통과. 지정 Library 이미지 접근이 필요한 항목과 최종 배포는 아직 보류입니다. [v0.1.28 기록](2026-11-04-approved-polish/report.md)은 보존합니다.
 
 최신: [v0.1.27 저장된 보행 클립·움집 충돌·주민2명·플레이 BGM](2026-11-03-walk-residents-audio/report.md). 기존 CI 실패 원인과 재검증, 같은 구도 원속도 보행, Android 실제 입력·저장 증거를 포함합니다. 시범 주민 외형과 직접 청취는 별도 검토입니다.
 

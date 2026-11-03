@@ -1,16 +1,23 @@
 extends SceneTree
 # Offline authored contact/down/passing/up poses, baked to editable bone tracks.
-const FEET = [Vector2(.40,0),Vector2(.20,0),Vector2(0,0),Vector2(-.20,.005),Vector2(-.40,.02),Vector2(-.22,.12),Vector2(.06,.16),Vector2(.34,.08),Vector2(.40,0)]
+const SUPPORT := .56
+const REACH := .40
 func foot(t:float)->Vector2:
 	t=fposmod(t,1.0)
-	# Grounded half-cycle has constant backward velocity (no skating).
-	if t<.5:return Vector2(lerpf(.40,-.40,t*2),0)
-	var swing:=(t-.5)*2
-	return Vector2(lerpf(-.40,.40,smoothstep(0,1,swing)),pow(sin(PI*swing),1.5)*.145)
+	# Two short double-support windows; keep a constant backward stance velocity.
+	if t<SUPPORT:return Vector2(lerpf(REACH,-REACH,t/SUPPORT),0)
+	var swing:=(t-SUPPORT)/(1.0-SUPPORT)
+	return Vector2(lerpf(-REACH,REACH,smoothstep(0,1,swing)),pow(sin(PI*swing),1.5)*.19)
+func foot_pitch(t:float)->float:
+	t=fposmod(t,1.0)
+	# Small heel landing / toe release, then level the sole before the next contact.
+	if t<.08:return lerpf(-.10,0,smoothstep(0,.08,t))
+	if t<SUPPORT:return .12*smoothstep(.43,SUPPORT,t)
+	return lerpf(.12,-.10,smoothstep(SUPPORT,1,t))
 func _initialize()->void:call_deferred("run")
 func run()->void:
 	var c:=HybridCharacter.new();root.add_child(c);await process_frame
-	var clip:=Animation.new();clip.resource_name="BriskWalk_v002";clip.length=1.0;clip.loop_mode=Animation.LOOP_LINEAR
+	var clip:=Animation.new();clip.resource_name="BriskWalk_v003";clip.length=1.0;clip.loop_mode=Animation.LOOP_LINEAR
 	for i in c.rig.get_bone_count():
 		for type in [Animation.TYPE_POSITION_3D,Animation.TYPE_ROTATION_3D]:
 			var track:=clip.add_track(type);clip.track_set_path(track,NodePath("Skeleton3D:"+c.rig.get_bone_name(i)))
@@ -28,13 +35,13 @@ func run()->void:
 			assert(d<upper+lower,"Authored target must remain within the existing leg reach")
 			var knee:=acos(clampf((d*d-upper*upper-lower*lower)/(2*upper*lower),-1,1))
 			var thigh:=atan2(-z,-y)-atan2(lower*sin(knee),upper+lower*cos(knee))
-			c.rotate_bone("thigh"+suffix,Vector3(thigh,0,0));c.rotate_bone("shin"+suffix,Vector3(knee,0,0));c.rotate_bone("foot"+suffix,Vector3(-thigh-knee,0,0))
+			c.rotate_bone("thigh"+suffix,Vector3(thigh,0,0));c.rotate_bone("shin"+suffix,Vector3(knee,0,0));c.rotate_bone("foot"+suffix,Vector3(-thigh-knee+foot_pitch(t+(.5 if side<0 else 0)),0,0))
 			# Opposite arm and leg: v001 swung the same-side arm with the leg.
 			c.rotate_bone("arm"+suffix,Vector3(p.x*.70,0,-side*.035));c.rotate_bone("forearm"+suffix,Vector3(-.22-.045*cos(TAU*t)*side,0,0))
 		for i in c.rig.get_bone_count():
 			clip.position_track_insert_key(i*2,t,c.rig.get_bone_pose_position(i))
 			clip.rotation_track_insert_key(i*2+1,t,c.rig.get_bone_pose_rotation(i))
 	DirAccess.make_dir_recursive_absolute("res://assets/characters/motion")
-	assert(ResourceSaver.save(clip,"res://assets/characters/motion/brisk_walk_v002.tres")==OK)
+	assert(ResourceSaver.save(clip,"res://assets/characters/motion/brisk_walk_v003.tres")==OK)
 	print("Saved 30 bone tracks, 65 keys per track, loop 1 second; explicit authored gait")
 	quit()

@@ -4,7 +4,7 @@
 
 - 편집 원본: `female.blend`, `sturdy_male.blend` (원본 해상도 유지)
 - 게임 파생본: `game/assets/characters/residents/` (각 16,000삼각형 목표, 1024px 텍스처, 약 1.3MB GLB)
-- 공통 보행: `game/assets/characters/motion/brisk_walk_v002.tres` (v001 원본 보존)
+- 공통 보행: `game/assets/characters/motion/brisk_walk_v003.tres` (v001·v002 원본 보존). 양발 지지 구간·발 들기·착지 기울기 보완, 기존 모델과 피부 가중치 유지.
 - 보행 편집·재생성: `game/tests/bake_walk_clip.gd` (30트랙 × 65키, 1초 정규화 주기; 이동 거리에 맞춰 재생)
 - 참고 원화: `design/assets/residents/v001/original/NPC-002_male-sturdy-builder_primitive_v002.png`, `NPC-003_female-young-forager_primitive_v002.png`
 
