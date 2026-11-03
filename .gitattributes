@@ -8,3 +8,5 @@ game/assets/audio/manifest.json text eol=lf
 # Editable character source must retain its original binary bytes.
 art-source/**/*.blend -text
 design/assets/animals-3d/**/*.glb filter=lfs diff=lfs merge=lfs -text
+# User-supplied surrounding-character GLB originals.
+design/assets/residents-3d/**/*.glb filter=lfs diff=lfs merge=lfs -text

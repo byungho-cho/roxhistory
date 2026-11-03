@@ -22,7 +22,7 @@
 
 성인 남성 2명·성인 여성 2명·할아버지·할머니·남자아이·여자아이입니다. 원시적인 털가죽·끈 매듭·맨발을 공통 기준으로 유지합니다. 노인·어린이는 회청록/자주·적갈색/초록/황토·노랑으로 옷 색을 구분합니다.
 
-[Figma 주민 8종](https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS/RoxHistory-V1.0?node-id=595-36) · [원본과 Figma 코드 매핑](../design/assets/residents/v001/README.md). 전체 약 10종 목표 중 8종이 승인됐으며 나머지 2종은 미정입니다. 현재 8종은 정적 원화입니다. 2D/3D 구현 방식과 주민 보행·배회는 개발 범위로 따로 남깁니다.
+[Figma 주민 8종](https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS/RoxHistory-V1.0?node-id=595-36) · [원본과 Figma 코드 매핑](../design/assets/residents/v001/README.md). 전체 약 10종 목표 중 8종이 승인됐으며 나머지 2종은 미정입니다. 현재 8종은 정적 원화입니다. 별도로 사용자가 제공한 [주변 인물 3D GLB 원본 5개](../design/assets/residents-3d/reference-v001/README.md)를 Git LFS에 보관했습니다. 원본의 skins·animations는 모두0개이며 승인 원화와 각 모델의 대응 관계는 미지정입니다. 경량화·재질 확인·리깅·보행·배회·게임 연결은 개발 후속입니다.
 
 ## Figma 현재 페이지
 
