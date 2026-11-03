@@ -372,24 +372,26 @@ func enter_game() -> void:
 
 func play_hud() -> void:
 	var quest_panel:=button(stage,"",focus_objective);quest_panel.name="QuestPanel";quest_panel.custom_minimum_size=Vector2.ZERO
-	quest_panel.position=Vector2(safe.x,safe.y+68);quest_panel.size=Vector2(240,74)
+	quest_panel.position=Vector2(safe.x,safe.y+64);quest_panel.size=Vector2(210,64)
 	var dark:=StyleBoxFlat.new();dark.bg_color=Color(.15,.13,.09,.78);dark.set_corner_radius_all(10);dark.set_content_margin_all(6)
 	for state in ["normal","hover","pressed"]:quest_panel.add_theme_stylebox_override(state,dark)
 	dark.border_color=Color(.94,.79,.48,.22);dark.set_border_width_all(1)
-	var accent:=ColorRect.new();accent.color=Color(.95,.73,.34,.7);accent.position=Vector2(0,12);accent.size=Vector2(2,48);accent.mouse_filter=Control.MOUSE_FILTER_IGNORE;quest_panel.add_child(accent)
-	var chevron:=label(quest_panel,"⌄",18,Color("f5cf8d"));chevron.position=Vector2(218,7)
+	var accent:=ColorRect.new();accent.color=Color(.95,.73,.34,.7);accent.position=Vector2(0,12);accent.size=Vector2(2,40);accent.mouse_filter=Control.MOUSE_FILTER_IGNORE;quest_panel.add_child(accent)
+	var chevron:=label(quest_panel,"⌄",16,Color("f5cf8d"));chevron.position=Vector2(191,6)
 	picture(quest_panel,DemoArt.icon("hut"),Rect2(8,8,26,26))
-	objective=label(quest_panel,"",14,Color("fff0cd"));objective.position=Vector2(38,8);objective.size=Vector2(180,58)
+	objective=label(quest_panel,"",13,Color("fff0cd"));objective.position=Vector2(38,6);objective.size=Vector2(150,52)
 	joystick=DemoJoystick.new();stage.add_child(joystick);joystick.position=Vector2(safe.x,h-safe.y-140)
+	var action_width:=64.0 if w/h>2.2 else 56.0
+	var cover_extra:float=(action_width-56.0)*6.0
 	action_backdrop=Panel.new();stage.add_child(action_backdrop);action_backdrop.mouse_filter=Control.MOUSE_FILTER_IGNORE
-	action_backdrop.position=Vector2(w-safe.x-492,h-safe.y-78);action_backdrop.size=Vector2(430,74)
+	action_backdrop.position=Vector2(w-safe.x-506-cover_extra,h-safe.y-78);action_backdrop.size=Vector2(430+cover_extra,74)
 	var capsule:=StyleBoxFlat.new();capsule.bg_color=Color(56/255.0,43/255.0,20/255.0,.78);capsule.border_color=Color("f5cf8d");capsule.set_border_width_all(1);capsule.set_corner_radius_all(37);action_backdrop.add_theme_stylebox_override("panel",capsule)
 	action_row=HBoxContainer.new();action_row.name="Actions";action_row.add_theme_constant_override("separation",5);stage.add_child(action_row)
-	action_row.position=Vector2(w-safe.x-477,h-safe.y-76);action_row.size=Vector2(363,70)
+	action_row.position=Vector2(w-safe.x-491-cover_extra,h-safe.y-76);action_row.size=Vector2(363+cover_extra,70)
 	for data in [["사냥","spear"],["채집","berries"],["제작","hammer"],["건설","hut"],["임무","scroll"],["가방","bag"]]:
 		var caption:String=data[0]
 		var callback:Callable=gather_action if caption=="채집" else build_action if caption=="건설" else quest_details if caption=="임무" else inventory_summary if caption=="가방" else func():toast("아직 준비 중인 기능입니다")
-		var b:=button(action_row,caption,callback,false,data[1]);b.custom_minimum_size=Vector2(56,70)
+		var b:=button(action_row,caption,callback,false,data[1]);b.custom_minimum_size=Vector2(action_width,70)
 		b.icon=DemoArt.play_icon(data[1])
 		if caption=="임무":b.name="JournalButton"
 		if caption=="가방":b.name="InventoryButton"
@@ -400,10 +402,10 @@ func play_hud() -> void:
 		b.add_theme_color_override("font_color",Color("fff0cd"));b.add_theme_color_override("font_disabled_color",Color("c0b299"))
 		if caption=="채집":gather_button=b
 		if caption=="건설":build_button=b
-	action_toggle=button(stage,"",context_action);action_toggle.name="ActionToggle";action_toggle.custom_minimum_size=Vector2.ZERO;action_toggle.position=Vector2(w-safe.x-112,h-safe.y-88);action_toggle.size=Vector2(88,88)
-	var expand:=button(stage,"",func():actions_expanded=not actions_expanded);expand.name="ExpandActions";expand.custom_minimum_size=Vector2.ZERO;expand.position=Vector2(w-safe.x-35,h-safe.y-65);expand.size=Vector2(40,44)
-	var expand_skin:=StyleBoxTexture.new();expand_skin.texture=DemoArt.play_icon("expand")
-	for state in ["normal","hover","pressed"]:expand.add_theme_stylebox_override(state,expand_skin)
+	action_toggle=button(stage,"",context_action);action_toggle.name="ActionToggle";action_toggle.custom_minimum_size=Vector2.ZERO;action_toggle.position=Vector2(w-safe.x-128,h-safe.y-76);action_toggle.size=Vector2(64,64)
+	var expand:=button(stage,"",func():actions_expanded=not actions_expanded);expand.name="ExpandActions";expand.custom_minimum_size=Vector2.ZERO;expand.position=Vector2(w-safe.x-64,h-safe.y-76);expand.size=Vector2(64,64)
+	for state in ["normal","hover","pressed"]:expand.add_theme_stylebox_override(state,StyleBoxEmpty.new())
+	picture(expand,DemoArt.play_icon("expand"),Rect2(12,12,40,40))
 	apply_action_skin("메뉴")
 	context_panel=PanelContainer.new();stage.add_child(context_panel);context_panel.position=Vector2(w*.5-145,h-safe.y-108);context_panel.size=Vector2(290,32);context_panel.add_theme_stylebox_override("panel",dark);context_panel.mouse_filter=Control.MOUSE_FILTER_IGNORE
 	context=label(context_panel,"",13,Color("fff0cd"));context.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
@@ -425,7 +427,7 @@ func inventory_summary() -> void:
 
 func update_hud() -> void:
 	if screen!="play" or not is_instance_valid(objective) or model.state.is_empty():return
-	objective.text="움집 3채를 지어라 · %d/3\n나무 %d/1 · 돌 %d/1"%[model.built_count(),mini(model.state.wood,1),mini(model.state.stone,1)] if model.built_count()<3 else "정착지 완성 · 3/3 ✓\n건물 위 씨앗을 받아 주세요"
+	objective.text="움막을 지어라 · %d/3\n나무 %d/1 · 돌 %d/1"%[model.built_count(),mini(model.state.wood,1),mini(model.state.stone,1)] if model.built_count()<3 else "정착지 완성 · 3/3 ✓\n건물 위 씨앗을 받아 주세요"
 
 func _process(delta: float) -> void:
 	if is_instance_valid(toast_panel): toast_panel.visible = toast_time > 0 and toast_label.text != ""
@@ -728,14 +730,14 @@ func apply_action_skin(caption:String)->void:
 	if action_toggle.get_meta("caption","")==caption:return
 	action_toggle.set_meta("caption",caption)
 	action_toggle.text=caption
-	action_toggle.add_theme_font_size_override("font_size",15)
-	action_toggle.add_theme_constant_override("icon_max_width",43)
+	action_toggle.add_theme_font_size_override("font_size",12)
+	action_toggle.add_theme_constant_override("icon_max_width",32)
 	action_toggle.icon_alignment=HORIZONTAL_ALIGNMENT_CENTER
 	action_toggle.vertical_icon_alignment=VERTICAL_ALIGNMENT_TOP
 	if caption in ["메뉴","접기"]:
 		action_toggle.icon=null
 		var skin:=StyleBoxTexture.new();skin.texture=DemoArt.play_icon("menu" if caption=="메뉴" else "collapse")
-		skin.content_margin_top=48;skin.content_margin_bottom=10
+		skin.content_margin_top=32;skin.content_margin_bottom=5
 		for state in ["normal","hover","pressed"]:action_toggle.add_theme_stylebox_override(state,skin)
 	else:
 		action_toggle.icon=DemoArt.play_icon("hut" if caption=="건설" else "berries")

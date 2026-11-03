@@ -30,6 +30,7 @@ var gait_phase:=0.0
 var walking:=0.0
 var random:=RandomNumberGenerator.new()
 var walked_distance:=0.0
+var footprint_body: StaticBody2D
 
 func _ready() -> void:
 	home_position=position;destination=position;random.seed=int(position.x*100+position.y);resting=random.randf_range(.4,2.0)
@@ -49,16 +50,16 @@ func _ready() -> void:
 	environment.environment.background_color = Color(0,0,0,0)
 	environment.environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	environment.environment.ambient_light_color = Color("fff0d9")
-	environment.environment.ambient_light_energy = 0.65
+	environment.environment.ambient_light_energy = 0.50
 	scene.add_child(environment)
 	var sun := DirectionalLight3D.new()
 	sun.rotation_degrees = Vector3(-38,-35,0)
 	sun.light_color = Color("fff1d1")
-	sun.light_energy = 0.9
+	sun.light_energy = 1.05
 	scene.add_child(sun)
 	var fill := DirectionalLight3D.new()
 	fill.rotation_degrees = Vector3(-25,145,0)
-	fill.light_energy = 0.25
+	fill.light_color=Color("e7edda");fill.light_energy = 0.22
 	scene.add_child(fill)
 	pivot = Node3D.new()
 	pivot.rotation.y = heading
@@ -82,12 +83,14 @@ func _ready() -> void:
 	add_child(display)
 	update_geometry()
 	var body := StaticBody2D.new()
+	footprint_body=body
 	var collision := CollisionShape2D.new()
 	var footprint := CircleShape2D.new()
-	footprint.radius = world_height*0.22
+	footprint.radius = world_height*0.26
 	collision.shape = footprint
 	body.add_child(collision)
 	add_child(body)
+	scale=Vector2.ONE*SceneStyle.ground_scale(position.y)
 	queue_redraw()
 
 func update_geometry() -> void:
@@ -117,8 +120,9 @@ func _process(delta: float) -> void:
 		viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
 
 func _draw() -> void:
-	draw_set_transform(Vector2(3,-3),0,Vector2(1,0.28))
-	draw_circle(Vector2.ZERO,world_height*0.40,Color(0.17,0.14,0.10,0.17))
+	draw_set_transform(SceneStyle.CONTACT_OFFSET,0,Vector2(1,0.28))
+	draw_circle(Vector2.ZERO,world_height*0.42,Color(SceneStyle.CONTACT_COLOR,0.07))
+	draw_circle(Vector2.ZERO,world_height*0.30,SceneStyle.CONTACT_COLOR)
 	draw_set_transform(Vector2.ZERO)
 
 func turn_bone(label:String,angle:Vector3)->void:
@@ -127,11 +131,16 @@ func turn_bone(label:String,angle:Vector3)->void:
 
 func safe_ground(point:Vector2)->bool:
 	if point.x<100 or point.x>2300 or point.y<100 or point.y>1250:return false
+	# Northern wildlife must remain below the title/resources and above the river.
+	if species=="bear" and not Rect2(1390,265,240,120).has_point(point):return false
 	if Geometry2D.is_point_in_polygon(point,PackedVector2Array(DemoWorld.RIVER_POLYGON)):return false
 	var world:DemoWorld=get_parent()
 	if world.player and point.distance_to(world.player.position)<65:return false
 	for hut in world.environment_props:
 		if hut.kind=="hut" and hut.visible and point.distance_to(hut.position+Vector2(0,-40))<180:return false
+	var query:=PhysicsPointQueryParameters2D.new();query.position=point
+	if footprint_body:query.exclude=[footprint_body.get_rid()]
+	if not get_world_2d().direct_space_state.intersect_point(query,1).is_empty():return false
 	return true
 
 func _physics_process(delta:float)->void:
@@ -150,7 +159,8 @@ func _physics_process(delta:float)->void:
 	var next:=position+direction.normalized()*speed*delta
 	if not safe_ground(next):resting=1;return
 	var distance:=position.distance_to(next);position=next;walked_distance+=distance
-	gait_phase+=distance/maxf(20,world_height*.45)*TAU
+	scale=Vector2.ONE*SceneStyle.ground_scale(position.y)
+	gait_phase+=distance/maxf(20,world_height*.45*scale.x)*TAU
 	walking=move_toward(walking,1,delta*3)
 	heading=lerp_angle(heading,atan2(direction.x,direction.y),1-exp(-delta*3))
 

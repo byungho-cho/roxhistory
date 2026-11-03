@@ -26,6 +26,12 @@ func run()->void:
 	await frames(600)
 	for a in w.animals:
 		check(a.walked_distance>15,"Autonomous locomotion: "+a.species)
+		var ground:Vector2=a.display.position+a.camera.unproject_position(Vector3.ZERO)*a.display.scale
+		check(ground.length()<.01,"3D ground projection remains attached to sorted foot origin: "+a.species)
+		if a.species=="bear":
+			check(Rect2(1390,265,240,120).has_point(a.position),"Bear remains in northern meadow, outside resource HUD band")
+			check(a.scale.x<.85 and a.world_height*a.scale.x<60,"Far-bank bear uses landscape depth scale")
+			check(not a.safe_ground(Vector2(1510,200)),"Bear cannot roam back into top HUD strip")
 		check(not Geometry2D.is_point_in_polygon(a.position,PackedVector2Array(DemoWorld.RIVER_POLYGON)),"Wildlife remains on land")
 		check(a.rig.get_bone_pose_rotation(a.bones.head)!=poses[a],"Idle/grazing joint changes: "+a.species)
 	check(ambient.smoke[0].sprite.position.distance_to(smoke_before)>5,"Smoke rises from completed chimney")

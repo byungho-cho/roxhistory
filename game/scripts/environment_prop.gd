@@ -88,7 +88,8 @@ func set_effects_enabled(enabled: bool) -> void:
 
 func _draw() -> void:
 	if kind == "grass": return
-	draw_set_transform(Vector2(8,-15),0,Vector2(1,0.25))
-	draw_circle(Vector2.ZERO,shadow_size.x,SceneStyle.SHADOW)
-	draw_circle(Vector2.ZERO,shadow_size.x*0.72,Color(SceneStyle.SHADOW,0.08))
+	draw_set_transform(SceneStyle.CONTACT_OFFSET+Vector2(0,-6),0,Vector2(1,0.22))
+	# Feather the contact instead of a hard opaque oval below the threshold.
+	for ring in 6:
+		draw_circle(Vector2.ZERO,shadow_size.x*(1.0-ring*.09),Color(SceneStyle.SHADOW,.024))
 	draw_set_transform(Vector2.ZERO)
