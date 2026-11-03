@@ -1,6 +1,6 @@
 # S40000 원화 기준 구현 교정 · v0.1.21
 
-2026-11-03 KST. 기준 main `e23e8168170a2624868fdfde91ef8ef9c036b556`, 작업 브랜치 `feat/s40000-faithful-world-20261103`. Android versionCode 22, 패키지 `com.roxhistory.demo`. 최종 병합·배포 정보는 검증 후 갱신한다.
+2026-11-03 KST. 기준 main `e23e8168170a2624868fdfde91ef8ef9c036b556`, 작업 브랜치 `feat/s40000-faithful-world-20261103`. Android versionCode 22, 패키지 `com.roxhistory.demo`. 변경 커밋 `011d0f8`, [PR #42](https://github.com/byungho-cho/roxhistory/pull/42) 병합 main `951dded282b256c6b7b90577042d735e4dc8af9f`. 최신 main의 PR #41 주민 3D 원본도 보존했다.
 
 ## 무엇이 달라졌나
 
@@ -47,3 +47,13 @@
 ## 자산과 편집 원본
 
 [전체 출처·사용 위치](../../../design/assets/s40000/v001/implementation-20261103.md), [3D 리깅 편집 원본](../../../design/assets/animals-3d/rigged-v001/README.md). 기존 사용자 제공 원본·이전 시안은 보존한다. 새로운 버튼 그림이나 동물 모델로 임의 교체하지 않았다.
+
+## 최종 전달
+
+- 버전 **0.1.21 / code22**, 생성 2026-11-03 11:27:41 KST.
+- main `951dded282b256c6b7b90577042d735e4dc8af9f`에서 다시 빌드하고 Android 에뮬레이터 업데이트 설치·이어하기 확인. [최종 설치 화면](android-final-main.png): 기존 건물1·씨앗10 보존.
+- [APK 한 파일 직접 다운로드](https://github.com/byungho-cho/roxhistory/releases/download/v0.1.21/RoxHistory-0.1.21-20261103-112741.apk) · 166,683,774 bytes. 공개 URL 재다운로드 후 해시 동일 확인.
+- SHA256 `ffcb5c113706d952eb699229d3231e70d9fef9360c59b9dbcf10674b92392874`
+- 새 APK 검증 후 기존 v0.1.20 릴리스 APK만 삭제. 소스·태그·원본·과거 보고서 보존.
+- [원격 CI #55](https://github.com/byungho-cho/roxhistory/actions/runs/41566022933): 보고 시 import/state 성공, native/render 검사 진행 중. **원격 전체 통과로 표기하지 않는다.** 로컬1512 통과와 별도다.
+- 영상은 같은 변경의 검토 빌드에서 기록했으며 최종본에는 밝은 지형의 점선 대비 보강만 추가됐다. 최종 점선은 최신 캡처 참고.
