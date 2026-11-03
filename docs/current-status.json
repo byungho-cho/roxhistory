@@ -1,31 +1,31 @@
 {
   "updatedAt": "2026-11-03",
   "timezone": "Asia/Seoul",
-  "sourceMain": "a0e5e0d9b9fef89e089efd3e39f2b24ed427d53e",
+  "sourceMain": "951dded282b256c6b7b90577042d735e4dc8af9f",
   "latestRelease": {
-    "tag": "v0.1.20",
-    "url": "https://github.com/byungho-cho/roxhistory/releases/tag/v0.1.20",
-    "source": "a0e5e0d9b9fef89e089efd3e39f2b24ed427d53e",
+    "tag": "v0.1.21",
+    "url": "https://github.com/byungho-cho/roxhistory/releases/tag/v0.1.21",
+    "source": "951dded282b256c6b7b90577042d735e4dc8af9f",
     "assets": [
       {
-        "name": "RoxHistory-0.1.20-20261103-092003.apk",
-        "size": 157701844,
-        "digest": "sha256:e66ba231d1b6de94e70ff96a6c99754373465456d8b1a9cc27ad8aa487b6f093",
-        "url": "https://github.com/byungho-cho/roxhistory/releases/download/v0.1.20/RoxHistory-0.1.20-20261103-092003.apk"
+        "name": "RoxHistory-0.1.21-20261103-112741.apk",
+        "size": 166683774,
+        "digest": "sha256:ffcb5c113706d952eb699229d3231e70d9fef9360c59b9dbcf10674b92392874",
+        "url": "https://github.com/byungho-cho/roxhistory/releases/download/v0.1.21/RoxHistory-0.1.21-20261103-112741.apk"
       }
     ]
   },
   "ci": {
-    "run": 52,
-    "sha": "efafc60ef6e6f8a47072a786d50935ce4e9eef8a",
+    "run": 55,
+    "sha": "5bca6962a0b54104853751d505011d22c061e969",
     "status": "in_progress",
     "conclusion": null,
-    "url": "https://github.com/byungho-cho/roxhistory/actions/runs/41551821636"
+    "url": "https://github.com/byungho-cho/roxhistory/actions/runs/41566022933"
   },
   "ciChecks": null,
-  "localRelatedChecks": 1480,
-  "runtimeVersion": "0.1.20",
-  "versionCode": 21,
+  "localRelatedChecks": 1512,
+  "runtimeVersion": "0.1.21",
+  "versionCode": 22,
   "residentAppearanceApproved": 8,
   "residentFigmaRegistered": 8,
   "residentRuntimeImplemented": 0,
@@ -33,11 +33,11 @@
   "residentConceptRemaining": 2,
   "pending": [
     "resident model/walk/wandering/runtime integration",
-    "animal walking rig and roaming",
-    "pixel-exact S40000 and cloud boundary",
-    "physical Android/fold testing and direct listening"
+    "animal/hero foot contact and motion art review",
+    "pixel-exact S40000 and physical Android/fold testing",
+    "long-running performance and direct listening"
   ],
-  "verificationBasis": "22 local native/state suites passed; Android emulator touch flow and final main update verified; CI52 still in progress at publication.",
+  "verificationBasis": "23 local suites passed; Android emulator touch flow and final main update verified; CI55 in progress at publication.",
   "resident3DSourceArchive": {
     "count": 5,
     "path": "design/assets/residents-3d/reference-v001",
