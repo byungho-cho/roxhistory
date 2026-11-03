@@ -1,0 +1,1 @@
+11-03 08:06:55.770  2452  2487 I godot   : HYBRID_PERF {"draw_calls":156.0,"frames":120,"gpu":"Android Emulator OpenGL ES Translator (NVIDIA GeForce RTX 5060/PCIe/SSE2)","mean_ms":16.6915666666667,"mode":"3D","p95_ms":18.557,"physics_ms":1.55,"primitives":131334.0,"process_ms":7.399,"viewport":"(960.0, 540.0)"}

@@ -8,23 +8,33 @@ var target := ""
 var stuck := 0.0
 var previous := Vector2.INF
 var trail: TravelTrail
+var retry_count := 0
+var blocked_cells: Array[Vector2i] = []
 func _init(owner_app:Node) -> void:app=owner_app
 func cancel() -> void:
-	path.clear();action="";target="";stuck=0
+	path.clear();action="";target="";stuck=0;retry_count=0;blocked_cells.clear()
+	if is_instance_valid(trail):trail.clear()
 	if is_instance_valid(app.world):app.world.player.work_destination=Vector2.INF
-func start(kind:String,id:String,destination:Vector2) -> void:
+func start(kind:String,id:String,destination:Vector2,retry:int=0,blocked:Array[Vector2i]=[]) -> void:
 	cancel()
+	retry_count=retry;blocked_cells=blocked.duplicate()
 	app.world.player.resume_camera()
 	if not is_instance_valid(trail):
 		trail=TravelTrail.new(self);app.world.add_child(trail)
 	if not destination.is_finite():app.toast("이곳으로 이동할 수 없어요");return
 	var player:DemoPlayer=app.world.player
+	if kind=="move":
+		var pose:=player.transform;pose.origin=destination
+		if not Rect2(40,40,2320,1270).has_point(destination) or player.test_move(pose,Vector2.ZERO,null,.08,true):
+			app.toast("이곳으로 이동할 수 없어요");return
 	var grid:=AStarGrid2D.new();grid.region=Rect2i(0,0,100,56);grid.cell_size=Vector2(24,24);grid.offset=Vector2(12,12);grid.diagonal_mode=AStarGrid2D.DIAGONAL_MODE_ONLY_IF_NO_OBSTACLES;grid.update()
 	for y in 56:
 		for x in 100:
 			var point:=Vector2(x*24+12,y*24+12)
 			var transform:=player.transform;transform.origin=point
 			grid.set_point_solid(Vector2i(x,y),point.x<40 or point.x>2360 or point.y<40 or point.y>1310 or player.test_move(transform,Vector2.ZERO,null,.08,true))
+	for cell in blocked_cells:
+		if grid.is_in_boundsv(cell):grid.set_point_solid(cell,true)
 	var from:=Vector2i((player.position-Vector2(12,12))/24)
 	var to:=Vector2i((destination-Vector2(12,12))/24)
 	grid.set_point_solid(from,false)
@@ -49,11 +59,21 @@ func _physics_process(delta:float) -> void:
 	if player.position.distance_to(previous)<.05:stuck+=delta
 	else:stuck=0
 	previous=player.position
-	if stuck>1.5:cancel();app.toast("이동이 막혔어요. 다른 위치를 선택해 주세요");return
+	if stuck>1.5:
+		# Moving wildlife or a clipped grid corner can invalidate a previously safe route.
+		# Retry a bounded number of times, excluding the blocked waypoint this request.
+		if retry_count<2 and path.size()>1:
+			var kind:=action;var id:=target;var destination:=path[-1]
+			var blocked:=blocked_cells.duplicate();blocked.append(Vector2i((path[0]-Vector2(12,12))/24))
+			start(kind,id,destination,retry_count+1,blocked)
+		else:
+			cancel();app.toast("이동이 막혔어요. 다른 위치를 선택해 주세요")
+		return
 	if player.position.distance_to(path[0])>3:return
 	path.remove_at(0)
 	if not path.is_empty():player.work_destination=path[0];return
 	var next:=action;var id:=target;cancel()
-	if next=="build":app.build_action()
+	if next=="move":return
+	elif next=="build":app.build_action()
 	elif str(app.world.nearest().get("id",""))==id:app.gather_action()
 	else:app.toast("채집 대상이 바뀌었어요. 다시 선택해 주세요")

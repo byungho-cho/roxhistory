@@ -4,6 +4,8 @@ extends Node2D
 var navigation: AutoTravel
 var crumbs:Array[Dictionary]=[]
 var previous:=Vector2.INF
+func clear()->void:
+	crumbs.clear();previous=Vector2.INF;queue_redraw()
 func _init(owner_navigation:AutoTravel)->void:
 	navigation=owner_navigation
 	z_index=2
@@ -19,7 +21,7 @@ func _process(delta:float)->void:
 	queue_redraw()
 func _draw()->void:
 	var zoom:=maxf(.3,get_canvas_transform().get_scale().x)
-	for c in crumbs:draw_line(c.a,c.b,Color(1,.92,.65,.32*(1-c.age/.5)),2,true)
+	for c in crumbs:draw_circle(c.b,1.6/zoom,Color(1,.92,.65,.32*(1-c.age/.5)))
 	if navigation.action=="":return
 	var points:=PackedVector2Array([navigation.app.world.player.position]);points.append_array(navigation.path)
 	var offset:=0.0
@@ -28,10 +30,8 @@ func _draw()->void:
 		if length<.01:continue
 		var at:=offset
 		while at<length:
-			var end:=minf(at+6,length)
 			var a:=points[i].lerp(points[i+1],at/length)
-			var b:=points[i].lerp(points[i+1],end/length)
-			draw_line(a,b,Color(.25,.18,.09,.48),4.0/zoom,true)
-			draw_line(a,b,Color(1,.94,.72,.78),2.2/zoom,true)
-			at+=15
+			draw_circle(a,2.5/zoom,Color(.25,.18,.09,.36))
+			draw_circle(a,1.65/zoom,Color(1,.94,.72,.76))
+			at+=12.0/zoom
 		offset=at-length

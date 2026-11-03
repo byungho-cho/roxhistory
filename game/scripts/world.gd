@@ -101,7 +101,7 @@ func _ready() -> void:
 	player.position = DemoConfig.point(model.state.position)
 	add_child(player)
 	# Wildlife stays outside the settlement and clear of the demo resource/build routes.
-	for entry in [["deer",520,1030,92,-0.8],["rabbit",1660,1040,34,0.6],["rabbit",1730,1090,32,-0.4],["bear",1510,320,70,-0.7]]:
+	for entry in [["deer",520,1030,92,-0.8],["rabbit",1660,1040,34,0.6],["rabbit",1730,1090,32,-0.4],["bear",1510,320,70,-0.7],["deer",270,980,85,0.9],["rabbit",2130,1120,32,-1.2]]:
 		var animal := WorldAnimal.new()
 		animal.name = "Wildlife_"+str(entry[0])+str(animals.size())
 		animal.species = entry[0]

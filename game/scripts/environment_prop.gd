@@ -25,6 +25,7 @@ func set_hut_style(value: int) -> void:
 	sprite.texture = textures[key]
 	sprite.scale = Vector2.ONE*width/sprite.texture.get_width()
 	sprite.position.y = -sprite.texture.get_height()*sprite.scale.y*0.5
+	queue_redraw()
 
 func chimney_socket() -> Vector2:
 	var dimensions := sprite.texture.get_size()*sprite.scale
@@ -62,6 +63,8 @@ func configure(key: String, width: float, footprint: Vector2, wind_phase: float 
 	sprite.scale = Vector2(ratio,ratio)
 	sprite.position.y = -sprite.texture.get_height()*ratio*0.5
 	add_child(sprite)
+	if key=="hut":
+		var surface:=ShaderMaterial.new();surface.shader=preload("res://shaders/hut_surface.gdshader");sprite.material=surface
 	if key=="rock":sprite.material=stone_surface()
 	if key in ["tree","grass","shrub"]:
 		var material_instance := ShaderMaterial.new()
@@ -88,6 +91,16 @@ func set_effects_enabled(enabled: bool) -> void:
 
 func _draw() -> void:
 	if kind == "grass": return
+	if kind=="hut":
+		var width:=sprite.texture.get_width()*sprite.scale.x
+		# Irregular worn soil beneath the entrance, never a new navigation obstacle.
+		var door:=Vector2(width*.20,-6)
+		draw_set_transform(door+Vector2(8,9),-.12,Vector2(1,.28))
+		for ring in 8:draw_circle(Vector2.ZERO,width*(.15-ring*.008),Color(.50,.36,.20,.018))
+		draw_set_transform(Vector2(width*.03,-width*.055),0,Vector2(1,.23))
+		for ring in 10:draw_circle(Vector2.ZERO,width*(.45-ring*.016),Color(.20,.15,.08,.018))
+		draw_set_transform(Vector2.ZERO)
+		return
 	draw_set_transform(SceneStyle.CONTACT_OFFSET+Vector2(0,-6),0,Vector2(1,0.22))
 	# Feather the contact instead of a hard opaque oval below the threshold.
 	for ring in 6:

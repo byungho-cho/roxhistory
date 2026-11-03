@@ -16,7 +16,7 @@ func run() -> void:
 		for i in 16:
 			var phase := TAU*i/16.0
 			var foot := HeroMotion.step(phase,side)
-			check(foot.y>=0 and foot.y<=0.12,"Swing stays above support plane within the approved lift envelope")
+			check(foot.y>=0 and foot.y<=0.18,"Swing stays above support plane within the revised foot-clearance envelope")
 	# Use the application's real character for the entire fixture. Keep one
 	# viewport lifetime rather than destroying and replacing it mid-frame.
 	var app: Node = load("res://scenes/main.tscn").instantiate()
@@ -24,6 +24,15 @@ func run() -> void:
 	var p: DemoPlayer = app.world.player
 	p.set_character_3d(true);p.set_process(false);p.set_physics_process(false)
 	var hero := p.hybrid
+	hero.walk_blend=1;hero.action_blend=0
+	hero.apply_pose(PI*.5,0)
+	var left_up:Vector3=hero.rig.get_bone_global_pose(hero.bones.footL).origin
+	var right_down:Vector3=hero.rig.get_bone_global_pose(hero.bones.footR).origin
+	hero.apply_pose(PI*1.5,0)
+	var left_down:Vector3=hero.rig.get_bone_global_pose(hero.bones.footL).origin
+	var right_up:Vector3=hero.rig.get_bone_global_pose(hero.bones.footR).origin
+	check(left_up.y-left_down.y>.12 and right_up.y-right_down.y>.12,"Rendered skeleton alternates clear foot lift, not just body sway")
+	check(absf(left_down.y-right_down.y)<.015,"Alternating support feet share one ground plane")
 	hero.walk_blend=0;hero.action_blend=1;hero.apply_pose(0,0)
 	var standing_hips:=hero.rig.get_bone_global_pose(hero.bones.hips).origin
 	var standing_feet: Array[Vector3]=[]

@@ -23,6 +23,7 @@ func _ready() -> void:
 	if ResourceLoader.exists("res://assets/ui/s40000/portrait.png"): portrait=load("res://assets/ui/s40000/portrait.png")
 func slot(kind: String) -> Rect2:
 	var i:int=["wood","stone","tokens"].find(kind)
+	if app.w<app.h:return Rect2(Vector2(app.safe.x+i*70,app.safe.y+66),Vector2(68,36))
 	return Rect2(Vector2(app.w-app.safe.x-330+i*70,app.safe.y+5),Vector2(68,36))
 func gained(kind:String,at:Vector2,delay:float=0.0) -> void:
 	reveal=5.0

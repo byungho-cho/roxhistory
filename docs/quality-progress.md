@@ -1,8 +1,8 @@
 # RoxHistory 품질 진행 현황
 
-업데이트: 2026-11-03 KST. **구현 검토본 v0.1.25 / 주민 외형 8종 승인·Figma 등록 완료 / 주민 보행·배회 개발 대기**.
+업데이트: 2026-11-03 KST. **구현 검토본 v0.1.26 / 주민 외형 8종 승인·Figma 등록 완료 / 주민 보행·배회 개발 대기**.
 
-[v0.1.25 조작·재생성 검증](shared-reports/2026-11-03-interaction-polish/report.md) · [현재 개발 현황](current-status.md) · [구조화 기록](quality-progress.json) · [검증 보고서](shared-reports/2026-11-03-play-flow/report.md).
+[v0.1.26 보행·조작·마을 검증](shared-reports/2026-11-03-village-controls/report.md) · [현재 개발 현황](current-status.md) · [구조화 기록](quality-progress.json) · [검증 보고서](shared-reports/2026-11-03-play-flow/report.md).
 
 | 범위 | 구현·검증 | 사용자 승인·잔여 범위 |
 | --- | --- | --- |

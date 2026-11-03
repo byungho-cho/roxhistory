@@ -28,8 +28,8 @@ func clear() -> void:
 		app.world.player.cancel_camera_guide()
 func ui_hit(at: Vector2) -> bool:
 	if app.modal: return true
-	if at.y < app.safe.y+76: return true
-	for c in [app.joystick,app.gather_button,app.build_button,app.objective.get_parent(),app.context_panel]:
+	if at.y < app.safe.y+(112 if app.w<app.h else 76): return true
+	for c in [app.joystick,app.gather_button,app.build_button,app.objective.get_parent()]:
 		if is_instance_valid(c) and c.is_visible_in_tree() and c.get_global_rect().has_point(at): return true
 	for button in app.stage.find_children("*","Button",true,false):
 		if button.is_visible_in_tree() and button.get_global_rect().has_point(at):return true
@@ -51,7 +51,7 @@ func _input(event: InputEvent) -> void:
 				if mouse_dragging:blocked=false
 				mouse_dragging=false
 				mouse_start=Vector2.INF
-	if event is InputEventMouseMotion and mouse_start.is_finite() and mouse_can_pan and app.world.player.zoom_factor>1.01:
+	if event is InputEventMouseMotion and mouse_start.is_finite() and mouse_can_pan and app.world.player.can_pan():
 		if mouse_start.distance_to(event.position)>12 or mouse_dragging:
 			if not mouse_dragging:app.cancel_task();mouse_last=mouse_start
 			mouse_dragging=true;blocked=true
@@ -94,7 +94,7 @@ func _input(event: InputEvent) -> void:
 		var was_moved:bool=touches[event.index].moved
 		if touches[event.index].start.distance_to(event.position)>12:touches[event.index].moved=true
 		touches[event.index].at=event.position
-		if not pinching and (not blocked or panning) and touches.size()==1 and not touches[event.index].ui and touches[event.index].pan and touches[event.index].moved and app.world.player.zoom_factor>1.01:
+		if not pinching and (not blocked or panning) and touches.size()==1 and not touches[event.index].ui and touches[event.index].pan and touches[event.index].moved and app.world.player.can_pan():
 			if not was_moved:app.cancel_task();last=touches[event.index].start
 			blocked=true;panning=true;app.world.player.pan_camera(event.position-last)
 		if pinching and touches.size()==2:
