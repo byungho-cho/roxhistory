@@ -49,3 +49,5 @@
 - AVD 원본의 기존 저장은 빈 파일이어서 최초 검사는 유효한 업데이트 검증이 아니었다. 허용된 임시 세션에서 새 게임/채집으로 정상 저장을 만든 후, 기존 배포 v0.1.27 설치·로드 → v0.1.29 업데이트를 다시 수행했다. 정상 저장 및 설정의 업데이트 전후 SHA256이 동일했다. [전](evidence/android-before-hashes.txt) / [후](evidence/android-installed-hashes.txt)
 - 이어하기 후 나무1·돌0, 주인공 위치가 복원됐다. [실행 화면](evidence/android-v029-continued.png). 첫 화면의 [버전·생성일](evidence/android-v029-title.png)도 확인했다.
 - APK에서 전체 건설·보상·핀치·폴드 실기기 회귀를 모두 재수행한 것은 아니다. 해당 흐름의 이번 회귀는 위 Windows 실제 엔진/합성 입력 결과와 구분한다. 공개 최종 배포 전 이미지 의존 수정과 Android 통합 확인이 남아 있다.
+
+로컬 APK와 동일한 실행 소스 커밋: `dfeaed9e42dc3a175bf1a8654d631991f912ff88`. 이후 메타데이터 커밋은 문서만 갱신한다.

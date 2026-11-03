@@ -10,5 +10,6 @@
   "status": "local intermediate APK; not published; image-dependent scope incomplete",
   "file": "RoxHistory-0.1.29-20261104-073102.apk",
   "sourceBase": "fde60b765f953378db66f3d13e21d233c89455c5",
-  "bytes": 185622394
+  "bytes": 185622394,
+  "sourceCommit": "dfeaed9e42dc3a175bf1a8654d631991f912ff88"
 }
