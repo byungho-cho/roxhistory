@@ -707,5 +707,16 @@
     "localChecks": 1480,
     "androidEmulator": "passed",
     "report": "shared-reports/2026-11-03-play-flow/report.md"
+  },
+  "resident3DSourceArchive": {
+    "count": 5,
+    "path": "design/assets/residents-3d/reference-v001",
+    "storage": "Git LFS",
+    "source_preserved": true,
+    "skins": 0,
+    "animations": 0,
+    "mapping_to_approved_2d": "unassigned",
+    "runtime_integrated": false,
+    "inspection": "GLB header/JSON and source/copy hashes; not rendered or imported in game"
   }
 }

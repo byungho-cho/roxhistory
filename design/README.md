@@ -14,6 +14,7 @@
 
 ## 원본과 실제 반영
 
+- [인물 3D 원본 5개](assets/residents-3d/reference-v001/README.md): 사용자 Meshy GLB를 Git LFS 원본 보관. 리깅·애니메이션·게임 연결 미수행.
 - [주민 8종](assets/residents/v001/README.md): 외형·색상 승인 및 Figma 등록 완료, 모델·보행·배회·게임 배치 대기.
 - [앱 아이콘](app-icon/README.md): v0.1.17부터 실제 런처 적용 완료.
 - [움집 3종](assets/huts/v001/README.md): v0.1.19에서 배치·1/3 선택·스타일 저장 구현.
