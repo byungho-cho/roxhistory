@@ -101,6 +101,8 @@ jobs:
           # Playback uses the audio driver's real clock, unlike fixed-tick animation tests.
           timeout 150 xvfb-run -a godot --max-fps 60 --audio-driver Dummy --path game --resolution 1280x720 --script res://tests/a303_audio_tests.gd -- --test-ui --slow-selection-review 2>&1 | tee a303-audio-tests.log
           ! grep -E 'SCRIPT ERROR:|ERROR:' a303-audio-tests.log
+          timeout 150 xvfb-run -a godot --max-fps 60 --audio-driver Dummy --path game --resolution 1280x720 --script res://tests/play_music_tests.gd -- --test-ui 2>&1 | tee play-music-tests.log
+          ! grep -E 'SCRIPT ERROR:|ERROR:' play-music-tests.log
           timeout 600 xvfb-run -a godot --fixed-fps 60 --audio-driver Dummy --path game --resolution 1280x720 --script res://tests/play_flow_tests.gd -- --test-ui 2>&1 | tee play-flow-tests.log
           ! grep -E 'SCRIPT ERROR:|ERROR:' play-flow-tests.log
           timeout 600 xvfb-run -a godot --fixed-fps 60 --audio-driver Dummy --path game --resolution 1280x720 --script res://tests/s40000_tests.gd -- --test-ui 2>&1 | tee s40000-tests.log
@@ -109,6 +111,8 @@ jobs:
           ! grep -E 'SCRIPT ERROR:|ERROR:' interaction-polish-tests.log
           timeout 600 xvfb-run -a godot --fixed-fps 60 --audio-driver Dummy --path game --resolution 1280x720 --script res://tests/village_controls_tests.gd -- --test-ui 2>&1 | tee village-controls-tests.log
           ! grep -E 'SCRIPT ERROR:|ERROR:' village-controls-tests.log
+          timeout 600 xvfb-run -a godot --fixed-fps 60 --audio-driver Dummy --path game --resolution 1280x720 --script res://tests/walk_residents_tests.gd -- --test-ui 2>&1 | tee walk-residents-tests.log
+          ! grep -E 'SCRIPT ERROR:|ERROR:' walk-residents-tests.log
       - name: Export signed debug APK
         run: |
           set -euo pipefail

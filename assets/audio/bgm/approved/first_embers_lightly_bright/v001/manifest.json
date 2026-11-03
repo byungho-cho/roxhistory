@@ -1,0 +1,83 @@
+{
+  "id": "bgm.first_embers.lightly_bright.v001",
+  "title": "첫 불씨 · 경쾌 1안 (살짝 경쾌한 버전)",
+  "status": "approved",
+  "decision_date": "2026-11-03",
+  "bpm": 104,
+  "bars": 32,
+  "time_signature": "4/4",
+  "key": "G major",
+  "source_archive": {
+    "filename": "RoxHistory_SELECTED_First_Embers_Lightly_Bright.zip",
+    "sha256": "f6efe09c73abbec12524bac4ccfca8b67d94875755e7dcc8e4073f7c0f525e3a"
+  },
+  "files": [
+    {
+      "file": "listen.mp3",
+      "source_filename": "SELECTED_First_Embers_Lightly_Bright.mp3",
+      "role": "listening_preview",
+      "bytes": 1773633,
+      "sha256": "6a3491203c1d87e5946c1a8fe13b43a4185e177d5105454c397d36ecc3f78120"
+    },
+    {
+      "file": "score.mid",
+      "source_filename": "SELECTED_First_Embers_Lightly_Bright.mid",
+      "role": "editable_score",
+      "bytes": 7333,
+      "sha256": "c2924ec6ab705e84e221dbb3d15951bfb745a05701521ca3f81a7eb06177aa4d"
+    }
+  ],
+  "loop": {
+    "enabled": true,
+    "begin_sample": 0,
+    "end_sample_exclusive": 3544615,
+    "basis": "Original WAV master; not a tested MP3 playback loop"
+  },
+  "provenance": {
+    "method": "Original composition and arrangement with mathematically synthesized instrument timbres, as recorded in the source package",
+    "third_party_samples": false,
+    "soundfont_used": false,
+    "existing_recording_used": false,
+    "scope": "Instrumental demo; no nature sounds, voices, or combat sound effects",
+    "rights_note": "This describes the production record and is not a separate legal review or rights warranty."
+  },
+  "source_measurements": {
+    "loudness_lufs": -18.0,
+    "true_peak_dbtp": -6.12,
+    "loudness_range_lu": 1.8,
+    "basis": "Production quality report; loudness not remeasured for this handoff"
+  },
+  "verification": {
+    "verification_date": "2026-11-03",
+    "sample_rate_hz": 48000,
+    "channels": 2,
+    "wav_codec": "pcm_s24le",
+    "wav_frames": 3544615,
+    "duration_seconds": 73.84614583333334,
+    "peak_dbfs": -6.120001792907715,
+    "clipped_samples": 0,
+    "nonfinite_samples": 0,
+    "loop_join_step_per_channel": [
+      0.0035965442657470703,
+      0.0029560327529907227
+    ],
+    "adjacent_sample_step_p99": 0.021786212921142578,
+    "mp3_decoded_frames": 3544615,
+    "mp3_decoded_duration_seconds": 73.84614583333334,
+    "mp3_nonfinite_samples": 0,
+    "listening_review_performed": false,
+    "game_integration_tested": false
+  },
+  "runtime_integration": "not_integrated_asset_handoff_only",
+  "runtime_note": "No default music mapping or game code changed. Determine scene assignment and format conversion during authorized game integration.",
+  "pending_master": {
+    "file": "loop.wav",
+    "source_filename": "SELECTED_First_Embers_Lightly_Bright.wav",
+    "role": "game_master",
+    "bytes": 21267830,
+    "sha256": "36fa8ff5bef566ee42f717531fe2367f4e7bc6da5d766232ccf846b7ca13c29b",
+    "status": "not_uploaded",
+    "reason": "Large-file transfer failed; original WAV and source ZIP retained without alteration"
+  },
+  "distribution_status": "mp3_and_midi_uploaded_wav_pending"
+}

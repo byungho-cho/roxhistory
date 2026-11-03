@@ -3,6 +3,8 @@ extends Node2D
 
 # User-provided Meshy01 mesh, optimized and bound by tools/prepare_meshy_hero.py.
 # Original 3D motion is retargeted through the imported bone rest orientations.
+var model_path:="res://assets/characters/meshy01/hero.glb"
+var render_size_factor:=1.0
 var viewport: SubViewport
 var rig: Skeleton3D
 var pivot: Node3D
@@ -29,6 +31,8 @@ var work_kind := "wood"
 var last_action_time := 0.0
 var idle_elapsed:=0.0
 var idle_looking:=false
+const WALK_CLIP: Animation=preload("res://assets/characters/motion/brisk_walk_v001.tres")
+const WALK_MAX_LIFT:=0.16
 
 func material(color: String) -> StandardMaterial3D:
 	var m := StandardMaterial3D.new()
@@ -89,7 +93,7 @@ func cone(parent: Node3D, pos: Vector3, top: float, bottom: float, height: float
 func _ready() -> void:
 	viewport = SubViewport.new()
 	viewport.name = "Character3DViewport"
-	viewport.size = Vector2i(384,480)
+	viewport.size = Vector2i(roundi(384*render_size_factor),roundi(480*render_size_factor))
 	viewport.transparent_bg = true
 	viewport.own_world_3d = true
 	viewport.render_target_update_mode = SubViewport.UPDATE_DISABLED
@@ -150,8 +154,8 @@ func set_render_zoom(factor: float) -> void:
 	# Hysteresis avoids allocation churn around a pinch threshold; projection stays identical.
 	if not viewport or not display:return
 	var width:=viewport.size.x
-	if factor>=1.5:width=768
-	elif factor<=1.25:width=384
+	if factor>=1.5:width=roundi(768*render_size_factor)
+	elif factor<=1.25:width=roundi(384*render_size_factor)
 	if viewport.size.x==width:return
 	viewport.size=Vector2i(width,width*5/4)
 	display.scale=Vector2.ONE*(0.46/1.5)*(384.0/width)
@@ -193,7 +197,11 @@ func animate(delta: float, movement: Vector2, phase: float, walking: bool, actio
 		work_block.scale.y = maxf(0.15,hit.y-0.04)
 		action_blend = blend_before
 	work_block.visible = action == "build"
+	var walking_weight:=walk_blend
+	walk_blend=0
 	apply_pose(phase,strike)
+	walk_blend=walking_weight
+	apply_walk_clip(phase,walking_weight*(1.0-action_blend))
 	idle_looking=false
 	if idle_elapsed>=2.5 and not walking and action=="":
 		var t:=fposmod(idle_elapsed-2.5,14.0)
@@ -238,6 +246,17 @@ func apply_pose(phase: float, strike: float) -> void:
 		rotate_bone("arm"+suffix,Vector3(swing,0,side*lerpf(-0.05,-0.30,action_blend)))
 		rotate_bone("forearm"+suffix,Vector3(lerpf(-0.15,-0.48+strike*(-0.03 if work_kind=="stone" else 0.22),action_blend) if suffix == "R" else -0.12-strike*0.10,0,0))
 
+func apply_walk_clip(phase:float,weight:float)->void:
+	if weight<=0:return
+	var t:=fposmod(phase/TAU,1.0)*WALK_CLIP.length
+	for track in WALK_CLIP.get_track_count():
+		var label:=str(WALK_CLIP.track_get_path(track).get_subname(0))
+		var index:int=bones[label]
+		if WALK_CLIP.track_get_type(track)==Animation.TYPE_ROTATION_3D:
+			rig.set_bone_pose_rotation(index,rig.get_bone_pose_rotation(index).slerp(WALK_CLIP.rotation_track_interpolate(track,t),weight))
+		else:
+			rig.set_bone_pose_position(index,rig.get_bone_pose_position(index).lerp(WALK_CLIP.position_track_interpolate(track,t),weight))
+
 func tool_contact_world() -> Vector2:
 	# Project the stone head through the same camera used to draw the character.
 	var point := pivot.global_transform*rig.get_bone_global_pose(bones.handR)*tool_3d.transform*Vector3(0,0.025,0.43)
@@ -245,10 +264,10 @@ func tool_contact_world() -> Vector2:
 
 func stride_world_length() -> float:
 	# Stylized isometric gait: don't speed up the cadence with camera foreshortening.
-	return 92.0
+	return 104.0
 
 func build_villager() -> void:
-	var imported=preload("res://assets/characters/meshy01/hero.glb").instantiate()
+	var imported=load(model_path).instantiate()
 	pivot.add_child(imported)
 	if OS.is_debug_build() and "--test-ui" in OS.get_cmdline_user_args() and "--profile-no-hero" in OS.get_cmdline_user_args():imported.visible=false
 	rig=imported.find_children("*","Skeleton3D",true,false)[0]

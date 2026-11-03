@@ -75,5 +75,5 @@ func _physics_process(delta:float) -> void:
 	var next:=action;var id:=target;cancel()
 	if next=="move":return
 	elif next=="build":app.build_action()
-	elif str(app.world.nearest().get("id",""))==id:app.gather_action()
+	elif str(app.world.nearest().get("id",""))==id:app.gather_action(id)
 	else:app.toast("채집 대상이 바뀌었어요. 다시 선택해 주세요")

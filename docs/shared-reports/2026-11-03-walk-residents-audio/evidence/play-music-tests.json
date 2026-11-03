@@ -1,0 +1,5 @@
+{
+  "checks": 13,
+  "failed": [],
+  "runtime": "Godot mixer; endpoint seek; automated only, not physical speaker listening"
+}

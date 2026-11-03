@@ -31,6 +31,12 @@ func chimney_socket() -> Vector2:
 	var dimensions := sprite.texture.get_size()*sprite.scale
 	var sockets := [Vector2(0.0,0.86),Vector2(0.19,0.69),Vector2(0.0,0.86)]
 	return Vector2(dimensions.x*sockets[hut_style].x,-dimensions.y*sockets[hut_style].y)
+static func hut_footprint(width:float)->PackedVector2Array:
+	# Ground ellipse under the eaves, not the roof silhouette above the walker.
+	var points:=PackedVector2Array()
+	for p in [Vector2(-.49,-.08),Vector2(-.40,-.23),Vector2(-.15,-.33),Vector2(.20,-.31),Vector2(.43,-.21),Vector2(.49,-.08),Vector2(.32,.015),Vector2(-.30,.015)]:points.append(p*width)
+	return points
+
 static func stone_surface() -> ShaderMaterial:
 	if not stone_material:
 		stone_material=ShaderMaterial.new();stone_material.shader=preload("res://shaders/stone_surface.gdshader")
@@ -76,11 +82,12 @@ func configure(key: String, width: float, footprint: Vector2, wind_phase: float 
 	if footprint.x > 0:
 		var body := StaticBody2D.new()
 		body.name = "Footprint"
-		body.position.y = -footprint.y*0.5
+		body.position.y = 0 if key=="hut" else -footprint.y*0.5
 		var collision := CollisionShape2D.new()
-		var shape := RectangleShape2D.new()
-		shape.size = footprint
-		collision.shape = shape
+		if key=="hut":
+			var shape:=ConvexPolygonShape2D.new();shape.points=hut_footprint(width);collision.shape=shape
+		else:
+			var shape:=RectangleShape2D.new();shape.size=footprint;collision.shape=shape
 		body.add_child(collision)
 		add_child(body)
 	queue_redraw()

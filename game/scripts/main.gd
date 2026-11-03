@@ -533,20 +533,20 @@ func _process(delta: float) -> void:
 		autosave = 0
 		model.save_position(world.player.position)
 
-func gather_action() -> void:
+func gather_action(selected_id:String="") -> void:
 	if modal or gestures.blocked or task != "" or screen != "play": return
 	var n := world.nearest()
+	if selected_id!="":
+		for candidate in model.nodes():
+			if candidate.id==selected_id and not world.exhausted(candidate) and world.player.position.distance_to(DemoConfig.point(candidate.position))<=float(DemoConfig.get_data().interact_radius):n=candidate;break
 	if n.is_empty(): return
 	task = "gather"
 	world.player.face_target(DemoConfig.point(n.position))
 	var target_point:=DemoConfig.point(n.position)
-	var stand: Vector2=world.gather_stand(target_point,n.kind)
-	if not stand.is_finite():
-		cancel_task();toast("자원 옆의 빈 공간으로 이동해 주세요");return
-	gather_approach=world.player.position.distance_to(stand)>4
-	approach_elapsed=0
-	world.player.work_destination=stand if gather_approach else Vector2.INF
-	world.player.set_activity("" if gather_approach else "gather")
+	# Already inside the accepted interaction radius: keep the player's feet planted.
+	gather_approach=false;approach_elapsed=0
+	world.player.work_destination=Vector2.INF
+	world.player.set_activity("gather")
 	task_target = n.id
 	world.feedback.begin("gather",n.id)
 	task_total = float(DemoConfig.get_data().gather_seconds)
@@ -607,7 +607,10 @@ func world_tap(screen_point:Vector2) -> void:
 		var point:=DemoConfig.point(n.position)
 		if Rect2(point-Vector2(60,70),Vector2(120,90)).has_point(at):
 			if world.exhausted(n):toast("이 자원은 모두 채집했어요");return
-			cancel_task();navigation.start("gather",n.id,world.gather_stand(point,n.kind));return
+			cancel_task()
+			if world.player.position.distance_to(point)<=float(DemoConfig.get_data().interact_radius):gather_action(n.id)
+			else:navigation.start("gather",n.id,world.gather_stand(point,n.kind))
+			return
 	if model.built_count()<3 and at.distance_to(world.site.position)<115:
 		cancel_task()
 		if not model.can_build():toast("나무 1개와 돌 1개가 필요해요");return

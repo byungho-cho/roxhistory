@@ -1,0 +1,48 @@
+{
+  "pinch_drag_no_movement": true,
+  "before": [
+    1569.08605957031,
+    950.044311523438
+  ],
+  "after": [
+    1569.08605957031,
+    950.044311523438
+  ],
+  "manual": [
+    1544.92297363281,
+    995.8798828125
+  ],
+  "screen_sizes": [
+    "1280x720",
+    "896x370",
+    "816x616",
+    "370x896 landscape request"
+  ],
+  "perf": [
+    {
+      "draw_calls": 187.0,
+      "frames": 120,
+      "gpu": "Android Emulator OpenGL ES Translator (NVIDIA GeForce RTX 5060/PCIe/SSE2)",
+      "mean_ms": 99.5262416666666,
+      "mode": "3D",
+      "p95_ms": 220.093,
+      "physics_ms": 3.258,
+      "primitives": 212839.0,
+      "process_ms": 124.061,
+      "viewport": "(960.0, 540.0)"
+    },
+    {
+      "draw_calls": 191.0,
+      "frames": 120,
+      "gpu": "Android Emulator OpenGL ES Translator (NVIDIA GeForce RTX 5060/PCIe/SSE2)",
+      "mean_ms": 29.3931166666667,
+      "mode": "3D",
+      "p95_ms": 41.029,
+      "physics_ms": 8.88,
+      "primitives": 212978.0,
+      "process_ms": 42.546,
+      "viewport": "(960.0, 540.0)"
+    }
+  ],
+  "physical_device": false
+}

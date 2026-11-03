@@ -15,6 +15,7 @@ var effects_enabled := true
 var feedback: WorldFeedback
 var objectives: WorldObjectives
 var animals: Array[WorldAnimal] = []
+var residents:Array[TrialResident]=[]
 # Water visuals and physics share the shoreline traced on terrain.png.
 const SHORE = [Vector2(0,320),Vector2(600,430),Vector2(1200,575),Vector2(1800,750),Vector2(2400,835)]
 const RIVER_POLYGON = [Vector2(0,175),Vector2(600,270),Vector2(1200,410),Vector2(1800,550),Vector2(2400,680),Vector2(2400,835),Vector2(1800,750),Vector2(1200,575),Vector2(600,430),Vector2(0,320)]
@@ -110,6 +111,8 @@ func _ready() -> void:
 		animal.heading = entry[4]
 		add_child(animal)
 		animals.append(animal)
+	for entry in [["female",1020,940],["sturdy_male",1430,1100]]:
+		var resident:=TrialResident.new();resident.variant=entry[0];resident.name="TrialResident_"+str(entry[0]);resident.position=Vector2(entry[1],entry[2]);add_child(resident);residents.append(resident)
 	objectives=WorldObjectives.new(self);add_child(objectives)
 	feedback = WorldFeedback.new(self)
 	add_child(feedback)
@@ -191,10 +194,10 @@ func refresh() -> void:
 		if not has_node("HomeCollision"+str(i)):
 			var body := StaticBody2D.new()
 			body.name = "HomeCollision"+str(i)
-			body.position = homes[i].position+Vector2(0,-60)
+			body.position = homes[i].position
 			var collision := CollisionShape2D.new()
-			var shape := RectangleShape2D.new()
-			shape.size = Vector2(220,120)
+			var shape := ConvexPolygonShape2D.new()
+			shape.points = EnvironmentProp.hut_footprint(340)
 			collision.shape = shape
 			body.add_child(collision)
 			add_child(body)

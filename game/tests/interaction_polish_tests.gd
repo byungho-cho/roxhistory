@@ -18,7 +18,7 @@ func snap(name:String)->void:
 func run()->void:
 	app=load("res://scenes/main.tscn").instantiate();root.add_child(app);await frames(3)
 	app.start_region();app.close_modal();await frames(5)
-	check(is_equal_approx(float(DemoConfig.get_data().move_speed),151.25),"Direct and automatic movement share configured movement speed")
+	check(is_equal_approx(float(DemoConfig.get_data().move_speed),181.5),"Direct and automatic movement share configured movement speed")
 	var n:Dictionary=app.model.nodes()[0];var id:String=n.id
 	var old:=DemoConfig.point(n.position)
 	for i in int(n.charges):check(app.model.gather(id),"Gather transaction accepted before depletion")

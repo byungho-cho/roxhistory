@@ -211,5 +211,113 @@
     "reference": "docs/current-status.md",
     "source_audio_modified": false,
     "direct_listening_approved": false
+  },
+  "gather_contact": {
+    "v002": {
+      "status": "implemented_pending_listening",
+      "path": "assets/audio/sfx/implemented/gather_contact/v002",
+      "source": "Original synthesis; no third-party samples",
+      "date": "2026-11-03",
+      "files": [
+        {
+          "file": "wood_0.wav",
+          "seconds": 0.24,
+          "sample_rate": 22050,
+          "loop": false,
+          "peak_dbfs": -6.74,
+          "rms_dbfs": -25.6,
+          "sha256": "6ea6239c3929ab8dc0ab108adde02fe899d967ceb8e14e139bb4e2459398ba85",
+          "source": {
+            "method": "Original deterministic modal/noise synthesis, no third-party samples",
+            "inputs": [
+              {
+                "path": "assets/audio/sfx/implemented/gather_contact/v002/wood_0.wav",
+                "sha256": "6ea6239c3929ab8dc0ab108adde02fe899d967ceb8e14e139bb4e2459398ba85"
+              }
+            ]
+          }
+        },
+        {
+          "file": "wood_1.wav",
+          "seconds": 0.24,
+          "sample_rate": 22050,
+          "loop": false,
+          "peak_dbfs": -6.74,
+          "rms_dbfs": -24.8,
+          "sha256": "d0bbd200397f68116cd6373646ba7e3fc2992a5998de63621631321ebb9df5a8",
+          "source": {
+            "method": "Original deterministic modal/noise synthesis, no third-party samples",
+            "inputs": [
+              {
+                "path": "assets/audio/sfx/implemented/gather_contact/v002/wood_1.wav",
+                "sha256": "d0bbd200397f68116cd6373646ba7e3fc2992a5998de63621631321ebb9df5a8"
+              }
+            ]
+          }
+        },
+        {
+          "file": "stone_0.wav",
+          "seconds": 0.24,
+          "sample_rate": 22050,
+          "loop": false,
+          "peak_dbfs": -6.74,
+          "rms_dbfs": -26.47,
+          "sha256": "d43109aaca0fc2c184a69ae4c41b5ddd81f21afbc96098285bbb0d526c19cbdc",
+          "source": {
+            "method": "Original deterministic modal/noise synthesis, no third-party samples",
+            "inputs": [
+              {
+                "path": "assets/audio/sfx/implemented/gather_contact/v002/stone_0.wav",
+                "sha256": "d43109aaca0fc2c184a69ae4c41b5ddd81f21afbc96098285bbb0d526c19cbdc"
+              }
+            ]
+          }
+        },
+        {
+          "file": "stone_1.wav",
+          "seconds": 0.24,
+          "sample_rate": 22050,
+          "loop": false,
+          "peak_dbfs": -6.74,
+          "rms_dbfs": -25.32,
+          "sha256": "9738a2722d64092476a8368802edd1bd2aebc28355f74f4790e6eddbc98ff3d3",
+          "source": {
+            "method": "Original deterministic modal/noise synthesis, no third-party samples",
+            "inputs": [
+              {
+                "path": "assets/audio/sfx/implemented/gather_contact/v002/stone_1.wav",
+                "sha256": "9738a2722d64092476a8368802edd1bd2aebc28355f74f4790e6eddbc98ff3d3"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "first_embers_play": {
+    "id": "bgm.first_embers.lightly_bright.v001",
+    "status": "approved_implemented_pending_listening",
+    "source_commit": "518001ce5c55d054ce27089d734f4ec9944d5bbb",
+    "runtime": {
+      "file": "play_bgm.wav",
+      "seconds": 73.84614583333334,
+      "sample_rate": 48000,
+      "loop": true,
+      "loop_begin": 0,
+      "loop_end_exclusive": 3544615,
+      "sha256": "f55b5d64147b370110d06bf272708e23a8b13ef29da6e2260e36146e567c1ced",
+      "source": {
+        "method": "FFmpeg PCM16 decoding of approved lossy MP3; not original WAV master; no recomposition or time stretching",
+        "inputs": [
+          {
+            "path": "assets/audio/bgm/approved/first_embers_lightly_bright/v001/listen.mp3",
+            "sha256": "6a3491203c1d87e5946c1a8fe13b43a4185e177d5105454c397d36ecc3f78120"
+          }
+        ]
+      }
+    },
+    "scene": "play only; A303 unchanged",
+    "master_status": "WAV not yet received",
+    "date": "2026-11-03"
   }
 }

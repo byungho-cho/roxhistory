@@ -1,0 +1,102 @@
+{
+  "assets": 16,
+  "failed": [],
+  "results": [
+    {
+      "asset": "wood_0.wav",
+      "peak_dbfs": -6.75,
+      "rms_dbfs": -25.6,
+      "loop_boundary_delta": null
+    },
+    {
+      "asset": "wood_1.wav",
+      "peak_dbfs": -6.75,
+      "rms_dbfs": -24.8,
+      "loop_boundary_delta": null
+    },
+    {
+      "asset": "stone_0.wav",
+      "peak_dbfs": -6.75,
+      "rms_dbfs": -26.47,
+      "loop_boundary_delta": null
+    },
+    {
+      "asset": "stone_1.wav",
+      "peak_dbfs": -6.75,
+      "rms_dbfs": -25.32,
+      "loop_boundary_delta": null
+    },
+    {
+      "asset": "build_0.wav",
+      "peak_dbfs": -4.73,
+      "rms_dbfs": -22.48,
+      "loop_boundary_delta": null
+    },
+    {
+      "asset": "build_1.wav",
+      "peak_dbfs": -4.73,
+      "rms_dbfs": -21.08,
+      "loop_boundary_delta": null
+    },
+    {
+      "asset": "gain.wav",
+      "peak_dbfs": -7.54,
+      "rms_dbfs": -20.68,
+      "loop_boundary_delta": null
+    },
+    {
+      "asset": "complete.wav",
+      "peak_dbfs": -7.54,
+      "rms_dbfs": -19.19,
+      "loop_boundary_delta": null
+    },
+    {
+      "asset": "reward.wav",
+      "peak_dbfs": -7.54,
+      "rms_dbfs": -19.27,
+      "loop_boundary_delta": null
+    },
+    {
+      "asset": "river.wav",
+      "peak_dbfs": -10.46,
+      "rms_dbfs": -24.6,
+      "loop_boundary_delta": 120
+    },
+    {
+      "asset": "wind.wav",
+      "peak_dbfs": -11.06,
+      "rms_dbfs": -26.33,
+      "loop_boundary_delta": 616
+    },
+    {
+      "asset": "ui.wav",
+      "peak_dbfs": -13.15,
+      "rms_dbfs": -24.13,
+      "loop_boundary_delta": null
+    },
+    {
+      "asset": "select.wav",
+      "peak_dbfs": -12.4,
+      "rms_dbfs": -27.42,
+      "loop_boundary_delta": null
+    },
+    {
+      "asset": "bird.wav",
+      "peak_dbfs": -14.89,
+      "rms_dbfs": -27.37,
+      "loop_boundary_delta": null
+    },
+    {
+      "asset": "a303_bgm.wav",
+      "peak_dbfs": -3.47,
+      "rms_dbfs": -17.72,
+      "loop_boundary_delta": 72
+    },
+    {
+      "asset": "play_bgm.wav",
+      "peak_dbfs": -6.39,
+      "rms_dbfs": -20.25,
+      "loop_boundary_delta": 44
+    }
+  ]
+}

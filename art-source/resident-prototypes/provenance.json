@@ -1,0 +1,12 @@
+{
+  "source": "art-source\\meshy01\\meshy01-hero.blend",
+  "source_sha256": "32344d26de3ff50138f5a33bd8708d67a4021774a4872443d5132298a6037b37",
+  "method": "Existing skinned hero geometry and 15-bone rig reused; silhouette edits and simple weighted hair/garment additions. Trial, not approval-equivalent final residents.",
+  "references": [
+    "NPC-002",
+    "NPC-003"
+  ],
+  "external_generation": false,
+  "paid_credits": 0,
+  "license": "Inherited user-provided Meshy source; account rights not independently verified."
+}
