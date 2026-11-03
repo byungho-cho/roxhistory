@@ -8,6 +8,7 @@
 | [품질 진행](quality-progress.md) · [JSON](quality-progress.json) | 상태와 증거 연결 |
 | [수정사항 대장](team-lead-change-register.md) | 완료 요청과 새 주민 요청 구분 |
 | [최신 개발 지시 기준](developer-instructions-current.md) | 개발 담당의 잔여 범위 |
+| [번호별 개발 지시문](개발지시/README.md) | 대표님 검토·승인본과 번호 전달 절차 · [빈 템플릿](개발지시/TEMPLATE.md) |
 | [캐릭터 품질 로드맵](character-quality-roadmap.md) | 주민·동물·실기기 품질 상태 |
 | [역할 분담](team-workflow.md) | 팀장과 개발 담당 범위 |
 | [공유 보고서](shared-reports/README.md) | 날짜별 구현·실행·검증 증거 |
