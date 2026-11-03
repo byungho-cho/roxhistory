@@ -1,0 +1,108 @@
+{
+  "environment": "Android15 API35 x86_64 emulator 1280x720",
+  "states": [
+    {
+      "built": false,
+      "depleted": {},
+      "intro_seen": true,
+      "position": [
+        990.0,
+        1020.0
+      ],
+      "region": "amsa",
+      "reward_claimed": false,
+      "schema": 1,
+      "stone": 0,
+      "tokens": 0,
+      "wood": 0
+    },
+    {
+      "built": false,
+      "depleted": {
+        "wood_3": 1
+      },
+      "intro_seen": true,
+      "position": [
+        1365.30969238281,
+        843.383850097656
+      ],
+      "region": "amsa",
+      "reward_claimed": false,
+      "schema": 1,
+      "stone": 0,
+      "tokens": 0,
+      "wood": 1
+    },
+    {
+      "built": false,
+      "depleted": {
+        "stone_2": 1,
+        "wood_3": 1
+      },
+      "intro_seen": true,
+      "position": [
+        1385.58410644531,
+        1087.67761230469
+      ],
+      "region": "amsa",
+      "reward_claimed": false,
+      "schema": 1,
+      "stone": 1,
+      "tokens": 0,
+      "wood": 1
+    },
+    {
+      "built": true,
+      "depleted": {
+        "stone_2": 1,
+        "wood_3": 1
+      },
+      "homes": [
+        {
+          "claimed": false,
+          "style": 1
+        }
+      ],
+      "hut_style": 1,
+      "intro_seen": true,
+      "position": [
+        730.601318359375,
+        1094.19909667969
+      ],
+      "region": "amsa",
+      "reward_claimed": false,
+      "schema": 1,
+      "stone": 0,
+      "tokens": 0,
+      "wood": 0
+    },
+    {
+      "built": true,
+      "depleted": {
+        "stone_2": 1,
+        "wood_3": 1
+      },
+      "homes": [
+        {
+          "claimed": true,
+          "style": 1
+        }
+      ],
+      "hut_style": 1,
+      "intro_seen": true,
+      "position": [
+        730.601318359375,
+        1094.19909667969
+      ],
+      "region": "amsa",
+      "reward_claimed": true,
+      "schema": 1,
+      "stone": 0,
+      "tokens": 10,
+      "wood": 0
+    }
+  ],
+  "production_save_unchanged": true,
+  "duplicate_reward": true,
+  "background_resume": true
+}

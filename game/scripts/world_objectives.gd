@@ -12,7 +12,7 @@ func _ready() -> void:
 	world.model.changed.connect(refresh)
 	refresh()
 func refresh() -> void:
-	if world.model.state.built: targets.clear();redraw();return
+	if (world.model.built_count()>=3): targets.clear();redraw();return
 	for kind in ["wood","stone"]:
 		if world.model.state[kind]>=1: targets.erase(kind);continue
 		if targets.has(kind) and not world.exhausted(targets[kind]): continue
@@ -44,20 +44,20 @@ func _draw() -> void:
 	for key in targets:
 		var at:=DemoConfig.point(targets[key].position)
 		draw_set_transform(at,0,Vector2(1,0.58))
-		draw_circle(Vector2.ZERO,168,Color(0.65,0.80,0.35,0.055+flash*0.07))
-		draw_arc(Vector2.ZERO,168,0,TAU,64,Color(.28,.33,.20,.35),4,true)
-		draw_arc(Vector2.ZERO,168,0,TAU,64,Color(.80,.82,.51,.55+flash*.30),2,true)
+		draw_circle(Vector2.ZERO,42,Color(0.65,0.80,0.35,0.055+flash*0.07))
+		draw_arc(Vector2.ZERO,42,0,TAU,64,Color(.28,.33,.20,.35),4,true)
+		draw_arc(Vector2.ZERO,42,0,TAU,64,Color(.80,.82,.51,.55+flash*.30),2,true)
 		draw_set_transform(Vector2.ZERO)
 		if world.selected==str(targets[key].id):
 			# Actual reach is a world-space circle, not the larger decorative zone.
-			draw_arc(at,float(DemoConfig.get_data().interact_radius),0,TAU,64,Color(.95,.86,.55,.40),2,true)
-	if world.model.can_build() and not world.model.state.built and (not is_instance_valid(world.feedback) or world.feedback.activity != "build"):
-		draw_texture_rect(DemoArt.icon("hut"),Rect2(world.site.position+Vector2(-26,-168-flash*8),Vector2(52,52)),false)
+			draw_arc(at,44.0,0,TAU,64,Color(.95,.86,.55,.40),2,true)
+	if world.model.can_build() and not (world.model.built_count()>=3) and (not is_instance_valid(world.feedback) or world.feedback.activity != "build"):
+		draw_texture_rect(DemoArt.icon("hut"),Rect2(world.site.position+Vector2(-26,-42-flash*8),Vector2(52,52)),false)
 
 func draw_markers() -> void:
 	for key in targets:
 		if world.selected==str(targets[key].id): continue
-		var at:=DemoConfig.point(targets[key].position)+Vector2(55,-92-flash*8)
-		markers.draw_circle(at,21,Color("493020ed"))
-		markers.draw_arc(at,21,0,TAU,48,Color("dbe58d"),2,true)
-		markers.draw_texture_rect(DemoArt.icon(key),Rect2(at-Vector2(15,14),Vector2(30,28)),false)
+		var at:=DemoConfig.point(targets[key].position)+Vector2(32,-52-flash*4)
+		markers.draw_circle(at,14,Color("493020ed"))
+		markers.draw_arc(at,14,0,TAU,48,Color("dbe58d"),2,true)
+		markers.draw_texture_rect(DemoArt.icon(key),Rect2(at-Vector2(10,10),Vector2(20,20)),false)

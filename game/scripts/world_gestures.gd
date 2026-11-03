@@ -9,8 +9,10 @@ var start_distance := 1.0
 var start_zoom := 1.0
 var anchor_world:=Vector2.ZERO
 var trace_events:=0
+var mouse_start:=Vector2.INF
 func _init(owner_app: Node) -> void: app=owner_app
 func clear() -> void:
+	mouse_start=Vector2.INF
 	touches.clear();pinching=false;blocked=false
 	if is_instance_valid(app.joystick): app.joystick.clear()
 	if is_instance_valid(app.stage):
@@ -27,14 +29,22 @@ func ui_hit(at: Vector2) -> bool:
 	for button in app.stage.find_children("*","Button",true,false):
 		if button.is_visible_in_tree() and button.get_global_rect().has_point(at):return true
 	var row: Control=app.gather_button.get_parent()
-	return row.get_global_rect().has_point(at)
+	return row.is_visible_in_tree() and row.get_global_rect().has_point(at)
 func _input(event: InputEvent) -> void:
 	if OS.has_feature("android") and app.test_mode and trace_events<30 and (event is InputEventScreenTouch or event is InputEventScreenDrag):
 		trace_events+=1;print("PLAY_TOUCH ",event.as_text()," active=",app.application_active," screen=",app.screen)
 	if app.screen!="play" or not is_instance_valid(app.world) or not app.application_active: return
+	if event is InputEventMouseButton and not OS.has_feature("android"):
+		if event.ctrl_pressed and event.pressed and event.button_index in [MOUSE_BUTTON_WHEEL_UP,MOUSE_BUTTON_WHEEL_DOWN] and not ui_hit(event.position):
+			app.cancel_task();app.world.player.zoom_at(event.position,app.world.player.zoom_factor*(1.12 if event.button_index==MOUSE_BUTTON_WHEEL_UP else 1.0/1.12));get_viewport().set_input_as_handled()
+		elif event.button_index==MOUSE_BUTTON_LEFT:
+			if event.pressed:mouse_start=event.position if not ui_hit(event.position) else Vector2.INF
+			else:
+				if mouse_start.is_finite() and mouse_start.distance_to(event.position)<12:app.world_tap(event.position)
+				mouse_start=Vector2.INF
 	if event is InputEventScreenTouch:
 		if event.pressed:
-			touches[event.index]={"at":event.position,"ui":ui_hit(event.position)}
+			touches[event.index]={"at":event.position,"start":event.position,"ui":ui_hit(event.position),"moved":false}
 			var world_fingers: Array=[]
 			var has_ui:=false
 			for key in touches:
@@ -53,6 +63,9 @@ func _input(event: InputEvent) -> void:
 			if touches.size()>2 and pinching:
 				pinching=false;app.world.player.camera.position_smoothing_enabled=true
 		else:
+			if touches.has(event.index) and not blocked:
+				var finger:Dictionary=touches[event.index]
+				if not finger.ui and not finger.moved and finger.start.distance_to(event.position)<12:app.world_tap(event.position)
 			touches.erase(event.index)
 			if pinching and touches.size()<2:
 				pinching=false;app.world.player.camera.position_smoothing_enabled=true
@@ -61,6 +74,7 @@ func _input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 			if touches.is_empty(): blocked=false
 	elif event is InputEventScreenDrag and touches.has(event.index):
+		if touches[event.index].start.distance_to(event.position)>12:touches[event.index].moved=true
 		touches[event.index].at=event.position
 		if pinching and touches.size()==2:
 			var pair:=touches.values()
