@@ -6,6 +6,11 @@ on:
   pull_request:
     paths: [".gitattributes", "game/**", "scripts/verify-demo-assets.mjs", "scripts/*audio*.py", "assets/audio-sources/**", ".github/workflows/android-demo.yml"]
   workflow_dispatch:
+    inputs:
+      build_android:
+        description: "Build APK only after an explicit user request"
+        type: boolean
+        default: false
 permissions:
   contents: read
 jobs:
@@ -127,7 +132,12 @@ jobs:
           ! grep -E 'SCRIPT ERROR:|ERROR:' demolition-tests.log
           timeout 180 xvfb-run -a godot --fixed-fps 60 --audio-driver Dummy --path game --resolution 1280x720 --script res://tests/action_queue_tests.gd -- --test-ui 2>&1 | tee action-queue-tests.log
           ! grep -E 'SCRIPT ERROR:|ERROR:' action-queue-tests.log
+          timeout 180 xvfb-run -a godot --fixed-fps 60 --audio-driver Dummy --path game --resolution 1280x720 --script res://tests/build_preview_tests.gd -- --test-ui 2>&1 | tee build-preview-tests.log
+          ! grep -E 'SCRIPT ERROR:|ERROR:' build-preview-tests.log
+          timeout 180 xvfb-run -a godot --fixed-fps 60 --audio-driver Dummy --path game --resolution 1280x720 --script res://tests/clean_terrain_tests.gd -- --test-ui 2>&1 | tee clean-terrain-tests.log
+          ! grep -E 'SCRIPT ERROR:|ERROR:' clean-terrain-tests.log
       - name: Export signed debug APK
+        if: github.event_name == 'workflow_dispatch' && inputs.build_android
         run: |
           set -euo pipefail
           mkdir -p build
@@ -157,6 +167,7 @@ jobs:
             docs/stage1/
           retention-days: 30
       - uses: actions/upload-artifact@v4
+        if: github.event_name == 'workflow_dispatch' && inputs.build_android
         with:
           name: RoxHistory-0.1.22-APK
           path: build/RoxHistory-0.1.22.apk

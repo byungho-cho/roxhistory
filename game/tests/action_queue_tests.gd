@@ -22,7 +22,7 @@ func run()->void:
 		if b.text=="움집 선택":b.pressed.emit();break
 	check(app.choosing_plot and app.world.show_candidates and not app.modal,"Hut choice reveals candidates")
 	var before:Vector2=app.world.player.position
-	tap(DemoConfig.BUILD_SITES[3]);check(app.task=="build" and app.navigation.action=="","Remote construction begins without travel")
+	tap(DemoConfig.BUILD_SITES[3]);app.confirm_build_preview();check(app.task=="build" and app.navigation.action=="","Remote construction begins without travel")
 	await frames(12)
 	check(app.world.player.position.distance_to(before)<1,"Hero remains still during construction")
 	check(app.world.feedback.preview.visible,"Construction scaffold retained")
@@ -78,7 +78,7 @@ func run()->void:
 	root.get_texture().get_image().save_png("res://reports/queue-hud.png")
 	app.cancel_task();app.start_region();await frames()
 	state=app.model.state.duplicate(true);state.wood=3;state.stone=3;app.model.commit(state)
-	app.world.select_site(3);app.build_action();app.choosing_plot=true;tap(DemoConfig.BUILD_SITES[4])
+	app.world.select_site(3);app.build_action();app.choosing_plot=true;tap(DemoConfig.BUILD_SITES[4]);app.confirm_build_preview()
 	check(app.task_site==3 and int(app.pending_action.id)==4,"Second plot queues without moving the active scaffold")
 	var limit:=320
 	while (app.task!="" or not app.pending_action.is_empty()) and limit>0:await frames(1);limit-=1

@@ -705,5 +705,11 @@
     "bytes": 50655,
     "sha256": "495960bcc86f44720d6923501d1942bb6145d116c7a980c502e6bc248bbc5afb",
     "source": "b1433687df091e1355d5abb17c0fc55a73ceea11 design/reference-images/2026-11-04-ui-assets-brush/png/resource-slot-brush@2x.png"
+  },
+  {
+    "path": "game/assets/environment/terrain-clean-v033.png",
+    "bytes": 2583598,
+    "sha256": "36149684589b198e8d4ffcd9926f7127c04b0a12580b7f29eaa4a1816ffdc431",
+    "source": "share/reference-assets design/reference-images/2026-11-04-clean-terrain/terrain-s40000-clean-edited-v001.png; user approved 2026-11-04"
   }
 ]

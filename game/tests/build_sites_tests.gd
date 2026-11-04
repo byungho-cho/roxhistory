@@ -63,7 +63,7 @@ func run()->void:
  app.world.player.position=Vector2(1150,900);app.world.player.resume_camera();await frames()
  await snap("candidates")
  app.choosing_plot=true;app.world.show_candidates=true
- tap(DemoConfig.BUILD_SITES[3]);check(app.world.selected_site==3 and app.task=="build" and app.navigation.action=="","Choose arbitrary site starts remote construction")
+ tap(DemoConfig.BUILD_SITES[3]);app.confirm_build_preview();check(app.world.selected_site==3 and app.task=="build" and app.navigation.action=="","Choose arbitrary site starts remote construction")
  app.inventory_summary();await frames(6)
  check(app.task=="build" and app.world.selected_site==3,"Informational UI preserves active construction")
  app.close_modal();app.cancel_task()

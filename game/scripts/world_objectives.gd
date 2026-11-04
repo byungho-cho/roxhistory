@@ -51,8 +51,8 @@ func _draw() -> void:
 		if world.selected==str(targets[key].id):
 			# Actual reach is a world-space circle, not the larger decorative zone.
 			draw_arc(at,44.0,0,TAU,64,Color(.95,.86,.55,.40),2,true)
-	if world.selected_site>=0 and world.model.can_build() and not (world.model.built_count()>=3) and (not is_instance_valid(world.feedback) or world.feedback.activity != "build"):
-		draw_texture_rect(DemoArt.icon("hut"),Rect2(world.site.position+Vector2(-26,-42-flash*8),Vector2(52,52)),false)
+	if world.show_candidates and world.selected_site>=0 and world.model.can_build() and not (world.model.built_count()>=3) and (not is_instance_valid(world.feedback) or world.feedback.activity != "build"):
+		pass # Candidate preview owns its icon; never leave an icon at the old default site.
 
 func draw_markers() -> void:
 	for key in targets:

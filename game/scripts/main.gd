@@ -20,6 +20,10 @@ var task := ""
 const GATHER_SEARCH_RADIUS := 650.0
 var pending_action:Dictionary={}
 var choosing_plot:=false
+var build_preview:BuildPreview
+var menu_expanded:=true
+var menu_toggle:DemoButton
+var menu_backdrop:Panel
 var task_target := ""
 var task_site := -1
 var cancel_site_button:DemoButton
@@ -59,11 +63,16 @@ func update_quest()->void:
 	var count:=model.built_count()
 	objective.text=("움막을 지어라 · %d/3채"%count) if count<3 else "정착지 완성 · 3/3채"
 	if quest_expanded:
-		objective.text+=("\n나무 %d/1 · 돌 %d/1"%[mini(model.state.wood,1),mini(model.state.stone,1)]) if count<3 else "\n건물 위 씨앗을 받아 주세요"
+		objective.text+=("\n나무 %d/1 · 돌 %d/1"%[mini(model.state.wood,1),mini(model.state.stone,1)]) if count<3 else ("\n건물 위 씨앗을 받아 주세요" if has_pending_rewards() else "\n씨앗 보상을 모두 받았어요")
 	objective.size=Vector2(153,48 if quest_expanded else 28)
 	objective.get_parent().size=Vector2(202,58 if quest_expanded else 38)
 	if is_instance_valid(quest_arrow):quest_arrow.text="⌃" if quest_expanded else "⌄"
 	if is_instance_valid(quest_accent):quest_accent.size.y=38 if quest_expanded else 18
+
+func has_pending_rewards()->bool:
+	for i in model.built_count():
+		if model.reward_pending(i):return true
+	return false
 
 func _ready() -> void:
 	gestures=WorldGestures.new(self);add_child(gestures)
@@ -107,6 +116,7 @@ func clear_children(node: Node) -> void:
 		child.queue_free()
 
 func show_screen(next: String) -> void:
+	cancel_build_preview()
 	var layout_size:=Vector2i(540,960) if get_window().size.x<get_window().size.y else Vector2i(960,540)
 	if get_window().content_scale_size!=layout_size:get_window().content_scale_size=layout_size
 	var previous := screen
@@ -337,7 +347,7 @@ func title_screen() -> void:
 	for state in ["normal","hover","pressed","disabled","focus"]:horn.add_theme_stylebox_override(state,StyleBoxEmpty.new())
 	for child in horn.get_children():
 		if child is TextureRect:
-			child.size=Vector2.ONE*176*.54*2*minf(w/1600,h/900)
+			child.size=Vector2.ONE*176*.54*2*.7*minf(w/1600,h/900)
 			child.position=(horn.size-child.size)*.5
 			var cast:=child.duplicate();cast.name="HornShadow";cast.position+=Vector2(1,3);cast.modulate=Color(0.12,0.07,0.02,.35);horn.add_child(cast);horn.move_child(cast,child.get_index())
 	horn.enable_art_feedback()
@@ -409,7 +419,9 @@ func play_hud() -> void:
 	quest_panel.set_meta("semantic_text","퀘스트 상세 펼침·접힘")
 	joystick=DemoJoystick.new();stage.add_child(joystick);joystick.position=Vector2(safe.x,h-safe.y-140)
 	var action_width:=64.0 if w/h>2.2 else 60.0
-	var menu_width:=action_width*5+8*4
+	var menu_width:=action_width*5+8*4+48
+	menu_backdrop=Panel.new();menu_backdrop.name="MenuBackdrop";menu_backdrop.mouse_filter=Control.MOUSE_FILTER_IGNORE;stage.add_child(menu_backdrop)
+	var capsule:=StyleBoxFlat.new();capsule.bg_color=Color(.33,.25,.12,.83);capsule.border_color=Color(.83,.68,.38,.9);capsule.set_border_width_all(2);capsule.set_corner_radius_all(30);capsule.shadow_color=Color(0,0,0,.2);capsule.shadow_size=3;menu_backdrop.add_theme_stylebox_override("panel",capsule)
 	action_row=HBoxContainer.new();action_row.name="Actions";action_row.add_theme_constant_override("separation",8);stage.add_child(action_row)
 	action_row.position=Vector2(w-safe.x-menu_width,h-safe.y-76);action_row.size=Vector2(menu_width,72)
 	if w<h:action_row.position.y=h-safe.y-220
@@ -417,7 +429,8 @@ func play_hud() -> void:
 		var caption:String=data[0]
 		var callback:Callable=gather_action if caption=="채집" else construction_menu if caption=="건설" else quest_details if caption=="임무" else inventory_summary if caption=="가방" else func():toast("아직 준비 중인 기능입니다")
 		var b:=button(action_row,caption,callback,false,data[1]);b.custom_minimum_size=Vector2(action_width,72)
-		b.set_meta("permanent_action",true)
+		b.set_meta("permanent_action",false)
+		b.set_meta("auxiliary_action",caption!="건설")
 		if caption=="제작":b.disabled=true;b.hint_text="제작은 아직 준비 중입니다"
 		b.icon=DemoArt.play_icon(data[1])
 		if caption=="임무":b.name="JournalButton"
@@ -431,7 +444,13 @@ func play_hud() -> void:
 		b.add_theme_color_override("font_color",Color("fff0cd"));b.add_theme_color_override("font_disabled_color",Color("c0b299"))
 		if caption=="채집":gather_button=b
 		if caption=="건설":build_button=b
-	cancel_site_button=button(stage,"부지 선택 취소",func():choosing_plot=false;world.clear_site();world.show_candidates=false;world.queue_redraw())
+	action_row.move_child(build_button,action_row.get_child_count()-1)
+	menu_toggle=button(action_row,"‹",toggle_menu);menu_toggle.name="MenuToggle";menu_toggle.custom_minimum_size=Vector2(44,72);menu_toggle.hint_text="보조 메뉴 펼침·접힘"
+	menu_toggle.icon=DemoArt.play_icon("expand");menu_toggle.expand_icon=true;menu_toggle.add_theme_constant_override("icon_max_width",40)
+	for state in ["normal","hover","pressed"]:menu_toggle.add_theme_stylebox_override(state,StyleBoxEmpty.new())
+	apply_menu_state()
+	build_preview=BuildPreview.new(self);world.add_child(build_preview)
+	cancel_site_button=button(stage,"부지 선택 취소",cancel_build_preview)
 	cancel_site_button.name="CancelBuildSite";cancel_site_button.custom_minimum_size=Vector2.ZERO
 	cancel_site_button.position=Vector2(w-safe.x-140,h-safe.y-(270 if w<h else 126));cancel_site_button.size=Vector2(140,44)
 	cancel_site_button.add_theme_font_size_override("font_size",13)
@@ -447,6 +466,21 @@ func play_hud() -> void:
 	var portrait_hit:=button(stage,"",pause_game);portrait_hit.name="PortraitPause";portrait_hit.custom_minimum_size=Vector2.ZERO;portrait_hit.position=safe;portrait_hit.size=Vector2(58,58)
 	for state in ["normal","hover","pressed"]:portrait_hit.add_theme_stylebox_override(state,StyleBoxEmpty.new())
 	update_hud()
+
+func toggle_menu()->void:
+	menu_expanded=not menu_expanded
+	apply_menu_state()
+
+func apply_menu_state()->void:
+	if not is_instance_valid(action_row):return
+	for child in action_row.get_children():
+		if child.get_meta("auxiliary_action",false):child.visible=menu_expanded
+	menu_toggle.text=""
+	menu_toggle.icon=DemoArt.play_icon("expand") if menu_expanded else DemoArt.play_icon("menu")
+	menu_toggle.hint_text="접기" if menu_expanded else "메뉴 펼치기"
+	var width:float=(64.0 if w/h>2.2 else 60.0)*(5 if menu_expanded else 1)+8*(5 if menu_expanded else 1)+44
+	action_row.size.x=width;action_row.position.x=w-safe.x-width
+	menu_backdrop.position=action_row.position+Vector2(-8,17);menu_backdrop.size=Vector2(width+16,56)
 
 func inventory_summary() -> void:
 	show_modal("가진 재료","나무 %d개 · 돌 %d개\n완료 기념 씨앗 %d개"%[model.state.wood,model.state.stone,model.state.tokens],[{"text":"돌아가기","action":close_modal}],false,true)
@@ -566,7 +600,23 @@ func gather_action(selected_id:String="") -> void:
 
 func construction_menu()->void:
 	if modal or gestures.blocked:return
+	cancel_build_preview()
 	show_modal("건설","움집 · 나무 1개 + 돌 1개",[{"text":"취소","action":close_modal},{"text":"움집 선택","action":func():close_modal();choosing_plot=true;world.show_candidates=true;world.queue_redraw();toast("원형 부지를 선택해 주세요",2)}],true,true,true)
+
+func cancel_build_preview()->void:
+	if choosing_plot and is_instance_valid(world) and task!="build":world.clear_site()
+	choosing_plot=false
+	if is_instance_valid(build_preview):build_preview.clear()
+	if is_instance_valid(world):world.show_candidates=false;world.queue_redraw()
+
+func confirm_build_preview()->void:
+	if not is_instance_valid(build_preview) or build_preview.site_id<0 or not application_active or modal:return
+	var id:=build_preview.site_id
+	if not world.site_available(id):cancel_build_preview();toast("이 부지는 지금 사용할 수 없어요");return
+	if not model.can_build():toast("나무 1개와 돌 1개가 필요해요");return
+	cancel_build_preview()
+	if task!="":reserve_action({"kind":"build","id":id});return
+	if world.select_site(id):build_action()
 
 func reserve_action(request:Dictionary)->void:
 	pending_action=request.duplicate(true)
@@ -613,7 +663,9 @@ func finish_task() -> void:
 	call_deferred("run_reserved_action")
 
 func cancel_task(clear_reservation:bool=true) -> void:
-	if clear_reservation:pending_action.clear()
+	if clear_reservation:
+		pending_action.clear()
+		cancel_build_preview()
 	if is_instance_valid(navigation):navigation.cancel()
 	if is_instance_valid(audio): audio.stop_work()
 	task = ""
@@ -689,17 +741,13 @@ func world_tap(screen_point:Vector2) -> void:
 			return
 	var site_id:=world.site_at(at) if choosing_plot else -1
 	if site_id>=0:
-		if not task.is_empty():
-			reserve_action({"kind":"build","id":site_id});choosing_plot=false;world.show_candidates=false;world.queue_redraw();return
-		if world.selected_site==site_id and navigation.action=="build":navigation.cancel();world.clear_site();return
-		if not world.select_site(site_id):toast("이 부지는 지금 사용할 수 없어요");return
-		navigation.cancel()
-		if not model.can_build():toast("나무 1개와 돌 1개가 필요해요");return
-		build_action()
+		if not world.site_available(site_id):toast("이 부지는 지금 사용할 수 없어요");return
+		build_preview.select(site_id)
 		return
 	# Building images own their taps even after their reward has been claimed.
 	for prop in world.environment_props:
 		if prop.kind=="hut" and prop.visible and Rect2(prop.position-Vector2(170,245),Vector2(340,260)).has_point(at):return
+	cancel_build_preview()
 	navigation.start("move","",at)
 
 func focus_objective() -> void:
@@ -711,7 +759,7 @@ func focus_objective() -> void:
 	if not Rect2(Vector2(80,90),Vector2(w-160,h-190)).has_point(screen_point): world.player.guide_to(point+Vector2(0,-35))
 
 func quest_details() -> void:
-	show_modal("정착지를 만들어요","기존 움집 한 채에 새 움집 세 채를 더 지어 주세요.\n\n진행 %d/3 · 건설마다 나무 1개 + 돌 1개\n자원을 누르면 자동 이동하여 채집합니다.\n건설 → 움집 선택 후 부지를 누르면 바로 건설합니다.\n완성된 건물을 누르면 씨앗 10개를 받습니다."%model.built_count(),[{"text":"돌아가기","action":close_modal}],false,true)
+	show_modal("정착지를 만들어요","기존 움집 한 채에 새 움집 세 채를 더 지어 주세요.\n\n진행 %d/3 · 건설마다 나무 1개 + 돌 1개\n자원을 누르면 자동 이동하여 채집합니다.\n건설 → 움집 선택 후 부지를 고르고 미리보기에서 확인하면 건설합니다.\n%s"%[model.built_count(),("미수령 건물을 누르면 씨앗 10개를 받습니다." if has_pending_rewards() else "모든 완료 보상을 받았습니다." if model.built_count()>=3 else "건설 완료 후 건물에서 씨앗을 받을 수 있습니다.")],[{"text":"돌아가기","action":close_modal}],false,true)
 
 func pause_game() -> void:
 	cancel_task()
