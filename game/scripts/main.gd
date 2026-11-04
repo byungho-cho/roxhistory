@@ -17,6 +17,9 @@ var toast_time := 0.0
 var screen := ""
 var modal := false
 var task := ""
+const GATHER_SEARCH_RADIUS := 650.0
+var pending_action:Dictionary={}
+var choosing_plot:=false
 var task_target := ""
 var task_site := -1
 var cancel_site_button:DemoButton
@@ -139,7 +142,7 @@ func show_screen(next: String) -> void:
 		"region": region_screen()
 		"play": play_hud()
 	toast_panel=PanelContainer.new();stage.add_child(toast_panel)
-	toast_panel.position=Vector2(w*.5-120,safe.y+8);toast_panel.size=Vector2(240,38)
+	toast_panel.position=Vector2(w*.5-120,safe.y+(190 if w<h else 118) if screen=="play" else safe.y+8);toast_panel.size=Vector2(240,38)
 	var toast_style:=StyleBoxFlat.new();toast_style.bg_color=Color(.13,.10,.07,.87);toast_style.set_corner_radius_all(19);toast_style.set_content_margin_all(8)
 	toast_panel.add_theme_stylebox_override("panel",toast_style)
 	toast_panel.mouse_filter=Control.MOUSE_FILTER_IGNORE
@@ -328,12 +331,14 @@ func title_screen() -> void:
 	var continue_btn:=design_button(stage,"이어서 하기",design_rect(1108,401,388,90),enter_game,true,"hut");continue_btn.disabled=model.state.is_empty();continue_btn.hint_text="먼저 새 여정을 시작해 주세요."
 	design_button(stage,"새로 시작",design_rect(1108,513,388,82),new_game_prompt,false,"spear")
 	design_button(stage,"장 선택",design_rect(1108,617,388,82),chapter_menu,false,"compass")
-	var horn:=design_button(stage,"",design_rect(1357,30,176,176),toggle_sound,false,"horn")
+	var horn:=design_button(stage,"",design_rect(1313,20,220,220),toggle_sound,false,"horn")
 	horn.name="SoundToggle";horn.set_meta("semantic_text","소리 켜기 / 끄기")
 	horn.get_node("FigmaSkin").hide()
 	for state in ["normal","hover","pressed","disabled","focus"]:horn.add_theme_stylebox_override(state,StyleBoxEmpty.new())
 	for child in horn.get_children():
 		if child is TextureRect:
+			child.size=Vector2.ONE*176*.54*2*minf(w/1600,h/900)
+			child.position=(horn.size-child.size)*.5
 			var cast:=child.duplicate();cast.name="HornShadow";cast.position+=Vector2(1,3);cast.modulate=Color(0.12,0.07,0.02,.35);horn.add_child(cast);horn.move_child(cast,child.get_index())
 	horn.enable_art_feedback()
 	design_panel(design_rect(76,744,360,78),false)
@@ -410,7 +415,7 @@ func play_hud() -> void:
 	if w<h:action_row.position.y=h-safe.y-220
 	for data in [["채집","berries"],["제작","hammer"],["건설","hut"],["임무","scroll"],["가방","bag"]]:
 		var caption:String=data[0]
-		var callback:Callable=gather_action if caption=="채집" else build_action if caption=="건설" else quest_details if caption=="임무" else inventory_summary if caption=="가방" else func():toast("아직 준비 중인 기능입니다")
+		var callback:Callable=gather_action if caption=="채집" else construction_menu if caption=="건설" else quest_details if caption=="임무" else inventory_summary if caption=="가방" else func():toast("아직 준비 중인 기능입니다")
 		var b:=button(action_row,caption,callback,false,data[1]);b.custom_minimum_size=Vector2(action_width,72)
 		b.set_meta("permanent_action",true)
 		if caption=="제작":b.disabled=true;b.hint_text="제작은 아직 준비 중입니다"
@@ -419,22 +424,14 @@ func play_hud() -> void:
 		if caption=="가방":b.name="InventoryButton"
 		var action_style:=StyleBoxFlat.new();action_style.bg_color=Color.TRANSPARENT;action_style.set_content_margin_all(2)
 		for state in ["normal","hover","pressed","disabled"]:b.add_theme_stylebox_override(state,action_style)
-		var stone:=Polygon2D.new();stone.name="ApprovedStonePedestal";stone.show_behind_parent=true;b.add_child(stone)
-		stone.position=Vector2(1,39)
-		stone.polygon=PackedVector2Array([Vector2(0,10),Vector2(7,2),Vector2(action_width-10,0),Vector2(action_width-2,9),Vector2(action_width-4,25),Vector2(3,25)])
-		stone.texture=preload("res://assets/ui/s40000/approved-option3-reference.png")
-		var stone_uv:=PackedVector2Array()
-		for p in stone.polygon:stone_uv.append(Vector2(832,852)+Vector2(p.x/(action_width-2)*42,p.y/25*14))
-		stone.uv=stone_uv
-		var nameplate:=Panel.new();nameplate.name="ActionNameplate";nameplate.mouse_filter=Control.MOUSE_FILTER_IGNORE;nameplate.show_behind_parent=true;b.add_child(nameplate)
-		nameplate.position=Vector2(2,49);nameplate.size=Vector2(action_width-4,21)
-		var plate:=StyleBoxFlat.new();plate.bg_color=Color(.19,.12,.055,.86);plate.border_color=Color(.76,.58,.30,.6);plate.set_border_width_all(1);plate.set_corner_radius_all(4);plate.shadow_color=Color(0,0,0,.25);plate.shadow_size=2;plate.shadow_offset=Vector2(0,2);nameplate.add_theme_stylebox_override("panel",plate)
+		var stone:=picture(b,preload("res://assets/ui/brush/action-stone-base@2x.png"),Rect2(0,28,action_width,action_width*88.0/128.0))
+		stone.name="ApprovedStonePedestal";stone.show_behind_parent=true
 		b.add_theme_font_size_override("font_size",13)
 		b.vertical_icon_alignment=VERTICAL_ALIGNMENT_TOP;b.icon_alignment=HORIZONTAL_ALIGNMENT_CENTER;b.add_theme_constant_override("icon_max_width",46)
 		b.add_theme_color_override("font_color",Color("fff0cd"));b.add_theme_color_override("font_disabled_color",Color("c0b299"))
 		if caption=="채집":gather_button=b
 		if caption=="건설":build_button=b
-	cancel_site_button=button(stage,"부지 선택 취소",func():navigation.cancel();world.clear_site())
+	cancel_site_button=button(stage,"부지 선택 취소",func():choosing_plot=false;world.clear_site();world.show_candidates=false;world.queue_redraw())
 	cancel_site_button.name="CancelBuildSite";cancel_site_button.custom_minimum_size=Vector2.ZERO
 	cancel_site_button.position=Vector2(w-safe.x-140,h-safe.y-(270 if w<h else 126));cancel_site_button.size=Vector2(140,44)
 	cancel_site_button.add_theme_font_size_override("font_size",13)
@@ -477,7 +474,7 @@ func _process(delta: float) -> void:
 		var keyboard := Vector2(float(Input.is_physical_key_pressed(KEY_D) or Input.is_physical_key_pressed(KEY_RIGHT))-float(Input.is_physical_key_pressed(KEY_A) or Input.is_physical_key_pressed(KEY_LEFT)),float(Input.is_physical_key_pressed(KEY_S) or Input.is_physical_key_pressed(KEY_DOWN))-float(Input.is_physical_key_pressed(KEY_W) or Input.is_physical_key_pressed(KEY_UP)))
 		if keyboard.length() > 0: direction = keyboard.normalized()
 	if direction.length()>0.12 and is_instance_valid(navigation):
-		navigation.cancel()
+		cancel_task() # Explicit user choice: manual input cancels work and the one reservation.
 		if world.player.manual_camera:world.player.resume_camera()
 	world.player.direction = direction
 	world.player.presentation_paused = modal or not application_active
@@ -487,7 +484,7 @@ func _process(delta: float) -> void:
 			var n := world.nearest()
 			cancel = cancel or str(n.get("id","")) != task_target or direction.length() > 0.12
 		else:
-			cancel = cancel or not world.near_site() or direction.length() > 0.12
+			cancel = direction.length() > 0.12
 		if cancel:
 			cancel_task()
 			toast("작업 범위를 벗어나 멈췄습니다.")
@@ -505,16 +502,16 @@ func _process(delta: float) -> void:
 			world.feedback.update_work(task_total-task_remaining,task_total)
 			task_bar.value = (1.0-task_remaining/task_total)*100
 			if task_remaining <= 0: finish_task()
-	cancel_site_button.visible=world.selected_site>=0 and task.is_empty() and not modal and model.built_count()<DemoConfig.HOME_GOAL
+	cancel_site_button.visible=choosing_plot and not modal and model.built_count()<DemoConfig.HOME_GOAL
 	var near := world.nearest()
 	var working_hint := "채집 중… 이동하면 멈춥니다" if task=="gather" else "보금자리 건설 중…"
 	gather_button.hint_text=working_hint if task!="" else ("자원 가까이 이동해 주세요" if near.is_empty() else "작업을 마친 뒤 사용할 수 있어요")
-	build_button.hint_text=working_hint if task!="" else ("완성된 보금자리입니다" if (model.built_count()>=DemoConfig.HOME_GOAL) else ("나무 1개와 돌 1개가 필요해요" if not model.can_build() else "금빛 건설 터 안으로 이동해 주세요"))
+	build_button.hint_text=working_hint if task!="" else ("완성된 보금자리입니다" if (model.built_count()>=DemoConfig.HOME_GOAL) else ("나무 1개와 돌 1개가 필요해요" if not model.can_build() else "움집을 선택하고 건설할 부지를 골라 주세요"))
 	gather_button.set_working(task=="gather");build_button.set_working(task=="build")
 	gather_button.text="채집 중" if task=="gather" else "채집"
 	build_button.text="건설 중" if task=="build" else "건설"
-	gather_button.disabled = modal or task != "" or near.is_empty()
-	build_button.disabled = modal or task != "" or (model.built_count()>=DemoConfig.HOME_GOAL) or not world.near_site() or not model.can_build() or not world.site_available(world.selected_site)
+	gather_button.disabled = modal
+	build_button.disabled = modal or (model.built_count()>=DemoConfig.HOME_GOAL)
 	style_action_state(gather_button)
 	style_action_state(build_button)
 	if task == "":
@@ -534,12 +531,25 @@ func _process(delta: float) -> void:
 		model.save_position(world.player.position)
 
 func gather_action(selected_id:String="") -> void:
-	if modal or gestures.blocked or task != "" or screen != "play": return
+	if modal or gestures.blocked or screen != "play": return
+	if task!="":
+		reserve_action({"kind":"gather","id":selected_id})
+		return
 	var n := world.nearest()
 	if selected_id!="":
+		n={}
 		for candidate in model.nodes():
-			if candidate.id==selected_id and not world.exhausted(candidate) and world.player.position.distance_to(DemoConfig.point(candidate.position))<=float(DemoConfig.get_data().interact_radius):n=candidate;break
-	if n.is_empty(): return
+			if candidate.id==selected_id and not world.exhausted(candidate):n=candidate;break
+		if n.is_empty():toast("예약한 채집 대상이 사라졌어요");return
+	if n.is_empty():
+		var candidates:=model.nodes().filter(func(c):return not world.exhausted(c) and world.player.position.distance_to(DemoConfig.point(c.position))<=GATHER_SEARCH_RADIUS)
+		candidates.sort_custom(func(a,b):return world.player.position.distance_squared_to(DemoConfig.point(a.position))<world.player.position.distance_squared_to(DemoConfig.point(b.position)))
+		for candidate in candidates:
+			if navigation.start("gather",candidate.id,world.gather_stand(DemoConfig.point(candidate.position),candidate.kind),0,[],true):return
+		toast("주변에 접근 가능한 채집물이 없어요");return
+	if world.player.position.distance_to(DemoConfig.point(n.position))>float(DemoConfig.get_data().interact_radius):
+		navigation.start("gather",n.id,world.gather_stand(DemoConfig.point(n.position),n.kind));return
+	navigation.cancel()
 	task = "gather"
 	world.player.face_target(DemoConfig.point(n.position))
 	var target_point:=DemoConfig.point(n.position)
@@ -554,14 +564,33 @@ func gather_action(selected_id:String="") -> void:
 	task_bar.visible = not gather_approach
 	context.text = "자원 옆에 자리 잡는 중" if gather_approach else "채집 중… 이동하면 멈춥니다"
 
+func construction_menu()->void:
+	if modal or gestures.blocked:return
+	show_modal("건설","움집 · 나무 1개 + 돌 1개",[{"text":"취소","action":close_modal},{"text":"움집 선택","action":func():close_modal();choosing_plot=true;world.show_candidates=true;world.queue_redraw();toast("원형 부지를 선택해 주세요",2)}],true,true,true)
+
+func reserve_action(request:Dictionary)->void:
+	pending_action=request.duplicate(true)
+	toast("현재 작업 후 실행할 행동을 예약했어요",1.5)
+
+func run_reserved_action()->void:
+	var request:=pending_action.duplicate(true)
+	pending_action.clear()
+	if request.is_empty():return
+	match str(request.kind):
+		"move":navigation.start("move","",request.at)
+		"gather":gather_action(str(request.get("id","")))
+		"build":
+			if world.select_site(int(request.id)):build_action()
+			else:toast("예약한 건설 부지를 사용할 수 없어요")
+
 func build_action() -> void:
 	if modal or gestures.blocked or task!="" or model.built_count()>=3:return
 	if world.selected_site<0:toast("건설할 원형 부지를 먼저 선택해 주세요");return
 	if not model.can_build():toast("나무 1개와 돌 1개가 필요해요");return
 	if not world.site_available(world.selected_site):toast("이 부지에 장애물이 있어요. 다른 부지를 선택해 주세요");return
-	if not world.near_site():navigation.start("build",str(world.selected_site),world.site.position+Vector2(0,65));return
+	navigation.cancel();choosing_plot=false;world.show_candidates=false;world.queue_redraw()
 	task_site=world.selected_site
-	task="build";world.feedback.begin("build");world.player.face_target(world.site.position);world.player.set_activity("build")
+	task="build";world.feedback.begin("build");world.player.set_activity("")
 	task_total=float(DemoConfig.get_data().build_seconds);task_remaining=task_total;task_bar.visible=false;toast("",0)
 
 func finish_task() -> void:
@@ -570,7 +599,7 @@ func finish_task() -> void:
 	var built_at:=world.site.position
 	var built_site:=task_site
 	var site_valid:=world.site_available(built_site) if kind=="build" else true
-	cancel_task()
+	cancel_task(false)
 	if kind == "gather":
 		if model.gather(target,world.player.position):
 			world.feedback.gathered(target)
@@ -581,8 +610,10 @@ func finish_task() -> void:
 	elif kind == "build" and site_valid and model.build(world.player.position,built_site):
 		world.feedback.built(built_at)
 	elif kind=="build" and not site_valid:toast("부지가 막혀 건설을 멈췄습니다. 재료는 사용하지 않았어요")
+	call_deferred("run_reserved_action")
 
-func cancel_task() -> void:
+func cancel_task(clear_reservation:bool=true) -> void:
+	if clear_reservation:pending_action.clear()
 	if is_instance_valid(navigation):navigation.cancel()
 	if is_instance_valid(audio): audio.stop_work()
 	task = ""
@@ -606,7 +637,6 @@ func request_demolition(screen_point:Vector2)->void:
 		if model.reward_pending(i):toast("건물을 눌러 씨앗을 먼저 받아 주세요");return
 		var key:=model.home_key(i)
 		var quote:=model.demolition_quote(key)
-		if not quote.supported:toast("이 건물의 소수 환급 기준은 아직 준비 중입니다");return
 		show_modal("이 움집을 철거할까요?","반환: 나무 %d개 · 돌 %d개"%[quote.wood,quote.stone],[{"text":"취소","action":close_modal},{"text":"철거","action":func():confirm_demolition(key)}],true,true,true)
 		demolition_key=key
 		var shade:=overlay.get_child(0)
@@ -651,14 +681,16 @@ func world_tap(screen_point:Vector2) -> void:
 		var point:=DemoConfig.point(n.position)
 		if Rect2(point-Vector2(60,70),Vector2(120,90)).has_point(at):
 			if world.exhausted(n):toast("이 자원은 모두 채집했어요");return
-			if not task.is_empty():return # Action/object clicks never interrupt active work.
+			if not task.is_empty():
+				navigation.start("gather",n.id,world.gather_stand(point,n.kind));return
 			navigation.cancel()
 			if world.player.position.distance_to(point)<=float(DemoConfig.get_data().interact_radius):gather_action(n.id)
 			else:navigation.start("gather",n.id,world.gather_stand(point,n.kind))
 			return
-	var site_id:=world.site_at(at)
+	var site_id:=world.site_at(at) if choosing_plot else -1
 	if site_id>=0:
-		if not task.is_empty():return
+		if not task.is_empty():
+			reserve_action({"kind":"build","id":site_id});choosing_plot=false;world.show_candidates=false;world.queue_redraw();return
 		if world.selected_site==site_id and navigation.action=="build":navigation.cancel();world.clear_site();return
 		if not world.select_site(site_id):toast("이 부지는 지금 사용할 수 없어요");return
 		navigation.cancel()
@@ -679,7 +711,7 @@ func focus_objective() -> void:
 	if not Rect2(Vector2(80,90),Vector2(w-160,h-190)).has_point(screen_point): world.player.guide_to(point+Vector2(0,-35))
 
 func quest_details() -> void:
-	show_modal("정착지를 만들어요","기존 움집 한 채에 새 움집 세 채를 더 지어 주세요.\n\n진행 %d/3 · 건설마다 나무 1개 + 돌 1개\n자원을 누르면 자동 이동하여 채집합니다.\n건설 터를 누르면 이동한 뒤 건설합니다.\n완성된 건물을 누르면 씨앗 10개를 받습니다."%model.built_count(),[{"text":"돌아가기","action":close_modal}],false,true)
+	show_modal("정착지를 만들어요","기존 움집 한 채에 새 움집 세 채를 더 지어 주세요.\n\n진행 %d/3 · 건설마다 나무 1개 + 돌 1개\n자원을 누르면 자동 이동하여 채집합니다.\n건설 → 움집 선택 후 부지를 누르면 바로 건설합니다.\n완성된 건물을 누르면 씨앗 10개를 받습니다."%model.built_count(),[{"text":"돌아가기","action":close_modal}],false,true)
 
 func pause_game() -> void:
 	cancel_task()
@@ -785,7 +817,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 	elif event is InputEventKey and event.pressed and not event.echo and screen == "play" and not modal:
 		if event.physical_keycode == KEY_E: gather_action()
-		elif event.physical_keycode == KEY_B: build_action()
+		elif event.physical_keycode == KEY_B: construction_menu()
 
 func _notification(what: int) -> void:
 	# Synthetic tests issue PAUSED/RESUMED explicitly; desktop focus is external.
@@ -826,7 +858,7 @@ func style_action_state(control:DemoButton)->void:
 	plate.border_color=Color("ffe4a0") if state=="ready" else Color("d3ad67") if state=="working" else Color(.57,.49,.36,.55)
 	plate.shadow_color=Color(1,.72,.23,.38) if state=="ready" else Color(0,0,0,.22)
 	plate.shadow_size=7 if state=="ready" else 2
-	control.get_node("ActionNameplate").add_theme_stylebox_override("panel",plate)
+	# The authored stone includes its nameplate; only a subtle halo is dynamic.
 	var halo:=StyleBoxFlat.new();halo.set_corner_radius_all(12);halo.set_content_margin_all(2)
 	halo.bg_color=Color(1,.72,.18,.12) if state=="ready" else Color(.9,.65,.2,.07) if state=="working" else Color.TRANSPARENT
 	halo.shadow_color=Color(1,.75,.28,.16) if state=="ready" else Color.TRANSPARENT;halo.shadow_size=5

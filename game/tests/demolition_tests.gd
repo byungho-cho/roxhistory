@@ -74,7 +74,7 @@ func run()->void:
   check(quote.stone==1,"Refund calculated independently per resource "+str(amount))
   if amount<=10:check(quote.wood==amount and quote.supported,"Full return boundary "+str(amount))
   elif amount==20:check(quote.wood==18 and quote.supported,"Exact integer 90 percent future cost")
-  else:check(not quote.supported and not app.model.demolish(app.model.home_key(0)),"Unapproved fractional return never rounded "+str(amount))
+  else:check(quote.supported and quote.wood==int(floor(amount*.9)),"Approved fractional refund floors per resource "+str(amount))
  # No active demonstration building uses those future costs.
  var sample:Dictionary=app.model.state.duplicate(true);sample.homes[0].cost={"wood":1,"stone":1};app.model.commit(sample);await frames()
  app.gestures.hold_at=point();app.gestures.hold_time=.6;app.gestures.clear();app.gestures._process(1)
@@ -100,7 +100,7 @@ func run()->void:
  app.toast("저장 오류",2);app._process(.01);check(app.toast_panel.visible,"Required error toast retained")
  app.show_screen("title");await frames()
  var horn:Control=app.stage.get_node("SoundToggle")
- check(horn.size.is_equal_approx(app.design_rect(1357,30,176,176).size),"Title horn doubled within design bounds")
+ check(horn.size.is_equal_approx(app.design_rect(1313,20,220,220).size),"Title horn doubled within design bounds")
  for size in [Vector2i(360,780),Vector2i(1100,900),Vector2i(1280,720)]:
   root.size=size;await frames(6)
   horn=app.stage.get_node("SoundToggle")

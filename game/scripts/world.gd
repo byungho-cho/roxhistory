@@ -7,6 +7,7 @@ var selected := ""
 var art_nodes := {}
 var resource_labels := {}
 var selected_site:=0
+var show_candidates:=false
 var site: Node2D
 var home: EnvironmentProp
 var homes: Array[EnvironmentProp] = []
@@ -71,6 +72,12 @@ func _ready() -> void:
 		var canopy_uv:=PackedVector2Array()
 		for point in canopy.polygon:canopy_uv.append((p+point)/background.scale)
 		canopy.uv=canopy_uv;add_child(canopy)
+	# Painted large rocks need physical footprints independent of their drawing order.
+	for p in SceneStyle.PAINTED_ROCKS:
+		var outline:=PackedVector2Array()
+		for i in 16:outline.append(p+Vector2(cos(TAU*i/16)*42,sin(TAU*i/16)*21-8))
+		polygon_body(outline)
+		get_child(get_child_count()-1).name="LandscapeRockCollision"
 	for n in model.nodes():
 		var root := Node2D.new()
 		root.name = "Resource_"+str(n.id)
@@ -273,7 +280,7 @@ func _draw() -> void:
 			draw_polyline(tail,reward_bubble.border_color,2,true)
 			draw_style_box(reward_bubble,box)
 			draw_texture_rect(reward_pouch,Rect2(box.position+Vector2(7,7),Vector2(58,52)),false)
-	if model.built_count()<DemoConfig.HOME_GOAL:
+	if show_candidates and model.built_count()<DemoConfig.HOME_GOAL:
 		for id in DemoConfig.BUILD_SITES.size():
 			if not model.site_free(id):continue
 			draw_site(DemoConfig.BUILD_SITES[id],id==selected_site)

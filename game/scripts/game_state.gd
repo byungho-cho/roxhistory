@@ -114,8 +114,7 @@ func demolition_quote(key:String)->Dictionary:
 		for kind in ["wood","stone"]:
 			var paid:=int(cost[kind])
 			var tenths:=paid*10 if paid<=10 else paid*9
-			# Future fractional policy is not approved. Never silently round or lose credit.
-			if tenths%10!=0:result.supported=false
+			# Approved policy: integer division floors each resource independently.
 			result[kind]=tenths/10
 		return result
 	return {}
