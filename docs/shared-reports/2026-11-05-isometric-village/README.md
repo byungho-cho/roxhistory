@@ -31,3 +31,11 @@
 - 기존 움집·동물·메뉴 아이콘 재사용. 움집 축소 선명도는 mipmap 생성으로 조정. 기존 출처/이용 조건 그대로 적용하며 신규 외부 구매·다운로드 모델 없음.
 - APK만 GitHub 배포, Windows 실행 파일은 이후 로컬 저장 원칙 유지.
 
+
+## 최종 배포
+
+- [APK 한 파일 다운로드](https://github.com/byungho-cho/roxhistory/releases/download/v0.1.34/RoxHistory-0.1.34-20261105-074925.apk) · 0.1.34/code35 · 2026-11-05 07:49:25 KST
+- [PR #62](https://github.com/byungho-cho/roxhistory/pull/62), 병합 main/빌드 소스 9c31e7827e88c9db8e8293239583dcd4bb8ceb1e
+- SHA256: 7f48a3d288094f7a7a4301958d81157d7e357bfe25da84c1e86e2124ce43dc82; 196930124 bytes. GitHub 공개 링크 재다운로드 해시 일치.
+- [CI #69](https://github.com/byungho-cho/roxhistory/actions/runs/41927751846) 성공. 새마을48/상태349 및 자산·음향 출처 검증. 과거 지형 좌표 검사는 수동 선택으로 보존.
+- 최종 main APK 설치·시작 확인 및 업데이트 전후 테스트 저장 해시 동일. 실기기/Android 내 전체 플레이는 미검증.
