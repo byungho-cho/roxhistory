@@ -1,0 +1,21 @@
+{
+  "android": "15",
+  "abi": "x86_64",
+  "avd": "RoxHistory35 read-only",
+  "installation": "updated existing 0.1.4 to 0.1.34 without uninstall",
+  "display": "landscape 1280x720",
+  "migration": {
+    "passed": true,
+    "wood": 7,
+    "stone": 8,
+    "tokens": 10,
+    "uid": "built-8",
+    "claimed": true,
+    "site": "5 -> 0",
+    "revision": 34
+  },
+  "restartSaveUnchanged": true,
+  "fullGameplayOnAndroid": "not tested",
+  "physicalDevice": "not tested",
+  "warning": "cached shader recompilation on startup; app remains alive"
+}

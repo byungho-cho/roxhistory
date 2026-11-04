@@ -31,7 +31,7 @@ func find_position(old:Vector2)->Vector2:
 		for x in 60:
 			var at:=Vector2(x*40+20,y*40+20)
 			var pose:=world.player.transform;pose.origin=at
-			grid.set_point_solid(Vector2i(x,y),not Rect2(100,100,2200,1150).has_point(at) or world.player.test_move(pose,Vector2.ZERO,null,.08,true))
+			grid.set_point_solid(Vector2i(x,y),not VillageLayout.ground_ok(at) or world.player.test_move(pose,Vector2.ZERO,null,.08,true))
 	var start:=Vector2i((world.player.position-Vector2(20,20))/40)
 	grid.set_point_solid(start,false)
 	for attempt in 60:
@@ -41,7 +41,7 @@ func find_position(old:Vector2)->Vector2:
 		var clear:=true
 		for rock in SceneStyle.PAINTED_ROCKS:
 			if at.distance_to(rock)<110:clear=false
-		for home in (DemoConfig.HOME_SITES+DemoConfig.BUILD_SITES)+[Vector2(865,720)]:
+		for home in (DemoConfig.HOME_SITES+DemoConfig.BUILD_SITES)+[DemoConfig.CHIEF_POSITION]:
 			if at.distance_to(home+Vector2(0,-40))<240:clear=false
 		for n in world.model.nodes():
 			if not world.exhausted(n) and at.distance_to(DemoConfig.point(n.position))<150:clear=false

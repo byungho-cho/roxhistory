@@ -711,5 +711,35 @@
     "bytes": 2583598,
     "sha256": "36149684589b198e8d4ffcd9926f7127c04b0a12580b7f29eaa4a1816ffdc431",
     "source": "share/reference-assets design/reference-images/2026-11-04-clean-terrain/terrain-s40000-clean-edited-v001.png; user approved 2026-11-04"
+  },
+  {
+    "path": "game/assets/environment/terrain-isometric-v034.png",
+    "bytes": 1987804,
+    "sha256": "504f52757a228434ae1141750d50640d328d6e1d350d498952991cacd81fa208",
+    "source": "share/reference-assets; see docs/shared-reports/2026-11-05-isometric-village/README.md"
+  },
+  {
+    "path": "game/assets/ui/v034/build-cancel.png",
+    "bytes": 1473801,
+    "sha256": "faaa096d5a03701ff47586de3ac994f6c8797ea99a31afced4469ec377a83c62",
+    "source": "share/reference-assets; see docs/shared-reports/2026-11-05-isometric-village/README.md"
+  },
+  {
+    "path": "game/assets/ui/v034/build-confirm.png",
+    "bytes": 1173751,
+    "sha256": "d33daacff86b1933a31c5460eafa27b0f70a1acc5aa9ac83d9131b14654185fe",
+    "source": "share/reference-assets; see docs/shared-reports/2026-11-05-isometric-village/README.md"
+  },
+  {
+    "path": "game/assets/ui/v034/chief-portrait.png",
+    "bytes": 1504111,
+    "sha256": "d0b2554d3b6f99f183a66d93df5b1bca7ce096534a0a2c1e0e2e3b40601967bc",
+    "source": "share/reference-assets; see docs/shared-reports/2026-11-05-isometric-village/README.md"
+  },
+  {
+    "path": "game/assets/ui/v034/energy-bar-frame.png",
+    "bytes": 536140,
+    "sha256": "e30f0fc65fec6996ea0f1af103c65884d5233fe700e2124af80af9296fd0869d",
+    "source": "share/reference-assets; see docs/shared-reports/2026-11-05-isometric-village/README.md"
   }
 ]

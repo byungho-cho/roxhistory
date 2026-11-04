@@ -7,6 +7,10 @@ on:
     paths: [".gitattributes", "game/**", "scripts/verify-demo-assets.mjs", "scripts/*audio*.py", "assets/audio-sources/**", ".github/workflows/android-demo.yml"]
   workflow_dispatch:
     inputs:
+      legacy_scene_checks:
+        description: "Run historical scene-coordinate checks (pre-isometric terrain)"
+        type: boolean
+        default: false
       build_android:
         description: "Build APK only after an explicit user request"
         type: boolean
@@ -54,9 +58,15 @@ jobs:
           set -euo pipefail
           godot --headless --path game --editor --import --quit 2>&1 | tee import.log
           godot --headless --path game --script res://tests/state_tests.gd 2>&1 | tee state-tests.log
-          godot --headless --path game --script res://tests/environment_tests.gd 2>&1 | tee environment-tests.log
-          ! grep -E 'SCRIPT ERROR:|ERROR:' import.log state-tests.log environment-tests.log
-      - name: Native render and synthetic multitouch checks
+
+          ! grep -E 'SCRIPT ERROR:|ERROR:' import.log state-tests.log
+      - name: Current isometric village core checks
+        run: |
+          set -euo pipefail
+          timeout 600 xvfb-run -a godot --fixed-fps 60 --audio-driver Dummy --path game --resolution 1280x720 --script res://tests/isometric_village_tests.gd -- --test-ui 2>&1 | tee isometric-tests.log
+          ! grep -E 'SCRIPT ERROR:|ERROR:' isometric-tests.log
+      - name: Historical scene coordinate checks
+        if: github.event_name == 'workflow_dispatch' && inputs.legacy_scene_checks
         run: |
           set -euo pipefail
           mkdir -p "$HOME/.local/share/godot/app_userdata/RoxHistory"

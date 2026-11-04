@@ -31,7 +31,7 @@ func _ready() -> void:
 	roof = Sprite2D.new()
 	roof.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	roof.texture = preload("res://assets/effects/construction-scaffold.png")
-	roof.scale = Vector2.ONE*310.0/roof.texture.get_width()
+	roof.scale = Vector2.ONE*220.0/roof.texture.get_width()
 	# Scaffold image includes the back and front of an elliptical footprint.
 	# Its front posts extend below the site's center, unlike a hut's doorway anchor.
 	roof.position.y = -roof.texture.get_height()*roof.scale.y*0.5+55
@@ -152,7 +152,9 @@ func _draw() -> void:
 	if activity == "build":
 		var p: Vector2 = preview.position
 		draw_set_transform(p+Vector2(0,-35),0,Vector2(1,.40))
-		draw_arc(Vector2.ZERO,156,0,TAU,64,Color(1,.79,.32,.6),4,true)
+		draw_set_transform(Vector2.ZERO)
+		var outline:=VillageLayout.plot_polygon(world.selected_site)
+		outline.append(outline[0]);draw_polyline(outline,Color(1,.79,.32,.6),3,true)
 		draw_set_transform(Vector2.ZERO)
 		for shaft in 7:
 			var x:float=sin(shaft*2.4)*125

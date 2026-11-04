@@ -22,7 +22,7 @@ func start(kind:String,id:String,destination:Vector2,retry:int=0,blocked:Array[V
 	var player:DemoPlayer=app.world.player
 	if kind=="move":
 		var pose:=player.transform;pose.origin=destination
-		if not Rect2(40,40,2320,1270).has_point(destination) or player.test_move(pose,Vector2.ZERO,null,.08,true):
+		if not VillageLayout.ground_ok(destination) or player.test_move(pose,Vector2.ZERO,null,.08,true):
 			if not quiet:app.toast("이곳으로 이동할 수 없어요")
 			return false
 	var grid:=AStarGrid2D.new();grid.region=Rect2i(0,0,100,56);grid.cell_size=Vector2(24,24);grid.offset=Vector2(12,12);grid.diagonal_mode=AStarGrid2D.DIAGONAL_MODE_ONLY_IF_NO_OBSTACLES;grid.update()
@@ -30,7 +30,7 @@ func start(kind:String,id:String,destination:Vector2,retry:int=0,blocked:Array[V
 		for x in 100:
 			var point:=Vector2(x*24+12,y*24+12)
 			var transform:=player.transform;transform.origin=point
-			grid.set_point_solid(Vector2i(x,y),point.x<40 or point.x>2360 or point.y<40 or point.y>1310 or player.test_move(transform,Vector2.ZERO,null,.08,true))
+			grid.set_point_solid(Vector2i(x,y),not VillageLayout.ground_ok(point) or player.test_move(transform,Vector2.ZERO,null,.08,true))
 	for cell in blocked:
 		if grid.is_in_boundsv(cell):grid.set_point_solid(cell,true)
 	var from:=Vector2i((player.position-Vector2(12,12))/24)
@@ -87,6 +87,7 @@ func _physics_process(delta:float) -> void:
 	if not path.is_empty():player.work_destination=path[0];return
 	var next:=action;var id:=target;cancel()
 	if next=="move":return
+	elif next=="family":app.family.begin();return
 	elif next=="build":
 		if str(app.world.selected_site)==id:app.build_action()
 		else:app.toast("건설 부지 선택이 바뀌었어요")

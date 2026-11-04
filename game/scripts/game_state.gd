@@ -29,6 +29,7 @@ func respawn(id:String, at:Vector2, now:float) -> bool:
 func _init(save_store: SaveStore) -> void:
 	store = save_store
 	state = store.load_game()
+	migrate_village()
 
 func commit(next: Dictionary, reset: bool = false) -> bool:
 	if not store.save_game(next,reset):
@@ -75,7 +76,7 @@ func gather(node_id: String, pos: Vector2 = Vector2.ZERO) -> bool:
 
 func can_build() -> bool:
 	var c := DemoConfig.get_data()
-	return not state.is_empty() and built_count() < DemoConfig.HOME_GOAL and state.wood >= c.wood_cost and state.stone >= c.stone_cost
+	return not state.is_empty() and built_count() < DemoConfig.MAX_RESIDENT_HOMES and state.wood >= c.wood_cost and state.stone >= c.stone_cost
 
 func homes() -> Array:
 	if state.has("homes"): return state.homes.duplicate(true)
@@ -137,7 +138,7 @@ func demolish(key:String)->bool:
 
 func site_free(id:int)->bool:
 	if id<0 or id>=DemoConfig.BUILD_SITES.size():return false
-	var candidate:=EnvironmentProp.hut_footprint(340)
+	var candidate:=EnvironmentProp.hut_footprint(230)
 	for k in candidate.size():candidate[k]+=DemoConfig.BUILD_SITES[id]
 	for i in built_count():
 		var occupied:=EnvironmentProp.hut_footprint(340)
@@ -158,11 +159,12 @@ func build(pos: Vector2 = Vector2.ZERO, site_id:int=-1) -> bool:
 	next.stone -= int(c.stone_cost)
 	next.built = true
 	# Choose once at the successful transaction; reload/visual effects never reroll.
-	next.hut_style = randi_range(0,2)
+	next.hut_style = 1
 	next.homes = stable_homes()
 	next.home_serial=int(next.get("home_serial",0))+1
 	next.homes.append({"uid":"built-"+str(next.home_serial),"style":next.hut_style,"claimed":false,"site":site_id,"cost":{"wood":int(c.wood_cost),"stone":int(c.stone_cost)}})
 	next.hut_style = next.homes[0].style
+	if next.homes.size()>=DemoConfig.HOME_GOAL:next.family_unlocked=true
 	if pos != Vector2.ZERO:
 		next.position = [pos.x,pos.y]
 	var ok := commit(next)
@@ -181,3 +183,23 @@ func claim_reward(index: int = 0) -> bool:
 	var ok := commit(next)
 	busy = false
 	return ok
+
+func migrate_village()->bool:
+	if state.is_empty() or int(state.get("terrain_revision",0))>=34:return true
+	var next:=state.duplicate(true)
+	next.homes=stable_homes()
+	# Preserve stable identity, style, costs and claimed flags; remap plots only once.
+	for i in next.homes.size():next.homes[i].site=i;next.homes[i].erase("legacy_slot")
+	next.position=DemoConfig.get_data().spawn.duplicate()
+	next.node_positions={}
+	next.terrain_revision=34
+	next.family_joined=false
+	next.family_unlocked=next.homes.size()>=DemoConfig.HOME_GOAL
+	return commit(next)
+
+func family_available()->bool:
+	return not state.get("family_joined",false) and (state.get("family_unlocked",false) or built_count()>=DemoConfig.HOME_GOAL)
+func join_family()->bool:
+	if busy or not family_available():return false
+	var next:=state.duplicate(true);next.family_joined=true;next.family_unlocked=true
+	return commit(next)

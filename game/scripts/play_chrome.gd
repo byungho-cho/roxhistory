@@ -20,7 +20,7 @@ func _ready() -> void:
 	app.model.changed.connect(queue_redraw)
 	resized.connect(queue_redraw)
 	mouse_filter=Control.MOUSE_FILTER_IGNORE
-	if ResourceLoader.exists("res://assets/ui/s40000/portrait.png"): portrait=load("res://assets/ui/s40000/portrait.png")
+	if ResourceLoader.exists("res://assets/ui/s40000/portrait.png"): portrait=load("res://assets/ui/v034/chief-portrait.png")
 func slot(kind: String) -> Rect2:
 	var i:int=["wood","stone","tokens"].find(kind)
 	if app.w<app.h:return Rect2(Vector2(app.safe.x+i*100,app.safe.y+66),Vector2(96,36))
@@ -65,16 +65,12 @@ func _draw() -> void:
 	var font:=DemoArt.theme().default_font
 	var origin: Vector2=app.safe
 
-	if portrait:
-		var silhouette:=PackedVector2Array();var portrait_uv:=PackedVector2Array()
-		for point in PORTRAIT_OUTLINE:
-			silhouette.append(origin+Vector2(-2,-2)+point*58.0/200.0);portrait_uv.append(point/200.0)
-		draw_colored_polygon(silhouette,Color.WHITE,portrait_uv,portrait)
-
+	if portrait:draw_texture_rect(portrait,Rect2(origin+Vector2(-5,-3),Vector2(65,59.17)),false)
 	draw_string(font,origin+Vector2(62,22),"새벽",HORIZONTAL_ALIGNMENT_LEFT,138,17,Color("fff1d4"))
 	draw_string(font,origin+Vector2(62,41),"정착",HORIZONTAL_ALIGNMENT_LEFT,32,12,Color("fff1d4"))
-	frame(Rect2(origin+Vector2(100,32),Vector2(97,10)),Color(.07,.08,.035,.85),Color(.9,.75,.44,.2))
-	if app.model.built_count()>0:frame(Rect2(origin+Vector2(101,33),Vector2(95*app.model.built_count()/3.0,8)),Color("8ac644"),Color(0,0,0,0))
+	draw_texture_rect_region(preload("res://assets/ui/v034/energy-bar-frame.png"),Rect2(origin+Vector2(98,30),Vector2(102,10)),Rect2(100,250,1975,205))
+	var fill:=minf(1,app.model.built_count()/3.0)
+	if fill>0:draw_style_box(energy_fill(),Rect2(origin+Vector2(102,32),Vector2(94*fill,6)))
 	for key in ["wood","stone","tokens"]:
 		var rect:=slot(key);var beat:float=pulse.get(key,0.0)
 		# PNG already includes 75% alpha. Preserve brush caps at the height scale.
@@ -99,10 +95,8 @@ func _draw() -> void:
 	draw_arc(center,49,-PI,-PI*.12,40,Color("fff0bb"),1,true)
 	var normalized: Vector2=app.world.player.position/Vector2(2400,1350)-Vector2(.5,.5)
 	var dot:=center+(normalized*96).limit_length(45)
-	var marker:=PackedVector2Array([Vector2(0,-7),Vector2(5,5),Vector2(0,2),Vector2(-5,5)])
-	for i in marker.size():marker[i]=dot+marker[i].rotated(-app.world.player.hybrid.heading)
-	draw_colored_polygon(marker,Color("ffe6a5"))
-	var edge:=marker.duplicate();edge.append(marker[0]);draw_polyline(edge,Color("80552c"),1.5,true)
+	draw_circle(dot,4.5,Color("63451d"))
+	draw_circle(dot,2.5,Color("fff0b2"))
 	draw_string(font,center+Vector2(-5,-33),"N",HORIZONTAL_ALIGNMENT_LEFT,20,12,Color("fff2cf"))
 	for f in flights:
 		if f.age<0:continue
@@ -115,3 +109,6 @@ func _draw() -> void:
 		var extent:=lerpf(40,30,q)
 		draw_circle(at,extent*0.65,Color(1,.85,.4,.15))
 		draw_texture_rect(DemoArt.icon(f.kind),Rect2(at-Vector2.ONE*extent/2,Vector2.ONE*extent),false)
+
+func energy_fill()->StyleBoxFlat:
+	var skin:=StyleBoxFlat.new();skin.bg_color=Color("8ac644");skin.set_corner_radius_all(3);return skin
