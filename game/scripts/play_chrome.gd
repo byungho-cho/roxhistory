@@ -5,6 +5,8 @@ var flights: Array[Dictionary]=[]
 var pulse := {"wood":0.0,"stone":0.0,"tokens":0.0}
 var styles: Dictionary={}
 var portrait: Texture2D
+# Original portrait pixels, clipped to the hair/shoulders instead of its baked gold ring.
+const PORTRAIT_OUTLINE=[Vector2(28,103),Vector2(29,77),Vector2(40,57),Vector2(53,43),Vector2(70,34),Vector2(82,22),Vector2(100,27),Vector2(118,23),Vector2(142,37),Vector2(157,53),Vector2(157,73),Vector2(170,90),Vector2(171,116),Vector2(162,140),Vector2(147,153),Vector2(156,166),Vector2(153,177),Vector2(132,186),Vector2(100,186),Vector2(68,179),Vector2(47,167),Vector2(61,152),Vector2(66,141),Vector2(49,130),Vector2(43,118),Vector2(33,120)]
 var reveal := 0.0
 var resource_alpha := .75
 var displayed_tokens := 0.0
@@ -62,7 +64,11 @@ func _draw() -> void:
 	var font:=DemoArt.theme().default_font
 	var origin: Vector2=app.safe
 
-	if portrait:draw_texture_rect(portrait,Rect2(origin+Vector2(-2,-2),Vector2(58,58)),false)
+	if portrait:
+		var silhouette:=PackedVector2Array();var portrait_uv:=PackedVector2Array()
+		for point in PORTRAIT_OUTLINE:
+			silhouette.append(origin+Vector2(-2,-2)+point*58.0/200.0);portrait_uv.append(point/200.0)
+		draw_colored_polygon(silhouette,Color.WHITE,portrait_uv,portrait)
 
 	draw_string(font,origin+Vector2(62,22),"새벽",HORIZONTAL_ALIGNMENT_LEFT,138,17,Color("fff1d4"))
 	draw_string(font,origin+Vector2(62,41),"정착",HORIZONTAL_ALIGNMENT_LEFT,32,12,Color("fff1d4"))

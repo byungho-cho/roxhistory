@@ -91,7 +91,50 @@ func reward_pending(index: int) -> bool:
 func home_position(index:int)->Vector2:
 	var list:=homes()
 	if index<0 or index>=list.size():return Vector2.INF
-	return DemoConfig.BUILD_SITES[int(list[index].site)] if list[index].has("site") else DemoConfig.HOME_SITES[index]
+	return DemoConfig.BUILD_SITES[int(list[index].site)] if list[index].has("site") else DemoConfig.HOME_SITES[int(list[index].get("legacy_slot",index))]
+
+func home_key(index:int)->String:
+	var list:=homes()
+	if index<0 or index>=list.size():return ""
+	return str(list[index].get("uid","legacy-"+str(list[index].get("legacy_slot",index))))
+
+func stable_homes()->Array:
+	var list:=homes()
+	for i in list.size():
+		if not list[i].has("site"):list[i].legacy_slot=int(list[i].get("legacy_slot",i))
+		list[i].uid=home_key(i)
+	return list
+
+func demolition_quote(key:String)->Dictionary:
+	var list:=homes()
+	for i in list.size():
+		if home_key(i)!=key:continue
+		var cost:Dictionary=list[i].get("cost",{"wood":1,"stone":1}) # Historical demo cost.
+		var result:Dictionary={"index":i,"wood":0,"stone":0,"supported":true}
+		for kind in ["wood","stone"]:
+			var paid:=int(cost[kind])
+			var tenths:=paid*10 if paid<=10 else paid*9
+			# Future fractional policy is not approved. Never silently round or lose credit.
+			if tenths%10!=0:result.supported=false
+			result[kind]=tenths/10
+		return result
+	return {}
+
+func demolish(key:String)->bool:
+	if busy:return false
+	var quote:=demolition_quote(key)
+	if quote.is_empty() or not quote.supported or reward_pending(int(quote.index)):return false
+	busy=true
+	var next:=state.duplicate(true)
+	next.homes=stable_homes()
+	next.homes.remove_at(int(quote.index))
+	next.wood+=int(quote.wood);next.stone+=int(quote.stone)
+	next.built=not next.homes.is_empty()
+	next.reward_claimed=next.homes[0].claimed if next.built else false
+	next.hut_style=next.homes[0].style if next.built else 0
+	var ok:=commit(next)
+	busy=false
+	return ok
 
 func site_free(id:int)->bool:
 	if id<0 or id>=DemoConfig.BUILD_SITES.size():return false
@@ -117,8 +160,9 @@ func build(pos: Vector2 = Vector2.ZERO, site_id:int=-1) -> bool:
 	next.built = true
 	# Choose once at the successful transaction; reload/visual effects never reroll.
 	next.hut_style = randi_range(0,2)
-	next.homes = homes()
-	next.homes.append({"style":next.hut_style,"claimed":false,"site":site_id,"cost":{"wood":int(c.wood_cost),"stone":int(c.stone_cost)}})
+	next.homes = stable_homes()
+	next.home_serial=int(next.get("home_serial",0))+1
+	next.homes.append({"uid":"built-"+str(next.home_serial),"style":next.hut_style,"claimed":false,"site":site_id,"cost":{"wood":int(c.wood_cost),"stone":int(c.stone_cost)}})
 	next.hut_style = next.homes[0].style
 	if pos != Vector2.ZERO:
 		next.position = [pos.x,pos.y]

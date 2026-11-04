@@ -199,7 +199,10 @@ func refresh() -> void:
 	var saved_homes:=model.homes()
 	for i in homes.size():
 		homes[i].visible=i<saved_homes.size()
-		if i>=saved_homes.size():continue
+		if i>=saved_homes.size():
+			var old_body:=get_node_or_null("HomeCollision"+str(i))
+			if old_body:remove_child(old_body);old_body.queue_free()
+			continue
 		homes[i].position=model.home_position(i)
 		homes[i].set_hut_style(int(saved_homes[i].style))
 		if not has_node("HomeCollision"+str(i)):

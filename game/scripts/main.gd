@@ -45,6 +45,7 @@ var action_row: HBoxContainer
 var quest_expanded:=true
 var quest_arrow:Label
 var quest_accent:ColorRect
+var demolition_key:=""
 
 func toggle_quest()->void:
 	quest_expanded=not quest_expanded
@@ -327,7 +328,7 @@ func title_screen() -> void:
 	var continue_btn:=design_button(stage,"이어서 하기",design_rect(1108,401,388,90),enter_game,true,"hut");continue_btn.disabled=model.state.is_empty();continue_btn.hint_text="먼저 새 여정을 시작해 주세요."
 	design_button(stage,"새로 시작",design_rect(1108,513,388,82),new_game_prompt,false,"spear")
 	design_button(stage,"장 선택",design_rect(1108,617,388,82),chapter_menu,false,"compass")
-	var horn:=design_button(stage,"",design_rect(1445,44,88,88),toggle_sound,false,"horn")
+	var horn:=design_button(stage,"",design_rect(1357,30,176,176),toggle_sound,false,"horn")
 	horn.name="SoundToggle";horn.set_meta("semantic_text","소리 켜기 / 끄기")
 	horn.get_node("FigmaSkin").hide()
 	for state in ["normal","hover","pressed","disabled","focus"]:horn.add_theme_stylebox_override(state,StyleBoxEmpty.new())
@@ -387,13 +388,7 @@ func enter_game() -> void:
 	world.player.set_character_3d(true)
 	world.player.camera.reset_smoothing()
 	show_screen("play")
-	if not model.state.intro_seen:
-		var c := DemoConfig.get_data()
-		show_modal("첫 보금자리","이 강변에서 새 삶을 시작해 보세요.\n\n왼쪽 조이스틱: 이동\n반짝이는 자원 가까이에서 채집\n나무 %d · 돌 %d를 모아 금빛 원에서 건설\n\n진행은 자동 저장됩니다." % [c.wood_cost,c.stone_cost],[
-			{"text":"여정 시작","primary":true,"action":func():
-				var next := model.state.duplicate(true)
-				next.intro_seen = true
-				if model.commit(next): close_modal()}])
+	# Old intro_seen is retained in saves; entry now goes directly to play.
 
 
 func play_hud() -> void:
@@ -424,6 +419,13 @@ func play_hud() -> void:
 		if caption=="가방":b.name="InventoryButton"
 		var action_style:=StyleBoxFlat.new();action_style.bg_color=Color.TRANSPARENT;action_style.set_content_margin_all(2)
 		for state in ["normal","hover","pressed","disabled"]:b.add_theme_stylebox_override(state,action_style)
+		var stone:=Polygon2D.new();stone.name="ApprovedStonePedestal";stone.show_behind_parent=true;b.add_child(stone)
+		stone.position=Vector2(1,39)
+		stone.polygon=PackedVector2Array([Vector2(0,10),Vector2(7,2),Vector2(action_width-10,0),Vector2(action_width-2,9),Vector2(action_width-4,25),Vector2(3,25)])
+		stone.texture=preload("res://assets/ui/s40000/approved-option3-reference.png")
+		var stone_uv:=PackedVector2Array()
+		for p in stone.polygon:stone_uv.append(Vector2(832,852)+Vector2(p.x/(action_width-2)*42,p.y/25*14))
+		stone.uv=stone_uv
 		var nameplate:=Panel.new();nameplate.name="ActionNameplate";nameplate.mouse_filter=Control.MOUSE_FILTER_IGNORE;nameplate.show_behind_parent=true;b.add_child(nameplate)
 		nameplate.position=Vector2(2,49);nameplate.size=Vector2(action_width-4,21)
 		var plate:=StyleBoxFlat.new();plate.bg_color=Color(.19,.12,.055,.86);plate.border_color=Color(.76,.58,.30,.6);plate.set_border_width_all(1);plate.set_corner_radius_all(4);plate.shadow_color=Color(0,0,0,.25);plate.shadow_size=2;plate.shadow_offset=Vector2(0,2);nameplate.add_theme_stylebox_override("panel",plate)
@@ -468,7 +470,7 @@ func _process(delta: float) -> void:
 		var closest:=Geometry2D.get_closest_point_to_segment(world.player.position,world.SHORE[i],world.SHORE[i+1])
 		river_distance=minf(river_distance,world.player.position.distance_to(closest))
 	audio.river_proximity=1.0-smoothstep(80,720,river_distance)
-	context_panel.visible = context.text != "" and task != "build" and not modal and not toast_panel.visible
+	context_panel.visible = false # Passive lower hints are replaced by world markers/HUD states.
 	var direction := Vector2.ZERO
 	if not modal and application_active and not gestures.blocked:
 		if is_instance_valid(joystick): direction = joystick.value
@@ -578,7 +580,6 @@ func finish_task() -> void:
 
 	elif kind == "build" and site_valid and model.build(world.player.position,built_site):
 		world.feedback.built(built_at)
-		toast("건물 위 씨앗을 눌러 보상을 받으세요",2)
 	elif kind=="build" and not site_valid:toast("부지가 막혀 건설을 멈췄습니다. 재료는 사용하지 않았어요")
 
 func cancel_task() -> void:
@@ -595,7 +596,45 @@ func cancel_task() -> void:
 	if is_instance_valid(task_bar): task_bar.visible = false
 
 func completion() -> void:
-	toast("완성된 건물 위 씨앗을 눌러 주세요")
+	pass # The building's reward marker is the completion affordance.
+
+func request_demolition(screen_point:Vector2)->void:
+	if modal or not application_active or screen!="play":return
+	var at:Vector2=world.get_global_transform_with_canvas().affine_inverse()*screen_point
+	for i in model.built_count():
+		if not world.reward_hit(i,at):continue
+		if model.reward_pending(i):toast("건물을 눌러 씨앗을 먼저 받아 주세요");return
+		var key:=model.home_key(i)
+		var quote:=model.demolition_quote(key)
+		if not quote.supported:toast("이 건물의 소수 환급 기준은 아직 준비 중입니다");return
+		show_modal("이 움집을 철거할까요?","반환: 나무 %d개 · 돌 %d개"%[quote.wood,quote.stone],[{"text":"취소","action":close_modal},{"text":"철거","action":func():confirm_demolition(key)}],true,true,true)
+		demolition_key=key
+		var shade:=overlay.get_child(0)
+		shade.gui_input.connect(func(event:InputEvent):
+			if event is InputEventMouseButton and event.pressed and event.button_index==MOUSE_BUTTON_LEFT:close_modal())
+		return
+
+func confirm_demolition(key:String)->void:
+	if not application_active or not modal or demolition_key!=key:return
+	var quote:=model.demolition_quote(key)
+	if quote.is_empty():close_modal();return
+	var at:=model.home_position(int(quote.index))
+	var prior:Sprite2D=world.homes[int(quote.index)].sprite
+	var ghost:=Sprite2D.new();ghost.texture=prior.texture;ghost.material=prior.material
+	var ghost_transform:=prior.global_transform
+	if model.demolish(key):
+		close_modal()
+		world.add_child(ghost);ghost.global_transform=ghost_transform;ghost.z_index=2
+		var fade:=ghost.create_tween().set_parallel(true)
+		fade.tween_property(ghost,"modulate:a",0.0,.32)
+		fade.tween_property(ghost,"position:y",ghost.position.y+8,.32)
+		fade.chain().tween_callback(ghost.queue_free)
+		for i in 16:
+			var angle:=TAU*i/16.0
+			world.feedback.particles.append({"p":at+Vector2(cos(angle)*105,sin(angle)*22-24),"v":Vector2(cos(angle)*28,-22-absf(sin(angle))*18),"age":0.0,"life":.85,"color":Color(.72,.61,.43,.34),"size":12.0+i%4*3,"material":"dust","spin":0.0})
+		world.feedback.sound_cue.emit("build")
+		toast("나무 %d개 · 돌 %d개 반환"%[quote.wood,quote.stone],2)
+	else:ghost.free()
 
 func claim_home(index:int) -> void:
 	if model.claim_reward(index):
@@ -660,7 +699,7 @@ func show_about() -> void:
 			else: sync_audio(); show_about()},
 		{"text":"돌아가기","primary":true,"action":close_modal}])
 
-func show_modal(title: String, body: String, actions: Array, compact: bool = false, preserve_work:bool=false) -> void:
+func show_modal(title: String, body: String, actions: Array, compact: bool = false, preserve_work:bool=false, brief:bool=false) -> void:
 	if is_instance_valid(region_selection):region_selection.cancel_input()
 	if gestures: gestures.clear()
 	if is_instance_valid(joystick): joystick.clear()
@@ -682,23 +721,24 @@ func show_modal(title: String, body: String, actions: Array, compact: bool = fal
 	shade.mouse_filter = Control.MOUSE_FILTER_STOP
 	overlay.add_child(shade)
 	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	var width := minf(390 if compact else 680,w-safe.x*2)
-	var height := minf(h-safe.y*2,290 if compact else 500)
-	var at := Vector2(w-safe.x-width,safe.y) if compact else Vector2((w-width)/2,(h-height)/2)
+	var width := minf(300 if brief else 390 if compact else 680,w-safe.x*2)
+	var height := minf(h-safe.y*2,166 if brief else 290 if compact else 500)
+	var at := Vector2(w-safe.x-width,safe.y) if compact and not brief else Vector2((w-width)/2,(h-height)/2)
 	var p := box(overlay,Rect2(at,Vector2(width,height)))
-	var v := column(p,12)
-	var modal_title:=label(v,title,28,Color("47240e"));modal_title.add_theme_font_override("font",FigmaArt.TITLE)
+	var v := column(p,8 if brief else 12)
+	var modal_title:=label(v,title,20 if brief else 28,Color("47240e"));modal_title.add_theme_font_override("font",FigmaArt.TITLE)
 	var scroll := ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	v.add_child(scroll)
-	var text := paragraph(scroll,body,20)
+	var text := paragraph(scroll,body,16 if brief else 20)
 	text.custom_minimum_size.x = width-60
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation",12)
 	v.add_child(row)
 	for a in actions:
 		var b := button(row,a.text,a.action,a.get("primary",false))
+		if brief:b.custom_minimum_size=Vector2(80,44)
 		for state in ["normal","hover","pressed","disabled","focus"]:b.add_theme_stylebox_override(state,StyleBoxEmpty.new())
 		for color_key in ["font_color","font_hover_color","font_pressed_color","font_disabled_color"]:b.add_theme_color_override(color_key,Color("47240e"))
 		b.add_theme_font_override("font",FigmaArt.BODY)
@@ -707,6 +747,7 @@ func show_modal(title: String, body: String, actions: Array, compact: bool = fal
 		b.add_theme_font_size_override("font_size",17)
 
 func close_modal() -> void:
+	demolition_key=""
 	if is_instance_valid(overlay):
 		ui.remove_child(overlay)
 		overlay.queue_free()
@@ -752,6 +793,8 @@ func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_GO_BACK_REQUEST:
 		go_back()
 	elif what == NOTIFICATION_APPLICATION_PAUSED or what == NOTIFICATION_APPLICATION_FOCUS_OUT:
+		var was_demolition:=not demolition_key.is_empty()
+		if was_demolition:close_modal()
 		if is_instance_valid(region_selection):region_selection.cancel_input()
 		if gestures: gestures.clear()
 		if is_instance_valid(chrome): chrome.clear_effects()
@@ -763,7 +806,7 @@ func _notification(what: int) -> void:
 		if is_instance_valid(world) and screen == "play":
 			world.player.direction = Vector2.ZERO
 			world.player.presentation_paused = true
-			model.save_position(world.player.position)
+			if not was_demolition:model.save_position(world.player.position)
 	elif what == NOTIFICATION_APPLICATION_RESUMED or what == NOTIFICATION_APPLICATION_FOCUS_IN:
 		application_active = true
 		sync_audio()
