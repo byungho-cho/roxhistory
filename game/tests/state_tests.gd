@@ -42,6 +42,7 @@ func run_tests() -> void:
 	check(model.state.wood == 19 and model.state.stone == 11,"Construction deducts exact cost from excess inventory")
 	check(model.build() and model.build(),"Two additional homes can be built")
 	check(model.built_count()==3 and model.state.wood==17 and model.state.stone==9,"Three homes deduct exactly three material pairs")
+	for i in range(3,DemoConfig.MAX_RESIDENT_HOMES):check(model.build(),"Expansion within new capacity")
 	for i in 30:
 		check(not model.build(),"Repeated construction rejected")
 	check(model.claim_reward(),"Reward claimed")

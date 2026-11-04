@@ -8,7 +8,8 @@ const COLS := 16
 const ROWS := 32
 const HEIGHT := 142.0
 const STRIDE := 104.0
-const MIN_ZOOM := 1.0/1.2
+const MIN_ZOOM := 1.0/1.56
+const MAX_ZOOM := 1.5
 const WORLD_SIZE := Vector2(2400,1350)
 var direction := Vector2.ZERO
 var phase := 0.0
@@ -149,7 +150,7 @@ func fit_camera() -> void:
 
 func zoom_at(midpoint: Vector2, factor: float, world_anchor: Vector2=Vector2.INF) -> void:
 	var anchor := get_viewport().get_canvas_transform().affine_inverse()*midpoint if not world_anchor.is_finite() else world_anchor
-	zoom_factor=clampf(factor,MIN_ZOOM,2.0)
+	zoom_factor=clampf(factor,MIN_ZOOM,MAX_ZOOM)
 	fit_camera()
 	var half := get_viewport_rect().size*0.5/camera.zoom
 	var center := anchor-(midpoint-get_viewport_rect().size*0.5)/camera.zoom

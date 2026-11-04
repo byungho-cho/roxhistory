@@ -21,8 +21,8 @@ var residents:Array[TrialResident]=[]
 var reward_pouch:AtlasTexture
 var reward_bubble:StyleBoxFlat
 # Water visuals and physics share the shoreline traced on terrain.png.
-const SHORE = [Vector2(0,325),Vector2(600,455),Vector2(1200,595),Vector2(1800,750),Vector2(2400,850)]
-const RIVER_POLYGON = [Vector2(0,185),Vector2(600,285),Vector2(1200,410),Vector2(1800,565),Vector2(2400,685),Vector2(2400,850),Vector2(1800,750),Vector2(1200,595),Vector2(600,455),Vector2(0,325)]
+const SHORE = [Vector2(0,340),Vector2(170,285),Vector2(280,220),Vector2(370,130),Vector2(280,60)]
+const RIVER_POLYGON = [Vector2(0,155),Vector2(145,120),Vector2(260,70),Vector2(280,60),Vector2(370,130),Vector2(280,220),Vector2(170,285),Vector2(0,340)]
 
 func _init(game: GameState) -> void:
 	model = game
@@ -40,7 +40,7 @@ func _ready() -> void:
 	background.z_index = -20
 	add_child(background)
 	var margin:=Sprite2D.new();margin.name="OverviewMargin";margin.texture=terrain; margin.centered=false
-	margin.position=Vector2(-240,-135);margin.scale=background.scale*1.2;margin.z_index=-18
+	margin.position=Vector2(-672,-378);margin.scale=background.scale*1.56;margin.z_index=-18
 	var margin_material:=ShaderMaterial.new();margin_material.shader=preload("res://shaders/overview_margin.gdshader");margin.material=margin_material;add_child(margin)
 	water = Polygon2D.new()
 	water.name = "LivingWater"
@@ -55,9 +55,14 @@ func _ready() -> void:
 	water.material = water_material
 	add_child(water)
 	polygon_body(PackedVector2Array(RIVER_POLYGON))
-	prop("hut",Vector2(865,720),300,Vector2(220,80),"ExistingHut")
+	for i in VillageLayout.PLAYABLE.size():
+		var a:Vector2=VillageLayout.PLAYABLE[i];var b:Vector2=VillageLayout.PLAYABLE[(i+1)%VillageLayout.PLAYABLE.size()]
+		var boundary:=StaticBody2D.new();boundary.name="VillageBoundary"
+		var edge:=CollisionShape2D.new();var segment:=SegmentShape2D.new();segment.a=a;segment.b=b;edge.shape=segment;boundary.add_child(edge);add_child(boundary)
+	add_child(VillageLayout.new(model))
+	prop("hut",DemoConfig.CHIEF_POSITION,340,Vector2(220,80),"ExistingHut")
 	get_node("ExistingHut").set_hut_style(0)
-	prop("props",Vector2(1020,795),65,Vector2(40,20),"PotteryAndGrindingStone")
+	prop("props",Vector2(1035,660),65,Vector2(40,20),"PotteryAndGrindingStone")
 	# Clean approved terrain: independent scenery owns both silhouette and footprint.
 	# Removed all six legacy canopy masks and five painted-rock collision regions.
 	for i in SceneStyle.SCENIC_TREES.size():
@@ -98,15 +103,15 @@ func _ready() -> void:
 	site = Node2D.new()
 	site.position = DemoConfig.point(DemoConfig.get_data().build_site)
 	add_child(site)
-	for i in DemoConfig.HOME_GOAL:
-		var hut := prop("hut",DemoConfig.HOME_SITES[i],340,Vector2.ZERO,"QuestHome"+str(i))
+	for i in DemoConfig.MAX_RESIDENT_HOMES:
+		var hut := prop("hut",DemoConfig.BUILD_SITES[i],230,Vector2.ZERO,"QuestHome"+str(i))
 		homes.append(hut)
 	home=homes[0]
 	player = DemoPlayer.new()
 	player.position = DemoConfig.point(model.state.position)
 	add_child(player)
 	# Wildlife stays outside the settlement and clear of the demo resource/build routes.
-	for entry in [["deer",520,1030,92,-0.8],["rabbit",1660,1040,34,0.6],["rabbit",1730,1090,32,-0.4],["bear",1510,320,70,-0.7],["deer",270,980,85,0.9],["rabbit",2130,1120,32,-1.2]]:
+	for entry in [["deer",470,430,75,-0.8],["rabbit",1680,1040,30,0.6],["rabbit",1790,1080,28,-0.4],["bear",1950,620,78,-0.7],["deer",600,450,68,0.9]]:
 		var animal := WorldAnimal.new()
 		animal.name = "Wildlife_"+str(entry[0])+str(animals.size())
 		animal.species = entry[0]
@@ -115,8 +120,10 @@ func _ready() -> void:
 		animal.heading = entry[4]
 		add_child(animal)
 		animals.append(animal)
-	for entry in [["female",1020,940],["sturdy_male",1430,1100]]:
+	for entry in [["female",1610,890],["sturdy_male",1570,920]]:
 		var resident:=TrialResident.new();resident.variant=entry[0];resident.name="TrialResident_"+str(entry[0]);resident.position=Vector2(entry[1],entry[2]);add_child(resident);residents.append(resident)
+		resident.visible=model.state.get("family_joined",false) or model.family_available()
+		resident.set_physics_process(model.state.get("family_joined",false))
 	objectives=WorldObjectives.new(self);add_child(objectives)
 	feedback = WorldFeedback.new(self)
 	add_child(feedback)
@@ -131,8 +138,7 @@ func restore_clear_position() -> void:
 	await get_tree().physics_frame
 	# The artwork changed the shoreline. Preserve progress, but never strand an old
 	# save on the inaccessible northern bank.
-	var bank:=shore_point(clampf(player.position.x/2400.0,0,1))
-	if player.position.y<bank.y+25:player.position=DemoConfig.point(DemoConfig.get_data().spawn)
+	if not VillageLayout.ground_ok(player.position):player.position=DemoConfig.point(DemoConfig.get_data().spawn)
 	if not player.test_move(player.transform,Vector2.ZERO,null,0.08,true): return
 	var original := player.position
 	for radius in [48,96,160,240,360]:
@@ -190,6 +196,9 @@ func refresh() -> void:
 		art_nodes[n.id].get_node("ResourceCollision").get_child(0).set_deferred("disabled",exhausted(n))
 		if exhausted(n) and selected==str(n.id):selected=""
 		resource_labels[n.id].text = "%s %d/%d" % ["나무" if n.kind == "wood" else "돌",int(n.charges)-int(model.state.depleted.get(n.id,0)),int(n.charges)]
+	for resident in residents:
+		resident.visible=model.state.get("family_joined",false) or model.family_available()
+		resident.set_physics_process(model.state.get("family_joined",false))
 	var saved_homes:=model.homes()
 	for i in homes.size():
 		homes[i].visible=i<saved_homes.size()
@@ -205,14 +214,14 @@ func refresh() -> void:
 			body.position = homes[i].position
 			var collision := CollisionShape2D.new()
 			var shape := ConvexPolygonShape2D.new()
-			shape.points = EnvironmentProp.hut_footprint(340)
+			shape.points = EnvironmentProp.hut_footprint(230)
 			collision.shape = shape
 			body.add_child(collision)
 			add_child(body)
 		get_node("HomeCollision"+str(i)).position=homes[i].position
 	if selected_site>=0 and not model.site_free(selected_site):selected_site=-1
 	if selected_site>=0:site.position=DemoConfig.BUILD_SITES[selected_site]
-	elif model.built_count()<DemoConfig.HOME_GOAL:
+	elif model.built_count()<DemoConfig.MAX_RESIDENT_HOMES:
 		for id in DemoConfig.BUILD_SITES.size():
 			if model.site_free(id):site.position=DemoConfig.BUILD_SITES[id];break
 	queue_redraw()
@@ -231,7 +240,7 @@ func nearest() -> Dictionary:
 	return result
 
 func near_site() -> bool:
-	return selected_site>=0 and model.site_free(selected_site) and model.built_count()<DemoConfig.HOME_GOAL and player.position.distance_to(site.position) < 150 and player.position.y >= site.position.y
+	return selected_site>=0 and model.site_free(selected_site) and model.built_count()<DemoConfig.MAX_RESIDENT_HOMES and player.position.distance_to(site.position) < 150 and player.position.y >= site.position.y
 
 func interaction_at(screen_point:Vector2)->bool:
 	var at:=get_global_transform_with_canvas().affine_inverse()*screen_point
@@ -267,39 +276,36 @@ func _draw() -> void:
 			draw_polyline(tail,reward_bubble.border_color,2,true)
 			draw_style_box(reward_bubble,box)
 			draw_texture_rect(reward_pouch,Rect2(box.position+Vector2(7,7),Vector2(58,52)),false)
-	if show_candidates and model.built_count()<DemoConfig.HOME_GOAL:
+	if show_candidates and model.built_count()<DemoConfig.MAX_RESIDENT_HOMES:
 		for id in DemoConfig.BUILD_SITES.size():
 			if not model.site_free(id):continue
 			draw_site(DemoConfig.BUILD_SITES[id],id==selected_site)
 
 func draw_site(at:Vector2,chosen:bool)->void:
-	draw_set_transform(at+Vector2(0,-35))
-	var ring:=PackedVector2Array()
-	for k in 65:ring.append(Vector2(cos(TAU*k/64)*156,sin(TAU*k/64)*59))
-	draw_colored_polygon(ring,Color(.83,.58,.22,.13 if chosen else .035))
-	draw_polyline(ring,Color(1,.77,.32,.28 if chosen else .06),11,true)
-	draw_polyline(ring,Color(1,.86,.47,.85 if chosen else .27),2.5,true)
-	for k in 10:
-		var post:=Vector2(cos(TAU*k/10)*150,sin(TAU*k/10)*56)
-		var next:=Vector2(cos(TAU*(k+1)/10)*150,sin(TAU*(k+1)/10)*56)
-		draw_polyline(PackedVector2Array([post-Vector2(0,19),post.lerp(next,.5)-Vector2(0,12),next-Vector2(0,19)]),Color(.69,.51,.28,.85 if chosen else .48),2.5,true)
-		draw_line(post,post-Vector2(0,28),Color("75512f"),9,true)
-		draw_line(post-Vector2(1,2),post-Vector2(1,27),Color("ba955b"),2,true)
-		draw_circle(post-Vector2(0,28),4,Color("e0bb7a"))
-	if chosen:draw_texture_rect(EnvironmentProp.asset("wood"),Rect2(70,12,72,40),false)
-	draw_set_transform(Vector2.ZERO)
+	var id:=DemoConfig.BUILD_SITES.find(at)
+	if id<0:return
+	var p:=VillageLayout.plot_polygon(id);var ring:=p.duplicate();ring.append(p[0])
+	draw_colored_polygon(p,Color(.83,.66,.30,.15 if chosen else .045))
+	draw_polyline(ring,Color(.96,.84,.54,.8 if chosen else .3),2,true)
+	for i in 4:
+		var post:=p[i];var next:=p[(i+1)%4]
+		draw_polyline(PackedVector2Array([post-Vector2(0,16),post.lerp(next,.5)-Vector2(0,9),next-Vector2(0,16)]),Color(.65,.48,.26,.65),2,true)
+		draw_line(post,post-Vector2(0,24),Color("88623c"),6,true)
+		draw_line(post-Vector2(1,1),post-Vector2(1,24),Color("d6b777"),2,true)
 
 func site_at(at:Vector2)->int:
-	if model.built_count()>=DemoConfig.HOME_GOAL:return -1
+	if model.built_count()>=DemoConfig.MAX_RESIDENT_HOMES:return -1
 	for id in DemoConfig.BUILD_SITES.size():
-		if model.site_free(id) and ((at-DemoConfig.BUILD_SITES[id]-Vector2(0,-35))/Vector2(156,74)).length()<1:return id
+		if model.site_free(id) and Geometry2D.is_point_in_polygon(at,VillageLayout.plot_polygon(id)):return id
 	return -1
 
 func site_available(id:int)->bool:
-	if not model.site_free(id) or model.built_count()>=DemoConfig.HOME_GOAL:return false
+	if not model.site_free(id) or model.built_count()>=DemoConfig.MAX_RESIDENT_HOMES:return false
 	var at:Vector2=DemoConfig.BUILD_SITES[id]
+	for animal in animals:
+		if Geometry2D.is_point_in_polygon(animal.position,VillageLayout.plot_polygon(id)):return false
 	var query:=PhysicsShapeQueryParameters2D.new();var shape:=ConvexPolygonShape2D.new()
-	shape.points=EnvironmentProp.hut_footprint(340);query.shape=shape;query.transform=Transform2D(0,at);query.margin=8
+	shape.points=VillageLayout.plot_polygon(id);query.shape=shape;query.transform=Transform2D.IDENTITY;query.margin=8
 	query.exclude=[player.get_rid()]
 	if not get_world_2d().direct_space_state.intersect_shape(query,1).is_empty():return false
 	for rock in SceneStyle.PAINTED_ROCKS:

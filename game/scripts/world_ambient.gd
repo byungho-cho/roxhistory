@@ -19,14 +19,6 @@ func _ready() -> void:
 			sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 			prop.add_child(sprite)
 			smoke.append({"hut":prop,"sprite":sprite,"phase":puff/3.0+prop.position.x*.001})
-	for i in 5:
-		var individual:=Sprite2D.new()
-		var atlas:=AtlasTexture.new();atlas.atlas=preload("res://assets/effects/fish-school.png");atlas.region=Rect2(65,25,450,320);atlas.filter_clip=true
-		individual.texture=atlas;individual.scale=Vector2.ONE*float([33,42,28,36,39][i])/450.0
-		individual.modulate=Color(.48,.68,.65,.52);individual.z_index=-18
-		var material:=ShaderMaterial.new();material.shader=preload("res://shaders/fish_motion.gdshader");material.set_shader_parameter("phase",i*1.7);individual.material=material
-		world.add_child(individual);school.append(individual)
-	fish=school[0]
 
 func _process(delta: float) -> void:
 	if not world.player.presentation_paused and world.effects_enabled: clock += delta

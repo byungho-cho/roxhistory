@@ -1,3 +1,5 @@
+> 2026-11-05 v0.1.34: [사선 마을·가족 합류·검증](shared-reports/2026-11-05-isometric-village/README.md). 촌장 포함 총6채 잠정 적용. Android APK 요청 재개, Windows 실행 파일은 로컬 전용. 아래는 이전 이력입니다.
+
 > 최신 PC 검토본 v0.1.33: [Windows EXE·비교·검증](shared-reports/2026-11-04-build-preview/report.md). PR #60/main ec01c10. 로컬36묶음 통과. APK는 사용자 요청 전까지 보류하며 기존 v0.1.32를 유지합니다. 아래는 이전 이력입니다.
 
 > 최신 v0.1.32/code33 공개 배포 완료. PR #58 / main be561e8. [검증·비교·APK](shared-reports/2026-11-04-action-queue/report.md). 로컬34묶음 통과, Android 저장 유지. 아래는 이전 이력입니다.

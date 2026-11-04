@@ -1,0 +1,5 @@
+{
+  "checks": 46,
+  "environment": "Windows offscreen native Godot, fixed 60Hz, isolated test profile",
+  "failures": []
+}

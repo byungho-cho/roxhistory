@@ -35,7 +35,7 @@ func valid(s: Variant) -> bool:
 	if s.has("hut_style") and (not (s.hut_style is int or s.hut_style is float) or s.hut_style != int(s.hut_style) or s.hut_style < 0 or s.hut_style > 2):
 		return false
 	if s.has("homes"):
-		if not s.homes is Array or s.homes.size() > DemoConfig.HOME_GOAL: return false
+		if not s.homes is Array or s.homes.size() > DemoConfig.MAX_RESIDENT_HOMES: return false
 		var occupied_sites:=[]
 		var home_ids:=[]
 		var legacy_slots:=[]
@@ -64,6 +64,8 @@ func valid(s: Variant) -> bool:
 	if s.has("home_serial"):
 		var serial:Variant=s.home_serial
 		if not (serial is int or serial is float) or serial!=int(serial) or serial<0:return false
+	for flag in ["family_joined","family_unlocked"]:
+		if s.has(flag) and not s[flag] is bool:return false
 	var allowed := {}
 	for n in DemoConfig.get_data().nodes:
 		allowed[n.id] = n.charges
