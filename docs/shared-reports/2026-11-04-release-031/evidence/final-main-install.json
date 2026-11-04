@@ -1,0 +1,38 @@
+{
+  "version": "0.1.31",
+  "versionCode": 32,
+  "source": "d8446208876f69b33ecb5ac71c76526f804821cf",
+  "apk": "RoxHistory-0.1.31-20261104-133220.apk",
+  "sha256": "8654405c655e3e12ef35716d8d433404c221b9227da95492a4c3e8f6c8df0eb5",
+  "bytes": 189210969,
+  "runtimeErrors": 0,
+  "originalSaveUnchanged": true,
+  "isolatedSave": {
+    "built": true,
+    "depleted": {
+      "stone_2": 2.0,
+      "wood_3": 2.0
+    },
+    "homes": [
+      {
+        "claimed": true,
+        "legacy_slot": 1.0,
+        "style": 2.0,
+        "uid": "legacy-1"
+      }
+    ],
+    "hut_style": 2.0,
+    "intro_seen": true,
+    "position": [
+      1389.61779785156,
+      875.041381835938
+    ],
+    "region": "amsa",
+    "reward_claimed": true,
+    "schema": 1.0,
+    "stone": 1.0,
+    "tokens": 20.0,
+    "wood": 1.0
+  },
+  "environment": "Android15 API35 x86_64 emulator,1280x720,RTX5060 host; physical device unverified"
+}

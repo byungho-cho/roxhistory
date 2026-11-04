@@ -1,25 +1,25 @@
 {
   "updatedAt": "2026-11-04",
   "timezone": "Asia/Seoul",
-  "sourceMain": "7340f8efae407cfdba4226154b3e5b015384d842",
+  "sourceMain": "d8446208876f69b33ecb5ac71c76526f804821cf",
   "latestRelease": {
-    "tag": "v0.1.30",
-    "url": "https://github.com/byungho-cho/roxhistory/releases/tag/v0.1.30",
-    "apk": "https://github.com/byungho-cho/roxhistory/releases/download/v0.1.30/RoxHistory-0.1.30-20261104-090450.apk",
-    "sha256": "c717797538bf9e330ecf513bf050b5b2f05d2993e97776ec226d8aeb2818b45b",
-    "source": "7340f8efae407cfdba4226154b3e5b015384d842",
-    "bytes": 187207781
+    "tag": "v0.1.31",
+    "sha256": "8654405c655e3e12ef35716d8d433404c221b9227da95492a4c3e8f6c8df0eb5",
+    "source": "d8446208876f69b33ecb5ac71c76526f804821cf",
+    "url": "https://github.com/byungho-cho/roxhistory/releases/tag/v0.1.31",
+    "apk": "https://github.com/byungho-cho/roxhistory/releases/download/v0.1.31/RoxHistory-0.1.31-20261104-133220.apk",
+    "bytes": 189210969
   },
   "ci": {
-    "testedSha": "45fb50f3157dfbc6ce435c0bae9855fb0a3f64f7",
-    "url": "https://github.com/byungho-cho/roxhistory/actions/runs/41739769603",
-    "status": "success",
-    "run": 41739769603
+    "testedSha": "2586169bfb91abe190d526a4e6954b34807ff25f",
+    "url": "https://github.com/byungho-cho/roxhistory/actions/runs/41773080320",
+    "run": 41773080320,
+    "status": "in_progress_at_publication"
   },
   "ciChecks": null,
   "localRelatedChecks": null,
-  "runtimeVersion": "0.1.30",
-  "versionCode": 31,
+  "runtimeVersion": "0.1.31",
+  "versionCode": 32,
   "residentAppearanceApproved": 8,
   "residentFigmaRegistered": 8,
   "residentRuntimeImplemented": 2,
@@ -43,9 +43,9 @@
     "inspection": "GLB header/JSON and source/copy hashes; not rendered or imported in game"
   },
   "interactionReport": "docs/shared-reports/2026-11-03-interaction-polish/report.md",
-  "release": "https://github.com/byungho-cho/roxhistory/releases/tag/v0.1.30",
+  "release": "https://github.com/byungho-cho/roxhistory/releases/tag/v0.1.31",
   "sourceMainMeaning": "Exact merged main APK build source; later commits may update documentation only",
-  "localSuitesPassed": 30,
+  "localSuitesPassed": 33,
   "walkResidentsReport": "docs/shared-reports/2026-11-03-walk-residents-audio/report.md",
   "pcReview": {
     "version": "0.1.28",
@@ -58,12 +58,12 @@
     "merged": false
   },
   "activeWork": {
-    "branch": "feat/apk-motion-boundary-20261104",
-    "report": "docs/shared-reports/2026-11-04-release-review/report.md",
+    "version": "0.1.31",
+    "merged": true,
     "pcReviewRequired": false,
-    "version": "0.1.30",
-    "versionCode": 31,
-    "status": "Merged, original-signer APK publicly published and downloaded hash verified",
-    "merged": true
+    "branch": "feat/selected-hud-build-sites-20261104",
+    "report": "docs/shared-reports/2026-11-04-release-031/report.md",
+    "versionCode": 32,
+    "status": "Merged; original-signer APK public and downloaded hash verified. Vegetation/rock visual review and physical-device validation remain unverified."
   }
 }
