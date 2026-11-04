@@ -1,0 +1,27 @@
+{
+  "source": "7340f8efae407cfdba4226154b3e5b015384d842",
+  "package": "com.roxhistory.demo",
+  "version": "0.1.30",
+  "versionCode": 31,
+  "install": "success",
+  "save_and_preferences_hashes_preserved": true,
+  "after_continue": {
+    "wood": 0.0,
+    "stone": 0.0,
+    "tokens": 20.0,
+    "homes": [
+      {
+        "claimed": true,
+        "style": 1.0
+      },
+      {
+        "claimed": true,
+        "style": 2
+      }
+    ],
+    "reward_claimed": true
+  },
+  "device": "Android15 x86_64 read-only emulator host GPU,1280x720",
+  "physical_device": false,
+  "direct_listening": false
+}
