@@ -1,3 +1,5 @@
+> 최신 v0.1.32/code33 공개 배포 완료. PR #58 / main be561e8. [검증·비교·APK](shared-reports/2026-11-04-action-queue/report.md). 로컬34묶음 통과, Android 저장 유지. 아래는 이전 이력입니다.
+
 > 2026-11-04 최신: v0.1.31/code32 공개 배포 완료. main d844620, PR#56, [검증·APK](shared-reports/2026-11-04-release-031/report.md). 아래 이전 버전 기록은 이 배포를 대체하지 않습니다.
 
 # 현재 통합 배포 작업 · 2026-11-04

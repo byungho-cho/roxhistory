@@ -1,0 +1,11 @@
+{
+  "package": "com.roxhistory.demo",
+  "version": "0.1.32",
+  "code": 33,
+  "normal_save_preserved": true,
+  "test_save_preserved": true,
+  "normal_sha256": "34b742d376d281c93a7309368b0757be973efe9e9b6112a226a78d8151148d4a",
+  "test_sha256": "a38d15def08b6b86c0fcfc4677dfa0598049f830b6e754ba2de8888eafccf7dd",
+  "apk_sha256": "b0048f00445ac87b0b40e58aaf672fc87beb904829f83e8263767ab2de304a26",
+  "source": "be561e84d6ad16aa8c44caed6f9bad15a6fbb41a"
+}
