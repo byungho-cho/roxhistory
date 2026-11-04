@@ -34,3 +34,11 @@
 [변경 전 v32](evidence/before-v032.png) · [변경 후 v33](evidence/after-v033.png) · [미리보기](evidence/preview-open.png) · [접힘 제안](evidence/preview-closed.png) · [원속도 11초 영상·무음](evidence/preview-build-11s.mp4). 60Hz 실행을 30fps로 캡처했습니다.
 
 [전체36묶음 결과](evidence/native-full-suite.json) · [미리보기92항목](evidence/build-preview-tests.json) · [지형32항목](evidence/clean-terrain-tests.json). 내보낸 Windows EXE도 별도 프로필에서 종료코드0, 오류 없이 시작 화면을 표시했고 복사한 저장 파일 해시가 유지됐습니다. [EXE 실행 화면](evidence/exported-exe-title.png) · [실행·저장 확인](evidence/exported-exe-test.json). 수동 PC 플레이는 사용자 검토 대상입니다.
+
+## Windows 최종 전달
+
+[EXE 한 파일 직접 다운로드](https://github.com/byungho-cho/roxhistory/releases/download/v0.1.33-pc/RoxHistory-0.1.33-20261104-204045.exe) · [PR #60](https://github.com/byungho-cho/roxhistory/pull/60).
+
+버전0.1.33 / 소스 versionCode34 (Android 미빌드). 병합 소스 ec01c10517fd2b176e572119156e5d39dc9a3122. 파일 232608344 bytes. SHA256 397fcce4f07b8afa1f19a878d260c1adee01e2f7cf7610b5fffd7f3cff0e30a9. 공개 파일 재다운로드 해시 일치 확인. 별도 PCK·ZIP 없이 실행 가능합니다. Windows 코드서명 미적용.
+
+최종 main EXE 종료코드0/오류 없음/복사한 저장 해시 보존. [검증 JSON](evidence/windows-final.json), [공개 파일 검증](evidence/windows-release.json). [원격 CI](https://github.com/byungho-cho/roxhistory/actions/runs/41822661709)는 확인 당시 실행 중이며 로컬36묶음 통과와 구분합니다. 기존 v0.1.32 APK·원본·태그·이전 검토본은 유지했습니다.

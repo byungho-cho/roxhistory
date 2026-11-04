@@ -1,7 +1,7 @@
 {
   "updatedAt": "2026-11-04",
   "timezone": "Asia/Seoul",
-  "sourceMain": "be561e84d6ad16aa8c44caed6f9bad15a6fbb41a",
+  "sourceMain": "ec01c10517fd2b176e572119156e5d39dc9a3122",
   "latestRelease": {
     "sha256": "b0048f00445ac87b0b40e58aaf672fc87beb904829f83e8263767ab2de304a26",
     "url": "https://github.com/byungho-cho/roxhistory/releases/tag/v0.1.32",
@@ -11,15 +11,15 @@
     "source": "be561e84d6ad16aa8c44caed6f9bad15a6fbb41a"
   },
   "ci": {
-    "url": "https://github.com/byungho-cho/roxhistory/actions/runs/41796712040",
-    "status": "in_progress_at_publication",
-    "testedSha": "95bd13bb2c83fab8598d5ccaff95cb501d7ce646",
-    "run": 41796712040
+    "testedSha": "d4f93a0d77e67964c328f4e2784ed8fa52820e4a",
+    "url": "https://github.com/byungho-cho/roxhistory/actions/runs/41822661709",
+    "run": 41822661709,
+    "status": "in_progress_at_windows_publication"
   },
   "ciChecks": null,
   "localRelatedChecks": null,
-  "runtimeVersion": "0.1.32",
-  "versionCode": 33,
+  "runtimeVersion": "0.1.33",
+  "versionCode": 34,
   "residentAppearanceApproved": 8,
   "residentFigmaRegistered": 8,
   "residentRuntimeImplemented": 2,
@@ -30,7 +30,7 @@
     "outer-range stationary tool contact and gait art review",
     "physical Android/fold testing, direct listening and long-run performance"
   ],
-  "verificationBasis": "34 native suites and 140 asset hashes passed; Android15 emulator update and both save hashes preserved; physical device/direct listening unverified",
+  "verificationBasis": "36 Windows native suites; 141 assets; exported EXE start and copied save preserved. Android v33/physical device/direct listening not tested.",
   "resident3DSourceArchive": {
     "count": 5,
     "path": "design/assets/residents-3d/reference-v001",
@@ -44,26 +44,32 @@
   },
   "interactionReport": "docs/shared-reports/2026-11-03-interaction-polish/report.md",
   "release": "https://github.com/byungho-cho/roxhistory/releases/tag/v0.1.32",
-  "sourceMainMeaning": "Exact merged main APK build source; later commits may update documentation only",
-  "localSuitesPassed": 34,
+  "sourceMainMeaning": "Latest merged runtime source. Android v0.1.32 build source remains in latestRelease.source; v0.1.33 is Windows only.",
+  "localSuitesPassed": 36,
   "walkResidentsReport": "docs/shared-reports/2026-11-03-walk-residents-audio/report.md",
   "pcReview": {
-    "version": "0.1.28",
-    "branch": "feat/approved-hud-resident-polish",
-    "report": "docs/shared-reports/2026-11-04-approved-polish/report.md",
-    "nativeSuitesPassed": 28,
+    "version": "0.1.33",
+    "source": "ec01c10517fd2b176e572119156e5d39dc9a3122",
+    "report": "docs/shared-reports/2026-11-04-build-preview/report.md",
+    "nativeSuitesPassed": 36,
     "nativeSuitesFailed": 0,
-    "finalDirectInput": "Interrupted by physical Escape; pending",
-    "androidFinal": "Superseded by v0.1.30 Android validation; PC approval not required",
-    "merged": false
+    "exportedExe": "Exit 0; screenshot reviewed; isolated copied save hash preserved",
+    "manualInput": "User review pending; no native computer control resumed",
+    "merged": true
   },
   "activeWork": {
-    "status": "Published original-signer APK; public download hash verified; physical device and final visual approval pending.",
-    "version": "0.1.32",
-    "report": "docs/shared-reports/2026-11-04-action-queue/report.md",
-    "pcReviewRequired": false,
-    "versionCode": 33,
-    "merged": true,
-    "branch": "feat/action-queue-brush-20261104"
-  }
+    "version": "0.1.33",
+    "status": "Windows EXE published and download hash verified; APK on user hold",
+    "report": "docs/shared-reports/2026-11-04-build-preview/report.md",
+    "merged": true
+  },
+  "latestWindows": {
+    "tag": "v0.1.33-pc",
+    "release_id": 433841063,
+    "url": "https://github.com/byungho-cho/roxhistory/releases/download/v0.1.33-pc/RoxHistory-0.1.33-20261104-204045.exe",
+    "bytes": 232608344,
+    "source": "ec01c10517fd2b176e572119156e5d39dc9a3122",
+    "sha256": "397fcce4f07b8afa1f19a878d260c1adee01e2f7cf7610b5fffd7f3cff0e30a9"
+  },
+  "apkPolicy": "On hold until explicit user request; preserve existing v0.1.32 APK."
 }
