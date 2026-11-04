@@ -1,7 +1,13 @@
 # v0.1.32 · 건설·채집 예약 및 붓터치 HUD
 
 2026-11-04 · 기준 main `661f18c8ee7b1defdbe732a36339213a764fc495` · versionCode 33.
-공개 APK와 병합 SHA는 최종 배포 확인 후 이 문서에 기록합니다.
+공개 배포 완료: [APK 직접 다운로드](https://github.com/byungho-cho/roxhistory/releases/download/v0.1.32/RoxHistory-0.1.32-20261104-170605.apk) · [PR #58](https://github.com/byungho-cho/roxhistory/pull/58).
+빌드 소스 main: be561e84d6ad16aa8c44caed6f9bad15a6fbb41a.
+APK SHA256: b0048f00445ac87b0b40e58aaf672fc87beb904829f83e8263767ab2de304a26 · 189297451 bytes.
+공개 다운로드 해시 일치 확인 후 이전 공개 APK 1개만 삭제했습니다. 태그·소스·보고서·원본은 보존했습니다.
+최종 main APK의 Android 업데이트·실행 및 일반/임시 저장 해시 보존을 확인했습니다.
+[업데이트 검증](evidence/android-final-update.json) · [시작 화면](evidence/android-final-title.png) · [플레이 화면](evidence/android-final-play.png) · [배포 정보](evidence/release.json).
+로컬 전체 34개 검사 묶음 통과. [원격 CI](https://github.com/byungho-cho/roxhistory/actions/runs/41796712040)는 배포 시 실행 중으로 통과로 기록하지 않습니다. 실기기·직접 청취는 미검증입니다.
 
 ## 기준과 변경
 
