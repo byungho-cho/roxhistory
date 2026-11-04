@@ -18,6 +18,8 @@ var screen := ""
 var modal := false
 var task := ""
 var task_target := ""
+var task_site := -1
+var cancel_site_button:DemoButton
 var gather_approach:=false
 var approach_elapsed:=0.0
 var application_active := true
@@ -430,6 +432,12 @@ func play_hud() -> void:
 		b.add_theme_color_override("font_color",Color("fff0cd"));b.add_theme_color_override("font_disabled_color",Color("c0b299"))
 		if caption=="채집":gather_button=b
 		if caption=="건설":build_button=b
+	cancel_site_button=button(stage,"부지 선택 취소",func():navigation.cancel();world.clear_site())
+	cancel_site_button.name="CancelBuildSite";cancel_site_button.custom_minimum_size=Vector2.ZERO
+	cancel_site_button.position=Vector2(w-safe.x-140,h-safe.y-(270 if w<h else 126));cancel_site_button.size=Vector2(140,44)
+	cancel_site_button.add_theme_font_size_override("font_size",13)
+	var cancel_skin:=StyleBoxFlat.new();cancel_skin.bg_color=Color(.10,.12,.10,.78);cancel_skin.border_color=Color(.8,.65,.39,.5);cancel_skin.set_border_width_all(1);cancel_skin.set_corner_radius_all(10)
+	for state in ["normal","hover","pressed"]:cancel_site_button.add_theme_stylebox_override(state,cancel_skin)
 	context_panel=PanelContainer.new();stage.add_child(context_panel);context_panel.position=Vector2(w*.5-145,h-safe.y-108);context_panel.size=Vector2(290,32);context_panel.add_theme_stylebox_override("panel",dark);context_panel.mouse_filter=Control.MOUSE_FILTER_IGNORE
 	context=label(context_panel,"",13,Color("fff0cd"));context.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
 	task_bar=ProgressBar.new();task_bar.mouse_filter=Control.MOUSE_FILTER_IGNORE;task_bar.show_percentage=false;task_bar.position=Vector2(w*.5-100,h-safe.y-120);task_bar.size=Vector2(200,7);stage.add_child(task_bar);task_bar.visible=false
@@ -442,7 +450,7 @@ func play_hud() -> void:
 	update_hud()
 
 func inventory_summary() -> void:
-	show_modal("가진 재료","나무 %d개 · 돌 %d개\n완료 기념 씨앗 %d개"%[model.state.wood,model.state.stone,model.state.tokens],[{"text":"돌아가기","action":close_modal}])
+	show_modal("가진 재료","나무 %d개 · 돌 %d개\n완료 기념 씨앗 %d개"%[model.state.wood,model.state.stone,model.state.tokens],[{"text":"돌아가기","action":close_modal}],false,true)
 
 func update_hud() -> void:
 	if screen!="play" or not is_instance_valid(objective) or model.state.is_empty():return
@@ -471,8 +479,8 @@ func _process(delta: float) -> void:
 		if world.player.manual_camera:world.player.resume_camera()
 	world.player.direction = direction
 	world.player.presentation_paused = modal or not application_active
-	if task != "":
-		var cancel := modal
+	if task != "" and not modal and application_active:
+		var cancel := false
 		if task == "gather":
 			var n := world.nearest()
 			cancel = cancel or str(n.get("id","")) != task_target or direction.length() > 0.12
@@ -495,6 +503,7 @@ func _process(delta: float) -> void:
 			world.feedback.update_work(task_total-task_remaining,task_total)
 			task_bar.value = (1.0-task_remaining/task_total)*100
 			if task_remaining <= 0: finish_task()
+	cancel_site_button.visible=world.selected_site>=0 and task.is_empty() and not modal and model.built_count()<DemoConfig.HOME_GOAL
 	var near := world.nearest()
 	var working_hint := "채집 중… 이동하면 멈춥니다" if task=="gather" else "보금자리 건설 중…"
 	gather_button.hint_text=working_hint if task!="" else ("자원 가까이 이동해 주세요" if near.is_empty() else "작업을 마친 뒤 사용할 수 있어요")
@@ -503,7 +512,7 @@ func _process(delta: float) -> void:
 	gather_button.text="채집 중" if task=="gather" else "채집"
 	build_button.text="건설 중" if task=="build" else "건설"
 	gather_button.disabled = modal or task != "" or near.is_empty()
-	build_button.disabled = modal or task != "" or (model.built_count()>=DemoConfig.HOME_GOAL) or not world.near_site() or not model.can_build()
+	build_button.disabled = modal or task != "" or (model.built_count()>=DemoConfig.HOME_GOAL) or not world.near_site() or not model.can_build() or not world.site_available(world.selected_site)
 	style_action_state(gather_button)
 	style_action_state(build_button)
 	if task == "":
@@ -545,8 +554,11 @@ func gather_action(selected_id:String="") -> void:
 
 func build_action() -> void:
 	if modal or gestures.blocked or task!="" or model.built_count()>=3:return
+	if world.selected_site<0:toast("건설할 원형 부지를 먼저 선택해 주세요");return
 	if not model.can_build():toast("나무 1개와 돌 1개가 필요해요");return
-	if not world.near_site():navigation.start("build", "",world.site.position+Vector2(0,65));return
+	if not world.site_available(world.selected_site):toast("이 부지에 장애물이 있어요. 다른 부지를 선택해 주세요");return
+	if not world.near_site():navigation.start("build",str(world.selected_site),world.site.position+Vector2(0,65));return
+	task_site=world.selected_site
 	task="build";world.feedback.begin("build");world.player.face_target(world.site.position);world.player.set_activity("build")
 	task_total=float(DemoConfig.get_data().build_seconds);task_remaining=task_total;task_bar.visible=false;toast("",0)
 
@@ -554,6 +566,8 @@ func finish_task() -> void:
 	var kind := task
 	var target := task_target
 	var built_at:=world.site.position
+	var built_site:=task_site
+	var site_valid:=world.site_available(built_site) if kind=="build" else true
 	cancel_task()
 	if kind == "gather":
 		if model.gather(target,world.player.position):
@@ -562,15 +576,17 @@ func finish_task() -> void:
 			chrome.gained(resource_kind,world.art_nodes[target].position+Vector2(0,-70))
 			toast("",0)
 
-	elif kind == "build" and model.build(world.player.position):
+	elif kind == "build" and site_valid and model.build(world.player.position,built_site):
 		world.feedback.built(built_at)
 		toast("건물 위 씨앗을 눌러 보상을 받으세요",2)
+	elif kind=="build" and not site_valid:toast("부지가 막혀 건설을 멈췄습니다. 재료는 사용하지 않았어요")
 
 func cancel_task() -> void:
 	if is_instance_valid(navigation):navigation.cancel()
 	if is_instance_valid(audio): audio.stop_work()
 	task = ""
 	task_target = ""
+	task_site = -1
 	gather_approach=false;approach_elapsed=0
 	if is_instance_valid(world):
 		world.player.work_destination=Vector2.INF
@@ -596,19 +612,24 @@ func world_tap(screen_point:Vector2) -> void:
 		var point:=DemoConfig.point(n.position)
 		if Rect2(point-Vector2(60,70),Vector2(120,90)).has_point(at):
 			if world.exhausted(n):toast("이 자원은 모두 채집했어요");return
-			cancel_task()
+			if not task.is_empty():return # Action/object clicks never interrupt active work.
+			navigation.cancel()
 			if world.player.position.distance_to(point)<=float(DemoConfig.get_data().interact_radius):gather_action(n.id)
 			else:navigation.start("gather",n.id,world.gather_stand(point,n.kind))
 			return
-	if model.built_count()<3 and at.distance_to(world.site.position)<115:
-		cancel_task()
+	var site_id:=world.site_at(at)
+	if site_id>=0:
+		if not task.is_empty():return
+		if world.selected_site==site_id and navigation.action=="build":navigation.cancel();world.clear_site();return
+		if not world.select_site(site_id):toast("이 부지는 지금 사용할 수 없어요");return
+		navigation.cancel()
 		if not model.can_build():toast("나무 1개와 돌 1개가 필요해요");return
-		navigation.start("build","",world.site.position+Vector2(0,65))
+		build_action()
 		return
 	# Building images own their taps even after their reward has been claimed.
 	for prop in world.environment_props:
 		if prop.kind=="hut" and prop.visible and Rect2(prop.position-Vector2(170,245),Vector2(340,260)).has_point(at):return
-	cancel_task();navigation.start("move","",at)
+	navigation.start("move","",at)
 
 func focus_objective() -> void:
 	if gestures.blocked or modal: return
@@ -619,7 +640,7 @@ func focus_objective() -> void:
 	if not Rect2(Vector2(80,90),Vector2(w-160,h-190)).has_point(screen_point): world.player.guide_to(point+Vector2(0,-35))
 
 func quest_details() -> void:
-	show_modal("정착지를 만들어요","기존 움집 한 채에 새 움집 세 채를 더 지어 주세요.\n\n진행 %d/3 · 건설마다 나무 1개 + 돌 1개\n자원을 누르면 자동 이동하여 채집합니다.\n건설 터를 누르면 이동한 뒤 건설합니다.\n완성된 건물을 누르면 씨앗 10개를 받습니다."%model.built_count(),[{"text":"돌아가기","action":close_modal}])
+	show_modal("정착지를 만들어요","기존 움집 한 채에 새 움집 세 채를 더 지어 주세요.\n\n진행 %d/3 · 건설마다 나무 1개 + 돌 1개\n자원을 누르면 자동 이동하여 채집합니다.\n건설 터를 누르면 이동한 뒤 건설합니다.\n완성된 건물을 누르면 씨앗 10개를 받습니다."%model.built_count(),[{"text":"돌아가기","action":close_modal}],false,true)
 
 func pause_game() -> void:
 	cancel_task()
@@ -639,11 +660,11 @@ func show_about() -> void:
 			else: sync_audio(); show_about()},
 		{"text":"돌아가기","primary":true,"action":close_modal}])
 
-func show_modal(title: String, body: String, actions: Array, compact: bool = false) -> void:
+func show_modal(title: String, body: String, actions: Array, compact: bool = false, preserve_work:bool=false) -> void:
 	if is_instance_valid(region_selection):region_selection.cancel_input()
 	if gestures: gestures.clear()
 	if is_instance_valid(joystick): joystick.clear()
-	cancel_task()
+	if not preserve_work:cancel_task()
 	if is_instance_valid(world):
 		world.player.direction = Vector2.ZERO
 		world.player.presentation_paused = true

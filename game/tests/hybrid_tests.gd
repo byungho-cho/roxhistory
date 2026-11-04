@@ -38,7 +38,7 @@ func run() -> void:
 	check(p.hybrid.tool_3d.visible and p.hybrid.action_blend > 0.9,"Gather drives skeletal action and tool")
 	check(p.hybrid.rig.get_bone_pose_rotation(p.hybrid.bones.armR) != Quaternion.IDENTITY,"Shoulder rotates in 3D")
 	app.quest_details(); await frames(4)
-	check(not p.hybrid.tool_3d.visible and app.task == "","Popup clears action")
+	check(not p.hybrid.tool_3d.visible and app.task == "gather","Quest popup pauses the retained action")
 	app.close_modal(); await frames(12)
 	var before: Vector2 = p.position
 	var state: Dictionary = app.model.state.duplicate(true)

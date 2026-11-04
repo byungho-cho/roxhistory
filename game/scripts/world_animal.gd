@@ -136,8 +136,8 @@ func safe_ground(point:Vector2)->bool:
 	if Geometry2D.is_point_in_polygon(point,PackedVector2Array(DemoWorld.RIVER_POLYGON)):return false
 	var world:DemoWorld=get_parent()
 	if world.player and point.distance_to(world.player.position)<65:return false
-	for place in DemoConfig.HOME_SITES:
-		if point.distance_to(place)<190:return false
+	for place in DemoConfig.BUILD_SITES:
+		if ((point-place+Vector2(0,40))/Vector2(180,75)).length()<1:return false
 	for resource in world.model.nodes():
 		if not world.exhausted(resource) and point.distance_to(DemoConfig.point(resource.position))<85:return false
 	for animal in world.animals:

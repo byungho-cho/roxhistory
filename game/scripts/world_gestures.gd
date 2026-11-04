@@ -41,7 +41,7 @@ func _input(event: InputEvent) -> void:
 	if app.screen!="play" or not is_instance_valid(app.world) or not app.application_active: return
 	if event is InputEventMouseButton and not OS.has_feature("android"):
 		if event.ctrl_pressed and event.pressed and event.button_index in [MOUSE_BUTTON_WHEEL_UP,MOUSE_BUTTON_WHEEL_DOWN] and not ui_hit(event.position):
-			app.cancel_task();app.world.player.zoom_at(event.position,app.world.player.zoom_factor*(1.12 if event.button_index==MOUSE_BUTTON_WHEEL_UP else 1.0/1.12));get_viewport().set_input_as_handled()
+			app.navigation.cancel();app.world.player.zoom_at(event.position,app.world.player.zoom_factor*(1.12 if event.button_index==MOUSE_BUTTON_WHEEL_UP else 1.0/1.12));get_viewport().set_input_as_handled()
 		elif event.button_index==MOUSE_BUTTON_LEFT:
 			if event.pressed:
 				mouse_start=event.position if not ui_hit(event.position) else Vector2.INF
@@ -53,7 +53,7 @@ func _input(event: InputEvent) -> void:
 				mouse_start=Vector2.INF
 	if event is InputEventMouseMotion and mouse_start.is_finite() and mouse_can_pan and app.world.player.can_pan():
 		if mouse_start.distance_to(event.position)>12 or mouse_dragging:
-			if not mouse_dragging:app.cancel_task();mouse_last=mouse_start
+			if not mouse_dragging:app.navigation.cancel();mouse_last=mouse_start
 			mouse_dragging=true;blocked=true
 			app.world.player.pan_camera(event.position-mouse_last);get_viewport().set_input_as_handled()
 		mouse_last=event.position
@@ -73,7 +73,7 @@ func _input(event: InputEvent) -> void:
 				if OS.has_feature("android") and app.test_mode: print("PLAY_PINCH_BEGIN ",start_zoom)
 				var midpoint: Vector2=(touches[world_fingers[0]].at+touches[world_fingers[1]].at)*0.5
 				anchor_world=get_viewport().get_canvas_transform().affine_inverse()*midpoint
-				app.cancel_task();app.joystick.clear();app.world.player.direction=Vector2.ZERO
+				app.navigation.cancel();app.joystick.clear();app.world.player.direction=Vector2.ZERO
 				app.world.player.cancel_camera_guide()
 				app.world.player.camera.position_smoothing_enabled=false
 			if touches.size()>2 and pinching:
@@ -95,7 +95,7 @@ func _input(event: InputEvent) -> void:
 		if touches[event.index].start.distance_to(event.position)>12:touches[event.index].moved=true
 		touches[event.index].at=event.position
 		if not pinching and (not blocked or panning) and touches.size()==1 and not touches[event.index].ui and touches[event.index].pan and touches[event.index].moved and app.world.player.can_pan():
-			if not was_moved:app.cancel_task();last=touches[event.index].start
+			if not was_moved:app.navigation.cancel();last=touches[event.index].start
 			blocked=true;panning=true;app.world.player.pan_camera(event.position-last)
 		if pinching and touches.size()==2:
 			var pair:=touches.values()

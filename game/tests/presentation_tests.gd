@@ -52,7 +52,7 @@ func run() -> void:
 	p.position = app.world.gather_stand(app.world.art_nodes.stone_2.position,"stone"); await frames(4); audio.stop_effects(); app.gather_action(); await wait_positioning(); await frames(80)
 	check(audio.events.any(func(e): return e.begins_with("stone_")),"Stone has separate impact sound")
 	check(app.model.state.stone == 1,"Stone commit remains one")
-	p.position = Vector2(1145,695); await frames(4); app.build_action()
+	p.position = app.world.site.position+Vector2(0,65); await frames(4); app.build_action()
 	audio.stop_effects(); await frames(130)
 	check(audio.events.any(func(e): return e.begins_with("build_")),"Construction has separate impact sound")
 	check(app.model.state.built and audio.events.count("complete") == 1,"Completion sound follows one committed building")

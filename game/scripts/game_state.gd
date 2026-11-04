@@ -88,8 +88,26 @@ func reward_pending(index: int) -> bool:
 	var list := homes()
 	return index >= 0 and index < list.size() and not list[index].claimed
 
-func build(pos: Vector2 = Vector2.ZERO) -> bool:
-	if busy or not can_build():
+func home_position(index:int)->Vector2:
+	var list:=homes()
+	if index<0 or index>=list.size():return Vector2.INF
+	return DemoConfig.BUILD_SITES[int(list[index].site)] if list[index].has("site") else DemoConfig.HOME_SITES[index]
+
+func site_free(id:int)->bool:
+	if id<0 or id>=DemoConfig.BUILD_SITES.size():return false
+	var candidate:=EnvironmentProp.hut_footprint(340)
+	for k in candidate.size():candidate[k]+=DemoConfig.BUILD_SITES[id]
+	for i in built_count():
+		var occupied:=EnvironmentProp.hut_footprint(340)
+		for k in occupied.size():occupied[k]+=home_position(i)
+		if not Geometry2D.intersect_polygons(candidate,occupied).is_empty():return false
+	return true
+
+func build(pos: Vector2 = Vector2.ZERO, site_id:int=-1) -> bool:
+	if site_id==-1:
+		for i in DemoConfig.BUILD_SITES.size():
+			if site_free(i):site_id=i;break
+	if busy or not can_build() or not site_free(site_id):
 		return false
 	busy = true
 	var c := DemoConfig.get_data()
@@ -100,7 +118,7 @@ func build(pos: Vector2 = Vector2.ZERO) -> bool:
 	# Choose once at the successful transaction; reload/visual effects never reroll.
 	next.hut_style = randi_range(0,2)
 	next.homes = homes()
-	next.homes.append({"style":next.hut_style,"claimed":false})
+	next.homes.append({"style":next.hut_style,"claimed":false,"site":site_id,"cost":{"wood":int(c.wood_cost),"stone":int(c.stone_cost)}})
 	next.hut_style = next.homes[0].style
 	if pos != Vector2.ZERO:
 		next.position = [pos.x,pos.y]

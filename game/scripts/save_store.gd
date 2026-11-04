@@ -36,8 +36,18 @@ func valid(s: Variant) -> bool:
 		return false
 	if s.has("homes"):
 		if not s.homes is Array or s.homes.size() > DemoConfig.HOME_GOAL: return false
+		var occupied_sites:=[]
 		for home in s.homes:
 			if not home is Dictionary or not home.get("claimed") is bool: return false
+			if home.has("site"):
+				var id:Variant=home.site
+				if not (id is int or id is float) or id!=int(id) or id<0 or id>=DemoConfig.BUILD_SITES.size() or int(id) in occupied_sites:return false
+				occupied_sites.append(int(id))
+			if home.has("cost"):
+				if not home.cost is Dictionary:return false
+				for kind in ["wood","stone"]:
+					var amount:Variant=home.cost.get(kind)
+					if not (amount is int or amount is float) or amount!=int(amount) or amount<0 or amount>10000:return false
 			var style: Variant = home.get("style")
 			if not (style is int or style is float) or style != int(style) or style < 0 or style > 2: return false
 		if s.built != (s.homes.size()>0): return false

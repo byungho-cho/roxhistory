@@ -121,6 +121,8 @@ jobs:
           ! grep -E 'SCRIPT ERROR:|ERROR:' release-review-tests.log
           timeout 150 xvfb-run -a godot --fixed-fps 60 --audio-driver Dummy --path game --resolution 1280x720 --script res://tests/selected_hud_tests.gd -- --test-ui 2>&1 | tee selected-hud-tests.log
           ! grep -E 'SCRIPT ERROR:|ERROR:' selected-hud-tests.log
+          timeout 180 xvfb-run -a godot --fixed-fps 60 --audio-driver Dummy --path game --resolution 1280x720 --script res://tests/build_sites_tests.gd -- --test-ui 2>&1 | tee build-sites-tests.log
+          ! grep -E 'SCRIPT ERROR:|ERROR:' build-sites-tests.log
       - name: Export signed debug APK
         run: |
           set -euo pipefail

@@ -41,7 +41,7 @@ func find_position(old:Vector2)->Vector2:
 		var clear:=true
 		for rock in SceneStyle.PAINTED_ROCKS:
 			if at.distance_to(rock)<110:clear=false
-		for home in DemoConfig.HOME_SITES+[Vector2(865,720)]:
+		for home in (DemoConfig.HOME_SITES+DemoConfig.BUILD_SITES)+[Vector2(865,720)]:
 			if at.distance_to(home+Vector2(0,-40))<240:clear=false
 		for n in world.model.nodes():
 			if not world.exhausted(n) and at.distance_to(DemoConfig.point(n.position))<150:clear=false
