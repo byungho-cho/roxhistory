@@ -40,7 +40,9 @@ func run() -> void:
 	map.select_region("amsa");await create_timer(.3).timeout
 	var empty:=Vector2(250,350)
 	map.begin_pointer(0,empty);map.end_pointer(0,empty)
-	check(not map.panel_visible and map.details.visible,"Close starts a visible fade with logical selection dismissed")
+	check(map.panel_visible and map.details.visible,"Background tap does not close selected card")
+	map.details.surface.get_node("CloseRegionDetails").pressed.emit()
+	check(not map.panel_visible and map.details.visible,"Explicit close starts a visible fade with logical selection dismissed")
 	check(not map.ui_hit(map.start_button.get_global_rect().get_center()) and map.start_button.mouse_filter==Control.MOUSE_FILTER_IGNORE and map.start_button.disabled,"Closing panel releases start-button touch immediately")
 	await create_timer(.08).timeout;map.select_region("dongsam");await create_timer(.3).timeout
 	check(map.details.visible and map.details.surface.modulate.a==1 and map.details.title_label.text=="동삼동","Reopen cancels old hide callback and displays latest region")

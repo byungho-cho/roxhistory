@@ -17,3 +17,6 @@ static func ground_scale(world_y: float) -> float:
 
 const CONTACT_OFFSET := Vector2(4,-2)
 const CONTACT_COLOR := Color(0.17,0.14,0.10,0.17)
+# Rock clusters already painted into the approved terrain, in world coordinates.
+# Respawn must not put a second resource sprite over these scenic silhouettes.
+const PAINTED_ROCKS := [Vector2(1925,930),Vector2(1390,1170),Vector2(750,1135),Vector2(110,575),Vector2(2160,455)]

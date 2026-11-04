@@ -1,0 +1,170 @@
+[
+  {
+    "name": "state_tests.gd",
+    "exit": 0,
+    "pass": true,
+    "seconds": 1.25
+  },
+  {
+    "name": "environment_tests.gd",
+    "exit": 0,
+    "pass": true,
+    "seconds": 2.7
+  },
+  {
+    "name": "ui_smoke.gd",
+    "exit": 0,
+    "pass": true,
+    "seconds": 11.19
+  },
+  {
+    "name": "environment_review.gd",
+    "exit": 0,
+    "pass": true,
+    "seconds": 10.41
+  },
+  {
+    "name": "character_tests.gd",
+    "exit": 1,
+    "pass": false,
+    "seconds": 5.67
+  },
+  {
+    "name": "hybrid_tests.gd",
+    "exit": 0,
+    "pass": true,
+    "seconds": 4.75
+  },
+  {
+    "name": "hybrid_occlusion.gd",
+    "exit": 0,
+    "pass": true,
+    "seconds": 10.56
+  },
+  {
+    "name": "polish_tests.gd",
+    "exit": 0,
+    "pass": true,
+    "seconds": 1.39
+  },
+  {
+    "name": "interaction_tests.gd",
+    "exit": 1,
+    "pass": false,
+    "seconds": 9.03
+  },
+  {
+    "name": "presentation_tests.gd",
+    "exit": 0,
+    "pass": true,
+    "seconds": 8.73
+  },
+  {
+    "name": "hero_tests.gd",
+    "exit": 0,
+    "pass": true,
+    "seconds": 2.84
+  },
+  {
+    "name": "play_experience_tests.gd",
+    "exit": 0,
+    "pass": true,
+    "seconds": 4.17
+  },
+  {
+    "name": "world_life_tests.gd",
+    "exit": 0,
+    "pass": true,
+    "seconds": 2.75
+  },
+  {
+    "name": "gather_contact_tests.gd",
+    "exit": 1,
+    "pass": false,
+    "seconds": 12.06
+  },
+  {
+    "name": "region_tests.gd",
+    "exit": 1,
+    "pass": false,
+    "seconds": 6.03
+  },
+  {
+    "name": "a303_art_tests.gd",
+    "exit": 0,
+    "pass": true,
+    "seconds": 3.09
+  },
+  {
+    "name": "selection_effect_tests.gd",
+    "exit": 0,
+    "pass": true,
+    "seconds": 3.03
+  },
+  {
+    "name": "living_map_tests.gd",
+    "exit": 0,
+    "pass": true,
+    "seconds": 4.75
+  },
+  {
+    "name": "panel_transition_tests.gd",
+    "exit": 0,
+    "pass": true,
+    "seconds": 4.11
+  },
+  {
+    "name": "aurora_tests.gd",
+    "exit": 0,
+    "pass": true,
+    "seconds": 7.39
+  },
+  {
+    "name": "a303_audio_tests.gd",
+    "exit": 0,
+    "pass": true,
+    "seconds": 8.74
+  },
+  {
+    "name": "play_music_tests.gd",
+    "exit": 0,
+    "pass": true,
+    "seconds": 5.11
+  },
+  {
+    "name": "play_flow_tests.gd",
+    "exit": 0,
+    "pass": true,
+    "seconds": 14.06
+  },
+  {
+    "name": "s40000_tests.gd",
+    "exit": 0,
+    "pass": true,
+    "seconds": 6.5
+  },
+  {
+    "name": "interaction_polish_tests.gd",
+    "exit": 0,
+    "pass": true,
+    "seconds": 6.61
+  },
+  {
+    "name": "village_controls_tests.gd",
+    "exit": 0,
+    "pass": true,
+    "seconds": 6.78
+  },
+  {
+    "name": "walk_residents_tests.gd",
+    "exit": 0,
+    "pass": true,
+    "seconds": 7.0
+  },
+  {
+    "name": "approved_polish_tests.gd",
+    "exit": 0,
+    "pass": true,
+    "seconds": 3.42
+  }
+]

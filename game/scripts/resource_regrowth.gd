@@ -39,6 +39,8 @@ func find_position(old:Vector2)->Vector2:
 		var at:=grid.get_point_position(cell)
 		if at.distance_to(old)<180 or grid.is_point_solid(cell):continue
 		var clear:=true
+		for rock in SceneStyle.PAINTED_ROCKS:
+			if at.distance_to(rock)<110:clear=false
 		for home in DemoConfig.HOME_SITES+[Vector2(865,720)]:
 			if at.distance_to(home+Vector2(0,-40))<240:clear=false
 		for n in world.model.nodes():

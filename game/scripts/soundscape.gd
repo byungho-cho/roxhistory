@@ -5,6 +5,7 @@ var enabled := false
 var active := true
 var in_world := false
 var in_region := false
+var menu_music := false
 var ducked := false
 var voices: Array[AudioStreamPlayer] = []
 var river: AudioStreamPlayer
@@ -56,10 +57,11 @@ func ambience(key: String, volume: float) -> AudioStreamPlayer:
 	add_child(player)
 	return player
 
-func configure(sound: bool, foreground: bool, playing: bool, popup: bool, region: bool = false) -> void:
+func configure(sound: bool, foreground: bool, playing: bool, popup: bool, region: bool = false, title: bool = false) -> void:
 	var was_region := in_region
 	var was_audible := enabled and active
 	enabled = sound; active = foreground; in_world = playing; ducked = popup; in_region = region
+	menu_music = region or title
 	if not was_region and in_region: bird_wait = nature_random.randf_range(9,14)
 	if enabled and active and not was_audible: last_interface_ms = -1000
 	if not enabled or not active:
@@ -67,9 +69,9 @@ func configure(sound: bool, foreground: bool, playing: bool, popup: bool, region
 		if bgm and bgm.playing:
 			bgm.stream_paused = true
 			bgm.volume_db = -60
-		if bgm and not in_region: bgm.stop()
+		if bgm and not menu_music: bgm.stop()
 	elif bgm:
-		if in_region:
+		if menu_music:
 			if bgm.stream_paused: bgm.stream_paused = false
 			elif not bgm.playing:
 				bgm.volume_db = -60
@@ -147,9 +149,9 @@ func _process(delta: float) -> void:
 		play_bgm.volume_db=move_toward(play_bgm.volume_db,target,delta*100)
 		if not in_world and play_bgm.volume_db<=-59.9: play_bgm.stop()
 	if bgm and bgm.playing and not bgm.stream_paused:
-		var target := REGION_MUSIC_DB+(-3.0 if ducked else 0.0) if in_region else -60.0
+		var target := REGION_MUSIC_DB+(-3.0 if ducked else 0.0) if menu_music else -60.0
 		bgm.volume_db = move_toward(bgm.volume_db,target,delta*100)
-		if not in_region and bgm.volume_db <= -59.9: bgm.stop()
+		if not menu_music and bgm.volume_db <= -59.9: bgm.stop()
 	if river and river.playing:
 		var duck := -8.0 if ducked else 0.0
 		var water_level := REGION_WATER_DB if in_region else lerpf(-36.0206,-26.0206,river_proximity)

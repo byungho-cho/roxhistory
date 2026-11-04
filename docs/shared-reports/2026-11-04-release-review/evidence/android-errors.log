@@ -1,0 +1,5 @@
+--------- beginning of main
+11-03 23:26:37.529  4895  4994 E godot   : WARNING: Failed to load cached shader, recompiling.
+11-03 23:26:37.529  4895  4994 E godot   :    at: _load_from_cache (drivers/gles3/shader_gles3.cpp:612)
+11-03 23:29:07.810  8057  8080 E godot   : WARNING: Failed to load cached shader, recompiling.
+11-03 23:29:07.810  8057  8080 E godot   :    at: _load_from_cache (drivers/gles3/shader_gles3.cpp:612)

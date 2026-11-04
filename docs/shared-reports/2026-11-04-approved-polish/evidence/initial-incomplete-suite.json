@@ -1,0 +1,134 @@
+[
+  {
+    "name": "state_tests.gd",
+    "exit": 0,
+    "pass": true,
+    "seconds": 1.55
+  },
+  {
+    "name": "environment_tests.gd",
+    "exit": 0,
+    "pass": true,
+    "seconds": 3.39
+  },
+  {
+    "name": "ui_smoke.gd",
+    "exit": 0,
+    "pass": true,
+    "seconds": 12.91
+  },
+  {
+    "name": "environment_review.gd",
+    "exit": 0,
+    "pass": true,
+    "seconds": 10.91
+  },
+  {
+    "name": "character_tests.gd",
+    "exit": 0,
+    "pass": true,
+    "seconds": 6.56
+  },
+  {
+    "name": "hybrid_tests.gd",
+    "exit": 0,
+    "pass": true,
+    "seconds": 5.05
+  },
+  {
+    "name": "hybrid_occlusion.gd",
+    "exit": 0,
+    "pass": true,
+    "seconds": 10.98
+  },
+  {
+    "name": "polish_tests.gd",
+    "exit": 0,
+    "pass": true,
+    "seconds": 1.69
+  },
+  {
+    "name": "interaction_tests.gd",
+    "exit": 1,
+    "pass": false,
+    "seconds": 9.94
+  },
+  {
+    "name": "presentation_tests.gd",
+    "exit": 1,
+    "pass": false,
+    "seconds": 9.94
+  },
+  {
+    "name": "hero_tests.gd",
+    "exit": 0,
+    "pass": true,
+    "seconds": 3.3
+  },
+  {
+    "name": "play_experience_tests.gd",
+    "exit": 1,
+    "pass": false,
+    "seconds": 4.97
+  },
+  {
+    "name": "world_life_tests.gd",
+    "exit": 0,
+    "pass": true,
+    "seconds": 3.16
+  },
+  {
+    "name": "gather_contact_tests.gd",
+    "exit": 0,
+    "pass": true,
+    "seconds": 14.84
+  },
+  {
+    "name": "region_tests.gd",
+    "exit": 0,
+    "pass": true,
+    "seconds": 6.91
+  },
+  {
+    "name": "a303_art_tests.gd",
+    "exit": 0,
+    "pass": true,
+    "seconds": 3.53
+  },
+  {
+    "name": "selection_effect_tests.gd",
+    "exit": 0,
+    "pass": true,
+    "seconds": 3.42
+  },
+  {
+    "name": "living_map_tests.gd",
+    "exit": 0,
+    "pass": true,
+    "seconds": 5.76
+  },
+  {
+    "name": "panel_transition_tests.gd",
+    "exit": 0,
+    "pass": true,
+    "seconds": 4.84
+  },
+  {
+    "name": "aurora_tests.gd",
+    "exit": 0,
+    "pass": true,
+    "seconds": 7.17
+  },
+  {
+    "name": "a303_audio_tests.gd",
+    "exit": 0,
+    "pass": true,
+    "seconds": 6.94
+  },
+  {
+    "name": "play_music_tests.gd",
+    "exit": 0,
+    "pass": true,
+    "seconds": 5.24
+  }
+]

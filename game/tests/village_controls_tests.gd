@@ -58,7 +58,11 @@ func run()->void:
 		check(center.distance_to(app.world.player.camera.get_screen_center_position())<1,"Pan remains latched: "+str(size))
 		var toggle:Control=app.action_toggle;var expand:Control=app.stage.get_node("ExpandActions")
 		check(not toggle.get_global_rect().intersects(expand.get_global_rect()),"Menu and arrow touch areas do not overlap: "+str(size))
-		check(toggle.size==Vector2(64,64) and toggle.has_node("ActionVisual"),"Menu retains hit size and overlay artwork")
+		check(toggle.size.x>=64 and toggle.size.y>=64 and toggle.has_node("ActionVisual"),"Menu retains minimum touch size and caption")
+		app.apply_action_skin("메뉴")
+		var skin:StyleBoxTexture=toggle.get_theme_stylebox("normal")
+		check(skin.texture is AtlasTexture and skin.texture.atlas==DemoArt.play_icon("menu"),"Menu uses the approved source image")
+		check(toggle.get_node("ActionVisual").find_children("*","TextureRect",true,false).is_empty(),"Menu has no duplicated symbol overlay")
 		app.world.player.resume_camera()
 	check(app.world.animals.size()==6,"Two existing-model animals added")
 	for a in app.world.animals:

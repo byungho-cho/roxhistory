@@ -49,7 +49,7 @@ func run() -> void:
 	check(audio.events.size() == after_cancel,"Cancelled work schedules no late sounds")
 	audio.stop_effects(); app.gather_action(); await wait_positioning(); await frames(80)
 	check(app.model.state.wood == 1 and audio.events.count("gain") == 1,"Successful committed gather cues once")
-	p.position = Vector2(1920,960); await frames(4); audio.stop_effects(); app.gather_action(); await wait_positioning(); await frames(80)
+	p.position = app.world.gather_stand(app.world.art_nodes.stone_2.position,"stone"); await frames(4); audio.stop_effects(); app.gather_action(); await wait_positioning(); await frames(80)
 	check(audio.events.any(func(e): return e.begins_with("stone_")),"Stone has separate impact sound")
 	check(app.model.state.stone == 1,"Stone commit remains one")
 	p.position = Vector2(1145,695); await frames(4); app.build_action()

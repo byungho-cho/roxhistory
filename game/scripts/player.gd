@@ -8,6 +8,8 @@ const COLS := 16
 const ROWS := 32
 const HEIGHT := 142.0
 const STRIDE := 104.0
+const MIN_ZOOM := 1.0/1.2
+const WORLD_SIZE := Vector2(2400,1350)
 var direction := Vector2.ZERO
 var phase := 0.0
 var walk_weight := 0.0
@@ -38,7 +40,13 @@ var idle_elapsed:=0.0
 
 func can_pan()->bool:
 	var visible_world:=get_viewport_rect().size/camera.zoom
-	return visible_world.x<2399 or visible_world.y<1349
+	var bounds:=camera_bounds()
+	return visible_world.x<bounds.size.x-1 or visible_world.y<bounds.size.y-1
+
+func camera_bounds()->Rect2:
+	# Extra viewing margin only at the new wide overview; playable coordinates stay fixed.
+	var margin:=WORLD_SIZE*.5*maxf(0.0,1.0/zoom_factor-1.0)
+	return Rect2(-margin,WORLD_SIZE+margin*2)
 
 func pan_camera(screen_delta:Vector2)->void:
 	cancel_camera_guide()
@@ -46,7 +54,8 @@ func pan_camera(screen_delta:Vector2)->void:
 	manual_camera=true
 	var half:=get_viewport_rect().size*.5/camera.zoom
 	camera_center-=screen_delta/camera.zoom
-	camera_center=camera_center.clamp(half,Vector2(2400,1350)-half)
+	var bounds:=camera_bounds()
+	camera_center=camera_center.clamp(bounds.position+half,bounds.end-half)
 	camera.position=camera_center-global_position
 	camera.reset_smoothing();camera.force_update_scroll()
 
@@ -132,17 +141,20 @@ func fit_camera() -> void:
 	var viewport_size := get_viewport().get_visible_rect().size
 	var fit := maxf(viewport_size.x/2400.0,viewport_size.y/1350.0)
 	camera.zoom = Vector2.ONE*fit*zoom_factor
+	var bounds:=camera_bounds()
+	camera.limit_left=roundi(bounds.position.x);camera.limit_top=roundi(bounds.position.y)
+	camera.limit_right=roundi(bounds.end.x);camera.limit_bottom=roundi(bounds.end.y)
 	if is_instance_valid(hybrid):hybrid.set_render_zoom(zoom_factor)
 	camera.reset_smoothing()
 
 func zoom_at(midpoint: Vector2, factor: float, world_anchor: Vector2=Vector2.INF) -> void:
 	var anchor := get_viewport().get_canvas_transform().affine_inverse()*midpoint if not world_anchor.is_finite() else world_anchor
-	zoom_factor=clampf(factor,1.0,2.0)
+	zoom_factor=clampf(factor,MIN_ZOOM,2.0)
 	fit_camera()
 	var half := get_viewport_rect().size*0.5/camera.zoom
 	var center := anchor-(midpoint-get_viewport_rect().size*0.5)/camera.zoom
-	center.x=clampf(center.x,half.x,2400-half.x)
-	center.y=clampf(center.y,half.y,1350-half.y)
+	var bounds:=camera_bounds()
+	center=center.clamp(bounds.position+half,bounds.end-half)
 	camera.position=center-global_position
 	if manual_camera:camera_center=center
 	camera.reset_smoothing();camera.force_update_scroll()

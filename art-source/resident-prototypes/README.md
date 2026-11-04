@@ -4,10 +4,12 @@
 
 - 편집 원본: `female.blend`, `sturdy_male.blend` (원본 해상도 유지)
 - 게임 파생본: `game/assets/characters/residents/` (각 16,000삼각형 목표, 1024px 텍스처, 약 1.3MB GLB)
-- 공통 보행: `game/assets/characters/motion/brisk_walk_v001.tres`
+- 공통 보행: `game/assets/characters/motion/brisk_walk_v003.tres` (v001·v002 원본 보존). 양발 지지 구간·발 들기·착지 기울기 보완, 기존 모델과 피부 가중치 유지.
 - 보행 편집·재생성: `game/tests/bake_walk_clip.gd` (30트랙 × 65키, 1초 정규화 주기; 이동 거리에 맞춰 재생)
 - 참고 원화: `design/assets/residents/v001/original/NPC-002_male-sturdy-builder_primitive_v002.png`, `NPC-003_female-young-forager_primitive_v002.png`
 
 **시범 외형이며 원화 일치 완료본이 아닙니다.** 기존 주인공의 얼굴·신발·가죽옷 UV를 공유하므로 성인 체형·얼굴·맨발 표현은 별도 모델링이 필요합니다. 추가 머리카락과 옷의 변형도 최종 아트 검수가 필요합니다. 직업·대화·생산·보상 시스템은 추가하지 않습니다.
+
+2026-11-04 PC 확인본: 높은 상투를 낮추고 여성은 낮은 묶음 머리·땋은 머리·녹색 긴 가죽옷으로, 남성은 넓은 몸통·앞치마·수염으로 구분했습니다. 주인공 GLB와 초상화는 수정하지 않았습니다. 두 주민은 각각 16,000삼각형입니다. 현재 수염과 머리 윗부분은 단순한 형태가 눈에 띄며 최종 주민 원화 품질 승인을 뜻하지 않습니다.
 
 제공된 Meshy 원본의 이용 조건을 승계합니다. 계정별 이용권은 독립적으로 확인하지 않았습니다. 생성 출처와 원본 해시는 `provenance.json`에 기록합니다.

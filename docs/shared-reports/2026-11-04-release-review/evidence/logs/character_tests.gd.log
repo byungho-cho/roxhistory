@@ -1,0 +1,26 @@
+Godot Engine v4.5.1.stable.official.f62fdbde1 - https://godotengine.org
+OpenGL API 3.3.0 NVIDIA 610.88 - Compatibility - Using Device: NVIDIA - NVIDIA GeForce RTX 5060
+
+PLAY_AUDIO_STATE {"active":true,"db":-60.0,"enabled":false,"paused":false,"playing":false,"position":0.0,"reason":"configure","world":false}
+A303_AUDIO_STATE {"active":true,"bgm":false,"enabled":false,"events":[],"music_db":-60.0,"paused":false,"position":0.0,"reason":"configure","region":false,"ticks_ms":1307,"water":false,"wind":false}
+PLAY_AUDIO_STATE {"active":true,"db":-60.0,"enabled":false,"paused":false,"playing":false,"position":0.0,"reason":"configure","world":true}
+A303_AUDIO_STATE {"active":true,"bgm":false,"enabled":false,"events":[],"music_db":-60.0,"paused":false,"position":0.0,"reason":"configure","region":false,"ticks_ms":1780,"water":false,"wind":false}
+PLAY_AUDIO_STATE {"active":true,"db":-60.0,"enabled":false,"paused":false,"playing":false,"position":0.0,"reason":"configure","world":true}
+A303_AUDIO_STATE {"active":true,"bgm":false,"enabled":false,"events":[],"music_db":-60.0,"paused":false,"position":0.0,"reason":"configure","region":false,"ticks_ms":1781,"water":false,"wind":false}
+PLAY_AUDIO_STATE {"active":true,"db":-60.0,"enabled":false,"paused":false,"playing":false,"position":0.0,"reason":"configure","world":true}
+A303_AUDIO_STATE {"active":true,"bgm":false,"enabled":false,"events":[],"music_db":-60.0,"paused":false,"position":0.0,"reason":"configure","region":false,"ticks_ms":1787,"water":false,"wind":false}
+PLAY_AUDIO_STATE {"active":true,"db":-60.0,"enabled":false,"paused":false,"playing":false,"position":0.0,"reason":"configure","world":true}
+A303_AUDIO_STATE {"active":true,"bgm":false,"enabled":false,"events":[],"music_db":-60.0,"paused":false,"position":0.0,"reason":"configure","region":false,"ticks_ms":5295,"water":false,"wind":false}
+PLAY_AUDIO_STATE {"active":true,"db":-60.0,"enabled":false,"paused":false,"playing":false,"position":0.0,"reason":"configure","world":true}
+A303_AUDIO_STATE {"active":true,"bgm":false,"enabled":false,"events":[],"music_db":-60.0,"paused":false,"position":0.0,"reason":"configure","region":false,"ticks_ms":5344,"water":false,"wind":false}
+PLAY_AUDIO_STATE {"active":false,"db":-60.0,"enabled":false,"paused":false,"playing":false,"position":0.0,"reason":"configure","world":true}
+A303_AUDIO_STATE {"active":false,"bgm":false,"enabled":false,"events":[],"music_db":-60.0,"paused":false,"position":0.0,"reason":"configure","region":false,"ticks_ms":5444,"water":false,"wind":false}
+PLAY_AUDIO_STATE {"active":true,"db":-60.0,"enabled":false,"paused":false,"playing":false,"position":0.0,"reason":"configure","world":true}
+A303_AUDIO_STATE {"active":true,"bgm":false,"enabled":false,"events":[],"music_db":-60.0,"paused":false,"position":0.0,"reason":"configure","region":false,"ticks_ms":5494,"water":false,"wind":false}
+PLAY_AUDIO_STATE {"active":true,"db":-60.0,"enabled":false,"paused":false,"playing":false,"position":0.0,"reason":"configure","world":true}
+A303_AUDIO_STATE {"active":true,"bgm":false,"enabled":false,"events":[],"music_db":-60.0,"paused":false,"position":0.0,"reason":"configure","region":false,"ticks_ms":5599,"water":false,"wind":false}
+PLAY_AUDIO_STATE {"active":true,"db":-60.0,"enabled":false,"paused":false,"playing":false,"position":0.0,"reason":"configure","world":true}
+A303_AUDIO_STATE {"active":true,"bgm":false,"enabled":false,"events":[],"music_db":-60.0,"paused":false,"position":0.0,"reason":"configure","region":false,"ticks_ms":5600,"water":false,"wind":false}
+PLAY_AUDIO_STATE {"active":true,"db":-60.0,"enabled":false,"paused":false,"playing":false,"position":0.0,"reason":"configure","world":true}
+A303_AUDIO_STATE {"active":true,"bgm":false,"enabled":false,"events":[],"music_db":-60.0,"paused":false,"position":0.0,"reason":"configure","region":false,"ticks_ms":5607,"water":false,"wind":false}
+{"checks":68,"failed":[],"runtime":"Native Godot physics/synthetic input, real action timers; not Android"}

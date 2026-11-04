@@ -52,17 +52,16 @@ func _ready() -> void:
 	markers=RegionMarkers.new(self);add_child(markers)
 	ui_root=Control.new();ui_root.name="FixedMapUI";ui_root.mouse_filter=Control.MOUSE_FILTER_IGNORE
 	ui_root.position=origin;ui_root.scale=Vector2.ONE*ui_factor;add_child(ui_root)
-	var back:=FigmaArt.button(ui_root,"back",Rect2(35,29,73,73),"",func():app.show_screen("title"),app);back.name="RegionBack";back.tooltip_text="뒤로가기"
+	var back:=FigmaArt.button(ui_root,"back",Rect2(35,29,73,73),"",func():app.show_screen("title"),app);back.name="RegionBack";back.set_meta("semantic_text","뒤로가기")
 	var heading:=FigmaArt.stone_title(ui_root,"첫 터전을 고르세요","title-region.png",Rect2(127,41.5371,251.5737,36.4773));heading.name="RegionHeading"
 	var subtitle:=FigmaArt.text(ui_root,"이야기가 시작될 곳을 찾아보세요.",Rect2(127,84,600,27),18,FigmaArt.NOTO,Color("fcf4d8"),false)
-	var bag:=FigmaArt.button(ui_root,"bag",Rect2(1495.5,32.764,72,65.471),"",app.show_about,app);bag.name="RegionBag";bag.tooltip_text="가방과 설정"
+	var bag:=FigmaArt.button(ui_root,"bag",Rect2(1495.5,32.764,72,65.471),"",app.show_about,app);bag.name="RegionBag";bag.set_meta("semantic_text","가방과 설정")
 	var compass:=FigmaArt.picture(ui_root,"compass",Rect2(1502.5,135.983,50,61.034))
 	var north:=FigmaArt.text(ui_root,"N",Rect2(1515,113,24,20),17,FigmaArt.NOTO,Color("fcf4d8"))
 	details=RegionPanel.new(app);ui_root.add_child(details);details.position=Vector2(1178,372)
 	title_label=details.title_label;era_label=details.era_label;intro_label=details.intro_label;symbol=details.symbol;start_button=details.start_button
-	var reset:=FigmaArt.button(ui_root,"reset",Rect2(35,792,73,73),"",restore,app);reset.name="MapReset";reset.tooltip_text="선택을 유지하고 전체 지도로 복원"
-	var hint:=FigmaArt.text(ui_root,"두 손가락 또는 Ctrl + 휠로 확대·축소",Rect2(127,815,520,30),17,FigmaArt.NOTO,Color("fcf4d8"),false);hint.name="GestureHint"
-	for label in [subtitle,hint,north]:
+	var reset:=FigmaArt.button(ui_root,"reset",Rect2(35,792,73,73),"",restore,app);reset.name="MapReset";reset.set_meta("semantic_text","선택을 유지하고 전체 지도로 복원")
+	for label in [subtitle,north]:
 		label.add_theme_color_override("font_shadow_color",Color(0,0,0,.65));label.add_theme_constant_override("shadow_offset_y",2)
 	# Design padding already covers ordinary displays. Add only real/custom insets.
 	var inset:Vector2=app.safe if app.safe.x>24 or app.safe.y>18 else Vector2.ZERO
@@ -73,7 +72,7 @@ func _ready() -> void:
 	for item in [bag,compass,north,details]:item.position.x+=right_shift
 	for item in [bag,compass,north]:item.position.y+=top_shift
 	var bottom_shift:float=(size.y-maxf(inset.y,35*ui_factor)-origin.y)/ui_factor-865
-	reset.position+=Vector2(left_shift,bottom_shift);hint.position+=Vector2(left_shift,bottom_shift)
+	reset.position+=Vector2(left_shift,bottom_shift)
 	details.position.y=(size.y-maxf(inset.y,45*ui_factor)-origin.y)/ui_factor-483
 	if not saved.is_empty():
 		selected=saved.get("selected","amsa")
@@ -169,11 +168,9 @@ func end_pointer(index:int,at:Vector2) -> void:
 	var tap:bool=fingers[index].owned and not moved and not multi and at.distance_to(fingers[index].start)<=8
 	fingers.erase(index)
 	if tap:
-		var found:=false
 		for key in REGIONS:
-			if markers.contains(key,at):select_region(key);found=true;break
-		if not found:
-			panel_visible=false;details.set_shown(false)
+			if markers.contains(key,at):select_region(key);break
+		# Empty map taps retain the selected card; only its explicit close dismisses it.
 	for id in fingers:fingers[id].start=fingers[id].at;fingers[id].pan=pan
 	if fingers.size()==2:
 		var pair=fingers.values()

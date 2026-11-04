@@ -1,6 +1,7 @@
 <svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="240" height="240" viewBox="0 0 240 240" fill="none" xmlns="http://www.w3.org/2000/svg">
-<g id="UI-002_collapse &#194;&#183; X &#236;&#160;&#145;&#234;&#184;&#176;">
-<path id="Ellipse" d="M213.2 120C213.2 171.473 171.473 213.2 120 213.2C68.5271 213.2 26.8 171.473 26.8 120C26.8 68.5271 68.5271 26.8 120 26.8C171.473 26.8 213.2 68.5271 213.2 120Z" fill="#261F17" stroke-width="5.6" stroke="#D9A345"/>
-<path id="Vector" d="M92 62L148 118M148 62L92 118" stroke-width="12.8" stroke-linecap="round" stroke="#FFE6A6"/>
+<defs><radialGradient id="hide"><stop stop-color="#7E552C"/><stop offset="1" stop-color="#50391F"/></radialGradient><linearGradient id="rim" x2="0.3" y2="1"><stop stop-color="#FFF0BE"/><stop offset="0.5" stop-color="#D9A85B"/><stop offset="1" stop-color="#F8D999"/></linearGradient></defs>
+<g id="UI-002_collapse">
+<path id="Ellipse" d="M213.2 120C213.2 171.473 171.473 213.2 120 213.2C68.5271 213.2 26.8 171.473 26.8 120C26.8 68.5271 68.5271 26.8 120 26.8C171.473 26.8 213.2 68.5271 213.2 120Z" fill="url(#hide)" stroke-width="4" stroke="url(#rim)"/>
+<path id="Vector" d="M104 77L136 109M136 77L104 109" stroke-width="6" stroke-linecap="round" stroke="#FFE6A6"/>
 </g>
 </svg>

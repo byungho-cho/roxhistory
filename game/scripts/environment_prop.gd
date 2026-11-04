@@ -6,6 +6,7 @@ var shadow_size := Vector2.ZERO
 var ground_size := Vector2.ZERO
 var kind := ""
 var hut_style := 0
+var depth_visual:Node2D
 static var textures := {}
 static var stone_material: ShaderMaterial
 const HUTS := ["res://assets/environment/hut-round.png", "res://assets/environment/hut-oval.png", "res://assets/environment/hut-covered.png"]
@@ -25,6 +26,7 @@ func set_hut_style(value: int) -> void:
 	sprite.texture = textures[key]
 	sprite.scale = Vector2.ONE*width/sprite.texture.get_width()
 	sprite.position.y = -sprite.texture.get_height()*sprite.scale.y*0.5
+	if depth_visual:sprite.position.y-=depth_visual.position.y
 	queue_redraw()
 
 func chimney_socket() -> Vector2:
@@ -71,6 +73,10 @@ func configure(key: String, width: float, footprint: Vector2, wind_phase: float 
 	add_child(sprite)
 	if key=="hut":
 		var surface:=ShaderMaterial.new();surface.shader=preload("res://shaders/hut_surface.gdshader");sprite.material=surface
+		# Sort at the centre of the ground footprint, not the lowest roof pixel.
+		# The physical origin/footprint and all saved building positions stay fixed.
+		y_sort_enabled=true;depth_visual=Node2D.new();depth_visual.name="DepthVisual";depth_visual.position.y=-width*.12;add_child(depth_visual)
+		sprite.reparent(depth_visual,true)
 	if key=="rock":sprite.material=stone_surface()
 	if key in ["tree","grass","shrub"]:
 		var material_instance := ShaderMaterial.new()

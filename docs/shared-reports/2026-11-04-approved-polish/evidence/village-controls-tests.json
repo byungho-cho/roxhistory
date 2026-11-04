@@ -1,0 +1,5 @@
+{
+  "checks": 43,
+  "failed": [],
+  "runtime": "Native Godot actual physics and synthetic input; no physical device claim"
+}

@@ -1,0 +1,10 @@
+{
+  "version": "0.1.28",
+  "file": "RoxHistory-0.1.28-20261104-061840.exe",
+  "bytes": 226668800,
+  "sha256": "97266cd6a802195e3a019880d6afeb0d4d6886b855e5d20efd0bbf394d20d753",
+  "base_main": "cbe6ccdc2457a6e013ff68133cae21589b92b850",
+  "branch": "feat/approved-hud-resident-polish",
+  "platform": "Windows x86_64, PCK embedded",
+  "status": "PC review pending; final direct input interrupted by user Escape; no Android/APK/merge"
+}

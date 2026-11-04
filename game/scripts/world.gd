@@ -16,6 +16,8 @@ var feedback: WorldFeedback
 var objectives: WorldObjectives
 var animals: Array[WorldAnimal] = []
 var residents:Array[TrialResident]=[]
+var reward_pouch:AtlasTexture
+var reward_bubble:StyleBoxFlat
 # Water visuals and physics share the shoreline traced on terrain.png.
 const SHORE = [Vector2(0,320),Vector2(600,430),Vector2(1200,575),Vector2(1800,750),Vector2(2400,835)]
 const RIVER_POLYGON = [Vector2(0,175),Vector2(600,270),Vector2(1200,410),Vector2(1800,550),Vector2(2400,680),Vector2(2400,835),Vector2(1800,750),Vector2(1200,575),Vector2(600,430),Vector2(0,320)]
@@ -25,6 +27,8 @@ func _init(game: GameState) -> void:
 
 func _ready() -> void:
 	y_sort_enabled = true
+	reward_pouch=AtlasTexture.new();reward_pouch.atlas=preload("res://assets/ui/seed-pouch-reference-v001.png");reward_pouch.region=Rect2(796,211,196,177);reward_pouch.filter_clip=true
+	reward_bubble=StyleBoxFlat.new();reward_bubble.bg_color=Color(.99,.92,.76,.86);reward_bubble.border_color=Color(.55,.39,.22,.85);reward_bubble.set_border_width_all(2);reward_bubble.set_corner_radius_all(12);reward_bubble.shadow_color=Color(0,0,0,.15);reward_bubble.shadow_size=3;reward_bubble.shadow_offset=Vector2(1,3)
 	var terrain: Texture2D = preload(SceneStyle.TERRAIN)
 	var background := Sprite2D.new()
 	background.name = "Terrain"
@@ -33,6 +37,9 @@ func _ready() -> void:
 	background.scale = Vector2(2400.0/terrain.get_width(),1350.0/terrain.get_height())
 	background.z_index = -20
 	add_child(background)
+	var margin:=Sprite2D.new();margin.name="OverviewMargin";margin.texture=terrain; margin.centered=false
+	margin.position=Vector2(-240,-135);margin.scale=background.scale*1.2;margin.z_index=-18
+	var margin_material:=ShaderMaterial.new();margin_material.shader=preload("res://shaders/overview_margin.gdshader");margin.material=margin_material;add_child(margin)
 	water = Polygon2D.new()
 	water.name = "LivingWater"
 	water.polygon = PackedVector2Array(RIVER_POLYGON)
@@ -56,7 +63,9 @@ func _ready() -> void:
 		if p.x==1780:get_child(get_child_count()-1).name="SettlementTree"
 		# Reuse the exact landscape pixels for depth occlusion, not another tree style.
 		var canopy:=Polygon2D.new();canopy.name="LandscapeCanopy";canopy.position=p
-		canopy.polygon=PackedVector2Array([Vector2(-78,-110),Vector2(-62,-160),Vector2(0,-180),Vector2(70,-145),Vector2(90,-95),Vector2(45,-55),Vector2(-35,-65)])
+		# Trace the crown and narrow trunk, excluding the broad soil/water wedge
+		# from the previous polygon that incorrectly covered nearby stones/walkers.
+		canopy.polygon=PackedVector2Array([Vector2(-17,0),Vector2(-8,-20),Vector2(-12,-55),Vector2(-42,-59),Vector2(-65,-76),Vector2(-59,-100),Vector2(-38,-114),Vector2(-13,-129),Vector2(12,-125),Vector2(34,-111),Vector2(52,-109),Vector2(66,-89),Vector2(55,-68),Vector2(24,-57),Vector2(12,-48),Vector2(9,-18),Vector2(24,0),Vector2(4,-6)])
 		canopy.texture=terrain
 		var canopy_uv:=PackedVector2Array()
 		for point in canopy.polygon:canopy_uv.append((p+point)/background.scale)
@@ -226,8 +235,14 @@ func interaction_at(screen_point:Vector2)->bool:
 		if not exhausted(n) and Rect2(DemoConfig.point(n.position)-Vector2(60,70),Vector2(120,90)).has_point(at):return true
 	if model.built_count()<3 and at.distance_to(site.position)<115:return true
 	for i in model.built_count():
-		if model.reward_pending(i) and Rect2(homes[i].position-Vector2(150,245),Vector2(300,260)).has_point(at):return true
+		if model.reward_pending(i) and reward_hit(i,at):return true
 	return false
+
+func reward_marker_rect(index:int)->Rect2:
+	return Rect2(homes[index].position+Vector2(76,-244),Vector2(72,67))
+
+func reward_hit(index:int,at:Vector2)->bool:
+	return reward_marker_rect(index).grow(10).has_point(at) or Rect2(homes[index].position-Vector2(150,245),Vector2(300,260)).has_point(at)
 
 func _process(_delta: float) -> void:
 	if not is_instance_valid(player): return
@@ -242,10 +257,12 @@ func _draw() -> void:
 	if not is_instance_valid(player): return
 	for i in model.built_count():
 		if model.reward_pending(i):
-			var at:Vector2=homes[i].position+Vector2(0,-220)
-			draw_circle(at,26,Color(.22,.15,.07,.85))
-			draw_arc(at,27,0,TAU,40,Color("ffe6a1"),2,true)
-			draw_texture_rect(DemoArt.icon("tokens"),Rect2(at-Vector2(19,19),Vector2(38,38)),false)
+			var box:=reward_marker_rect(i)
+			var tail:=PackedVector2Array([box.position+Vector2(12,54),box.position+Vector2(2,78),box.position+Vector2(31,62)])
+			draw_colored_polygon(tail,reward_bubble.bg_color)
+			draw_polyline(tail,reward_bubble.border_color,2,true)
+			draw_style_box(reward_bubble,box)
+			draw_texture_rect(reward_pouch,Rect2(box.position+Vector2(7,7),Vector2(58,52)),false)
 	if model.built_count()<DemoConfig.HOME_GOAL:
 		draw_set_transform(site.position)
 		var corners:=PackedVector2Array([Vector2(-100,-40),Vector2(90,-40),Vector2(115,40),Vector2(-90,52)])
