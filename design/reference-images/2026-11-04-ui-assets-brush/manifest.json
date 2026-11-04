@@ -1,0 +1,1289 @@
+{
+  "package": "RoxHistory UI assets, brush direction v001",
+  "date_utc": "2026-11-04",
+  "main_inspected": "661f18c8ee7b1defdbe732a36339213a764fc495",
+  "runtime_integrated": false,
+  "assets": [
+    {
+      "id": "action-round-base",
+      "logical_canvas_1x": [
+        120,
+        120
+      ],
+      "origin": {
+        "kind": "native-svg-derived",
+        "source": "https://github.com/byungho-cho/roxhistory/blob/661f18c8ee7b1defdbe732a36339213a764fc495/game/assets/ui/s40000/collapse.svg",
+        "source_file": "source/action-round-base.svg",
+        "status": "application-review candidate, not extracted from current approved artwork",
+        "processing": "Remove X glyph; ring also removes inner fill. Preserve circle and rim geometry/colors. Render SVG at 120/240 px."
+      },
+      "slicing": {
+        "mode": "none",
+        "rule": "Keep 1:1 aspect ratio; center interior is transparent for minimap-ring."
+      },
+      "variants": [
+        {
+          "file": "png/action-round-base.png",
+          "scale": 1,
+          "pixels": [
+            120,
+            120
+          ],
+          "bytes": 5665,
+          "sha256": "da02fc7da5c99cc2d65dbafb4783d70de0f6668e06a329eee1e8869b8a12f906",
+          "alpha_min": 0,
+          "alpha_max": 255,
+          "alpha_center": 255,
+          "alpha_zero_pixels": 7093,
+          "alpha_partial_pixels": 369,
+          "alpha_bbox": [
+            12,
+            12,
+            108,
+            108
+          ]
+        },
+        {
+          "file": "png/action-round-base@2x.png",
+          "scale": 2,
+          "pixels": [
+            240,
+            240
+          ],
+          "bytes": 14491,
+          "sha256": "a4655deb1eb05f53b92230d208e68a21fce2fa036afea6c20258ea30211e813e",
+          "alpha_min": 0,
+          "alpha_max": 255,
+          "alpha_center": 255,
+          "alpha_zero_pixels": 28768,
+          "alpha_partial_pixels": 716,
+          "alpha_bbox": [
+            24,
+            24,
+            216,
+            216
+          ]
+        }
+      ]
+    },
+    {
+      "id": "action-stone-base",
+      "logical_canvas_1x": [
+        128,
+        88
+      ],
+      "origin": {
+        "kind": "image-generated-reference-guided",
+        "source_file": "source/action-stone-base-generated-original.png",
+        "figma_reference": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=689-330",
+        "status": "application-review candidate; not pixel-identical extraction",
+        "processing": "One built-in image generation call; remove alpha<=2 noise; crop (324,322,751,471), uniform resize to240x151 and pad256x176; downsample1x."
+      },
+      "slicing": {
+        "mode": "none",
+        "rule": "Preserve aspect ratio and texture; do not 9-slice. Put icon above and separate label in safe rect.",
+        "label_safe_rect_1x": [
+          18,
+          46,
+          92,
+          27
+        ]
+      },
+      "variants": [
+        {
+          "file": "png/action-stone-base.png",
+          "scale": 1,
+          "pixels": [
+            128,
+            88
+          ],
+          "bytes": 18626,
+          "sha256": "e423590962ee96f572365ae3d31e12a69f34360e29c901776c08cabec38ec394",
+          "alpha_min": 0,
+          "alpha_max": 255,
+          "alpha_center": 253,
+          "alpha_zero_pixels": 3066,
+          "alpha_partial_pixels": 7949,
+          "alpha_bbox": [
+            2,
+            4,
+            126,
+            84
+          ]
+        },
+        {
+          "file": "png/action-stone-base@2x.png",
+          "scale": 2,
+          "pixels": [
+            256,
+            176
+          ],
+          "bytes": 56324,
+          "sha256": "ee616ae308cc5ba41a5f3c590819f111a148d2366b310ca9863d0161d4bb593f",
+          "alpha_min": 0,
+          "alpha_max": 255,
+          "alpha_center": 253,
+          "alpha_zero_pixels": 13550,
+          "alpha_partial_pixels": 31025,
+          "alpha_bbox": [
+            8,
+            12,
+            248,
+            163
+          ]
+        }
+      ]
+    },
+    {
+      "id": "build-hut-icon",
+      "logical_canvas_1x": [
+        128,
+        128
+      ],
+      "origin": {
+        "kind": "existing-main-png",
+        "source": "https://github.com/byungho-cho/roxhistory/blob/661f18c8ee7b1defdbe732a36339213a764fc495/game/assets/ui/s40000/build-hut-icon-v001.png",
+        "status": "existing art reuse",
+        "processing": "2x file is byte-identical to source. 1x is 50% downsample, no new generated icon."
+      },
+      "slicing": {
+        "mode": "none",
+        "rule": "Preserve aspect ratio. Existing menu/expand glyphs are baked; control hit area/label remain separate."
+      },
+      "variants": [
+        {
+          "file": "png/build-hut-icon.png",
+          "scale": 1,
+          "pixels": [
+            128,
+            128
+          ],
+          "bytes": 18893,
+          "sha256": "c1365ad6c081f8288c49cc1291177064282a25fa856b90210917d03258ea0698",
+          "alpha_min": 0,
+          "alpha_max": 255,
+          "alpha_center": 253,
+          "alpha_zero_pixels": 11099,
+          "alpha_partial_pixels": 5115,
+          "alpha_bbox": [
+            10,
+            24,
+            114,
+            117
+          ]
+        },
+        {
+          "file": "png/build-hut-icon@2x.png",
+          "scale": 2,
+          "pixels": [
+            256,
+            256
+          ],
+          "bytes": 67707,
+          "sha256": "5ab47ff6d807f55837547460958c4f1409578c192cd28927b3ae6c75e9096993",
+          "alpha_min": 0,
+          "alpha_max": 255,
+          "alpha_center": 253,
+          "alpha_zero_pixels": 45845,
+          "alpha_partial_pixels": 19217,
+          "alpha_bbox": [
+            18,
+            7,
+            249,
+            247
+          ]
+        }
+      ]
+    },
+    {
+      "id": "craft-axe",
+      "logical_canvas_1x": [
+        128,
+        128
+      ],
+      "origin": {
+        "kind": "existing-main-png",
+        "source": "https://github.com/byungho-cho/roxhistory/blob/661f18c8ee7b1defdbe732a36339213a764fc495/game/assets/ui/s40000/craft-axe-v001.png",
+        "status": "existing art reuse",
+        "processing": "2x file is byte-identical to source. 1x is 50% downsample, no new generated icon."
+      },
+      "slicing": {
+        "mode": "none",
+        "rule": "Preserve aspect ratio. Existing menu/expand glyphs are baked; control hit area/label remain separate."
+      },
+      "variants": [
+        {
+          "file": "png/craft-axe.png",
+          "scale": 1,
+          "pixels": [
+            128,
+            128
+          ],
+          "bytes": 14876,
+          "sha256": "434252d00377191e04f13184b62f1d4b136a5cdd4832d42c8f214af9f684e3fa",
+          "alpha_min": 0,
+          "alpha_max": 255,
+          "alpha_center": 255,
+          "alpha_zero_pixels": 12711,
+          "alpha_partial_pixels": 3448,
+          "alpha_bbox": [
+            10,
+            15,
+            117,
+            116
+          ]
+        },
+        {
+          "file": "png/craft-axe@2x.png",
+          "scale": 2,
+          "pixels": [
+            256,
+            256
+          ],
+          "bytes": 44265,
+          "sha256": "7cae7beadf0e02fdd1e7760751ac29575ef9df78217a683872f13f0d1d533671",
+          "alpha_min": 0,
+          "alpha_max": 255,
+          "alpha_center": 251,
+          "alpha_zero_pixels": 52458,
+          "alpha_partial_pixels": 12548,
+          "alpha_bbox": [
+            20,
+            10,
+            234,
+            228
+          ]
+        }
+      ]
+    },
+    {
+      "id": "expand-button",
+      "logical_canvas_1x": [
+        128,
+        128
+      ],
+      "origin": {
+        "kind": "existing-main-png",
+        "source": "https://github.com/byungho-cho/roxhistory/blob/661f18c8ee7b1defdbe732a36339213a764fc495/game/assets/ui/s40000/expand-button-v001.png",
+        "status": "existing art reuse",
+        "processing": "2x file is byte-identical to source. 1x is 50% downsample, no new generated icon."
+      },
+      "slicing": {
+        "mode": "none",
+        "rule": "Preserve aspect ratio. Existing menu/expand glyphs are baked; control hit area/label remain separate."
+      },
+      "variants": [
+        {
+          "file": "png/expand-button.png",
+          "scale": 1,
+          "pixels": [
+            128,
+            128
+          ],
+          "bytes": 15532,
+          "sha256": "06691a0339ecf2e4c2ee74ea7ec5aa65a33666f682adc907a83bb5d50fd13f5d",
+          "alpha_min": 0,
+          "alpha_max": 255,
+          "alpha_center": 253,
+          "alpha_zero_pixels": 10299,
+          "alpha_partial_pixels": 5891,
+          "alpha_bbox": [
+            13,
+            0,
+            127,
+            128
+          ]
+        },
+        {
+          "file": "png/expand-button@2x.png",
+          "scale": 2,
+          "pixels": [
+            256,
+            256
+          ],
+          "bytes": 48652,
+          "sha256": "e38749cc576d8888d5ee9e22024de2168f242cc1b3e2e8d1f44cd30ab662bcb7",
+          "alpha_min": 0,
+          "alpha_max": 255,
+          "alpha_center": 253,
+          "alpha_zero_pixels": 42598,
+          "alpha_partial_pixels": 22468,
+          "alpha_bbox": [
+            2,
+            0,
+            254,
+            256
+          ]
+        }
+      ]
+    },
+    {
+      "id": "gather-berries",
+      "logical_canvas_1x": [
+        128,
+        128
+      ],
+      "origin": {
+        "kind": "existing-main-png",
+        "source": "https://github.com/byungho-cho/roxhistory/blob/661f18c8ee7b1defdbe732a36339213a764fc495/game/assets/ui/s40000/gather-berries-v001.png",
+        "status": "existing art reuse",
+        "processing": "2x file is byte-identical to source. 1x is 50% downsample, no new generated icon."
+      },
+      "slicing": {
+        "mode": "none",
+        "rule": "Preserve aspect ratio. Existing menu/expand glyphs are baked; control hit area/label remain separate."
+      },
+      "variants": [
+        {
+          "file": "png/gather-berries.png",
+          "scale": 1,
+          "pixels": [
+            128,
+            128
+          ],
+          "bytes": 18921,
+          "sha256": "69b0a278d34046d0945d9df08630e4e58afc6910bfe4b8eec074ee7fa608b539",
+          "alpha_min": 0,
+          "alpha_max": 255,
+          "alpha_center": 253,
+          "alpha_zero_pixels": 10322,
+          "alpha_partial_pixels": 5786,
+          "alpha_bbox": [
+            16,
+            17,
+            119,
+            111
+          ]
+        },
+        {
+          "file": "png/gather-berries@2x.png",
+          "scale": 2,
+          "pixels": [
+            256,
+            256
+          ],
+          "bytes": 70290,
+          "sha256": "358579b2f837193a01f44a632fbbebad87cd9bf09821a04462992189adbe85bf",
+          "alpha_min": 0,
+          "alpha_max": 255,
+          "alpha_center": 253,
+          "alpha_zero_pixels": 43112,
+          "alpha_partial_pixels": 21712,
+          "alpha_bbox": [
+            0,
+            3,
+            246,
+            231
+          ]
+        }
+      ]
+    },
+    {
+      "id": "hero-portrait",
+      "logical_canvas_1x": [
+        100,
+        100
+      ],
+      "origin": {
+        "kind": "existing-main-png-runtime-mask",
+        "source": "https://github.com/byungho-cho/roxhistory/blob/661f18c8ee7b1defdbe732a36339213a764fc495/game/assets/ui/s40000/portrait.png",
+        "mask_source": "https://github.com/byungho-cho/roxhistory/blob/661f18c8ee7b1defdbe732a36339213a764fc495/game/scripts/play_chrome.gd",
+        "source_file": "source/hero-portrait-main-original.png",
+        "status": "existing runtime silhouette export, no regenerated face",
+        "processing": "Use exact PORTRAIT_OUTLINE polygon from main play_chrome.gd in SVG clipPath; preserve source facial pixels; export 100/200px."
+      },
+      "slicing": {
+        "mode": "none",
+        "rule": "Keep silhouette and aspect ratio; do not add the original baked gold ring back."
+      },
+      "variants": [
+        {
+          "file": "png/hero-portrait.png",
+          "scale": 1,
+          "pixels": [
+            100,
+            100
+          ],
+          "bytes": 15433,
+          "sha256": "9d6bb27d609cc430c1427fae4510492dbd220932732fddd1b58f6cd380de46fb",
+          "alpha_min": 0,
+          "alpha_max": 255,
+          "alpha_center": 255,
+          "alpha_zero_pixels": 5459,
+          "alpha_partial_pixels": 296,
+          "alpha_bbox": [
+            14,
+            11,
+            86,
+            93
+          ]
+        },
+        {
+          "file": "png/hero-portrait@2x.png",
+          "scale": 2,
+          "pixels": [
+            200,
+            200
+          ],
+          "bytes": 47299,
+          "sha256": "800a27254c8ed393b38403911d76ac22156e7463adea5b6ee2c5214df8bcfc5a",
+          "alpha_min": 0,
+          "alpha_max": 255,
+          "alpha_center": 255,
+          "alpha_zero_pixels": 22136,
+          "alpha_partial_pixels": 574,
+          "alpha_bbox": [
+            28,
+            22,
+            171,
+            186
+          ]
+        }
+      ]
+    },
+    {
+      "id": "hunt-spear",
+      "logical_canvas_1x": [
+        128,
+        128
+      ],
+      "origin": {
+        "kind": "existing-main-png",
+        "source": "https://github.com/byungho-cho/roxhistory/blob/661f18c8ee7b1defdbe732a36339213a764fc495/game/assets/ui/s40000/hunt-spear-v001.png",
+        "status": "existing art reuse",
+        "processing": "2x file is byte-identical to source. 1x is 50% downsample, no new generated icon."
+      },
+      "slicing": {
+        "mode": "none",
+        "rule": "Preserve aspect ratio. Existing menu/expand glyphs are baked; control hit area/label remain separate."
+      },
+      "variants": [
+        {
+          "file": "png/hunt-spear.png",
+          "scale": 1,
+          "pixels": [
+            128,
+            128
+          ],
+          "bytes": 9849,
+          "sha256": "b17fa44931804df85394b560ec0bc70be9aa03989b91e021ac6978057b0d46fc",
+          "alpha_min": 0,
+          "alpha_max": 255,
+          "alpha_center": 253,
+          "alpha_zero_pixels": 14415,
+          "alpha_partial_pixels": 1790,
+          "alpha_bbox": [
+            16,
+            13,
+            112,
+            118
+          ]
+        },
+        {
+          "file": "png/hunt-spear@2x.png",
+          "scale": 2,
+          "pixels": [
+            256,
+            256
+          ],
+          "bytes": 24019,
+          "sha256": "516de2c7aec1d7377cb7179195ecdd7866760dfabaf6ee6c48f492beb750158c",
+          "alpha_min": 0,
+          "alpha_max": 255,
+          "alpha_center": 253,
+          "alpha_zero_pixels": 59053,
+          "alpha_partial_pixels": 6016,
+          "alpha_bbox": [
+            36,
+            32,
+            219,
+            231
+          ]
+        }
+      ]
+    },
+    {
+      "id": "inventory-bag",
+      "logical_canvas_1x": [
+        128,
+        128
+      ],
+      "origin": {
+        "kind": "existing-main-png",
+        "source": "https://github.com/byungho-cho/roxhistory/blob/661f18c8ee7b1defdbe732a36339213a764fc495/game/assets/ui/s40000/inventory-bag-v001.png",
+        "status": "existing art reuse",
+        "processing": "2x file is byte-identical to source. 1x is 50% downsample, no new generated icon."
+      },
+      "slicing": {
+        "mode": "none",
+        "rule": "Preserve aspect ratio. Existing menu/expand glyphs are baked; control hit area/label remain separate."
+      },
+      "variants": [
+        {
+          "file": "png/inventory-bag.png",
+          "scale": 1,
+          "pixels": [
+            128,
+            128
+          ],
+          "bytes": 21592,
+          "sha256": "3556ac485b96b12dc840c040ba85014584f5b9caeb424bae8a413b7bd113aa06",
+          "alpha_min": 0,
+          "alpha_max": 255,
+          "alpha_center": 252,
+          "alpha_zero_pixels": 9079,
+          "alpha_partial_pixels": 7043,
+          "alpha_bbox": [
+            1,
+            10,
+            112,
+            127
+          ]
+        },
+        {
+          "file": "png/inventory-bag@2x.png",
+          "scale": 2,
+          "pixels": [
+            256,
+            256
+          ],
+          "bytes": 83029,
+          "sha256": "ed36ce396c4029fe964fc2ac39091a3f7e12bfe3a86126b195e14d4f285ca31e",
+          "alpha_min": 0,
+          "alpha_max": 255,
+          "alpha_center": 252,
+          "alpha_zero_pixels": 37960,
+          "alpha_partial_pixels": 26948,
+          "alpha_bbox": [
+            0,
+            7,
+            251,
+            256
+          ]
+        }
+      ]
+    },
+    {
+      "id": "joystick-base",
+      "logical_canvas_1x": [
+        164,
+        164
+      ],
+      "origin": {
+        "kind": "existing-figma-export",
+        "source": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=529-150",
+        "status": "existing I10000 native HUD skin reuse; application review, not current artwork extraction",
+        "processing": "Figma exportAsync native 1x/2x; no redraw."
+      },
+      "slicing": {
+        "mode": "none",
+        "rule": "Preserve aspect ratio; joystick hit target and displacement remain dynamic."
+      },
+      "variants": [
+        {
+          "file": "png/joystick-base.png",
+          "scale": 1,
+          "pixels": [
+            164,
+            164
+          ],
+          "bytes": 4765,
+          "sha256": "ac127f7cc7fb682112cebcc830c1c4fef4dba64901b879c96e40bb738142c127",
+          "alpha_min": 0,
+          "alpha_max": 255,
+          "alpha_center": 71,
+          "alpha_zero_pixels": 5540,
+          "alpha_partial_pixels": 20824,
+          "alpha_bbox": [
+            0,
+            0,
+            164,
+            164
+          ]
+        },
+        {
+          "file": "png/joystick-base@2x.png",
+          "scale": 2,
+          "pixels": [
+            328,
+            328
+          ],
+          "bytes": 9340,
+          "sha256": "7797867848c36e1a9e056fd2fa544fa48ac2649e627868ed97877b85537d8e0c",
+          "alpha_min": 0,
+          "alpha_max": 255,
+          "alpha_center": 71,
+          "alpha_zero_pixels": 22568,
+          "alpha_partial_pixels": 81932,
+          "alpha_bbox": [
+            0,
+            0,
+            328,
+            328
+          ]
+        }
+      ]
+    },
+    {
+      "id": "joystick-knob",
+      "logical_canvas_1x": [
+        80,
+        80
+      ],
+      "origin": {
+        "kind": "existing-figma-export",
+        "source": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=529-151",
+        "status": "existing I10000 native HUD skin reuse; application review, not current artwork extraction",
+        "processing": "Figma exportAsync native 1x/2x; no redraw."
+      },
+      "slicing": {
+        "mode": "none",
+        "rule": "Preserve aspect ratio; joystick hit target and displacement remain dynamic."
+      },
+      "variants": [
+        {
+          "file": "png/joystick-knob.png",
+          "scale": 1,
+          "pixels": [
+            80,
+            80
+          ],
+          "bytes": 2333,
+          "sha256": "e3f505900478ba35ac0e1d908170b4bc96ced30ca09d199507eda1eb92368e5f",
+          "alpha_min": 0,
+          "alpha_max": 255,
+          "alpha_center": 230,
+          "alpha_zero_pixels": 1252,
+          "alpha_partial_pixels": 4908,
+          "alpha_bbox": [
+            0,
+            0,
+            80,
+            80
+          ]
+        },
+        {
+          "file": "png/joystick-knob@2x.png",
+          "scale": 2,
+          "pixels": [
+            160,
+            160
+          ],
+          "bytes": 4609,
+          "sha256": "cd8fa3d79fe074df8feb6ff9290ce7cd5df2ca5e89c95851e8ff6d59584777fd",
+          "alpha_min": 0,
+          "alpha_max": 255,
+          "alpha_center": 230,
+          "alpha_zero_pixels": 5260,
+          "alpha_partial_pixels": 18836,
+          "alpha_bbox": [
+            0,
+            0,
+            160,
+            160
+          ]
+        }
+      ]
+    },
+    {
+      "id": "menu-button",
+      "logical_canvas_1x": [
+        256,
+        256
+      ],
+      "origin": {
+        "kind": "existing-main-png",
+        "source": "https://github.com/byungho-cho/roxhistory/blob/661f18c8ee7b1defdbe732a36339213a764fc495/game/assets/ui/s40000/menu-button-v001.png",
+        "status": "existing art reuse",
+        "processing": "2x file is byte-identical to source. 1x is 50% downsample, no new generated icon."
+      },
+      "slicing": {
+        "mode": "none",
+        "rule": "Preserve aspect ratio. Existing menu/expand glyphs are baked; control hit area/label remain separate."
+      },
+      "variants": [
+        {
+          "file": "png/menu-button.png",
+          "scale": 1,
+          "pixels": [
+            256,
+            256
+          ],
+          "bytes": 51964,
+          "sha256": "cee98e595e3189c6a285a577567c4f0af7b8f8c9e4d76d217131ebd775057dca",
+          "alpha_min": 0,
+          "alpha_max": 255,
+          "alpha_center": 253,
+          "alpha_zero_pixels": 35214,
+          "alpha_partial_pixels": 29887,
+          "alpha_bbox": [
+            8,
+            0,
+            243,
+            247
+          ]
+        },
+        {
+          "file": "png/menu-button@2x.png",
+          "scale": 2,
+          "pixels": [
+            512,
+            512
+          ],
+          "bytes": 208289,
+          "sha256": "858c6013260f8cc961e5c08676dc890e8ef9972ffd32843b75a5d7e7d875e5a1",
+          "alpha_min": 0,
+          "alpha_max": 255,
+          "alpha_center": 253,
+          "alpha_zero_pixels": 143431,
+          "alpha_partial_pixels": 117709,
+          "alpha_bbox": [
+            14,
+            0,
+            486,
+            494
+          ]
+        }
+      ]
+    },
+    {
+      "id": "minimap-ring",
+      "logical_canvas_1x": [
+        120,
+        120
+      ],
+      "origin": {
+        "kind": "native-svg-derived",
+        "source": "https://github.com/byungho-cho/roxhistory/blob/661f18c8ee7b1defdbe732a36339213a764fc495/game/assets/ui/s40000/collapse.svg",
+        "source_file": "source/minimap-ring.svg",
+        "status": "application-review candidate, not extracted from current approved artwork",
+        "processing": "Remove X glyph; ring also removes inner fill. Preserve circle and rim geometry/colors. Render SVG at 120/240 px."
+      },
+      "slicing": {
+        "mode": "none",
+        "rule": "Keep 1:1 aspect ratio; center interior is transparent for minimap-ring."
+      },
+      "variants": [
+        {
+          "file": "png/minimap-ring.png",
+          "scale": 1,
+          "pixels": [
+            120,
+            120
+          ],
+          "bytes": 3915,
+          "sha256": "8000863bf287ae33171db2cdb119b2a2516e938b658611d188cbeeb36f6c0738",
+          "alpha_min": 0,
+          "alpha_max": 255,
+          "alpha_center": 0,
+          "alpha_zero_pixels": 13446,
+          "alpha_partial_pixels": 703,
+          "alpha_bbox": [
+            12,
+            12,
+            108,
+            108
+          ]
+        },
+        {
+          "file": "png/minimap-ring@2x.png",
+          "scale": 2,
+          "pixels": [
+            240,
+            240
+          ],
+          "bytes": 8838,
+          "sha256": "e7b5f4f7cf339762baf03ef9f41596aa7a2f6771a72060b8033a0fd98d7c2b78",
+          "alpha_min": 0,
+          "alpha_max": 255,
+          "alpha_center": 0,
+          "alpha_zero_pixels": 54552,
+          "alpha_partial_pixels": 1392,
+          "alpha_bbox": [
+            24,
+            24,
+            216,
+            216
+          ]
+        }
+      ]
+    },
+    {
+      "id": "progress-fill",
+      "logical_canvas_1x": [
+        111,
+        9
+      ],
+      "origin": {
+        "kind": "existing-figma-export",
+        "source": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=529-131",
+        "status": "existing I10000 native HUD skin reuse; application review, not current artwork extraction",
+        "processing": "Figma exportAsync native 1x/2x; no redraw."
+      },
+      "slicing": {
+        "mode": "horizontal-3-slice",
+        "insets_1x": {
+          "left": 5,
+          "right": 5
+        },
+        "insets_2x": {
+          "left": 10,
+          "right": 10
+        },
+        "vertical": "Preserve height; clip dynamically for percentage. At zero, draw nothing; do not retain a minimum-width segment."
+      },
+      "variants": [
+        {
+          "file": "png/progress-fill.png",
+          "scale": 1,
+          "pixels": [
+            111,
+            9
+          ],
+          "bytes": 1149,
+          "sha256": "c8f786b6979b40d59be0836ebb029a8f1e92d3fc63b86313bf4faf81309ab0c0",
+          "alpha_min": 0,
+          "alpha_max": 255,
+          "alpha_center": 255,
+          "alpha_zero_pixels": 4,
+          "alpha_partial_pixels": 28,
+          "alpha_bbox": [
+            0,
+            0,
+            111,
+            9
+          ]
+        },
+        {
+          "file": "png/progress-fill@2x.png",
+          "scale": 2,
+          "pixels": [
+            222,
+            18
+          ],
+          "bytes": 3629,
+          "sha256": "13f54b69721c3949475dd9789ef09143947c6db65196e5281351f3a288d55888",
+          "alpha_min": 0,
+          "alpha_max": 255,
+          "alpha_center": 255,
+          "alpha_zero_pixels": 48,
+          "alpha_partial_pixels": 52,
+          "alpha_bbox": [
+            0,
+            0,
+            222,
+            18
+          ]
+        }
+      ]
+    },
+    {
+      "id": "progress-track",
+      "logical_canvas_1x": [
+        155,
+        13
+      ],
+      "origin": {
+        "kind": "existing-figma-export",
+        "source": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=529-130",
+        "status": "existing I10000 native HUD skin reuse; application review, not current artwork extraction",
+        "processing": "Figma exportAsync native 1x/2x; no redraw."
+      },
+      "slicing": {
+        "mode": "horizontal-3-slice",
+        "insets_1x": {
+          "left": 7,
+          "right": 7
+        },
+        "insets_2x": {
+          "left": 14,
+          "right": 14
+        },
+        "vertical": "Preserve height; do not vertically stretch."
+      },
+      "variants": [
+        {
+          "file": "png/progress-track.png",
+          "scale": 1,
+          "pixels": [
+            155,
+            13
+          ],
+          "bytes": 548,
+          "sha256": "dff6bdf4383b637e4ef3e99868649d745e72ec65408a8fbdfdf8cb7be1613bfd",
+          "alpha_min": 0,
+          "alpha_max": 225,
+          "alpha_center": 217,
+          "alpha_zero_pixels": 24,
+          "alpha_partial_pixels": 1991,
+          "alpha_bbox": [
+            0,
+            0,
+            155,
+            13
+          ]
+        },
+        {
+          "file": "png/progress-track@2x.png",
+          "scale": 2,
+          "pixels": [
+            310,
+            26
+          ],
+          "bytes": 1053,
+          "sha256": "39861252b229dd6c740b2bde1475ffbb2666de57bb6cbf59e48b9358e2c494b7",
+          "alpha_min": 0,
+          "alpha_max": 225,
+          "alpha_center": 217,
+          "alpha_zero_pixels": 108,
+          "alpha_partial_pixels": 7952,
+          "alpha_bbox": [
+            0,
+            0,
+            310,
+            26
+          ]
+        }
+      ]
+    },
+    {
+      "id": "quest-panel",
+      "logical_canvas_1x": [
+        300,
+        92
+      ],
+      "origin": {
+        "kind": "existing-figma-export",
+        "source": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=529-133",
+        "status": "existing I10000 native HUD skin reuse; application review, not current artwork extraction",
+        "processing": "Figma exportAsync native 1x/2x; no redraw."
+      },
+      "slicing": {
+        "mode": "9-slice",
+        "insets_1x": {
+          "left": 20,
+          "right": 20,
+          "top": 20,
+          "bottom": 20
+        },
+        "insets_2x": {
+          "left": 40,
+          "right": 40,
+          "top": 40,
+          "bottom": 40
+        },
+        "note": "Candidate margins include existing round corners/shadow. Engine visual check still required."
+      },
+      "variants": [
+        {
+          "file": "png/quest-panel.png",
+          "scale": 1,
+          "pixels": [
+            300,
+            92
+          ],
+          "bytes": 21305,
+          "sha256": "f9d3c822673e022191c2de5d77f3d289f1d63e9c4d251025d98d3dae56469ee5",
+          "alpha_min": 0,
+          "alpha_max": 231,
+          "alpha_center": 209,
+          "alpha_zero_pixels": 4,
+          "alpha_partial_pixels": 27596,
+          "alpha_bbox": [
+            0,
+            0,
+            300,
+            92
+          ]
+        },
+        {
+          "file": "png/quest-panel@2x.png",
+          "scale": 2,
+          "pixels": [
+            600,
+            184
+          ],
+          "bytes": 76397,
+          "sha256": "6aa8f8100db7efbb17fc9777bbf8fb652c38e5df8eb17379bb9280feddfbd2ff",
+          "alpha_min": 0,
+          "alpha_max": 232,
+          "alpha_center": 209,
+          "alpha_zero_pixels": 11,
+          "alpha_partial_pixels": 110389,
+          "alpha_bbox": [
+            0,
+            0,
+            600,
+            184
+          ]
+        }
+      ]
+    },
+    {
+      "id": "quest-scroll",
+      "logical_canvas_1x": [
+        128,
+        128
+      ],
+      "origin": {
+        "kind": "existing-main-png",
+        "source": "https://github.com/byungho-cho/roxhistory/blob/661f18c8ee7b1defdbe732a36339213a764fc495/game/assets/ui/s40000/quest-scroll-v001.png",
+        "status": "existing art reuse",
+        "processing": "2x file is byte-identical to source. 1x is 50% downsample, no new generated icon."
+      },
+      "slicing": {
+        "mode": "none",
+        "rule": "Preserve aspect ratio. Existing menu/expand glyphs are baked; control hit area/label remain separate."
+      },
+      "variants": [
+        {
+          "file": "png/quest-scroll.png",
+          "scale": 1,
+          "pixels": [
+            128,
+            128
+          ],
+          "bytes": 18319,
+          "sha256": "9307d1954604993ecbd4fe6a633efa2b89c40e45bfdc0f16cdbb1e4b48f98ede",
+          "alpha_min": 0,
+          "alpha_max": 255,
+          "alpha_center": 252,
+          "alpha_zero_pixels": 10410,
+          "alpha_partial_pixels": 5722,
+          "alpha_bbox": [
+            13,
+            0,
+            125,
+            112
+          ]
+        },
+        {
+          "file": "png/quest-scroll@2x.png",
+          "scale": 2,
+          "pixels": [
+            256,
+            256
+          ],
+          "bytes": 64918,
+          "sha256": "aa3a0ea9f3cc3b1571e8bdf959d811cb90ecf83383323caa5aec87c73c0d5e50",
+          "alpha_min": 0,
+          "alpha_max": 255,
+          "alpha_center": 252,
+          "alpha_zero_pixels": 43320,
+          "alpha_partial_pixels": 21603,
+          "alpha_bbox": [
+            0,
+            0,
+            249,
+            244
+          ]
+        }
+      ]
+    },
+    {
+      "id": "resource-slot-brush",
+      "logical_canvas_1x": [
+        256,
+        56
+      ],
+      "origin": {
+        "kind": "selected-image-normalized",
+        "source_file": "source/resource-slot-brush-selected-original.png",
+        "status": "selected brush direction; technical export",
+        "figma_reference": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=689-330",
+        "processing": "Remove alpha <=2/255 isolated noise; crop (40,154,2022,412), scale uniformly to 496x101, center in 512x112; alpha *=192/253 then clamp <=192; derive 1x, preserve source."
+      },
+      "slicing": {
+        "mode": "horizontal-3-slice",
+        "insets_1x": {
+          "left": 32,
+          "right": 88
+        },
+        "insets_2x": {
+          "left": 64,
+          "right": 176
+        },
+        "vertical": "Uniform scale only; do not vertically 9-slice the brush tail. At target height H, scale caps by H/56; target width must exceed (32+88)*H/56.",
+        "content_safe_rect_1x": [
+          36,
+          10,
+          124,
+          36
+        ]
+      },
+      "variants": [
+        {
+          "file": "png/resource-slot-brush.png",
+          "scale": 1,
+          "pixels": [
+            256,
+            56
+          ],
+          "bytes": 17302,
+          "sha256": "f827b777034f9b5b31c0be4e98326f456f878ac738051ca9e9ee900d2fc96c4d",
+          "alpha_min": 0,
+          "alpha_max": 192,
+          "alpha_center": 192,
+          "alpha_zero_pixels": 2999,
+          "alpha_partial_pixels": 11337,
+          "alpha_bbox": [
+            2,
+            1,
+            251,
+            55
+          ]
+        },
+        {
+          "file": "png/resource-slot-brush@2x.png",
+          "scale": 2,
+          "pixels": [
+            512,
+            112
+          ],
+          "bytes": 50655,
+          "sha256": "495960bcc86f44720d6923501d1942bb6145d116c7a980c502e6bc248bbc5afb",
+          "alpha_min": 0,
+          "alpha_max": 192,
+          "alpha_center": 192,
+          "alpha_zero_pixels": 12520,
+          "alpha_partial_pixels": 44824,
+          "alpha_bbox": [
+            8,
+            5,
+            502,
+            106
+          ]
+        }
+      ]
+    },
+    {
+      "id": "resource-stone",
+      "logical_canvas_1x": [
+        96,
+        88
+      ],
+      "origin": {
+        "kind": "existing-figma-export",
+        "source": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=92-154",
+        "status": "existing resource art export",
+        "processing": "Figma exportAsync native 1x/2x; no redraw."
+      },
+      "slicing": {
+        "mode": "none",
+        "rule": "Preserve aspect ratio; resource amount and + remain separate."
+      },
+      "variants": [
+        {
+          "file": "png/resource-stone.png",
+          "scale": 1,
+          "pixels": [
+            96,
+            88
+          ],
+          "bytes": 16514,
+          "sha256": "b2a4114ef9b97bd43b97b14331e64a5ef639b64bde3b56476cdf978d17f4b196",
+          "alpha_min": 0,
+          "alpha_max": 253,
+          "alpha_center": 252,
+          "alpha_zero_pixels": 2964,
+          "alpha_partial_pixels": 5484,
+          "alpha_bbox": [
+            1,
+            1,
+            95,
+            88
+          ]
+        },
+        {
+          "file": "png/resource-stone@2x.png",
+          "scale": 2,
+          "pixels": [
+            192,
+            176
+          ],
+          "bytes": 54724,
+          "sha256": "022d91cb5929309067b43008c9917b758b854053c5252248149c021985067e2a",
+          "alpha_min": 0,
+          "alpha_max": 253,
+          "alpha_center": 252,
+          "alpha_zero_pixels": 12057,
+          "alpha_partial_pixels": 21735,
+          "alpha_bbox": [
+            1,
+            2,
+            190,
+            176
+          ]
+        }
+      ]
+    },
+    {
+      "id": "resource-wood",
+      "logical_canvas_1x": [
+        96,
+        88
+      ],
+      "origin": {
+        "kind": "existing-figma-export",
+        "source": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=92-152",
+        "status": "existing resource art export",
+        "processing": "Figma exportAsync native 1x/2x; no redraw."
+      },
+      "slicing": {
+        "mode": "none",
+        "rule": "Preserve aspect ratio; resource amount and + remain separate."
+      },
+      "variants": [
+        {
+          "file": "png/resource-wood.png",
+          "scale": 1,
+          "pixels": [
+            96,
+            88
+          ],
+          "bytes": 17602,
+          "sha256": "3bc50c9ec99c3e3211608085516b2f6ad38465f3f341620e61621f33a01fbb01",
+          "alpha_min": 0,
+          "alpha_max": 254,
+          "alpha_center": 253,
+          "alpha_zero_pixels": 2700,
+          "alpha_partial_pixels": 5748,
+          "alpha_bbox": [
+            1,
+            1,
+            96,
+            87
+          ]
+        },
+        {
+          "file": "png/resource-wood@2x.png",
+          "scale": 2,
+          "pixels": [
+            192,
+            176
+          ],
+          "bytes": 60750,
+          "sha256": "aa3b700ce13baa077835e59e9764721f85740c0e4cf850c4168a178e7e7151c2",
+          "alpha_min": 0,
+          "alpha_max": 254,
+          "alpha_center": 253,
+          "alpha_zero_pixels": 10996,
+          "alpha_partial_pixels": 22796,
+          "alpha_bbox": [
+            2,
+            3,
+            192,
+            174
+          ]
+        }
+      ]
+    }
+  ],
+  "states": {
+    "normal": "Use static image at white tint and renderer alpha 1. Brush already contains alpha~0.753.",
+    "pressed": "Reuse same image; code-managed small scale/tint feedback; not separate texture.",
+    "selected": "Code-managed glow/outline behind image; no text/glow baked into assets.",
+    "disabled": "Code-managed tint/opacity and blocked interaction, with readable dynamic text.",
+    "focus": "Separate focus indicator. Never encode hit target or accessibility text in raster."
+  }
+}
