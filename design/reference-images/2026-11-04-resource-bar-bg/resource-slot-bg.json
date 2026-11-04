@@ -1,0 +1,93 @@
+{
+  "name": "RoxHistory resource slot background",
+  "version": 1,
+  "createdAt": "2026-11-04",
+  "format": "PNG RGBA 8-bit sRGB",
+  "contents": "Background only. No text, values, icons, plus signs, or sample data.",
+  "rendererOpacity": 1,
+  "sliceCoordinates": "Full canvas; do not auto-trim without recalculating insets.",
+  "reference": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=689-330",
+  "files": [
+    {
+      "file": "resource-slot-bg.png",
+      "width": 256,
+      "height": 56,
+      "scale": 1,
+      "nineSlicePx": {
+        "left": 30,
+        "right": 30,
+        "top": 26,
+        "bottom": 26
+      },
+      "alpha": {
+        "center": 192,
+        "minimum": 0,
+        "maximum": 195,
+        "fullyTransparentPixels": 2511,
+        "semiTransparentPixels": 11825,
+        "fullyOpaquePixels": 0
+      },
+      "alphaNonzeroBoundsExclusive": [
+        4,
+        3,
+        252,
+        53
+      ],
+      "sha256": "620dce45d2d82a84964e9c07ff63dce52ce86659e33438d5ca8da8fb6b786c1f"
+    },
+    {
+      "file": "resource-slot-bg@2x.png",
+      "width": 512,
+      "height": 112,
+      "scale": 2,
+      "nineSlicePx": {
+        "left": 60,
+        "right": 60,
+        "top": 52,
+        "bottom": 52
+      },
+      "alpha": {
+        "center": 192,
+        "minimum": 0,
+        "maximum": 196,
+        "fullyTransparentPixels": 11086,
+        "semiTransparentPixels": 46258,
+        "fullyOpaquePixels": 0
+      },
+      "alphaNonzeroBoundsExclusive": [
+        9,
+        7,
+        503,
+        105
+      ],
+      "sha256": "5b4e6c4627a39b835a0d2cf74f200d293f55ce0b946320f252a2aab8c896c4a1"
+    },
+    {
+      "file": "resource-slot-bg@4x.png",
+      "width": 1024,
+      "height": 224,
+      "scale": 4,
+      "nineSlicePx": {
+        "left": 120,
+        "right": 120,
+        "top": 104,
+        "bottom": 104
+      },
+      "alpha": {
+        "center": 192,
+        "minimum": 0,
+        "maximum": 202,
+        "fullyTransparentPixels": 47841,
+        "semiTransparentPixels": 181535,
+        "fullyOpaquePixels": 0
+      },
+      "alphaNonzeroBoundsExclusive": [
+        20,
+        16,
+        1004,
+        208
+      ],
+      "sha256": "09e94ba5fa42e2af7fb5139a8094831854d7e21d166f7ec0b4bf519c2a8056bb"
+    }
+  ]
+}
