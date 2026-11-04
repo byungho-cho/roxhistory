@@ -27,8 +27,8 @@ func run()->void:
  app.cancel_task()
  for size in [Vector2i(1280,720),Vector2i(896,370),Vector2i(816,616),Vector2i(370,896)]:
   root.size=size;await frames(8)
-  check(app.action_row.visible and app.action_row.get_child_count()==5,"Always visible five actions "+str(size))
-  check(not app.stage.has_node("ActionToggle") and not app.stage.has_node("ExpandActions"),"No fold controls "+str(size))
+  check(app.action_row.visible and app.action_row.get_child_count()==6,"Five actions and fold control "+str(size))
+  check(is_instance_valid(app.menu_toggle),"Fold control available "+str(size))
   var prior:=Rect2()
   for button in app.action_row.get_children():
    var rect:Rect2=button.get_global_rect()

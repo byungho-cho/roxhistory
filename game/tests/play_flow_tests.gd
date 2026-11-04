@@ -43,8 +43,8 @@ func run()->void:
 	await wait_work()
 	check(app.model.state.stone==1,"Tap walks and gathers exactly one stone")
 	app.choosing_plot=true;app.world.show_candidates=true
-	tap(app.world.site.position);await wait_work()
-	check(app.model.built_count()==1 and not app.modal,"Build directly completes without modal")
+	tap(app.world.site.position);app.confirm_build_preview();await wait_work()
+	check(app.model.built_count()==1 and not app.modal,"Confirmed build completes without completion modal")
 	check(app.model.state.tokens==0 and app.model.reward_pending(0),"Building leaves persisted unclaimed reward")
 	await snap("reward-ready")
 	var saved:=GameState.new(app.model.store);check(saved.reward_pending(0),"Pending reward survives save reload")
@@ -57,7 +57,7 @@ func run()->void:
 		app.choosing_plot=true;app.world.show_candidates=true
 		for site_id in DemoConfig.BUILD_SITES.size():
 			if app.world.site_available(site_id):app.world.select_site(site_id);break
-		tap(app.world.site.position);await wait_work()
+		tap(app.world.site.position);app.confirm_build_preview();await wait_work()
 		check(app.model.built_count()==i+2,"Next build site supports another home")
 		app.claim_home(i+1)
 	check(app.model.state.tokens==30 and not app.model.can_build(),"Three rewards, construction goal capped")

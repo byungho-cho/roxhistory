@@ -1,0 +1,40 @@
+{
+  "checks": 92,
+  "failed": [],
+  "measurements": [
+    {
+      "horn_touch_logical": 132.0,
+      "horn_visual_logical": 79.8336029052734
+    },
+    {
+      "expanded": true,
+      "menu": "[P: (879.0, 446.0), S: (404.0, 72.0)]",
+      "viewport": "(896, 370)"
+    },
+    {
+      "expanded": false,
+      "menu": "[P: (1167.0, 446.0), S: (116.0, 72.0)]",
+      "viewport": "(896, 370)"
+    },
+    {
+      "expanded": true,
+      "menu": "[P: (552.0, 630.0), S: (384.0, 72.0)]",
+      "viewport": "(816, 616)"
+    },
+    {
+      "expanded": false,
+      "menu": "[P: (824.0, 630.0), S: (112.0, 72.0)]",
+      "viewport": "(816, 616)"
+    },
+    {
+      "expanded": true,
+      "menu": "[P: (132.0, 722.0), S: (384.0, 72.0)]",
+      "viewport": "(540, 960)"
+    },
+    {
+      "expanded": false,
+      "menu": "[P: (404.0, 722.0), S: (112.0, 72.0)]",
+      "viewport": "(540, 960)"
+    }
+  ]
+}

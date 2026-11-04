@@ -41,7 +41,7 @@ func run()->void:
 	hut.set_hut_style(0)
 	for size in [Vector2i(1280,720),Vector2i(896,370),Vector2i(816,616)]:
 		root.size=size;await frames(4);await frames(4)
-		check(app.action_row.visible and app.action_row.get_child_count()==5,"Five persistent actions "+str(size))
+		check(app.action_row.visible and app.action_row.get_child_count()==6,"Five actions plus fold control "+str(size))
 		for button in app.action_row.get_children():
 			check(button.size.x>=44 and button.size.y>=44,"Usable action target "+button.text+str(size))
 		check(app.objective.get_parent().size.y==58,"Compact expanded quest "+str(size))

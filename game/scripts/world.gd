@@ -21,8 +21,8 @@ var residents:Array[TrialResident]=[]
 var reward_pouch:AtlasTexture
 var reward_bubble:StyleBoxFlat
 # Water visuals and physics share the shoreline traced on terrain.png.
-const SHORE = [Vector2(0,320),Vector2(600,430),Vector2(1200,575),Vector2(1800,750),Vector2(2400,835)]
-const RIVER_POLYGON = [Vector2(0,175),Vector2(600,270),Vector2(1200,410),Vector2(1800,550),Vector2(2400,680),Vector2(2400,835),Vector2(1800,750),Vector2(1200,575),Vector2(600,430),Vector2(0,320)]
+const SHORE = [Vector2(0,325),Vector2(600,455),Vector2(1200,595),Vector2(1800,750),Vector2(2400,850)]
+const RIVER_POLYGON = [Vector2(0,185),Vector2(600,285),Vector2(1200,410),Vector2(1800,565),Vector2(2400,685),Vector2(2400,850),Vector2(1800,750),Vector2(1200,595),Vector2(600,455),Vector2(0,325)]
 
 func _init(game: GameState) -> void:
 	model = game
@@ -58,26 +58,13 @@ func _ready() -> void:
 	prop("hut",Vector2(865,720),300,Vector2(220,80),"ExistingHut")
 	get_node("ExistingHut").set_hut_style(0)
 	prop("props",Vector2(1020,795),65,Vector2(40,20),"PotteryAndGrindingStone")
-	# Approved landscape already contains vegetation. Match its trunks with physics;
-	# do not paste a second, unrelated set of trees over the artwork.
-	for p in [Vector2(95,750),Vector2(330,800),Vector2(710,930),Vector2(1780,850),Vector2(2090,930),Vector2(1450,645)]:
-		rect_body(Rect2(p-Vector2(25,20),Vector2(50,30)))
-		if p.x==1780:get_child(get_child_count()-1).name="SettlementTree"
-		# Reuse the exact landscape pixels for depth occlusion, not another tree style.
-		var canopy:=Polygon2D.new();canopy.name="LandscapeCanopy";canopy.position=p
-		# Trace the crown and narrow trunk, excluding the broad soil/water wedge
-		# from the previous polygon that incorrectly covered nearby stones/walkers.
-		canopy.polygon=PackedVector2Array([Vector2(-17,0),Vector2(-8,-20),Vector2(-12,-55),Vector2(-42,-59),Vector2(-65,-76),Vector2(-59,-100),Vector2(-38,-114),Vector2(-13,-129),Vector2(12,-125),Vector2(34,-111),Vector2(52,-109),Vector2(66,-89),Vector2(55,-68),Vector2(24,-57),Vector2(12,-48),Vector2(9,-18),Vector2(24,0),Vector2(4,-6)])
-		canopy.texture=terrain
-		var canopy_uv:=PackedVector2Array()
-		for point in canopy.polygon:canopy_uv.append((p+point)/background.scale)
-		canopy.uv=canopy_uv;add_child(canopy)
-	# Painted large rocks need physical footprints independent of their drawing order.
-	for p in SceneStyle.PAINTED_ROCKS:
-		var outline:=PackedVector2Array()
-		for i in 16:outline.append(p+Vector2(cos(TAU*i/16)*42,sin(TAU*i/16)*21-8))
-		polygon_body(outline)
-		get_child(get_child_count()-1).name="LandscapeRockCollision"
+	# Clean approved terrain: independent scenery owns both silhouette and footprint.
+	# Removed all six legacy canopy masks and five painted-rock collision regions.
+	for i in SceneStyle.SCENIC_TREES.size():
+		var p:Vector2=SceneStyle.SCENIC_TREES[i]
+		prop("tree",p,170,Vector2(50,30),"SettlementTree" if p.x==1780 else "ScenicTree"+str(i))
+	for i in SceneStyle.PAINTED_ROCKS.size():
+		prop("rock",SceneStyle.PAINTED_ROCKS[i],100,Vector2(64,28),"ScenicRock"+str(i))
 	for n in model.nodes():
 		var root := Node2D.new()
 		root.name = "Resource_"+str(n.id)
