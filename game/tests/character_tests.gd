@@ -113,7 +113,7 @@ func run() -> void:
 	app.build_action()
 	check(not app.modal and app.task=="build","Minimal materials start construction directly")
 	await frames(5)
-	check(player.motion_state == "build" and player.hybrid.tool_3d.visible,"Construction drives action animation")
+	check(app.world.feedback.preview.visible and player.motion_state != "build","Remote construction animates the site, not the hero")
 	await create_timer(float(DemoConfig.get_data().build_seconds)+0.15).timeout
 	check(app.model.state.built and not app.modal and app.model.reward_pending(0) and player.activity == "","Construction exposes world reward and clears action state")
 	app.claim_home(0)

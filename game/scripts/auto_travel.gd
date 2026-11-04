@@ -15,15 +15,16 @@ func cancel() -> void:
 	path.clear();action="";target="";stuck=0;retry_count=0;blocked_cells.clear()
 	if is_instance_valid(trail):trail.clear()
 	if is_instance_valid(app.world):app.world.player.work_destination=Vector2.INF
-func start(kind:String,id:String,destination:Vector2,retry:int=0,blocked:Array[Vector2i]=[]) -> bool:
+func start(kind:String,id:String,destination:Vector2,retry:int=0,blocked:Array[Vector2i]=[],quiet:bool=false) -> bool:
 	if not is_instance_valid(trail):
 		trail=TravelTrail.new(self);app.world.add_child(trail)
-	if not destination.is_finite():app.toast("이곳으로 이동할 수 없어요");return false
+	if not destination.is_finite():return false
 	var player:DemoPlayer=app.world.player
 	if kind=="move":
 		var pose:=player.transform;pose.origin=destination
 		if not Rect2(40,40,2320,1270).has_point(destination) or player.test_move(pose,Vector2.ZERO,null,.08,true):
-			app.toast("이곳으로 이동할 수 없어요");return false
+			if not quiet:app.toast("이곳으로 이동할 수 없어요")
+			return false
 	var grid:=AStarGrid2D.new();grid.region=Rect2i(0,0,100,56);grid.cell_size=Vector2(24,24);grid.offset=Vector2(12,12);grid.diagonal_mode=AStarGrid2D.DIAGONAL_MODE_ONLY_IF_NO_OBSTACLES;grid.update()
 	for y in 56:
 		for x in 100:
@@ -43,9 +44,17 @@ func start(kind:String,id:String,destination:Vector2,retry:int=0,blocked:Array[V
 			var transform:=player.transform;transform.origin=point
 			if not grid.is_point_solid(cell) and not player.test_move(transform,destination-point) and point.distance_to(destination)<distance:
 				best=cell;distance=point.distance_to(destination)
-	if best.x<0:app.toast("이곳으로 이동할 수 없어요");return false
+	if best.x<0:
+		if not quiet:app.toast("이곳으로 이동할 수 없어요")
+		return false
 	var planned:=grid.get_point_path(from,best)
-	if planned.is_empty():app.toast("이곳으로 가는 길이 막혀 있어요");return false
+	if planned.is_empty():
+		if not quiet:app.toast("이곳으로 가는 길이 막혀 있어요")
+		return false
+	if not app.task.is_empty():
+		planned.append(destination)
+		app.reserve_action({"kind":kind,"id":id,"at":destination,"path":planned})
+		return true
 	# Only an accepted route is a movement command. Rejected clicks preserve work.
 	app.cancel_task()
 	retry_count=retry;blocked_cells=blocked.duplicate()

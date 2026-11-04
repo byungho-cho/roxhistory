@@ -125,6 +125,8 @@ jobs:
           ! grep -E 'SCRIPT ERROR:|ERROR:' build-sites-tests.log
           timeout 180 xvfb-run -a godot --fixed-fps 60 --audio-driver Dummy --path game --resolution 1280x720 --script res://tests/demolition_tests.gd -- --test-ui 2>&1 | tee demolition-tests.log
           ! grep -E 'SCRIPT ERROR:|ERROR:' demolition-tests.log
+          timeout 180 xvfb-run -a godot --fixed-fps 60 --audio-driver Dummy --path game --resolution 1280x720 --script res://tests/action_queue_tests.gd -- --test-ui 2>&1 | tee action-queue-tests.log
+          ! grep -E 'SCRIPT ERROR:|ERROR:' action-queue-tests.log
       - name: Export signed debug APK
         run: |
           set -euo pipefail

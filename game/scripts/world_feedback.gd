@@ -69,7 +69,7 @@ func update_work(seconds: float, total: float) -> void:
 			color = Color("d4bd92") if target.begins_with("wood") else Color("b6b7a4")
 		# Particles originate at the rendered tool head, not the object's center
 		# several pixels away. Object sway and the matching sound share this beat.
-		if world.player.use_3d:
+		if activity=="gather" and world.player.use_3d:
 			var hero := world.player.hybrid
 			hero.animate(0,Vector2.ZERO,world.player.phase,false,activity,next_hit,false)
 			point = hero.tool_contact_world()
@@ -82,6 +82,9 @@ func update_work(seconds: float, total: float) -> void:
 			resource_impact_point=world.art_nodes[target].position+Vector2(0,-18)
 		burst(resource_impact_point,color,6,0.40,("wood" if target.begins_with("wood") else "stone") if activity=="gather" else "wood")
 		if activity=="gather":burst(resource_impact_point,Color(.62,.53,.38,.22) if target.begins_with("wood") else Color(.65,.66,.64,.20),3,.30,"dust")
+		else:
+			burst(world.site.position+Vector2(0,-35),Color(.76,.65,.46,.28),12,.65,"dust")
+			burst(world.site.position+Vector2(0,-70),Color(1,.8,.34,.7),8,.6)
 		remember("impact:"+activity)
 		sound_cue.emit(("wood" if target.begins_with("wood") else "stone") if activity == "gather" else "build")
 		next_hit += HeroMotion.CYCLE

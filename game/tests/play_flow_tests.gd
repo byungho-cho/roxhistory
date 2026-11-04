@@ -42,6 +42,7 @@ func run()->void:
 	check(app.navigation.action=="gather","Tapping current stone position starts gather route")
 	await wait_work()
 	check(app.model.state.stone==1,"Tap walks and gathers exactly one stone")
+	app.choosing_plot=true;app.world.show_candidates=true
 	tap(app.world.site.position);await wait_work()
 	check(app.model.built_count()==1 and not app.modal,"Build directly completes without modal")
 	check(app.model.state.tokens==0 and app.model.reward_pending(0),"Building leaves persisted unclaimed reward")
@@ -53,6 +54,9 @@ func run()->void:
 	check(int(app.chrome.displayed_tokens)==10 and app.chrome.slot("tokens").position.y<100,"Animated seed total reaches upper HUD")
 	for i in 2:
 		app.model.gather("wood_1");app.model.gather("stone_1")
+		app.choosing_plot=true;app.world.show_candidates=true
+		for site_id in DemoConfig.BUILD_SITES.size():
+			if app.world.site_available(site_id):app.world.select_site(site_id);break
 		tap(app.world.site.position);await wait_work()
 		check(app.model.built_count()==i+2,"Next build site supports another home")
 		app.claim_home(i+1)

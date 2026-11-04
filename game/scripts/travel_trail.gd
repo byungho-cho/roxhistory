@@ -24,8 +24,11 @@ func _draw()->void:
 	if not is_instance_valid(navigation) or not is_instance_valid(navigation.app.world):return
 	var zoom:=maxf(.3,get_canvas_transform().get_scale().x)
 	for c in crumbs:draw_circle(c.b,1.6/zoom,Color(1,.92,.65,.32*(1-c.age/.5)))
-	if navigation.action=="":return
-	var points:=PackedVector2Array([navigation.app.world.player.position]);points.append_array(navigation.path)
+	var points:=PackedVector2Array([navigation.app.world.player.position])
+	var pending:Dictionary=navigation.app.pending_action
+	if pending.has("path"):points.append_array(pending.path)
+	elif navigation.action!="":points.append_array(navigation.path)
+	else:return
 	var offset:=0.0
 	for i in points.size()-1:
 		var length:=points[i].distance_to(points[i+1])

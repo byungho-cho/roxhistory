@@ -5,6 +5,7 @@ var flights: Array[Dictionary]=[]
 var pulse := {"wood":0.0,"stone":0.0,"tokens":0.0}
 var styles: Dictionary={}
 var portrait: Texture2D
+const RESOURCE_BRUSH=preload("res://assets/ui/brush/resource-slot-brush@2x.png")
 # Original portrait pixels, clipped to the hair/shoulders instead of its baked gold ring.
 const PORTRAIT_OUTLINE=[Vector2(28,103),Vector2(29,77),Vector2(40,57),Vector2(53,43),Vector2(70,34),Vector2(82,22),Vector2(100,27),Vector2(118,23),Vector2(142,37),Vector2(157,53),Vector2(157,73),Vector2(170,90),Vector2(171,116),Vector2(162,140),Vector2(147,153),Vector2(156,166),Vector2(153,177),Vector2(132,186),Vector2(100,186),Vector2(68,179),Vector2(47,167),Vector2(61,152),Vector2(66,141),Vector2(49,130),Vector2(43,118),Vector2(33,120)]
 var reveal := 0.0
@@ -76,10 +77,16 @@ func _draw() -> void:
 	if app.model.built_count()>0:frame(Rect2(origin+Vector2(101,33),Vector2(95*app.model.built_count()/3.0,8)),Color("8ac644"),Color(0,0,0,0))
 	for key in ["wood","stone","tokens"]:
 		var rect:=slot(key);var beat:float=pulse.get(key,0.0)
-		frame(Rect2(rect.position+Vector2(11,5),Vector2(84,27)),Color(0,0,0,resource_alpha*.68),Color.TRANSPARENT)
+		# PNG already includes 75% alpha. Preserve brush caps at the height scale.
+		var brush_rect:=Rect2(rect.position+Vector2(11,5),Vector2(84,27))
+		var scale_y:=brush_rect.size.y/112.0
+		var left:=64*scale_y;var right:=176*scale_y
+		draw_texture_rect_region(RESOURCE_BRUSH,Rect2(brush_rect.position,Vector2(left,27)),Rect2(0,0,64,112))
+		draw_texture_rect_region(RESOURCE_BRUSH,Rect2(brush_rect.position+Vector2(left,0),Vector2(84-left-right,27)),Rect2(64,0,272,112))
+		draw_texture_rect_region(RESOURCE_BRUSH,Rect2(brush_rect.end-Vector2(right,27),Vector2(right,27)),Rect2(336,0,176,112))
 		var extent:=28.0+beat*4
-		draw_texture_rect(DemoArt.icon(key),Rect2(rect.position+Vector2(3,3),Vector2(extent,extent)),false,Color(1,1,1,resource_alpha))
-		draw_string(font,rect.position+Vector2(34,25),str(int(displayed_tokens)) if key=="tokens" else str(int(app.model.state[key])),HORIZONTAL_ALIGNMENT_LEFT,62,15,Color(1,.98,.90,resource_alpha))
+		draw_texture_rect(DemoArt.icon(key),Rect2(rect.position+Vector2(3,3),Vector2(extent,extent)),false)
+		draw_string(font,rect.position+Vector2(34,25),str(int(displayed_tokens)) if key=="tokens" else str(int(app.model.state[key])),HORIZONTAL_ALIGNMENT_LEFT,62,15,Color(1,.98,.90,1))
 	var center:=Vector2(app.w-app.safe.x-50,app.safe.y+50)
 	draw_circle(center+Vector2(1,3),53,Color(.15,.10,.04,.20))
 	draw_circle(center,51,Color("49321e"))

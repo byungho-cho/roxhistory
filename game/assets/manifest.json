@@ -693,5 +693,17 @@
     "sha256": "cbacdaf4d9eec5d8bdd6d88b22d737627a626e09f358bd3babf5cbcafdadb1d6",
     "source": "Approved Figma option3 node 702:334/335, original retained; pedestal UV region (832,852,42,14)",
     "license": "User-approved project artwork, reused without generation"
+  },
+  {
+    "path": "game/assets/ui/brush/action-stone-base@2x.png",
+    "bytes": 56324,
+    "sha256": "ee616ae308cc5ba41a5f3c590819f111a148d2366b310ca9863d0161d4bb593f",
+    "source": "b1433687df091e1355d5abb17c0fc55a73ceea11 design/reference-images/2026-11-04-ui-assets-brush/png/action-stone-base@2x.png"
+  },
+  {
+    "path": "game/assets/ui/brush/resource-slot-brush@2x.png",
+    "bytes": 50655,
+    "sha256": "495960bcc86f44720d6923501d1942bb6145d116c7a980c502e6bc248bbc5afb",
+    "source": "b1433687df091e1355d5abb17c0fc55a73ceea11 design/reference-images/2026-11-04-ui-assets-brush/png/resource-slot-brush@2x.png"
   }
 ]
