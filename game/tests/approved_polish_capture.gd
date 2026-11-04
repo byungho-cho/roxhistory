@@ -13,8 +13,8 @@ func run()->void:
 	app.world.player.position=Vector2(1150,810)
 	for r in app.world.residents:r.set_physics_process(false)
 	for a in app.world.animals:a.set_physics_process(false)
-	app.actions_expanded=false;await snap("folded")
-	app.actions_expanded=true;await snap("expanded")
+	for i in 12:await process_frame
+	await snap("menu")
 	app.world.player.zoom_at(Vector2(480,270),2.0);await snap("zoom")
 	app.canvas.visible=false
 	var p:DemoPlayer=app.world.player

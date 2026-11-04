@@ -24,9 +24,8 @@ func run()->void:
 	app.start_region();app.close_modal();await frames(5)
 	check(app.model.built_count()==0,"One existing hut and zero newly built huts")
 	check(app.world.homes.filter(func(h):return h.visible).size()==0,"Future huts remain invisible")
-	await snap("collapsed")
-	app.actions_expanded=true;await frames(3);await snap("expanded")
-	app.actions_expanded=false
+	await snap("initial-hud")
+	await frames(3);await snap("menu")
 	var p:DemoPlayer=app.world.player
 	var zoom:=InputEventMouseButton.new();zoom.button_index=MOUSE_BUTTON_WHEEL_UP;zoom.ctrl_pressed=true;zoom.pressed=true;zoom.position=Vector2(500,300)
 	app.gestures._input(zoom);check(p.zoom_factor>1,"Ctrl+wheel zooms")

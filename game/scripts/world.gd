@@ -6,6 +6,7 @@ var player: DemoPlayer
 var selected := ""
 var art_nodes := {}
 var resource_labels := {}
+var selected_site:=0
 var site: Node2D
 var home: EnvironmentProp
 var homes: Array[EnvironmentProp] = []
@@ -198,7 +199,11 @@ func refresh() -> void:
 	var saved_homes:=model.homes()
 	for i in homes.size():
 		homes[i].visible=i<saved_homes.size()
-		if i>=saved_homes.size():continue
+		if i>=saved_homes.size():
+			var old_body:=get_node_or_null("HomeCollision"+str(i))
+			if old_body:remove_child(old_body);old_body.queue_free()
+			continue
+		homes[i].position=model.home_position(i)
 		homes[i].set_hut_style(int(saved_homes[i].style))
 		if not has_node("HomeCollision"+str(i)):
 			var body := StaticBody2D.new()
@@ -210,7 +215,12 @@ func refresh() -> void:
 			collision.shape = shape
 			body.add_child(collision)
 			add_child(body)
-	site.position=DemoConfig.HOME_SITES[mini(model.built_count(),DemoConfig.HOME_GOAL-1)]
+		get_node("HomeCollision"+str(i)).position=homes[i].position
+	if selected_site>=0 and not model.site_free(selected_site):selected_site=-1
+	if selected_site>=0:site.position=DemoConfig.BUILD_SITES[selected_site]
+	elif model.built_count()<DemoConfig.HOME_GOAL:
+		for id in DemoConfig.BUILD_SITES.size():
+			if model.site_free(id):site.position=DemoConfig.BUILD_SITES[id];break
 	queue_redraw()
 
 func exhausted(n: Dictionary) -> bool:
@@ -227,13 +237,13 @@ func nearest() -> Dictionary:
 	return result
 
 func near_site() -> bool:
-	return model.built_count()<DemoConfig.HOME_GOAL and player.position.distance_to(site.position) < 150 and player.position.y >= site.position.y
+	return selected_site>=0 and model.site_free(selected_site) and model.built_count()<DemoConfig.HOME_GOAL and player.position.distance_to(site.position) < 150 and player.position.y >= site.position.y
 
 func interaction_at(screen_point:Vector2)->bool:
 	var at:=get_global_transform_with_canvas().affine_inverse()*screen_point
 	for n in model.nodes():
 		if not exhausted(n) and Rect2(DemoConfig.point(n.position)-Vector2(60,70),Vector2(120,90)).has_point(at):return true
-	if model.built_count()<3 and at.distance_to(site.position)<115:return true
+	if site_at(at)>=0:return true
 	for i in model.built_count():
 		if model.reward_pending(i) and reward_hit(i,at):return true
 	return false
@@ -264,16 +274,50 @@ func _draw() -> void:
 			draw_style_box(reward_bubble,box)
 			draw_texture_rect(reward_pouch,Rect2(box.position+Vector2(7,7),Vector2(58,52)),false)
 	if model.built_count()<DemoConfig.HOME_GOAL:
-		draw_set_transform(site.position)
-		var corners:=PackedVector2Array([Vector2(-100,-40),Vector2(90,-40),Vector2(115,40),Vector2(-90,52)])
-		draw_colored_polygon(corners,Color(.48,.34,.17,.10))
-		for i in 4:
-			var post:=corners[i];var next:=corners[(i+1)%4]
-			draw_polyline(PackedVector2Array([post-Vector2(0,17),post.lerp(next,.5)-Vector2(0,10),next-Vector2(0,17)]),Color("b49a67"),2.8,true)
-			draw_line(post,post-Vector2(1,26),Color("684827"),6,true)
-			draw_line(post-Vector2(1,2),post-Vector2(2,25),Color("b98e52"),2,true)
-			draw_circle(post-Vector2(1,26),3,Color("d6b477"))
-		draw_set_transform(Vector2.ZERO)
+		for id in DemoConfig.BUILD_SITES.size():
+			if not model.site_free(id):continue
+			draw_site(DemoConfig.BUILD_SITES[id],id==selected_site)
+
+func draw_site(at:Vector2,chosen:bool)->void:
+	draw_set_transform(at+Vector2(0,-35))
+	var ring:=PackedVector2Array()
+	for k in 65:ring.append(Vector2(cos(TAU*k/64)*156,sin(TAU*k/64)*59))
+	draw_colored_polygon(ring,Color(.83,.58,.22,.13 if chosen else .035))
+	draw_polyline(ring,Color(1,.77,.32,.28 if chosen else .06),11,true)
+	draw_polyline(ring,Color(1,.86,.47,.85 if chosen else .27),2.5,true)
+	for k in 10:
+		var post:=Vector2(cos(TAU*k/10)*150,sin(TAU*k/10)*56)
+		var next:=Vector2(cos(TAU*(k+1)/10)*150,sin(TAU*(k+1)/10)*56)
+		draw_polyline(PackedVector2Array([post-Vector2(0,19),post.lerp(next,.5)-Vector2(0,12),next-Vector2(0,19)]),Color(.69,.51,.28,.85 if chosen else .48),2.5,true)
+		draw_line(post,post-Vector2(0,28),Color("75512f"),9,true)
+		draw_line(post-Vector2(1,2),post-Vector2(1,27),Color("ba955b"),2,true)
+		draw_circle(post-Vector2(0,28),4,Color("e0bb7a"))
+	if chosen:draw_texture_rect(EnvironmentProp.asset("wood"),Rect2(70,12,72,40),false)
+	draw_set_transform(Vector2.ZERO)
+
+func site_at(at:Vector2)->int:
+	if model.built_count()>=DemoConfig.HOME_GOAL:return -1
+	for id in DemoConfig.BUILD_SITES.size():
+		if model.site_free(id) and ((at-DemoConfig.BUILD_SITES[id]-Vector2(0,-35))/Vector2(156,74)).length()<1:return id
+	return -1
+
+func site_available(id:int)->bool:
+	if not model.site_free(id) or model.built_count()>=DemoConfig.HOME_GOAL:return false
+	var at:Vector2=DemoConfig.BUILD_SITES[id]
+	var query:=PhysicsShapeQueryParameters2D.new();var shape:=ConvexPolygonShape2D.new()
+	shape.points=EnvironmentProp.hut_footprint(340);query.shape=shape;query.transform=Transform2D(0,at);query.margin=8
+	query.exclude=[player.get_rid()]
+	if not get_world_2d().direct_space_state.intersect_shape(query,1).is_empty():return false
+	for rock in SceneStyle.PAINTED_ROCKS:
+		if ((rock-at-Vector2(0,-40))/Vector2(190,100)).length()<1:return false
+	return true
+
+func select_site(id:int)->bool:
+	if not site_available(id):return false
+	selected_site=id;site.position=DemoConfig.BUILD_SITES[id];queue_redraw();objectives.redraw();return true
+
+func clear_site()->void:
+	selected_site=-1;queue_redraw();objectives.redraw()
 
 func gather_stand(target: Vector2, resource_kind: String="wood") -> Vector2:
 	# Keep the short contact stance clear of huts and scenery, without teleporting.

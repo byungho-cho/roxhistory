@@ -10,6 +10,7 @@ func _init(owner_navigation:AutoTravel)->void:
 	navigation=owner_navigation
 	z_index=2
 func _process(delta:float)->void:
+	if not is_instance_valid(navigation) or not is_instance_valid(navigation.app.world):return
 	for crumb in crumbs:crumb.age+=delta
 	crumbs=crumbs.filter(func(c):return c.age<.5)
 	var p:Vector2=navigation.app.world.player.position
@@ -20,6 +21,7 @@ func _process(delta:float)->void:
 	else:previous=Vector2.INF
 	queue_redraw()
 func _draw()->void:
+	if not is_instance_valid(navigation) or not is_instance_valid(navigation.app.world):return
 	var zoom:=maxf(.3,get_canvas_transform().get_scale().x)
 	for c in crumbs:draw_circle(c.b,1.6/zoom,Color(1,.92,.65,.32*(1-c.age/.5)))
 	if navigation.action=="":return

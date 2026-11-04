@@ -1,0 +1,26 @@
+[
+  {
+    "name": "ui_smoke.gd",
+    "exit": 0,
+    "pass": true,
+    "seconds": 13.84
+  },
+  {
+    "name": "play_flow_tests.gd",
+    "exit": 0,
+    "pass": true,
+    "seconds": 30.12
+  },
+  {
+    "name": "selected_hud_tests.gd",
+    "exit": 0,
+    "pass": true,
+    "seconds": 6.25
+  },
+  {
+    "name": "build_sites_tests.gd",
+    "exit": 0,
+    "pass": true,
+    "seconds": 25.67
+  }
+]

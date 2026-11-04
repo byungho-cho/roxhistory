@@ -53,8 +53,8 @@ func run_tests() -> void:
 	await snap("03-region")
 	app.start_region()
 	await process_frame
-	check(app.screen == "play" and app.modal,"New game shows quest introduction")
-	await snap("04-quest-intro")
+	check(app.screen == "play" and not app.modal,"New game enters play directly without introduction modal")
+	await snap("04-direct-play")
 	app.close_modal()
 	var intro: Dictionary = app.model.state.duplicate(true)
 	intro.intro_seen = true
@@ -65,7 +65,6 @@ func run_tests() -> void:
 	await create_timer(0.15).timeout
 	check(app.world.player.position.x > before.x,"Touch joystick moves player")
 	check(app.joystick.finger == 0,"Joystick owns first finger")
-	app.actions_expanded=true
 	for i in 4:await process_frame
 	var journal: Control = app.stage.get_node("Actions/JournalButton")
 	await press(journal,1)

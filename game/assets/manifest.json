@@ -686,5 +686,12 @@
     "bytes": 2150050,
     "sha256": "f8618295c9e5ed507ab73d4e3a9391bb37cd4e7f8c09fd63a482723870923bff",
     "source": "Selected project concept 18; reference branch cd6a2dc59613efd05c9cd15240386f3ba44c68c1. Runtime uses only the pouch rectangle through AtlasTexture; no external-game assets."
+  },
+  {
+    "path": "game/assets/ui/s40000/approved-option3-reference.png",
+    "bytes": 2415103,
+    "sha256": "cbacdaf4d9eec5d8bdd6d88b22d737627a626e09f358bd3babf5cbcafdadb1d6",
+    "source": "Approved Figma option3 node 702:334/335, original retained; pedestal UV region (832,852,42,14)",
+    "license": "User-approved project artwork, reused without generation"
   }
 ]

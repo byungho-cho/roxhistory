@@ -9,7 +9,7 @@ func snap(label:String)->void:
 func run()->void:
 	app=load("res://scenes/main.tscn").instantiate();root.add_child(app);await frames(3)
 	app.start_region();app.close_modal();await frames(90);await snap("initial")
-	app.actions_expanded=true;await frames(5);await snap("expanded");app.actions_expanded=false
+	await frames(5);await snap("menu")
 	for i in 2:
 		app.model.gather("wood_1");app.model.gather("stone_1");app.model.build()
 	app.model.state.homes[0].style=1;app.model.state.homes[1].style=2;app.world.refresh()

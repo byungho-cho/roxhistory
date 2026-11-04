@@ -3,6 +3,8 @@ extends RefCounted
 
 static var data: Dictionary = {}
 const HOME_SITES := [Vector2(1145,625),Vector2(1390,810),Vector2(1060,1030)]
+# HOME_SITES remains the immutable mapping for old saves without a site field.
+const BUILD_SITES := [Vector2(1170,760),Vector2(1510,830),Vector2(1080,1150),Vector2(500,640),Vector2(350,1240),Vector2(1780,1230)]
 const HOME_GOAL := 3
 
 static func get_data() -> Dictionary:

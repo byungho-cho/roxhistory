@@ -36,12 +36,34 @@ func valid(s: Variant) -> bool:
 		return false
 	if s.has("homes"):
 		if not s.homes is Array or s.homes.size() > DemoConfig.HOME_GOAL: return false
+		var occupied_sites:=[]
+		var home_ids:=[]
+		var legacy_slots:=[]
 		for home in s.homes:
 			if not home is Dictionary or not home.get("claimed") is bool: return false
+			if home.has("uid"):
+				if not home.uid is String or home.uid.is_empty() or home.uid in home_ids:return false
+				home_ids.append(home.uid)
+			if home.has("legacy_slot"):
+				var slot:Variant=home.legacy_slot
+				if not (slot is int or slot is float) or slot!=int(slot) or slot<0 or slot>=DemoConfig.HOME_SITES.size() or slot in legacy_slots:return false
+				legacy_slots.append(slot)
+			if home.has("site"):
+				var id:Variant=home.site
+				if not (id is int or id is float) or id!=int(id) or id<0 or id>=DemoConfig.BUILD_SITES.size() or int(id) in occupied_sites:return false
+				occupied_sites.append(int(id))
+			if home.has("cost"):
+				if not home.cost is Dictionary:return false
+				for kind in ["wood","stone"]:
+					var amount:Variant=home.cost.get(kind)
+					if not (amount is int or amount is float) or amount!=int(amount) or amount<0 or amount>10000:return false
 			var style: Variant = home.get("style")
 			if not (style is int or style is float) or style != int(style) or style < 0 or style > 2: return false
 		if s.built != (s.homes.size()>0): return false
 		if not s.homes.is_empty() and s.reward_claimed != s.homes[0].claimed: return false
+	if s.has("home_serial"):
+		var serial:Variant=s.home_serial
+		if not (serial is int or serial is float) or serial!=int(serial) or serial<0:return false
 	var allowed := {}
 	for n in DemoConfig.get_data().nodes:
 		allowed[n.id] = n.charges

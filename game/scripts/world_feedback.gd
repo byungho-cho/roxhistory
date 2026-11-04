@@ -147,11 +147,19 @@ func _draw() -> void:
 		var tip := at+Vector2(0,-65+sin(pulse*3)*3)
 		draw_colored_polygon(PackedVector2Array([tip,tip+Vector2(-8,-10),tip+Vector2(8,-10)]),Color("ffe5aa"))
 	if activity == "build":
-		var p: Vector2 = world.site.position
-		for i in 9:
-			var t := fposmod(pulse*0.65+i/9.0,1.0)
+		var p: Vector2 = preview.position
+		draw_set_transform(p+Vector2(0,-35),0,Vector2(1,.40))
+		draw_arc(Vector2.ZERO,156,0,TAU,64,Color(1,.79,.32,.6),4,true)
+		draw_set_transform(Vector2.ZERO)
+		for shaft in 7:
+			var x:float=sin(shaft*2.4)*125
+			var alpha:float=(.12+.045*sin(pulse*2+shaft))*smoothstep(0,.12,preview_progress)
+			var base:=p+Vector2(x,-25)
+			draw_colored_polygon(PackedVector2Array([base+Vector2(-13,0),base+Vector2(13,0),base+Vector2(5,-160),base+Vector2(-5,-160)]),Color(1,.82,.32,alpha))
+		for i in 14:
+			var t := fposmod(pulse*0.65+i/14.0,1.0)
 			var at := p+Vector2(sin(i*2.4)*80,-35-t*65)
-			draw_circle(at,12+t*18,Color(0.88,0.70,0.42,sin(t*PI)*0.28))
+			draw_circle(at,19+t*25,Color(0.93,0.77,0.50,sin(t*PI)*0.32))
 		for i in 6:
 			var t := fposmod(pulse*0.6+i/6.0,1.0)
 			draw_circle(p+Vector2(sin(i*2.4)*90,-25-t*110),2.5,Color(1,0.83,0.35,sin(t*PI)*0.65))
@@ -175,6 +183,6 @@ func _draw() -> void:
 		draw_string_outline(font,at,n.text,HORIZONTAL_ALIGNMENT_LEFT,-1,28,3,Color(0.18,0.12,0.06,alpha))
 		draw_string(font,at,n.text,HORIZONTAL_ALIGNMENT_LEFT,-1,28,Color(1,0.94,0.75,alpha))
 	if celebration > 0:
-		draw_set_transform(celebration_point,0,Vector2(1,0.45))
+		draw_set_transform(celebration_point+Vector2(0,-35),0,Vector2(1,0.45))
 		draw_arc(Vector2.ZERO,115+(1.5-celebration)*35,0,TAU,64,Color(1,0.9,0.61,celebration/1.5),5,true)
 		draw_set_transform(Vector2.ZERO)

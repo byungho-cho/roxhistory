@@ -14,8 +14,19 @@ var mouse_last:=Vector2.ZERO
 var mouse_dragging:=false
 var mouse_can_pan:=false
 var panning:=false
+var hold_at:=Vector2.INF
+var hold_time:=0.0
+func _process(delta:float)->void:
+	if not hold_at.is_finite():return
+	if app.modal or not app.application_active or pinching or panning or mouse_dragging:hold_at=Vector2.INF;return
+	hold_time+=delta
+	if hold_time>=0.65:
+		var at:=hold_at
+		hold_at=Vector2.INF
+		app.request_demolition(at)
 func _init(owner_app: Node) -> void: app=owner_app
 func clear() -> void:
+	hold_at=Vector2.INF;hold_time=0.0
 	mouse_start=Vector2.INF
 	mouse_dragging=false;panning=false
 	touches.clear();pinching=false;blocked=false
@@ -41,25 +52,30 @@ func _input(event: InputEvent) -> void:
 	if app.screen!="play" or not is_instance_valid(app.world) or not app.application_active: return
 	if event is InputEventMouseButton and not OS.has_feature("android"):
 		if event.ctrl_pressed and event.pressed and event.button_index in [MOUSE_BUTTON_WHEEL_UP,MOUSE_BUTTON_WHEEL_DOWN] and not ui_hit(event.position):
-			app.cancel_task();app.world.player.zoom_at(event.position,app.world.player.zoom_factor*(1.12 if event.button_index==MOUSE_BUTTON_WHEEL_UP else 1.0/1.12));get_viewport().set_input_as_handled()
+			app.navigation.cancel();app.world.player.zoom_at(event.position,app.world.player.zoom_factor*(1.12 if event.button_index==MOUSE_BUTTON_WHEEL_UP else 1.0/1.12));get_viewport().set_input_as_handled()
 		elif event.button_index==MOUSE_BUTTON_LEFT:
 			if event.pressed:
 				mouse_start=event.position if not ui_hit(event.position) else Vector2.INF
+				hold_at=mouse_start;hold_time=0.0
 				mouse_last=event.position;mouse_can_pan=not app.world.interaction_at(event.position)
 			else:
+				hold_at=Vector2.INF
 				if not mouse_dragging and mouse_start.is_finite() and mouse_start.distance_to(event.position)<12:app.world_tap(event.position)
 				if mouse_dragging:blocked=false
 				mouse_dragging=false
 				mouse_start=Vector2.INF
 	if event is InputEventMouseMotion and mouse_start.is_finite() and mouse_can_pan and app.world.player.can_pan():
 		if mouse_start.distance_to(event.position)>12 or mouse_dragging:
-			if not mouse_dragging:app.cancel_task();mouse_last=mouse_start
+			if not mouse_dragging:app.navigation.cancel();mouse_last=mouse_start
 			mouse_dragging=true;blocked=true
 			app.world.player.pan_camera(event.position-mouse_last);get_viewport().set_input_as_handled()
 		mouse_last=event.position
+	if event is InputEventMouseMotion and hold_at.is_finite() and hold_at.distance_to(event.position)>12:hold_at=Vector2.INF
 	if event is InputEventScreenTouch:
 		if event.pressed:
 			touches[event.index]={"at":event.position,"start":event.position,"ui":ui_hit(event.position),"moved":false,"pan":not app.world.interaction_at(event.position)}
+			hold_at=event.position if touches.size()==1 and not ui_hit(event.position) else Vector2.INF
+			hold_time=0.0
 			var world_fingers: Array=[]
 			var has_ui:=false
 			for key in touches:
@@ -73,12 +89,13 @@ func _input(event: InputEvent) -> void:
 				if OS.has_feature("android") and app.test_mode: print("PLAY_PINCH_BEGIN ",start_zoom)
 				var midpoint: Vector2=(touches[world_fingers[0]].at+touches[world_fingers[1]].at)*0.5
 				anchor_world=get_viewport().get_canvas_transform().affine_inverse()*midpoint
-				app.cancel_task();app.joystick.clear();app.world.player.direction=Vector2.ZERO
+				app.navigation.cancel();app.joystick.clear();app.world.player.direction=Vector2.ZERO
 				app.world.player.cancel_camera_guide()
 				app.world.player.camera.position_smoothing_enabled=false
 			if touches.size()>2 and pinching:
 				pinching=false;app.world.player.camera.position_smoothing_enabled=true
 		else:
+			hold_at=Vector2.INF
 			if touches.has(event.index) and not blocked:
 				var finger:Dictionary=touches[event.index]
 				if not finger.ui and not finger.moved and finger.start.distance_to(event.position)<12:app.world_tap(event.position)
@@ -90,12 +107,13 @@ func _input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 			if touches.is_empty(): blocked=false;panning=false
 	elif event is InputEventScreenDrag and touches.has(event.index):
+		if hold_at.is_finite() and hold_at.distance_to(event.position)>12:hold_at=Vector2.INF
 		var last:Vector2=touches[event.index].at
 		var was_moved:bool=touches[event.index].moved
 		if touches[event.index].start.distance_to(event.position)>12:touches[event.index].moved=true
 		touches[event.index].at=event.position
 		if not pinching and (not blocked or panning) and touches.size()==1 and not touches[event.index].ui and touches[event.index].pan and touches[event.index].moved and app.world.player.can_pan():
-			if not was_moved:app.cancel_task();last=touches[event.index].start
+			if not was_moved:app.navigation.cancel();last=touches[event.index].start
 			blocked=true;panning=true;app.world.player.pan_camera(event.position-last)
 		if pinching and touches.size()==2:
 			var pair:=touches.values()

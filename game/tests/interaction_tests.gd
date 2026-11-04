@@ -51,7 +51,7 @@ func run() -> void:
 	app.gather_action(); await wait_work(); await frames(2)
 	check(app.model.state.stone == 1 and fx.events.count("credit:stone") == 1,"Stone credits once")
 	await snap("stone-credit")
-	p.position = Vector2(1145,695); await frames(4)
+	p.position = app.world.site.position+Vector2(0,65); await frames(4)
 	app.build_action()
 	await frames(25)
 	check(fx.preview.visible and fx.preview_progress > 0.1,"Construction grows visibly during work")

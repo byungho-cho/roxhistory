@@ -1,0 +1,43 @@
+{
+  "candidates": [
+    {
+      "arrived": true,
+      "at": "(1170.0, 760.0)",
+      "id": 0,
+      "segments": 4
+    },
+    {
+      "arrived": true,
+      "at": "(1510.0, 830.0)",
+      "id": 1,
+      "segments": 16
+    },
+    {
+      "arrived": true,
+      "at": "(1080.0, 1150.0)",
+      "id": 2,
+      "segments": 14
+    },
+    {
+      "arrived": true,
+      "at": "(500.0, 640.0)",
+      "id": 3,
+      "segments": 28
+    },
+    {
+      "arrived": true,
+      "at": "(350.0, 1240.0)",
+      "id": 4,
+      "segments": 34
+    },
+    {
+      "arrived": true,
+      "at": "(1780.0, 1230.0)",
+      "id": 5,
+      "segments": 28
+    }
+  ],
+  "checks": 61,
+  "failed": [],
+  "runtime": "Native Godot physics/navigation/save + synthetic input; not physical Android"
+}

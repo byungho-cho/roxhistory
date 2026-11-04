@@ -48,7 +48,7 @@ func run()->void:
 	var box:Rect2=app.world.reward_marker_rect(0)
 	check(box.get_center().x>app.world.homes[0].position.x,"Reward bubble sits right of hut")
 	check(app.world.reward_hit(0,box.get_center()),"Offset bubble is inside reward touch target")
-	app.actions_expanded=true;await process_frame;await snap("reward-menu")
+	await process_frame;await snap("reward-menu")
 	app.world_tap(app.world.get_global_transform_with_canvas()*box.get_center())
 	app.world_tap(app.world.get_global_transform_with_canvas()*box.get_center())
 	check(app.model.state.tokens==10 and not app.model.reward_pending(0),"Bubble double tap claims once")

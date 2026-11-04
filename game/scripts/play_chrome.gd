@@ -5,12 +5,13 @@ var flights: Array[Dictionary]=[]
 var pulse := {"wood":0.0,"stone":0.0,"tokens":0.0}
 var styles: Dictionary={}
 var portrait: Texture2D
+# Original portrait pixels, clipped to the hair/shoulders instead of its baked gold ring.
+const PORTRAIT_OUTLINE=[Vector2(28,103),Vector2(29,77),Vector2(40,57),Vector2(53,43),Vector2(70,34),Vector2(82,22),Vector2(100,27),Vector2(118,23),Vector2(142,37),Vector2(157,53),Vector2(157,73),Vector2(170,90),Vector2(171,116),Vector2(162,140),Vector2(147,153),Vector2(156,166),Vector2(153,177),Vector2(132,186),Vector2(100,186),Vector2(68,179),Vector2(47,167),Vector2(61,152),Vector2(66,141),Vector2(49,130),Vector2(43,118),Vector2(33,120)]
 var reveal := 0.0
 var resource_alpha := .75
 var displayed_tokens := 0.0
 var token_target := 0.0
 var last_map_position := Vector2.INF
-var profile_fade: GradientTexture2D
 func _init(owner_app: Node) -> void: app=owner_app
 func _ready() -> void:
 	displayed_tokens=float(app.model.state.tokens);token_target=displayed_tokens
@@ -18,13 +19,11 @@ func _ready() -> void:
 	app.model.changed.connect(queue_redraw)
 	resized.connect(queue_redraw)
 	mouse_filter=Control.MOUSE_FILTER_IGNORE
-	profile_fade=GradientTexture2D.new();profile_fade.width=304;profile_fade.height=82
-	profile_fade.gradient=Gradient.new();profile_fade.gradient.offsets=PackedFloat32Array([0,.7,1]);profile_fade.gradient.colors=PackedColorArray([Color(.141,.114,.075,.85),Color(.141,.114,.075,.72),Color(.141,.114,.075,0)])
 	if ResourceLoader.exists("res://assets/ui/s40000/portrait.png"): portrait=load("res://assets/ui/s40000/portrait.png")
 func slot(kind: String) -> Rect2:
 	var i:int=["wood","stone","tokens"].find(kind)
-	if app.w<app.h:return Rect2(Vector2(app.safe.x+i*70,app.safe.y+66),Vector2(68,36))
-	return Rect2(Vector2(app.w-app.safe.x-330+i*70,app.safe.y+5),Vector2(68,36))
+	if app.w<app.h:return Rect2(Vector2(app.safe.x+i*100,app.safe.y+66),Vector2(96,36))
+	return Rect2(Vector2(app.w-app.safe.x-420+i*100,app.safe.y+5),Vector2(96,36))
 func gained(kind:String,at:Vector2,delay:float=0.0) -> void:
 	reveal=5.0
 	flights.append({"kind":kind,"world":at,"age":-delay})
@@ -64,9 +63,12 @@ func _draw() -> void:
 	if not is_instance_valid(app.world) or app.model.state.is_empty(): return
 	var font:=DemoArt.theme().default_font
 	var origin: Vector2=app.safe
-	draw_texture_rect(profile_fade,Rect2(origin+Vector2(32,3),Vector2(178,48)),false)
 
-	if portrait:draw_texture_rect(portrait,Rect2(origin+Vector2(-2,-2),Vector2(58,58)),false)
+	if portrait:
+		var silhouette:=PackedVector2Array();var portrait_uv:=PackedVector2Array()
+		for point in PORTRAIT_OUTLINE:
+			silhouette.append(origin+Vector2(-2,-2)+point*58.0/200.0);portrait_uv.append(point/200.0)
+		draw_colored_polygon(silhouette,Color.WHITE,portrait_uv,portrait)
 
 	draw_string(font,origin+Vector2(62,22),"새벽",HORIZONTAL_ALIGNMENT_LEFT,138,17,Color("fff1d4"))
 	draw_string(font,origin+Vector2(62,41),"정착",HORIZONTAL_ALIGNMENT_LEFT,32,12,Color("fff1d4"))
@@ -74,11 +76,10 @@ func _draw() -> void:
 	if app.model.built_count()>0:frame(Rect2(origin+Vector2(101,33),Vector2(95*app.model.built_count()/3.0,8)),Color("8ac644"),Color(0,0,0,0))
 	for key in ["wood","stone","tokens"]:
 		var rect:=slot(key);var beat:float=pulse.get(key,0.0)
-		frame(Rect2(rect.position+Vector2(11,5),Vector2(55,27)),Color(.10,.12,.07,resource_alpha*.83),Color(.85,.71,.44,resource_alpha*.18))
-		draw_line(rect.position+Vector2(23,7),rect.position+Vector2(57,7),Color(1,.93,.71,.22*resource_alpha),1,true)
+		frame(Rect2(rect.position+Vector2(11,5),Vector2(84,27)),Color(0,0,0,resource_alpha*.68),Color.TRANSPARENT)
 		var extent:=28.0+beat*4
 		draw_texture_rect(DemoArt.icon(key),Rect2(rect.position+Vector2(3,3),Vector2(extent,extent)),false,Color(1,1,1,resource_alpha))
-		draw_string(font,rect.position+Vector2(34,25),str(int(displayed_tokens)) if key=="tokens" else str(int(app.model.state[key])),HORIZONTAL_ALIGNMENT_LEFT,32,16,Color(1,.98,.90,resource_alpha))
+		draw_string(font,rect.position+Vector2(34,25),str(int(displayed_tokens)) if key=="tokens" else str(int(app.model.state[key])),HORIZONTAL_ALIGNMENT_LEFT,62,15,Color(1,.98,.90,resource_alpha))
 	var center:=Vector2(app.w-app.safe.x-50,app.safe.y+50)
 	draw_circle(center+Vector2(1,3),53,Color(.15,.10,.04,.20))
 	draw_circle(center,51,Color("49321e"))

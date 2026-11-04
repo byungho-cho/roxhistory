@@ -40,13 +40,10 @@ func run()->void:
 			check(p.test_move(pose,Vector2.ZERO,null,.08,true),"Physical flank still blocked, style/side "+str(style)+str(side))
 	hut.set_hut_style(0)
 	for size in [Vector2i(1280,720),Vector2i(896,370),Vector2i(816,616)]:
-		root.size=size;await frames(4);app.actions_expanded=true;await frames(4)
-		var toggle:Rect2=app.action_toggle.get_global_rect()
-		var arrow:Rect2=app.stage.get_node("ExpandActions").get_global_rect()
-		check(not toggle.intersects(arrow),"Toggle/arrow touch areas separate "+str(size))
-		for b in app.action_row.get_children():
-			check(not b.get_global_rect().intersects(toggle),"Menu action touch does not overlap fold "+b.text+str(size))
-		check(toggle.size.x>=64 and arrow.size.x>=44,"Usable action targets "+str(size))
+		root.size=size;await frames(4);await frames(4)
+		check(app.action_row.visible and app.action_row.get_child_count()==5,"Five persistent actions "+str(size))
+		for button in app.action_row.get_children():
+			check(button.size.x>=44 and button.size.y>=44,"Usable action target "+button.text+str(size))
 		check(app.objective.get_parent().size.y==58,"Compact expanded quest "+str(size))
 		app.toggle_quest();check(app.objective.text.contains("/3채"),"Collapsed quest retains meaningful count");app.toggle_quest()
 		await RenderingServer.frame_post_draw
