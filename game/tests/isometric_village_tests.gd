@@ -17,6 +17,7 @@ func run()->void:
 	for a in app.world.animals:a.set_physics_process(false)
 	check(app.world.homes.size()==DemoConfig.MAX_RESIDENT_HOMES,"Resident pool matches capacity")
 	check(not app.menu_backdrop.visible,"Round menu has no common background")
+	for resident in app.world.residents:check(resident.collision_layer==0,"Absent family has no invisible collision")
 	check(app.world.get_node_or_null("WorldAmbient")==null or true,"World starts")
 	for child in app.world.get_children():
 		if child is WorldAmbient:check(child.school.is_empty(),"Fish omitted")

@@ -198,6 +198,7 @@ func refresh() -> void:
 		resource_labels[n.id].text = "%s %d/%d" % ["나무" if n.kind == "wood" else "돌",int(n.charges)-int(model.state.depleted.get(n.id,0)),int(n.charges)]
 	for resident in residents:
 		resident.visible=model.state.get("family_joined",false) or model.family_available()
+		resident.collision_layer=1 if resident.visible else 0
 		resident.set_physics_process(model.state.get("family_joined",false))
 	var saved_homes:=model.homes()
 	for i in homes.size():
