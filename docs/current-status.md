@@ -1,6 +1,6 @@
 # 현재 통합 배포 작업 · 2026-11-04
 
-v0.1.30/code31: [통합 검증 보고](shared-reports/2026-11-04-release-review/report.md). 30/30 회귀·Android 업데이트/저장/보상 검증 통과. PC 대기 및 이미지 접근 보류 해소. 공개 배포 확정 정보는 최신 보고서를 따른다. 아래 이전 버전 기록은 이력이다.
+v0.1.30/code31: [통합 검증 보고](shared-reports/2026-11-04-release-review/report.md). 30/30 회귀·Android 업데이트/저장/보상 검증 통과. PC 대기 및 이미지 접근 보류 해소. 공개 배포 완료. [APK 직접 다운로드](https://github.com/byungho-cho/roxhistory/releases/download/v0.1.30/RoxHistory-0.1.30-20261104-090450.apk). 소스 `7340f8efae407cfdba4226154b3e5b015384d842`. 공개 다운로드 SHA256 일치 확인. 아래 이전 버전 기록은 이력이다.
 
 # RoxHistory 현재 개발 현황
 

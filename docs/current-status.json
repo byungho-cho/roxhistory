@@ -1,22 +1,25 @@
 {
   "updatedAt": "2026-11-04",
   "timezone": "Asia/Seoul",
-  "sourceMain": "54fef1878bffec564bd02d1bcc1011b181e6738f",
+  "sourceMain": "7340f8efae407cfdba4226154b3e5b015384d842",
   "latestRelease": {
-    "tag": "v0.1.27",
-    "url": "https://github.com/byungho-cho/roxhistory/releases/tag/v0.1.27",
-    "artifacts": "Single APK, final source SHA and SHA256 in release metadata"
+    "tag": "v0.1.30",
+    "url": "https://github.com/byungho-cho/roxhistory/releases/tag/v0.1.30",
+    "apk": "https://github.com/byungho-cho/roxhistory/releases/download/v0.1.30/RoxHistory-0.1.30-20261104-090450.apk",
+    "sha256": "c717797538bf9e330ecf513bf050b5b2f05d2993e97776ec226d8aeb2818b45b",
+    "source": "7340f8efae407cfdba4226154b3e5b015384d842",
+    "bytes": 187207781
   },
   "ci": {
-    "testedSha": "8bcb9c59759daec1c5593081d7d52c1d8b440f23",
-    "url": "https://github.com/byungho-cho/roxhistory/actions/runs/41633404866",
+    "testedSha": "45fb50f3157dfbc6ce435c0bae9855fb0a3f64f7",
+    "url": "https://github.com/byungho-cho/roxhistory/actions/runs/41739769603",
     "status": "success",
-    "run": 41633404866
+    "run": 41739769603
   },
   "ciChecks": null,
   "localRelatedChecks": null,
-  "runtimeVersion": "0.1.27",
-  "versionCode": 28,
+  "runtimeVersion": "0.1.30",
+  "versionCode": 31,
   "residentAppearanceApproved": 8,
   "residentFigmaRegistered": 8,
   "residentRuntimeImplemented": 2,
@@ -27,7 +30,7 @@
     "outer-range stationary tool contact and gait art review",
     "physical Android/fold testing, direct listening and long-run performance"
   ],
-  "verificationBasis": "27 native suites, 134 assets, 16 audio files; Android emulator actual gather/build/reward/regrowth/reload; physical device and final art acceptance pending",
+  "verificationBasis": "30 native suites,137 asset hashes,16 audio files;Android15 emulator update/save/gather/build/reward/reload;physical device/direct listening unverified",
   "resident3DSourceArchive": {
     "count": 5,
     "path": "design/assets/residents-3d/reference-v001",
@@ -40,9 +43,9 @@
     "inspection": "GLB header/JSON and source/copy hashes; not rendered or imported in game"
   },
   "interactionReport": "docs/shared-reports/2026-11-03-interaction-polish/report.md",
-  "release": "https://github.com/byungho-cho/roxhistory/releases/tag/v0.1.27",
-  "sourceMainMeaning": "v0.1.27 code merge; final docs-inclusive build commit is in release metadata",
-  "localSuitesPassed": 27,
+  "release": "https://github.com/byungho-cho/roxhistory/releases/tag/v0.1.30",
+  "sourceMainMeaning": "Exact merged main APK build source; later commits may update documentation only",
+  "localSuitesPassed": 30,
   "walkResidentsReport": "docs/shared-reports/2026-11-03-walk-residents-audio/report.md",
   "pcReview": {
     "version": "0.1.28",
@@ -60,6 +63,7 @@
     "pcReviewRequired": false,
     "version": "0.1.30",
     "versionCode": 31,
-    "status": "30/30 suites and Android candidate passed; merge and public APK pending"
+    "status": "Merged, original-signer APK publicly published and downloaded hash verified",
+    "merged": true
   }
 }

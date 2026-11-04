@@ -52,3 +52,17 @@ AtlasTexture `Rect2(796,211,196,177)`로 읽는다. 원본 해상도 유지. 메
 - 보행 지지/발높이 검사를 통과해도 방향별 3D 투영 발 미끄러짐이 완전히 해결됐다고 주장하지 않는다.
 - 실물 Android/폴드 터치, 직접 스피커·헤드폰 청취, 장시간 성능은 미검증이다.
 - 시각적 최종 수락은 사용자가 확인한다. 빌드·자동 검사 통과를 원화 일치 승인으로 간주하지 않는다.
+
+## 최종 공개 배포
+
+- 버전 **0.1.30 / code31**. [PR54](https://github.com/byungho-cho/roxhistory/pull/54).
+- 최종 APK 소스/main 병합 커밋: `7340f8efae407cfdba4226154b3e5b015384d842`. 병합된 main에서 재빌드했다.
+- [원격 CI](https://github.com/byungho-cho/roxhistory/actions/runs/41739769603) 통과.
+- [APK 한 파일 직접 다운로드](https://github.com/byungho-cho/roxhistory/releases/download/v0.1.30/RoxHistory-0.1.30-20261104-090450.apk). 크기 187207781 bytes.
+- SHA256 `c717797538bf9e330ecf513bf050b5b2f05d2993e97776ec226d8aeb2818b45b`. 공개 URL에서 다시 내려받아 크기·해시 일치 확인.
+- 병합 main APK 업데이트 설치/실행 및 보상 후 저장 유지 확인: [결과](evidence/final-main-install.json).
+- Android 지역 카드 배경 탭 유지·명시적 닫기·다른 지역 재선택을 확인: [유지](evidence/android-region-kept.png), [닫기](evidence/android-region-closed.png), [동삼동](evidence/android-region-reopened.png).
+- 두 번째 채집/건설/보상 반복도 추가 확인했다. 추가2채 각각1회 보상, 씨앗20. [원속도 영상](evidence/android-repeat.mp4).
+- 문서 후속 커밋은 배포 기록만 갱신하며 위 APK 빌드 소스와 구분한다.
+
+이전 공개 APK 1개는 새 APK의 공개 다운로드 검증 후 삭제했다. 소스 태그·보고서·원본 에셋은 보존했다. [정리 기록](evidence/old-apk-cleanup.json).
