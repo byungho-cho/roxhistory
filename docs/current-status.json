@@ -1,36 +1,37 @@
 {
-  "updatedAt": "2026-11-04",
+  "updatedAt": "2026-11-05",
   "timezone": "Asia/Seoul",
-  "sourceMain": "ec01c10517fd2b176e572119156e5d39dc9a3122",
+  "sourceMain": "9c31e7827e88c9db8e8293239583dcd4bb8ceb1e",
   "latestRelease": {
-    "sha256": "b0048f00445ac87b0b40e58aaf672fc87beb904829f83e8263767ab2de304a26",
-    "url": "https://github.com/byungho-cho/roxhistory/releases/tag/v0.1.32",
-    "tag": "v0.1.32",
-    "apk": "https://github.com/byungho-cho/roxhistory/releases/download/v0.1.32/RoxHistory-0.1.32-20261104-170605.apk",
-    "bytes": 189297451,
-    "source": "be561e84d6ad16aa8c44caed6f9bad15a6fbb41a"
+    "bytes": 196930124,
+    "sha256": "7f48a3d288094f7a7a4301958d81157d7e357bfe25da84c1e86e2124ce43dc82",
+    "url": "https://github.com/byungho-cho/roxhistory/releases/tag/v0.1.34",
+    "release_id": 434543892,
+    "source": "9c31e7827e88c9db8e8293239583dcd4bb8ceb1e",
+    "apk": "https://github.com/byungho-cho/roxhistory/releases/download/v0.1.34/RoxHistory-0.1.34-20261105-074925.apk",
+    "tag": "v0.1.34"
   },
   "ci": {
-    "testedSha": "d4f93a0d77e67964c328f4e2784ed8fa52820e4a",
-    "url": "https://github.com/byungho-cho/roxhistory/actions/runs/41822661709",
-    "run": 41822661709,
-    "status": "in_progress_at_windows_publication"
+    "testedSha": "fd563ffa009dfa4a071249f7583fad6909126e84",
+    "run": 41927751846,
+    "url": "https://github.com/byungho-cho/roxhistory/actions/runs/41927751846",
+    "status": "success"
   },
   "ciChecks": null,
   "localRelatedChecks": null,
-  "runtimeVersion": "0.1.33",
-  "versionCode": 34,
+  "runtimeVersion": "0.1.34",
+  "versionCode": 35,
   "residentAppearanceApproved": 8,
   "residentFigmaRegistered": 8,
   "residentRuntimeImplemented": 2,
   "residentConceptTarget": 10,
   "residentConceptRemaining": 2,
   "pending": [
-    "resident final adult anatomy, bare feet and approved art match",
-    "outer-range stationary tool contact and gait art review",
-    "physical Android/fold testing, direct listening and long-run performance"
+    "Six total provisionally includes chief1 + resident5; confirmation pending",
+    "Dirt road/foundation material and menu appearance still differ from concept",
+    "Physical device touch, Android full gameplay, direct listening and long-run performance unverified"
   ],
-  "verificationBasis": "36 Windows native suites; 141 assets; exported EXE start and copied save preserved. Android v33/physical device/direct listening not tested.",
+  "verificationBasis": "Windows current village48/state349; assets146; Android15 read-only AVD update/start/legacy fixture migration and stable reload. Not a full historical regression.",
   "resident3DSourceArchive": {
     "count": 5,
     "path": "design/assets/residents-3d/reference-v001",
@@ -43,9 +44,9 @@
     "inspection": "GLB header/JSON and source/copy hashes; not rendered or imported in game"
   },
   "interactionReport": "docs/shared-reports/2026-11-03-interaction-polish/report.md",
-  "release": "https://github.com/byungho-cho/roxhistory/releases/tag/v0.1.32",
-  "sourceMainMeaning": "Latest merged runtime source. Android v0.1.32 build source remains in latestRelease.source; v0.1.33 is Windows only.",
-  "localSuitesPassed": 36,
+  "release": "https://github.com/byungho-cho/roxhistory/releases/tag/v0.1.34",
+  "sourceMainMeaning": "Merged runtime and final APK source.",
+  "localSuitesPassed": 2,
   "walkResidentsReport": "docs/shared-reports/2026-11-03-walk-residents-audio/report.md",
   "pcReview": {
     "version": "0.1.33",
@@ -58,9 +59,9 @@
     "merged": true
   },
   "activeWork": {
-    "version": "0.1.33",
-    "status": "Windows EXE published and download hash verified; APK on user hold",
-    "report": "docs/shared-reports/2026-11-04-build-preview/report.md",
+    "version": "0.1.34",
+    "status": "APK published and public hash verified; user mobile visual review pending",
+    "report": "docs/shared-reports/2026-11-05-isometric-village/README.md",
     "merged": true
   },
   "latestWindows": {
@@ -71,5 +72,5 @@
     "source": "ec01c10517fd2b176e572119156e5d39dc9a3122",
     "sha256": "397fcce4f07b8afa1f19a878d260c1adee01e2f7cf7610b5fffd7f3cff0e30a9"
   },
-  "apkPolicy": "On hold until explicit user request; preserve existing v0.1.32 APK."
+  "apkPolicy": "Explicitly requested APK v0.1.34 released; future Windows executables local only."
 }
