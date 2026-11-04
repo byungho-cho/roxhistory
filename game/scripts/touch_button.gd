@@ -17,7 +17,7 @@ func enable_art_feedback() -> void:
 func set_working(value: bool) -> void:
 	if working==value: return
 	working=value
-	if has_node("FigmaSkin"):return
+	if has_node("FigmaSkin") or get_meta("permanent_action",false):return
 	if value:
 		set_meta("resting_disabled_style",get_theme_stylebox("disabled"))
 		var style:=DemoArt.button_style(true)

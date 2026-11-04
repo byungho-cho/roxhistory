@@ -10,7 +10,6 @@ var resource_alpha := .75
 var displayed_tokens := 0.0
 var token_target := 0.0
 var last_map_position := Vector2.INF
-var profile_fade: GradientTexture2D
 func _init(owner_app: Node) -> void: app=owner_app
 func _ready() -> void:
 	displayed_tokens=float(app.model.state.tokens);token_target=displayed_tokens
@@ -18,13 +17,11 @@ func _ready() -> void:
 	app.model.changed.connect(queue_redraw)
 	resized.connect(queue_redraw)
 	mouse_filter=Control.MOUSE_FILTER_IGNORE
-	profile_fade=GradientTexture2D.new();profile_fade.width=304;profile_fade.height=82
-	profile_fade.gradient=Gradient.new();profile_fade.gradient.offsets=PackedFloat32Array([0,.7,1]);profile_fade.gradient.colors=PackedColorArray([Color(.141,.114,.075,.85),Color(.141,.114,.075,.72),Color(.141,.114,.075,0)])
 	if ResourceLoader.exists("res://assets/ui/s40000/portrait.png"): portrait=load("res://assets/ui/s40000/portrait.png")
 func slot(kind: String) -> Rect2:
 	var i:int=["wood","stone","tokens"].find(kind)
-	if app.w<app.h:return Rect2(Vector2(app.safe.x+i*70,app.safe.y+66),Vector2(68,36))
-	return Rect2(Vector2(app.w-app.safe.x-330+i*70,app.safe.y+5),Vector2(68,36))
+	if app.w<app.h:return Rect2(Vector2(app.safe.x+i*100,app.safe.y+66),Vector2(96,36))
+	return Rect2(Vector2(app.w-app.safe.x-420+i*100,app.safe.y+5),Vector2(96,36))
 func gained(kind:String,at:Vector2,delay:float=0.0) -> void:
 	reveal=5.0
 	flights.append({"kind":kind,"world":at,"age":-delay})
@@ -64,7 +61,6 @@ func _draw() -> void:
 	if not is_instance_valid(app.world) or app.model.state.is_empty(): return
 	var font:=DemoArt.theme().default_font
 	var origin: Vector2=app.safe
-	draw_texture_rect(profile_fade,Rect2(origin+Vector2(32,3),Vector2(178,48)),false)
 
 	if portrait:draw_texture_rect(portrait,Rect2(origin+Vector2(-2,-2),Vector2(58,58)),false)
 
@@ -74,11 +70,10 @@ func _draw() -> void:
 	if app.model.built_count()>0:frame(Rect2(origin+Vector2(101,33),Vector2(95*app.model.built_count()/3.0,8)),Color("8ac644"),Color(0,0,0,0))
 	for key in ["wood","stone","tokens"]:
 		var rect:=slot(key);var beat:float=pulse.get(key,0.0)
-		frame(Rect2(rect.position+Vector2(11,5),Vector2(55,27)),Color(.10,.12,.07,resource_alpha*.83),Color(.85,.71,.44,resource_alpha*.18))
-		draw_line(rect.position+Vector2(23,7),rect.position+Vector2(57,7),Color(1,.93,.71,.22*resource_alpha),1,true)
+		frame(Rect2(rect.position+Vector2(11,5),Vector2(84,27)),Color(0,0,0,resource_alpha*.68),Color.TRANSPARENT)
 		var extent:=28.0+beat*4
 		draw_texture_rect(DemoArt.icon(key),Rect2(rect.position+Vector2(3,3),Vector2(extent,extent)),false,Color(1,1,1,resource_alpha))
-		draw_string(font,rect.position+Vector2(34,25),str(int(displayed_tokens)) if key=="tokens" else str(int(app.model.state[key])),HORIZONTAL_ALIGNMENT_LEFT,32,16,Color(1,.98,.90,resource_alpha))
+		draw_string(font,rect.position+Vector2(34,25),str(int(displayed_tokens)) if key=="tokens" else str(int(app.model.state[key])),HORIZONTAL_ALIGNMENT_LEFT,62,15,Color(1,.98,.90,resource_alpha))
 	var center:=Vector2(app.w-app.safe.x-50,app.safe.y+50)
 	draw_circle(center+Vector2(1,3),53,Color(.15,.10,.04,.20))
 	draw_circle(center,51,Color("49321e"))

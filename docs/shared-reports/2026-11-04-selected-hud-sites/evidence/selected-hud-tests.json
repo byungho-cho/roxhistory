@@ -1,0 +1,5 @@
+{
+  "checks": 145,
+  "failed": [],
+  "runtime": "Native Godot offscreen render and synthetic input, not physical Android"
+}

@@ -1,0 +1,5 @@
+{
+  "checks": 86,
+  "failed": [],
+  "runtime": "Windows Godot real mixer/render + synthetic input; not direct listening"
+}

@@ -65,7 +65,6 @@ func run_tests() -> void:
 	await create_timer(0.15).timeout
 	check(app.world.player.position.x > before.x,"Touch joystick moves player")
 	check(app.joystick.finger == 0,"Joystick owns first finger")
-	app.actions_expanded=true
 	for i in 4:await process_frame
 	var journal: Control = app.stage.get_node("Actions/JournalButton")
 	await press(journal,1)
