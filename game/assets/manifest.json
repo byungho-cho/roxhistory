@@ -753,5 +753,17 @@
     "bytes": 14432,
     "sha256": "992399652e3bc33d71984eca53fe32efac96e2f1cb3eb81b05bd8cb5fb56ec72",
     "source": "Figma 836:116"
+  },
+  {
+    "path": "game/assets/ui/review-v037/home-toggle.png",
+    "bytes": 10781,
+    "sha256": "e72a60b894335f7a10ab27851955437daedd69d9d71353bf52c3c4b15fb88ca0",
+    "source": "Figma 1024:39 composed home toggle export; original padding preserved"
+  },
+  {
+    "path": "game/assets/ui/review-v037/minimap-ring.png",
+    "bytes": 20386,
+    "sha256": "4731a8742d29d9d2aa664e1f32a263dc63b5f5a81b4e337d1eb1c56294eb8c28",
+    "source": "Figma 836:101 original gold ring / HUD 956:419"
   }
 ]

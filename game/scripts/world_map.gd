@@ -16,6 +16,7 @@ var mountain:TextureRect
 func _init(owner_app:Node)->void:app=owner_app
 func _ready()->void:
 	mouse_filter=Control.MOUSE_FILTER_IGNORE
+	texture_filter=CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	village=AssetCatalog.texture("WORLD-VILLAGE")
 	visible_fraction=1058.0/1536.0 # Alpha > 0.5 measured from approved WM-001.
 	terrain=AssetCatalog.texture("TERRAIN-VILLAGE")
@@ -41,7 +42,7 @@ func pan(delta:Vector2)->void:center-=delta/zoom;clamp_camera();queue_redraw()
 func accepts(at:Vector2)->bool:
 	return at.y>app.safe.y+110 and not Rect2(Vector2(app.w-app.safe.x-64,app.safe.y+112),Vector2(64,64)).has_point(at)
 func _input(event:InputEvent)->void:
-	if not app.application_active or app.modal:return
+	if not app.application_active or app.modal or app.map_transition_active:return
 	if event is InputEventMouseButton and not OS.has_feature("android"):
 		if event.ctrl_pressed and event.pressed and event.button_index in [MOUSE_BUTTON_WHEEL_UP,MOUSE_BUTTON_WHEEL_DOWN] and accepts(event.position):
 			zoom_at(event.position,zoom*(1.12 if event.button_index==MOUSE_BUTTON_WHEEL_UP else 1.0/1.12));get_viewport().set_input_as_handled()

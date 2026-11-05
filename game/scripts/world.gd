@@ -20,6 +20,7 @@ var animals: Array[WorldAnimal] = []
 var residents:Array[TrialResident]=[]
 var reward_pouch:AtlasTexture
 var reward_bubble:StyleBoxFlat
+var reward_markers:Node2D
 # Water visuals and physics share the shoreline traced on terrain.png.
 const SHORE = [Vector2(0,340),Vector2(170,285),Vector2(280,220),Vector2(370,130),Vector2(280,60)]
 const RIVER_POLYGON = [Vector2(0,155),Vector2(145,120),Vector2(260,70),Vector2(280,60),Vector2(370,130),Vector2(280,220),Vector2(170,285),Vector2(0,340)]
@@ -76,18 +77,14 @@ func _ready() -> void:
 		icon.position.y = -icon.texture.get_height()*icon.scale.y*0.5
 		if n.kind=="stone":icon.material=EnvironmentProp.stone_surface()
 		root.add_child(icon)
-		var contact_shadow:=Polygon2D.new()
-		var outline:=PackedVector2Array()
-		for k in 32: outline.append(Vector2(cos(k*TAU/32)*width*.48,sin(k*TAU/32)*9))
-		contact_shadow.polygon=outline;contact_shadow.color=SceneStyle.SHADOW
-		contact_shadow.position=Vector2(5,-5);contact_shadow.z_index=-1;root.add_child(contact_shadow)
 		var text := Label.new()
 		text.theme = DemoArt.theme()
-		text.add_theme_font_size_override("font_size",16)
+		text.add_theme_font_size_override("font_size",12)
 		text.add_theme_color_override("font_color",Color("fff2cf"))
 		text.add_theme_color_override("font_outline_color",Color("34251b"))
-		text.add_theme_constant_override("outline_size",6)
-		text.position = Vector2(-44,8)
+		text.add_theme_constant_override("outline_size",3)
+		text.size=Vector2(100,20);text.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
+		text.z_index=10;text.mouse_filter=Control.MOUSE_FILTER_IGNORE
 		root.add_child(text)
 		art_nodes[n.id] = root
 		resource_labels[n.id] = text
@@ -121,6 +118,9 @@ func _ready() -> void:
 	objectives=WorldObjectives.new(self);add_child(objectives)
 	feedback = WorldFeedback.new(self)
 	add_child(feedback)
+	reward_markers=Node2D.new();reward_markers.name="SeedRewards";reward_markers.z_index=12
+	add_child(reward_markers);reward_markers.draw.connect(draw_rewards)
+	model.changed.connect(reward_markers.queue_redraw)
 	add_child(WorldAmbient.new(self))
 	add_child(ResourceRegrowth.new(self))
 	model.changed.connect(refresh)
@@ -265,22 +265,26 @@ func _process(_delta: float) -> void:
 	if id != selected:
 		selected = id
 		queue_redraw()
-	for key in resource_labels: resource_labels[key].visible=key==selected
+	for key in resource_labels:
+		var text:Label=resource_labels[key]
+		var icon:Sprite2D=art_nodes[key].get_child(0)
+		# Keep the same readable screen size and gap for both rocks and trees.
+		text.scale=Vector2.ONE/player.camera.zoom.x
+		text.position=Vector2(-50*text.scale.x,icon.position.y-icon.texture.get_height()*icon.scale.y*.5-24*text.scale.y)
+		text.visible=art_nodes[key].visible
 
 func _draw() -> void:
 	if not is_instance_valid(player): return
-	for i in model.built_count():
-		if model.reward_pending(i):
-			var box:=reward_marker_rect(i)
-			var tail:=PackedVector2Array([box.position+Vector2(12,54),box.position+Vector2(2,78),box.position+Vector2(31,62)])
-			draw_colored_polygon(tail,reward_bubble.bg_color)
-			draw_polyline(tail,reward_bubble.border_color,2,true)
-			draw_style_box(reward_bubble,box)
-			draw_texture_rect(reward_pouch,Rect2(box.position+Vector2(7,7),Vector2(58,52)),false)
 	if show_candidates and model.built_count()<DemoConfig.MAX_RESIDENT_HOMES:
 		for id in DemoConfig.BUILD_SITES.size():
 			if not model.site_free(id):continue
 			draw_site(DemoConfig.BUILD_SITES[id],id==selected_site)
+
+func draw_rewards()->void:
+	for i in model.built_count():
+		if model.reward_pending(i):
+			# The transparent seed artwork owns its silhouette; no square backing.
+			reward_markers.draw_texture_rect(AssetCatalog.texture("UI-SEED"),reward_marker_rect(i),false)
 
 func draw_site(at:Vector2,chosen:bool)->void:
 	var id:=DemoConfig.BUILD_SITES.find(at)

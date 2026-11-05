@@ -25,6 +25,10 @@ var menu_expanded:=true
 var build_side:BuildSideMenu
 var menu_toggle:DemoButton
 var menu_backdrop:Panel
+var menu_tween:Tween
+var map_transition:ColorRect
+var map_tween:Tween
+var map_transition_active:=false
 var task_target := ""
 var task_site := -1
 var cancel_site_button:DemoButton
@@ -49,7 +53,7 @@ var chrome: PlayChrome
 var region_selection: RegionSelection
 var region_snapshot := {}
 var navigation: AutoTravel
-var action_row: HBoxContainer
+var action_row: Control
 var quest_expanded:=true
 var quest_arrow:Label
 var quest_accent:ColorRect
@@ -123,6 +127,9 @@ func clear_children(node: Node) -> void:
 		child.queue_free()
 
 func show_screen(next: String) -> void:
+	if menu_tween:menu_tween.kill()
+	if map_tween:map_tween.kill()
+	map_transition_active=false
 	world_map_open=false
 	cancel_build_preview()
 	var layout_size:=Vector2i(540,960) if get_window().size.x<get_window().size.y else Vector2i(960,540)
@@ -430,14 +437,14 @@ func play_hud() -> void:
 	var menu_width:=action_width*6+8*5+48
 	menu_backdrop=Panel.new();menu_backdrop.name="MenuBackdrop";menu_backdrop.mouse_filter=Control.MOUSE_FILTER_IGNORE;stage.add_child(menu_backdrop)
 	var capsule:=StyleBoxFlat.new();capsule.bg_color=Color(.33,.25,.12,.83);capsule.border_color=Color(.83,.68,.38,.9);capsule.set_border_width_all(2);capsule.set_corner_radius_all(30);capsule.shadow_color=Color(0,0,0,.2);capsule.shadow_size=3;menu_backdrop.add_theme_stylebox_override("panel",capsule)
-	action_row=HBoxContainer.new();action_row.name="Actions";action_row.add_theme_constant_override("separation",8);stage.add_child(action_row)
+	action_row=Control.new();action_row.name="Actions";action_row.mouse_filter=Control.MOUSE_FILTER_IGNORE;stage.add_child(action_row)
 	action_row.position=Vector2(w-safe.x-menu_width,h-safe.y-76);action_row.size=Vector2(menu_width,72)
 	if w<h:action_row.position.y=h-safe.y-220
 	for data in [["사냥","spear"],["채집","berries"],["제작","hammer"],["건설","hut"],["임무","scroll"],["가방","bag"]]:
 		var caption:String=data[0]
 		var callback:Callable=gather_action if caption=="채집" else construction_menu if caption=="건설" else quest_details if caption=="임무" else inventory_summary if caption=="가방" else func():toast("아직 준비 중인 기능입니다")
 		var b:=button(action_row,caption,callback,false,data[1]);b.custom_minimum_size=Vector2(action_width,72)
-		b.set_meta("permanent_action",false)
+		b.set_meta("permanent_action",true)
 		b.set_meta("auxiliary_action",caption!="건설")
 		if caption in ["사냥","제작"]:b.disabled=true;b.hint_text=caption+"은 아직 준비 중입니다"
 		b.icon=DemoArt.play_icon(data[1])
@@ -452,7 +459,7 @@ func play_hud() -> void:
 	menu_toggle=button(action_row,"‹",toggle_menu);menu_toggle.name="MenuToggle";menu_toggle.custom_minimum_size=Vector2(56,56);menu_toggle.size_flags_vertical=Control.SIZE_SHRINK_CENTER;menu_toggle.hint_text="보조 메뉴 펼침·접힘"
 	menu_toggle.icon=DemoArt.play_icon("expand");menu_toggle.expand_icon=true;menu_toggle.add_theme_constant_override("icon_max_width",54)
 	var circle:=StyleBoxEmpty.new()
-	for state in ["normal","hover","pressed"]:menu_toggle.add_theme_stylebox_override(state,circle)
+	for state in ["normal","hover","pressed","focus"]:menu_toggle.add_theme_stylebox_override(state,circle)
 	apply_menu_state()
 	build_side=BuildSideMenu.new(self);stage.add_child(build_side)
 	build_preview=BuildPreview.new(self);world.add_child(build_preview)
@@ -468,20 +475,35 @@ func play_hud() -> void:
 	chrome=PlayChrome.new(self);chrome.z_index=5;stage.add_child(chrome);chrome.size=Vector2(w,h)
 	stage.add_child(ConstructionProgress.new(self))
 	family=FamilyArrival.new(self);stage.add_child(family)
-	var map_hit:=button(stage,"",func():world.player.resume_camera());map_hit.name="RecenterCamera";map_hit.custom_minimum_size=Vector2.ZERO;map_hit.position=Vector2(w-safe.x-100,safe.y);map_hit.size=Vector2(100,100)
+	var map_hit:=button(stage,"",recenter_map);map_hit.name="RecenterCamera";map_hit.custom_minimum_size=Vector2.ZERO;map_hit.position=Vector2(w-safe.x-100,safe.y);map_hit.size=Vector2(100,100)
+	map_hit.hint_text="현재 위치로 지도 맞추기"
 	for state in ["normal","hover","pressed"]:map_hit.add_theme_stylebox_override(state,StyleBoxEmpty.new())
 	var portrait_hit:=button(stage,"",pause_game);portrait_hit.name="PortraitPause";portrait_hit.custom_minimum_size=Vector2.ZERO;portrait_hit.position=safe;portrait_hit.size=Vector2(58,58)
 	for state in ["normal","hover","pressed"]:portrait_hit.add_theme_stylebox_override(state,StyleBoxEmpty.new())
 	world_map=VillageWorldMap.new(self);stage.add_child(world_map);stage.move_child(world_map,0)
 	map_toggle=button(stage,"",toggle_world_map);map_toggle.icon=AssetCatalog.texture("UI-MAP");map_toggle.expand_icon=true;map_toggle.add_theme_constant_override("icon_max_width",48);map_toggle.custom_minimum_size=Vector2.ZERO;map_toggle.position=Vector2(w-safe.x-64,safe.y+112);map_toggle.size=Vector2(56,56)
-	for state in ["normal","hover","pressed"]:map_toggle.add_theme_stylebox_override(state,StyleBoxEmpty.new())
-	var face:=Panel.new();face.name="HomeFace";face.position=Vector2(10,10);face.size=Vector2(36,36);face.mouse_filter=Control.MOUSE_FILTER_IGNORE
-	var face_skin:=StyleBoxFlat.new();face_skin.bg_color=Color("573a20");face_skin.set_corner_radius_all(18);face.add_theme_stylebox_override("panel",face_skin);map_toggle.add_child(face)
-	picture(face,AssetCatalog.texture("UI-HOME"),Rect2(1,1,34,34));face.hide()
+	for state in ["normal","hover","pressed","focus"]:map_toggle.add_theme_stylebox_override(state,StyleBoxEmpty.new())
 	world_map_open=false
 	update_hud()
 
 func toggle_world_map()->void:
+	if modal or map_transition_active:return
+	map_transition_active=true;gestures.clear();world_map.clear_input()
+	world.player.direction=Vector2.ZERO;world.player.presentation_paused=true
+	map_transition=ColorRect.new();map_transition.name="MapCloudTransition"
+	map_transition.mouse_filter=Control.MOUSE_FILTER_STOP;map_transition.z_index=20
+	var clouds:=ShaderMaterial.new();clouds.shader=preload("res://shaders/cloud_transition.gdshader")
+	clouds.set_shader_parameter("aspect",w/h);map_transition.material=clouds
+	stage.add_child(map_transition);map_transition.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	map_tween=create_tween().set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	map_tween.tween_method(func(value:float):clouds.set_shader_parameter("coverage",value),0.0,1.0,.36)
+	map_tween.tween_callback(switch_map_scene)
+	map_tween.tween_method(func(value:float):clouds.set_shader_parameter("coverage",value),1.0,0.0,.44)
+	map_tween.tween_callback(func():
+		map_transition.queue_free();map_transition_active=false
+		world.player.presentation_paused=modal or not application_active)
+
+func switch_map_scene()->void:
 	world_map_open=not world_map_open
 	gestures.clear()
 	world_map.activate(world_map_open)
@@ -490,30 +512,57 @@ func toggle_world_map()->void:
 	action_row.visible=not world_map_open
 	objective.get_parent().visible=not world_map_open
 	family.bubble.visible=not world_map_open and model.family_available()
-	map_toggle.icon=AssetCatalog.texture("UI-MAP")
-	map_toggle.get_node("HomeFace").visible=world_map_open
+	map_toggle.icon=AssetCatalog.texture("UI-HOME-TOGGLE" if world_map_open else "UI-MAP")
+	if world_map_open:
+		var round_mask:=ShaderMaterial.new();round_mask.shader=preload("res://shaders/round_toggle.gdshader");map_toggle.material=round_mask
+	else:map_toggle.material=null
 	map_toggle.tooltip_text="마을로 돌아가기" if world_map_open else "월드맵 보기"
 	if world_map_open:
 		world.player.direction=Vector2.ZERO
 		cancel_build_preview()
 		context_panel.hide();task_bar.hide();cancel_site_button.hide()
+	chrome.queue_redraw()
+
+func recenter_map()->void:
+	if world_map_open:
+		world_map.center=Vector2.ZERO;world_map.clear_input();world_map.queue_redraw()
+	else:world.player.resume_camera()
+	chrome.queue_redraw()
 
 func toggle_menu()->void:
 	menu_expanded=not menu_expanded
-	apply_menu_state()
+	apply_menu_state(true)
 
-func apply_menu_state()->void:
+func apply_menu_state(animated:bool=false)->void:
 	if not is_instance_valid(action_row):return
-	for child in action_row.get_children():
-		if child.get_meta("auxiliary_action",false):child.visible=menu_expanded
+	if menu_tween:menu_tween.kill()
+	var button_width:=64.0 if w/h>2.2 else 60.0
+	var stride:=button_width+8
+	var width:=stride*6+56
+	action_row.size=Vector2(width,77);action_row.position.x=w-safe.x-width
+	if animated:menu_tween=create_tween().set_parallel(true).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	for i in 6:
+		var child:Control=action_row.get_child(i)
+		var auxiliary:bool=child.get_meta("auxiliary_action",false)
+		var shown:=menu_expanded or not auxiliary
+		var target:=Vector2(stride*i if menu_expanded else stride*5,0)
+		child.size=Vector2(button_width,77)
+		child.mouse_filter=Control.MOUSE_FILTER_STOP if shown else Control.MOUSE_FILTER_IGNORE
+		if shown:child.show()
+		if animated:
+			menu_tween.tween_property(child,"position",target,.22)
+			menu_tween.tween_property(child,"modulate:a",1.0 if shown else 0.0,.18)
+			if not shown:menu_tween.tween_callback(child.hide).set_delay(.22)
+		else:
+			child.position=target;child.modulate.a=1.0 if shown else 0.0;child.visible=shown
 	menu_toggle.text=""
 	menu_toggle.icon=AssetCatalog.texture("UI-MENU-COLLAPSE")
 	menu_toggle.hint_text="접기" if menu_expanded else "메뉴 펼치기"
-	menu_toggle.rotation=0.0 if menu_expanded else PI
-	var width:float=(64.0 if w/h>2.2 else 60.0)*(6 if menu_expanded else 1)+8*(6 if menu_expanded else 1)+44
-	action_row.size.x=width;action_row.position.x=w-safe.x-width
+	menu_toggle.size=Vector2(56,56);menu_toggle.position=Vector2(stride*6,10)
+	menu_toggle.pivot_offset=menu_toggle.size*.5
+	if animated:menu_tween.tween_property(menu_toggle,"rotation",0.0 if menu_expanded else PI,.22)
+	else:menu_toggle.rotation=0.0 if menu_expanded else PI
 	menu_backdrop.hide()
-	menu_backdrop.position=action_row.position+Vector2(-8,17);menu_backdrop.size=Vector2(width+16,56)
 
 func inventory_summary() -> void:
 	show_modal("가진 재료","나무 %d개 · 돌 %d개\n완료 기념 씨앗 %d개"%[model.state.wood,model.state.stone,model.state.tokens],[{"text":"돌아가기","action":close_modal}],false,true)
@@ -527,7 +576,7 @@ func _process(delta: float) -> void:
 	if toast_time > 0:
 		toast_time -= delta
 		if toast_time <= 0 and is_instance_valid(toast_label): toast_label.text = ""
-	if screen != "play" or world_map_open or not is_instance_valid(world):
+	if screen != "play" or world_map_open or map_transition_active or not is_instance_valid(world):
 		return
 	var river_distance:=INF
 	for i in world.SHORE.size()-1:
@@ -575,8 +624,8 @@ func _process(delta: float) -> void:
 	gather_button.hint_text=working_hint if task!="" else ("자원 가까이 이동해 주세요" if near.is_empty() else "작업을 마친 뒤 사용할 수 있어요")
 	build_button.hint_text=working_hint if task!="" else ("완성된 보금자리입니다" if (model.built_count()>=DemoConfig.MAX_RESIDENT_HOMES) else ("나무 20개와 돌 20개가 필요해요" if not model.can_build() else "움집을 선택하고 건설할 부지를 골라 주세요"))
 	gather_button.set_working(task=="gather");build_button.set_working(task=="build")
-	gather_button.text="채집 중" if task=="gather" else "채집"
-	build_button.text="건설 중" if task=="build" else "건설"
+	gather_button.text="채집"
+	build_button.text="건설"
 	gather_button.disabled = modal
 	build_button.disabled = modal or (model.built_count()>=DemoConfig.MAX_RESIDENT_HOMES)
 	style_action_state(gather_button)
@@ -896,6 +945,7 @@ func go_back() -> void:
 		show_modal("여정을 나갈까요?","앱을 종료합니다.",[{"text":"돌아가기","action":close_modal},{"text":"종료","action":func(): get_tree().quit()}])
 
 func _unhandled_input(event: InputEvent) -> void:
+	if map_transition_active:return
 	if event.is_action_pressed("ui_cancel"):
 		go_back()
 		get_viewport().set_input_as_handled()

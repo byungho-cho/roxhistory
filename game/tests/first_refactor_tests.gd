@@ -8,6 +8,9 @@ func check(ok:bool,message:String)->void:
 	if not ok:errors.append(message);push_error(message)
 func frames(n:int=3)->void:
 	for i in n:await physics_frame;await process_frame
+	var remaining:=90
+	while is_instance_valid(app) and app.map_transition_active and remaining>0:
+		await physics_frame;await process_frame;remaining-=1
 func capture(label:String)->void:
 	if DisplayServer.get_name()=="headless":return
 	await RenderingServer.frame_post_draw

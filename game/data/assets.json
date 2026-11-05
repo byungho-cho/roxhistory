@@ -278,6 +278,19 @@
       ],
       "sha256": "992399652e3bc33d71984eca53fe32efac96e2f1cb3eb81b05bd8cb5fb56ec72",
       "notes": "Authored transparent image. Keep padding and aspect ratio; no duplicate background."
+    },
+    "UI-HOME-TOGGLE": {
+      "file": "res://assets/ui/review-v037/home-toggle.png",
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "source": "Figma 1024:39",
+      "source_size": [
+        84,
+        82
+      ],
+      "sha256": "e72a60b894335f7a10ab27851955437daedd69d9d71353bf52c3c4b15fb88ca0"
     }
   }
 }

@@ -13,6 +13,7 @@ var resource_alpha := .75
 var displayed_tokens := 0.0
 var token_target := 0.0
 var last_map_position := Vector2.INF
+var minimap:LiveMinimap
 func _init(owner_app: Node) -> void: app=owner_app
 func _ready() -> void:
 	displayed_tokens=float(app.model.state.tokens);token_target=displayed_tokens
@@ -21,6 +22,9 @@ func _ready() -> void:
 	resized.connect(queue_redraw)
 	mouse_filter=Control.MOUSE_FILTER_IGNORE
 	if ResourceLoader.exists("res://assets/ui/s40000/portrait.png"): portrait=load("res://assets/ui/v034/chief-portrait.png")
+	call_deferred("create_minimap")
+func create_minimap()->void:
+	minimap=LiveMinimap.new(app);add_child(minimap)
 func slot(kind: String) -> Rect2:
 	var i:int=["wood","stone","tokens"].find(kind)
 	if app.w<app.h:return Rect2(Vector2(app.safe.x+i*100,app.safe.y+66),Vector2(96,36))
@@ -91,11 +95,19 @@ func _draw() -> void:
 	for i in 64:
 		var d:=Vector2.from_angle(TAU*i/64.0)
 		points.append(center+d*48);uv.append(Vector2(.5,.5)+d*.5)
-	draw_colored_polygon(points,Color.WHITE,uv,preload(SceneStyle.TERRAIN))
-	draw_arc(center,50,0,TAU,64,Color("c8a15e"),3,true)
-	draw_arc(center,49,-PI,-PI*.12,40,Color("fff0bb"),1,true)
-	var normalized: Vector2=Vector2.ZERO if app.world_map_open else app.world.player.position/Vector2(2400,1350)-Vector2(.5,.5)
+	if is_instance_valid(minimap):draw_colored_polygon(points,Color.WHITE,uv,minimap.current_texture())
+	draw_texture_rect(preload("res://assets/ui/review-v037/minimap-ring.png"),Rect2(center-Vector2(54,54.6),Vector2(108,109.2)),false)
+	var normalized:=Vector2.ZERO
+	if is_instance_valid(minimap):normalized=minimap.normalized_point(Vector2.ZERO if app.world_map_open else app.world.player.position)
 	var dot:=center+(normalized*96).limit_length(45)
+	if is_instance_valid(minimap):
+		var camera_center:Vector2=app.world_map.center if app.world_map_open else app.world.player.camera.get_screen_center_position()
+		var extent:Vector2=Vector2(app.w,app.h)/app.world_map.zoom if app.world_map_open else Vector2(app.w,app.h)/app.world.player.camera.zoom
+		var start:=center+minimap.normalized_point(camera_center-extent*.5)*96
+		var end:=center+minimap.normalized_point(camera_center+extent*.5)*96
+		var camera_rect:=PackedVector2Array([start,Vector2(end.x,start.y),end,Vector2(start.x,end.y)])
+		for clipped in Geometry2D.intersect_polygons(camera_rect,points):
+			clipped.append(clipped[0]);draw_polyline(clipped,Color(1,.94,.69,.6),1,true)
 	draw_circle(dot,4.5,Color("63451d"))
 	draw_circle(dot,2.5,Color("fff0b2"))
 	draw_string(font,center+Vector2(-5,-33),"N",HORIZONTAL_ALIGNMENT_LEFT,20,12,Color("fff2cf"))

@@ -29,8 +29,14 @@ func _process(_delta:float)->void:
 	if not is_instance_valid(app.world):return
 	bubble.visible=app.model.family_available() and not app.modal and not app.world_map_open
 	if not bubble.visible:return
-	var at:Vector2=app.world.get_global_transform_with_canvas()*Vector2(1590,795)
-	bubble.position=Vector2(clampf(at.x-83,app.safe.x,app.w-app.safe.x-166),clampf(at.y,app.safe.y+120,app.h-app.safe.y-160))
+	var head:=Vector2(1590,745)
+	if not app.world.residents.is_empty():
+		head.x=0;head.y=INF
+		for resident in app.world.residents:
+			head.x+=resident.position.x;head.y=minf(head.y,resident.position.y-150)
+		head.x/=app.world.residents.size()
+	var at:Vector2=app.world.get_global_transform_with_canvas()*head
+	bubble.position=Vector2(clampf(at.x-83,app.safe.x,app.w-app.safe.x-166),clampf(at.y-bubble.size.y-10,app.safe.y+90,app.h-app.safe.y-160))
 	if talking and app.task!="family":talking=false;progress.hide()
 	bubble.text="함께 마을을 가꾸어요…" if talking else "우리도 함께 살고 싶어요!"
 	progress.value=100*(1-app.task_remaining/1.5) if talking else 0
