@@ -53,6 +53,9 @@ var quest_expanded:=true
 var quest_arrow:Label
 var quest_accent:ColorRect
 var demolition_key:=""
+var world_map:VillageWorldMap
+var world_map_open:=false
+var map_toggle:DemoButton
 var family:FamilyArrival
 
 func toggle_quest()->void:
@@ -64,7 +67,7 @@ func update_quest()->void:
 	var count:=model.built_count()
 	objective.text=("움막을 지어라 · %d/3채"%count) if count<3 else "정착지 완성 · 3/3채"
 	if quest_expanded:
-		objective.text+=("\n나무 %d/1 · 돌 %d/1"%[mini(model.state.wood,1),mini(model.state.stone,1)]) if count<3 else ("\n건물 위 씨앗을 받아 주세요" if has_pending_rewards() else "\n씨앗 보상을 모두 받았어요")
+		objective.text+=("\n나무 %d/20 · 돌 %d/20"%[mini(model.state.wood,20),mini(model.state.stone,20)]) if count<3 else ("\n건물 위 씨앗을 받아 주세요" if has_pending_rewards() else "\n씨앗 보상을 모두 받았어요")
 	if model.family_available():objective.text="낯선 가족 · 말풍선으로 대화"+("\n함께 살 곳을 찾고 있어요" if quest_expanded else "")
 	elif model.state.get("family_joined",false):objective.text="우리 마을 · %d/%d채"%[count+1,DemoConfig.MAX_RESIDENT_HOMES+1]+("\n새 가족이 합류했어요" if quest_expanded else "")
 	objective.size=Vector2(153,48 if quest_expanded else 28)
@@ -119,6 +122,7 @@ func clear_children(node: Node) -> void:
 		child.queue_free()
 
 func show_screen(next: String) -> void:
+	world_map_open=false
 	cancel_build_preview()
 	var layout_size:=Vector2i(540,960) if get_window().size.x<get_window().size.y else Vector2i(960,540)
 	if get_window().content_scale_size!=layout_size:get_window().content_scale_size=layout_size
@@ -420,34 +424,33 @@ func play_hud() -> void:
 	picture(quest_panel,DemoArt.icon("hut"),Rect2(8,7,22,22))
 	objective=label(quest_panel,"",12,Color("fff0cd"));objective.position=Vector2(34,6);objective.size=Vector2(153,48)
 	quest_panel.set_meta("semantic_text","퀘스트 상세 펼침·접힘")
-	joystick=DemoJoystick.new();stage.add_child(joystick);joystick.position=Vector2(safe.x,h-safe.y-140)
+	joystick=DemoJoystick.new();stage.add_child(joystick);joystick.position=Vector2(safe.x,h-safe.y-140);joystick.hide();joystick.set_process_input(false)
 	var action_width:=64.0 if w/h>2.2 else 60.0
-	var menu_width:=action_width*5+8*4+48
+	var menu_width:=action_width*6+8*5+48
 	menu_backdrop=Panel.new();menu_backdrop.name="MenuBackdrop";menu_backdrop.mouse_filter=Control.MOUSE_FILTER_IGNORE;stage.add_child(menu_backdrop)
 	var capsule:=StyleBoxFlat.new();capsule.bg_color=Color(.33,.25,.12,.83);capsule.border_color=Color(.83,.68,.38,.9);capsule.set_border_width_all(2);capsule.set_corner_radius_all(30);capsule.shadow_color=Color(0,0,0,.2);capsule.shadow_size=3;menu_backdrop.add_theme_stylebox_override("panel",capsule)
 	action_row=HBoxContainer.new();action_row.name="Actions";action_row.add_theme_constant_override("separation",8);stage.add_child(action_row)
 	action_row.position=Vector2(w-safe.x-menu_width,h-safe.y-76);action_row.size=Vector2(menu_width,72)
 	if w<h:action_row.position.y=h-safe.y-220
-	for data in [["채집","berries"],["제작","hammer"],["건설","hut"],["임무","scroll"],["가방","bag"]]:
+	for data in [["사냥","spear"],["채집","berries"],["제작","hammer"],["건설","hut"],["임무","scroll"],["가방","bag"]]:
 		var caption:String=data[0]
 		var callback:Callable=gather_action if caption=="채집" else construction_menu if caption=="건설" else quest_details if caption=="임무" else inventory_summary if caption=="가방" else func():toast("아직 준비 중인 기능입니다")
 		var b:=button(action_row,caption,callback,false,data[1]);b.custom_minimum_size=Vector2(action_width,72)
 		b.set_meta("permanent_action",false)
 		b.set_meta("auxiliary_action",caption!="건설")
-		if caption=="제작":b.disabled=true;b.hint_text="제작은 아직 준비 중입니다"
+		if caption in ["사냥","제작"]:b.disabled=true;b.hint_text=caption+"은 아직 준비 중입니다"
 		b.icon=DemoArt.play_icon(data[1])
 		if caption=="임무":b.name="JournalButton"
 		if caption=="가방":b.name="InventoryButton"
 		var action_style:=StyleBoxFlat.new();action_style.bg_color=Color.TRANSPARENT;action_style.set_content_margin_all(2)
 		for state in ["normal","hover","pressed","disabled"]:b.add_theme_stylebox_override(state,action_style)
 		var stone:=picture(b,preload("res://assets/ui/brush/action-stone-base@2x.png"),Rect2(0,28,action_width,action_width*88.0/128.0))
-		stone.name="ApprovedStonePedestal";stone.show_behind_parent=true;stone.hide()
+		stone.name="ApprovedStonePedestal";stone.show_behind_parent=true
 		b.add_theme_font_size_override("font_size",13)
 		b.vertical_icon_alignment=VERTICAL_ALIGNMENT_TOP;b.icon_alignment=HORIZONTAL_ALIGNMENT_CENTER;b.add_theme_constant_override("icon_max_width",46)
 		b.add_theme_color_override("font_color",Color("fff0cd"));b.add_theme_color_override("font_disabled_color",Color("c0b299"))
 		if caption=="채집":gather_button=b
 		if caption=="건설":build_button=b
-	action_row.move_child(build_button,action_row.get_child_count()-1)
 	menu_toggle=button(action_row,"‹",toggle_menu);menu_toggle.name="MenuToggle";menu_toggle.custom_minimum_size=Vector2(56,56);menu_toggle.size_flags_vertical=Control.SIZE_SHRINK_CENTER;menu_toggle.hint_text="보조 메뉴 펼침·접힘"
 	menu_toggle.icon=DemoArt.play_icon("expand");menu_toggle.expand_icon=true;menu_toggle.add_theme_constant_override("icon_max_width",40)
 	var circle:=StyleBoxFlat.new();circle.bg_color=Color("654421");circle.border_color=Color("dcb56b");circle.set_border_width_all(2);circle.set_corner_radius_all(28);circle.set_content_margin_all(3)
@@ -470,7 +473,31 @@ func play_hud() -> void:
 	for state in ["normal","hover","pressed"]:map_hit.add_theme_stylebox_override(state,StyleBoxEmpty.new())
 	var portrait_hit:=button(stage,"",pause_game);portrait_hit.name="PortraitPause";portrait_hit.custom_minimum_size=Vector2.ZERO;portrait_hit.position=safe;portrait_hit.size=Vector2(58,58)
 	for state in ["normal","hover","pressed"]:portrait_hit.add_theme_stylebox_override(state,StyleBoxEmpty.new())
+	world_map=VillageWorldMap.new(self);stage.add_child(world_map);stage.move_child(world_map,0)
+	map_toggle=button(stage,"",toggle_world_map);map_toggle.icon=AssetCatalog.texture("UI-MAP");map_toggle.expand_icon=true;map_toggle.add_theme_constant_override("icon_max_width",48);map_toggle.custom_minimum_size=Vector2.ZERO;map_toggle.position=Vector2(w-safe.x-64,safe.y+112);map_toggle.size=Vector2(56,56)
+	for state in ["normal","hover","pressed"]:map_toggle.add_theme_stylebox_override(state,StyleBoxEmpty.new())
+	var face:=Panel.new();face.name="HomeFace";face.position=Vector2(10,10);face.size=Vector2(36,36);face.mouse_filter=Control.MOUSE_FILTER_IGNORE
+	var face_skin:=StyleBoxFlat.new();face_skin.bg_color=Color("573a20");face_skin.set_corner_radius_all(18);face.add_theme_stylebox_override("panel",face_skin);map_toggle.add_child(face)
+	picture(face,AssetCatalog.texture("UI-HOME"),Rect2(1,1,34,34));face.hide()
+	world_map_open=false
 	update_hud()
+
+func toggle_world_map()->void:
+	world_map_open=not world_map_open
+	gestures.clear()
+	world_map.activate(world_map_open)
+	world.visible=not world_map_open
+	world.set_process_mode(Node.PROCESS_MODE_DISABLED if world_map_open else Node.PROCESS_MODE_INHERIT)
+	action_row.visible=not world_map_open
+	objective.get_parent().visible=not world_map_open
+	family.bubble.visible=not world_map_open and model.family_available()
+	map_toggle.icon=AssetCatalog.texture("UI-MAP")
+	map_toggle.get_node("HomeFace").visible=world_map_open
+	map_toggle.tooltip_text="마을로 돌아가기" if world_map_open else "월드맵 보기"
+	if world_map_open:
+		world.player.direction=Vector2.ZERO
+		cancel_build_preview()
+		context_panel.hide();task_bar.hide();cancel_site_button.hide()
 
 func toggle_menu()->void:
 	menu_expanded=not menu_expanded
@@ -483,7 +510,7 @@ func apply_menu_state()->void:
 	menu_toggle.text=""
 	menu_toggle.icon=DemoArt.play_icon("expand") if menu_expanded else DemoArt.play_icon("menu")
 	menu_toggle.hint_text="접기" if menu_expanded else "메뉴 펼치기"
-	var width:float=(64.0 if w/h>2.2 else 60.0)*(5 if menu_expanded else 1)+8*(5 if menu_expanded else 1)+44
+	var width:float=(64.0 if w/h>2.2 else 60.0)*(6 if menu_expanded else 1)+8*(6 if menu_expanded else 1)+44
 	action_row.size.x=width;action_row.position.x=w-safe.x-width
 	menu_backdrop.hide()
 	menu_backdrop.position=action_row.position+Vector2(-8,17);menu_backdrop.size=Vector2(width+16,56)
@@ -500,7 +527,7 @@ func _process(delta: float) -> void:
 	if toast_time > 0:
 		toast_time -= delta
 		if toast_time <= 0 and is_instance_valid(toast_label): toast_label.text = ""
-	if screen != "play" or not is_instance_valid(world):
+	if screen != "play" or world_map_open or not is_instance_valid(world):
 		return
 	var river_distance:=INF
 	for i in world.SHORE.size()-1:
@@ -546,7 +573,7 @@ func _process(delta: float) -> void:
 	var near := world.nearest()
 	var working_hint := "채집 중… 이동하면 멈춥니다" if task=="gather" else "보금자리 건설 중…"
 	gather_button.hint_text=working_hint if task!="" else ("자원 가까이 이동해 주세요" if near.is_empty() else "작업을 마친 뒤 사용할 수 있어요")
-	build_button.hint_text=working_hint if task!="" else ("완성된 보금자리입니다" if (model.built_count()>=DemoConfig.MAX_RESIDENT_HOMES) else ("나무 1개와 돌 1개가 필요해요" if not model.can_build() else "움집을 선택하고 건설할 부지를 골라 주세요"))
+	build_button.hint_text=working_hint if task!="" else ("완성된 보금자리입니다" if (model.built_count()>=DemoConfig.MAX_RESIDENT_HOMES) else ("나무 20개와 돌 20개가 필요해요" if not model.can_build() else "움집을 선택하고 건설할 부지를 골라 주세요"))
 	gather_button.set_working(task=="gather");build_button.set_working(task=="build")
 	gather_button.text="채집 중" if task=="gather" else "채집"
 	build_button.text="건설 중" if task=="build" else "건설"
@@ -607,7 +634,7 @@ func gather_action(selected_id:String="") -> void:
 func construction_menu()->void:
 	if modal or gestures.blocked:return
 	cancel_build_preview()
-	show_modal("건설","움집 · 나무 1개 + 돌 1개",[{"text":"취소","action":close_modal},{"text":"움집 선택","action":func():close_modal();choosing_plot=true;world.show_candidates=true;world.queue_redraw();toast("격자 부지를 선택해 주세요",2)}],true,true,true)
+	show_modal("건설","움집 · 나무 20개 + 돌 20개",[{"text":"초소","action":func():pass,"disabled":true},{"text":"취소","action":close_modal},{"text":"움집 선택","action":func():close_modal();choosing_plot=true;world.show_candidates=true;world.queue_redraw();toast("격자 부지를 선택해 주세요",2)}],true,true,true)
 
 func cancel_build_preview()->void:
 	if choosing_plot and is_instance_valid(world) and task!="build":world.clear_site()
@@ -619,7 +646,7 @@ func confirm_build_preview()->void:
 	if not is_instance_valid(build_preview) or build_preview.site_id<0 or not application_active or modal:return
 	var id:=build_preview.site_id
 	if not world.site_available(id):cancel_build_preview();toast("이 부지는 지금 사용할 수 없어요");return
-	if not model.can_build():toast("나무 1개와 돌 1개가 필요해요");return
+	if not model.can_build():toast("나무 20개와 돌 20개가 필요해요");return
 	cancel_build_preview()
 	if task!="":reserve_action({"kind":"build","id":id});return
 	if world.select_site(id):build_action()
@@ -643,7 +670,7 @@ func run_reserved_action()->void:
 func build_action() -> void:
 	if modal or gestures.blocked or task!="" or model.built_count()>=DemoConfig.MAX_RESIDENT_HOMES:return
 	if world.selected_site<0:toast("건설할 격자 부지를 먼저 선택해 주세요");return
-	if not model.can_build():toast("나무 1개와 돌 1개가 필요해요");return
+	if not model.can_build():toast("나무 20개와 돌 20개가 필요해요");return
 	if not world.site_available(world.selected_site):toast("이 부지에 장애물이 있어요. 다른 부지를 선택해 주세요");return
 	navigation.cancel();choosing_plot=false;world.show_candidates=false;world.queue_redraw()
 	task_site=world.selected_site
@@ -732,14 +759,14 @@ func claim_home(index:int) -> void:
 		for i in 6:chrome.gained("tokens",world.reward_marker_rect(index).get_center()+Vector2((i-3)*8,0),i*.055)
 
 func world_tap(screen_point:Vector2) -> void:
-	if modal or gestures.blocked:return
+	if world_map_open or modal or gestures.blocked:return
 	var at:Vector2=world.get_global_transform_with_canvas().affine_inverse()*screen_point
 	for i in model.built_count():
 		if model.reward_pending(i) and world.reward_hit(i,at):claim_home(i);return
 	for n in model.nodes():
 		if world.exhausted(n):continue
 		var point:=DemoConfig.point(n.position)
-		if Rect2(point-Vector2(60,70),Vector2(120,90)).has_point(at):
+		if world.resource_hit(n,at):
 			if world.exhausted(n):toast("이 자원은 모두 채집했어요");return
 			if not task.is_empty():
 				navigation.start("gather",n.id,world.gather_stand(point,n.kind));return
@@ -767,7 +794,7 @@ func focus_objective() -> void:
 	if not Rect2(Vector2(80,90),Vector2(w-160,h-190)).has_point(screen_point): world.player.guide_to(point+Vector2(0,-35))
 
 func quest_details() -> void:
-	show_modal("정착지를 만들어요","기존 움집 한 채에 새 움집 세 채를 더 지어 주세요.\n\n진행 %d/3 · 건설마다 나무 1개 + 돌 1개\n자원을 누르면 자동 이동하여 채집합니다.\n건설 → 움집 선택 후 부지를 고르고 미리보기에서 확인하면 건설합니다.\n%s"%[model.built_count(),("미수령 건물을 누르면 씨앗 10개를 받습니다." if has_pending_rewards() else "모든 완료 보상을 받았습니다." if model.built_count()>=3 else "건설 완료 후 건물에서 씨앗을 받을 수 있습니다.")],[{"text":"돌아가기","action":close_modal}],false,true)
+	show_modal("정착지를 만들어요","기존 움집 한 채에 새 움집 세 채를 더 지어 주세요.\n\n진행 %d/3 · 건설마다 나무 20개 + 돌 20개\n자원을 누르면 자동 이동하여 채집합니다.\n건설 → 움집 선택 후 부지를 고르고 미리보기에서 확인하면 건설합니다.\n%s"%[model.built_count(),("미수령 건물을 누르면 씨앗 10개를 받습니다." if has_pending_rewards() else "모든 완료 보상을 받았습니다." if model.built_count()>=3 else "건설 완료 후 건물에서 씨앗을 받을 수 있습니다.")],[{"text":"돌아가기","action":close_modal}],false,true)
 
 func pause_game() -> void:
 	cancel_task()
@@ -826,6 +853,7 @@ func show_modal(title: String, body: String, actions: Array, compact: bool = fal
 	v.add_child(row)
 	for a in actions:
 		var b := button(row,a.text,a.action,a.get("primary",false))
+		b.disabled=a.get("disabled",false)
 		if brief:b.custom_minimum_size=Vector2(80,44)
 		for state in ["normal","hover","pressed","disabled","focus"]:b.add_theme_stylebox_override(state,StyleBoxEmpty.new())
 		for color_key in ["font_color","font_hover_color","font_pressed_color","font_disabled_color"]:b.add_theme_color_override(color_key,Color("47240e"))
@@ -871,7 +899,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_cancel"):
 		go_back()
 		get_viewport().set_input_as_handled()
-	elif event is InputEventKey and event.pressed and not event.echo and screen == "play" and not modal:
+	elif event is InputEventKey and event.pressed and not event.echo and screen == "play" and not world_map_open and not modal:
 		if event.physical_keycode == KEY_E: gather_action()
 		elif event.physical_keycode == KEY_B: construction_menu()
 

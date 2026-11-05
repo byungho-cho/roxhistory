@@ -27,7 +27,7 @@ func finish()->void:
 	if app.model.join_family():app.toast("새 가족이 마을에 합류했어요",2.5)
 func _process(_delta:float)->void:
 	if not is_instance_valid(app.world):return
-	bubble.visible=app.model.family_available() and not app.modal
+	bubble.visible=app.model.family_available() and not app.modal and not app.world_map_open
 	if not bubble.visible:return
 	var at:Vector2=app.world.get_global_transform_with_canvas()*Vector2(1590,795)
 	bubble.position=Vector2(clampf(at.x-93,app.safe.x,app.w-app.safe.x-186),clampf(at.y,app.safe.y+120,app.h-app.safe.y-160))

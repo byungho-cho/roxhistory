@@ -30,6 +30,7 @@ func _init(save_store: SaveStore) -> void:
 	store = save_store
 	state = store.load_game()
 	migrate_village()
+	migrate_resources()
 
 func commit(next: Dictionary, reset: bool = false) -> bool:
 	if not store.save_game(next,reset):
@@ -202,4 +203,15 @@ func family_available()->bool:
 func join_family()->bool:
 	if busy or not family_available():return false
 	var next:=state.duplicate(true);next.family_joined=true;next.family_unlocked=true
+	return commit(next)
+
+func migrate_resources()->bool:
+	if state.is_empty() or int(state.get("resource_revision",0))>=35:return true
+	var next:=state.duplicate(true)
+	for n in DemoConfig.get_data().nodes:
+		var used:=int(next.depleted.get(n.id,0))
+		var old_max:=5 if n.kind=="wood" else 4
+		# Keep fully exhausted sources exhausted. Preserve earned balances and timers.
+		next.depleted[n.id]=int(n.charges) if used>=old_max else mini(used,int(n.charges)-1)
+	next.resource_revision=35
 	return commit(next)

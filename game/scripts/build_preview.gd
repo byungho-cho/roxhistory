@@ -27,7 +27,7 @@ func clear()->void:
 	if is_instance_valid(controls):controls.hide()
 func _process(delta:float)->void:
 	if site_id<0:return
-	if not app.application_active or app.modal:controls.hide();return
+	if not app.application_active or app.modal or app.world_map_open:controls.hide();return
 	age+=delta;ghost.position.y=-4-3*sin(age*TAU/2.4)
 	var at:=get_global_transform_with_canvas()*Vector2(0,-165)
 	controls.position=Vector2(clampf(at.x-48,app.safe.x,app.w-app.safe.x-96),clampf(at.y-44,app.safe.y+110,app.h-app.safe.y-140))

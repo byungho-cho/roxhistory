@@ -16,7 +16,7 @@ static func play_icon(key:String)->Texture2D:
 	play_cache[key]=source;return source
 
 static func icon(key: String) -> Texture2D:
-	if key=="tokens":return preload("res://assets/ui/seed.svg")
+	if key=="tokens":return AssetCatalog.texture("UI-SEED")
 	if FigmaArt.CROPS.has(key) or FigmaArt.CONTROL_CROPS.has(key):return FigmaArt.texture(key)
 	if key=="meat":return FigmaArt.texture("meat.png")
 	if cache.has(key):

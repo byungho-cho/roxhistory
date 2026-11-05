@@ -1,9 +1,9 @@
 {
   "version": 1,
   "quest_id": "amsa_first_home",
-  "wood_cost": 1,
-  "stone_cost": 1,
-  "gather_yield": 1,
+  "wood_cost": 20,
+  "stone_cost": 20,
+  "gather_yield": 10,
   "gather_seconds": 1.2,
   "build_seconds": 2,
   "reward": 10,
@@ -29,7 +29,8 @@
         520,
         800
       ],
-      "charges": 5
+      "charges": 5,
+      "size": "large"
     },
     {
       "id": "wood_2",
@@ -38,7 +39,8 @@
         670,
         1100
       ],
-      "charges": 5
+      "charges": 2,
+      "size": "small"
     },
     {
       "id": "wood_3",
@@ -47,7 +49,8 @@
         1770,
         690
       ],
-      "charges": 5
+      "charges": 3,
+      "size": "medium"
     },
     {
       "id": "wood_4",
@@ -56,7 +59,8 @@
         2020,
         1030
       ],
-      "charges": 5
+      "charges": 5,
+      "size": "large"
     },
     {
       "id": "stone_1",
@@ -65,7 +69,8 @@
         530,
         550
       ],
-      "charges": 4
+      "charges": 2,
+      "size": "small"
     },
     {
       "id": "stone_2",
@@ -74,7 +79,8 @@
         1870,
         770
       ],
-      "charges": 4
+      "charges": 3,
+      "size": "medium"
     },
     {
       "id": "stone_3",
@@ -83,7 +89,8 @@
         1550,
         1150
       ],
-      "charges": 4
+      "charges": 5,
+      "size": "large"
     }
   ],
   "history": {

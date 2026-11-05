@@ -17,7 +17,7 @@ static func ground_ok(point:Vector2)->bool:return Geometry2D.is_point_in_polygon
 static func plot_polygon(id:int)->PackedVector2Array:return polygon(PLOTS[id],4)
 func _init(state:GameState)->void:model=state
 func _ready()->void:
-	z_index=-15;model.changed.connect(queue_redraw)
+	z_index=-15;model.changed.connect(rebuild_art);rebuild_art()
 func _draw()->void:
 	# Clipped fine grid: square world cells project to the same 2:1 diamonds.
 	for u in range(-30,31):
@@ -25,15 +25,30 @@ func _draw()->void:
 			var a:=project(Vector2(u,v));var b:=project(Vector2(u+1,v));var c:=project(Vector2(u,v+1))
 			if ground_ok(a) and ground_ok(b):draw_line(a,b,Color(.94,.87,.55,.10),1,true)
 			if ground_ok(a) and ground_ok(c):draw_line(a,c,Color(.94,.87,.55,.10),1,true)
-	# Roads follow grid axes, and stay outside the square foundations.
-	for segment in [[Vector2(-8,-.5),Vector2(12,-.5)],[Vector2(-8,6.5),Vector2(12,6.5)],[Vector2(-1.5,-7),Vector2(-1.5,13)],[Vector2(5.5,-7),Vector2(5.5,13)]]:
-		draw_line(project(segment[0]),project(segment[1]),Color(.46,.32,.13,.20),23,true)
-		draw_line(project(segment[0]),project(segment[1]),Color(.79,.62,.32,.78),17,true)
+
+func rebuild_art()->void:
+	for child in get_children():remove_child(child);child.queue_free()
+	# Roads exist only between completed homes and the chief; sprites never own physics.
+	for home_data in model.homes():
+		var target:Vector2=PLOTS[int(home_data.get("site",0))]
+		var elbow:=Vector2(target.x,CHIEF.y)
+		road(CHIEF,elbow);road(elbow,target)
 	foundation(CHIEF,6)
-	for i in model.built_count():
-		var id:=int(model.homes()[i].get("site",i))
-		foundation(PLOTS[id],4)
+	for home_data in model.homes():foundation(PLOTS[int(home_data.get("site",0))],4)
+	queue_redraw()
 func foundation(cell:Vector2,span:int)->void:
-	var p:=polygon(cell,span);draw_colored_polygon(p,Color(.70,.49,.23,.80))
-	var inset:=polygon(cell,span-1);draw_colored_polygon(inset,Color(.85,.66,.36,.88))
-	p.append(p[0]);draw_polyline(p,Color(.95,.79,.44,.60),3,true)
+	var s:=Sprite2D.new();s.texture=AssetCatalog.texture("GROUND-PAD");s.scale=Vector2.ONE*(span*64.0/1088.0)
+	s.position=project(cell);s.scale.y*=.81
+	var material:=ShaderMaterial.new();material.shader=preload("res://shaders/pad_edge.gdshader");s.material=material
+	add_child(s)
+func road(a:Vector2,b:Vector2)->void:
+	if a==b:return
+	var delta:=b-a
+	var steps:=int(maxf(absf(delta.x),absf(delta.y)))
+	for i in steps:
+		var c:=a+delta*(float(i)+.5)/steps
+		var s:=Sprite2D.new();s.texture=AssetCatalog.texture("GROUND-ROAD");s.position=project(c)
+		# Extract the central connecting section in the shader; consistent 1-cell width.
+		var material:=ShaderMaterial.new();material.shader=preload("res://shaders/road_tile.gdshader");s.material=material
+		s.scale=Vector2(64.0/s.texture.get_width(),32.0/s.texture.get_height());s.flip_h=delta.x!=0
+		add_child(s)

@@ -58,7 +58,7 @@ func _ready() -> void:
 	visible = false
 
 func _process(delta: float) -> void:
-	visible = app.task == "build" and is_instance_valid(app.world) and not app.modal
+	visible = app.task == "build" and is_instance_valid(app.world) and not app.modal and not app.world_map_open
 	if not visible: clock = 0; return
 	clock += delta
 	var ratio := clampf(1.0-app.task_remaining/maxf(0.001,app.task_total),0,1)

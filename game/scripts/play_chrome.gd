@@ -80,6 +80,7 @@ func _draw() -> void:
 		draw_texture_rect_region(RESOURCE_BRUSH,Rect2(brush_rect.position,Vector2(left,27)),Rect2(0,0,64,112))
 		draw_texture_rect_region(RESOURCE_BRUSH,Rect2(brush_rect.position+Vector2(left,0),Vector2(84-left-right,27)),Rect2(64,0,272,112))
 		draw_texture_rect_region(RESOURCE_BRUSH,Rect2(brush_rect.end-Vector2(right,27),Vector2(right,27)),Rect2(336,0,176,112))
+		draw_string(font,rect.position+Vector2(35,8),{"wood":"나무","stone":"돌","tokens":"씨앗"}[key],HORIZONTAL_ALIGNMENT_LEFT,55,10,Color("fff1d4"))
 		var extent:=28.0+beat*4
 		draw_texture_rect(DemoArt.icon(key),Rect2(rect.position+Vector2(3,3),Vector2(extent,extent)),false)
 		draw_string(font,rect.position+Vector2(34,25),str(int(displayed_tokens)) if key=="tokens" else str(int(app.model.state[key])),HORIZONTAL_ALIGNMENT_LEFT,62,15,Color(1,.98,.90,1))

@@ -65,19 +65,15 @@ func _ready() -> void:
 	prop("props",Vector2(1035,660),65,Vector2(40,20),"PotteryAndGrindingStone")
 	# Clean approved terrain: independent scenery owns both silhouette and footprint.
 	# Removed all six legacy canopy masks and five painted-rock collision regions.
-	for i in SceneStyle.SCENIC_TREES.size():
-		var p:Vector2=SceneStyle.SCENIC_TREES[i]
-		prop("tree",p,170,Vector2(50,30),"SettlementTree" if p.x==1780 else "ScenicTree"+str(i))
-	for i in SceneStyle.PAINTED_ROCKS.size():
-		prop("rock",SceneStyle.PAINTED_ROCKS[i],100,Vector2(64,28),"ScenicRock"+str(i))
 	for n in model.nodes():
 		var root := Node2D.new()
 		root.name = "Resource_"+str(n.id)
 		root.position = DemoConfig.point(n.position)
 		add_child(root)
 		var icon := Sprite2D.new()
-		icon.texture = EnvironmentProp.asset("wood") if n.kind == "wood" else EnvironmentProp.asset("rock")
-		var width := SceneStyle.WOOD_WIDTH if n.kind == "wood" else SceneStyle.STONE_WIDTH
+		icon.texture = AssetCatalog.texture("ENV-TREE" if n.kind == "wood" else "ENV-ROCK")
+		var scale_class:float={"small":0.72,"medium":0.86,"large":1.0}.get(n.get("size","large"),1.0)
+		var width:float=(200.0 if n.kind=="wood" else 125.0)*scale_class
 		icon.scale = Vector2.ONE*width/icon.texture.get_width()
 		icon.position.y = -icon.texture.get_height()*icon.scale.y*0.5
 		if n.kind=="stone":icon.material=EnvironmentProp.stone_surface()
@@ -246,11 +242,17 @@ func near_site() -> bool:
 func interaction_at(screen_point:Vector2)->bool:
 	var at:=get_global_transform_with_canvas().affine_inverse()*screen_point
 	for n in model.nodes():
-		if not exhausted(n) and Rect2(DemoConfig.point(n.position)-Vector2(60,70),Vector2(120,90)).has_point(at):return true
+		if resource_hit(n,at):return true
 	if site_at(at)>=0:return true
 	for i in model.built_count():
 		if model.reward_pending(i) and reward_hit(i,at):return true
 	return false
+
+func resource_hit(n:Dictionary,at:Vector2)->bool:
+	if exhausted(n):return false
+	var root:Node2D=art_nodes[n.id]
+	var image:Sprite2D=root.get_child(0)
+	return image.get_rect().has_point(image.transform.affine_inverse()*(at-root.position))
 
 func reward_marker_rect(index:int)->Rect2:
 	return Rect2(homes[index].position+Vector2(76,-244),Vector2(72,67))
@@ -309,8 +311,6 @@ func site_available(id:int)->bool:
 	shape.points=VillageLayout.plot_polygon(id);query.shape=shape;query.transform=Transform2D.IDENTITY;query.margin=8
 	query.exclude=[player.get_rid()]
 	if not get_world_2d().direct_space_state.intersect_shape(query,1).is_empty():return false
-	for rock in SceneStyle.PAINTED_ROCKS:
-		if ((rock-at-Vector2(0,-40))/Vector2(190,100)).length()<1:return false
 	return true
 
 func select_site(id:int)->bool:

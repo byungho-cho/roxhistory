@@ -11,7 +11,7 @@ func _init(owner_world: DemoWorld) -> void: world = owner_world
 
 func _ready() -> void:
 	for prop in world.environment_props:
-		if prop.kind != "hut": continue
+		if prop.kind != "hut" or AssetCatalog.entry("BLD-HUT-L1").size()>0: continue # Level 1 has no chimney.
 		for puff in 3:
 			var sprite := Sprite2D.new()
 			sprite.texture = preload("res://assets/effects/chimney-smoke.png")
