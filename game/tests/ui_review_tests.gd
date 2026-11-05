@@ -95,6 +95,7 @@ func run()->void:
 	check(app.model.state.wood>=wood_before+10,"Actual gathering awards resources")
 	check(app.gather_button.text=="채집","Gather label stays stable throughout contact loop")
 	app.cancel_task()
+	await capture("gathered")
 	check(app.model.build(Vector2.ZERO,1) and app.model.build(Vector2.ZERO,2),"Three homes unlock residents")
 	app.world.player.position=FamilyArrival.MEETING;app.world.player.resume_camera();await frames()
 	check(app.family.bubble.visible,"Resident dialogue is available")

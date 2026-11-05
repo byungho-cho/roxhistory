@@ -142,13 +142,7 @@ func _process(delta: float) -> void:
 
 func _draw() -> void:
 	if not is_instance_valid(world.player): return
-	if world.selected != "" and world.art_nodes.has(world.selected):
-		var at: Vector2 = world.art_nodes[world.selected].position
-		draw_set_transform(at,0,Vector2(1,0.42))
-		draw_arc(Vector2.ZERO,40+sin(pulse*3),0,TAU,48,Color(1,0.88,0.53,0.60),2,true)
-		draw_set_transform(Vector2.ZERO)
-		var tip := at+Vector2(0,-65+sin(pulse*3)*3)
-		draw_colored_polygon(PackedVector2Array([tip,tip+Vector2(-8,-10),tip+Vector2(8,-10)]),Color("ffe5aa"))
+	# Proximity does not add a second selection ring or arrow under resources.
 	if activity == "build":
 		var p: Vector2 = preview.position
 		draw_set_transform(p+Vector2(0,-35),0,Vector2(1,.40))
