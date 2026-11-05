@@ -254,6 +254,30 @@
         941
       ],
       "sha256": "64170ffb72632d32dc93d6a560dae0432dfd4e4699a6d8ea7afe09a1be87a033"
+    },
+    "BLD-OUTPOST": {
+      "file": "res://assets/refactor-v036/watchtower.png",
+      "source": "Figma 886:36",
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "sha256": "87d68ae68bbc9702ac0a2aa20cddde7693fd4a21fc9dcd2bdc76f9cf8674e942",
+      "notes": "Authored transparent image. Keep padding and aspect ratio; no duplicate background.",
+      "source_size": [
+        1254,
+        1254
+      ]
+    },
+    "UI-MENU-COLLAPSE": {
+      "file": "res://assets/refactor-v036/menu-collapse.png",
+      "source": "Figma 836:116",
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "sha256": "992399652e3bc33d71984eca53fe32efac96e2f1cb3eb81b05bd8cb5fb56ec72",
+      "notes": "Authored transparent image. Keep padding and aspect ratio; no duplicate background."
     }
   }
 }

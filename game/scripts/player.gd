@@ -8,7 +8,7 @@ const COLS := 16
 const ROWS := 32
 const HEIGHT := 142.0
 const STRIDE := 104.0
-const MIN_ZOOM := 1.0/1.56
+const MIN_ZOOM := 1.0
 const MAX_ZOOM := 1.5
 const WORLD_SIZE := Vector2(2400,1350)
 var direction := Vector2.ZERO
@@ -45,9 +45,8 @@ func can_pan()->bool:
 	return visible_world.x<bounds.size.x-1 or visible_world.y<bounds.size.y-1
 
 func camera_bounds()->Rect2:
-	# Extra viewing margin only at the new wide overview; playable coordinates stay fixed.
-	var margin:=WORLD_SIZE*.5*maxf(0.0,1.0/zoom_factor-1.0)
-	return Rect2(-margin,WORLD_SIZE+margin*2)
+	# The minimum zoom fits the authored terrain; decorative space is not navigable.
+	return Rect2(Vector2.ZERO,WORLD_SIZE)
 
 func pan_camera(screen_delta:Vector2)->void:
 	cancel_camera_guide()

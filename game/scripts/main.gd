@@ -22,6 +22,7 @@ var pending_action:Dictionary={}
 var choosing_plot:=false
 var build_preview:BuildPreview
 var menu_expanded:=true
+var build_side:BuildSideMenu
 var menu_toggle:DemoButton
 var menu_backdrop:Panel
 var task_target := ""
@@ -444,18 +445,16 @@ func play_hud() -> void:
 		if caption=="가방":b.name="InventoryButton"
 		var action_style:=StyleBoxFlat.new();action_style.bg_color=Color.TRANSPARENT;action_style.set_content_margin_all(2)
 		for state in ["normal","hover","pressed","disabled"]:b.add_theme_stylebox_override(state,action_style)
-		var stone:=picture(b,preload("res://assets/ui/brush/action-stone-base@2x.png"),Rect2(0,28,action_width,action_width*88.0/128.0))
-		stone.name="ApprovedStonePedestal";stone.show_behind_parent=true
-		b.add_theme_font_size_override("font_size",13)
-		b.vertical_icon_alignment=VERTICAL_ALIGNMENT_TOP;b.icon_alignment=HORIZONTAL_ALIGNMENT_CENTER;b.add_theme_constant_override("icon_max_width",46)
-		b.add_theme_color_override("font_color",Color("fff0cd"));b.add_theme_color_override("font_disabled_color",Color("c0b299"))
+		var visual:=ActionVisual.new(b,b.icon);b.icon=null;b.add_child(visual)
+		for color_name in ["font_color","font_hover_color","font_pressed_color","font_disabled_color","font_focus_color"]:b.add_theme_color_override(color_name,Color.TRANSPARENT)
 		if caption=="채집":gather_button=b
 		if caption=="건설":build_button=b
 	menu_toggle=button(action_row,"‹",toggle_menu);menu_toggle.name="MenuToggle";menu_toggle.custom_minimum_size=Vector2(56,56);menu_toggle.size_flags_vertical=Control.SIZE_SHRINK_CENTER;menu_toggle.hint_text="보조 메뉴 펼침·접힘"
-	menu_toggle.icon=DemoArt.play_icon("expand");menu_toggle.expand_icon=true;menu_toggle.add_theme_constant_override("icon_max_width",40)
-	var circle:=StyleBoxFlat.new();circle.bg_color=Color("654421");circle.border_color=Color("dcb56b");circle.set_border_width_all(2);circle.set_corner_radius_all(28);circle.set_content_margin_all(3)
+	menu_toggle.icon=DemoArt.play_icon("expand");menu_toggle.expand_icon=true;menu_toggle.add_theme_constant_override("icon_max_width",54)
+	var circle:=StyleBoxEmpty.new()
 	for state in ["normal","hover","pressed"]:menu_toggle.add_theme_stylebox_override(state,circle)
 	apply_menu_state()
+	build_side=BuildSideMenu.new(self);stage.add_child(build_side)
 	build_preview=BuildPreview.new(self);world.add_child(build_preview)
 	cancel_site_button=button(stage,"부지 선택 취소",cancel_build_preview)
 	cancel_site_button.name="CancelBuildSite";cancel_site_button.custom_minimum_size=Vector2.ZERO
@@ -466,7 +465,7 @@ func play_hud() -> void:
 	context_panel=PanelContainer.new();stage.add_child(context_panel);context_panel.position=Vector2(w*.5-145,h-safe.y-108);context_panel.size=Vector2(290,32);context_panel.add_theme_stylebox_override("panel",dark);context_panel.mouse_filter=Control.MOUSE_FILTER_IGNORE
 	context=label(context_panel,"",13,Color("fff0cd"));context.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
 	task_bar=ProgressBar.new();task_bar.mouse_filter=Control.MOUSE_FILTER_IGNORE;task_bar.show_percentage=false;task_bar.position=Vector2(w*.5-100,h-safe.y-120);task_bar.size=Vector2(200,7);stage.add_child(task_bar);task_bar.visible=false
-	chrome=PlayChrome.new(self);stage.add_child(chrome);chrome.size=Vector2(w,h)
+	chrome=PlayChrome.new(self);chrome.z_index=5;stage.add_child(chrome);chrome.size=Vector2(w,h)
 	stage.add_child(ConstructionProgress.new(self))
 	family=FamilyArrival.new(self);stage.add_child(family)
 	var map_hit:=button(stage,"",func():world.player.resume_camera());map_hit.name="RecenterCamera";map_hit.custom_minimum_size=Vector2.ZERO;map_hit.position=Vector2(w-safe.x-100,safe.y);map_hit.size=Vector2(100,100)
@@ -508,8 +507,9 @@ func apply_menu_state()->void:
 	for child in action_row.get_children():
 		if child.get_meta("auxiliary_action",false):child.visible=menu_expanded
 	menu_toggle.text=""
-	menu_toggle.icon=DemoArt.play_icon("expand") if menu_expanded else DemoArt.play_icon("menu")
+	menu_toggle.icon=AssetCatalog.texture("UI-MENU-COLLAPSE")
 	menu_toggle.hint_text="접기" if menu_expanded else "메뉴 펼치기"
+	menu_toggle.rotation=0.0 if menu_expanded else PI
 	var width:float=(64.0 if w/h>2.2 else 60.0)*(6 if menu_expanded else 1)+8*(6 if menu_expanded else 1)+44
 	action_row.size.x=width;action_row.position.x=w-safe.x-width
 	menu_backdrop.hide()
@@ -634,7 +634,7 @@ func gather_action(selected_id:String="") -> void:
 func construction_menu()->void:
 	if modal or gestures.blocked:return
 	cancel_build_preview()
-	show_modal("건설","움집 · 나무 20개 + 돌 20개",[{"text":"초소","action":func():pass,"disabled":true},{"text":"취소","action":close_modal},{"text":"움집 선택","action":func():close_modal();choosing_plot=true;world.show_candidates=true;world.queue_redraw();toast("격자 부지를 선택해 주세요",2)}],true,true,true)
+	build_side.visible=not build_side.visible
 
 func cancel_build_preview()->void:
 	if choosing_plot and is_instance_valid(world) and task!="build":world.clear_site()
@@ -827,7 +827,7 @@ func show_modal(title: String, body: String, actions: Array, compact: bool = fal
 		overlay.queue_free()
 	modal = true
 	sync_audio()
-	overlay = Control.new()
+	overlay = Control.new();overlay.z_index=50
 	ui.add_child(overlay)
 	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -937,13 +937,5 @@ func style_action_state(control:DemoButton)->void:
 	var state:="working" if control.working else "unavailable" if control.disabled else "ready"
 	if control.get_meta("action_state","")==state:return
 	control.set_meta("action_state",state)
-	var plate:=StyleBoxFlat.new();plate.set_corner_radius_all(5);plate.set_border_width_all(1)
-	plate.bg_color=Color("70532c") if state=="working" else Color("68451d") if state=="ready" else Color(.16,.13,.09,.82)
-	plate.border_color=Color("ffe4a0") if state=="ready" else Color("d3ad67") if state=="working" else Color(.57,.49,.36,.55)
-	plate.shadow_color=Color(1,.72,.23,.38) if state=="ready" else Color(0,0,0,.22)
-	plate.shadow_size=7 if state=="ready" else 2
-	# The authored stone includes its nameplate; only a subtle halo is dynamic.
-	var halo:=StyleBoxFlat.new();halo.set_corner_radius_all(12);halo.set_content_margin_all(2)
-	halo.bg_color=Color(1,.72,.18,.12) if state=="ready" else Color(.9,.65,.2,.07) if state=="working" else Color.TRANSPARENT
-	halo.shadow_color=Color(1,.75,.28,.16) if state=="ready" else Color.TRANSPARENT;halo.shadow_size=5
-	for variant in ["normal","hover","pressed","disabled"]:control.add_theme_stylebox_override(variant,halo)
+	# Authored art supplies all borders, shadows and nameplates. No proximity halo.
+	for variant in ["normal","hover","pressed","disabled"]:control.add_theme_stylebox_override(variant,StyleBoxEmpty.new())

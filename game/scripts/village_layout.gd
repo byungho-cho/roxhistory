@@ -38,8 +38,8 @@ func rebuild_art()->void:
 	queue_redraw()
 func foundation(cell:Vector2,span:int)->void:
 	var s:=Sprite2D.new();s.texture=AssetCatalog.texture("GROUND-PAD");s.scale=Vector2.ONE*(span*64.0/1088.0)
-	s.position=project(cell);s.scale.y*=.81
-	var material:=ShaderMaterial.new();material.shader=preload("res://shaders/pad_edge.gdshader");s.material=material
+	s.position=project(cell)+Vector2(0,span*6);s.scale.y*=.81
+	var material:=ShaderMaterial.new();material.shader=preload("res://shaders/pad_edge.gdshader");s.material=material;s.z_index=1;s.texture_filter=CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	add_child(s)
 func road(a:Vector2,b:Vector2)->void:
 	if a==b:return
@@ -49,6 +49,6 @@ func road(a:Vector2,b:Vector2)->void:
 		var c:=a+delta*(float(i)+.5)/steps
 		var s:=Sprite2D.new();s.texture=AssetCatalog.texture("GROUND-ROAD");s.position=project(c)
 		# Extract the central connecting section in the shader; consistent 1-cell width.
-		var material:=ShaderMaterial.new();material.shader=preload("res://shaders/road_tile.gdshader");s.material=material
+		var material:=ShaderMaterial.new();material.shader=preload("res://shaders/road_tile.gdshader");s.material=material;s.z_index=1;s.texture_filter=CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 		s.scale=Vector2(64.0/s.texture.get_width(),32.0/s.texture.get_height());s.flip_h=delta.x!=0
 		add_child(s)

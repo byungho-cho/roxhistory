@@ -741,5 +741,17 @@
     "bytes": 536140,
     "sha256": "e30f0fc65fec6996ea0f1af103c65884d5233fe700e2124af80af9296fd0869d",
     "source": "share/reference-assets; see docs/shared-reports/2026-11-05-isometric-village/README.md"
+  },
+  {
+    "path": "game/assets/refactor-v036/watchtower.png",
+    "bytes": 983779,
+    "sha256": "87d68ae68bbc9702ac0a2aa20cddde7693fd4a21fc9dcd2bdc76f9cf8674e942",
+    "source": "Figma 886:36"
+  },
+  {
+    "path": "game/assets/refactor-v036/menu-collapse.png",
+    "bytes": 14432,
+    "sha256": "992399652e3bc33d71984eca53fe32efac96e2f1cb3eb81b05bd8cb5fb56ec72",
+    "source": "Figma 836:116"
   }
 ]

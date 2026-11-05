@@ -39,9 +39,7 @@ func _ready() -> void:
 	background.scale = Vector2(2400.0/terrain.get_width(),1350.0/terrain.get_height())
 	background.z_index = -20
 	add_child(background)
-	var margin:=Sprite2D.new();margin.name="OverviewMargin";margin.texture=terrain; margin.centered=false
-	margin.position=Vector2(-672,-378);margin.scale=background.scale*1.56;margin.z_index=-18
-	var margin_material:=ShaderMaterial.new();margin_material.shader=preload("res://shaders/overview_margin.gdshader");margin.material=margin_material;add_child(margin)
+
 	water = Polygon2D.new()
 	water.name = "LivingWater"
 	water.polygon = PackedVector2Array(RIVER_POLYGON)
