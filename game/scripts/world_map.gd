@@ -14,6 +14,7 @@ var visible_fraction:=0.69
 var terrain:Texture2D
 var mountain:TextureRect
 var ground_review:TextureRect
+var outer_fog:TextureRect
 var natural_only:=false
 func _init(owner_app:Node)->void:app=owner_app
 func _ready()->void:
@@ -21,13 +22,16 @@ func _ready()->void:
 	texture_filter=CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	village=AssetCatalog.texture("WORLD-VILLAGE")
 	visible_fraction=1058.0/1536.0 # Alpha > 0.5 measured from approved WM-001.
-	terrain=AssetCatalog.texture("TERRAIN-VILLAGE")
+	terrain=preload("res://assets/terrain-review-v001/ground-a.png")
 	ground_review=TextureRect.new();ground_review.texture=terrain;ground_review.expand_mode=TextureRect.EXPAND_IGNORE_SIZE
 	ground_review.mouse_filter=Control.MOUSE_FILTER_IGNORE;ground_review.show_behind_parent=true
-	var ground_material:=ShaderMaterial.new();ground_material.shader=load("res://shaders/world_ground_review.gdshader")
-	ground_material.set_shader_parameter("soil_tex",AssetCatalog.texture("GROUND-PAD"));ground_review.material=ground_material;add_child(ground_review)
+	var ground_material:=ShaderMaterial.new();ground_material.shader=load("res://shaders/terrain_candidate.gdshader")
+	ground_material.set_shader_parameter("dirt_texture",preload("res://assets/terrain-review-v001/ground-b.png"));ground_review.material=ground_material;add_child(ground_review)
 	mountain=TextureRect.new();mountain.texture=AssetCatalog.texture("WORLD-MOUNTAIN");mountain.expand_mode=TextureRect.EXPAND_IGNORE_SIZE;mountain.mouse_filter=Control.MOUSE_FILTER_IGNORE
 	var mask:=ShaderMaterial.new();mask.shader=preload("res://shaders/mountain_mask.gdshader");mask.set_shader_parameter("mask_texture",load("res://assets/refactor-v035/mountain-mask.svg"));mountain.material=mask;add_child(mountain)
+	outer_fog=TextureRect.new();outer_fog.name="WorldOuterFog"
+	outer_fog.texture=preload("res://assets/terrain-review-v001/fog-cloud.png");outer_fog.expand_mode=TextureRect.EXPAND_IGNORE_SIZE;outer_fog.mouse_filter=Control.MOUSE_FILTER_IGNORE
+	var fog_material:=ShaderMaterial.new();fog_material.shader=preload("res://shaders/world_outer_fog.gdshader");outer_fog.material=fog_material;add_child(outer_fog)
 	size=Vector2(app.w,app.h)
 	clip_contents=true
 	set_process_input(false);hide()
@@ -96,6 +100,12 @@ func _draw()->void:
 	ground_review.material.set_shader_parameter("camera_center",center)
 	ground_review.material.set_shader_parameter("map_zoom",zoom)
 	ground_review.material.set_shader_parameter("reference_scale",app.w/1672.0)
+	outer_fog.size=size
+	outer_fog.visible=not natural_only
+	outer_fog.material.set_shader_parameter("viewport_size",size)
+	outer_fog.material.set_shader_parameter("camera_center",center)
+	outer_fog.material.set_shader_parameter("map_zoom",zoom)
+	outer_fog.material.set_shader_parameter("reference_scale",app.w/1672.0)
 	var extent:=village.get_size()*factor()
 	var at:=size*.5-center*zoom
 	var base:float=app.w/1672.0

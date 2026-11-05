@@ -777,5 +777,25 @@
     "path": "game/assets/characters/residents-v5/figma-residents-source.png",
     "bytes": 531945,
     "sha256": "b52c1a931c7df3459d2262b1a6760975594fecb860b0772e59bb970ad84079b7"
+  },
+  {
+    "path": "game/assets/terrain-review-v001/fog-cloud.png",
+    "bytes": 1630753,
+    "sha256": "14362e46eedb9307736915492a069be7d76d6c3d3fe28024cab0550411288d08"
+  },
+  {
+    "path": "game/assets/terrain-review-v001/ground-a.png",
+    "bytes": 2412774,
+    "sha256": "7707a501905ee57825a66e9db2ccf0300e0f400ead5829ff7c311b1269cbc8e7"
+  },
+  {
+    "path": "game/assets/terrain-review-v001/ground-b.png",
+    "bytes": 2258143,
+    "sha256": "25d6cd9774fae60205cde0abe9463dd285fcc71c264931fa80359acd8a148722"
+  },
+  {
+    "path": "game/assets/terrain-review-v001/village-option2-expanded.png",
+    "bytes": 2231251,
+    "sha256": "97d718e8904c0c832564a3193be6e23bb936d2b2763b2c92a21ed5c6378e39e3"
   }
 ]

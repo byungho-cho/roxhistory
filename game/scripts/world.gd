@@ -34,21 +34,23 @@ func _ready() -> void:
 	reward_roof_bounds=AssetCatalog.texture("BLD-HUT-L1").get_image().get_used_rect()
 	reward_pouch=AtlasTexture.new();reward_pouch.atlas=preload("res://assets/ui/seed-pouch-reference-v001.png");reward_pouch.region=Rect2(796,211,196,177);reward_pouch.filter_clip=true
 	reward_bubble=StyleBoxFlat.new();reward_bubble.bg_color=Color(.99,.92,.76,.86);reward_bubble.border_color=Color(.55,.39,.22,.85);reward_bubble.set_border_width_all(2);reward_bubble.set_corner_radius_all(12);reward_bubble.shadow_color=Color(0,0,0,.15);reward_bubble.shadow_size=3;reward_bubble.shadow_offset=Vector2(1,3)
-	var terrain: Texture2D = preload(SceneStyle.TERRAIN)
+	var terrain: Texture2D = preload("res://assets/terrain-review-v001/village-option2-expanded.png")
 	var background := Sprite2D.new()
 	background.name = "Terrain"
 	background.texture = terrain
 	background.centered = false
-	background.scale = Vector2(2400.0/terrain.get_width(),1350.0/terrain.get_height())
+	background.position=Vector2(-300,-169)
+	background.scale = Vector2(3000.0/terrain.get_width(),1688.0/terrain.get_height())
+	var edge_material:=ShaderMaterial.new();edge_material.shader=preload("res://shaders/village_candidate_edge.gdshader");background.material=edge_material
 	background.z_index = -20
 	add_child(background)
 	# Decorative mirrored edge only; no collisions or navigation are expanded.
 	var surround:=TextureRect.new();surround.name="TerrainSurround"
-	surround.texture=terrain;surround.expand_mode=TextureRect.EXPAND_IGNORE_SIZE
-	surround.position=Vector2(-600,-338);surround.size=Vector2(3600,2026);surround.z_index=-21
+	surround.texture=preload("res://assets/terrain-review-v001/ground-a.png");surround.expand_mode=TextureRect.EXPAND_IGNORE_SIZE
+	surround.position=Vector2(-4800,-5325);surround.size=Vector2(12000,12000);surround.z_index=-21
 	surround.visibility_layer=2
 	surround.mouse_filter=Control.MOUSE_FILTER_IGNORE
-	var surround_material:=ShaderMaterial.new();surround_material.shader=load("res://shaders/village_surround.gdshader")
+	var surround_material:=ShaderMaterial.new();surround_material.shader=load("res://shaders/village_candidate_surround.gdshader")
 	surround.material=surround_material;add_child(surround)
 
 	water = Polygon2D.new()
@@ -63,6 +65,9 @@ func _ready() -> void:
 	water_material.shader = preload("res://shaders/water.gdshader")
 	water.material = water_material
 	add_child(water)
+	# New candidate already paints its distant river; don't overlay the old shoreline.
+	# Physics/playable boundaries remain unchanged until terrain review is approved.
+	water.hide()
 	polygon_body(PackedVector2Array(RIVER_POLYGON))
 	for i in VillageLayout.PLAYABLE.size():
 		var a:Vector2=VillageLayout.PLAYABLE[i];var b:Vector2=VillageLayout.PLAYABLE[(i+1)%VillageLayout.PLAYABLE.size()]

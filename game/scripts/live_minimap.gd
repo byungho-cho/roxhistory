@@ -29,7 +29,7 @@ func _ready()->void:
 	var scale_factor:=PIXELS/DemoPlayer.WORLD_SIZE.y*CONTENT_ZOOM
 	village_view.canvas_transform=Transform2D(Vector2(scale_factor,0),Vector2(0,scale_factor),(Vector2.ONE*PIXELS-DemoPlayer.WORLD_SIZE*scale_factor)*.5)
 	var backing:=CanvasLayer.new();backing.layer=-100;backing.custom_viewport=village_view;village_view.add_child(backing)
-	var ground:=TextureRect.new();ground.texture=load(SceneStyle.TERRAIN);ground.expand_mode=TextureRect.EXPAND_IGNORE_SIZE;ground.size=Vector2.ONE*PIXELS
+	var ground:=TextureRect.new();ground.texture=load("res://assets/terrain-review-v001/ground-a.png");ground.expand_mode=TextureRect.EXPAND_IGNORE_SIZE;ground.size=Vector2.ONE*PIXELS
 	var mat:=ShaderMaterial.new();mat.shader=load("res://shaders/minimap_terrain_extension.gdshader");ground.material=mat;backing.add_child(ground)
 	map_view=make_view()
 	overview=VillageWorldMap.new(app);overview.natural_only=true;map_view.add_child(overview)
