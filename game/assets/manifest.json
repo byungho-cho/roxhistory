@@ -797,5 +797,35 @@
     "path": "game/assets/terrain-review-v001/village-option2-expanded.png",
     "bytes": 2231251,
     "sha256": "97d718e8904c0c832564a3193be6e23bb936d2b2763b2c92a21ed5c6378e39e3"
+  },
+  {
+    "path": "game/assets/ui/building-menu-v001/brush-black-v003.png",
+    "bytes": 915171,
+    "sha256": "5e608f98000c804f91c67e2f01c01ba64f1ff38895c4fb29bd0f100377986ac2"
+  },
+  {
+    "path": "game/assets/ui/building-menu-v001/button-base.png",
+    "bytes": 681355,
+    "sha256": "18cebc4a83d3aa0ac8fdcf94fe85806f6df1a78256a5e483da2998d00aa89905"
+  },
+  {
+    "path": "game/assets/ui/building-menu-v001/icon-close.png",
+    "bytes": 388213,
+    "sha256": "b2ed55b52becb01e5b66f2fa969616c9a38398b3baf93c60824476e144554bc2"
+  },
+  {
+    "path": "game/assets/ui/building-menu-v001/icon-demolish.png",
+    "bytes": 680098,
+    "sha256": "ed7d825f89851b2f7905073a22b97c78754e079959a637dbaee68beaaa3ffaef"
+  },
+  {
+    "path": "game/assets/ui/building-menu-v001/icon-move.png",
+    "bytes": 675421,
+    "sha256": "63d54304b314fd889971143cff5b17e28b861dd55e4ab99f8246e92d31d8ae02"
+  },
+  {
+    "path": "game/assets/ui/building-menu-v001/icon-upgrade.png",
+    "bytes": 738286,
+    "sha256": "a089b3cc8e00081b21ae9de66dbe5048a30bf9feb2b8262e1133429a266dadda"
   }
 ]

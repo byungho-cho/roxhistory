@@ -17,8 +17,9 @@ func item(title:String,texture:Texture2D,at:Vector2,callback:Callable)->DemoButt
 	var b:DemoButton=app.button(self,"",callback);b.position=at;b.custom_minimum_size=Vector2(64,68);b.size=Vector2(64,68)
 	for state in ["normal","hover","pressed","disabled"]:b.add_theme_stylebox_override(state,StyleBoxEmpty.new())
 	app.picture(b,texture,Rect2(7,0,50,50))
-	var brush:Texture2D=preload("res://assets/ui/brush/resource-slot-brush@2x.png")
-	app.picture(b,brush,Rect2(3,40,58,20))
+	var brush:Texture2D=BuildingMenu.art("brush-black-v003.png")
+	var background:TextureRect=app.picture(b,brush,Rect2(3,40,58,20))
+	background.modulate.a=.82
 	var caption:Label=app.label(b,title,11,Color("fff5d6"));caption.position=Vector2(3,40);caption.size=Vector2(58,20);caption.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER;caption.vertical_alignment=VERTICAL_ALIGNMENT_CENTER
 	b.enable_art_feedback()
 	return b

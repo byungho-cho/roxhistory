@@ -63,6 +63,7 @@ var world_map_open:=false
 var map_toggle:DemoButton
 var family:FamilyArrival
 var building_workflow:BuildingWorkflow
+var building_menu:BuildingMenu
 
 func toggle_quest()->void:
 	quest_expanded=not quest_expanded
@@ -468,6 +469,7 @@ func play_hud() -> void:
 	var toggle_visual:=MenuToggleVisual.new();toggle_visual.name="ToggleVisual";menu_toggle.add_child(toggle_visual)
 	apply_menu_state()
 	build_side=BuildSideMenu.new(self);stage.add_child(build_side)
+	building_menu=BuildingMenu.new(self);stage.add_child(building_menu)
 	build_preview=BuildPreview.new(self);world.add_child(build_preview)
 	cancel_site_button=button(stage,"부지 선택 취소",cancel_build_preview)
 	cancel_site_button.name="CancelBuildSite";cancel_site_button.custom_minimum_size=Vector2.ZERO
@@ -707,6 +709,7 @@ func gather_action(selected_id:String="") -> void:
 
 func construction_menu()->void:
 	if modal or gestures.blocked:return
+	if is_instance_valid(building_menu):building_menu.close()
 	cancel_build_preview()
 	build_side.visible=not build_side.visible
 
@@ -790,20 +793,31 @@ func cancel_task(clear_reservation:bool=true) -> void:
 func completion() -> void:
 	pass # The building's reward marker is the completion affordance.
 
+func request_building_menu(screen_point:Vector2)->void:
+	if is_instance_valid(building_menu):building_menu.show_at(screen_point)
+
 func request_demolition(screen_point:Vector2)->void:
 	if modal or not application_active or screen!="play":return
-	var at:Vector2=world.get_global_transform_with_canvas().affine_inverse()*screen_point
+	var at:=world.get_global_transform_with_canvas().affine_inverse()*screen_point
 	for i in model.built_count():
-		if not world.reward_hit(i,at):continue
-		if model.reward_pending(i):toast("건물을 눌러 씨앗을 먼저 받아 주세요");return
-		var key:=model.home_key(i)
-		var quote:=model.demolition_quote(key)
-		show_modal("이 움집을 철거할까요?","반환: 나무 %d개 · 돌 %d개"%[quote.wood,quote.stone],[{"text":"취소","action":close_modal},{"text":"철거","action":func():confirm_demolition(key)}],true,true,true)
-		demolition_key=key
-		var shade:=overlay.get_child(0)
-		shade.gui_input.connect(func(event:InputEvent):
-			if event is InputEventMouseButton and event.pressed and event.button_index==MOUSE_BUTTON_LEFT:close_modal())
-		return
+		if world.reward_hit(i,at):show_demolition_confirmation(model.home_key(i));return
+
+func show_demolition_confirmation(key:String)->void:
+	if modal or not application_active or screen!="play":return
+	var quote:=model.demolition_quote(key)
+	if quote.is_empty():return
+	if model.reward_pending(int(quote.index)):toast("건물 위 씨앗 보상을 먼저 받아 주세요");return
+	show_modal("이 움집을 철거할까요?","반환: 나무 %d개 · 돌 %d개"%[quote.wood,quote.stone],[{"text":"취소","action":close_modal},{"text":"철거","action":func():confirm_demolition(key)}],true,true,true)
+	demolition_key=key
+	var buttons:=overlay.find_children("*","Button",true,false)
+	for i in buttons.size():
+		var b:Button=buttons[i];b.text="";b.custom_minimum_size.y=56
+		var skin:=b.get_node_or_null("FigmaSkin")
+		if skin:skin.hide()
+		BuildingMenu.decorate(b,"icon-close.png" if i==0 else "icon-demolish.png",44)
+	var shade:=overlay.get_child(0)
+	shade.gui_input.connect(func(event:InputEvent):
+		if event is InputEventMouseButton and event.pressed and event.button_index==MOUSE_BUTTON_LEFT:close_modal())
 
 func confirm_demolition(key:String)->void:
 	if not application_active or not modal or demolition_key!=key:return
@@ -836,7 +850,10 @@ func world_tap(screen_point:Vector2) -> void:
 	if world_map_open or modal or gestures.blocked:return
 	var at:Vector2=world.get_global_transform_with_canvas().affine_inverse()*screen_point
 	for i in model.built_count():
-		if model.reward_pending(i) and world.reward_hit(i,at):claim_home(i);return
+		if model.reward_pending(i) and world.reward_marker_rect(i).grow(6).has_point(at):claim_home(i);return
+	if is_instance_valid(building_menu):
+		if building_menu.show_at(screen_point):return
+		if building_menu.visible:building_menu.close();return
 	for n in model.nodes():
 		if world.exhausted(n):continue
 		var point:=DemoConfig.point(n.position)

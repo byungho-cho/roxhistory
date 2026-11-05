@@ -16,6 +16,7 @@ var mouse_can_pan:=false
 var panning:=false
 var hold_at:=Vector2.INF
 var hold_time:=0.0
+var hold_consumed:=false
 func _process(delta:float)->void:
 	if not hold_at.is_finite():return
 	if app.modal or not app.application_active or pinching or panning or mouse_dragging:hold_at=Vector2.INF;return
@@ -23,10 +24,11 @@ func _process(delta:float)->void:
 	if hold_time>=0.65:
 		var at:=hold_at
 		hold_at=Vector2.INF
-		app.request_demolition(at)
+		hold_consumed=true
+		app.request_building_menu(at)
 func _init(owner_app: Node) -> void: app=owner_app
 func clear() -> void:
-	hold_at=Vector2.INF;hold_time=0.0
+	hold_at=Vector2.INF;hold_time=0.0;hold_consumed=false
 	mouse_start=Vector2.INF
 	mouse_dragging=false;panning=false
 	touches.clear();pinching=false;blocked=false
@@ -57,11 +59,11 @@ func _input(event: InputEvent) -> void:
 		elif event.button_index==MOUSE_BUTTON_LEFT:
 			if event.pressed:
 				mouse_start=event.position if not ui_hit(event.position) else Vector2.INF
-				hold_at=mouse_start;hold_time=0.0
+				hold_at=mouse_start;hold_time=0.0;hold_consumed=false
 				mouse_last=event.position;mouse_can_pan=not app.world.interaction_at(event.position)
 			else:
 				hold_at=Vector2.INF
-				if not mouse_dragging and mouse_start.is_finite() and mouse_start.distance_to(event.position)<12:app.world_tap(event.position)
+				if not hold_consumed and not mouse_dragging and mouse_start.is_finite() and mouse_start.distance_to(event.position)<12:app.world_tap(event.position)
 				if mouse_dragging:blocked=false
 				mouse_dragging=false
 				mouse_start=Vector2.INF
@@ -76,7 +78,7 @@ func _input(event: InputEvent) -> void:
 		if event.pressed:
 			touches[event.index]={"at":event.position,"start":event.position,"ui":ui_hit(event.position),"moved":false,"pan":not app.world.interaction_at(event.position)}
 			hold_at=event.position if touches.size()==1 and not ui_hit(event.position) else Vector2.INF
-			hold_time=0.0
+			hold_time=0.0;hold_consumed=false
 			var world_fingers: Array=[]
 			var has_ui:=false
 			for key in touches:
@@ -99,7 +101,7 @@ func _input(event: InputEvent) -> void:
 			hold_at=Vector2.INF
 			if touches.has(event.index) and not blocked:
 				var finger:Dictionary=touches[event.index]
-				if not finger.ui and not finger.moved and finger.start.distance_to(event.position)<12:app.world_tap(event.position)
+				if not hold_consumed and not finger.ui and not finger.moved and finger.start.distance_to(event.position)<12:app.world_tap(event.position)
 			touches.erase(event.index)
 			if pinching and touches.size()<2:
 				pinching=false;app.world.player.camera.position_smoothing_enabled=true

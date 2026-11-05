@@ -41,8 +41,7 @@ func upgrade_block_reason(target:int)->String:
 	if approved_texture("BLD-CHIEF-L%d"%target)==null:return "%d단계 주인공 움집 에셋 준비 중"%target
 	return ""
 
-# Approved radial-menu upgrade action will call this entry point. Do not add
-# replacement radial buttons while their actual artwork is still unavailable.
+# Approved radial-menu upgrade action calls this guarded entry point.
 func request_upgrade()->void:
 	if app.modal or not app.application_active or app.screen!="play" or app.world_map_open:return
 	var target:int=app.model.chief_level()+1

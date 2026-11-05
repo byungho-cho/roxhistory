@@ -21,8 +21,8 @@ Local backup archives contain working changes and preview save profiles; they ar
 - Outpost and chief-upgrade data transactions are prepared and tested, but gameplay activation, final visuals and upgrade animation integration are incomplete. The outpost menu remains disabled pending its approved level-one asset. The existing Figma 886:36 icon is explicitly marked unverified.
 - Outpost rule: chief hut plus three completed resident huts; wood 15 / stone 10. Demolition below the threshold relocks new construction while preserving existing outposts.
 - Chief upgrade rule: completed outpost required; each step uses the current hut cost (wood 20 / stone 20); base construction time 2 seconds gives 4 / 8 / 16 seconds for levels 2 / 3 / 4. Persisted start/end timestamps prevent repeated payment and completion. Device-clock changes can accelerate or delay offline completion; there is no server time authority.
-- Terrain/fog subsequently arrived through the approved Git asset branch and are integrated as candidates; see `terrain-candidate-review.md`. Village-return icon, bubbles and submenu brush assets remain unavailable through the Windows Library transfer path. Existing provisional visuals remain; brown replacement brush was not applied, black variant is pending.
-- Building radial menu is approved in concept but awaits assets; relocation is not implemented. No invented replacement artwork is included.
+- Terrain/fog subsequently arrived through the approved Git asset branch and are integrated as candidates; see `terrain-candidate-review.md`. The approved black submenu brush and radial menu also arrived through Git and are applied; see `building-menu-review.md`. Village-return icon and bubbles remain unavailable through the Windows Library transfer path. Brown replacement brush was not applied.
+- Building radial menu is connected to existing selection and demolition confirmation. Relocation remains explicitly disabled; chief upgrades remain gated by completed outpost and approved building-stage assets. No invented replacement artwork is included.
 - Village outer terrain and world-map texture remain provisional. Maximum village zoom matching the supplied reference remains unresolved.
 
 ## Verification and distribution
@@ -33,6 +33,6 @@ APK 0.1.38 (version code 39) was built locally with the same certificate as 0.1.
 
 ## Subsequent workflow wiring (not in the existing 0.1.38 APK)
 
-`BuildingWorkflow.request_upgrade()` is the entry point for the pending approved radial menu. It uses the existing confirmation modal, invalidates canceled callbacks, rechecks resources/current level/assets before payment, and processes durable completion independently of ordinary work and map switching. The existing construction scaffold is reused at the chief hut and excluded from GPS. Final construction effects and radial-menu input remain pending.
+`BuildingWorkflow.request_upgrade()` is the entry point connected to the approved radial menu. It uses the existing confirmation modal, invalidates canceled callbacks, rechecks resources/current level/assets before payment, and processes durable completion independently of ordinary work and map switching. The existing construction scaffold is reused at the chief hut and excluded from GPS. Final construction effects remain pending.
 
 Building textures require explicit `approved: true` catalog records under `BLD-CHIEF-L2/L3/L4` and `BLD-OUTPOST-L1`; absent, invalid or unapproved resources never become catalog fallback artwork. These records are deliberately not added without the approved source files. Outpost menu conditions are centralized, but outpost placement/rendering is still pending. No new feature is exposed as playable, and no new APK is built or published by this follow-up.
