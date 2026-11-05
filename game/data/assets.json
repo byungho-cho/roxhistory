@@ -1,0 +1,283 @@
+{
+  "version": 1,
+  "assets": {
+    "BLD-HUT-L1": {
+      "file": "res://assets/refactor-v035/hut-stages.png",
+      "crop": [
+        84,
+        281,
+        338,
+        292
+      ],
+      "anchor": [
+        0.5,
+        0.8
+      ],
+      "fallback": "BLD-HUT-LEGACY",
+      "source": "Figma 957:293",
+      "notes": "First stage only; transparent atlas padding preserved. No chimney. Footprint is independent.",
+      "source_size": [
+        2172,
+        724
+      ],
+      "sha256": "02a93a4e37cd99f7d103b550e1261d737a4b31a778519e5473ed26f92f41d5bc"
+    },
+    "BLD-HUT-LEGACY": {
+      "file": "res://assets/environment/hut-round.png",
+      "crop": [
+        63,
+        50,
+        901,
+        589
+      ],
+      "anchor": [
+        0.5,
+        0.8
+      ],
+      "source_size": [
+        1024,
+        683
+      ],
+      "sha256": "277f188c76c8cbb1aa6812e3fee97428596a4a775d0c57c835ac345cb5548efc"
+    },
+    "GROUND-PAD": {
+      "file": "res://assets/refactor-v035/pad.png",
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "source": "Figma 956:337 / 854:201",
+      "road_sockets": [
+        [
+          0,
+          0.5
+        ],
+        [
+          0.5,
+          0
+        ],
+        [
+          1,
+          0.5
+        ],
+        [
+          0.5,
+          1
+        ]
+      ],
+      "notes": "Diamond crop. Edge mask in shader, logical span remains 6 or 4 cells.",
+      "alpha_bounds": [
+        344,
+        110,
+        1088,
+        676
+      ],
+      "source_size": [
+        1774,
+        887
+      ],
+      "sha256": "5b9008280f4720ca59b76c81ddd94627a6254d08980db39419c5790441c970ea"
+    },
+    "GROUND-ROAD": {
+      "file": "res://assets/refactor-v035/road.png",
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "source": "Figma 826:107",
+      "road_sockets": [
+        [
+          0.145,
+          0.873
+        ],
+        [
+          0.902,
+          0.177
+        ]
+      ],
+      "notes": "Alpha glow requires runtime clipping; 1-cell logical width.",
+      "source_size": [
+        1536,
+        1024
+      ],
+      "sha256": "3beadf926ca94db77cbdb57944d02a94a4f0a17408f72488573d5762a42eda74"
+    },
+    "WORLD-VILLAGE": {
+      "file": "res://assets/refactor-v035/world-village.png",
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "fallback": "BLD-HUT-LEGACY",
+      "source": "Figma 755:50",
+      "source_size": [
+        1536,
+        1024
+      ],
+      "sha256": "3ad0ffe76013095583f03ce03f5ffcd8ead82c6df3eb2c8d14b5003647ce03e3"
+    },
+    "TERRAIN-VILLAGE": {
+      "file": "res://assets/environment/terrain-isometric-v034.png",
+      "anchor": [
+        0,
+        0
+      ],
+      "source": "Figma 826:110",
+      "source_size": [
+        1672,
+        941
+      ],
+      "sha256": "504f52757a228434ae1141750d50640d328d6e1d350d498952991cacd81fa208"
+    },
+    "ENV-TREE": {
+      "file": "res://assets/environment/tree-v018.png",
+      "crop": [
+        15,
+        52,
+        1062,
+        1380
+      ],
+      "anchor": [
+        0.5,
+        1
+      ],
+      "source_size": [
+        1086,
+        1448
+      ],
+      "sha256": "7043a5bd3b7f5ab0abc78cd2bfa6c9925174d5d9fc0c1686587f23b8b806eabe"
+    },
+    "ENV-ROCK": {
+      "file": "res://assets/environment/rock-v018.png",
+      "crop": [
+        90,
+        151,
+        1390,
+        709
+      ],
+      "anchor": [
+        0.5,
+        1
+      ],
+      "source_size": [
+        1536,
+        1024
+      ],
+      "sha256": "292ecab63711a9c4d72d35bec3c8e154fcd18eedaaae8746c33e61b918161865"
+    },
+    "UI-MAP": {
+      "file": "res://assets/refactor-v035/map-button.png",
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "source": "Figma 996:39",
+      "source_size": [
+        1254,
+        1254
+      ],
+      "sha256": "361d89ea27dc80da28d3c65c457f03922bab17f3715a8c9720b46068e60ce181"
+    },
+    "UI-HOME": {
+      "file": "res://assets/refactor-v035/home-button.png",
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "source": "Figma 1024:44",
+      "source_size": [
+        1254,
+        1254
+      ],
+      "sha256": "d177670a86aab56976e18ae4dee90db6edc47d6b433d5099fe07f98a99f81359"
+    },
+    "UI-SEED": {
+      "file": "res://assets/refactor-v035/seeds.png",
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "source": "Figma 988:39",
+      "source_size": [
+        1254,
+        1254
+      ],
+      "sha256": "0dfba74f6139fb0144647cac89a43fd7bfd45fb4045be83c825a7ec3c2d536bf"
+    },
+    "WORLD-RIVER": {
+      "file": "res://assets/refactor-v035/world-river.png",
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "source": "Figma 1047:36",
+      "source_size": [
+        2172,
+        724
+      ],
+      "sha256": "d8020a8c63089c5e62b249769b04cf038c58ddb1e6ca88b4777b7678092a2702"
+    },
+    "WORLD-LAKE": {
+      "file": "res://assets/refactor-v035/world-lake.png",
+      "crop": [
+        253,
+        137,
+        1234,
+        602
+      ],
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "source": "Figma 1044:42",
+      "source_size": [
+        1774,
+        887
+      ],
+      "sha256": "fa473e26d1df323e12762abf06203a5b7f2b88e75a4bda2edffe6f32e48a0a5b"
+    },
+    "WORLD-MOUNTAIN": {
+      "file": "res://assets/refactor-v035/mountain-map.png",
+      "crop": [
+        612,
+        281,
+        176,
+        136
+      ],
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "source": "Figma 1036:425; separate mask",
+      "source_size": [
+        1672,
+        941
+      ],
+      "sha256": "64170ffb72632d32dc93d6a560dae0432dfd4e4699a6d8ea7afe09a1be87a033"
+    },
+    "BLD-OUTPOST": {
+      "file": "res://assets/refactor-v036/watchtower.png",
+      "source": "Figma 886:36",
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "sha256": "87d68ae68bbc9702ac0a2aa20cddde7693fd4a21fc9dcd2bdc76f9cf8674e942",
+      "notes": "Authored transparent image. Keep padding and aspect ratio; no duplicate background.",
+      "source_size": [
+        1254,
+        1254
+      ]
+    },
+    "UI-MENU-COLLAPSE": {
+      "file": "res://assets/refactor-v036/menu-collapse.png",
+      "source": "Figma 836:116",
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "sha256": "992399652e3bc33d71984eca53fe32efac96e2f1cb3eb81b05bd8cb5fb56ec72",
+      "notes": "Authored transparent image. Keep padding and aspect ratio; no duplicate background."
+    }
+  }
+}

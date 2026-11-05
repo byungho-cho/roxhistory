@@ -49,7 +49,7 @@ func ui_hit(at: Vector2) -> bool:
 func _input(event: InputEvent) -> void:
 	if OS.has_feature("android") and app.test_mode and trace_events<30 and (event is InputEventScreenTouch or event is InputEventScreenDrag):
 		trace_events+=1;print("PLAY_TOUCH ",event.as_text()," active=",app.application_active," screen=",app.screen)
-	if app.screen!="play" or not is_instance_valid(app.world) or not app.application_active: return
+	if app.world_map_open or app.screen!="play" or not is_instance_valid(app.world) or not app.application_active: return
 	if event is InputEventMouseButton and not OS.has_feature("android"):
 		if event.ctrl_pressed and event.pressed and event.button_index in [MOUSE_BUTTON_WHEEL_UP,MOUSE_BUTTON_WHEEL_DOWN] and not ui_hit(event.position):
 			app.navigation.cancel();app.world.player.zoom_at(event.position,app.world.player.zoom_factor*(1.12 if event.button_index==MOUSE_BUTTON_WHEEL_UP else 1.0/1.12));get_viewport().set_input_as_handled()

@@ -65,6 +65,11 @@ jobs:
           set -euo pipefail
           timeout 600 xvfb-run -a godot --fixed-fps 60 --audio-driver Dummy --path game --resolution 1280x720 --script res://tests/isometric_village_tests.gd -- --test-ui 2>&1 | tee isometric-tests.log
           ! grep -E 'SCRIPT ERROR:|ERROR:' isometric-tests.log
+      - name: Current visual refactor and map input checks
+        run: |
+          set -euo pipefail
+          timeout 300 xvfb-run -a godot --fixed-fps 60 --audio-driver Dummy --path game --resolution 1280x720 --script res://tests/first_refactor_tests.gd -- --test-ui 2>&1 | tee refactor-tests.log
+          ! grep -E 'SCRIPT ERROR:|ERROR:' refactor-tests.log
       - name: Historical scene coordinate checks
         if: github.event_name == 'workflow_dispatch' && inputs.legacy_scene_checks
         run: |

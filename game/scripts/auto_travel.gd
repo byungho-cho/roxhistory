@@ -64,6 +64,7 @@ func start(kind:String,id:String,destination:Vector2,retry:int=0,blocked:Array[V
 	player.work_destination=path[0]
 	return true
 func _physics_process(delta:float) -> void:
+	if app.world_map_open:return
 	if action=="" or not is_instance_valid(app.world):return
 	var player:DemoPlayer=app.world.player
 	if app.modal:return # Informational UI pauses the queued route, just like active work.

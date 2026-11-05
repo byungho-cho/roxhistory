@@ -80,9 +80,10 @@ func _draw() -> void:
 		draw_texture_rect_region(RESOURCE_BRUSH,Rect2(brush_rect.position,Vector2(left,27)),Rect2(0,0,64,112))
 		draw_texture_rect_region(RESOURCE_BRUSH,Rect2(brush_rect.position+Vector2(left,0),Vector2(84-left-right,27)),Rect2(64,0,272,112))
 		draw_texture_rect_region(RESOURCE_BRUSH,Rect2(brush_rect.end-Vector2(right,27),Vector2(right,27)),Rect2(336,0,176,112))
+
 		var extent:=28.0+beat*4
 		draw_texture_rect(DemoArt.icon(key),Rect2(rect.position+Vector2(3,3),Vector2(extent,extent)),false)
-		draw_string(font,rect.position+Vector2(34,25),str(int(displayed_tokens)) if key=="tokens" else str(int(app.model.state[key])),HORIZONTAL_ALIGNMENT_LEFT,62,15,Color(1,.98,.90,1))
+		draw_string(font,rect.position+Vector2(34,25),str(int(displayed_tokens)) if key=="tokens" else str(int(app.model.state[key])),HORIZONTAL_ALIGNMENT_LEFT,66,13,Color(1,.98,.90,1))
 	var center:=Vector2(app.w-app.safe.x-50,app.safe.y+50)
 	draw_circle(center+Vector2(1,3),53,Color(.15,.10,.04,.20))
 	draw_circle(center,51,Color("49321e"))
@@ -93,7 +94,7 @@ func _draw() -> void:
 	draw_colored_polygon(points,Color.WHITE,uv,preload(SceneStyle.TERRAIN))
 	draw_arc(center,50,0,TAU,64,Color("c8a15e"),3,true)
 	draw_arc(center,49,-PI,-PI*.12,40,Color("fff0bb"),1,true)
-	var normalized: Vector2=app.world.player.position/Vector2(2400,1350)-Vector2(.5,.5)
+	var normalized: Vector2=Vector2.ZERO if app.world_map_open else app.world.player.position/Vector2(2400,1350)-Vector2(.5,.5)
 	var dot:=center+(normalized*96).limit_length(45)
 	draw_circle(dot,4.5,Color("63451d"))
 	draw_circle(dot,2.5,Color("fff0b2"))

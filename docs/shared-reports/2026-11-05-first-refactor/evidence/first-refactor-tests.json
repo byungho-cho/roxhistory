@@ -1,0 +1,5 @@
+{
+  "checks": 30,
+  "environment": "Godot isolated test profile; no physical touchscreen",
+  "failures": []
+}

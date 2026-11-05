@@ -24,7 +24,7 @@ func run()->void:
 	await capture("initial")
 	app.world.player.zoom_at(Vector2(640,360),DemoPlayer.MAX_ZOOM);await capture("zoom")
 	app.world.player.zoom_at(Vector2(640,360),DemoPlayer.MIN_ZOOM)
-	var next:Dictionary=app.model.state.duplicate(true);next.wood=10;next.stone=10;app.model.commit(next)
+	var next:Dictionary=app.model.state.duplicate(true);next.wood=100;next.stone=100;app.model.commit(next)
 	for id in 3:
 		check(app.world.site_available(id),"Plot %d available"%id)
 		var before:=JSON.stringify(app.model.state)

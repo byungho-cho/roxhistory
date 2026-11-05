@@ -16,16 +16,9 @@ const HUT_BOUNDS := [Rect2(63,50,901,589),Rect2(62,83,899,551),Rect2(15,72,997,5
 func set_hut_style(value: int) -> void:
 	hut_style = clampi(value,0,2)
 	var width := sprite.texture.get_width()*sprite.scale.x
-	var key := "hut_style_"+str(hut_style)
-	if not textures.has(key):
-		var texture: Texture2D = load(HUTS[hut_style])
-		var atlas := AtlasTexture.new()
-		atlas.atlas = texture
-		atlas.region = HUT_BOUNDS[hut_style]
-		textures[key] = atlas
-	sprite.texture = textures[key]
+	sprite.texture = AssetCatalog.texture("BLD-HUT-L1")
 	sprite.scale = Vector2.ONE*width/sprite.texture.get_width()
-	sprite.position.y = -sprite.texture.get_height()*sprite.scale.y*0.5
+	sprite.position.y = -sprite.texture.get_height()*sprite.scale.y*0.30
 	if depth_visual:sprite.position.y-=depth_visual.position.y
 	queue_redraw()
 

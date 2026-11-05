@@ -68,7 +68,7 @@ func valid(s: Variant) -> bool:
 		if s.has(flag) and not s[flag] is bool:return false
 	var allowed := {}
 	for n in DemoConfig.get_data().nodes:
-		allowed[n.id] = n.charges
+		allowed[n.id] = n.charges if int(s.get("resource_revision",0))>=35 else (5 if n.kind=="wood" else 4)
 	for k in s.depleted:
 		if not allowed.has(k) or not (s.depleted[k] is int or s.depleted[k] is float):
 			return false
