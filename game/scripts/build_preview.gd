@@ -12,11 +12,11 @@ func _ready()->void:
 	ghost.modulate=Color(1,1,.87,.52)
 	controls=HBoxContainer.new();controls.name="BuildPreviewControls";controls.add_theme_constant_override("separation",8);app.stage.add_child(controls)
 	for entry in [["✕","취소",false],["✓","건설 확인",true]]:
-		var b:=Button.new();b.custom_minimum_size=Vector2(48,48)
+		var b:=Button.new();b.custom_minimum_size=Vector2(48,48);b.focus_mode=Control.FOCUS_NONE
 		b.icon=preload("res://assets/ui/v034/build-confirm.png") if entry[2] else preload("res://assets/ui/v034/build-cancel.png")
 		var cropped:=AtlasTexture.new();cropped.atlas=b.icon;cropped.region=b.icon.get_image().get_used_rect();b.icon=cropped
 		b.expand_icon=true;b.add_theme_constant_override("icon_max_width",58)
-		for state in ["normal","hover","pressed"]:b.add_theme_stylebox_override(state,StyleBoxEmpty.new())
+		for state in ["normal","hover","pressed","focus","disabled"]:b.add_theme_stylebox_override(state,StyleBoxEmpty.new())
 		b.pressed.connect(app.confirm_build_preview if entry[2] else app.cancel_build_preview)
 		controls.add_child(b)
 	hide();controls.hide()

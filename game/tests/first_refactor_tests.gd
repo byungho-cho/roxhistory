@@ -26,6 +26,14 @@ func run()->void:
 	check(app.build_side.visible and not app.modal,"Construction opens side menu, not modal")
 	check(app.build_side.hut.disabled,"Insufficient materials disable hut")
 	await capture("build-side-poor")
+	app.choosing_plot=true;app.build_preview.select(0);await frames()
+	var poor_state:=JSON.stringify(app.model.state)
+	var confirm:Button=app.build_preview.controls.get_child(1)
+	confirm.pressed.emit();await frames()
+	check(JSON.stringify(app.model.state)==poor_state and app.task=="","Insufficient confirmation neither spends nor builds")
+	check(confirm.focus_mode==Control.FOCUS_NONE and confirm.get_theme_stylebox("focus") is StyleBoxEmpty,"PC confirmation has no rectangular focus border")
+	await capture("preview-insufficient")
+	app.cancel_build_preview()
 	app.construction_menu();await frames()
 
 	var at:Vector2=app.world.player.position
