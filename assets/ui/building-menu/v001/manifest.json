@@ -1,0 +1,97 @@
+[
+  {
+    "file": "button-base.png",
+    "size": [
+      1254,
+      1254
+    ],
+    "mode": "RGBA",
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "visible_bounds": [
+      285,
+      291,
+      954,
+      965
+    ],
+    "sha256": "18cebc4a83d3aa0ac8fdcf94fe85806f6df1a78256a5e483da2998d00aa89905"
+  },
+  {
+    "file": "icon-move.png",
+    "size": [
+      1254,
+      1254
+    ],
+    "mode": "RGBA",
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "visible_bounds": [
+      214,
+      207,
+      1031,
+      1062
+    ],
+    "sha256": "63d54304b314fd889971143cff5b17e28b861dd55e4ab99f8246e92d31d8ae02"
+  },
+  {
+    "file": "icon-upgrade.png",
+    "size": [
+      1254,
+      1254
+    ],
+    "mode": "RGBA",
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "visible_bounds": [
+      241,
+      261,
+      1012,
+      966
+    ],
+    "sha256": "a089b3cc8e00081b21ae9de66dbe5048a30bf9feb2b8262e1133429a266dadda"
+  },
+  {
+    "file": "icon-demolish.png",
+    "size": [
+      1254,
+      1254
+    ],
+    "mode": "RGBA",
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "visible_bounds": [
+      249,
+      207,
+      1015,
+      1063
+    ],
+    "sha256": "ed7d825f89851b2f7905073a22b97c78754e079959a637dbaee68beaaa3ffaef"
+  },
+  {
+    "file": "icon-close.png",
+    "size": [
+      1254,
+      1254
+    ],
+    "mode": "RGBA",
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "visible_bounds": [
+      366,
+      386,
+      887,
+      908
+    ],
+    "sha256": "b2ed55b52becb01e5b66f2fa969616c9a38398b3baf93c60824476e144554bc2"
+  }
+]
