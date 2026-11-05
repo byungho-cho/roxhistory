@@ -33,13 +33,21 @@ func rebuild_art()->void:
 		var target:Vector2=PLOTS[int(home_data.get("site",0))]
 		var elbow:=Vector2(target.x,CHIEF.y)
 		road(CHIEF,elbow);road(elbow,target)
-	foundation(CHIEF,6)
-	for home_data in model.homes()+model.outposts():foundation(PLOTS[int(home_data.get("site",0))],4)
+	foundation(CHIEF,6,model.chief_level())
+	for home_data in model.homes()+model.outposts():foundation(PLOTS[int(home_data.get("site",0))],4,int(home_data.get("level",1)))
 	queue_redraw()
-func foundation(cell:Vector2,span:int)->void:
-	var s:=Sprite2D.new();s.texture=AssetCatalog.texture("GROUND-PAD");s.scale=Vector2.ONE*(span*64.0/1088.0)
-	s.position=project(cell)+Vector2(0,span*6);s.scale.y*=.81
-	var material:=ShaderMaterial.new();material.shader=preload("res://shaders/pad_edge.gdshader");s.material=material;s.z_index=1;s.texture_filter=CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+func foundation(cell:Vector2,span:int,level:int=1)->void:
+	var id:="GROUND-PAD-L%d"%clampi(level,1,4)
+	var entry:=AssetCatalog.entry(id)
+	var bounds:Array=entry.alpha_bounds
+	var s:=Sprite2D.new();s.texture=AssetCatalog.texture(id)
+	# Preserve the old visible ground extent and centre; source PNG padding stays intact.
+	var visible_size:=Vector2(float(span)*64.0,float(span)*64.0*676.0/1088.0*.81)
+	s.scale=visible_size/Vector2(bounds[2],bounds[3])
+	s.offset=s.texture.get_size()*.5-(Vector2(bounds[0],bounds[1])+Vector2(bounds[2],bounds[3])*.5)
+	s.position=project(cell)+Vector2(0,span*6)
+	s.set_meta("foundation_level",clampi(level,1,4));s.set_meta("foundation_cell",cell);s.set_meta("foundation_span",span)
+	s.z_index=1;s.texture_filter=CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	add_child(s)
 func road(a:Vector2,b:Vector2)->void:
 	if a==b:return

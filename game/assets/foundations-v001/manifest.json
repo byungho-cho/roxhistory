@@ -1,0 +1,82 @@
+[
+  {
+    "file": "res://assets/foundations-v001/level-1.png",
+    "source_size": [
+      1774,
+      887
+    ],
+    "alpha_bounds": [
+      71,
+      66,
+      1617,
+      756
+    ],
+    "anchor": [
+      0.5,
+      0.5
+    ],
+    "source": "Figma zkbflw9fCdAlWbphhw5pSS / 1092:49 / 1091:519",
+    "level_mapping": "L1=B dirt",
+    "sha256": "223557b646fc7108e94468eb52451d45e17f69dc604cff58f3a12dd634afe33d"
+  },
+  {
+    "file": "res://assets/foundations-v001/level-2.png",
+    "source_size": [
+      1774,
+      887
+    ],
+    "alpha_bounds": [
+      71,
+      69,
+      1612,
+      752
+    ],
+    "anchor": [
+      0.5,
+      0.5
+    ],
+    "source": "Figma zkbflw9fCdAlWbphhw5pSS / 1092:49 / 1091:518",
+    "level_mapping": "L2=A dirt",
+    "sha256": "f618c56c6292e73e7c6cdd8d952de4b577fe1aac19c570a55187e05872fd0420"
+  },
+  {
+    "file": "res://assets/foundations-v001/level-3.png",
+    "source_size": [
+      1774,
+      887
+    ],
+    "alpha_bounds": [
+      69,
+      58,
+      1625,
+      767
+    ],
+    "anchor": [
+      0.5,
+      0.5
+    ],
+    "source": "Figma zkbflw9fCdAlWbphhw5pSS / 1092:49 / 1091:517",
+    "level_mapping": "L3=gravel",
+    "sha256": "9aba2a2627d772ead2e6a81fbdfa62afb7236fb38e593c7f2371738e2566d20c"
+  },
+  {
+    "file": "res://assets/foundations-v001/level-4.png",
+    "source_size": [
+      1774,
+      887
+    ],
+    "alpha_bounds": [
+      67,
+      57,
+      1628,
+      772
+    ],
+    "anchor": [
+      0.5,
+      0.5
+    ],
+    "source": "Figma zkbflw9fCdAlWbphhw5pSS / 1092:49 / 1098:38",
+    "level_mapping": "L4=ordered natural stone",
+    "sha256": "cb18aacdc9d0669738c780d184a7926c8fb6219492f328dd51d5d45af6f3f610"
+  }
+]

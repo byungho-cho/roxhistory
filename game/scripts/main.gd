@@ -486,6 +486,7 @@ func play_hud() -> void:
 	task_bar=ProgressBar.new();task_bar.mouse_filter=Control.MOUSE_FILTER_IGNORE;task_bar.show_percentage=false;task_bar.position=Vector2(w*.5-100,h-safe.y-120);task_bar.size=Vector2(200,7);stage.add_child(task_bar);task_bar.visible=false
 	chrome=PlayChrome.new(self);chrome.z_index=5;stage.add_child(chrome);chrome.size=Vector2(w,h)
 	stage.add_child(ConstructionProgress.new(self))
+	stage.add_child(ConstructionProgress.new(self,true))
 	family=FamilyArrival.new(self);stage.add_child(family)
 	var map_hit:=button(stage,"",recenter_map);map_hit.name="RecenterCamera";map_hit.custom_minimum_size=Vector2.ZERO;map_hit.position=Vector2(w-safe.x-100,safe.y+10);map_hit.size=Vector2(100,100)
 	map_hit.hint_text="현재 위치로 지도 맞추기"
@@ -640,7 +641,7 @@ func _process(delta: float) -> void:
 			if world.player.position.distance_to(world.player.work_destination)<3:
 				gather_approach=false;world.player.work_destination=Vector2.INF
 				world.player.face_target(world.art_nodes[task_target].position)
-				world.player.set_activity("gather");task_bar.visible=true
+				world.player.set_activity("gather");task_bar.visible=false
 				context.text="채집 중… 이동하면 멈춥니다"
 			elif approach_elapsed>1.5:
 				cancel_task();toast("자원 옆의 빈 공간으로 이동해 주세요")
@@ -708,7 +709,7 @@ func gather_action(selected_id:String="") -> void:
 	world.feedback.begin("gather",n.id)
 	task_total = float(DemoConfig.get_data().gather_seconds)
 	task_remaining = task_total
-	task_bar.visible = not gather_approach
+	task_bar.visible = false
 	context.text = "자원 옆에 자리 잡는 중" if gather_approach else "채집 중… 이동하면 멈춥니다"
 
 func construction_menu()->void:
