@@ -1,0 +1,13 @@
+{
+  "before": [
+    "1f8296e2013d5374c861ec3ea53e207bb90db7fea08b02e9a06041f70062413d  files/save.json",
+    "1f8296e2013d5374c861ec3ea53e207bb90db7fea08b02e9a06041f70062413d  files/save.backup.json"
+  ],
+  "after": [
+    "1f8296e2013d5374c861ec3ea53e207bb90db7fea08b02e9a06041f70062413d  files/save.json",
+    "1f8296e2013d5374c861ec3ea53e207bb90db7fea08b02e9a06041f70062413d  files/save.backup.json"
+  ],
+  "preserved": true,
+  "device": "RoxHistory35 read-only emulator-5556",
+  "apk_sha256": "F01736593CC191DF01AE8271784A5A19DAE85F64676EAEDA5EBE8A019C236F20"
+}

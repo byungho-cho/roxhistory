@@ -55,3 +55,11 @@
 - 움집 1단계는 Figma에도 게임 검증 전 시안으로 표시되어 있다. 기존 승인된 에셋 구조를 유지했으며 원화 최종 승인으로 간주하지 않는다. 사이드 이름표는 기존 붓터치 재사용이라 MAT-006 세부 형태 차이가 남는다.
 - 구름의 최종 미술 승인, 실물 Fold 커버·펼침 터치, 저사양 GPU 성능·발열·장시간 플레이, 직접 음원 청취는 미검증이다. 미니맵은 중앙 원형 크롭이므로 지도 전체 직사각형의 바깥 구석은 보이지 않는다.
 - PR은 draft로 제출하며 사용자 승인 없이 main에 병합하지 않는다. APK는 검토용 빌드로 구분한다.
+
+## 최종 전달 및 기기 검증
+
+- [검토용 APK 다운로드](https://github.com/byungho-cho/roxhistory/releases/download/v0.1.37-review/RoxHistory-0.1.37-review.apk), 208,436,206 bytes. 공개 URL에서 다시 내려받아 SHA-256 `f01736593cc191df01ae8271784a5a19dae85f64676eaeda5ebe8a019c236f20` 일치를 확인했다.
+- 빌드 소스: `a865af8de14dbd330673a04221f977ea9310fb31`. 이후 보고서 추가 커밋은 바이너리에 영향을 주지 않는다. [Draft PR #66](https://github.com/byungho-cho/roxhistory/pull/66), main 미병합. 원격 CI 결과는 이 보고서에서 검증하지 않았다.
+- 최종 APK 재설치에서도 테스트 저장/백업 파일의 전후 해시가 같았다. [보존 결과](evidence/android-update.json). Android 에뮬레이터에서 이어 하기, 마을 진입, 월드맵 이동과 마을 복귀를 확인했다. [최종 마을 화면](evidence/android-village-final.png), [월드맵 화면](evidence/android-world.png).
+- 에뮬레이터 600프레임 표본은 평균 25.44ms, 95백분위 41.8ms였다. 실제 저사양 기기 성능이나 60fps 보장은 검증하지 않았다.
+- Windows EXE는 같은 소스로 생성했다. 격리된 테스트 저장 프로필로 PC 프로세스를 실행했으나 최종 전면 창에서 게임 화면을 확인하지 못했다. 자동 실행·렌더 검증과 별개로 최종 EXE의 PC 직접 조작 확인은 미검증이다. 기존 사용자 저장은 변경하지 않았다.
