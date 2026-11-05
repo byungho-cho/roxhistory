@@ -21,6 +21,7 @@ var residents:Array[TrialResident]=[]
 var reward_pouch:AtlasTexture
 var reward_bubble:StyleBoxFlat
 var reward_markers:Node2D
+var reward_roof_bounds:=Rect2()
 # Water visuals and physics share the shoreline traced on terrain.png.
 const SHORE = [Vector2(0,340),Vector2(170,285),Vector2(280,220),Vector2(370,130),Vector2(280,60)]
 const RIVER_POLYGON = [Vector2(0,155),Vector2(145,120),Vector2(260,70),Vector2(280,60),Vector2(370,130),Vector2(280,220),Vector2(170,285),Vector2(0,340)]
@@ -30,6 +31,7 @@ func _init(game: GameState) -> void:
 
 func _ready() -> void:
 	y_sort_enabled = true
+	reward_roof_bounds=AssetCatalog.texture("BLD-HUT-L1").get_image().get_used_rect()
 	reward_pouch=AtlasTexture.new();reward_pouch.atlas=preload("res://assets/ui/seed-pouch-reference-v001.png");reward_pouch.region=Rect2(796,211,196,177);reward_pouch.filter_clip=true
 	reward_bubble=StyleBoxFlat.new();reward_bubble.bg_color=Color(.99,.92,.76,.86);reward_bubble.border_color=Color(.55,.39,.22,.85);reward_bubble.set_border_width_all(2);reward_bubble.set_corner_radius_all(12);reward_bubble.shadow_color=Color(0,0,0,.15);reward_bubble.shadow_size=3;reward_bubble.shadow_offset=Vector2(1,3)
 	var terrain: Texture2D = preload(SceneStyle.TERRAIN)
@@ -40,6 +42,14 @@ func _ready() -> void:
 	background.scale = Vector2(2400.0/terrain.get_width(),1350.0/terrain.get_height())
 	background.z_index = -20
 	add_child(background)
+	# Decorative mirrored edge only; no collisions or navigation are expanded.
+	var surround:=TextureRect.new();surround.name="TerrainSurround"
+	surround.texture=terrain;surround.expand_mode=TextureRect.EXPAND_IGNORE_SIZE
+	surround.position=Vector2(-600,-338);surround.size=Vector2(3600,2026);surround.z_index=-21
+	surround.visibility_layer=2
+	surround.mouse_filter=Control.MOUSE_FILTER_IGNORE
+	var surround_material:=ShaderMaterial.new();surround_material.shader=load("res://shaders/village_surround.gdshader")
+	surround.material=surround_material;add_child(surround)
 
 	water = Polygon2D.new()
 	water.name = "LivingWater"
@@ -61,7 +71,9 @@ func _ready() -> void:
 	add_child(VillageLayout.new(model))
 	prop("hut",DemoConfig.CHIEF_POSITION,340,Vector2(220,80),"ExistingHut")
 	get_node("ExistingHut").set_hut_style(0)
+	get_node("ExistingHut").sprite.position.y+=3.0
 	prop("props",Vector2(1035,660),65,Vector2(40,20),"PotteryAndGrindingStone")
+	get_node("PotteryAndGrindingStone").hide()
 	# Clean approved terrain: independent scenery owns both silhouette and footprint.
 	# Removed all six legacy canopy masks and five painted-rock collision regions.
 	for n in model.nodes():
@@ -77,17 +89,10 @@ func _ready() -> void:
 		icon.position.y = -icon.texture.get_height()*icon.scale.y*0.5
 		if n.kind=="stone":icon.material=EnvironmentProp.stone_surface()
 		root.add_child(icon)
-		var text := Label.new()
-		text.theme = DemoArt.theme()
-		text.add_theme_font_size_override("font_size",12)
-		text.add_theme_color_override("font_color",Color("fff2cf"))
-		text.add_theme_color_override("font_outline_color",Color("34251b"))
-		text.add_theme_constant_override("outline_size",3)
-		text.size=Vector2(100,20);text.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
-		text.z_index=10;text.mouse_filter=Control.MOUSE_FILTER_IGNORE
-		root.add_child(text)
-		art_nodes[n.id] = root
-		resource_labels[n.id] = text
+		var indicator:=ResourceIndicator.new();indicator.kind=str(n.kind);indicator.z_index=10
+		root.add_child(indicator)
+		art_nodes[n.id]=root
+		resource_labels[n.id]=indicator
 		rect_body(Rect2(root.position-Vector2(28,24),Vector2(56,24)))
 		var resource_body:=get_child(get_child_count()-1)
 		resource_body.name="ResourceCollision";resource_body.reparent(root)
@@ -189,7 +194,7 @@ func refresh() -> void:
 		art_nodes[n.id].modulate=Color.WHITE
 		art_nodes[n.id].get_node("ResourceCollision").get_child(0).set_deferred("disabled",exhausted(n))
 		if exhausted(n) and selected==str(n.id):selected=""
-		resource_labels[n.id].text = "%s %d/%d" % ["나무" if n.kind == "wood" else "돌",int(n.charges)-int(model.state.depleted.get(n.id,0)),int(n.charges)]
+		resource_labels[n.id].update_amount(float(n.charges)-float(model.state.depleted.get(n.id,0)),float(n.charges))
 	for resident in residents:
 		resident.visible=model.state.get("family_joined",false) or model.family_available()
 		resident.collision_layer=1 if resident.visible else 0
@@ -253,7 +258,11 @@ func resource_hit(n:Dictionary,at:Vector2)->bool:
 	return image.get_rect().has_point(image.transform.affine_inverse()*(at-root.position))
 
 func reward_marker_rect(index:int)->Rect2:
-	return Rect2(homes[index].position+Vector2(76,-244),Vector2(72,67))
+	var image:Sprite2D=homes[index].sprite
+	var roof_local:=reward_roof_bounds.position+Vector2(reward_roof_bounds.size.x*.5,0)-image.texture.get_size()*.5
+	var roof:=to_local(image.to_global(roof_local))
+	# Tail tip stays three logical world pixels above the visible roof, including scaling.
+	return Rect2(roof-Vector2(36,70),Vector2(72,67))
 
 func reward_hit(index:int,at:Vector2)->bool:
 	return reward_marker_rect(index).grow(10).has_point(at) or Rect2(homes[index].position-Vector2(150,245),Vector2(300,260)).has_point(at)
@@ -266,12 +275,10 @@ func _process(_delta: float) -> void:
 		selected = id
 		queue_redraw()
 	for key in resource_labels:
-		var text:Label=resource_labels[key]
+		var indicator:ResourceIndicator=resource_labels[key]
 		var icon:Sprite2D=art_nodes[key].get_child(0)
-		# Keep the same readable screen size and gap for both rocks and trees.
-		text.scale=Vector2.ONE/player.camera.zoom.x
-		text.position=Vector2(-50*text.scale.x,icon.position.y-icon.texture.get_height()*icon.scale.y*.5-24*text.scale.y)
-		text.visible=art_nodes[key].visible
+		indicator.update_geometry(icon.texture.get_height()*icon.scale.y,player.camera.zoom.x)
+		indicator.visible=art_nodes[key].visible
 
 func _draw() -> void:
 	if not is_instance_valid(player): return
@@ -283,8 +290,14 @@ func _draw() -> void:
 func draw_rewards()->void:
 	for i in model.built_count():
 		if model.reward_pending(i):
-			# The transparent seed artwork owns its silhouette; no square backing.
-			reward_markers.draw_texture_rect(AssetCatalog.texture("UI-SEED"),reward_marker_rect(i),false)
+			var rect:=reward_marker_rect(i)
+			var body:=Rect2(rect.position,Vector2(rect.size.x,rect.size.y-8))
+			reward_markers.draw_style_box(reward_bubble,body)
+			var tip:=Vector2(rect.get_center().x,rect.end.y)
+			var tail:=PackedVector2Array([tip+Vector2(-7,-9),tip,tip+Vector2(7,-9)])
+			reward_markers.draw_colored_polygon(tail,reward_bubble.bg_color)
+			reward_markers.draw_polyline(tail,reward_bubble.border_color,2,true)
+			reward_markers.draw_texture_rect(AssetCatalog.texture("UI-SEED"),Rect2(body.position+Vector2(10,5),Vector2(52,48)),false)
 
 func draw_site(at:Vector2,chosen:bool)->void:
 	var id:=DemoConfig.BUILD_SITES.find(at)

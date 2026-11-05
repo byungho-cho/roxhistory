@@ -8,6 +8,7 @@ func clear()->void:
 	crumbs.clear();previous=Vector2.INF;queue_redraw()
 func _init(owner_navigation:AutoTravel)->void:
 	navigation=owner_navigation
+	visibility_layer=2 # World only: the GPS renders natural scenery on layer 1.
 	z_index=2
 func _process(delta:float)->void:
 	if not is_instance_valid(navigation) or not is_instance_valid(navigation.app.world):return

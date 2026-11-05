@@ -1,0 +1,17 @@
+{
+  "source": "Figma zkbflw9fCdAlWbphhw5pSS",
+  "nodes": {
+    "hunter": "873:36",
+    "berries": "873:38",
+    "wood": "873:40"
+  },
+  "sha256": "b52c1a931c7df3459d2262b1a6760975594fecb860b0772e59bb970ad84079b7",
+  "source_size": [
+    2172,
+    724
+  ],
+  "presentation": "Unmodified transparent sheet, runtime AtlasTexture crops; whole-image bob/sway and horizontal flip only; no walking frames.",
+  "current_residents": [],
+  "preserved": "Previous GLBs, protagonist, collision, family state and GPS actor exclusion preserved.",
+  "status": "Inactive reference retained for later retouch/design approval. Runtime residents restored to original female/sturdy_male GLBs."
+}

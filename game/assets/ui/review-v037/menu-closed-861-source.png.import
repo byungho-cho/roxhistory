@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dswyn3lql7mpw"
-path="res://.godot/imported/menu-collapse.png-97449cd99c1ba7d82dd5156c1b8598d0.ctex"
+uid="uid://crmhue528iv42"
+path="res://.godot/imported/menu-closed-861-source.png-25ce8b2eddb2b5a06dad0c8f3b6e77c2.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/refactor-v036/menu-collapse.png"
-dest_files=["res://.godot/imported/menu-collapse.png-97449cd99c1ba7d82dd5156c1b8598d0.ctex"]
+source_file="res://assets/ui/review-v037/menu-closed-861-source.png"
+dest_files=["res://.godot/imported/menu-closed-861-source.png-25ce8b2eddb2b5a06dad0c8f3b6e77c2.ctex"]
 
 [params]
 

@@ -13,6 +13,8 @@ var village:Texture2D
 var visible_fraction:=0.69
 var terrain:Texture2D
 var mountain:TextureRect
+var ground_review:TextureRect
+var natural_only:=false
 func _init(owner_app:Node)->void:app=owner_app
 func _ready()->void:
 	mouse_filter=Control.MOUSE_FILTER_IGNORE
@@ -20,6 +22,10 @@ func _ready()->void:
 	village=AssetCatalog.texture("WORLD-VILLAGE")
 	visible_fraction=1058.0/1536.0 # Alpha > 0.5 measured from approved WM-001.
 	terrain=AssetCatalog.texture("TERRAIN-VILLAGE")
+	ground_review=TextureRect.new();ground_review.texture=terrain;ground_review.expand_mode=TextureRect.EXPAND_IGNORE_SIZE
+	ground_review.mouse_filter=Control.MOUSE_FILTER_IGNORE;ground_review.show_behind_parent=true
+	var ground_material:=ShaderMaterial.new();ground_material.shader=load("res://shaders/world_ground_review.gdshader")
+	ground_material.set_shader_parameter("soil_tex",AssetCatalog.texture("GROUND-PAD"));ground_review.material=ground_material;add_child(ground_review)
 	mountain=TextureRect.new();mountain.texture=AssetCatalog.texture("WORLD-MOUNTAIN");mountain.expand_mode=TextureRect.EXPAND_IGNORE_SIZE;mountain.mouse_filter=Control.MOUSE_FILTER_IGNORE
 	var mask:=ShaderMaterial.new();mask.shader=preload("res://shaders/mountain_mask.gdshader");mask.set_shader_parameter("mask_texture",load("res://assets/refactor-v035/mountain-mask.svg"));mountain.material=mask;add_child(mountain)
 	size=Vector2(app.w,app.h)
@@ -40,7 +46,7 @@ func zoom_at(at:Vector2,value:float)->void:
 	center=anchor-(at-size*.5)/zoom;clamp_camera();queue_redraw()
 func pan(delta:Vector2)->void:center-=delta/zoom;clamp_camera();queue_redraw()
 func accepts(at:Vector2)->bool:
-	return at.y>app.safe.y+110 and not Rect2(Vector2(app.w-app.safe.x-64,app.safe.y+112),Vector2(64,64)).has_point(at)
+	return at.y>app.safe.y+110 and not Rect2(Vector2(app.w-app.safe.x-64,app.safe.y+90),Vector2(64,64)).has_point(at)
 func _input(event:InputEvent)->void:
 	if not app.application_active or app.modal or app.map_transition_active:return
 	if event is InputEventMouseButton and not OS.has_feature("android"):
@@ -85,19 +91,11 @@ func _notification(what:int)->void:
 	if what in [NOTIFICATION_APPLICATION_FOCUS_OUT,NOTIFICATION_APPLICATION_PAUSED]:clear_input()
 func _draw()->void:
 	if not terrain:return
-	var tile:Vector2=Vector2(253.021,133.248)*app.w/1672.0
-	var crop:=Rect2(terrain.get_size()*Vector2(.209318,.265675),terrain.get_size()*Vector2(.568182,.53135))
-	var first:Vector2=((center-size*.5/zoom)/tile).floor()-Vector2.ONE
-	var last_tile:Vector2=((center+size*.5/zoom)/tile).ceil()+Vector2.ONE
-	for y in range(int(first.y),int(last_tile.y)+1):
-		for x in range(int(first.x),int(last_tile.x)+1):
-			var rect:=Rect2(size*.5+(Vector2(x,y)*tile-tile*.5-center)*zoom,tile*zoom)
-			var reflection:=Vector2(-1 if abs(x)%2==1 else 1,-1 if abs(y)%2==1 else 1)
-			var origin:=rect.position+Vector2(rect.size.x if reflection.x<0 else 0,rect.size.y if reflection.y<0 else 0)
-			draw_set_transform(origin,0,reflection)
-			draw_texture_rect_region(terrain,Rect2(Vector2.ZERO,rect.size),crop)
-	draw_set_transform(Vector2.ZERO)
-
+	ground_review.size=size
+	ground_review.material.set_shader_parameter("viewport_size",size)
+	ground_review.material.set_shader_parameter("camera_center",center)
+	ground_review.material.set_shader_parameter("map_zoom",zoom)
+	ground_review.material.set_shader_parameter("reference_scale",app.w/1672.0)
 	var extent:=village.get_size()*factor()
 	var at:=size*.5-center*zoom
 	var base:float=app.w/1672.0
@@ -107,6 +105,7 @@ func _draw()->void:
 		var dimensions:Vector2=object[2]*base*zoom
 		var place:Vector2=size*.5+(object[1]*base-center)*zoom
 		draw_texture_rect(AssetCatalog.texture(object[0]),Rect2(place-dimensions*.5,dimensions),false)
+	if natural_only:return
 	draw_texture_rect(village,Rect2(at-extent*.5,extent),false)
 	draw_texture_rect(preload("res://assets/ui/brush/resource-slot-brush@2x.png"),Rect2(at+Vector2(-40,extent.y*.38+2),Vector2(80,26)),false)
 	draw_string(DemoArt.theme().default_font,at+Vector2(-40,extent.y*.38+21),"내 마을",HORIZONTAL_ALIGNMENT_CENTER,80,14,Color("fff1d4"))

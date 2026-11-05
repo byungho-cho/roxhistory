@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://blcrmsbc5lgcp"
-path="res://.godot/imported/mountain-map.png-fb4fc81443c164b39931180dcaa23508.ctex"
+uid="uid://br1gruqb4dchm"
+path="res://.godot/imported/menu-open-861-source.png-4a27f18bef37bd478f59afcdea89b26a.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/refactor-v035/mountain-map.png"
-dest_files=["res://.godot/imported/mountain-map.png-fb4fc81443c164b39931180dcaa23508.ctex"]
+source_file="res://assets/ui/review-v037/menu-open-861-source.png"
+dest_files=["res://.godot/imported/menu-open-861-source.png-4a27f18bef37bd478f59afcdea89b26a.ctex"]
 
 [params]
 

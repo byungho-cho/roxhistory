@@ -61,6 +61,46 @@ func valid(s: Variant) -> bool:
 			if not (style is int or style is float) or style != int(style) or style < 0 or style > 2: return false
 		if s.built != (s.homes.size()>0): return false
 		if not s.homes.is_empty() and s.reward_claimed != s.homes[0].claimed: return false
+	# Optional field preserves all older saves. Do not require the unlock count
+	# here: demolishing a hut must not invalidate an already completed outpost.
+	if s.has("outposts"):
+		if not s.outposts is Array or s.outposts.size()>DemoConfig.BUILD_SITES.size():return false
+		var sites:=[]
+		var ids:=[]
+		for home in s.get("homes",[]):
+			if home.has("site"):sites.append(int(home.site))
+		for outpost in s.outposts:
+			if not outpost is Dictionary:return false
+			var id:Variant=outpost.get("site")
+			if not (id is int or id is float) or id!=int(id) or id<0 or id>=DemoConfig.BUILD_SITES.size() or int(id) in sites:return false
+			sites.append(int(id))
+			var uid:Variant=outpost.get("uid")
+			if not uid is String or uid.is_empty() or uid in ids:return false
+			ids.append(uid)
+			var level:Variant=outpost.get("level")
+			if not (level is int or level is float) or level!=1:return false
+			if not outpost.get("cost") is Dictionary:return false
+			for kind in ["wood","stone"]:
+				var amount:Variant=outpost.cost.get(kind)
+				if not (amount is int or amount is float) or amount!=int(amount) or amount<0 or amount>10000:return false
+	if s.has("chief_level"):
+		var level:Variant=s.chief_level
+		if not (level is int or level is float) or level!=int(level) or level<1 or level>4:return false
+	if s.has("chief_upgrade"):
+		var job:Variant=s.chief_upgrade
+		if not job is Dictionary or s.get("outposts",[]).is_empty():return false
+		for key in ["from","to","started_at","finishes_at"]:
+			var value:Variant=job.get(key)
+			if not (value is int or value is float) or not is_finite(float(value)):return false
+		if job.from!=int(s.get("chief_level",1)) or job.to!=job.from+1 or job.to>4 or job.from<1:return false
+		if job.started_at<0 or job.finishes_at<=job.started_at:return false
+		if not job.get("cost") is Dictionary:return false
+		for kind in ["wood","stone"]:
+			var amount:Variant=job.cost.get(kind)
+			if not (amount is int or amount is float) or amount!=int(amount) or amount<0 or amount>10000:return false
+	if s.has("outpost_serial"):
+		var serial:Variant=s.outpost_serial
+		if not (serial is int or serial is float) or serial!=int(serial) or serial<0:return false
 	if s.has("home_serial"):
 		var serial:Variant=s.home_serial
 		if not (serial is int or serial is float) or serial!=int(serial) or serial<0:return false

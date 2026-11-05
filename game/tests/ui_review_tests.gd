@@ -56,7 +56,7 @@ func run()->void:
 	check(not app.world_map_open,"Repeated toggle is ignored during transition")
 	await frames(15);await capture("clouds-covered")
 	await frames(35)
-	check(app.map_toggle.icon==AssetCatalog.texture("UI-HOME-TOGGLE"),"Home toggle uses the single composed Figma export")
+	check(app.map_toggle.icon==null and app.map_toggle.get_node("FigmaHomeFace").visible,"Home toggle uses the separate preserved frame and village overlay")
 	check(not app.map_toggle.has_node("HomeFace"),"No second background panel on map toggle")
 	await capture("world-min")
 	app.world_map.zoom_at(Vector2(app.w,app.h)*.5,2.4);await frames()

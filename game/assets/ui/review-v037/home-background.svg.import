@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://d4g83pkvmtlor"
-path="res://.godot/imported/collapse.svg-0c45e0cceb087d00092752a765d2b167.ctex"
+uid="uid://dd401pgwlxgam"
+path="res://.godot/imported/home-background.svg-49cfcca4427be6a80f433cbd9db5098e.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/ui/s40000/collapse.svg"
-dest_files=["res://.godot/imported/collapse.svg-0c45e0cceb087d00092752a765d2b167.ctex"]
+source_file="res://assets/ui/review-v037/home-background.svg"
+dest_files=["res://.godot/imported/home-background.svg-49cfcca4427be6a80f433cbd9db5098e.ctex"]
 
 [params]
 

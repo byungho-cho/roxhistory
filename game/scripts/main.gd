@@ -457,9 +457,11 @@ func play_hud() -> void:
 		if caption=="채집":gather_button=b
 		if caption=="건설":build_button=b
 	menu_toggle=button(action_row,"‹",toggle_menu);menu_toggle.name="MenuToggle";menu_toggle.custom_minimum_size=Vector2(56,56);menu_toggle.size_flags_vertical=Control.SIZE_SHRINK_CENTER;menu_toggle.hint_text="보조 메뉴 펼침·접힘"
-	menu_toggle.icon=DemoArt.play_icon("expand");menu_toggle.expand_icon=true;menu_toggle.add_theme_constant_override("icon_max_width",54)
+	menu_toggle.icon=null;menu_toggle.expand_icon=true;menu_toggle.add_theme_constant_override("icon_max_width",54)
 	var circle:=StyleBoxEmpty.new()
 	for state in ["normal","hover","pressed","focus"]:menu_toggle.add_theme_stylebox_override(state,circle)
+	menu_toggle.text="";menu_toggle.icon=null
+	var toggle_visual:=MenuToggleVisual.new();toggle_visual.name="ToggleVisual";menu_toggle.add_child(toggle_visual)
 	apply_menu_state()
 	build_side=BuildSideMenu.new(self);stage.add_child(build_side)
 	build_preview=BuildPreview.new(self);world.add_child(build_preview)
@@ -475,14 +477,17 @@ func play_hud() -> void:
 	chrome=PlayChrome.new(self);chrome.z_index=5;stage.add_child(chrome);chrome.size=Vector2(w,h)
 	stage.add_child(ConstructionProgress.new(self))
 	family=FamilyArrival.new(self);stage.add_child(family)
-	var map_hit:=button(stage,"",recenter_map);map_hit.name="RecenterCamera";map_hit.custom_minimum_size=Vector2.ZERO;map_hit.position=Vector2(w-safe.x-100,safe.y);map_hit.size=Vector2(100,100)
+	var map_hit:=button(stage,"",recenter_map);map_hit.name="RecenterCamera";map_hit.custom_minimum_size=Vector2.ZERO;map_hit.position=Vector2(w-safe.x-100,safe.y+10);map_hit.size=Vector2(100,100)
 	map_hit.hint_text="현재 위치로 지도 맞추기"
 	for state in ["normal","hover","pressed"]:map_hit.add_theme_stylebox_override(state,StyleBoxEmpty.new())
-	var portrait_hit:=button(stage,"",pause_game);portrait_hit.name="PortraitPause";portrait_hit.custom_minimum_size=Vector2.ZERO;portrait_hit.position=safe;portrait_hit.size=Vector2(58,58)
-	for state in ["normal","hover","pressed"]:portrait_hit.add_theme_stylebox_override(state,StyleBoxEmpty.new())
 	world_map=VillageWorldMap.new(self);stage.add_child(world_map);stage.move_child(world_map,0)
-	map_toggle=button(stage,"",toggle_world_map);map_toggle.icon=AssetCatalog.texture("UI-MAP");map_toggle.expand_icon=true;map_toggle.add_theme_constant_override("icon_max_width",48);map_toggle.custom_minimum_size=Vector2.ZERO;map_toggle.position=Vector2(w-safe.x-64,safe.y+112);map_toggle.size=Vector2(56,56)
+	map_toggle=button(stage,"",toggle_world_map);map_toggle.icon=AssetCatalog.texture("UI-MAP");map_toggle.expand_icon=true;map_toggle.add_theme_constant_override("icon_max_width",48);map_toggle.custom_minimum_size=Vector2.ZERO;map_toggle.position=Vector2(w-safe.x-64,safe.y+90);map_toggle.size=Vector2(56,56);map_toggle.z_index=6
 	for state in ["normal","hover","pressed","focus"]:map_toggle.add_theme_stylebox_override(state,StyleBoxEmpty.new())
+	var settings_button:=button(stage,"",pause_game);settings_button.name="SettingsButton";settings_button.z_index=6
+	settings_button.icon=load("res://assets/ui/review-v037/settings-figma.png");settings_button.expand_icon=true
+	settings_button.custom_minimum_size=Vector2.ZERO;settings_button.position=Vector2(w-safe.x-36,safe.y-2);settings_button.size=Vector2(36,36)
+	settings_button.add_theme_constant_override("icon_max_width",36)
+	for state in ["normal","hover","pressed","focus"]:settings_button.add_theme_stylebox_override(state,StyleBoxEmpty.new())
 	world_map_open=false
 	update_hud()
 
@@ -504,6 +509,7 @@ func toggle_world_map()->void:
 		world.player.presentation_paused=modal or not application_active)
 
 func switch_map_scene()->void:
+	chrome.clear_effects()
 	world_map_open=not world_map_open
 	gestures.clear()
 	world_map.activate(world_map_open)
@@ -512,11 +518,25 @@ func switch_map_scene()->void:
 	action_row.visible=not world_map_open
 	objective.get_parent().visible=not world_map_open
 	family.bubble.visible=not world_map_open and model.family_available()
-	map_toggle.icon=AssetCatalog.texture("UI-HOME-TOGGLE" if world_map_open else "UI-MAP")
-	if world_map_open:
-		var round_mask:=ShaderMaterial.new();round_mask.shader=preload("res://shaders/round_toggle.gdshader");map_toggle.material=round_mask
-	else:map_toggle.material=null
-	map_toggle.tooltip_text="마을로 돌아가기" if world_map_open else "월드맵 보기"
+	map_toggle.icon=null if world_map_open else AssetCatalog.texture("UI-MAP")
+	map_toggle.material=null
+	var home_face=map_toggle.get_node_or_null("FigmaHomeFace")
+	if not home_face:
+		home_face=TextureRect.new();home_face.name="FigmaHomeFace";home_face.mouse_filter=Control.MOUSE_FILTER_IGNORE
+		home_face.texture=load("res://assets/refactor-v035/map-button.png")
+		home_face.expand_mode=TextureRect.EXPAND_IGNORE_SIZE;home_face.position=Vector2(4,4.5714);home_face.size=Vector2(48,46.8571)
+		var material:=ShaderMaterial.new();material.shader=load("res://shaders/figma_home_toggle.gdshader")
+		material.set_shader_parameter("background_tex",load("res://assets/ui/review-v037/home-background.svg"))
+		material.set_shader_parameter("border_tex",load("res://assets/refactor-v035/map-button.png"))
+		material.set_shader_parameter("mask_tex",load("res://assets/ui/review-v037/home-border-mask.svg"))
+		home_face.material=material;map_toggle.add_child(home_face)
+		var village_icon:=TextureRect.new();village_icon.name="VillagePicture"
+		village_icon.texture=AssetCatalog.texture("WORLD-VILLAGE");village_icon.expand_mode=TextureRect.EXPAND_IGNORE_SIZE
+		village_icon.stretch_mode=TextureRect.STRETCH_KEEP_ASPECT_CENTERED;village_icon.position=Vector2(0,2);village_icon.size=Vector2(48,43)
+		village_icon.mouse_filter=Control.MOUSE_FILTER_IGNORE;home_face.add_child(village_icon)
+	home_face.visible=world_map_open
+	map_toggle.tooltip_text=""
+	map_toggle.hint_text=""
 	if world_map_open:
 		world.player.direction=Vector2.ZERO
 		cancel_build_preview()
@@ -556,12 +576,13 @@ func apply_menu_state(animated:bool=false)->void:
 		else:
 			child.position=target;child.modulate.a=1.0 if shown else 0.0;child.visible=shown
 	menu_toggle.text=""
-	menu_toggle.icon=AssetCatalog.texture("UI-MENU-COLLAPSE")
+	menu_toggle.icon=null
+	menu_toggle.get_node("ToggleVisual").expanded=menu_expanded
+	menu_toggle.get_node("ToggleVisual").queue_redraw()
 	menu_toggle.hint_text="접기" if menu_expanded else "메뉴 펼치기"
 	menu_toggle.size=Vector2(56,56);menu_toggle.position=Vector2(stride*6,10)
 	menu_toggle.pivot_offset=menu_toggle.size*.5
-	if animated:menu_tween.tween_property(menu_toggle,"rotation",0.0 if menu_expanded else PI,.22)
-	else:menu_toggle.rotation=0.0 if menu_expanded else PI
+	menu_toggle.rotation=0.0
 	menu_backdrop.hide()
 
 func inventory_summary() -> void:

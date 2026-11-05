@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cwcysrp6j51y5"
-path="res://.godot/imported/expand-button-v001.png-b0b405bf6f6128e3f30a7265b0a817e4.ctex"
+uid="uid://h715vfnttcts"
+path="res://.godot/imported/figma-residents-source.png-f5d6c40d9288b48abcff31e0c9b301ab.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/ui/s40000/expand-button-v001.png"
-dest_files=["res://.godot/imported/expand-button-v001.png-b0b405bf6f6128e3f30a7265b0a817e4.ctex"]
+source_file="res://assets/characters/residents-v5/figma-residents-source.png"
+dest_files=["res://.godot/imported/figma-residents-source.png-f5d6c40d9288b48abcff31e0c9b301ab.ctex"]
 
 [params]
 

@@ -6,6 +6,8 @@ var shadow_size := Vector2.ZERO
 var ground_size := Vector2.ZERO
 var kind := ""
 var hut_style := 0
+var configured_width := 0.0
+const BUILDING_IMAGE_SCALE := 0.8
 var depth_visual:Node2D
 static var textures := {}
 static var stone_material: ShaderMaterial
@@ -15,10 +17,13 @@ const HUT_BOUNDS := [Rect2(63,50,901,589),Rect2(62,83,899,551),Rect2(15,72,997,5
 
 func set_hut_style(value: int) -> void:
 	hut_style = clampi(value,0,2)
-	var width := sprite.texture.get_width()*sprite.scale.x
+	var width := configured_width*BUILDING_IMAGE_SCALE
 	sprite.texture = AssetCatalog.texture("BLD-HUT-L1")
-	sprite.scale = Vector2.ONE*width/sprite.texture.get_width()
-	sprite.position.y = -sprite.texture.get_height()*sprite.scale.y*0.30
+	# Logical pixels at the 960x540 reference viewport: inset each edge by 2,
+	# keeping the previous image centre before moving it down by 3.
+	var previous_size := sprite.texture.get_size()*width/sprite.texture.get_width()
+	sprite.scale = (previous_size-Vector2(4,4))/sprite.texture.get_size()
+	sprite.position.y = -previous_size.y*0.30+3.0
 	if depth_visual:sprite.position.y-=depth_visual.position.y
 	queue_redraw()
 
@@ -55,6 +60,7 @@ static func asset(key: String) -> Texture2D:
 
 func configure(key: String, width: float, footprint: Vector2, wind_phase: float = 0.0) -> void:
 	kind = key
+	configured_width = width
 	ground_size = footprint
 	shadow_size = Vector2(width*0.30, width*0.08)
 	sprite = Sprite2D.new()
@@ -98,7 +104,8 @@ func set_effects_enabled(enabled: bool) -> void:
 func _draw() -> void:
 	if kind == "grass": return
 	if kind=="hut":
-		var width:=sprite.texture.get_width()*sprite.scale.x
+		# Soil and contact shading retain their original size independently of the image.
+		var width:=configured_width
 		# Irregular worn soil beneath the entrance, never a new navigation obstacle.
 		var door:=Vector2(width*.20,-6)
 		draw_set_transform(door+Vector2(8,9),-.12,Vector2(1,.28))

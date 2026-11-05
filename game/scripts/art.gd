@@ -7,9 +7,10 @@ static var shared_theme: Theme
 static var play_cache:Dictionary={}
 static func play_icon(key:String)->Texture2D:
 	if key=="hut":return icon("hut") # BLD-001_icon_play uses the approved I10000 atlas.
-	if key=="collapse":return preload("res://assets/ui/s40000/collapse.svg")
+	if key=="collapse":return AssetCatalog.texture("UI-MENU-COLLAPSE")
+	if key in ["menu","expand"]:return AssetCatalog.texture("UI-MENU-EXPAND")
 	if play_cache.has(key):return play_cache[key]
-	var files:Dictionary={"spear":"hunt-spear","berries":"gather-berries","hammer":"craft-axe","hut":"build-hut-icon","scroll":"quest-scroll","bag":"inventory-bag","menu":"menu-button","expand":"expand-button"}
+	var files:Dictionary={"spear":"hunt-spear","berries":"gather-berries","hammer":"craft-axe","hut":"build-hut-icon","scroll":"quest-scroll","bag":"inventory-bag"}
 	if not files.has(key):return icon(key)
 	var source:Texture2D=load("res://assets/ui/s40000/"+files[key]+"-v001.png")
 	# Preserve the component's transparent padding and original proportions.

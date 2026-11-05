@@ -11,6 +11,9 @@ func _init(owner_app:Node)->void:app=owner_app
 func _ready()->void:
 	bubble=Button.new();bubble.name="FamilyConversation";bubble.text="우리도 함께 살고 싶어요!";bubble.custom_minimum_size=Vector2(166,44)
 	bubble.add_theme_font_size_override("font_size",12)
+	# The shared button theme has pale hover text for dark buttons, unlike this bubble.
+	for state in ["font_color","font_hover_color","font_pressed_color","font_hover_pressed_color","font_focus_color","font_disabled_color"]:
+		bubble.add_theme_color_override(state,Color("50391f"))
 	var skin:=StyleBoxFlat.new();skin.bg_color=Color("fff0c9");skin.border_color=Color("a68045");skin.set_border_width_all(2);skin.set_corner_radius_all(12)
 	for state in ["normal","hover","pressed"]:bubble.add_theme_stylebox_override(state,skin)
 	bubble.add_theme_color_override("font_color",Color("50391f"));bubble.pressed.connect(request);app.stage.add_child(bubble)

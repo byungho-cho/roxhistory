@@ -10,15 +10,17 @@ const RESOURCE_BRUSH=preload("res://assets/ui/brush/resource-slot-brush@2x.png")
 const PORTRAIT_OUTLINE=[Vector2(28,103),Vector2(29,77),Vector2(40,57),Vector2(53,43),Vector2(70,34),Vector2(82,22),Vector2(100,27),Vector2(118,23),Vector2(142,37),Vector2(157,53),Vector2(157,73),Vector2(170,90),Vector2(171,116),Vector2(162,140),Vector2(147,153),Vector2(156,166),Vector2(153,177),Vector2(132,186),Vector2(100,186),Vector2(68,179),Vector2(47,167),Vector2(61,152),Vector2(66,141),Vector2(49,130),Vector2(43,118),Vector2(33,120)]
 var reveal := 0.0
 var resource_alpha := .75
-var displayed_tokens := 0.0
-var token_target := 0.0
+const COUNT_DURATION:=0.35
+var resource_counts:Dictionary={}
 var last_map_position := Vector2.INF
 var minimap:LiveMinimap
+# Optional future marker artwork; keep its placement independent of map projection.
+var location_marker_texture:Texture2D
 func _init(owner_app: Node) -> void: app=owner_app
 func _ready() -> void:
-	displayed_tokens=float(app.model.state.tokens);token_target=displayed_tokens
+	sync_resource_counts(true)
 	texture_filter=CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
-	app.model.changed.connect(queue_redraw)
+	app.model.changed.connect(sync_resource_counts)
 	resized.connect(queue_redraw)
 	mouse_filter=Control.MOUSE_FILTER_IGNORE
 	if ResourceLoader.exists("res://assets/ui/s40000/portrait.png"): portrait=load("res://assets/ui/v034/chief-portrait.png")
@@ -27,25 +29,43 @@ func create_minimap()->void:
 	minimap=LiveMinimap.new(app);add_child(minimap)
 func slot(kind: String) -> Rect2:
 	var i:int=["wood","stone","tokens"].find(kind)
-	if app.w<app.h:return Rect2(Vector2(app.safe.x+i*100,app.safe.y+66),Vector2(96,36))
-	return Rect2(Vector2(app.w-app.safe.x-420+i*100,app.safe.y+5),Vector2(96,36))
+	if app.w<app.h:return Rect2(Vector2(app.safe.x+i*100,app.safe.y+62),Vector2(96,36))
+	return Rect2(Vector2(app.w-app.safe.x-420+i*100,app.safe.y+1),Vector2(96,36))
 func gained(kind:String,at:Vector2,delay:float=0.0) -> void:
 	reveal=5.0
 	flights.append({"kind":kind,"world":at,"age":-delay})
 func clear_effects() -> void:
-	flights.clear();displayed_tokens=float(app.model.state.get("tokens",0));token_target=displayed_tokens;queue_redraw()
+	flights.clear();sync_resource_counts(true)
+func sync_resource_counts(immediate:bool=false)->void:
+	for key in ["wood","stone","tokens"]:
+		var target:=float(app.model.state.get(key,0))
+		if immediate or not resource_counts.has(key):
+			resource_counts[key]={"shown":target,"from":target,"target":target,"elapsed":COUNT_DURATION}
+		elif resource_counts[key].target!=target:
+			var count:Dictionary=resource_counts[key]
+			count.from=count.shown;count.target=target;count.elapsed=0.0
+	queue_redraw()
+func advance_resource_counts(delta:float)->bool:
+	var changed:=false
+	for count in resource_counts.values():
+		if count.elapsed>=COUNT_DURATION:continue
+		count.elapsed=minf(COUNT_DURATION,count.elapsed+delta)
+		var t:float=count.elapsed/COUNT_DURATION
+		count.shown=lerpf(count.from,count.target,t*t*(3.0-2.0*t))
+		if count.elapsed>=COUNT_DURATION:count.shown=count.target
+		changed=true
+	return changed
 func _process(delta: float) -> void:
 	var previous_alpha:=resource_alpha
-	var previous_tokens:=displayed_tokens
+	var counting:=advance_resource_counts(delta)
 	reveal=maxf(0,reveal-delta)
 	resource_alpha=move_toward(resource_alpha,1.0 if reveal>0 else .75,delta*.5)
-	displayed_tokens=move_toward(displayed_tokens,token_target,delta*24)
 	var moving_map := false
 	if is_instance_valid(app.world):
 		var p: Vector2=app.world.player.position
 		moving_map=p!=last_map_position
 		last_map_position=p
-	var active := moving_map or not flights.is_empty() or previous_alpha!=resource_alpha or previous_tokens!=displayed_tokens
+	var active := moving_map or not flights.is_empty() or previous_alpha!=resource_alpha or counting
 	for key in pulse: active=active or pulse[key]>0
 	if not active:return
 	for key in pulse: pulse[key]=maxf(0,pulse[key]-delta*2.5)
@@ -53,7 +73,6 @@ func _process(delta: float) -> void:
 		f.age+=delta
 		if f.age>=0.85:
 			pulse[f.kind]=1.0
-			if f.kind=="tokens":token_target=float(app.model.state.tokens)
 	flights=flights.filter(func(f): return f.age<0.85)
 	queue_redraw()
 func frame(rect: Rect2, fill: Color, border: Color) -> void:
@@ -87,8 +106,8 @@ func _draw() -> void:
 
 		var extent:=28.0+beat*4
 		draw_texture_rect(DemoArt.icon(key),Rect2(rect.position+Vector2(3,3),Vector2(extent,extent)),false)
-		draw_string(font,rect.position+Vector2(34,25),str(int(displayed_tokens)) if key=="tokens" else str(int(app.model.state[key])),HORIZONTAL_ALIGNMENT_LEFT,66,13,Color(1,.98,.90,1))
-	var center:=Vector2(app.w-app.safe.x-50,app.safe.y+50)
+		draw_string(font,rect.position+Vector2(34,25),str(roundi(resource_counts[key].shown)),HORIZONTAL_ALIGNMENT_LEFT,66,13,Color(1,.98,.90,1))
+	var center:=Vector2(app.w-app.safe.x-50,app.safe.y+60)
 	draw_circle(center+Vector2(1,3),53,Color(.15,.10,.04,.20))
 	draw_circle(center,51,Color("49321e"))
 	var points:=PackedVector2Array();var uv:=PackedVector2Array()
@@ -100,17 +119,9 @@ func _draw() -> void:
 	var normalized:=Vector2.ZERO
 	if is_instance_valid(minimap):normalized=minimap.normalized_point(Vector2.ZERO if app.world_map_open else app.world.player.position)
 	var dot:=center+(normalized*96).limit_length(45)
-	if is_instance_valid(minimap):
-		var camera_center:Vector2=app.world_map.center if app.world_map_open else app.world.player.camera.get_screen_center_position()
-		var extent:Vector2=Vector2(app.w,app.h)/app.world_map.zoom if app.world_map_open else Vector2(app.w,app.h)/app.world.player.camera.zoom
-		var start:=center+minimap.normalized_point(camera_center-extent*.5)*96
-		var end:=center+minimap.normalized_point(camera_center+extent*.5)*96
-		var camera_rect:=PackedVector2Array([start,Vector2(end.x,start.y),end,Vector2(start.x,end.y)])
-		for clipped in Geometry2D.intersect_polygons(camera_rect,points):
-			clipped.append(clipped[0]);draw_polyline(clipped,Color(1,.94,.69,.6),1,true)
-	draw_circle(dot,4.5,Color("63451d"))
-	draw_circle(dot,2.5,Color("fff0b2"))
+	draw_location_marker(dot)
 	draw_string(font,center+Vector2(-5,-33),"N",HORIZONTAL_ALIGNMENT_LEFT,20,12,Color("fff2cf"))
+	draw_set_transform(Vector2.ZERO)
 	for f in flights:
 		if f.age<0:continue
 		var from: Vector2=app.world.get_global_transform_with_canvas()*f.world
@@ -125,3 +136,9 @@ func _draw() -> void:
 
 func energy_fill()->StyleBoxFlat:
 	var skin:=StyleBoxFlat.new();skin.bg_color=Color("8ac644");skin.set_corner_radius_all(3);return skin
+
+func draw_location_marker(at:Vector2)->void:
+	if location_marker_texture:
+		draw_texture_rect(location_marker_texture,Rect2(at+Vector2(-3.6,-8.5),Vector2(7.2,6)),false)
+	else:
+		draw_colored_polygon(PackedVector2Array([at+Vector2(-3.6,-8.5),at+Vector2(3.6,-8.5),at+Vector2(0,-2.5)]),Color("e53935"))

@@ -8,6 +8,92 @@ var state: Dictionary = {}
 var store: SaveStore
 var busy := false
 const RESPAWN_SECONDS := 30.0
+const OUTPOST_WOOD_COST := 15
+const OUTPOST_STONE_COST := 10
+const OUTPOST_UNLOCK_HOMES := 4
+
+# The chief's existing hut is not part of the resident-home save array.
+func completed_hut_count() -> int:
+	return 0 if state.is_empty() else 1+built_count()
+
+func outpost_unlocked() -> bool:
+	return completed_hut_count() >= OUTPOST_UNLOCK_HOMES
+
+func can_build_outpost() -> bool:
+	return outpost_unlocked() and state.wood >= OUTPOST_WOOD_COST and state.stone >= OUTPOST_STONE_COST
+
+func outpost_requirement() -> String:
+	if not outpost_unlocked():
+		return "주인공 움집 포함 완성된 움집 4채 필요 (%d/4)" % completed_hut_count()
+	return "나무 15개와 돌 10개가 필요해요"
+
+func outposts() -> Array:
+	return state.get("outposts",[]).duplicate(true)
+
+func outpost_position(index:int) -> Vector2:
+	var list:=outposts()
+	return DemoConfig.BUILD_SITES[int(list[index].site)] if index>=0 and index<list.size() else Vector2.INF
+
+func chief_level() -> int:
+	return int(state.get("chief_level",1))
+
+func chief_upgrade_cost() -> Dictionary:
+	var c:=DemoConfig.get_data()
+	return {"wood":int(c.wood_cost),"stone":int(c.stone_cost)}
+
+func can_upgrade_chief() -> bool:
+	if state.is_empty() or outposts().is_empty() or chief_level()>=4 or state.has("chief_upgrade"):return false
+	var cost:=chief_upgrade_cost()
+	return state.wood>=cost.wood and state.stone>=cost.stone
+
+func chief_upgrade_duration(target_level:int) -> float:
+	return float(DemoConfig.get_data().build_seconds)*pow(2.0,target_level-1)
+
+func upgrade_chief(now:float=-1.0) -> bool:
+	if busy or not can_upgrade_chief():return false
+	if now<0:now=Time.get_unix_time_from_system()
+	if not is_finite(now):return false
+	busy=true
+	var next:=state.duplicate(true)
+	var cost:=chief_upgrade_cost()
+	next.wood-=cost.wood;next.stone-=cost.stone
+	var target:=chief_level()+1
+	next.chief_upgrade={"from":chief_level(),"to":target,"started_at":now,"finishes_at":now+chief_upgrade_duration(target),"cost":cost}
+	var ok:=commit(next)
+	busy=false
+	return ok
+
+func chief_upgrade_remaining(now:float=-1.0) -> float:
+	if not state.has("chief_upgrade"):return 0.0
+	if now<0:now=Time.get_unix_time_from_system()
+	return maxf(0.0,float(state.chief_upgrade.finishes_at)-now)
+
+func finish_chief_upgrade(now:float=-1.0) -> bool:
+	if busy or not state.has("chief_upgrade"):return false
+	if now<0:now=Time.get_unix_time_from_system()
+	if not is_finite(now) or now<float(state.chief_upgrade.finishes_at):return false
+	busy=true
+	var next:=state.duplicate(true)
+	next.chief_level=int(next.chief_upgrade.to)
+	next.erase("chief_upgrade")
+	var ok:=commit(next)
+	busy=false
+	return ok
+
+# Same atomic payment/save transaction as huts. Outposts do not count toward
+# housing, family arrival or seed rewards. Existing towers survive relocking.
+func build_outpost(pos:Vector2=Vector2.ZERO, site_id:int=-1) -> bool:
+	if busy or not can_build_outpost() or not site_free(site_id):return false
+	busy=true
+	var next:=state.duplicate(true)
+	next.wood-=OUTPOST_WOOD_COST;next.stone-=OUTPOST_STONE_COST
+	next.outposts=outposts()
+	next.outpost_serial=int(next.get("outpost_serial",0))+1
+	next.outposts.append({"uid":"outpost-"+str(next.outpost_serial),"level":1,"site":site_id,"cost":{"wood":OUTPOST_WOOD_COST,"stone":OUTPOST_STONE_COST}})
+	if pos!=Vector2.ZERO:next.position=[pos.x,pos.y]
+	var ok:=commit(next)
+	busy=false
+	return ok
 
 func nodes() -> Array:
 	var result:Array=DemoConfig.get_data().nodes.duplicate(true)
@@ -31,6 +117,7 @@ func _init(save_store: SaveStore) -> void:
 	state = store.load_game()
 	migrate_village()
 	migrate_resources()
+	finish_chief_upgrade()
 
 func commit(next: Dictionary, reset: bool = false) -> bool:
 	if not store.save_game(next,reset):
@@ -144,6 +231,10 @@ func site_free(id:int)->bool:
 	for i in built_count():
 		var occupied:=EnvironmentProp.hut_footprint(340)
 		for k in occupied.size():occupied[k]+=home_position(i)
+		if not Geometry2D.intersect_polygons(candidate,occupied).is_empty():return false
+	for i in outposts().size():
+		var occupied:=EnvironmentProp.hut_footprint(340)
+		for k in occupied.size():occupied[k]+=outpost_position(i)
 		if not Geometry2D.intersect_polygons(candidate,occupied).is_empty():return false
 	return true
 

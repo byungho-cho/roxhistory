@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://cv41vgiwbtppd"
-path="res://.godot/imported/menu-button-v001.png-75bc5d2c56fad083c23b6aad0c9d1c8d.ctex"
+uid="uid://4vkuta4k4box"
+path="res://.godot/imported/settings-figma.png-69c92dd410828ee3aec239bbea526f50.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/ui/s40000/menu-button-v001.png"
-dest_files=["res://.godot/imported/menu-button-v001.png-75bc5d2c56fad083c23b6aad0c9d1c8d.ctex"]
+source_file="res://assets/ui/review-v037/settings-figma.png"
+dest_files=["res://.godot/imported/settings-figma.png-69c92dd410828ee3aec239bbea526f50.ctex"]
 
 [params]
 

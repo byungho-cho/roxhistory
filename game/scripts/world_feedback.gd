@@ -57,6 +57,7 @@ func begin(kind: String, id := "") -> void:
 func update_work(seconds: float, total: float) -> void:
 	elapsed = seconds
 	if activity == "": return
+	if activity=="gather" and world.resource_labels.has(target):world.resource_labels[target].reveal_bar()
 	world.player.action_time = seconds
 	if activity == "build":
 		preview_progress = clampf(seconds/total,0,1)
