@@ -6,9 +6,9 @@ var outpost_button:DemoButton
 func _init(owner_app:Node)->void:app=owner_app
 func _ready()->void:
 	name="BuildSideMenu";mouse_filter=Control.MOUSE_FILTER_IGNORE;size=Vector2(132,68);hide()
-	var tower:=item("초소",AssetCatalog.texture("BLD-OUTPOST"),Vector2.ZERO,func():pass)
+	var tower:=item("초소",AssetCatalog.texture("BLD-OUTPOST-L1"),Vector2.ZERO,select_outpost)
 	var lock:=AtlasTexture.new();lock.atlas=preload("res://assets/figma-latest/023a3.png");lock.region=Rect2(1152,558,364,400);lock.filter_clip=true
-	app.picture(tower,lock,Rect2(47,0,14,16))
+	app.picture(tower,lock,Rect2(47,0,14,16)).name="Lock"
 	outpost_button=tower
 	tower.disabled=true;tower.hint_text="초소는 아직 열리지 않았어요"
 	hut=item("움집",AssetCatalog.texture("BLD-HUT-L1"),Vector2(68,0),select_hut)
@@ -25,12 +25,20 @@ func item(title:String,texture:Texture2D,at:Vector2,callback:Callable)->DemoButt
 	return b
 func _process(_delta:float)->void:
 	if not visible:return
-	# Do not activate the unverified legacy tower artwork as the approved L1.
-	outpost_button.disabled=true
+	# Availability is rechecked on selection, confirmation and completion.
 	outpost_button.hint_text=app.building_workflow.outpost_block_reason()
+	outpost_button.disabled=not outpost_button.hint_text.is_empty()
+	outpost_button.get_node("Lock").visible=not app.model.outpost_unlocked()
 	position=app.build_button.global_position+Vector2(-68,-71)
 	hut.disabled=not app.model.can_build()
 	if app.world_map_open or app.modal:hide()
 func select_hut()->void:
 	if not app.model.can_build():app.toast(hut.hint_text);return
+	app.build_kind="hut"
+	hide();app.choosing_plot=true;app.world.show_candidates=true;app.world.queue_redraw()
+
+func select_outpost()->void:
+	var reason:String=app.building_workflow.outpost_block_reason()
+	if not reason.is_empty():app.toast(reason);return
+	app.build_kind="outpost"
 	hide();app.choosing_plot=true;app.world.show_candidates=true;app.world.queue_redraw()

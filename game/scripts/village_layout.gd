@@ -29,12 +29,12 @@ func _draw()->void:
 func rebuild_art()->void:
 	for child in get_children():remove_child(child);child.queue_free()
 	# Roads exist only between completed homes and the chief; sprites never own physics.
-	for home_data in model.homes():
+	for home_data in model.homes()+model.outposts():
 		var target:Vector2=PLOTS[int(home_data.get("site",0))]
 		var elbow:=Vector2(target.x,CHIEF.y)
 		road(CHIEF,elbow);road(elbow,target)
 	foundation(CHIEF,6)
-	for home_data in model.homes():foundation(PLOTS[int(home_data.get("site",0))],4)
+	for home_data in model.homes()+model.outposts():foundation(PLOTS[int(home_data.get("site",0))],4)
 	queue_redraw()
 func foundation(cell:Vector2,span:int)->void:
 	var s:=Sprite2D.new();s.texture=AssetCatalog.texture("GROUND-PAD");s.scale=Vector2.ONE*(span*64.0/1088.0)

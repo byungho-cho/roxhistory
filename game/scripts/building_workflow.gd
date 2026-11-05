@@ -28,7 +28,7 @@ static func approved_texture(id:String)->Texture2D:
 func outpost_block_reason()->String:
 	if not app.model.can_build_outpost():return app.model.outpost_requirement()
 	if approved_texture("BLD-OUTPOST-L1")==null:return "초소 1레벨 확정 게임 에셋 준비 중"
-	return "초소 배치 화면 연결 준비 중"
+	return ""
 
 func upgrade_block_reason(target:int)->String:
 	if app.model.state.has("chief_upgrade"):return "주인공 움집 업그레이드가 진행 중이에요"

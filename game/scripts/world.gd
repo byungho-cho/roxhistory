@@ -224,6 +224,7 @@ func refresh() -> void:
 			body.add_child(collision)
 			add_child(body)
 		get_node("HomeCollision"+str(i)).position=homes[i].position
+	refresh_outposts()
 	if selected_site>=0 and not model.site_free(selected_site):selected_site=-1
 	if selected_site>=0:site.position=DemoConfig.BUILD_SITES[selected_site]
 	elif model.built_count()<DemoConfig.MAX_RESIDENT_HOMES:
@@ -287,7 +288,7 @@ func _process(_delta: float) -> void:
 
 func _draw() -> void:
 	if not is_instance_valid(player): return
-	if show_candidates and model.built_count()<DemoConfig.MAX_RESIDENT_HOMES:
+	if show_candidates:
 		for id in DemoConfig.BUILD_SITES.size():
 			if not model.site_free(id):continue
 			draw_site(DemoConfig.BUILD_SITES[id],id==selected_site)
@@ -317,13 +318,12 @@ func draw_site(at:Vector2,chosen:bool)->void:
 		draw_line(post-Vector2(1,1),post-Vector2(1,24),Color("d6b777"),2,true)
 
 func site_at(at:Vector2)->int:
-	if model.built_count()>=DemoConfig.MAX_RESIDENT_HOMES:return -1
 	for id in DemoConfig.BUILD_SITES.size():
 		if model.site_free(id) and Geometry2D.is_point_in_polygon(at,VillageLayout.plot_polygon(id)):return id
 	return -1
 
 func site_available(id:int)->bool:
-	if not model.site_free(id) or model.built_count()>=DemoConfig.MAX_RESIDENT_HOMES:return false
+	if not model.site_free(id):return false
 	var at:Vector2=DemoConfig.BUILD_SITES[id]
 	for animal in animals:
 		if Geometry2D.is_point_in_polygon(animal.position,VillageLayout.plot_polygon(id)):return false
@@ -350,3 +350,16 @@ func gather_stand(target: Vector2, resource_kind: String="wood") -> Vector2:
 			var at:=player.transform;at.origin=candidate
 			if not player.test_move(at,Vector2.ZERO,null,0.08,true):return candidate
 	return Vector2.INF
+
+func refresh_outposts()->void:
+	for entry in model.outposts():
+		var node_name:String="Outpost_"+str(entry.uid)
+		if has_node(node_name):continue
+		var texture:=BuildingWorkflow.approved_texture("BLD-OUTPOST-L1")
+		if texture==null:continue
+		var body:=StaticBody2D.new();body.name=node_name;body.position=DemoConfig.BUILD_SITES[int(entry.site)];body.visibility_layer=2
+		var image:=Sprite2D.new();image.texture=texture;image.scale=Vector2.ONE*180/texture.get_width();image.position.y=-texture.get_height()*image.scale.y*.3+3;image.visibility_layer=2
+		image.texture_filter=CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+		body.add_child(image)
+		var collision:=CollisionShape2D.new();var shape:=ConvexPolygonShape2D.new();shape.points=EnvironmentProp.hut_footprint(230);collision.shape=shape;body.add_child(collision)
+		add_child(body)

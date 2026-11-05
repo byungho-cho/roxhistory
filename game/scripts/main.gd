@@ -19,6 +19,8 @@ var modal := false
 var task := ""
 const GATHER_SEARCH_RADIUS := 650.0
 var pending_action:Dictionary={}
+var build_kind:="hut"
+var task_build_kind:="hut"
 var choosing_plot:=false
 var build_preview:BuildPreview
 var menu_expanded:=true
@@ -654,7 +656,7 @@ func _process(delta: float) -> void:
 	gather_button.text="채집"
 	build_button.text="건설"
 	gather_button.disabled = modal
-	build_button.disabled = modal or (model.built_count()>=DemoConfig.MAX_RESIDENT_HOMES)
+	build_button.disabled = modal
 	style_action_state(gather_button)
 	style_action_state(build_button)
 	if task == "":
@@ -723,9 +725,9 @@ func confirm_build_preview()->void:
 	if not is_instance_valid(build_preview) or build_preview.site_id<0 or not application_active or modal:return
 	var id:=build_preview.site_id
 	if not world.site_available(id):cancel_build_preview();toast("이 부지는 지금 사용할 수 없어요");return
-	if not model.can_build():toast("나무 20개와 돌 20개가 필요해요");return
+	if not can_build_selected():return
 	cancel_build_preview()
-	if task!="":reserve_action({"kind":"build","id":id});return
+	if task!="":reserve_action({"kind":"build","id":id,"building":build_kind});return
 	if world.select_site(id):build_action()
 
 func reserve_action(request:Dictionary)->void:
@@ -741,16 +743,17 @@ func run_reserved_action()->void:
 		"family":navigation.start("family","first",FamilyArrival.MEETING)
 		"gather":gather_action(str(request.get("id","")))
 		"build":
+			build_kind=str(request.get("building","hut"))
 			if world.select_site(int(request.id)):build_action()
 			else:toast("예약한 건설 부지를 사용할 수 없어요")
 
 func build_action() -> void:
-	if modal or gestures.blocked or task!="" or model.built_count()>=DemoConfig.MAX_RESIDENT_HOMES:return
+	if modal or gestures.blocked or task!="":return
 	if world.selected_site<0:toast("건설할 격자 부지를 먼저 선택해 주세요");return
-	if not model.can_build():toast("나무 20개와 돌 20개가 필요해요");return
+	if not can_build_selected():return
 	if not world.site_available(world.selected_site):toast("이 부지에 장애물이 있어요. 다른 부지를 선택해 주세요");return
 	navigation.cancel();choosing_plot=false;world.show_candidates=false;world.queue_redraw()
-	task_site=world.selected_site
+	task_site=world.selected_site;task_build_kind=build_kind
 	task="build";world.feedback.begin("build");world.player.set_activity("")
 	task_total=float(DemoConfig.get_data().build_seconds);task_remaining=task_total;task_bar.visible=false;toast("",0)
 
@@ -759,6 +762,7 @@ func finish_task() -> void:
 	var target := task_target
 	var built_at:=world.site.position
 	var built_site:=task_site
+	var built_kind:=task_build_kind
 	var site_valid:=world.site_available(built_site) if kind=="build" else true
 	cancel_task(false)
 	if kind == "gather":
@@ -769,8 +773,13 @@ func finish_task() -> void:
 			toast("",0)
 
 	elif kind=="family":family.finish()
-	elif kind == "build" and site_valid and model.build(world.player.position,built_site):
-		world.feedback.built(built_at)
+	elif kind == "build" and site_valid:
+		var completed:bool=false
+		if built_kind=="outpost":
+			if building_workflow.outpost_block_reason().is_empty():completed=model.build_outpost(world.player.position,built_site)
+		else:completed=model.build(world.player.position,built_site)
+		if completed:world.feedback.built(built_at)
+		else:toast("건설 조건이 변경되어 취소했어요. 재료는 사용하지 않았어요")
 	elif kind=="build" and not site_valid:toast("부지가 막혀 건설을 멈췄습니다. 재료는 사용하지 않았어요")
 	call_deferred("run_reserved_action")
 
@@ -1032,3 +1041,11 @@ func style_action_state(control:DemoButton)->void:
 	control.set_meta("action_state",state)
 	# Authored art supplies all borders, shadows and nameplates. No proximity halo.
 	for variant in ["normal","hover","pressed","disabled"]:control.add_theme_stylebox_override(variant,StyleBoxEmpty.new())
+
+func can_build_selected()->bool:
+	if build_kind=="outpost":
+		var reason:String=building_workflow.outpost_block_reason()
+		if not reason.is_empty():toast(reason);return false
+		return true
+	if not model.can_build():toast("나무 20개와 돌 20개가 필요해요");return false
+	return true

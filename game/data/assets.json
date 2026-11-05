@@ -306,6 +306,78 @@
         925
       ],
       "sha256": "5cee73bd7445e357b43cff2d39c554e834812e9c9cc36428ff4661856feb66f8"
+    },
+    "BLD-CHIEF-L2": {
+      "file": "res://assets/refactor-v035/hut-stages.png",
+      "crop": [
+        527,
+        220,
+        402,
+        360
+      ],
+      "source_size": [
+        2172,
+        724
+      ],
+      "approved": true,
+      "review_only": true,
+      "qa": "Edge color residue; not release approved",
+      "source_commit": "a84985267dd8f282403b6f9ad3c4778446308698"
+    },
+    "BLD-CHIEF-L3": {
+      "file": "res://assets/refactor-v035/hut-stages.png",
+      "crop": [
+        1009,
+        166,
+        455,
+        415
+      ],
+      "source_size": [
+        2172,
+        724
+      ],
+      "approved": true,
+      "review_only": true,
+      "qa": "Edge color residue; not release approved",
+      "source_commit": "a84985267dd8f282403b6f9ad3c4778446308698"
+    },
+    "BLD-CHIEF-L4": {
+      "file": "res://assets/refactor-v035/hut-stages.png",
+      "crop": [
+        1537,
+        103,
+        609,
+        478
+      ],
+      "source_size": [
+        2172,
+        724
+      ],
+      "approved": true,
+      "review_only": true,
+      "qa": "Edge color residue; not release approved",
+      "source_commit": "a84985267dd8f282403b6f9ad3c4778446308698"
+    },
+    "BLD-OUTPOST-L1": {
+      "crop": [
+        280,
+        130,
+        870,
+        800
+      ],
+      "source_size": [
+        1448,
+        1086
+      ],
+      "anchor": [
+        0.5,
+        0.8
+      ],
+      "file": "res://assets/buildings-review-v001/outpost-level1.png",
+      "approved": true,
+      "review_only": true,
+      "qa": "Edge color residue; not release approved",
+      "source_commit": "a84985267dd8f282403b6f9ad3c4778446308698"
     }
   }
 }

@@ -21,6 +21,12 @@ func _ready()->void:
 		controls.add_child(b)
 	hide();controls.hide()
 func select(id:int)->void:
+	ghost.set_hut_style(1)
+	if app.build_kind=="outpost":
+		var texture:=BuildingWorkflow.approved_texture("BLD-OUTPOST-L1")
+		if texture==null:return
+		ghost.sprite.texture=texture;ghost.sprite.scale=Vector2.ONE*180/texture.get_width()
+		ghost.sprite.position.y=-texture.get_height()*ghost.sprite.scale.y*.3+3-ghost.depth_visual.position.y
 	site_id=id;position=DemoConfig.BUILD_SITES[id];age=0;show();controls.show();queue_redraw()
 func clear()->void:
 	site_id=-1;hide()
