@@ -19,6 +19,7 @@ var modal := false
 var task := ""
 const GATHER_SEARCH_RADIUS := 650.0
 var pending_action:Dictionary={}
+var queued_action_indicator:QueuedActionIndicator
 var build_kind:="hut"
 var task_build_kind:="hut"
 var choosing_plot:=false
@@ -472,6 +473,7 @@ func play_hud() -> void:
 	apply_menu_state()
 	build_side=BuildSideMenu.new(self);stage.add_child(build_side)
 	building_menu=BuildingMenu.new(self);stage.add_child(building_menu)
+	queued_action_indicator=QueuedActionIndicator.new(self);stage.add_child(queued_action_indicator)
 	build_preview=BuildPreview.new(self);world.add_child(build_preview)
 	cancel_site_button=button(stage,"부지 선택 취소",cancel_build_preview)
 	cancel_site_button.name="CancelBuildSite";cancel_site_button.custom_minimum_size=Vector2.ZERO
@@ -732,11 +734,12 @@ func confirm_build_preview()->void:
 
 func reserve_action(request:Dictionary)->void:
 	pending_action=request.duplicate(true)
-	toast("현재 작업 후 실행할 행동을 예약했어요",1.5)
+	if is_instance_valid(queued_action_indicator):queued_action_indicator.refresh()
 
 func run_reserved_action()->void:
 	var request:=pending_action.duplicate(true)
 	pending_action.clear()
+	if is_instance_valid(queued_action_indicator):queued_action_indicator.refresh()
 	if request.is_empty():return
 	match str(request.kind):
 		"move":navigation.start("move","",request.at)
@@ -786,6 +789,7 @@ func finish_task() -> void:
 func cancel_task(clear_reservation:bool=true) -> void:
 	if clear_reservation:
 		pending_action.clear()
+		if is_instance_valid(queued_action_indicator):queued_action_indicator.refresh()
 		cancel_build_preview()
 	if is_instance_valid(navigation):navigation.cancel()
 	if is_instance_valid(audio): audio.stop_work()

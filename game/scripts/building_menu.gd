@@ -71,7 +71,10 @@ func refresh()->void:
 	demolish_button.hint_text="주인공 움집은 철거할 수 없어요" if selected_key=="chief" else "건물 위 씨앗 보상을 먼저 받아 주세요"
 	var at:Vector2=DemoConfig.CHIEF_POSITION if selected_key=="chief" else app.model.home_position(i)
 	var screen_at:Vector2=app.world.get_global_transform_with_canvas()*at
-	position=Vector2(clampf(screen_at.x-size.x*.5,app.safe.x,app.w-app.safe.x-size.x),clampf(screen_at.y+8,app.safe.y+80,app.h-app.safe.y-220))
+	var bottom:float=app.h-app.safe.y
+	if is_instance_valid(app.action_row) and app.action_row.is_visible_in_tree():bottom=minf(bottom,app.action_row.global_position.y-8)
+	var top:float=app.safe.y+80
+	position=Vector2(clampf(screen_at.x-size.x*.5,app.safe.x,maxf(app.safe.x,app.w-app.safe.x-size.x)),clampf(screen_at.y+8,top,maxf(top,bottom-size.y)))
 func _process(_delta:float)->void:
 	if not visible:return
 	if app.modal or app.world_map_open or not app.application_active or app.screen!="play":close();return

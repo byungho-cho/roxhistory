@@ -9,7 +9,7 @@ var elapsed:=0.0
 const MEETING := Vector2(1540,975)
 func _init(owner_app:Node)->void:app=owner_app
 func _ready()->void:
-	bubble=Button.new();bubble.name="FamilyConversation";bubble.text="우리도 함께 살고 싶어요!";bubble.custom_minimum_size=Vector2(166,44)
+	bubble=DemoButton.new();bubble.name="FamilyConversation";bubble.text="우리도 함께 살고 싶어요!";bubble.custom_minimum_size=Vector2(166,44)
 	bubble.add_theme_font_size_override("font_size",12)
 	# The shared button theme has pale hover text for dark buttons, unlike this bubble.
 	for state in ["font_color","font_hover_color","font_pressed_color","font_hover_pressed_color","font_focus_color","font_disabled_color"]:
