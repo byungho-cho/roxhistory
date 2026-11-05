@@ -62,6 +62,7 @@ var world_map:VillageWorldMap
 var world_map_open:=false
 var map_toggle:DemoButton
 var family:FamilyArrival
+var building_workflow:BuildingWorkflow
 
 func toggle_quest()->void:
 	quest_expanded=not quest_expanded
@@ -413,6 +414,9 @@ func enter_game() -> void:
 		world = DemoWorld.new(model)
 		add_child(world)
 		world.feedback.sound_cue.connect(audio.cue)
+	if not is_instance_valid(building_workflow):
+		building_workflow=BuildingWorkflow.new(self);add_child(building_workflow)
+	else:building_workflow.refresh_visual()
 	if not is_instance_valid(navigation):
 		navigation=AutoTravel.new(self);add_child(navigation)
 	world.player.set_character_3d(true)
@@ -933,6 +937,7 @@ func show_modal(title: String, body: String, actions: Array, compact: bool = fal
 		b.add_theme_font_size_override("font_size",17)
 
 func close_modal() -> void:
+	if is_instance_valid(building_workflow):building_workflow.confirmation_target=-1
 	demolition_key=""
 	if is_instance_valid(overlay):
 		ui.remove_child(overlay)

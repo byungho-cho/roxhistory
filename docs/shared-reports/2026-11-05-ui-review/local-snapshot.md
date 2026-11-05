@@ -30,3 +30,9 @@ Local backup archives contain working changes and preview save profiles; they ar
 State regression: 343 checks passed. Outpost/upgrade transactions: 66 checks passed. Construction icon size/center and unchanged touch bounds checked. Desktop render captured after submenu adjustment. Dedicated source-snapshot smoke test covers village startup, replacement assets, build menu, both map scenes and save.
 
 APK 0.1.38 (version code 39) was built locally with the same certificate as 0.1.37. Physical Android installation was not verified. External APK publication remains blocked pending explicit approval; this source snapshot does not publish an APK or merge main.
+
+## Subsequent workflow wiring (not in the existing 0.1.38 APK)
+
+`BuildingWorkflow.request_upgrade()` is the entry point for the pending approved radial menu. It uses the existing confirmation modal, invalidates canceled callbacks, rechecks resources/current level/assets before payment, and processes durable completion independently of ordinary work and map switching. The existing construction scaffold is reused at the chief hut and excluded from GPS. Final construction effects and radial-menu input remain pending.
+
+Building textures require explicit `approved: true` catalog records under `BLD-CHIEF-L2/L3/L4` and `BLD-OUTPOST-L1`; absent, invalid or unapproved resources never become catalog fallback artwork. These records are deliberately not added without the approved source files. Outpost menu conditions are centralized, but outpost placement/rendering is still pending. No new feature is exposed as playable, and no new APK is built or published by this follow-up.

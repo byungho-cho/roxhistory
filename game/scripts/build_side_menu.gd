@@ -26,7 +26,7 @@ func _process(_delta:float)->void:
 	if not visible:return
 	# Do not activate the unverified legacy tower artwork as the approved L1.
 	outpost_button.disabled=true
-	outpost_button.hint_text=app.model.outpost_requirement() if not app.model.can_build_outpost() else "초소 1레벨 확정 게임 에셋 준비 중"
+	outpost_button.hint_text=app.building_workflow.outpost_block_reason()
 	position=app.build_button.global_position+Vector2(-68,-71)
 	hut.disabled=not app.model.can_build()
 	if app.world_map_open or app.modal:hide()
