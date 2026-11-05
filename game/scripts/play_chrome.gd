@@ -83,7 +83,7 @@ func _draw() -> void:
 
 		var extent:=28.0+beat*4
 		draw_texture_rect(DemoArt.icon(key),Rect2(rect.position+Vector2(3,3),Vector2(extent,extent)),false)
-		draw_string(font,rect.position+Vector2(34,25),{"wood":"나무 ","stone":"돌 ","tokens":"씨앗 "}[key]+(str(int(displayed_tokens)) if key=="tokens" else str(int(app.model.state[key]))),HORIZONTAL_ALIGNMENT_LEFT,66,13,Color(1,.98,.90,1))
+		draw_string(font,rect.position+Vector2(34,25),str(int(displayed_tokens)) if key=="tokens" else str(int(app.model.state[key])),HORIZONTAL_ALIGNMENT_LEFT,66,13,Color(1,.98,.90,1))
 	var center:=Vector2(app.w-app.safe.x-50,app.safe.y+50)
 	draw_circle(center+Vector2(1,3),53,Color(.15,.10,.04,.20))
 	draw_circle(center,51,Color("49321e"))
