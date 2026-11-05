@@ -1,0 +1,78 @@
+{
+  "version": 1,
+  "outpost": {
+    "file": "outpost-level1.png",
+    "source": "approved Option2 (level1), generated transparent extraction",
+    "source_size": [
+      1448,
+      1086
+    ],
+    "crop": [
+      280,
+      130,
+      870,
+      800
+    ],
+    "anchor": [
+      0.5,
+      0.8
+    ],
+    "ground_included": false,
+    "animation": false,
+    "qa": "Derived sprite; verify edges at gameplay scale before release. No guarantee of pixel-identical extraction."
+  },
+  "huts": {
+    "file": "hut-stages-existing.png",
+    "source": "game/assets/refactor-v035/hut-stages.png on fix/roxhistory-ui-review-20261105",
+    "blob_sha": "68c66d4f378e476511395eed53fa640d9d4baa33",
+    "source_size": [
+      2172,
+      724
+    ],
+    "ground_included": false,
+    "animation": false,
+    "stages": [
+      {
+        "level": 1,
+        "crop": [
+          84,
+          281,
+          338,
+          292
+        ],
+        "status": "existing game catalog crop"
+      },
+      {
+        "level": 2,
+        "crop": [
+          527,
+          220,
+          402,
+          360
+        ],
+        "status": "proposed region; requires visual check"
+      },
+      {
+        "level": 3,
+        "crop": [
+          1009,
+          166,
+          455,
+          415
+        ],
+        "status": "proposed region; requires visual check"
+      },
+      {
+        "level": 4,
+        "crop": [
+          1537,
+          103,
+          609,
+          478
+        ],
+        "status": "proposed region; requires visual check"
+      }
+    ],
+    "qa": "Existing interim sheet preserved byte-for-byte. Edge color/alpha residue visible; do not force into release if noticeable. Level2-4 previously not registered in game catalog. Buildings only, separate ground required."
+  }
+}
