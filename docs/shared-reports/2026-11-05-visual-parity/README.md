@@ -51,4 +51,15 @@
 - 움집1단계는 Figma에서도 게임 검증 전 시안으로 명시되어 있다. 적용 가능성은 확인했으나 최종 품질 승인으로 간주하지 않는다. 사이드 이름표는 기존 붓터치 재사용으로 MAT-006의 양끝 대칭과 세부 차이가 남는다.
 - 실물 Fold 커버/펼침 터치, 직접 청취, 장시간 성능, Android 전체 플레이는 미검증. APK 설치·업데이트 및 배포 결과는 아래에 추가한다.
 
-배포 전 검토 문서. 설치 파일과 병합 커밋은 공개 릴리스 완료 후 현행화한다.
+## 배포 및 Android 확인
+
+- 버전 0.1.36 / versionCode 37 / 생성일 2026-11-05.
+- [구현 PR #64](https://github.com/byungho-cho/roxhistory/pull/64), APK 소스 main `7040fdf545893fc12e1807b3c6a0ffbd0d74db9b`.
+- [CI run 72](https://github.com/byungho-cho/roxhistory/actions/runs/42025958891) 성공. 문서 후속 커밋은 APK 소스를 변경하지 않는다.
+- APK SHA-256: `07b895512a6e617ccd10a623992ca40552036097b65c04effa2172684bdb5c8e`.
+- 기존 `com.roxhistory.demo`와 인증서 SHA-256 `cf65aeecb4e399ba9e2e6b9fa947f34f8c31bd75c8e3b686ad29d8431bb1695f` 유지.
+- Android 15 RoxHistory35 AVD, 읽기 전용 임시 세션. v0.1.34에 테스트 저장을 넣고 v0.1.36으로 삭제 없이 업데이트했다. 나무7/돌8/씨앗10, built-8 건물과 수령 상태가 유지됐으며 재실행 후 저장 해시도 동일했다. 원본 AVD 저장은 변경하지 않았다.
+- SwiftShader 환경은 이전 버전부터 GL uniform 제한으로 화면 출력이 실패했다. host GPU(NVIDIA RTX5060)로 새 읽기 전용 세션을 실행하여 1280×720 가로 시작 화면 정상 표시를 확인했다. 최초 셰이더 캐시 재컴파일 경고 외 앱 오류는 관찰되지 않았다. 이 결과는 Android 전체 플레이·터치 검증을 뜻하지 않는다.
+- [Android 시작 화면](evidence/android-launch.png). 전체 플레이와 디자인 비교 캡처는 위 Windows 실행 결과이며 실물 기기 검증과 구분한다.
+
+[APK 직접 다운로드](https://github.com/byungho-cho/roxhistory/releases/download/v0.1.36/RoxHistory-0.1.36-20261105-212759.apk)
