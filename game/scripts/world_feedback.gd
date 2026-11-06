@@ -145,24 +145,7 @@ func _draw() -> void:
 	if not is_instance_valid(world.player): return
 	# Proximity does not add a second selection ring or arrow under resources.
 	if activity == "build":
-		var p: Vector2 = preview.position
-		draw_set_transform(p+Vector2(0,-35),0,Vector2(1,.40))
-		draw_set_transform(Vector2.ZERO)
-		var outline:=VillageLayout.plot_polygon(world.selected_site)
-		outline.append(outline[0]);draw_polyline(outline,Color(1,.79,.32,.6),3,true)
-		draw_set_transform(Vector2.ZERO)
-		for shaft in 7:
-			var x:float=sin(shaft*2.4)*125
-			var alpha:float=(.12+.045*sin(pulse*2+shaft))*smoothstep(0,.12,preview_progress)
-			var base:=p+Vector2(x,-25)
-			draw_colored_polygon(PackedVector2Array([base+Vector2(-13,0),base+Vector2(13,0),base+Vector2(5,-160),base+Vector2(-5,-160)]),Color(1,.82,.32,alpha))
-		for i in 14:
-			var t := fposmod(pulse*0.65+i/14.0,1.0)
-			var at := p+Vector2(sin(i*2.4)*80,-35-t*65)
-			draw_circle(at,19+t*25,Color(0.93,0.77,0.50,sin(t*PI)*0.32))
-		for i in 6:
-			var t := fposmod(pulse*0.6+i/6.0,1.0)
-			draw_circle(p+Vector2(sin(i*2.4)*90,-25-t*110),2.5,Color(1,0.83,0.35,sin(t*PI)*0.65))
+		draw_build_activity(self,preview.position,VillageLayout.plot_polygon(world.selected_site),pulse,preview_progress)
 	for p in particles:
 		var color: Color = p.color
 		color.a *= 1.0-p.age/p.life
@@ -186,3 +169,17 @@ func _draw() -> void:
 		draw_set_transform(celebration_point+Vector2(0,-35),0,Vector2(1,0.45))
 		draw_arc(Vector2.ZERO,115+(1.5-celebration)*35,0,TAU,64,Color(1,0.9,0.61,celebration/1.5),5,true)
 		draw_set_transform(Vector2.ZERO)
+
+static func draw_build_activity(canvas:Node2D,point:Vector2,footprint:PackedVector2Array,elapsed:float,progress:float)->void:
+	var outline:=footprint.duplicate();outline.append(outline[0]);canvas.draw_polyline(outline,Color(1,.79,.32,.6),3,true)
+	for shaft in 7:
+		var x:float=sin(shaft*2.4)*125
+		var alpha:float=(.12+.045*sin(elapsed*2+shaft))*smoothstep(0,.12,progress)
+		var base:=point+Vector2(x,-25)
+		canvas.draw_colored_polygon(PackedVector2Array([base+Vector2(-13,0),base+Vector2(13,0),base+Vector2(5,-160),base+Vector2(-5,-160)]),Color(1,.82,.32,alpha))
+	for i in 14:
+		var t:=fposmod(elapsed*.65+i/14.0,1.0)
+		canvas.draw_circle(point+Vector2(sin(i*2.4)*80,-35-t*65),19+t*25,Color(.93,.77,.50,sin(t*PI)*.32))
+	for i in 6:
+		var t:=fposmod(elapsed*.6+i/6.0,1.0)
+		canvas.draw_circle(point+Vector2(sin(i*2.4)*90,-25-t*110),2.5,Color(1,.83,.35,sin(t*PI)*.65))

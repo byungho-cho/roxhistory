@@ -8,12 +8,13 @@ var timer: Label
 var hammer: TextureRect
 var clock := 0.0
 var gathering:=false
+var upgrading:=false
 
-func _init(owner_app: Node, for_gathering:bool=false) -> void:
-	app = owner_app;gathering=for_gathering
+func _init(owner_app: Node, for_gathering:bool=false,for_upgrade:bool=false) -> void:
+	app = owner_app;gathering=for_gathering;upgrading=for_upgrade
 
 func _ready() -> void:
-	name="GatheringTimeProgress" if gathering else "ConstructionTimeProgress"
+	name="ChiefUpgradeProgress" if upgrading else ("GatheringTimeProgress" if gathering else "ConstructionTimeProgress")
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	size = Vector2(410,72)
 	scale = Vector2.ONE*0.65
@@ -62,14 +63,20 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	visible = app.task == ("gather" if gathering else "build") and is_instance_valid(app.world) and not app.modal and not app.world_map_open and app.application_active
+	if upgrading:visible=app.model.state.has("chief_upgrade") and is_instance_valid(app.world) and not app.modal and not app.world_map_open and app.application_active
 	if gathering:visible=visible and not app.gather_approach and app.world.art_nodes.has(app.task_target)
 	if gathering and visible:visible=app.world.art_nodes[app.task_target].visible
 	if not visible: clock = 0; return
 	clock += delta
-	var ratio := clampf(1.0-app.task_remaining/maxf(0.001,app.task_total),0,1)
+	var remaining:float=app.task_remaining
+	var total:float=app.task_total
+	if upgrading:
+		remaining=app.model.chief_upgrade_remaining()
+		total=app.model.state.chief_upgrade.finishes_at-app.model.state.chief_upgrade.started_at
+	var ratio := clampf(1.0-remaining/maxf(0.001,total),0,1)
 	fill.size.x = maxf(0.01,320*ratio)
 	fill.material.set_shader_parameter("dimensions",fill.size)
-	var seconds := maxi(0,int(ceil(app.task_remaining)))
+	var seconds := maxi(0,int(ceil(remaining)))
 	timer.text = "%02d:%02d:%02d" % [seconds/3600,(seconds/60)%60,seconds%60]
 	hammer.rotation = 0 if gathering else deg_to_rad(8+sin(clock*TAU/0.6)*12)
 	if gathering:
@@ -79,6 +86,10 @@ func _process(delta: float) -> void:
 	var world_zoom:float=app.world.get_global_transform_with_canvas().get_scale().x
 	scale=Vector2.ONE*clampf(world_zoom*.85,.34,.68)
 	position = point-Vector2(size.x*scale.x*.5,150*world_zoom+size.y*scale.y)
+	if upgrading:
+		var chief:Sprite2D=app.world.get_node("ExistingHut").sprite
+		var bounds:Rect2=chief.get_global_transform_with_canvas()*chief.get_rect()
+		position=Vector2(bounds.get_center().x-size.x*scale.x*.5,bounds.position.y-size.y*scale.y-5)
 	if gathering:
 		scale*=2.0/3.0
 		var image:Sprite2D=app.world.art_nodes[app.task_target].get_child(0)

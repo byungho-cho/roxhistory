@@ -19,5 +19,5 @@ static func point(value: Array) -> Vector2:
 
 static func fresh() -> Dictionary:
 	var c := get_data()
-	return {"schema":1,"terrain_revision":34,"resource_revision":35,"family_joined":false,"family_unlocked":false,"region":"amsa","position":c.spawn.duplicate(),"wood":0,"stone":0,
+	return {"schema":1,"terrain_revision":34,"resource_revision":35,"family_joined":false,"family_unlocked":false,"region":"amsa","position":c.spawn.duplicate(),"wood":500,"stone":500,
 		"depleted":{},"built":false,"reward_claimed":false,"tokens":0,"intro_seen":false}

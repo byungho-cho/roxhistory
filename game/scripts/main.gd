@@ -19,6 +19,7 @@ var modal := false
 var task := ""
 const GATHER_SEARCH_RADIUS := 650.0
 var pending_action:Dictionary={}
+var dispatching_reserved_action:=false
 var queued_action_indicator:QueuedActionIndicator
 var build_kind:="hut"
 var task_build_kind:="hut"
@@ -29,6 +30,7 @@ var build_side:BuildSideMenu
 var menu_toggle:DemoButton
 var menu_backdrop:Panel
 var menu_tween:Tween
+var menu_animating:=false
 var map_transition:ColorRect
 var map_tween:Tween
 var map_transition_active:=false
@@ -133,6 +135,7 @@ func clear_children(node: Node) -> void:
 
 func show_screen(next: String) -> void:
 	if menu_tween:menu_tween.kill()
+	menu_animating=false
 	if map_tween:map_tween.kill()
 	map_transition_active=false
 	world_map_open=false
@@ -487,6 +490,7 @@ func play_hud() -> void:
 	chrome=PlayChrome.new(self);chrome.z_index=5;stage.add_child(chrome);chrome.size=Vector2(w,h)
 	stage.add_child(ConstructionProgress.new(self))
 	stage.add_child(ConstructionProgress.new(self,true))
+	stage.add_child(ConstructionProgress.new(self,false,true))
 	family=FamilyArrival.new(self);stage.add_child(family)
 	var map_hit:=button(stage,"",recenter_map);map_hit.name="RecenterCamera";map_hit.custom_minimum_size=Vector2.ZERO;map_hit.position=Vector2(w-safe.x-100,safe.y+10);map_hit.size=Vector2(100,100)
 	map_hit.hint_text="현재 위치로 지도 맞추기"
@@ -561,6 +565,9 @@ func recenter_map()->void:
 	chrome.queue_redraw()
 
 func toggle_menu()->void:
+	if menu_animating:return
+	if is_instance_valid(build_side):build_side.hide()
+	if is_instance_valid(gestures):gestures.clear()
 	menu_expanded=not menu_expanded
 	apply_menu_state(true)
 
@@ -571,7 +578,10 @@ func apply_menu_state(animated:bool=false)->void:
 	var stride:=button_width+8
 	var width:=stride*6+56
 	action_row.size=Vector2(width,77);action_row.position.x=w-safe.x-width
-	if animated:menu_tween=create_tween().set_parallel(true).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	menu_animating=animated
+	if animated:
+		menu_tween=create_tween().set_parallel(true).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+		menu_tween.finished.connect(func():menu_animating=false)
 	for i in 6:
 		var child:Control=action_row.get_child(i)
 		var auxiliary:bool=child.get_meta("auxiliary_action",false)
@@ -713,6 +723,7 @@ func gather_action(selected_id:String="") -> void:
 	context.text = "자원 옆에 자리 잡는 중" if gather_approach else "채집 중… 이동하면 멈춥니다"
 
 func construction_menu()->void:
+	if menu_animating:return
 	if modal or gestures.blocked:return
 	if is_instance_valid(building_menu):building_menu.close()
 	cancel_build_preview()
@@ -735,13 +746,14 @@ func confirm_build_preview()->void:
 
 func reserve_action(request:Dictionary)->void:
 	pending_action=request.duplicate(true)
-	if is_instance_valid(queued_action_indicator):queued_action_indicator.refresh()
+	if is_instance_valid(queued_action_indicator):queued_action_indicator.reserve(request)
 
 func run_reserved_action()->void:
 	var request:=pending_action.duplicate(true)
-	pending_action.clear()
-	if is_instance_valid(queued_action_indicator):queued_action_indicator.refresh()
 	if request.is_empty():return
+	var receipt_generation:int=queued_action_indicator.dispatch()
+	pending_action.clear()
+	dispatching_reserved_action=true
 	match str(request.kind):
 		"move":navigation.start("move","",request.at)
 		"family":navigation.start("family","first",FamilyArrival.MEETING)
@@ -750,6 +762,9 @@ func run_reserved_action()->void:
 			build_kind=str(request.get("building","hut"))
 			if world.select_site(int(request.id)):build_action()
 			else:toast("예약한 건설 부지를 사용할 수 없어요")
+
+	dispatching_reserved_action=false
+	queued_action_indicator.observe_dispatch(receipt_generation)
 
 func build_action() -> void:
 	if modal or gestures.blocked or task!="":return
@@ -787,10 +802,10 @@ func finish_task() -> void:
 	elif kind=="build" and not site_valid:toast("부지가 막혀 건설을 멈췄습니다. 재료는 사용하지 않았어요")
 	call_deferred("run_reserved_action")
 
-func cancel_task(clear_reservation:bool=true) -> void:
+func cancel_task(clear_reservation:bool=true,preserve_receipt:bool=false) -> void:
 	if clear_reservation:
 		pending_action.clear()
-		if is_instance_valid(queued_action_indicator):queued_action_indicator.refresh()
+		if is_instance_valid(queued_action_indicator) and not dispatching_reserved_action and not preserve_receipt:queued_action_indicator.clear_receipt()
 		cancel_build_preview()
 	if is_instance_valid(navigation):navigation.cancel()
 	if is_instance_valid(audio): audio.stop_work()
@@ -861,6 +876,7 @@ func claim_home(index:int) -> void:
 		for i in 6:chrome.gained("tokens",world.reward_marker_rect(index).get_center()+Vector2((i-3)*8,0),i*.055)
 
 func world_tap(screen_point:Vector2) -> void:
+	if menu_animating and action_row.get_global_rect().has_point(screen_point):return
 	if world_map_open or modal or gestures.blocked:return
 	var at:Vector2=world.get_global_transform_with_canvas().affine_inverse()*screen_point
 	for i in model.built_count():

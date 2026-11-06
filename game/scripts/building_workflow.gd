@@ -5,6 +5,10 @@ var app:Node
 var confirmation_target:=-1
 var scaffold:Sprite2D
 var retry_after:=0.0
+var last_visual_level:=-1
+var transition:Tween
+var previous_visual:Sprite2D
+var scaffold_fade_left:=0.0
 func _init(owner_app:Node)->void:app=owner_app
 func _ready()->void:
 	app.model.changed.connect(refresh_visual)
@@ -63,7 +67,21 @@ func confirm_upgrade(target:int)->bool:
 func refresh_visual()->void:
 	if not is_instance_valid(app.world):return
 	var chief:EnvironmentProp=app.world.get_node("ExistingHut")
-	var texture:=approved_texture("BLD-CHIEF-L%d"%app.model.chief_level())
+	var level:int=app.model.chief_level()
+	var changed:=last_visual_level>=1 and level!=last_visual_level
+	var texture:=approved_texture("BLD-CHIEF-L%d"%level)
+	if changed and texture!=null:
+		if is_instance_valid(transition):transition.kill()
+		if is_instance_valid(previous_visual):previous_visual.queue_free()
+		previous_visual=Sprite2D.new();previous_visual.texture=chief.sprite.texture;previous_visual.transform=chief.sprite.transform;previous_visual.visibility_layer=2
+		previous_visual.texture_filter=chief.sprite.texture_filter;chief.sprite.get_parent().add_child(previous_visual)
+		chief.sprite.modulate.a=0
+		transition=create_tween().set_parallel(true)
+		transition.tween_property(previous_visual,"modulate:a",0.0,.35)
+		transition.tween_property(chief.sprite,"modulate:a",1.0,.35)
+		transition.chain().tween_callback(previous_visual.queue_free)
+		scaffold_fade_left=.35
+	last_visual_level=level
 	if texture!=null:
 		var previous_size:=texture.get_size()*chief.configured_width*EnvironmentProp.BUILDING_IMAGE_SCALE/texture.get_width()
 		chief.sprite.texture=texture
@@ -76,11 +94,15 @@ func refresh_visual()->void:
 		scaffold.scale=Vector2.ONE*300/scaffold.texture.get_width()
 		scaffold.position=DemoConfig.CHIEF_POSITION+Vector2(0,-scaffold.texture.get_height()*scaffold.scale.y*.5+55)
 		app.world.add_child(scaffold)
+	if not app.world.has_node("ChiefUpgradeEffects"):app.world.add_child(UpgradeConstructionEffect.new(app))
 	update_scaffold()
 
 func update_scaffold()->void:
 	if not is_instance_valid(scaffold):return
-	scaffold.visible=app.model.state.has("chief_upgrade") and app.screen=="play" and not app.world_map_open
+	scaffold.visible=(app.model.state.has("chief_upgrade") or scaffold_fade_left>0) and app.screen=="play" and not app.world_map_open and app.application_active
+	if not app.model.state.has("chief_upgrade"):
+		scaffold.modulate.a=scaffold_fade_left/.35
+		return
 	if scaffold.visible:
 		var job:Dictionary=app.model.state.chief_upgrade
 		var duration:float=job.finishes_at-job.started_at
@@ -88,6 +110,7 @@ func update_scaffold()->void:
 		scaffold.modulate.a=smoothstep(0,.12,progress)
 
 func _process(delta:float)->void:
+	scaffold_fade_left=maxf(0,scaffold_fade_left-delta)
 	update_scaffold()
 	if not app.model.state.has("chief_upgrade"):return
 	retry_after=maxf(0,retry_after-delta)

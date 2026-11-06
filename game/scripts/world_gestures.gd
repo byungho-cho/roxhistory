@@ -50,6 +50,9 @@ func ui_hit(at: Vector2) -> bool:
 	return false
 func _input(event: InputEvent) -> void:
 	if app.map_transition_active:return
+	if app.menu_animating and is_instance_valid(app.action_row) and (event is InputEventScreenTouch or event is InputEventScreenDrag or event is InputEventMouseButton or event is InputEventMouseMotion):
+		if app.action_row.get_global_rect().has_point(event.position):
+			get_viewport().set_input_as_handled();return
 	if OS.has_feature("android") and app.test_mode and trace_events<30 and (event is InputEventScreenTouch or event is InputEventScreenDrag):
 		trace_events+=1;print("PLAY_TOUCH ",event.as_text()," active=",app.application_active," screen=",app.screen)
 	if app.world_map_open or app.screen!="play" or not is_instance_valid(app.world) or not app.application_active: return

@@ -56,7 +56,7 @@ func start(kind:String,id:String,destination:Vector2,retry:int=0,blocked:Array[V
 		app.reserve_action({"kind":kind,"id":id,"at":destination,"path":planned})
 		return true
 	# Only an accepted route is a movement command. Rejected clicks preserve work.
-	app.cancel_task()
+	app.cancel_task(true,retry>0)
 	retry_count=retry;blocked_cells=blocked.duplicate()
 	app.world.player.resume_camera()
 	path=planned;path.remove_at(0);path.append(destination)

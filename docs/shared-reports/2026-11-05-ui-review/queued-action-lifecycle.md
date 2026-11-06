@@ -1,0 +1,9 @@
+# Queued action lifecycle (0.1.43)
+
+The most recent reservation flashes three times (0.32-second cycle, 0.96 seconds total) then stays fully visible. A presentation-only receipt retains its existing resource/build/move icon after the one-slot gameplay queue dispatches. Gathering travel and approach do not start the hide countdown. Actual gathering start begins a one-second countdown; construction uses the same one-second delay from actual construction start. Movement keeps its icon throughout travel and clears on arrival or cancellation. Family invitations still have no dedicated mapped icon, so their gameplay remains supported without an invented symbol.
+
+A new reservation immediately replaces the receipt, restores full opacity and resets flashing/countdown. Generation checks reject stale dispatch completion, and a local frame countdown eliminates asynchronous timers that could erase a newer icon. Explicit cancellation and invalid targets clear the receipt. Internal route retries preserve it; responsive HUD reconstruction copies its state. Queue dispatch, resource/cost mutations and single latest reservation semantics remain unchanged.
+
+Validation: 26 lifecycle checks plus 15 existing presentation/regression checks passed using isolated saves, covering dispatch/travel, retries, actual gather/build start, 1-second delay, replacement during an old countdown, stale generation, cancel, invalid target, movement and HUD reconstruction. Android physical-device behavior remains unverified.
+
+Position was intentionally not changed. Feedback image libfile_5052522dc8c881919ebffa9f98ecdd65 could not be officially materialized: current Library transfer helper fails on Windows os.setxattr. The affected icon is not yet confirmed. This remains an unresolved user-reported issue, not a claimed fix. Prior unspecified entrance-animation target remains pending as well.

@@ -19,6 +19,8 @@ func run_tests() -> void:
 	check(model.state.is_empty(),"Fresh installation has no continue state")
 	check(not model.gather("wood_1"),"Collection before starting a game is rejected")
 	check(model.start_new(),"Create new saved game")
+	check(model.state.wood==500 and model.state.stone==500,"New testing game starts with 500 of each resource")
+	var empty_inventory:=model.state.duplicate(true);empty_inventory.wood=0;empty_inventory.stone=0;model.commit(empty_inventory)
 	check(not model.build(),"Insufficient resources cannot build")
 	check(not model.claim_reward(),"Cannot claim before construction")
 	check(not model.gather("missing"),"Unknown resource IDs rejected")
@@ -31,6 +33,7 @@ func run_tests() -> void:
 	check(model.build(),"Minimal demo construction succeeds")
 	check(model.state.wood == 0 and model.state.stone == 0,"Construction deducts exactly twenty of each")
 	check(model.start_new(),"Reset before resource exhaustion checks")
+	empty_inventory=model.state.duplicate(true);empty_inventory.wood=0;empty_inventory.stone=0;model.commit(empty_inventory)
 	for n in DemoConfig.get_data().nodes:
 		for i in int(n.charges):
 			check(model.gather(n.id),"Collect charge %s %d" % [n.id,i])

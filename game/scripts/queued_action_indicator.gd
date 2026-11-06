@@ -1,13 +1,28 @@
 class_name QueuedActionIndicator
 extends TextureRect
-## Presentation only; pending_action remains the single source of truth.
+## Presentation only: retain a visual receipt after the single pending action dispatches.
 var app:Node
 var icon_key:=""
-func _init(owner_app:Node)->void:app=owner_app
+var request:Dictionary={}
+var phase:=""
+var generation:=0
+var blink_elapsed:=0.0
+var hide_remaining:=-1.0
+const BLINK_CYCLES:=3
+const BLINK_PERIOD:=.32
+func _init(owner_app:Node)->void:
+	app=owner_app
+	# Responsive HUD rebuilds must not discard an already dispatched receipt.
+	var previous=app.queued_action_indicator
+	if is_instance_valid(previous):
+		request=previous.request.duplicate(true);phase=previous.phase;generation=previous.generation
+		blink_elapsed=previous.blink_elapsed;hide_remaining=previous.hide_remaining
 func _ready()->void:
 	name="QueuedActionIndicator";mouse_filter=Control.MOUSE_FILTER_IGNORE
 	expand_mode=TextureRect.EXPAND_IGNORE_SIZE;stretch_mode=TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	size=Vector2(26,26);z_index=7;hide()
+	if phase.is_empty() and not app.pending_action.is_empty():reserve(app.pending_action)
+	else:refresh()
 func resolve_icon(request:Dictionary)->String:
 	match str(request.get("kind","")):
 		"build":return "hut"
@@ -18,8 +33,29 @@ func resolve_icon(request:Dictionary)->String:
 			for node in app.model.nodes():
 				if str(node.id)==id:return str(node.kind) if str(node.kind) in ["wood","stone"] else ""
 	return "" # No dedicated family invitation icon; do not invent an action symbol.
+func reserve(next:Dictionary)->void:
+	generation+=1;request=next.duplicate(true);phase="queued";blink_elapsed=0;hide_remaining=-1;modulate.a=1
+	refresh()
+func clear_receipt()->void:
+	generation+=1;request.clear();phase="";hide_remaining=-1;modulate.a=1;hide();icon_key=""
+func dispatch()->int:
+	phase="travelling"
+	return generation
+func observe_dispatch(expected_generation:int)->void:
+	if expected_generation!=generation:return
+	refresh()
 func refresh()->void:
-	icon_key=resolve_icon(app.pending_action)
+	if phase=="queued" and app.pending_action!=request:
+		if app.pending_action.is_empty():clear_receipt();return
+		reserve(app.pending_action);return
+	if phase=="travelling":
+		var kind:String=str(request.get("kind",""))
+		var id:String=str(request.get("id",""))
+		if app.task==kind and (kind!="gather" or id.is_empty() or app.task_target==id):
+			if not app.gather_approach:phase="started";hide_remaining=1.0
+		elif app.navigation.action!=kind or (kind=="gather" and not id.is_empty() and app.navigation.target!=id):
+			clear_receipt();return
+	icon_key=resolve_icon(request)
 	visible=not icon_key.is_empty() and app.screen=="play" and not app.world_map_open and not app.modal and app.application_active and is_instance_valid(app.world)
 	if not visible:return
 	texture=BuildingMenu.art("icon-move.png") if icon_key=="move" else DemoArt.play_icon(icon_key)
@@ -39,4 +75,11 @@ func refresh()->void:
 		if clear:position=candidate.position;return
 	# Dense reward/dialogue clusters: keep the icon above the highest obstruction.
 	for obstacle in obstacles:position.y=minf(position.y,obstacle.position.y-size.y-5)
-func _process(_delta:float)->void:refresh()
+func _process(delta:float)->void:
+	refresh()
+	if phase.is_empty() or not app.application_active:return
+	blink_elapsed+=delta
+	modulate.a=(1.0 if fmod(blink_elapsed,BLINK_PERIOD)<BLINK_PERIOD*.5 else .12) if blink_elapsed<BLINK_PERIOD*BLINK_CYCLES else 1.0
+	if phase=="started":
+		hide_remaining-=delta
+		if hide_remaining<=0:clear_receipt()
