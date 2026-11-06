@@ -9,15 +9,8 @@ func _physics_process(delta:float)->void:
 	if elapsed<1:return
 	elapsed=0
 	var now:=Time.get_unix_time_from_system()
-	var next:=world.model.state.duplicate(true)
-	var migrated:=false
-	if not next.has("respawn_due"):next.respawn_due={}
-	for n in world.model.nodes():
-		if not world.exhausted(n):continue
-		if not next.respawn_due.has(n.id):
-			next.respawn_due[n.id]=now+GameState.RESPAWN_SECONDS;migrated=true
-	if migrated:
-		world.model.commit(next);return
+	if world.model.ensure_respawn_timers(now):return
+	var next:=world.model.state
 	for n in world.model.nodes():
 		if not world.exhausted(n) or float(next.respawn_due.get(n.id,INF))>now:continue
 		var at:=find_position(DemoConfig.point(n.position))
@@ -32,13 +25,14 @@ func find_position(old:Vector2)->Vector2:
 		for x in cells.x:
 			var at:=grid.get_point_position(Vector2i(x,y))
 			var pose:=world.player.transform;pose.origin=at
-			grid.set_point_solid(Vector2i(x,y),not VillageLayout.ground_ok(at) or world.player.test_move(pose,Vector2.ZERO,null,.08,true))
+			grid.set_point_solid(Vector2i(x,y),not world.playable_rect().grow(-32).has_point(at) or world.player.test_move(pose,Vector2.ZERO,null,.08,true))
 	var start:=Vector2i(((world.player.position-VillageBounds.WORLD_RECT.position)/40).floor())
+	if not grid.region.has_point(start):return Vector2.INF
 	grid.set_point_solid(start,false)
-	for attempt in 60:
+	for attempt in 300:
 		var cell:=Vector2i(randi_range(3,cells.x-4),randi_range(3,cells.y-4))
 		var at:=grid.get_point_position(cell)
-		if not VillageBounds.RESOURCE_RELOCATION_RECT.has_point(at) or at.distance_to(old)<180 or grid.is_point_solid(cell):continue
+		if not world.playable_rect().grow(-130).has_point(at) or at.distance_to(old)<180 or grid.is_point_solid(cell):continue
 		var clear:=true
 		for rock in SceneStyle.PAINTED_ROCKS:
 			if at.distance_to(rock)<110:clear=false

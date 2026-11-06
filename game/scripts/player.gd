@@ -195,7 +195,7 @@ func _physics_process(delta: float) -> void:
 	velocity = movement*float(DemoConfig.get_data().move_speed)
 	var before := position
 	move_and_slide()
-	var safe_bounds:=VillageBounds.WORLD_RECT.grow(-24)
+	var safe_bounds:Rect2=get_parent().playable_rect().grow(-24) if get_parent().has_method("playable_rect") else VillageBounds.WORLD_RECT.grow(-24)
 	position=position.clamp(safe_bounds.position,safe_bounds.end)
 	var travelled := position.distance_to(before)
 	if manual_camera:camera.position=camera_center-global_position

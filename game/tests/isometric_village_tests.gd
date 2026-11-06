@@ -9,6 +9,7 @@ func check(value:bool,message:String)->void:
 func frames(n:int=3)->void:
 	for i in n:await physics_frame;await process_frame
 func capture(name:String)->void:
+	if DisplayServer.get_name()=="headless":return
 	await frames();await RenderingServer.frame_post_draw
 	root.get_texture().get_image().save_png("res://reports/isometric-"+name+".png")
 func run()->void:
@@ -24,7 +25,7 @@ func run()->void:
 	await capture("initial")
 	app.world.player.zoom_at(Vector2(640,360),DemoPlayer.MAX_ZOOM);await capture("zoom")
 	app.world.player.zoom_at(Vector2(640,360),DemoPlayer.MIN_ZOOM)
-	var next:Dictionary=app.model.state.duplicate(true);next.wood=100;next.stone=100;app.model.commit(next)
+	var next:Dictionary=app.model.state.duplicate(true);next.wood=100;next.stone=100;next.chief_level=3;app.model.commit(next)
 	for id in 3:
 		check(app.world.site_available(id),"Plot %d available"%id)
 		var before:=JSON.stringify(app.model.state)
@@ -70,6 +71,6 @@ func run()->void:
 	check(migrated.demolish("built-8"),"Demolition after migration")
 	check(migrated.state.wood==wood_before+1,"Actual cost refunded")
 	check(not migrated.demolish("built-8"),"No duplicate demolition refund")
-	var result:={"checks":checks,"failures":failures,"environment":"Windows offscreen native Godot, fixed 60Hz, isolated test profile"}
+	var result:={"checks":checks,"failures":failures,"environment":"Godot 4.5.1, fixed 60Hz, isolated test profile; headless captures skipped"}
 	FileAccess.open("res://reports/isometric-tests.json",FileAccess.WRITE).store_string(JSON.stringify(result,"  "))
 	print(JSON.stringify(result));quit(0 if failures.is_empty() else 1)

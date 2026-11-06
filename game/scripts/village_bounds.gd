@@ -23,3 +23,14 @@ static func inset_reference_polygon(reference_world_polygon:PackedVector2Array,c
 	var result:=PackedVector2Array()
 	for point in reference_world_polygon:result.append(center+(point-center)*.9)
 	return result
+
+# HQ percentages apply linearly to the frozen overview width and height.
+# The legacy rectangle already represents 90%; HQ4 preserves that maximum.
+static func rect_for_level(level:int)->Rect2:
+	var proportion:float=[.6,.7,.8,.9][clampi(level,1,4)-1]
+	var size:=WORLD_SIZE*(proportion/.9)
+	return Rect2(WORLD_RECT.get_center()-size*.5,size)
+
+static func polygon_for_level(level:int)->PackedVector2Array:
+	var rect:=rect_for_level(level)
+	return PackedVector2Array([rect.position,Vector2(rect.end.x,rect.position.y),rect.end,Vector2(rect.position.x,rect.end.y)])

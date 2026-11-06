@@ -19,7 +19,7 @@ static func start(model:GameState,key:String,now:float=-1)->bool:
 	if model.busy or found.is_empty():return false
 	var entry:Dictionary=found.data
 	var level:=int(entry.get("level",1))
-	if level>=4 or entry.has("upgrade") or model.state.wood<20 or model.state.stone<20:return false
+	if level>=4 or level>=model.chief_level() or not model.builder_available() or entry.has("upgrade") or model.state.wood<20 or model.state.stone<20:return false
 	if now<0:now=Time.get_unix_time_from_system()
 	if not is_finite(now):return false
 	var next:=model.state.duplicate(true)

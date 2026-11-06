@@ -69,6 +69,7 @@ var map_toggle:DemoButton
 var family:FamilyArrival
 var building_workflow:BuildingWorkflow
 var building_menu:BuildingMenu
+var resident_panel:ResidentPanel
 
 func toggle_quest()->void:
 	quest_expanded=not quest_expanded
@@ -81,7 +82,8 @@ func update_quest()->void:
 	if quest_expanded:
 		objective.text+=("\n나무 %d/20 · 돌 %d/20"%[mini(model.state.wood,20),mini(model.state.stone,20)]) if count<3 else ("\n건물 위 씨앗을 받아 주세요" if has_pending_rewards() else "\n씨앗 보상을 모두 받았어요")
 	if model.family_available():objective.text="낯선 가족 · 말풍선으로 대화"+("\n함께 살 곳을 찾고 있어요" if quest_expanded else "")
-	elif model.state.get("family_joined",false):objective.text="우리 마을 · %d/%d채"%[count+1,DemoConfig.MAX_RESIDENT_HOMES+1]+("\n새 가족이 합류했어요" if quest_expanded else "")
+	elif model.state.get("family_joined",false):objective.text="주민 %d/%d명 · 본부 %d단계"%[model.resident_count(),model.resident_capacity(),model.chief_level()]+("\n상단 주민을 눌러 일을 맡겨요" if quest_expanded else "")
+	elif count>=model.home_limit() and model.chief_level()<3:objective.text="본부를 업그레이드해요"+("\n주민 움집 한도 %d/%d채"%[count,model.home_limit()] if quest_expanded else "")
 	objective.size=Vector2(153,48 if quest_expanded else 28)
 	objective.get_parent().size=Vector2(202,58 if quest_expanded else 38)
 	if is_instance_valid(quest_arrow):quest_arrow.text="⌃" if quest_expanded else "⌄"
@@ -488,6 +490,7 @@ func play_hud() -> void:
 	context=label(context_panel,"",13,Color("fff0cd"));context.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
 	task_bar=ProgressBar.new();task_bar.mouse_filter=Control.MOUSE_FILTER_IGNORE;task_bar.show_percentage=false;task_bar.position=Vector2(w*.5-100,h-safe.y-120);task_bar.size=Vector2(200,7);stage.add_child(task_bar);task_bar.visible=false
 	chrome=PlayChrome.new(self);chrome.z_index=5;stage.add_child(chrome);chrome.size=Vector2(w,h)
+	resident_panel=ResidentPanel.new(self);stage.add_child(resident_panel)
 	stage.add_child(ConstructionProgress.new(self))
 	stage.add_child(ConstructionProgress.new(self,true))
 	stage.add_child(ConstructionProgress.new(self,false,true))
@@ -660,11 +663,11 @@ func _process(delta: float) -> void:
 			world.feedback.update_work(task_total-task_remaining,task_total)
 			task_bar.value = (1.0-task_remaining/task_total)*100
 			if task_remaining <= 0: finish_task()
-	cancel_site_button.visible=choosing_plot and not modal and model.built_count()<DemoConfig.MAX_RESIDENT_HOMES
+	cancel_site_button.visible=choosing_plot and not modal
 	var near := world.nearest()
 	var working_hint := "채집 중… 이동하면 멈춥니다" if task=="gather" else "보금자리 건설 중…"
 	gather_button.hint_text=working_hint if task!="" else ("자원 가까이 이동해 주세요" if near.is_empty() else "작업을 마친 뒤 사용할 수 있어요")
-	build_button.hint_text=working_hint if task!="" else ("완성된 보금자리입니다" if (model.built_count()>=DemoConfig.MAX_RESIDENT_HOMES) else ("나무 20개와 돌 20개가 필요해요" if not model.can_build() else "움집을 선택하고 건설할 부지를 골라 주세요"))
+	build_button.hint_text=working_hint if task!="" else ("완성된 보금자리입니다" if (model.built_count()>=DemoConfig.MAX_RESIDENT_HOMES) else (model.building_requirement("hut") if not model.can_build() else "움집을 선택하고 건설할 부지를 골라 주세요"))
 	gather_button.set_working(task=="gather");build_button.set_working(task=="build")
 	gather_button.text="채집"
 	build_button.text="건설"
@@ -773,6 +776,7 @@ func build_action() -> void:
 	if not world.site_available(world.selected_site):toast("이 부지에 장애물이 있어요. 다른 부지를 선택해 주세요");return
 	navigation.cancel();choosing_plot=false;world.show_candidates=false;world.queue_redraw()
 	task_site=world.selected_site;task_build_kind=build_kind
+	model.construction_busy=true
 	task="build";world.feedback.begin("build");world.player.set_activity("")
 	task_total=float(DemoConfig.get_data().build_seconds);task_remaining=task_total;task_bar.visible=false;toast("",0)
 
@@ -810,6 +814,7 @@ func cancel_task(clear_reservation:bool=true,preserve_receipt:bool=false) -> voi
 	if is_instance_valid(navigation):navigation.cancel()
 	if is_instance_valid(audio): audio.stop_work()
 	task = ""
+	if model:model.construction_busy=false
 	task_target = ""
 	task_site = -1
 	gather_approach=false;approach_elapsed=0
@@ -915,7 +920,7 @@ func focus_objective() -> void:
 	if not Rect2(Vector2(80,90),Vector2(w-160,h-190)).has_point(screen_point): world.player.guide_to(point+Vector2(0,-35))
 
 func quest_details() -> void:
-	show_modal("정착지를 만들어요","기존 움집 한 채에 새 움집 세 채를 더 지어 주세요.\n\n진행 %d/3 · 건설마다 나무 20개 + 돌 20개\n자원을 누르면 자동 이동하여 채집합니다.\n건설 → 움집 선택 후 부지를 고르고 미리보기에서 확인하면 건설합니다.\n%s"%[model.built_count(),("미수령 건물을 누르면 씨앗 10개를 받습니다." if has_pending_rewards() else "모든 완료 보상을 받았습니다." if model.built_count()>=3 else "건설 완료 후 건물에서 씨앗을 받을 수 있습니다.")],[{"text":"돌아가기","action":close_modal}],false,true)
+	show_modal("정착지를 만들어요","본부 단계에 따라 주민 움집 한도가 1 → 2 → 3채로 늘어요.\n본부를 먼저 업그레이드하면 마을 경계도 확장됩니다.\n\n진행 %d/3 · 건설마다 나무 20개 + 돌 20개\n자원을 누르면 자동 이동하여 채집합니다.\n건설 → 움집 선택 후 부지를 고르고 미리보기에서 확인하면 건설합니다.\n%s"%[model.built_count(),("미수령 건물을 누르면 씨앗 10개를 받습니다." if has_pending_rewards() else "모든 완료 보상을 받았습니다." if model.built_count()>=3 else "건설 완료 후 건물에서 씨앗을 받을 수 있습니다.")],[{"text":"돌아가기","action":close_modal}],false,true)
 
 func pause_game() -> void:
 	cancel_task()
@@ -923,7 +928,14 @@ func pause_game() -> void:
 	show_modal("잠시 쉬어 가기","암사동 · 첫 보금자리\n진행은 기기에 자동 저장됩니다.",[
 		{"text":"계속하기","primary":true,"action":close_modal},
 		{"text":"시작 화면","action":func(): close_modal(); show_screen("title")},
-		{"text":"안내·소리","action":show_about}])
+		{"text":"안내·소리","action":show_about},
+		{"text":"개발 설정","action":show_development_settings}])
+
+func show_development_settings()->void:
+	var enabled:bool=model.debug_unlimited_builders
+	show_modal("개발용 건설자 설정","기본 건설자는 1명입니다.\n본부와 주민 움집의 동시 업그레이드를 제한합니다.\n\n무제한 테스트: %s\n이 설정은 저장되지 않으며 다시 실행하면 꺼집니다."%("켜짐" if enabled else "꺼짐"),[
+		{"text":"무제한 끄기" if enabled else "무제한 켜기","action":func():model.debug_unlimited_builders=not enabled;show_development_settings()},
+		{"text":"돌아가기","action":pause_game}],true,true)
 
 func show_about() -> void:
 	var c := DemoConfig.get_data()
@@ -1068,5 +1080,5 @@ func can_build_selected()->bool:
 		var reason:String=building_workflow.outpost_block_reason()
 		if not reason.is_empty():toast(reason);return false
 		return true
-	if not model.can_build():toast("나무 20개와 돌 20개가 필요해요");return false
+	if not model.can_build():toast(model.building_requirement("hut"));return false
 	return true

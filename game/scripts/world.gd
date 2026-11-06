@@ -22,6 +22,9 @@ var reward_pouch:AtlasTexture
 var reward_bubble:StyleBoxFlat
 var reward_markers:Node2D
 var reward_roof_bounds:=Rect2()
+var boundary_level:=0
+var boundary_root:Node2D
+var boundary_pulse:Tween
 # Water visuals and physics share the shoreline traced on terrain.png.
 const SHORE = [Vector2(0,340),Vector2(170,285),Vector2(280,220),Vector2(370,130),Vector2(280,60)]
 const RIVER_POLYGON = [Vector2(0,155),Vector2(145,120),Vector2(260,70),Vector2(280,60),Vector2(370,130),Vector2(280,220),Vector2(170,285),Vector2(0,340)]
@@ -73,10 +76,8 @@ func _ready() -> void:
 	# Physics/playable boundaries remain unchanged until terrain review is approved.
 	water.hide()
 	polygon_body(PackedVector2Array(RIVER_POLYGON))
-	for i in VillageLayout.PLAYABLE.size():
-		var a:Vector2=VillageLayout.PLAYABLE[i];var b:Vector2=VillageLayout.PLAYABLE[(i+1)%VillageLayout.PLAYABLE.size()]
-		var boundary:=StaticBody2D.new();boundary.name="VillageBoundary"
-		var edge:=CollisionShape2D.new();var segment:=SegmentShape2D.new();segment.a=a;segment.b=b;edge.shape=segment;boundary.add_child(edge);add_child(boundary)
+	boundary_root=Node2D.new();boundary_root.name="UnlockedBoundary";add_child(boundary_root)
+	refresh_boundary()
 	add_child(VillageLayout.new(model))
 	prop("hut",DemoConfig.CHIEF_POSITION,340,Vector2(220,80),"ExistingHut")
 	get_node("ExistingHut").set_hut_style(0)
@@ -85,30 +86,11 @@ func _ready() -> void:
 	get_node("PotteryAndGrindingStone").hide()
 	# Clean approved terrain: independent scenery owns both silhouette and footprint.
 	# Removed all six legacy canopy masks and five painted-rock collision regions.
-	for n in model.nodes():
-		var root := Node2D.new()
-		root.name = "Resource_"+str(n.id)
-		root.position = DemoConfig.point(n.position)
-		add_child(root)
-		var icon := Sprite2D.new()
-		icon.texture = AssetCatalog.texture("ENV-TREE" if n.kind == "wood" else "ENV-ROCK")
-		var scale_class:float={"small":0.72,"medium":0.86,"large":1.0}.get(n.get("size","large"),1.0)
-		var width:float=(200.0 if n.kind=="wood" else 125.0)*scale_class
-		icon.scale = Vector2.ONE*width/icon.texture.get_width()
-		icon.position.y = -icon.texture.get_height()*icon.scale.y*0.5
-		if n.kind=="stone":icon.material=EnvironmentProp.stone_surface()
-		root.add_child(icon)
-		var indicator:=ResourceIndicator.new();indicator.kind=str(n.kind);indicator.z_index=10
-		root.add_child(indicator)
-		art_nodes[n.id]=root
-		resource_labels[n.id]=indicator
-		rect_body(Rect2(root.position-Vector2(28,24),Vector2(56,24)))
-		var resource_body:=get_child(get_child_count()-1)
-		resource_body.name="ResourceCollision";resource_body.reparent(root)
+	for n in model.nodes():add_resource_art(n)
 	site = Node2D.new()
 	site.position = DemoConfig.point(DemoConfig.get_data().build_site)
 	add_child(site)
-	for i in DemoConfig.MAX_RESIDENT_HOMES:
+	for i in maxi(DemoConfig.MAX_RESIDENT_HOMES,model.built_count()):
 		var hut := prop("hut",DemoConfig.BUILD_SITES[i],230,Vector2.ZERO,"QuestHome"+str(i))
 		homes.append(hut)
 	home=homes[0]
@@ -127,7 +109,7 @@ func _ready() -> void:
 		add_child(animal)
 		animals.append(animal)
 	for entry in [["female",1610,890],["sturdy_male",1570,920]]:
-		var resident:=TrialResident.new();resident.variant=entry[0];resident.name="TrialResident_"+str(entry[0]);resident.position=Vector2(entry[1],entry[2]);add_child(resident);residents.append(resident)
+		var resident:=TrialResident.new();resident.variant=entry[0];resident.resident_id="resident-"+str(residents.size());resident.name="TrialResident_"+str(entry[0]);resident.position=Vector2(entry[1],entry[2]);add_child(resident);residents.append(resident)
 		resident.visible=model.state.get("family_joined",false) or model.family_available()
 		resident.set_physics_process(model.state.get("family_joined",false))
 	objectives=WorldObjectives.new(self);add_child(objectives)
@@ -142,18 +124,39 @@ func _ready() -> void:
 	refresh()
 	call_deferred("restore_clear_position")
 
+func add_resource_art(n:Dictionary)->void:
+	var root := Node2D.new()
+	root.name = "Resource_"+str(n.id)
+	root.position = DemoConfig.point(n.position)
+	add_child(root)
+	var icon := Sprite2D.new()
+	icon.texture = AssetCatalog.texture("ENV-TREE" if n.kind == "wood" else "ENV-ROCK")
+	var scale_class:float={"small":0.72,"medium":0.86,"large":1.0}.get(n.get("size","large"),1.0)
+	var width:float=(200.0 if n.kind=="wood" else 125.0)*scale_class
+	icon.scale = Vector2.ONE*width/icon.texture.get_width()
+	icon.position.y = -icon.texture.get_height()*icon.scale.y*0.5
+	if n.kind=="stone":icon.material=EnvironmentProp.stone_surface()
+	root.add_child(icon)
+	var indicator:=ResourceIndicator.new();indicator.kind=str(n.kind);indicator.z_index=10
+	root.add_child(indicator)
+	art_nodes[n.id]=root
+	resource_labels[n.id]=indicator
+	rect_body(Rect2(root.position-Vector2(28,24),Vector2(56,24)))
+	var resource_body:=get_child(get_child_count()-1)
+	resource_body.name="ResourceCollision";resource_body.reparent(root)
+
 func restore_clear_position() -> void:
 	# Existing saves remain valid when new scenery occupies their old position.
 	await get_tree().physics_frame
 	# The artwork changed the shoreline. Preserve progress, but never strand an old
 	# save on the inaccessible northern bank.
-	if not VillageLayout.ground_ok(player.position):player.position=DemoConfig.point(DemoConfig.get_data().spawn)
+	if not VillageBounds.rect_for_level(model.chief_level()).grow(-24).has_point(player.position):player.position=DemoConfig.point(DemoConfig.get_data().spawn)
 	if not player.test_move(player.transform,Vector2.ZERO,null,0.08,true): return
 	var original := player.position
 	for radius in [48,96,160,240,360]:
 		for i in 16:
 			var candidate: Vector2 = original+Vector2.from_angle(i*TAU/16)*float(radius)
-			if not VillageBounds.WORLD_RECT.grow(-24).has_point(candidate): continue
+			if not VillageBounds.rect_for_level(model.chief_level()).grow(-24).has_point(candidate): continue
 			var at := player.transform
 			at.origin = candidate
 			if not player.test_move(at,Vector2.ZERO,null,0.08,true):
@@ -198,7 +201,12 @@ func polygon_body(points: PackedVector2Array) -> void:
 	add_child(body)
 
 func refresh() -> void:
+	refresh_boundary()
+	for id in art_nodes:
+		art_nodes[id].visible=false
+		art_nodes[id].get_node("ResourceCollision").get_child(0).set_deferred("disabled",true)
 	for n in model.nodes():
+		if not art_nodes.has(n.id):add_resource_art(n)
 		art_nodes[n.id].position=DemoConfig.point(n.position)
 		art_nodes[n.id].visible=not exhausted(n)
 		art_nodes[n.id].modulate=Color.WHITE
@@ -378,3 +386,31 @@ func refresh_outposts()->void:
 		body.add_child(image)
 		var collision:=CollisionShape2D.new();var shape:=ConvexPolygonShape2D.new();shape.points=EnvironmentProp.hut_footprint(230);collision.shape=shape;body.add_child(collision)
 		add_child(body)
+
+func refresh_boundary()->void:
+	if boundary_level==model.chief_level():return
+	var expanded:=boundary_level>0 and model.chief_level()>boundary_level
+	boundary_level=model.chief_level()
+	if boundary_pulse!=null:boundary_pulse.kill()
+	for child in boundary_root.get_children():
+		boundary_root.remove_child(child);child.queue_free()
+	var polygon:=VillageBounds.polygon_for_level(boundary_level)
+	for i in polygon.size():
+		var boundary:=StaticBody2D.new();boundary.name="VillageBoundary"
+		var edge:=CollisionShape2D.new();var segment:=SegmentShape2D.new()
+		segment.a=polygon[i];segment.b=polygon[(i+1)%polygon.size()]
+		edge.shape=segment;boundary.add_child(edge);boundary_root.add_child(boundary)
+	var outline:=Line2D.new();outline.name="UnlockedPerimeter";outline.points=polygon;outline.closed=true
+	outline.width=3;outline.default_color=Color(.91,.82,.54,.32);outline.z_index=-14
+	boundary_root.add_child(outline)
+	# Quiet on load. Highlight only a newly unlocked perimeter, without moving
+	# collision edges, taking camera control, or pausing the player's input.
+	if expanded:
+		boundary_pulse=create_tween().set_parallel(true)
+		boundary_pulse.tween_property(outline,"default_color:a",.9,.22).set_trans(Tween.TRANS_SINE)
+		boundary_pulse.tween_property(outline,"width",8.0,.22).set_trans(Tween.TRANS_SINE)
+		boundary_pulse.chain().tween_property(outline,"default_color:a",.32,.85).set_trans(Tween.TRANS_SINE)
+		boundary_pulse.parallel().tween_property(outline,"width",3.0,.85).set_trans(Tween.TRANS_SINE)
+
+func playable_rect()->Rect2:
+	return VillageBounds.rect_for_level(model.chief_level())

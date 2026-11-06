@@ -28,9 +28,9 @@ func _ready() -> void:
 func create_minimap()->void:
 	minimap=LiveMinimap.new(app);add_child(minimap)
 func slot(kind: String) -> Rect2:
-	var i:int=["wood","stone","tokens"].find(kind)
-	if app.w<app.h:return Rect2(Vector2(app.safe.x+i*100,app.safe.y+62),Vector2(96,36))
-	return Rect2(Vector2(app.w-app.safe.x-420+i*100,app.safe.y+1),Vector2(96,36))
+	var i:int=["wood","stone","tokens","residents"].find(kind)
+	if app.w<app.h:return Rect2(Vector2(app.safe.x+i*86,app.safe.y+62),Vector2(82,36))
+	return Rect2(Vector2(app.w-app.safe.x-520+i*100,app.safe.y+1),Vector2(96,36))
 func gained(kind:String,at:Vector2,delay:float=0.0) -> void:
 	reveal=5.0
 	flights.append({"kind":kind,"world":at,"age":-delay})
@@ -94,16 +94,19 @@ func _draw() -> void:
 	draw_texture_rect_region(preload("res://assets/ui/v034/energy-bar-frame.png"),Rect2(origin+Vector2(98,30),Vector2(102,10)),Rect2(100,250,1975,205))
 	var fill:=minf(1,app.model.built_count()/3.0)
 	if fill>0:draw_style_box(energy_fill(),Rect2(origin+Vector2(102,32),Vector2(94*fill,6)))
-	for key in ["wood","stone","tokens"]:
+	for key in ["wood","stone","tokens","residents"]:
 		var rect:=slot(key);var beat:float=pulse.get(key,0.0)
 		# PNG already includes 75% alpha. Preserve brush caps at the height scale.
-		var brush_rect:=Rect2(rect.position+Vector2(11,5),Vector2(84,27))
+		var brush_rect:=Rect2(rect.position+Vector2(11,5),Vector2(rect.size.x-12,27))
 		var scale_y:=brush_rect.size.y/112.0
 		var left:=64*scale_y;var right:=176*scale_y
 		draw_texture_rect_region(RESOURCE_BRUSH,Rect2(brush_rect.position,Vector2(left,27)),Rect2(0,0,64,112))
-		draw_texture_rect_region(RESOURCE_BRUSH,Rect2(brush_rect.position+Vector2(left,0),Vector2(84-left-right,27)),Rect2(64,0,272,112))
+		draw_texture_rect_region(RESOURCE_BRUSH,Rect2(brush_rect.position+Vector2(left,0),Vector2(brush_rect.size.x-left-right,27)),Rect2(64,0,272,112))
 		draw_texture_rect_region(RESOURCE_BRUSH,Rect2(brush_rect.end-Vector2(right,27),Vector2(right,27)),Rect2(336,0,176,112))
 
+		if key=="residents":
+			draw_string(font,rect.position+Vector2(7,25),"주민 %d/%d"%[app.model.resident_count(),app.model.resident_capacity()],HORIZONTAL_ALIGNMENT_LEFT,rect.size.x-5,12,Color(1,.98,.90,1))
+			continue
 		var extent:=28.0+beat*4
 		draw_texture_rect(DemoArt.icon(key),Rect2(rect.position+Vector2(3,3),Vector2(extent,extent)),false)
 		draw_string(font,rect.position+Vector2(34,25),str(roundi(resource_counts[key].shown)),HORIZONTAL_ALIGNMENT_LEFT,66,13,Color(1,.98,.90,1))

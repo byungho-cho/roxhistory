@@ -22,7 +22,7 @@ func start(kind:String,id:String,destination:Vector2,retry:int=0,blocked:Array[V
 	var player:DemoPlayer=app.world.player
 	if kind=="move":
 		var pose:=player.transform;pose.origin=destination
-		if not VillageLayout.ground_ok(destination) or player.test_move(pose,Vector2.ZERO,null,.08,true):
+		if not app.world.playable_rect().grow(-24).has_point(destination) or not VillageLayout.ground_ok(destination) or player.test_move(pose,Vector2.ZERO,null,.08,true):
 			if not quiet:app.toast("이곳으로 이동할 수 없어요")
 			return false
 	var cells:=VillageBounds.navigation_cells()
@@ -31,7 +31,7 @@ func start(kind:String,id:String,destination:Vector2,retry:int=0,blocked:Array[V
 		for x in cells.x:
 			var point:=grid.get_point_position(Vector2i(x,y))
 			var transform:=player.transform;transform.origin=point
-			grid.set_point_solid(Vector2i(x,y),not VillageLayout.ground_ok(point) or player.test_move(transform,Vector2.ZERO,null,.08,true))
+			grid.set_point_solid(Vector2i(x,y),not app.world.playable_rect().grow(-24).has_point(point) or not VillageLayout.ground_ok(point) or player.test_move(transform,Vector2.ZERO,null,.08,true))
 	for cell in blocked:
 		if grid.is_in_boundsv(cell):grid.set_point_solid(cell,true)
 	var from:=Vector2i(((player.position-VillageBounds.WORLD_RECT.position)/VillageBounds.NAV_CELL).floor())

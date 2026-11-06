@@ -34,7 +34,15 @@ func run_tests() -> void:
 	check(model.state.wood == 0 and model.state.stone == 0,"Construction deducts exactly twenty of each")
 	check(model.start_new(),"Reset before resource exhaustion checks")
 	empty_inventory=model.state.duplicate(true);empty_inventory.wood=0;empty_inventory.stone=0;model.commit(empty_inventory)
-	for n in DemoConfig.get_data().nodes:
+	check(model.home_limit()==1,"HQ1 starts with one home slot")
+	var tier_fixture:=model.state.duplicate(true);tier_fixture.chief_level=2
+	check(model.commit(tier_fixture) and model.home_limit()==2,"HQ2 permits two home slots")
+	tier_fixture=model.state.duplicate(true);tier_fixture.chief_level=3
+	model.prepare_resource_positions(tier_fixture)
+	check(model.commit(tier_fixture) and model.home_limit()==3,"HQ3 permits three home slots")
+	var expected:={"wood":0,"stone":0}
+	for n in model.nodes():
+		expected[n.kind]+=int(n.charges)*int(DemoConfig.get_data().gather_yield)
 		for i in int(n.charges):
 			check(model.gather(n.id),"Collect charge %s %d" % [n.id,i])
 		var before: int = model.state[n.kind]
@@ -43,10 +51,10 @@ func run_tests() -> void:
 		check(model.state[n.kind] == before,"No duplicate resource credit")
 	check(model.can_build(),"All resources meet build cost")
 	check(model.build(),"Construction succeeds")
-	check(model.state.wood == 460 and model.state.stone == 410,"Construction deducts exact cost from excess inventory")
+	check(model.state.wood == expected.wood-20 and model.state.stone == expected.stone-20,"Construction deducts exact cost from excess inventory")
 	check(model.build() and model.build(),"Two additional homes can be built")
-	check(model.built_count()==3 and model.state.wood==420 and model.state.stone==370,"Three homes deduct exactly three material pairs")
-	for i in range(3,DemoConfig.MAX_RESIDENT_HOMES):check(model.build(),"Expansion within new capacity")
+	check(model.built_count()==3 and model.state.wood==expected.wood-60 and model.state.stone==expected.stone-60,"Three homes deduct exactly three material pairs")
+	check(DemoConfig.MAX_RESIDENT_HOMES==3,"New construction has absolute cap of three")
 	for i in 30:
 		check(not model.build(),"Repeated construction rejected")
 	check(model.claim_reward(),"Reward claimed")
@@ -55,7 +63,12 @@ func run_tests() -> void:
 	check(model.state.tokens == 10,"Exactly one reward")
 	check(model.save_position(Vector2(1024,1110)),"Position checkpoint saves")
 	var restored := GameState.new(SaveStore.new(dir))
-	check(restored.state == JSON.parse_string(JSON.stringify(model.state)),"All state restored by new instance")
+	# JSON reload changes numeric/key Variant types; compare every saved value.
+	var expected_restored:Dictionary=JSON.parse_string(JSON.stringify(model.state))
+	var restored_matches:=restored.state.size()==expected_restored.size()
+	for key in expected_restored:
+		restored_matches=restored_matches and restored.state.has(key) and restored.state[key]==expected_restored[key]
+	check(restored_matches,"All state restored by new instance")
 	var file := FileAccess.open(dir.path_join("save.json"),FileAccess.WRITE)
 	file.store_string("broken write")
 	file.close()
@@ -95,6 +108,12 @@ func run_tests() -> void:
 	var original := badmodel.state.duplicate(true)
 	check(not badmodel.gather("wood_1"),"Write failure rejects collection")
 	check(badmodel.state == original,"Write failure does not credit resources")
+	# Only remove files from this test's unique fixture directory.
+	for name in DirAccess.get_files_at(dir.path_join("unwritable")):
+		DirAccess.remove_absolute(dir.path_join("unwritable").path_join(name))
+	DirAccess.remove_absolute(dir.path_join("unwritable"))
+	for name in DirAccess.get_files_at(dir):DirAccess.remove_absolute(dir.path_join(name))
+	DirAccess.remove_absolute(dir)
 	var report := {"checks":checks,"failed":failures,"engine":Engine.get_version_info().string,"utc":Time.get_datetime_string_from_system(true)}
 	DirAccess.make_dir_recursive_absolute("res://reports")
 	file = FileAccess.open("res://reports/state-tests.json",FileAccess.WRITE)

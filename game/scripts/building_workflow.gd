@@ -40,7 +40,7 @@ func outpost_block_reason()->String:
 func upgrade_block_reason(target:int)->String:
 	if app.model.state.has("chief_upgrade"):return "주인공 움집 업그레이드가 진행 중이에요"
 	if app.model.chief_level()>=4:return "최대 4단계 움집이에요"
-	if app.model.outposts().is_empty():return "초소 1개를 먼저 완성해 주세요"
+	if not app.model.builder_available():return "건설자 1명이 공사 중이에요"
 	if target!=app.model.chief_level()+1:return "건물 단계가 변경되었어요. 다시 선택해 주세요"
 	if not app.model.can_upgrade_chief():
 		var cost:Dictionary=app.model.chief_upgrade_cost()
@@ -84,6 +84,8 @@ func refresh_visual()->void:
 		transition.tween_property(chief.sprite,"modulate:a",1.0,.35)
 		transition.chain().tween_callback(previous_visual.queue_free)
 		scaffold_fade_left=.35
+	if changed and app.screen=="play":
+		app.toast("본부 %d단계 · 마을 경계가 %d%%로 넓어졌어요"%[level,[60,70,80,90][level-1]],5.0)
 	last_visual_level=level
 	if texture!=null:
 		var previous_size:=texture.get_size()*chief.configured_width*EnvironmentProp.BUILDING_IMAGE_SCALE/texture.get_width()
@@ -130,8 +132,12 @@ func owned_upgrade_reason(key:String)->String:
 	if found.data.has("upgrade"):return "업그레이드 공사 중이에요"
 	var level:=int(found.data.get("level",1))
 	if level>=4:return "최대 4단계 건물이에요"
+	if level>=app.model.chief_level():return "본부를 먼저 업그레이드해 주세요"
+	if not app.model.builder_available():return "건설자 1명이 공사 중이에요"
 	var asset:="BLD-OUTPOST-L%d"%(level+1) if found.collection=="outposts" else "BLD-CHIEF-L%d"%(level+1)
 	if approved_texture(asset)==null:return "초소 %d단계 확정 에셋 준비 중"%(level+1) if found.collection=="outposts" else "움집 단계 에셋 준비 중"
+	var rule_reason:String=app.model.upgrade_requirement(key)
+	if not rule_reason.is_empty():return rule_reason
 	if app.model.state.wood<20 or app.model.state.stone<20:return "나무 20개와 돌 20개가 필요해요"
 	return ""
 

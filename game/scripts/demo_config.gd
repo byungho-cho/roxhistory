@@ -5,7 +5,8 @@ static var data: Dictionary = {}
 const HOME_SITES := [Vector2(1145,625),Vector2(1390,810),Vector2(1060,1030)]
 # HOME_SITES remains the immutable mapping for old saves without a site field.
 const BUILD_SITES := [Vector2(1322,712),Vector2(874,712),Vector2(1098,824),Vector2(1322,936),Vector2(874,936),Vector2(1098,1048)]
-const MAX_RESIDENT_HOMES := 5
+const MAX_RESIDENT_HOMES := 3
+const MAX_SAVED_RESIDENT_HOMES := 5 # Retain every previously valid owned home.
 const CHIEF_POSITION := Vector2(1098,600)
 const HOME_GOAL := 3
 

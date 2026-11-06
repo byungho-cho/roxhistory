@@ -35,7 +35,7 @@ func valid(s: Variant) -> bool:
 	if s.has("hut_style") and (not (s.hut_style is int or s.hut_style is float) or s.hut_style != int(s.hut_style) or s.hut_style < 0 or s.hut_style > 2):
 		return false
 	if s.has("homes"):
-		if not s.homes is Array or s.homes.size() > DemoConfig.MAX_RESIDENT_HOMES: return false
+		if not s.homes is Array or s.homes.size() > DemoConfig.MAX_SAVED_RESIDENT_HOMES: return false
 		var occupied_sites:=[]
 		var home_ids:=[]
 		var legacy_slots:=[]
@@ -89,7 +89,7 @@ func valid(s: Variant) -> bool:
 		if not (level is int or level is float) or level!=int(level) or level<1 or level>4:return false
 	if s.has("chief_upgrade"):
 		var job:Variant=s.chief_upgrade
-		if not job is Dictionary or s.get("outposts",[]).is_empty():return false
+		if not job is Dictionary:return false
 		for key in ["from","to","started_at","finishes_at"]:
 			var value:Variant=job.get(key)
 			if not (value is int or value is float) or not is_finite(float(value)):return false
@@ -107,6 +107,10 @@ func valid(s: Variant) -> bool:
 		if not (serial is int or serial is float) or serial!=int(serial) or serial<0:return false
 	for flag in ["family_joined","family_unlocked"]:
 		if s.has(flag) and not s[flag] is bool:return false
+	if not ResidentJobs.valid_saved_jobs(s):return false
+	if s.has("resource_seed"):
+		var seed_value:Variant=s.resource_seed
+		if not (seed_value is int or seed_value is float) or not is_finite(float(seed_value)) or seed_value!=int(seed_value) or seed_value<1 or seed_value>2147483646:return false
 	var allowed := {}
 	for n in DemoConfig.get_data().nodes:
 		allowed[n.id] = n.charges if int(s.get("resource_revision",0))>=35 else (5 if n.kind=="wood" else 4)

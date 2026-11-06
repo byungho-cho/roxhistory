@@ -19,6 +19,7 @@ func _process(_delta:float)->void:
 	var center:Vector2=app.build_button.get_global_rect().get_center()
 	position=Vector2(center.x-hut.position.x-hut.size.x*.5,app.build_button.global_position.y-size.y-4)
 	hut.disabled=not app.model.can_build()
+	hut.hint_text=app.model.building_requirement("hut")
 	IntegratedMenuArt.refresh(hut);IntegratedMenuArt.refresh(outpost_button)
 	if app.world_map_open or app.modal:hide()
 func select_hut()->void:

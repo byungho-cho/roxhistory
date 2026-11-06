@@ -1,0 +1,336 @@
+{
+  "date_utc": "2026-11-06T13:33:21.472471+00:00",
+  "base_commit": "e6e24bfb8ee0b68ef9b6f57a13d9852b0ddeaae0",
+  "branch": "dev/village-systems-20261106",
+  "version": "0.1.50",
+  "version_code": 51,
+  "package": "com.roxhistory.demo",
+  "engine": "Godot4.5.1.stable.official.f62fdbde1",
+  "environment": "Cloud Linux headless; no rendered screenshots or Android device",
+  "result": "all listed checks passed",
+  "asset_check": {
+    "assets": 163,
+    "result": "pass"
+  },
+  "audio_check": {
+    "files": 16,
+    "result": "pass"
+  },
+  "suite_count": 12,
+  "concurrency_seeds": [
+    61106,
+    61107,
+    61108
+  ],
+  "suites": [
+    {
+      "name": "concurrency-61106",
+      "result": "pass",
+      "reported_checks": 8,
+      "failure_count": 0,
+      "details": {
+        "checks": 8,
+        "deliveries": {
+          "resident-0": 1,
+          "resident-1": 1
+        },
+        "elapsed_wall_ms": 1428.669,
+        "failed": [],
+        "max_frame_interval_ms": 74.706,
+        "physics_ticks": 925,
+        "scope": "Native headless Godot PC; original player/wildlife/resident physics left enabled. No Android performance claim.",
+        "seed": 61106,
+        "workers": [
+          {
+            "cargo": {},
+            "id": "resident-0",
+            "phase": "travel",
+            "position": [
+              664.750610351562,
+              761.607177734375
+            ],
+            "route_points": 1
+          },
+          {
+            "cargo": {},
+            "id": "resident-1",
+            "phase": "wait",
+            "position": [
+              1133.38134765625,
+              706.0
+            ],
+            "route_points": 0
+          }
+        ]
+      }
+    },
+    {
+      "name": "concurrency-61107",
+      "result": "pass",
+      "reported_checks": 8,
+      "failure_count": 0,
+      "details": {
+        "checks": 8,
+        "deliveries": {
+          "resident-0": 1,
+          "resident-1": 1
+        },
+        "elapsed_wall_ms": 890.604,
+        "failed": [],
+        "max_frame_interval_ms": 62.907,
+        "physics_ticks": 615,
+        "scope": "Native headless Godot PC; original player/wildlife/resident physics left enabled. No Android performance claim.",
+        "seed": 61107,
+        "workers": [
+          {
+            "cargo": {},
+            "id": "resident-0",
+            "phase": "wait",
+            "position": [
+              1067.36499023438,
+              709.898803710938
+            ],
+            "route_points": 0
+          },
+          {
+            "cargo": {},
+            "id": "resident-1",
+            "phase": "wait",
+            "position": [
+              1134.46728515625,
+              711.508605957031
+            ],
+            "route_points": 0
+          }
+        ]
+      }
+    },
+    {
+      "name": "concurrency-61108",
+      "result": "pass",
+      "reported_checks": 8,
+      "failure_count": 0,
+      "details": {
+        "checks": 8,
+        "deliveries": {
+          "resident-0": 1,
+          "resident-1": 1
+        },
+        "elapsed_wall_ms": 1469.958,
+        "failed": [],
+        "max_frame_interval_ms": 70.952,
+        "physics_ticks": 1019,
+        "scope": "Native headless Godot PC; original player/wildlife/resident physics left enabled. No Android performance claim.",
+        "seed": 61108,
+        "workers": [
+          {
+            "cargo": {},
+            "id": "resident-0",
+            "phase": "travel",
+            "position": [
+              993.810852050781,
+              682.003723144531
+            ],
+            "route_points": 17
+          },
+          {
+            "cargo": {},
+            "id": "resident-1",
+            "phase": "wait",
+            "position": [
+              1137.1953125,
+              711.706970214844
+            ],
+            "route_points": 0
+          }
+        ]
+      }
+    },
+    {
+      "name": "first_refactor_tests",
+      "result": "pass",
+      "reported_checks": 38,
+      "failure_count": 0,
+      "details": {
+        "checks": 38,
+        "environment": "Godot isolated test profile; no physical touchscreen",
+        "failures": []
+      }
+    },
+    {
+      "name": "hq_world_runtime_tests",
+      "result": "pass",
+      "reported_checks": null,
+      "failure_count": 0,
+      "details": "HQ live boundary/resource upgrade, reachable respawn and three viewport corner layouts: PASS"
+    },
+    {
+      "name": "hq_world_tests",
+      "result": "pass",
+      "reported_checks": null,
+      "failure_count": 0,
+      "details": "HQ world bounds and 4,000 seeded placements clear of reserved geometry: PASS"
+    },
+    {
+      "name": "import",
+      "result": "pass",
+      "reported_checks": null,
+      "failure_count": 0,
+      "details": "Import completed without script errors"
+    },
+    {
+      "name": "isometric_village_tests",
+      "result": "pass",
+      "reported_checks": 40,
+      "failure_count": 0,
+      "details": {
+        "checks": 40,
+        "environment": "Godot 4.5.1, fixed 60Hz, isolated test profile; headless captures skipped",
+        "failures": []
+      }
+    },
+    {
+      "name": "legacy_world_tests",
+      "result": "pass",
+      "reported_checks": null,
+      "failure_count": 0,
+      "details": "Five legacy homes load, render, retain identity/collisions through refresh, and persist without truncation: PASS"
+    },
+    {
+      "name": "resident_jobs_runtime_tests",
+      "result": "pass",
+      "reported_checks": 9,
+      "failure_count": 0,
+      "details": {
+        "checks": 9,
+        "failed": []
+      }
+    },
+    {
+      "name": "resident_jobs_tests",
+      "result": "pass",
+      "reported_checks": 23,
+      "failure_count": 0,
+      "details": {
+        "checks": 23,
+        "failed": []
+      }
+    },
+    {
+      "name": "state_tests",
+      "result": "pass",
+      "reported_checks": 448,
+      "failure_count": 0,
+      "details": {
+        "checks": 448,
+        "engine": "4.5.1-stable (official)",
+        "failed": [],
+        "utc": "2026-11-06T13:31:59"
+      }
+    },
+    {
+      "name": "ui_review_tests",
+      "result": "pass",
+      "reported_checks": 43,
+      "failure_count": 0,
+      "details": {
+        "checks": 43,
+        "environment": "Godot 4.5.1 / isolated test profile; headless captures skipped",
+        "failures": []
+      }
+    },
+    {
+      "name": "village_integration_tests",
+      "result": "pass",
+      "reported_checks": 68,
+      "failure_count": 0,
+      "details": {
+        "checks": 68,
+        "environment": "Godot4.5.1 headless; geometry/input/state only; pixels and Android unverified",
+        "failures": []
+      }
+    },
+    {
+      "name": "village_rules_tests",
+      "result": "pass",
+      "reported_checks": 77,
+      "failure_count": 0,
+      "details": {
+        "checks": 77,
+        "failures": []
+      }
+    }
+  ],
+  "tested_files_git_blob_sha1": {
+    "game/export_presets.cfg": "bc6dc6313023a06967190be17cc2b42893023c26",
+    "game/project.godot": "093816bd81357369133ef4461311f8303ae9f009",
+    "game/scripts/auto_travel.gd": "bdadf88d44bd0afb1f7fcaf958aad246241bf77e",
+    "game/scripts/build_side_menu.gd": "2d4942a99a22b83e7a6be00ecde3a2e67c102826",
+    "game/scripts/building_workflow.gd": "731f4543f534745f3bb51ddb3b8733c637611e5d",
+    "game/scripts/demo_config.gd": "2b97fb473df64895c8f4c347384aaca7c314ffb1",
+    "game/scripts/game_state.gd": "a651aeab6f5ef54a2f3d0f1bbfba009707ee5213",
+    "game/scripts/main.gd": "fe87733d839e88853ec896e8ab35873450527447",
+    "game/scripts/owned_building_upgrades.gd": "27e606d19427667a1bcedf9557993b2538d53c4e",
+    "game/scripts/play_chrome.gd": "357d21ccdc404cd8aded7c8f8bd0a016c5515921",
+    "game/scripts/player.gd": "f26e841426ca441974050fa1492b5663d430541c",
+    "game/scripts/resident_jobs.gd": "d814874ad765b2c025ec6f1e758c9bc8cbcb6d36",
+    "game/scripts/resident_jobs.gd.uid": "9277a81f4ab8e339d4a6744651a07c6bb6cc151c",
+    "game/scripts/resident_panel.gd": "a249e5b38b54c572a49a42325592ac19fada5adf",
+    "game/scripts/resident_panel.gd.uid": "ec585e9ccdc12f5ffca27f31863a3cf6b620c0f0",
+    "game/scripts/resource_placement.gd": "559057a82b2dd8c66f61d0eaff84c06d363f672c",
+    "game/scripts/resource_placement.gd.uid": "8bf205e5c1cc281034e867697cf29391ca763330",
+    "game/scripts/resource_regrowth.gd": "a2ce2e5b170ba190fa0987af41edfd5872dcf76f",
+    "game/scripts/save_store.gd": "b4104f01ffa7681659e68e281bbf3b2e0e99f209",
+    "game/scripts/trial_resident.gd": "679c8a20274c374c29a24ae30028af8e18056011",
+    "game/scripts/village_bounds.gd": "b56ae3419f136c993ae9cd09666f114e27a4656c",
+    "game/scripts/village_edge_clouds.gd": "c2055d9de0cf01471cc622f851923dd664bb05f3",
+    "game/scripts/world.gd": "fb965eb5a7b32866b3e7fd2f71c60e6890bfb51e",
+    "game/tests/first_refactor_tests.gd": "257cfdb25117d723d4ce1d225266daa28a6943e0",
+    "game/tests/hq_world_runtime_tests.gd": "d0fb0fd00eddef844485486f86fbcbf822cc68d0",
+    "game/tests/hq_world_runtime_tests.gd.uid": "711e491147f317e5b7efddd2880cde39adad20e1",
+    "game/tests/hq_world_tests.gd": "381e0062ad869e716031702bd51d9703eb1aa785",
+    "game/tests/hq_world_tests.gd.uid": "950f5cae5a60b3f750d35f9acda66a4457fc8074",
+    "game/tests/isometric_village_tests.gd": "4ef59ec26e6378158fa4d66aca4dd85ac8e968be",
+    "game/tests/legacy_world_tests.gd": "25f74353a0cc63121f4d7aa770eacf43bb483adb",
+    "game/tests/legacy_world_tests.gd.uid": "e4e7c9dbe2896b6cd870517bc9b5a1a6e09dab9b",
+    "game/tests/resident_jobs_concurrency_tests.gd": "4a9bfbb15b141e0a46a386741923e9d0f5f09a91",
+    "game/tests/resident_jobs_concurrency_tests.gd.uid": "1fbcc77ce7b68040cccf894f3954be0b7b96a11f",
+    "game/tests/resident_jobs_runtime_tests.gd": "1d56aa9608e98020ea2ade3ab4a320ffea3f679a",
+    "game/tests/resident_jobs_runtime_tests.gd.uid": "cd859ac9a7e076cf64aba5bc66f0182ea6d424d6",
+    "game/tests/resident_jobs_tests.gd": "4b72ba82465c7e40e318c8bad6081ebe83f1909c",
+    "game/tests/resident_jobs_tests.gd.uid": "a1fe157a959fc2f2f661245f87726f380be39348",
+    "game/tests/state_tests.gd": "77525b2e8279abd1dc95d4d559c3a85e0812d331",
+    "game/tests/ui_review_tests.gd": "28af947d3c26d76f1654cc75384600fb695ce91d",
+    "game/tests/village_integration_tests.gd": "6cd51bed75c66287581f053c99efae9ea1abe437",
+    "game/tests/village_integration_tests.gd.uid": "7a7faaf58aeb4d9d73bb01383b1852c05cfa2f78",
+    "game/tests/village_rules_tests.gd": "5a2e59d64ee8c7fd2b9a1e6de4fb9163a8e301a0",
+    "game/tests/village_rules_tests.gd.uid": "1c8cf335b103f2e3a0ff85deb545c0999cc4a857",
+    "scripts/check-village.sh": "758c64436d28c8ab2831f06b95301280dba61d27"
+  },
+  "baseline_ci": {
+    "run_id": 42181135417,
+    "existing_failures": [
+      "Insufficient materials disable hut",
+      "Insufficient confirmation neither spends nor builds"
+    ],
+    "cause": "Old empty-inventory fixture conflicts with approved demo starting inventory500/500",
+    "fix": "Explicit empty-inventory setup; current tests also use current HUD controls, indicators, zoom and HQ fixtures"
+  },
+  "not_verified": [
+    "GUI pixel rendering",
+    "Android input, performance and installation",
+    "Same-key APK build or signing",
+    "Remote CI for final commit"
+  ],
+  "not_implemented": [
+    "New2D character production sprites",
+    "Building relocation/free placement",
+    "Exploration fog reveal",
+    "Hearth/shrine/training gameplay",
+    "Recruitment beyond existing family2"
+  ],
+  "rollback_tag": "v0.1.49-review",
+  "additional_remote_tag_created": false,
+  "apk_built": false,
+  "public_release_created": false
+}
