@@ -5,6 +5,9 @@ var selected_key:=""
 var move_button:DemoButton
 var upgrade_button:DemoButton
 var demolish_button:DemoButton
+var close_button:DemoButton
+var saved_camera_offset:=Vector2.ZERO
+var framing_active:=false
 static var textures:Dictionary={}
 const ROOT:="res://assets/ui/building-menu-v001/"
 func _init(owner_app:Node)->void:app=owner_app
@@ -35,14 +38,30 @@ func item(title:String,file:String,at:Vector2,diameter:float,callback:Callable)-
 		caption.add_theme_color_override("font_outline_color",Color("231b12"));caption.add_theme_constant_override("outline_size",4);caption.mouse_filter=Control.MOUSE_FILTER_IGNORE
 	b.enable_art_feedback();return b
 func _ready()->void:
-	name="BuildingMenu";mouse_filter=Control.MOUSE_FILTER_IGNORE;z_index=8;size=Vector2(216,128)
-	move_button=item("이동","icon-move.png",Vector2(0,24),52,func():pass)
-	move_button.find_children("*","Label",true,false)[0].text="이동(예정)"
-	upgrade_button=item("업그레이드","icon-upgrade.png",Vector2(76,0),64,upgrade)
-	demolish_button=item("철거","icon-demolish.png",Vector2(164,24),52,demolish)
-	item("닫기","icon-close.png",Vector2(86,84),32,close)
+	name="BuildingMenu";mouse_filter=Control.MOUSE_FILTER_IGNORE;z_index=8;size=Vector2(288,132)
+	# Hold artwork/function is not connected until its display wording is confirmed.
+	move_button=app.button(self,"",func():pass);move_button.disabled=true;move_button.hide()
+	upgrade_button=app.button(self,"",upgrade);upgrade_button.name="Upgrade"
+	IntegratedMenuArt.install(upgrade_button,"upgrade",Vector2(96,96));upgrade_button.position=Vector2(96,36)
+	demolish_button=app.button(self,"",demolish);demolish_button.name="Demolish"
+	IntegratedMenuArt.install(demolish_button,"demolish",Vector2(96,96));demolish_button.position=Vector2(192,0)
+	close_button=app.button(self,"",close);close_button.name="Close"
+	IntegratedMenuArt.install(close_button,"close",Vector2(48,48))
 	hide()
-func close()->void:selected_key="";hide()
+func close()->void:
+	selected_key="";hide()
+	if framing_active and is_instance_valid(app.world):
+		app.world.player.camera.offset=saved_camera_offset;app.world.player.camera.force_update_scroll()
+	framing_active=false
+func _exit_tree()->void:
+	if framing_active and is_instance_valid(app.world):app.world.player.camera.offset=saved_camera_offset
+func selected_sprite()->Sprite2D:
+	if selected_key=="chief":return app.world.get_node("ExistingHut").sprite
+	var found:=OwnedBuildingUpgrades.lookup(app.model,selected_key)
+	if found.is_empty():return null
+	if found.collection=="homes":return app.world.homes[found.index].sprite
+	var outpost=app.world.get_node_or_null("Outpost_"+str(found.data.uid))
+	return outpost.get_child(0) if outpost else null
 func index()->int:
 	for i in app.model.built_count():
 		if app.model.home_key(i)==selected_key:return i
@@ -65,6 +84,7 @@ func show_at(screen_point:Vector2)->bool:
 	var key:=hit_key(at)
 	if key.is_empty():return false
 	app.cancel_build_preview();app.build_side.hide();app.navigation.cancel()
+	if not framing_active:saved_camera_offset=app.world.player.camera.offset;framing_active=true
 	selected_key=key;show();refresh();return true
 func refresh()->void:
 	var i:=index()
@@ -77,12 +97,27 @@ func refresh()->void:
 	demolish_button.hint_text="주인공 움집은 철거할 수 없어요" if selected_key=="chief" else "건물 위 씨앗 보상을 먼저 받아 주세요"
 	if selected_key.begins_with("outpost:"):demolish_button.hint_text="초소 철거는 아직 지원하지 않아요"
 	elif owned.get("data",{}).has("upgrade"):demolish_button.hint_text="공사 완료 후 철거할 수 있어요"
-	var at:Vector2=DemoConfig.CHIEF_POSITION if selected_key=="chief" else owned.position
-	var screen_at:Vector2=app.world.get_global_transform_with_canvas()*at
+	IntegratedMenuArt.refresh(upgrade_button,not upgrade_button.disabled)
+	IntegratedMenuArt.refresh(demolish_button);IntegratedMenuArt.refresh(close_button)
+	var sprite:=selected_sprite()
+	if sprite==null:close();return
+	var bounds:Rect2=sprite.get_global_transform_with_canvas()*sprite.get_rect()
+	var anchor:=Vector2(bounds.get_center().x,bounds.end.y)
 	var bottom:float=app.h-app.safe.y
 	if is_instance_valid(app.action_row) and app.action_row.is_visible_in_tree():bottom=minf(bottom,app.action_row.global_position.y-8)
-	var top:float=app.safe.y+80
-	position=Vector2(clampf(screen_at.x-size.x*.5,app.safe.x,maxf(app.safe.x,app.w-app.safe.x-size.x)),clampf(screen_at.y+8,top,maxf(top,bottom-size.y)))
+	var top:float=app.safe.y+100
+	var left:float=maxf(app.safe.x+size.x*.5,app.safe.x+bounds.size.x*.5)
+	var right:float=minf(app.w-app.safe.x-size.x*.5,app.w-app.safe.x-bounds.size.x*.5-52)
+	var desired:=Vector2(clampf(anchor.x,left,maxf(left,right)),clampf(anchor.y,top,maxf(top,bottom-size.y-8)))
+	var shift:=desired-anchor
+	if framing_active and shift.length()>.5:
+		app.world.player.camera.offset-=shift/app.world.player.camera.zoom
+		app.world.player.camera.force_update_scroll()
+		bounds=sprite.get_global_transform_with_canvas()*sprite.get_rect()
+		anchor=Vector2(bounds.get_center().x,bounds.end.y)
+	position=anchor+Vector2(-size.x*.5,8)
+	close_button.global_position=Vector2(bounds.end.x+4,bounds.end.y-48)
+
 func _process(_delta:float)->void:
 	if not visible:return
 	if app.modal or app.world_map_open or not app.application_active or app.screen!="play":close();return

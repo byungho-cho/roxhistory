@@ -32,7 +32,7 @@ func _process(delta: float) -> void:
 		art_feedback.pivot_offset=size*.5
 		art_feedback.scale=art_feedback.scale.lerp(Vector2.ONE*(.945 if down else 1.0),1-exp(-delta*28))
 		art_feedback.position.y=lerpf(art_feedback.position.y,3 if down else 0,1-exp(-delta*28))
-		art_feedback.modulate=Color(.72,.70,.66,.86) if disabled else (Color(.91,.86,.75) if down else Color.WHITE)
+		art_feedback.modulate=Color.WHITE if get_meta("integrated_art",false) else (Color(.72,.70,.66,.86) if disabled else (Color(.91,.86,.75) if down else Color.WHITE))
 		return
 	pivot_offset=size*0.5
 	scale=scale.lerp(Vector2.ONE*(0.965 if down else 1.0),1-exp(-delta*28))

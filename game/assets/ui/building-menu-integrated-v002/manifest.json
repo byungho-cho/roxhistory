@@ -1,0 +1,603 @@
+{
+  "version": "v002",
+  "date": "2026-11-06",
+  "scale": 3,
+  "figma_source": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=1092-60",
+  "editable_composition": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=1112-38",
+  "geometry": {
+    "building_actions": {
+      "canvas": [
+        288,
+        288
+      ],
+      "display": [
+        96,
+        96
+      ],
+      "circle_center": [
+        144,
+        108
+      ],
+      "circle_radius": 96,
+      "label_slot": [
+        0,
+        216,
+        288,
+        72
+      ],
+      "label_ink_box": [
+        0,
+        223.45,
+        288,
+        49.08
+      ]
+    },
+    "close": {
+      "canvas": [
+        144,
+        144
+      ],
+      "display": [
+        48,
+        48
+      ],
+      "circle_center": [
+        72,
+        72
+      ],
+      "circle_radius": 54,
+      "min_touch_display": [
+        44,
+        44
+      ]
+    },
+    "side": {
+      "canvas": [
+        216,
+        240
+      ],
+      "display": [
+        72,
+        80
+      ],
+      "icon_slot": [
+        18,
+        0,
+        180,
+        180
+      ],
+      "icon_baseline": 180,
+      "label_slot": [
+        0,
+        180,
+        216,
+        60
+      ],
+      "label_ink_box": [
+        0,
+        189.59,
+        216,
+        36.81
+      ]
+    }
+  },
+  "typography": {
+    "family": "Noto Sans KR",
+    "style": "Bold",
+    "building_font_size": 34,
+    "side_font_size": 32,
+    "rgba": [
+      255,
+      242,
+      207,
+      255
+    ]
+  },
+  "states": {
+    "disabled": {
+      "opacity": 0.35,
+      "extra_runtime_dim": false
+    },
+    "highlight": "Upgrade uses same dimensions with added gold glow inspired by approved radial concept.",
+    "move": "HOLD: approved concept word 이동 retained for reference only; not authorized as active gameplay wording/function."
+  },
+  "verification": {
+    "originals_unchanged": true,
+    "figma_visual_checked": true,
+    "all_dimensions_verified": true,
+    "all_rgba_verified": true,
+    "in_game_verified": false,
+    "final_text_small_screen_verified": false
+  },
+  "assets": [
+    {
+      "key": "upgrade",
+      "state": "normal",
+      "id": "1112:43",
+      "size": [
+        288,
+        288
+      ],
+      "circle": [
+        144,
+        108,
+        96
+      ],
+      "label": [
+        0,
+        222,
+        288,
+        52
+      ],
+      "hold": false,
+      "file": "exports/upgrade-normal.png",
+      "bytes": 95628,
+      "sha256": "9768d73b652d6d2bb852274b3eb03dcff642ab3cde45722ff50056cb688baad2",
+      "git_blob_sha": "36f0f3326a247285162aa7b5d13d59cc88244973",
+      "mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "visible_bounds_alpha_gt_16": [
+        0,
+        12,
+        287,
+        273
+      ],
+      "display_size": [
+        96.0,
+        96.0
+      ],
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "figma_url": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=1112-43"
+    },
+    {
+      "key": "upgrade",
+      "state": "disabled",
+      "id": "1114:39",
+      "size": [
+        288,
+        288
+      ],
+      "hold": false,
+      "file": "exports/upgrade-disabled.png",
+      "bytes": 83288,
+      "sha256": "a9388338665f8ed489eaa954ccc6b3f0f8858c009dc29aa39b7e7e8ee2f27411",
+      "git_blob_sha": "275b2ce879cc74d06d778395f763446f4714d8e7",
+      "mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        89
+      ],
+      "visible_bounds_alpha_gt_16": [
+        1,
+        12,
+        285,
+        273
+      ],
+      "display_size": [
+        96.0,
+        96.0
+      ],
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "figma_url": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=1114-39"
+    },
+    {
+      "key": "demolish",
+      "state": "normal",
+      "id": "1112:52",
+      "size": [
+        288,
+        288
+      ],
+      "circle": [
+        144,
+        108,
+        96
+      ],
+      "label": [
+        0,
+        222,
+        288,
+        52
+      ],
+      "hold": false,
+      "file": "exports/demolish-normal.png",
+      "bytes": 92473,
+      "sha256": "7c92d991130a76dfb400af5e8e916760675e957fbe9506e9cd5dd8d014541173",
+      "git_blob_sha": "dcc42f1af3b6f2bb2c06d3d4c2e54a364acc9a15",
+      "mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "visible_bounds_alpha_gt_16": [
+        0,
+        12,
+        287,
+        273
+      ],
+      "display_size": [
+        96.0,
+        96.0
+      ],
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "figma_url": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=1112-52"
+    },
+    {
+      "key": "demolish",
+      "state": "disabled",
+      "id": "1114:48",
+      "size": [
+        288,
+        288
+      ],
+      "hold": false,
+      "file": "exports/demolish-disabled.png",
+      "bytes": 80888,
+      "sha256": "bc04f767b555dbb4b68e9328a3121d8a1be74f6283b251fd796b7f8bd22b0e90",
+      "git_blob_sha": "cf3ea3049b23fa7cc778beb63099719e16c7ab4c",
+      "mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        89
+      ],
+      "visible_bounds_alpha_gt_16": [
+        1,
+        12,
+        285,
+        273
+      ],
+      "display_size": [
+        96.0,
+        96.0
+      ],
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "figma_url": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=1114-48"
+    },
+    {
+      "key": "move",
+      "state": "normal",
+      "id": "1112:61",
+      "size": [
+        288,
+        288
+      ],
+      "circle": [
+        144,
+        108,
+        96
+      ],
+      "label": [
+        0,
+        222,
+        288,
+        52
+      ],
+      "hold": true,
+      "file": "hold/move-normal.png",
+      "bytes": 90339,
+      "sha256": "2f65f6077745a25319a17dc1c98015f80cc8f8ff4dc6861a7d5e4a3457fb73f0",
+      "git_blob_sha": "aecd34a7fe8b5adec9532d145af44ee209cf00e7",
+      "mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "visible_bounds_alpha_gt_16": [
+        0,
+        12,
+        287,
+        273
+      ],
+      "display_size": [
+        96.0,
+        96.0
+      ],
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "figma_url": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=1112-61"
+    },
+    {
+      "key": "move",
+      "state": "disabled",
+      "id": "1114:57",
+      "size": [
+        288,
+        288
+      ],
+      "hold": true,
+      "file": "hold/move-disabled.png",
+      "bytes": 78479,
+      "sha256": "f1ccd4df2081a9ccafc3aaae6a0ea290be7fb74e5cc471659b0a4e3b9cdec63f",
+      "git_blob_sha": "4042b21562079f26160fa6f6ace80e71b3fee4aa",
+      "mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        89
+      ],
+      "visible_bounds_alpha_gt_16": [
+        1,
+        12,
+        285,
+        273
+      ],
+      "display_size": [
+        96.0,
+        96.0
+      ],
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "figma_url": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=1114-57"
+    },
+    {
+      "key": "close",
+      "state": "normal",
+      "id": "1112:70",
+      "size": [
+        144,
+        144
+      ],
+      "circle": [
+        72,
+        72,
+        54
+      ],
+      "file": "exports/close-normal.png",
+      "bytes": 25165,
+      "sha256": "632618e85b04eff45c30397850adf0b0835596776a801f9901b168d4e76f1d40",
+      "git_blob_sha": "52acb0bee223f4a71023844c9ee1f41c19cbfc3e",
+      "mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "visible_bounds_alpha_gt_16": [
+        18,
+        18,
+        126,
+        126
+      ],
+      "display_size": [
+        48.0,
+        48.0
+      ],
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "figma_url": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=1112-70"
+    },
+    {
+      "key": "close",
+      "state": "disabled",
+      "id": "1114:66",
+      "size": [
+        144,
+        144
+      ],
+      "file": "exports/close-disabled.png",
+      "bytes": 23647,
+      "sha256": "d5661e070036f78ec6c2a0ac5d63be4c0542e1d3dd870505b659c9008e06334f",
+      "git_blob_sha": "13eb27f39fe9d9893312f5cf54808099381125dd",
+      "mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        89
+      ],
+      "visible_bounds_alpha_gt_16": [
+        19,
+        18,
+        125,
+        125
+      ],
+      "display_size": [
+        48.0,
+        48.0
+      ],
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "figma_url": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=1114-66"
+    },
+    {
+      "key": "upgrade",
+      "state": "highlight",
+      "id": "1114:72",
+      "size": [
+        288,
+        288
+      ],
+      "file": "exports/upgrade-highlight.png",
+      "bytes": 118715,
+      "sha256": "683ef9e1828923d1d2b8f7b9880a969bf73e51fc124b633ed406c67eff3ecdfb",
+      "git_blob_sha": "4ecfe7f2c6b5ce22afcd3ff88134a94f32b8219c",
+      "mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "visible_bounds_alpha_gt_16": [
+        0,
+        1,
+        287,
+        273
+      ],
+      "display_size": [
+        96.0,
+        96.0
+      ],
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "figma_url": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=1114-72"
+    },
+    {
+      "key": "side-hut",
+      "state": "normal",
+      "id": "1114:83",
+      "size": [
+        216,
+        240
+      ],
+      "source": "1061:476",
+      "label": [
+        0,
+        188,
+        216,
+        40
+      ],
+      "file": "exports/side-hut-normal.png",
+      "bytes": 56099,
+      "sha256": "503fa03efedeb19b87ff58bd1636cc969a9bcc7f51156683a34b240506ba3b14",
+      "git_blob_sha": "1a358c8cbe169151bc1670c517f9418ee6afefe2",
+      "mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "visible_bounds_alpha_gt_16": [
+        1,
+        36,
+        215,
+        227
+      ],
+      "display_size": [
+        72.0,
+        80.0
+      ],
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "figma_url": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=1114-83"
+    },
+    {
+      "key": "side-hut",
+      "state": "disabled",
+      "id": "1114:92",
+      "size": [
+        216,
+        240
+      ],
+      "source": "1061:476",
+      "file": "exports/side-hut-disabled.png",
+      "bytes": 49542,
+      "sha256": "ff496ec80d72dfa16895f6250a829ba4744fc882a899e0574a51e9de92274425",
+      "git_blob_sha": "a7bbb787b79afd3a46c610505b7f7922aafec6f4",
+      "mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        89
+      ],
+      "visible_bounds_alpha_gt_16": [
+        1,
+        36,
+        214,
+        227
+      ],
+      "display_size": [
+        72.0,
+        80.0
+      ],
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "figma_url": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=1114-92"
+    },
+    {
+      "key": "side-outpost",
+      "state": "normal",
+      "id": "1114:102",
+      "size": [
+        216,
+        240
+      ],
+      "source": "886:36",
+      "label": [
+        0,
+        188,
+        216,
+        40
+      ],
+      "file": "exports/side-outpost-normal.png",
+      "bytes": 44922,
+      "sha256": "7061682201a307669fce4055b7bfe2c1194632225d732488eacf1826eedbc16d",
+      "git_blob_sha": "3b3982f9a8817df8f6ea2dda01c112c3345c1742",
+      "mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "visible_bounds_alpha_gt_16": [
+        1,
+        8,
+        215,
+        227
+      ],
+      "display_size": [
+        72.0,
+        80.0
+      ],
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "figma_url": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=1114-102"
+    },
+    {
+      "key": "side-outpost",
+      "state": "disabled",
+      "id": "1114:109",
+      "size": [
+        216,
+        240
+      ],
+      "source": "886:36",
+      "file": "exports/side-outpost-disabled.png",
+      "bytes": 39804,
+      "sha256": "2e7a31227f6eb70bfb2dd9ed4dcc186de49e47300858a5d87c17dd9f7ecf969b",
+      "git_blob_sha": "e973eed59bb544a5896a05205c6e423d51e25c2e",
+      "mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        89
+      ],
+      "visible_bounds_alpha_gt_16": [
+        1,
+        8,
+        214,
+        227
+      ],
+      "display_size": [
+        72.0,
+        80.0
+      ],
+      "pivot": [
+        0.5,
+        0.5
+      ],
+      "figma_url": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=1114-109"
+    }
+  ]
+}

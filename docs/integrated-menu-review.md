@@ -1,0 +1,13 @@
+# Integrated menu v002 implementation review
+
+Source commit 8a2e8a256fc5f03a1e079cbbd0a8ca1680599b52, assets/ui/building-menu/integrated-v002. Eleven non-hold PNGs copied unchanged to game/assets/ui/building-menu-integrated-v002; all manifest SHA-256 hashes verified. No alpha trimming, separate Label, alternate brush or regenerated icon is used. Source normal/disabled/highlight canvases retain their stated dimensions. Disabled source alpha is already 35%; runtime feedback preserves white modulation without a second dimming pass.
+
+Building menu action slots follow a downward U: upgrade in the lower middle, demolition higher on the right. Close X is separate, to the selected building's right. Move is still on HOLD and its source files have not been imported or connected. Its left slot remains reserved, currently empty. An explicit display preference (hidden versus disabled-reference artwork) was requested and remains unanswered; no move wording or function is finalized. Gold connecting line is omitted as allowed. Approved upgrade-highlight PNG supplies button emphasis; a matching building-foundation outline is not part of this asset package and is not claimed implemented.
+
+When HUD space is insufficient, a temporary camera presentation offset keeps the menu below its building. This does not move the character, saved position, world bounds or collision. Close/map change/stage destruction restores the previous offset. Full PNG canvas includes touch/name area; close is 48x48. Existing DemoButton touch ownership and cost/confirmation logic remain.
+
+Side menu uses the provided side-only hut/outpost artwork. It forms a horizontal row above construction, with hut center exactly aligned with construction center. Unlock/affordability rules remain. Disabled outpost is intentionally faint on busy terrain because the supplied PNG has 35% alpha; no compensating opacity edit was made. Normal unlocked art was also captured and reviewed.
+
+Verification: integrated menu 57 checks, existing building menu 19, building asset flow 38, menu transition 15 (129 total). Actual 1280x720 and 540x960 min/max zoom captures reviewed; touch close, disabled input rejection, save preservation, PNG size, no duplicate labels, side alignment and camera restoration checked. Physical Android verification not performed.
+
+Current village remains 2400x1350 with its original fixed playable polygon and six shared building sites. The separate bounds-preparation refactor is retained; expanded 90% boundary and 20–30-site rollout await authored terrain/reference framing. No new APK is published at this preparation stage; the latest public APK remains 0.1.46.

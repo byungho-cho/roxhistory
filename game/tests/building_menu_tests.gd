@@ -51,7 +51,7 @@ func run()->void:
 	var touch:=InputEventScreenTouch.new();touch.index=0;touch.position=chief_point;touch.pressed=true
 	app.gestures._input(touch);app.gestures._process(.66);touch.pressed=false;app.gestures._input(touch);await frames(2)
 	check(menu.visible and menu.selected_key=="chief","Touch longpress and release do not click through")
-	check(app.gestures.ui_hit(menu.move_button.global_position+menu.move_button.size*.5),"Disabled menu button still owns touch input")
+	check(app.gestures.ui_hit(menu.upgrade_button.global_position+menu.upgrade_button.size*.5),"Disabled menu button still owns touch input")
 	var camera_before:Vector2=app.world.player.camera.position
 	app.world_tap(Vector2(20,app.h*.5));await frames(2)
 	check(not menu.visible and app.navigation.action=="" and app.world.player.camera.position==camera_before,"Outside tap only closes menu")
