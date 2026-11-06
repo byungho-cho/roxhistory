@@ -52,6 +52,11 @@ func hit_key(at:Vector2)->String:
 	for i in range(app.model.built_count()-1,-1,-1):
 		var sprite:Sprite2D=app.world.homes[i].sprite
 		if sprite.get_rect().has_point(sprite.to_local(at)):return app.model.home_key(i)
+	for entry in app.model.outposts():
+		var outpost=app.world.get_node_or_null("Outpost_"+str(entry.uid))
+		if outpost:
+			var image:Sprite2D=outpost.get_child(0)
+			if image.get_rect().has_point(image.to_local(at)):return "outpost:"+str(entry.uid)
 	var chief:Sprite2D=app.world.get_node("ExistingHut").sprite
 	return "chief" if chief.get_rect().has_point(chief.to_local(at)) else ""
 func show_at(screen_point:Vector2)->bool:
@@ -63,13 +68,16 @@ func show_at(screen_point:Vector2)->bool:
 	selected_key=key;show();refresh();return true
 func refresh()->void:
 	var i:=index()
-	if selected_key!="chief" and i<0:close();return
+	var owned:=OwnedBuildingUpgrades.lookup(app.model,selected_key)
+	if selected_key!="chief" and owned.is_empty():close();return
 	move_button.disabled=true;move_button.hint_text="건물 이동은 다음 버전에서 제공할 예정이에요"
-	var upgrade_reason:String=app.building_workflow.upgrade_block_reason(app.model.chief_level()+1) if selected_key=="chief" else "현재 업그레이드는 주인공 움집만 지원해요"
+	var upgrade_reason:String=app.building_workflow.upgrade_block_reason(app.model.chief_level()+1) if selected_key=="chief" else app.building_workflow.owned_upgrade_reason(selected_key)
 	upgrade_button.disabled=not upgrade_reason.is_empty();upgrade_button.hint_text=upgrade_reason
-	demolish_button.disabled=selected_key=="chief" or (i>=0 and app.model.reward_pending(i))
+	demolish_button.disabled=selected_key=="chief" or selected_key.begins_with("outpost:") or owned.get("data",{}).has("upgrade") or (i>=0 and app.model.reward_pending(i))
 	demolish_button.hint_text="주인공 움집은 철거할 수 없어요" if selected_key=="chief" else "건물 위 씨앗 보상을 먼저 받아 주세요"
-	var at:Vector2=DemoConfig.CHIEF_POSITION if selected_key=="chief" else app.model.home_position(i)
+	if selected_key.begins_with("outpost:"):demolish_button.hint_text="초소 철거는 아직 지원하지 않아요"
+	elif owned.get("data",{}).has("upgrade"):demolish_button.hint_text="공사 완료 후 철거할 수 있어요"
+	var at:Vector2=DemoConfig.CHIEF_POSITION if selected_key=="chief" else owned.position
 	var screen_at:Vector2=app.world.get_global_transform_with_canvas()*at
 	var bottom:float=app.h-app.safe.y
 	if is_instance_valid(app.action_row) and app.action_row.is_visible_in_tree():bottom=minf(bottom,app.action_row.global_position.y-8)
@@ -80,8 +88,10 @@ func _process(_delta:float)->void:
 	if app.modal or app.world_map_open or not app.application_active or app.screen!="play":close();return
 	refresh()
 func upgrade()->void:
-	if selected_key!="chief":return
-	close();app.building_workflow.request_upgrade()
+	var key:=selected_key
+	close()
+	if key=="chief":app.building_workflow.request_upgrade()
+	else:app.building_workflow.request_owned_upgrade(key)
 func demolish()->void:
 	var key:=selected_key
 	if key=="chief" or index()<0:return

@@ -9,6 +9,7 @@ var hammer: TextureRect
 var clock := 0.0
 var gathering:=false
 var upgrading:=false
+var building_key:="chief"
 
 func _init(owner_app: Node, for_gathering:bool=false,for_upgrade:bool=false) -> void:
 	app = owner_app;gathering=for_gathering;upgrading=for_upgrade
@@ -63,7 +64,7 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	visible = app.task == ("gather" if gathering else "build") and is_instance_valid(app.world) and not app.modal and not app.world_map_open and app.application_active
-	if upgrading:visible=app.model.state.has("chief_upgrade") and is_instance_valid(app.world) and not app.modal and not app.world_map_open and app.application_active
+	if upgrading:visible=app.screen=="play" and not upgrade_job().is_empty() and is_instance_valid(app.world) and not app.modal and not app.world_map_open and app.application_active
 	if gathering:visible=visible and not app.gather_approach and app.world.art_nodes.has(app.task_target)
 	if gathering and visible:visible=app.world.art_nodes[app.task_target].visible
 	if not visible: clock = 0; return
@@ -71,8 +72,9 @@ func _process(delta: float) -> void:
 	var remaining:float=app.task_remaining
 	var total:float=app.task_total
 	if upgrading:
-		remaining=app.model.chief_upgrade_remaining()
-		total=app.model.state.chief_upgrade.finishes_at-app.model.state.chief_upgrade.started_at
+		var job:=upgrade_job()
+		remaining=maxf(0,float(job.finishes_at)-Time.get_unix_time_from_system())
+		total=job.finishes_at-job.started_at
 	var ratio := clampf(1.0-remaining/maxf(0.001,total),0,1)
 	fill.size.x = maxf(0.01,320*ratio)
 	fill.material.set_shader_parameter("dimensions",fill.size)
@@ -87,7 +89,8 @@ func _process(delta: float) -> void:
 	scale=Vector2.ONE*clampf(world_zoom*.85,.34,.68)
 	position = point-Vector2(size.x*scale.x*.5,150*world_zoom+size.y*scale.y)
 	if upgrading:
-		var chief:Sprite2D=app.world.get_node("ExistingHut").sprite
+		var chief:Sprite2D=upgrade_sprite()
+		if chief==null:hide();return
 		var bounds:Rect2=chief.get_global_transform_with_canvas()*chief.get_rect()
 		position=Vector2(bounds.get_center().x-size.x*scale.x*.5,bounds.position.y-size.y*scale.y-5)
 	if gathering:
@@ -97,3 +100,15 @@ func _process(delta: float) -> void:
 		position=Vector2(bounds.get_center().x-size.x*scale.x*.5,bounds.position.y-size.y*scale.y-5)
 	position.x = clampf(position.x,app.safe.x,maxf(app.safe.x,app.w-app.safe.x-size.x*scale.x))
 	position.y = clampf(position.y,app.safe.y+90,maxf(app.safe.y+90,app.h-app.safe.y-100-size.y*scale.y))
+
+func upgrade_job()->Dictionary:
+	if building_key=="chief":return app.model.state.get("chief_upgrade",{})
+	var found:=OwnedBuildingUpgrades.lookup(app.model,building_key)
+	return found.get("data",{}).get("upgrade",{})
+func upgrade_sprite()->Sprite2D:
+	if building_key=="chief":return app.world.get_node("ExistingHut").sprite
+	var found:=OwnedBuildingUpgrades.lookup(app.model,building_key)
+	if found.is_empty():return null
+	if found.collection=="homes":return app.world.homes[found.index].sprite
+	var node=app.world.get_node_or_null("Outpost_"+str(found.data.uid))
+	return node.get_child(0) if node else null

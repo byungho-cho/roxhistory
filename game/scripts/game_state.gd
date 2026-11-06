@@ -118,6 +118,7 @@ func _init(save_store: SaveStore) -> void:
 	migrate_village()
 	migrate_resources()
 	finish_chief_upgrade()
+	OwnedBuildingUpgrades.finish(self)
 
 func commit(next: Dictionary, reset: bool = false) -> bool:
 	if not store.save_game(next,reset):
@@ -210,6 +211,8 @@ func demolition_quote(key:String)->Dictionary:
 
 func demolish(key:String)->bool:
 	if busy:return false
+	var owned:=OwnedBuildingUpgrades.lookup(self,key)
+	if not owned.is_empty() and owned.data.has("upgrade"):return false
 	var quote:=demolition_quote(key)
 	if quote.is_empty() or not quote.supported or reward_pending(int(quote.index)):return false
 	busy=true

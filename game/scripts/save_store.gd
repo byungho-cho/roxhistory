@@ -41,6 +41,7 @@ func valid(s: Variant) -> bool:
 		var legacy_slots:=[]
 		for home in s.homes:
 			if not home is Dictionary or not home.get("claimed") is bool: return false
+			if not OwnedBuildingUpgrades.valid(home):return false
 			if home.has("uid"):
 				if not home.uid is String or home.uid.is_empty() or home.uid in home_ids:return false
 				home_ids.append(home.uid)
@@ -78,7 +79,7 @@ func valid(s: Variant) -> bool:
 			if not uid is String or uid.is_empty() or uid in ids:return false
 			ids.append(uid)
 			var level:Variant=outpost.get("level")
-			if not (level is int or level is float) or level!=1:return false
+			if not OwnedBuildingUpgrades.valid(outpost):return false
 			if not outpost.get("cost") is Dictionary:return false
 			for kind in ["wood","stone"]:
 				var amount:Variant=outpost.cost.get(kind)

@@ -214,6 +214,13 @@ func refresh() -> void:
 			continue
 		homes[i].position=model.home_position(i)
 		homes[i].set_hut_style(int(saved_homes[i].style))
+		var level:=int(saved_homes[i].get("level",1))
+		if level>1:
+			var upgraded:=BuildingWorkflow.approved_texture("BLD-CHIEF-L%d"%level)
+			if upgraded!=null:
+				var dimensions:=upgraded.get_size()*homes[i].configured_width*EnvironmentProp.BUILDING_IMAGE_SCALE/upgraded.get_width()
+				homes[i].sprite.texture=upgraded;homes[i].sprite.scale=(dimensions-Vector2(4,4))/upgraded.get_size()
+				homes[i].sprite.position.y=-dimensions.y*.30+3.0-homes[i].depth_visual.position.y
 		if not has_node("HomeCollision"+str(i)):
 			var body := StaticBody2D.new()
 			body.name = "HomeCollision"+str(i)
@@ -355,8 +362,11 @@ func gather_stand(target: Vector2, resource_kind: String="wood") -> Vector2:
 func refresh_outposts()->void:
 	for entry in model.outposts():
 		var node_name:String="Outpost_"+str(entry.uid)
-		if has_node(node_name):continue
-		var texture:=BuildingWorkflow.approved_texture("BLD-OUTPOST-L1")
+		var texture:=BuildingWorkflow.approved_texture("BLD-OUTPOST-L%d"%int(entry.get("level",1)))
+		if has_node(node_name):
+			if texture!=null:
+				var existing:Sprite2D=get_node(node_name).get_child(0);existing.texture=texture;existing.scale=Vector2.ONE*180/texture.get_width();existing.position.y=-texture.get_height()*existing.scale.y*.3+3
+			continue
 		if texture==null:continue
 		var body:=StaticBody2D.new();body.name=node_name;body.position=DemoConfig.BUILD_SITES[int(entry.site)];body.visibility_layer=2
 		var image:=Sprite2D.new();image.texture=texture;image.scale=Vector2.ONE*180/texture.get_width();image.position.y=-texture.get_height()*image.scale.y*.3+3;image.visibility_layer=2

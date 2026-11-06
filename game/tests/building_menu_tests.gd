@@ -24,7 +24,7 @@ func run()->void:
 	app.world_tap(home_point());await frames(2)
 	check(menu.visible and menu.selected_key==app.model.home_key(0),"Building click opens stable-key menu")
 	check(app.model.state==before and menu.demolish_button.disabled,"Building click does not consume pending seed reward")
-	check(menu.move_button.disabled and menu.upgrade_button.disabled,"Movement and resident upgrade unavailable")
+	check(menu.move_button.disabled and not menu.upgrade_button.disabled,"Movement unavailable; approved resident upgrade available")
 	menu.close();app.world_tap(app.world.get_global_transform_with_canvas()*app.world.reward_marker_rect(0).get_center());await frames(2)
 	check(not app.model.reward_pending(0),"Seed bubble still grants reward")
 	app.world_tap(home_point());await frames(2)

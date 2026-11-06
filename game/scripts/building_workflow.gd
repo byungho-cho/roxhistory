@@ -9,6 +9,9 @@ var last_visual_level:=-1
 var transition:Tween
 var previous_visual:Sprite2D
 var scaffold_fade_left:=0.0
+var owned_progress:Dictionary={}
+var owned_confirmation:=""
+var owned_retry:=0.0
 func _init(owner_app:Node)->void:app=owner_app
 func _ready()->void:
 	app.model.changed.connect(refresh_visual)
@@ -112,6 +115,7 @@ func update_scaffold()->void:
 func _process(delta:float)->void:
 	scaffold_fade_left=maxf(0,scaffold_fade_left-delta)
 	update_scaffold()
+	update_owned_upgrades()
 	if not app.model.state.has("chief_upgrade"):return
 	retry_after=maxf(0,retry_after-delta)
 	if app.model.chief_upgrade_remaining()>0 or retry_after>0:return
@@ -119,3 +123,50 @@ func _process(delta:float)->void:
 	if app.model.finish_chief_upgrade():
 		if is_instance_valid(app.world) and app.screen=="play":app.world.feedback.built(DemoConfig.CHIEF_POSITION)
 	else:retry_after=1.0
+
+func owned_upgrade_reason(key:String)->String:
+	var found:=OwnedBuildingUpgrades.lookup(app.model,key)
+	if found.is_empty():return "건물을 찾을 수 없어요"
+	if found.data.has("upgrade"):return "업그레이드 공사 중이에요"
+	var level:=int(found.data.get("level",1))
+	if level>=4:return "최대 4단계 건물이에요"
+	var asset:="BLD-OUTPOST-L%d"%(level+1) if found.collection=="outposts" else "BLD-CHIEF-L%d"%(level+1)
+	if approved_texture(asset)==null:return "초소 %d단계 확정 에셋 준비 중"%(level+1) if found.collection=="outposts" else "움집 단계 에셋 준비 중"
+	if app.model.state.wood<20 or app.model.state.stone<20:return "나무 20개와 돌 20개가 필요해요"
+	return ""
+
+func request_owned_upgrade(key:String)->void:
+	if app.modal or not app.application_active or app.screen!="play" or app.world_map_open:return
+	var reason:=owned_upgrade_reason(key)
+	if not reason.is_empty():app.toast(reason);return
+	var found:=OwnedBuildingUpgrades.lookup(app.model,key)
+	var target:=int(found.data.get("level",1))+1
+	owned_confirmation=key
+	app.show_modal("%s %d단계 업그레이드"%["초소" if found.collection=="outposts" else "주민 움집",target],"나무 20개 · 돌 20개\n공사 시간 %d초\n앱을 닫아도 공사가 진행돼요"%int(app.model.chief_upgrade_duration(target)),[{"text":"취소","action":app.close_modal},{"text":"업그레이드","action":func():confirm_owned_upgrade(key,target)}],true,true)
+
+func confirm_owned_upgrade(key:String,target:int)->bool:
+	if not app.modal or not app.application_active or owned_confirmation!=key:return false
+	var found:=OwnedBuildingUpgrades.lookup(app.model,key)
+	if found.is_empty() or int(found.data.get("level",1))+1!=target:return false
+	var reason:=owned_upgrade_reason(key)
+	if not reason.is_empty():app.close_modal();app.toast(reason);return false
+	if not OwnedBuildingUpgrades.start(app.model,key):return false
+	owned_confirmation="";app.close_modal();return true
+
+func update_owned_upgrades()->void:
+	var now:=Time.get_ticks_msec()/1000.0
+	if now>=owned_retry:
+		OwnedBuildingUpgrades.finish(app.model);owned_retry=now+.1
+	for key in owned_progress.keys():
+		if OwnedBuildingUpgrades.lookup(app.model,key).get("data",{}).get("upgrade",{}).is_empty():
+			if is_instance_valid(owned_progress[key]):owned_progress[key].queue_free()
+			owned_progress.erase(key)
+	if not is_instance_valid(app.stage) or not is_instance_valid(app.world):return
+	for key in OwnedBuildingUpgrades.keys(app.model):
+		var found:=OwnedBuildingUpgrades.lookup(app.model,key)
+		if not found.data.has("upgrade"):continue
+		if not is_instance_valid(owned_progress.get(key)):
+			var progress:=ConstructionProgress.new(app,false,true);progress.building_key=key;app.stage.add_child(progress);owned_progress[key]=progress
+		var effect_name:="OwnedUpgradeEffects_"+key.replace(":","_")
+		if not app.world.has_node(effect_name):
+			var effect:=UpgradeConstructionEffect.new(app);effect.building_key=key;app.world.add_child(effect)
