@@ -191,6 +191,126 @@
       ],
       "charges": 3,
       "size": "small"
+    },
+    {
+      "id": "wood_outer_v048_1",
+      "kind": "wood",
+      "position": [
+        -400,
+        -180
+      ],
+      "charges": 3,
+      "size": "medium"
+    },
+    {
+      "id": "stone_outer_v048_2",
+      "kind": "stone",
+      "position": [
+        350,
+        -180
+      ],
+      "charges": 3,
+      "size": "small"
+    },
+    {
+      "id": "wood_outer_v048_3",
+      "kind": "wood",
+      "position": [
+        1250,
+        -170
+      ],
+      "charges": 3,
+      "size": "medium"
+    },
+    {
+      "id": "stone_outer_v048_4",
+      "kind": "stone",
+      "position": [
+        2200,
+        -170
+      ],
+      "charges": 3,
+      "size": "small"
+    },
+    {
+      "id": "wood_outer_v048_5",
+      "kind": "wood",
+      "position": [
+        2820,
+        -100
+      ],
+      "charges": 3,
+      "size": "medium"
+    },
+    {
+      "id": "stone_outer_v048_6",
+      "kind": "stone",
+      "position": [
+        2860,
+        650
+      ],
+      "charges": 3,
+      "size": "small"
+    },
+    {
+      "id": "wood_outer_v048_7",
+      "kind": "wood",
+      "position": [
+        2780,
+        1430
+      ],
+      "charges": 3,
+      "size": "medium"
+    },
+    {
+      "id": "stone_outer_v048_8",
+      "kind": "stone",
+      "position": [
+        1900,
+        1500
+      ],
+      "charges": 3,
+      "size": "small"
+    },
+    {
+      "id": "wood_outer_v048_9",
+      "kind": "wood",
+      "position": [
+        1000,
+        1510
+      ],
+      "charges": 3,
+      "size": "medium"
+    },
+    {
+      "id": "stone_outer_v048_10",
+      "kind": "stone",
+      "position": [
+        100,
+        1480
+      ],
+      "charges": 3,
+      "size": "small"
+    },
+    {
+      "id": "wood_outer_v048_11",
+      "kind": "wood",
+      "position": [
+        -410,
+        1120
+      ],
+      "charges": 3,
+      "size": "medium"
+    },
+    {
+      "id": "stone_outer_v048_12",
+      "kind": "stone",
+      "position": [
+        -430,
+        650
+      ],
+      "charges": 3,
+      "size": "small"
     }
   ],
   "history": {

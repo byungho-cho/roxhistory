@@ -27,7 +27,7 @@ func _ready()->void:
 		if child is VillageLayout or child is BuildPreview or child is TravelTrail or child is WorldFeedback or child is WorldObjectives or child is WorldAmbient:exclude_actor_from_minimap(child)
 	if is_instance_valid(app.world.feedback.preview):exclude_actor_from_minimap(app.world.feedback.preview)
 	var scale_factor:=PIXELS/DemoPlayer.WORLD_SIZE.y*CONTENT_ZOOM
-	village_view.canvas_transform=Transform2D(Vector2(scale_factor,0),Vector2(0,scale_factor),(Vector2.ONE*PIXELS-DemoPlayer.WORLD_SIZE*scale_factor)*.5)
+	village_view.canvas_transform=Transform2D(Vector2(scale_factor,0),Vector2(0,scale_factor),Vector2.ONE*PIXELS*.5-VillageBounds.WORLD_RECT.get_center()*scale_factor)
 	var backing:=CanvasLayer.new();backing.layer=-100;backing.custom_viewport=village_view;village_view.add_child(backing)
 	var ground:=TextureRect.new();ground.texture=load("res://assets/terrain-review-v001/ground-a.png");ground.expand_mode=TextureRect.EXPAND_IGNORE_SIZE;ground.size=Vector2.ONE*PIXELS
 	var mat:=ShaderMaterial.new();mat.shader=load("res://shaders/minimap_terrain_extension.gdshader");ground.material=mat;backing.add_child(ground)
@@ -52,7 +52,7 @@ func current_texture()->Texture2D:
 func normalized_point(world_point:Vector2)->Vector2:
 	# Same uniform scale and centering used by each render target.
 	if app.world_map_open:return world_point/(app.h*5)*CONTENT_ZOOM
-	return (world_point-DemoPlayer.WORLD_SIZE*.5)/DemoPlayer.WORLD_SIZE.y*CONTENT_ZOOM
+	return (world_point-VillageBounds.WORLD_RECT.get_center())/DemoPlayer.WORLD_SIZE.y*CONTENT_ZOOM
 
 func exclude_actor_from_minimap(node:Node)->void:
 	# Main viewport keeps both layers. The GPS alone renders static layer 1.

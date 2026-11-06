@@ -108,7 +108,7 @@ func _ready() -> void:
 	player.position = DemoConfig.point(model.state.position)
 	add_child(player)
 	# Wildlife stays outside the settlement and clear of the demo resource/build routes.
-	for entry in [["deer",470,430,75,-0.8],["rabbit",1680,1040,30,0.6],["rabbit",1790,1080,28,-0.4],["bear",1950,620,78,-0.7],["deer",600,450,68,0.9]]:
+	for entry in [["deer",470,430,75,-0.8],["rabbit",1680,1040,30,0.6],["rabbit",1790,1080,28,-0.4],["bear",1950,620,78,-0.7],["deer",600,450,68,0.9],["deer",-350,400,68,0.9],["rabbit",900,-130,30,0.6],["rabbit",2450,1430,30,0.6],["bear",2820,300,78,-0.7]]:
 		var animal := WorldAnimal.new()
 		animal.name = "Wildlife_"+str(entry[0])+str(animals.size())
 		animal.species = entry[0]
@@ -144,7 +144,7 @@ func restore_clear_position() -> void:
 	for radius in [48,96,160,240,360]:
 		for i in 16:
 			var candidate: Vector2 = original+Vector2.from_angle(i*TAU/16)*float(radius)
-			if candidate.x < 40 or candidate.x > 2360 or candidate.y < 40 or candidate.y > 1310: continue
+			if not VillageBounds.WORLD_RECT.grow(-24).has_point(candidate): continue
 			var at := player.transform
 			at.origin = candidate
 			if not player.test_move(at,Vector2.ZERO,null,0.08,true):

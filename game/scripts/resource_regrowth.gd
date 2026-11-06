@@ -25,19 +25,20 @@ func _physics_process(delta:float)->void:
 		return # At most one persistent transaction per tick.
 
 func find_position(old:Vector2)->Vector2:
-	var grid:=AStarGrid2D.new();grid.region=Rect2i(0,0,60,34);grid.cell_size=Vector2(40,40);grid.offset=Vector2(20,20)
+	var cells:=Vector2i((VillageBounds.WORLD_SIZE/40).ceil())
+	var grid:=AStarGrid2D.new();grid.region=Rect2i(Vector2i.ZERO,cells);grid.cell_size=Vector2(40,40);grid.offset=VillageBounds.WORLD_RECT.position+Vector2(20,20)
 	grid.diagonal_mode=AStarGrid2D.DIAGONAL_MODE_ONLY_IF_NO_OBSTACLES;grid.update()
-	for y in 34:
-		for x in 60:
-			var at:=Vector2(x*40+20,y*40+20)
+	for y in cells.y:
+		for x in cells.x:
+			var at:=grid.get_point_position(Vector2i(x,y))
 			var pose:=world.player.transform;pose.origin=at
 			grid.set_point_solid(Vector2i(x,y),not VillageLayout.ground_ok(at) or world.player.test_move(pose,Vector2.ZERO,null,.08,true))
-	var start:=Vector2i((world.player.position-Vector2(20,20))/40)
+	var start:=Vector2i(((world.player.position-VillageBounds.WORLD_RECT.position)/40).floor())
 	grid.set_point_solid(start,false)
 	for attempt in 60:
-		var cell:=Vector2i(randi_range(4,55),randi_range(15,30))
+		var cell:=Vector2i(randi_range(3,cells.x-4),randi_range(3,cells.y-4))
 		var at:=grid.get_point_position(cell)
-		if at.distance_to(old)<180 or grid.is_point_solid(cell):continue
+		if not VillageBounds.RESOURCE_RELOCATION_RECT.has_point(at) or at.distance_to(old)<180 or grid.is_point_solid(cell):continue
 		var clear:=true
 		for rock in SceneStyle.PAINTED_ROCKS:
 			if at.distance_to(rock)<110:clear=false

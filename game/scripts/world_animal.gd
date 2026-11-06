@@ -130,7 +130,7 @@ func turn_bone(label:String,angle:Vector3)->void:
 	rig.set_bone_pose_rotation(index,rest_rotations[index]*Quaternion.from_euler(angle))
 
 func safe_ground(point:Vector2)->bool:
-	if point.x<100 or point.x>2300 or point.y<100 or point.y>1250:return false
+	if not VillageBounds.WORLD_RECT.grow(-100).has_point(point):return false
 	# Northern wildlife must remain below the title/resources and above the river.
 	if not VillageLayout.ground_ok(point):return false
 	if Geometry2D.is_point_in_polygon(point,PackedVector2Array(DemoWorld.RIVER_POLYGON)):return false

@@ -48,7 +48,7 @@ func camera_bounds()->Rect2:
 	# Center an oversized viewport without reversing clamp endpoints. Physical bounds stay unchanged.
 	var visible_size:=get_viewport_rect().size/camera.zoom
 	var padding:Vector2=(visible_size-WORLD_SIZE).max(Vector2.ZERO)*.5
-	return Rect2(-padding,WORLD_SIZE+padding*2)
+	return Rect2(VillageBounds.WORLD_RECT.position-padding,WORLD_SIZE+padding*2)
 
 func pan_camera(screen_delta:Vector2)->void:
 	cancel_camera_guide()
@@ -101,10 +101,10 @@ func _ready() -> void:
 	camera.name = "Camera2D"
 	camera.zoom = Vector2(0.5,0.5)
 	camera.position = Vector2(0,-120)
-	camera.limit_left = 0
-	camera.limit_top = 0
-	camera.limit_right = int(WORLD_SIZE.x)
-	camera.limit_bottom = int(WORLD_SIZE.y)
+	camera.limit_left = int(VillageBounds.WORLD_RECT.position.x)
+	camera.limit_top = int(VillageBounds.WORLD_RECT.position.y)
+	camera.limit_right = int(VillageBounds.WORLD_RECT.end.x)
+	camera.limit_bottom = int(VillageBounds.WORLD_RECT.end.y)
 	camera.position_smoothing_enabled = true
 	camera.position_smoothing_speed = 9.0
 	camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
@@ -195,8 +195,8 @@ func _physics_process(delta: float) -> void:
 	velocity = movement*float(DemoConfig.get_data().move_speed)
 	var before := position
 	move_and_slide()
-	position.x = clampf(position.x,40,2360)
-	position.y = clampf(position.y,40,1310)
+	var safe_bounds:=VillageBounds.WORLD_RECT.grow(-24)
+	position=position.clamp(safe_bounds.position,safe_bounds.end)
 	var travelled := position.distance_to(before)
 	if manual_camera:camera.position=camera_center-global_position
 	if movement.length() > 0.1: face_target(position+movement)

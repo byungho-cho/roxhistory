@@ -26,7 +26,7 @@ func start(kind:String,id:String,destination:Vector2,retry:int=0,blocked:Array[V
 			if not quiet:app.toast("이곳으로 이동할 수 없어요")
 			return false
 	var cells:=VillageBounds.navigation_cells()
-	var grid:=AStarGrid2D.new();grid.region=Rect2i(Vector2i.ZERO,cells);grid.cell_size=Vector2.ONE*VillageBounds.NAV_CELL;grid.offset=grid.cell_size*.5;grid.diagonal_mode=AStarGrid2D.DIAGONAL_MODE_ONLY_IF_NO_OBSTACLES;grid.update()
+	var grid:=AStarGrid2D.new();grid.region=Rect2i(Vector2i.ZERO,cells);grid.cell_size=Vector2.ONE*VillageBounds.NAV_CELL;grid.offset=VillageBounds.WORLD_RECT.position+grid.cell_size*.5;grid.diagonal_mode=AStarGrid2D.DIAGONAL_MODE_ONLY_IF_NO_OBSTACLES;grid.update()
 	for y in cells.y:
 		for x in cells.x:
 			var point:=grid.get_point_position(Vector2i(x,y))
@@ -34,8 +34,9 @@ func start(kind:String,id:String,destination:Vector2,retry:int=0,blocked:Array[V
 			grid.set_point_solid(Vector2i(x,y),not VillageLayout.ground_ok(point) or player.test_move(transform,Vector2.ZERO,null,.08,true))
 	for cell in blocked:
 		if grid.is_in_boundsv(cell):grid.set_point_solid(cell,true)
-	var from:=Vector2i((player.position-grid.offset)/VillageBounds.NAV_CELL)
-	var to:=Vector2i((destination-grid.offset)/VillageBounds.NAV_CELL)
+	var from:=Vector2i(((player.position-VillageBounds.WORLD_RECT.position)/VillageBounds.NAV_CELL).floor())
+	var to:=Vector2i(((destination-VillageBounds.WORLD_RECT.position)/VillageBounds.NAV_CELL).floor())
+	if not grid.is_in_boundsv(from):return false
 	grid.set_point_solid(from,false)
 	# Exact contact point may fall in an occupied cell; choose a nearby free endpoint.
 	var best:=Vector2i(-1,-1);var distance:=INF
@@ -78,7 +79,7 @@ func _physics_process(delta:float) -> void:
 		# Retry a bounded number of times, excluding the blocked waypoint this request.
 		if retry_count<2 and path.size()>1:
 			var kind:=action;var id:=target;var destination:=path[-1]
-			var blocked:=blocked_cells.duplicate();blocked.append(Vector2i((path[0]-Vector2.ONE*VillageBounds.NAV_CELL*.5)/VillageBounds.NAV_CELL))
+			var blocked:=blocked_cells.duplicate();blocked.append(Vector2i(((path[0]-VillageBounds.WORLD_RECT.position)/VillageBounds.NAV_CELL).floor()))
 			if not start(kind,id,destination,retry_count+1,blocked):
 				cancel();app.toast("이동이 막혔어요. 다른 위치를 선택해 주세요")
 		else:

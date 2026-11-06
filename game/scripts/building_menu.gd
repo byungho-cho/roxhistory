@@ -9,6 +9,7 @@ var close_button:DemoButton
 var saved_camera_offset:=Vector2.ZERO
 var framing_active:=false
 static var textures:Dictionary={}
+const ANCHOR_Y:=-42.0 # Previous +8 shifted up by 50 logical UI pixels.
 const ROOT:="res://assets/ui/building-menu-v001/"
 func _init(owner_app:Node)->void:app=owner_app
 static func art(file:String)->Texture2D:
@@ -108,15 +109,15 @@ func refresh()->void:
 	var top:float=app.safe.y+100
 	var left:float=maxf(app.safe.x+size.x*.5,app.safe.x+bounds.size.x*.5)
 	var right:float=minf(app.w-app.safe.x-size.x*.5,app.w-app.safe.x-bounds.size.x*.5-52)
-	var desired:=Vector2(clampf(anchor.x,left,maxf(left,right)),clampf(anchor.y,top,maxf(top,bottom-size.y-8)))
+	var desired:=Vector2(clampf(anchor.x,left,maxf(left,right)),clampf(anchor.y,top,maxf(top,bottom-size.y-ANCHOR_Y)))
 	var shift:=desired-anchor
 	if framing_active and shift.length()>.5:
 		app.world.player.camera.offset-=shift/app.world.player.camera.zoom
 		app.world.player.camera.force_update_scroll()
 		bounds=sprite.get_global_transform_with_canvas()*sprite.get_rect()
 		anchor=Vector2(bounds.get_center().x,bounds.end.y)
-	position=anchor+Vector2(-size.x*.5,8)
-	close_button.global_position=Vector2(bounds.end.x+4,bounds.end.y-48)
+	position=anchor+Vector2(-size.x*.5,ANCHOR_Y)
+	close_button.global_position=Vector2(bounds.end.x+4,bounds.end.y-98)
 
 func _process(_delta:float)->void:
 	if not visible:return
