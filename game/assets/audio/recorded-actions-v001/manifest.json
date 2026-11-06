@@ -1,0 +1,60 @@
+{
+  "source_commit": "49cab4efd212d6ddceec541d70d7e380e219b8a1",
+  "sample_rate": 48000,
+  "channels": 1,
+  "bits": 16,
+  "actions": {
+    "wood": {
+      "source_file": "Wood_01_Recorded_Axe_5s.wav",
+      "source_sha256": "d6b9388cea1fd2b0b781c5d78b22cebf3142ca9ecd3703787112fba70b8f48d8",
+      "frame_start": 9120,
+      "frame_end_exclusive": 36000,
+      "seconds": [
+        0.19,
+        0.75
+      ],
+      "file": "wood-hit.wav",
+      "sha256": "f664fe73dbd9e2b40b02dfa7a72a2dabcb3fdcff73175700e844e7e3bb785973",
+      "processing": "Exact PCM interval; no synthesis, pitch, gain or sample modification"
+    },
+    "stone": {
+      "source_file": "Stone_01_Recorded_Short_Chip_5s.wav",
+      "source_sha256": "af1e6df2099a5b9ad782065a8b83980ddce8e336a4015da20155759a74d020bc",
+      "frame_start": 8640,
+      "frame_end_exclusive": 40800,
+      "seconds": [
+        0.18,
+        0.85
+      ],
+      "file": "stone-hit.wav",
+      "sha256": "d7bedd6fc59309f68847b6879a5284cc1b855823ccb502767d316c73beed3c97",
+      "processing": "Exact PCM interval; no synthesis, pitch, gain or sample modification"
+    },
+    "build": {
+      "source_file": "Build_02_Recorded_Wood_Mallet_5s.wav",
+      "source_sha256": "6acd82ddd5592537a1a8feb1d2c4f28d997839c5133c436163c36d46f448a0ff",
+      "frame_start": 7680,
+      "frame_end_exclusive": 37440,
+      "seconds": [
+        0.16,
+        0.78
+      ],
+      "file": "build-hit.wav",
+      "sha256": "d8446e4a33d288173ff24dad6f9bbd96ae4c35f92ade3a00df645b12517c9ecd",
+      "processing": "Exact PCM interval; no synthesis, pitch, gain or sample modification"
+    },
+    "demolish": {
+      "source_file": "Build_01_Recorded_Hammer_5s.wav",
+      "source_sha256": "c0d47648c7530c299b46822595162fbf01cd2892f45684044ba3d5471ab0e0a1",
+      "frame_start": 9120,
+      "frame_end_exclusive": 26400,
+      "seconds": [
+        0.19,
+        0.55
+      ],
+      "file": "demolish-hit.wav",
+      "sha256": "dd408ce84736bb53dea3829a9f504a664f62bbec29f70aa4d233be25f9b9407a",
+      "processing": "Exact PCM interval; no synthesis, pitch, gain or sample modification"
+    }
+  }
+}

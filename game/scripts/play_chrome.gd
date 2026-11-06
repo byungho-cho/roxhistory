@@ -15,7 +15,7 @@ var resource_counts:Dictionary={}
 var last_map_position := Vector2.INF
 var minimap:LiveMinimap
 # Optional future marker artwork; keep its placement independent of map projection.
-var location_marker_texture:Texture2D
+var location_marker_texture:Texture2D=preload("res://assets/ui/minimap-player-figma-v001.svg")
 func _init(owner_app: Node) -> void: app=owner_app
 func _ready() -> void:
 	sync_resource_counts(true)
@@ -119,7 +119,7 @@ func _draw() -> void:
 	var normalized:=Vector2.ZERO
 	if is_instance_valid(minimap):normalized=minimap.normalized_point(Vector2.ZERO if app.world_map_open else app.world.player.position)
 	var dot:=center+(normalized*96).limit_length(45)
-	draw_location_marker(dot)
+	draw_location_marker(dot, (dot-center).angle()-PI*.5 if dot.distance_to(center)>34 else 0.0)
 	draw_string(font,center+Vector2(-5,-33),"N",HORIZONTAL_ALIGNMENT_LEFT,20,12,Color("fff2cf"))
 	draw_set_transform(Vector2.ZERO)
 	for f in flights:
@@ -137,8 +137,8 @@ func _draw() -> void:
 func energy_fill()->StyleBoxFlat:
 	var skin:=StyleBoxFlat.new();skin.bg_color=Color("8ac644");skin.set_corner_radius_all(3);return skin
 
-func draw_location_marker(at:Vector2)->void:
-	if location_marker_texture:
-		draw_texture_rect(location_marker_texture,Rect2(at+Vector2(-3.6,-8.5),Vector2(7.2,6)),false)
-	else:
-		draw_colored_polygon(PackedVector2Array([at+Vector2(-3.6,-8.5),at+Vector2(3.6,-8.5),at+Vector2(0,-2.5)]),Color("e53935"))
+func draw_location_marker(at:Vector2,angle:float=0.0)->void:
+	# Twice the former 7.2 x 6 size. Tip stays exactly on projected player position.
+	draw_set_transform(at,angle)
+	draw_texture_rect(location_marker_texture,Rect2(Vector2(-7.2,-12),Vector2(14.4,12)),false)
+	draw_set_transform(Vector2.ZERO)

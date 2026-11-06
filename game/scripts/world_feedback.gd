@@ -8,6 +8,8 @@ var activity := ""
 var target := ""
 var elapsed := 0.0
 var next_hit := HeroMotion.CONTACT
+var build_sound_count:=0
+var next_build_sound:=0.0
 var particles: Array[Dictionary] = []
 var notices: Array[Dictionary] = []
 var events: Array[String] = []
@@ -45,6 +47,7 @@ func remember(event: String) -> void:
 func begin(kind: String, id := "") -> void:
 	cancel()
 	activity = kind; target = id; elapsed = 0; next_hit = HeroMotion.CONTACT
+	build_sound_count=0;next_build_sound=0
 	world.player.hybrid.work_kind = ("wood" if id.begins_with("wood") else "stone") if kind == "gather" else "build"
 	world.player.external_work_clock = true
 	preview_progress = 0
@@ -87,7 +90,11 @@ func update_work(seconds: float, total: float) -> void:
 			burst(world.site.position+Vector2(0,-35),Color(.76,.65,.46,.28),12,.65,"dust")
 			burst(world.site.position+Vector2(0,-70),Color(1,.8,.34,.7),8,.6)
 		remember("impact:"+activity)
-		sound_cue.emit(("wood" if target.begins_with("wood") else "stone") if activity == "gather" else "build")
+		if activity=="gather":sound_cue.emit("wood" if target.begins_with("wood") else "stone")
+		elif next_hit>=next_build_sound:
+			sound_cue.emit("build");build_sound_count+=1
+			# Trial cadence: two early phrases, then one phrase every six seconds.
+			next_build_sound=next_hit+(1.0 if build_sound_count==1 else 6.0)
 		next_hit += HeroMotion.CYCLE
 	queue_redraw()
 

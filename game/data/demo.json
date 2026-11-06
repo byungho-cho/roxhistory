@@ -91,6 +91,106 @@
       ],
       "charges": 5,
       "size": "large"
+    },
+    {
+      "id": "wood_edge_1",
+      "kind": "wood",
+      "position": [
+        530,
+        320
+      ],
+      "charges": 3,
+      "size": "medium"
+    },
+    {
+      "id": "wood_edge_2",
+      "kind": "wood",
+      "position": [
+        1100,
+        380
+      ],
+      "charges": 3,
+      "size": "medium"
+    },
+    {
+      "id": "wood_edge_3",
+      "kind": "wood",
+      "position": [
+        1690,
+        320
+      ],
+      "charges": 3,
+      "size": "medium"
+    },
+    {
+      "id": "wood_edge_4",
+      "kind": "wood",
+      "position": [
+        2110,
+        520
+      ],
+      "charges": 3,
+      "size": "medium"
+    },
+    {
+      "id": "wood_edge_5",
+      "kind": "wood",
+      "position": [
+        390,
+        1000
+      ],
+      "charges": 3,
+      "size": "medium"
+    },
+    {
+      "id": "stone_edge_1",
+      "kind": "stone",
+      "position": [
+        790,
+        390
+      ],
+      "charges": 3,
+      "size": "small"
+    },
+    {
+      "id": "stone_edge_2",
+      "kind": "stone",
+      "position": [
+        1430,
+        300
+      ],
+      "charges": 3,
+      "size": "small"
+    },
+    {
+      "id": "stone_edge_3",
+      "kind": "stone",
+      "position": [
+        2060,
+        850
+      ],
+      "charges": 3,
+      "size": "small"
+    },
+    {
+      "id": "stone_edge_4",
+      "kind": "stone",
+      "position": [
+        340,
+        670
+      ],
+      "charges": 3,
+      "size": "small"
+    },
+    {
+      "id": "stone_edge_5",
+      "kind": "stone",
+      "position": [
+        1930,
+        1050
+      ],
+      "charges": 3,
+      "size": "small"
     }
   ],
   "history": {

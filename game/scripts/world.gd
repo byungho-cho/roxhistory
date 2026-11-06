@@ -109,6 +109,7 @@ func _ready() -> void:
 		homes.append(hut)
 	home=homes[0]
 	player = DemoPlayer.new()
+	var edge_clouds:=VillageEdgeClouds.new();edge_clouds.player=player;add_child(edge_clouds)
 	player.position = DemoConfig.point(model.state.position)
 	add_child(player)
 	# Wildlife stays outside the settlement and clear of the demo resource/build routes.

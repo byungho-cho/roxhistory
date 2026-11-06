@@ -866,7 +866,7 @@ func confirm_demolition(key:String)->void:
 		for i in 16:
 			var angle:=TAU*i/16.0
 			world.feedback.particles.append({"p":at+Vector2(cos(angle)*105,sin(angle)*22-24),"v":Vector2(cos(angle)*28,-22-absf(sin(angle))*18),"age":0.0,"life":.85,"color":Color(.72,.61,.43,.34),"size":12.0+i%4*3,"material":"dust","spin":0.0})
-		world.feedback.sound_cue.emit("build")
+		world.feedback.sound_cue.emit("demolish")
 		toast("나무 %d개 · 돌 %d개 반환"%[quote.wood,quote.stone],2)
 	else:ghost.free()
 

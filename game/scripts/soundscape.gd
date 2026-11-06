@@ -8,6 +8,7 @@ var in_region := false
 var menu_music := false
 var ducked := false
 var voices: Array[AudioStreamPlayer] = []
+var recorded_work:AudioStreamPlayer
 var river: AudioStreamPlayer
 var wind: AudioStreamPlayer
 var bgm: AudioStreamPlayer
@@ -28,6 +29,9 @@ func _ready() -> void:
 	nature_random.randomize()
 	for key in ["ui","select","bird","a303_bgm","play_bgm","wood_0","wood_1","stone_0","stone_1","build_0","build_1","gain","complete","reward","river","wind"]:
 		streams[key] = load("res://assets/audio/"+key+".wav")
+	for key in ["wood","stone","build","demolish"]:
+		streams["recorded_"+key]=load("res://assets/audio/recorded-actions-v001/"+key+"-hit.wav")
+	recorded_work=AudioStreamPlayer.new();recorded_work.name="RecordedActionVoice";recorded_work.bus="Master";add_child(recorded_work)
 	for i in 6:
 		var voice := AudioStreamPlayer.new()
 		voice.bus = "Master"
@@ -62,6 +66,7 @@ func configure(sound: bool, foreground: bool, playing: bool, popup: bool, region
 	var was_audible := enabled and active
 	enabled = sound; active = foreground; in_world = playing; ducked = popup; in_region = region
 	menu_music = region or title
+	if popup or not playing:stop_work()
 	if not was_region and in_region: bird_wait = nature_random.randf_range(9,14)
 	if enabled and active and not was_audible: last_interface_ms = -1000
 	if not enabled or not active:
@@ -105,9 +110,11 @@ func trace_status(reason: String) -> void:
 	print("A303_AUDIO_STATE "+JSON.stringify({"reason":reason,"enabled":enabled,"active":active,"region":in_region,"bgm":bgm.playing,"paused":bgm.stream_paused,"position":bgm.get_playback_position(),"music_db":bgm.volume_db,"water":river.playing,"wind":wind.playing,"events":events,"ticks_ms":Time.get_ticks_msec()}))
 
 func stop_effects() -> void:
+	if recorded_work:recorded_work.stop()
 	for voice in voices: voice.stop()
 
 func stop_work() -> void:
+	if recorded_work:recorded_work.stop()
 	for voice in voices:
 		if voice.get_meta("work",false): voice.stop()
 
@@ -116,6 +123,14 @@ func interface_time_ms() -> int:
 
 func cue(key: String) -> void:
 	if not enabled or not active: return
+	if key in ["wood","stone","build","demolish"]:
+		if not in_world or ducked:return
+		# One work voice: never stack the five-second listening arrangements.
+		recorded_work.stop();recorded_work.stream=streams["recorded_"+key]
+		recorded_work.volume_db=-8;recorded_work.pitch_scale=1.0;recorded_work.play()
+		events.append("recorded_"+key)
+		if events.size()>96:events.pop_front()
+		return
 	if key in ["ui","select"]:
 		var now := interface_time_ms()
 		if now-last_interface_ms < INTERFACE_GAP_MS: return

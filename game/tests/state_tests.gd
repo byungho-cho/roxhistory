@@ -43,9 +43,9 @@ func run_tests() -> void:
 		check(model.state[n.kind] == before,"No duplicate resource credit")
 	check(model.can_build(),"All resources meet build cost")
 	check(model.build(),"Construction succeeds")
-	check(model.state.wood == 130 and model.state.stone == 80,"Construction deducts exact cost from excess inventory")
+	check(model.state.wood == 280 and model.state.stone == 230,"Construction deducts exact cost from excess inventory")
 	check(model.build() and model.build(),"Two additional homes can be built")
-	check(model.built_count()==3 and model.state.wood==90 and model.state.stone==40,"Three homes deduct exactly three material pairs")
+	check(model.built_count()==3 and model.state.wood==240 and model.state.stone==190,"Three homes deduct exactly three material pairs")
 	for i in range(3,DemoConfig.MAX_RESIDENT_HOMES):check(model.build(),"Expansion within new capacity")
 	for i in 30:
 		check(not model.build(),"Repeated construction rejected")
