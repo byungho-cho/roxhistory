@@ -10,7 +10,7 @@ const HEIGHT := 142.0
 const STRIDE := 104.0
 const MIN_ZOOM := 0.56 # Previous 0.8 minimum reduced by another 30%.
 const MAX_ZOOM := 1.6 # Maximum unchanged during the additional zoom-out review.
-const WORLD_SIZE := Vector2(2400,1350)
+const WORLD_SIZE := VillageBounds.WORLD_SIZE
 var direction := Vector2.ZERO
 var phase := 0.0
 var walk_weight := 0.0
@@ -103,8 +103,8 @@ func _ready() -> void:
 	camera.position = Vector2(0,-120)
 	camera.limit_left = 0
 	camera.limit_top = 0
-	camera.limit_right = 2400
-	camera.limit_bottom = 1350
+	camera.limit_right = int(WORLD_SIZE.x)
+	camera.limit_bottom = int(WORLD_SIZE.y)
 	camera.position_smoothing_enabled = true
 	camera.position_smoothing_speed = 9.0
 	camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
@@ -141,7 +141,8 @@ func _process(_delta: float) -> void:
 
 func fit_camera() -> void:
 	var viewport_size := get_viewport().get_visible_rect().size
-	var fit := maxf(viewport_size.x/2400.0,viewport_size.y/1350.0)
+	var reference:=VillageBounds.OVERVIEW_REFERENCE_SIZE
+	var fit := maxf(viewport_size.x/reference.x,viewport_size.y/reference.y)
 	camera.zoom = Vector2.ONE*fit*zoom_factor
 	var bounds:=camera_bounds()
 	camera.limit_left=roundi(bounds.position.x);camera.limit_top=roundi(bounds.position.y)

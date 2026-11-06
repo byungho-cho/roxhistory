@@ -6,7 +6,7 @@ const AXIS_X := Vector2(32,16)
 const AXIS_Y := Vector2(-32,16)
 const CHIEF := Vector2(-5,-4)
 const PLOTS := [Vector2(2,-4),Vector2(-5,3),Vector2(2,3),Vector2(9,3),Vector2(2,10),Vector2(9,10)]
-const PLAYABLE := [Vector2(440,180),Vector2(1790,180),Vector2(2250,370),Vector2(2250,1080),Vector2(1840,1210),Vector2(440,1210),Vector2(160,1000),Vector2(160,400)]
+const PLAYABLE := VillageBounds.PLAYABLE
 var model:GameState
 static func project(cell:Vector2)->Vector2:return ORIGIN+AXIS_X*cell.x+AXIS_Y*cell.y
 static func anchor(cell:Vector2)->Vector2:return project(cell)+Vector2(0,24)

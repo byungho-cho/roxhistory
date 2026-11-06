@@ -22,7 +22,7 @@ func valid(s: Variant) -> bool:
 		if not (n is int or n is float) or not is_finite(float(n)):
 			return false
 	var p := DemoConfig.point(s.position)
-	if p.x < 20 or p.x > 2380 or p.y < 20 or p.y > 1330:
+	if not VillageBounds.valid_saved_position(p):
 		return false
 	for k in ["wood","stone","tokens"]:
 		if not (s[k] is int or s[k] is float) or s[k] < 0 or s[k] != int(s[k]) or s[k] > 10000:
@@ -124,7 +124,7 @@ func valid(s: Variant) -> bool:
 				if not value is Array or value.size()!=2:return false
 				for coordinate in value:
 					if not (coordinate is int or coordinate is float) or not is_finite(coordinate):return false
-				if not Rect2(100,100,2200,1150).has_point(DemoConfig.point(value)):return false
+				if not VillageBounds.RESOURCE_RELOCATION_RECT.has_point(DemoConfig.point(value)):return false
 			else:
 				if not (value is int or value is float) or not is_finite(value) or value<0:return false
 	return true
