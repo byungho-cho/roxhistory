@@ -1,0 +1,60 @@
+{
+  "status": "review",
+  "runtime_applied": false,
+  "files": [
+    {
+      "sample_rate_hz": 48000,
+      "channels": 1,
+      "frames": 112800,
+      "duration_seconds": 2.35,
+      "file": "Build_01_Wooden_Mallet.wav",
+      "sha256": "7a2349b4c3165e5f18d0e48b48b27fb8706a725fd2eff6b5113795dc42654f9e",
+      "bytes": 225644
+    },
+    {
+      "sample_rate_hz": 48000,
+      "channels": 1,
+      "frames": 112800,
+      "duration_seconds": 2.35,
+      "file": "Build_02_Stone_And_Timber.wav",
+      "sha256": "4295084f3ec7f8558c7084b393924b570169692ea5b77e05fd57a5028ec716cb",
+      "bytes": 225644
+    },
+    {
+      "sample_rate_hz": 48000,
+      "channels": 1,
+      "frames": 45600,
+      "duration_seconds": 0.95,
+      "file": "Stone_01_Clean_Stonechip.wav",
+      "sha256": "5a74061d6f0dd18ea8a51cfbac88ec732691a223459594ba27b24f2891929ddf",
+      "bytes": 91244
+    },
+    {
+      "sample_rate_hz": 48000,
+      "channels": 1,
+      "frames": 45600,
+      "duration_seconds": 0.95,
+      "file": "Stone_02_Rough_Stonechip.wav",
+      "sha256": "7175d91a356d8837e822b4c770ff2b753abaebac96120cfc8bcea028af3d3208",
+      "bytes": 91244
+    },
+    {
+      "sample_rate_hz": 48000,
+      "channels": 1,
+      "frames": 38400,
+      "duration_seconds": 0.8,
+      "file": "Wood_01_Soft_Woodcut.wav",
+      "sha256": "865dd062d2bf72439de922c58f34819953c4e5a0847adda48ee0a5af577db976",
+      "bytes": 76844
+    },
+    {
+      "sample_rate_hz": 48000,
+      "channels": 1,
+      "frames": 38400,
+      "duration_seconds": 0.8,
+      "file": "Wood_02_Crisp_Woodcut.wav",
+      "sha256": "693a8e709c079d14389e1283b8b7140c796d356a88aac0ca30d44dbe7bada1f2",
+      "bytes": 76844
+    }
+  ]
+}

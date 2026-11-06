@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_date": "2026-11-03",
+  "updated_date": "2026-11-06",
   "default_bgm_by_screen": {
     "A303": "bgm.a303.starlight.v001"
   },
@@ -188,6 +188,114 @@
         "method": "Original additive/modal synthesis",
         "third_party_samples": false
       }
+    },
+    {
+      "sample_rate_hz": 48000,
+      "channels": 1,
+      "frames": 112800,
+      "duration_seconds": 2.35,
+      "file": "Build_01_Wooden_Mallet.wav",
+      "sha256": "7a2349b4c3165e5f18d0e48b48b27fb8706a725fd2eff6b5113795dc42654f9e",
+      "bytes": 225644,
+      "id": "sfx.review.build_01_wooden_mallet.v001",
+      "path": "assets/audio/sfx/review/gather_build/20261106-v001/Build_01_Wooden_Mallet.wav",
+      "status": "review",
+      "listening_approval": false,
+      "runtime_integration": "not_applied",
+      "provenance": {
+        "method": "Original procedural synthesis; no recorded samples"
+      },
+      "format": "WAV PCM16"
+    },
+    {
+      "sample_rate_hz": 48000,
+      "channels": 1,
+      "frames": 112800,
+      "duration_seconds": 2.35,
+      "file": "Build_02_Stone_And_Timber.wav",
+      "sha256": "4295084f3ec7f8558c7084b393924b570169692ea5b77e05fd57a5028ec716cb",
+      "bytes": 225644,
+      "id": "sfx.review.build_02_stone_and_timber.v001",
+      "path": "assets/audio/sfx/review/gather_build/20261106-v001/Build_02_Stone_And_Timber.wav",
+      "status": "review",
+      "listening_approval": false,
+      "runtime_integration": "not_applied",
+      "provenance": {
+        "method": "Original procedural synthesis; no recorded samples"
+      },
+      "format": "WAV PCM16"
+    },
+    {
+      "sample_rate_hz": 48000,
+      "channels": 1,
+      "frames": 45600,
+      "duration_seconds": 0.95,
+      "file": "Stone_01_Clean_Stonechip.wav",
+      "sha256": "5a74061d6f0dd18ea8a51cfbac88ec732691a223459594ba27b24f2891929ddf",
+      "bytes": 91244,
+      "id": "sfx.review.stone_01_clean_stonechip.v001",
+      "path": "assets/audio/sfx/review/gather_build/20261106-v001/Stone_01_Clean_Stonechip.wav",
+      "status": "review",
+      "listening_approval": false,
+      "runtime_integration": "not_applied",
+      "provenance": {
+        "method": "Original procedural synthesis; no recorded samples"
+      },
+      "format": "WAV PCM16"
+    },
+    {
+      "sample_rate_hz": 48000,
+      "channels": 1,
+      "frames": 45600,
+      "duration_seconds": 0.95,
+      "file": "Stone_02_Rough_Stonechip.wav",
+      "sha256": "7175d91a356d8837e822b4c770ff2b753abaebac96120cfc8bcea028af3d3208",
+      "bytes": 91244,
+      "id": "sfx.review.stone_02_rough_stonechip.v001",
+      "path": "assets/audio/sfx/review/gather_build/20261106-v001/Stone_02_Rough_Stonechip.wav",
+      "status": "review",
+      "listening_approval": false,
+      "runtime_integration": "not_applied",
+      "provenance": {
+        "method": "Original procedural synthesis; no recorded samples"
+      },
+      "format": "WAV PCM16"
+    },
+    {
+      "sample_rate_hz": 48000,
+      "channels": 1,
+      "frames": 38400,
+      "duration_seconds": 0.8,
+      "file": "Wood_01_Soft_Woodcut.wav",
+      "sha256": "865dd062d2bf72439de922c58f34819953c4e5a0847adda48ee0a5af577db976",
+      "bytes": 76844,
+      "id": "sfx.review.wood_01_soft_woodcut.v001",
+      "path": "assets/audio/sfx/review/gather_build/20261106-v001/Wood_01_Soft_Woodcut.wav",
+      "status": "review",
+      "listening_approval": false,
+      "runtime_integration": "not_applied",
+      "provenance": {
+        "method": "Original procedural synthesis; no recorded samples"
+      },
+      "format": "WAV PCM16"
+    },
+    {
+      "sample_rate_hz": 48000,
+      "channels": 1,
+      "frames": 38400,
+      "duration_seconds": 0.8,
+      "file": "Wood_02_Crisp_Woodcut.wav",
+      "sha256": "693a8e709c079d14389e1283b8b7140c796d356a88aac0ca30d44dbe7bada1f2",
+      "bytes": 76844,
+      "id": "sfx.review.wood_02_crisp_woodcut.v001",
+      "path": "assets/audio/sfx/review/gather_build/20261106-v001/Wood_02_Crisp_Woodcut.wav",
+      "status": "review",
+      "listening_approval": false,
+      "runtime_integration": "not_applied",
+      "provenance": {
+        "method": "Original procedural synthesis; no recorded samples"
+      },
+      "format": "WAV PCM16"
     }
   ],
   "integration_plan": {
@@ -319,5 +427,108 @@
     "scene": "play only; A303 unchanged",
     "master_status": "WAV not yet received",
     "date": "2026-11-03"
+  },
+  "runtime_snapshot_20261106": {
+    "source_commit": "2f2fd76bd798b70f010f2bbbd3e90df63054b095",
+    "source_branch": "fix/roxhistory-ui-review-20261105",
+    "files": [
+      {
+        "source_path": "game/assets/audio/a303_bgm.wav",
+        "path": "assets/audio/bgm/approved/a303_starlight/v001/loop.wav",
+        "blob_sha": "f585e44b508a80e50d891ad67cd4a2b079ad14ae",
+        "copied": false
+      },
+      {
+        "source_path": "game/assets/audio/bird.wav",
+        "path": "assets/audio/ambience/implemented/soft_bird/v001/bird.wav",
+        "blob_sha": "c9d3d1853722e98fabf54aeac3dda07bd6078e58",
+        "copied": false
+      },
+      {
+        "source_path": "game/assets/audio/build_0.wav",
+        "path": "assets/audio/sfx/implemented/runtime_snapshot/v001/build_0.wav",
+        "blob_sha": "995da9341a87fb23fcdfc4bc2ada963298f6410d",
+        "copied": true
+      },
+      {
+        "source_path": "game/assets/audio/build_1.wav",
+        "path": "assets/audio/sfx/implemented/runtime_snapshot/v001/build_1.wav",
+        "blob_sha": "3472de141988246dfef5d94a46a1eec644916091",
+        "copied": true
+      },
+      {
+        "source_path": "game/assets/audio/complete.wav",
+        "path": "assets/audio/sfx/implemented/runtime_snapshot/v001/complete.wav",
+        "blob_sha": "3b3acb25a22241e1b24398510473b854dcc49873",
+        "copied": true
+      },
+      {
+        "source_path": "game/assets/audio/gain.wav",
+        "path": "assets/audio/sfx/implemented/runtime_snapshot/v001/gain.wav",
+        "blob_sha": "ee3aa3d07545aa2ff78a844f6f2c70d548ae5e2a",
+        "copied": true
+      },
+      {
+        "source_path": "game/assets/audio/play_bgm.wav",
+        "path": "assets/audio/bgm/implemented/first_embers_runtime/v001/play_bgm.wav",
+        "blob_sha": "00ee0b3a821cbb802cba2d216ebb955ceea0d037",
+        "copied": true
+      },
+      {
+        "source_path": "game/assets/audio/reward.wav",
+        "path": "assets/audio/sfx/implemented/runtime_snapshot/v001/reward.wav",
+        "blob_sha": "cd98a09b71ffc75d1fcc230fba1a9a7063b55542",
+        "copied": true
+      },
+      {
+        "source_path": "game/assets/audio/river.wav",
+        "path": "assets/audio/ambience/implemented/runtime_snapshot/v001/river.wav",
+        "blob_sha": "bef4ff29e161778b05295c6d1ebcbb4ae42ddf8a",
+        "copied": true
+      },
+      {
+        "source_path": "game/assets/audio/select.wav",
+        "path": "assets/audio/sfx/implemented/region_select/v001/select.wav",
+        "blob_sha": "91cc158d306a525f7fb178a0c376adf6d9558421",
+        "copied": false
+      },
+      {
+        "source_path": "game/assets/audio/stone_0.wav",
+        "path": "assets/audio/sfx/implemented/gather_contact/v002/stone_0.wav",
+        "blob_sha": "35958eaa0a44dbe37bdf87a23e8616253179d171",
+        "copied": false
+      },
+      {
+        "source_path": "game/assets/audio/stone_1.wav",
+        "path": "assets/audio/sfx/implemented/gather_contact/v002/stone_1.wav",
+        "blob_sha": "f31e31bdece3813970197a1d08cac2289ac9f87c",
+        "copied": false
+      },
+      {
+        "source_path": "game/assets/audio/ui.wav",
+        "path": "assets/audio/sfx/implemented/ui_soft_tap/v002/ui.wav",
+        "blob_sha": "73a9dfdc178bc270bf15f4ea610ce9e77c118443",
+        "copied": false
+      },
+      {
+        "source_path": "game/assets/audio/wind.wav",
+        "path": "assets/audio/ambience/implemented/runtime_snapshot/v001/wind.wav",
+        "blob_sha": "b5c97d9562b7b4d0a0c71ceb0cdca77200503485",
+        "copied": true
+      },
+      {
+        "source_path": "game/assets/audio/wood_0.wav",
+        "path": "assets/audio/sfx/implemented/gather_contact/v002/wood_0.wav",
+        "blob_sha": "36cd2484ac49983763bbdb88899063c3a9c002be",
+        "copied": false
+      },
+      {
+        "source_path": "game/assets/audio/wood_1.wav",
+        "path": "assets/audio/sfx/implemented/gather_contact/v002/wood_1.wav",
+        "blob_sha": "e48dba4e28adfeab7f72611cf5659092f14f59de",
+        "copied": false
+      }
+    ],
+    "runtime_changed": false
   }
 }
