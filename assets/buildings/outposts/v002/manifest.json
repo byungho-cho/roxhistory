@@ -1,0 +1,57 @@
+{
+  "status": "user_approved_visuals",
+  "method": "AI-assisted background and foundation removal; not pixel-exact extraction",
+  "assets": [
+    {
+      "file": "outpost-level2.png",
+      "size": [
+        1448,
+        1086
+      ],
+      "opaque_bbox": [
+        258,
+        29,
+        1123,
+        935
+      ],
+      "bytes": 1251079,
+      "sha256": "7942ec5fe15c516163d330ee4e544f88d4622f800045458ca69cc9232c68866c"
+    },
+    {
+      "file": "outpost-level3.png",
+      "size": [
+        1448,
+        1086
+      ],
+      "opaque_bbox": [
+        236,
+        71,
+        1150,
+        1021
+      ],
+      "bytes": 1217066,
+      "sha256": "1a1b0706ad26df37683ec7b83016a73207cbd7dfcf0691a05440e2a6bb66d521"
+    },
+    {
+      "file": "outpost-level4.png",
+      "size": [
+        1448,
+        1086
+      ],
+      "opaque_bbox": [
+        199,
+        50,
+        1213,
+        934
+      ],
+      "bytes": 1435133,
+      "sha256": "a4e1965e7287f5469156a1d307d59db79e4451c2482596e6ac06b9c671fe25a0"
+    }
+  ],
+  "integration_notes": [
+    "Building sprite only; use shared foundation as a separate layer.",
+    "Canvas matches v001 level1 (1448x1086), but visible ground-contact anchors differ by level. Do not assume identical image-center placement.",
+    "Preserve original source files. These are AI-assisted transparent edits approved after preview, not pixel-exact cutouts.",
+    "Fit building footprint to existing tile footprint using per-level pivot/scale metadata in game; opaque_bbox is measured at alpha > 128. Roof overhang must not determine collision size."
+  ]
+}
