@@ -46,10 +46,12 @@ func run()->void:
 	app.model=model;app.enter_game()
 	for i in 15:await process_frame
 	app.set_process(false)
-	check(not app.building_workflow.owned_upgrade_reason(outpost_key).is_empty(),"Outpost missing art / maximum is guarded")
+	check(app.building_workflow.owned_upgrade_reason(outpost_key).is_empty(),"Approved outpost stage ready")
+	AssetCatalog.entry("BLD-OUTPOST-L2").approved=false
 	var before_block:Dictionary=model.state.duplicate(true)
 	app.building_workflow.request_owned_upgrade(outpost_key)
 	check(not app.modal and model.state==before_block,"Missing outpost art never charges or starts")
+	AssetCatalog.entry("BLD-OUTPOST-L2").approved=true
 	var ui_key:=model.home_key(2)
 	check(app.building_workflow.owned_upgrade_reason(ui_key).is_empty(),"Resident approved stage ready")
 	app.building_workflow.request_owned_upgrade(ui_key)
@@ -59,7 +61,7 @@ func run()->void:
 	progress._process(.2)
 	check(progress.visible and progress.hammer.texture!=null,"Shared progress and hammer visible")
 	check(progress.upgrade_sprite()==app.world.homes[2].sprite,"Progress follows selected house")
-	check(BuildingWorkflow.approved_texture("BLD-OUTPOST-L2")==null,"No invented outpost artwork")
+	check(BuildingWorkflow.approved_texture("BLD-OUTPOST-L2")!=null,"Approved outpost artwork restored")
 	if "--capture-owned" in OS.get_cmdline_user_args():
 		await RenderingServer.frame_post_draw
 		root.get_texture().get_image().save_png("res://reports/owned-upgrade-working.png")

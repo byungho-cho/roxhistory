@@ -170,3 +170,16 @@ func update_owned_upgrades()->void:
 		var effect_name:="OwnedUpgradeEffects_"+key.replace(":","_")
 		if not app.world.has_node(effect_name):
 			var effect:=UpgradeConstructionEffect.new(app);effect.building_key=key;app.world.add_child(effect)
+
+static func apply_outpost_sprite(image:Sprite2D,level:int)->void:
+	var id:="BLD-OUTPOST-L%d"%level
+	var texture:=approved_texture(id)
+	if texture==null:return
+	image.texture=texture
+	var entry:=AssetCatalog.entry(id)
+	if entry.has("ground_pivot"):
+		image.centered=false
+		image.scale=Vector2.ONE*float(entry.display_ground_width)/float(entry.ground_span)
+		image.position=-Vector2(entry.ground_pivot[0],entry.ground_pivot[1])*image.scale+Vector2(0,3)
+	else:
+		image.centered=true;image.scale=Vector2.ONE*180/texture.get_width();image.position=Vector2(0,-texture.get_height()*image.scale.y*.3+3)

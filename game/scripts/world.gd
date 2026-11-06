@@ -365,11 +365,11 @@ func refresh_outposts()->void:
 		var texture:=BuildingWorkflow.approved_texture("BLD-OUTPOST-L%d"%int(entry.get("level",1)))
 		if has_node(node_name):
 			if texture!=null:
-				var existing:Sprite2D=get_node(node_name).get_child(0);existing.texture=texture;existing.scale=Vector2.ONE*180/texture.get_width();existing.position.y=-texture.get_height()*existing.scale.y*.3+3
+				var existing:Sprite2D=get_node(node_name).get_child(0);BuildingWorkflow.apply_outpost_sprite(existing,int(entry.get("level",1)))
 			continue
 		if texture==null:continue
 		var body:=StaticBody2D.new();body.name=node_name;body.position=DemoConfig.BUILD_SITES[int(entry.site)];body.visibility_layer=2
-		var image:=Sprite2D.new();image.texture=texture;image.scale=Vector2.ONE*180/texture.get_width();image.position.y=-texture.get_height()*image.scale.y*.3+3;image.visibility_layer=2
+		var image:=Sprite2D.new();BuildingWorkflow.apply_outpost_sprite(image,int(entry.get("level",1)));image.visibility_layer=2
 		image.texture_filter=CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 		body.add_child(image)
 		var collision:=CollisionShape2D.new();var shape:=ConvexPolygonShape2D.new();shape.points=EnvironmentProp.hut_footprint(230);collision.shape=shape;body.add_child(collision)

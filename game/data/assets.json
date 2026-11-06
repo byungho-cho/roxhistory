@@ -458,6 +458,72 @@
       "source": "Figma zkbflw9fCdAlWbphhw5pSS / 1092:49 / 1098:38",
       "level_mapping": "L4=ordered natural stone",
       "sha256": "cb18aacdc9d0669738c780d184a7926c8fb6219492f328dd51d5d45af6f3f610"
+    },
+    "BLD-OUTPOST-L2": {
+      "file": "res://assets/outposts-v002/outpost-level2.png",
+      "source_size": [
+        1448,
+        1086
+      ],
+      "crop": [
+        238,
+        9,
+        905,
+        946
+      ],
+      "ground_pivot": [
+        472,
+        791
+      ],
+      "ground_span": 780,
+      "display_ground_width": 180,
+      "approved": true,
+      "source_commit": "b046bf0f491290a42e4a0f67b22b6e336a829d14",
+      "qa": "User approved AI-separated building; structural floor/stairs retained, separate terrain foundation. Source pixels unchanged."
+    },
+    "BLD-OUTPOST-L3": {
+      "file": "res://assets/outposts-v002/outpost-level3.png",
+      "source_size": [
+        1448,
+        1086
+      ],
+      "crop": [
+        216,
+        51,
+        954,
+        990
+      ],
+      "ground_pivot": [
+        504,
+        829
+      ],
+      "ground_span": 790,
+      "display_ground_width": 180,
+      "approved": true,
+      "source_commit": "b046bf0f491290a42e4a0f67b22b6e336a829d14",
+      "qa": "User approved AI-separated building; structural floor/stairs retained, separate terrain foundation. Source pixels unchanged."
+    },
+    "BLD-OUTPOST-L4": {
+      "file": "res://assets/outposts-v002/outpost-level4.png",
+      "source_size": [
+        1448,
+        1086
+      ],
+      "crop": [
+        179,
+        30,
+        1054,
+        924
+      ],
+      "ground_pivot": [
+        531,
+        770
+      ],
+      "ground_span": 830,
+      "display_ground_width": 180,
+      "approved": true,
+      "source_commit": "b046bf0f491290a42e4a0f67b22b6e336a829d14",
+      "qa": "User approved AI-separated building; structural floor/stairs retained, separate terrain foundation. Source pixels unchanged."
     }
   }
 }
