@@ -9,8 +9,9 @@ var store: SaveStore
 var busy := false
 const RESPAWN_MIN_SECONDS := 300.0
 const RESPAWN_MAX_SECONDS := 600.0
-# Runtime-only developer option, never persisted.
-var debug_unlimited_builders := false
+# Runtime-only test-period default: builder count is shown, concurrency is unlimited.
+# Turning this off enforces the planned single-builder rule; never persisted.
+var debug_unlimited_builders := true
 var construction_busy := false
 const OUTPOST_WOOD_COST := 15
 const OUTPOST_STONE_COST := 10
@@ -195,7 +196,7 @@ func start_new() -> bool:
 	prepare_resource_positions(next)
 	var ok:=commit(next,true)
 	if ok:
-		debug_unlimited_builders=false
+		debug_unlimited_builders=true
 		construction_busy=false
 		busy=false
 	return ok

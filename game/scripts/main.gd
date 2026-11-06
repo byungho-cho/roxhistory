@@ -933,7 +933,7 @@ func pause_game() -> void:
 
 func show_development_settings()->void:
 	var enabled:bool=model.debug_unlimited_builders
-	show_modal("개발용 건설자 설정","기본 건설자는 1명입니다.\n본부와 주민 움집의 동시 업그레이드를 제한합니다.\n\n무제한 테스트: %s\n이 설정은 저장되지 않으며 다시 실행하면 꺼집니다."%("켜짐" if enabled else "꺼짐"),[
+	show_modal("개발용 건설자 설정","기획상 건설자는 1명입니다.\n테스트 기간에는 명수 제한 없이 건설·업그레이드할 수 있어요.\n무제한을 끄면 실제 1명 제한을 적용합니다.\n\n무제한 테스트: %s\n이 설정은 저장되지 않으며 다시 실행하면 켜집니다."%("켜짐" if enabled else "꺼짐"),[
 		{"text":"무제한 끄기" if enabled else "무제한 켜기","action":func():model.debug_unlimited_builders=not enabled;show_development_settings()},
 		{"text":"돌아가기","action":pause_game}],true,true)
 

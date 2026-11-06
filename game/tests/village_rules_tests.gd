@@ -11,7 +11,12 @@ func run()->void:
 	var store:=SaveStore.new(folder)
 	var model:=GameState.new(store)
 	check(model.start_new(),"Start isolated new save")
-	check(not model.debug_unlimited_builders and model.builder_available(),"One builder default")
+	check(model.debug_unlimited_builders and model.builder_available(),"Test-period unlimited builders default on")
+	model.construction_busy=true
+	check(model.can_upgrade_chief(),"Default unlimited allows upgrade during construction")
+	model.debug_unlimited_builders=false
+	check(not model.can_upgrade_chief(),"Turning unlimited off enforces one builder")
+	model.construction_busy=false
 	check(model.home_limit()==1 and model.nodes().size()==5,"HQ1 limits")
 	check(model.build(Vector2.ZERO,0),"First home")
 	check(not model.can_build(),"HQ1 second home locked")
@@ -65,11 +70,13 @@ func run()->void:
 	for id in saved_positions:check(DemoConfig.point(again.state.node_positions[id]).is_equal_approx(DemoConfig.point(saved_positions[id])),"Seeded positions stable across load")
 	for n in again.nodes():check(VillageBounds.rect_for_level(1).has_point(DemoConfig.point(n.position)),"Active position inside HQ area")
 	again.construction_busy=true
+	again.debug_unlimited_builders=false
 	check(not again.can_upgrade_chief(),"Runtime construction occupies builder")
 	again.debug_unlimited_builders=true
 	check(again.can_upgrade_chief(),"Explicit debug unlimited bypass")
-	check(not GameState.new(store).debug_unlimited_builders,"Debug not persisted")
-	check(again.start_new() and not again.debug_unlimited_builders and not again.construction_busy and not again.busy,"New campaign resets runtime builder options")
+	again.debug_unlimited_builders=false
+	check(GameState.new(store).debug_unlimited_builders,"Reload restores test-period unlimited default")
+	check(again.start_new() and again.debug_unlimited_builders and not again.construction_busy and not again.busy,"New campaign resets runtime builder options")
 	# Clean only the unique test folder we created, not any user's save.
 	for name in DirAccess.get_files_at(folder):DirAccess.remove_absolute(folder.path_join(name))
 	DirAccess.remove_absolute(folder)

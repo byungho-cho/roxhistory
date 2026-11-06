@@ -1,5 +1,5 @@
 {
-  "date_utc": "2026-11-06T13:33:21.472471+00:00",
+  "date_utc": "2026-11-06T13:41:16.615140+00:00",
   "base_commit": "e6e24bfb8ee0b68ef9b6f57a13d9852b0ddeaae0",
   "branch": "dev/village-systems-20261106",
   "version": "0.1.50",
@@ -34,9 +34,9 @@
           "resident-0": 1,
           "resident-1": 1
         },
-        "elapsed_wall_ms": 1428.669,
+        "elapsed_wall_ms": 1378.91,
         "failed": [],
-        "max_frame_interval_ms": 74.706,
+        "max_frame_interval_ms": 79.849,
         "physics_ticks": 925,
         "scope": "Native headless Godot PC; original player/wildlife/resident physics left enabled. No Android performance claim.",
         "seed": 61106,
@@ -75,9 +75,9 @@
           "resident-0": 1,
           "resident-1": 1
         },
-        "elapsed_wall_ms": 890.604,
+        "elapsed_wall_ms": 1244.347,
         "failed": [],
-        "max_frame_interval_ms": 62.907,
+        "max_frame_interval_ms": 128.535,
         "physics_ticks": 615,
         "scope": "Native headless Godot PC; original player/wildlife/resident physics left enabled. No Android performance claim.",
         "seed": 61107,
@@ -116,9 +116,9 @@
           "resident-0": 1,
           "resident-1": 1
         },
-        "elapsed_wall_ms": 1469.958,
+        "elapsed_wall_ms": 1245.843,
         "failed": [],
-        "max_frame_interval_ms": 70.952,
+        "max_frame_interval_ms": 70.966,
         "physics_ticks": 1019,
         "scope": "Native headless Godot PC; original player/wildlife/resident physics left enabled. No Android performance claim.",
         "seed": 61108,
@@ -225,7 +225,7 @@
         "checks": 448,
         "engine": "4.5.1-stable (official)",
         "failed": [],
-        "utc": "2026-11-06T13:31:59"
+        "utc": "2026-11-06T13:40:06"
       }
     },
     {
@@ -242,10 +242,10 @@
     {
       "name": "village_integration_tests",
       "result": "pass",
-      "reported_checks": 68,
+      "reported_checks": 71,
       "failure_count": 0,
       "details": {
-        "checks": 68,
+        "checks": 71,
         "environment": "Godot4.5.1 headless; geometry/input/state only; pixels and Android unverified",
         "failures": []
       }
@@ -253,10 +253,10 @@
     {
       "name": "village_rules_tests",
       "result": "pass",
-      "reported_checks": 77,
+      "reported_checks": 79,
       "failure_count": 0,
       "details": {
-        "checks": 77,
+        "checks": 79,
         "failures": []
       }
     }
@@ -268,8 +268,8 @@
     "game/scripts/build_side_menu.gd": "2d4942a99a22b83e7a6be00ecde3a2e67c102826",
     "game/scripts/building_workflow.gd": "731f4543f534745f3bb51ddb3b8733c637611e5d",
     "game/scripts/demo_config.gd": "2b97fb473df64895c8f4c347384aaca7c314ffb1",
-    "game/scripts/game_state.gd": "a651aeab6f5ef54a2f3d0f1bbfba009707ee5213",
-    "game/scripts/main.gd": "fe87733d839e88853ec896e8ab35873450527447",
+    "game/scripts/game_state.gd": "600cfcab487279435784ef96f22a1f2b948488f4",
+    "game/scripts/main.gd": "2eb87556bc712c872b76badc315ed49460409f11",
     "game/scripts/owned_building_upgrades.gd": "27e606d19427667a1bcedf9557993b2538d53c4e",
     "game/scripts/play_chrome.gd": "357d21ccdc404cd8aded7c8f8bd0a016c5515921",
     "game/scripts/player.gd": "f26e841426ca441974050fa1492b5663d430541c",
@@ -301,9 +301,9 @@
     "game/tests/resident_jobs_tests.gd.uid": "a1fe157a959fc2f2f661245f87726f380be39348",
     "game/tests/state_tests.gd": "77525b2e8279abd1dc95d4d559c3a85e0812d331",
     "game/tests/ui_review_tests.gd": "28af947d3c26d76f1654cc75384600fb695ce91d",
-    "game/tests/village_integration_tests.gd": "6cd51bed75c66287581f053c99efae9ea1abe437",
+    "game/tests/village_integration_tests.gd": "3c6eefd91c46ac10017bd39cb7b3cccae2c3e4df",
     "game/tests/village_integration_tests.gd.uid": "7a7faaf58aeb4d9d73bb01383b1852c05cfa2f78",
-    "game/tests/village_rules_tests.gd": "5a2e59d64ee8c7fd2b9a1e6de4fb9163a8e301a0",
+    "game/tests/village_rules_tests.gd": "b1484376d9eb131a688be33e86544cb37b6568b6",
     "game/tests/village_rules_tests.gd.uid": "1c8cf335b103f2e3a0ff85deb545c0999cc4a857",
     "scripts/check-village.sh": "758c64436d28c8ab2831f06b95301280dba61d27"
   },
@@ -332,5 +332,12 @@
   "rollback_tag": "v0.1.49-review",
   "additional_remote_tag_created": false,
   "apk_built": false,
-  "public_release_created": false
+  "public_release_created": false,
+  "builder_default_correction": {
+    "previous_commit": "181a1c4000807af6017a908da36354eba5f1dafe",
+    "default": "Unlimited builders ON during testing, with planned builder count still1",
+    "settings": "Unlimited OFF enforces one shared builder; ON removes only the headcount gate",
+    "reload_and_new_game": "Return to unlimited ON; runtime toggle not persisted",
+    "validation": "Constructor, successful new-game reset, actual settings buttons, restricted and unrestricted checks; all12suites rerun"
+  }
 }

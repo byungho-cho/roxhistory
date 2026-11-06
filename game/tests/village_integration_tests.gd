@@ -13,11 +13,18 @@ func run()->void:
 	app.start_region();await frames(8)
 	app.set_process(false)
 	check(app.model.chief_level()==1 and app.model.home_limit()==1,"Fresh HQ1 has one home allowance")
-	check(not app.model.debug_unlimited_builders,"Unlimited builder testing starts off")
+	check(app.model.debug_unlimited_builders,"Unlimited builder testing starts on")
 	var before:Dictionary=app.model.state.duplicate(true)
 	app.build_kind="hut";app.world.select_site(0);app.build_action()
 	check(app.task=="build" and app.model.construction_busy,"Construction reserves the single builder")
-	check(not app.building_workflow.upgrade_block_reason(2).is_empty(),"Construction blocks simultaneous HQ upgrade")
+	check(app.building_workflow.upgrade_block_reason(2).is_empty(),"Default test mode allows HQ upgrade while construction uses one builder")
+	app.show_development_settings()
+	var restriction_toggled:=false
+	for b in app.overlay.find_children("*","Button",true,false):
+		if b.text=="무제한 끄기":b.pressed.emit();restriction_toggled=true;break
+	check(restriction_toggled and not app.model.debug_unlimited_builders,"Settings button enables the real one-builder limit")
+	app.close_modal()
+	check(not app.building_workflow.upgrade_block_reason(2).is_empty(),"Enabled restriction blocks simultaneous HQ upgrade")
 	app.cancel_task();check(not app.model.construction_busy,"Cancel releases builder")
 	check(app.model.state==before,"Cancelled construction spends nothing")
 	app.world.select_site(0);app.set_process(true);app.build_action()
@@ -65,8 +72,14 @@ func run()->void:
 		for b in app.overlay.find_children("*","Button",true,false):
 			check(Rect2(Vector2.ZERO,Vector2(app.w,app.h)).encloses(b.get_global_rect()),"Roster job button stays in viewport: "+b.text)
 		app.close_modal()
-	app.model.debug_unlimited_builders=true
-	check(GameState.new(app.model.store).debug_unlimited_builders==false,"Unlimited builder toggle is not saved")
+	app.show_development_settings()
+	var unlimited_toggled:=false
+	for b in app.overlay.find_children("*","Button",true,false):
+		if b.text=="무제한 켜기":b.pressed.emit();unlimited_toggled=true;break
+	check(unlimited_toggled and app.model.debug_unlimited_builders,"Settings button restores unlimited test mode")
+	app.close_modal()
+	app.model.debug_unlimited_builders=false
+	check(GameState.new(app.model.store).debug_unlimited_builders,"Reload returns to unlimited test default")
 	var result:={"checks":checks,"failures":failures,"environment":"Godot4.5.1 headless; geometry/input/state only; pixels and Android unverified"}
 	FileAccess.open("res://reports/village-integration-tests.json",FileAccess.WRITE).store_string(JSON.stringify(result,"  "))
 	print(JSON.stringify(result));app.queue_free();await frames();quit(0 if failures.is_empty() else 1)
