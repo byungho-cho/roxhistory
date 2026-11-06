@@ -1,0 +1,29 @@
+{
+  "source_commit": "6ee87c8ff9dfb1158733dbc56e08b9c8b566f6b0",
+  "files": [
+    {
+      "file": "cloud-a-diagonal-up.png",
+      "width": 1577,
+      "height": 997,
+      "sha256": "2ef73c9ecd4b6ef986d448b1817888903efc55c16c95bfd2f85c1dc15e801850"
+    },
+    {
+      "file": "cloud-b-diagonal-down.png",
+      "width": 1577,
+      "height": 997,
+      "sha256": "80d809a7ff1352e88fb3cbb005bb40b978548a132c49786d37c5fdd88dcaf730"
+    },
+    {
+      "file": "mountain-a-green-peak.png",
+      "width": 1672,
+      "height": 941,
+      "sha256": "923aaa8c619d31fbe6f2cc49691890e9c438aa7c93dcca7c5898efce7d8cdb10"
+    },
+    {
+      "file": "mountain-b-low-ridge.png",
+      "width": 1942,
+      "height": 809,
+      "sha256": "683a0f9312568c365d36b8d4f77edaa87278c8e9957a37364afc043385111206"
+    }
+  ]
+}

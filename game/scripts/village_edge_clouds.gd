@@ -1,13 +1,17 @@
 class_name VillageEdgeClouds
 extends Node2D
 var player:DemoPlayer
+const ROOT:="res://assets/village-edge-v001/"
 func _ready()->void:
 	name="VillageEdgeClouds";z_index=-18;visibility_layer=2
-	var texture=preload("res://assets/terrain-review-v001/fog-cloud.png")
-	# World anchored decoration outside the unchanged playable polygon.
-	for entry in [[Vector2(-850,-450),Vector2(1100,600)], [Vector2(3200,-450),Vector2(1100,600)], [Vector2(-850,1950),Vector2(1100,600)], [Vector2(3200,1950),Vector2(1100,600)]]:
-		var cloud:=Sprite2D.new();cloud.texture=texture;cloud.position=entry[0];cloud.scale=entry[1]/texture.get_size();add_child(cloud)
+	# Anchored to world corners; full PNGs preserved, transparent margins accounted for.
+	for entry in [["cloud-b-diagonal-down.png",Vector2(-950,-540)], ["cloud-a-diagonal-up.png",Vector2(3350,-540)], ["cloud-a-diagonal-up.png",Vector2(-950,1890)], ["cloud-b-diagonal-down.png",Vector2(3350,1890)]]:
+		var cloud:=Sprite2D.new();cloud.texture=load(ROOT+str(entry[0]))
+		var used:Rect2=cloud.texture.get_image().get_used_rect()
+		cloud.centered=false;cloud.offset=-used.get_center()
+		cloud.position=entry[1];cloud.scale=Vector2.ONE*600.0/used.size.x
+		add_child(cloud)
 func _process(_delta:float)->void:
 	if not is_instance_valid(player):return
-	modulate.a=.24*(1.0-smoothstep(.56,1.25,player.zoom_factor))
+	modulate.a=.30*(1.0-smoothstep(.56,1.25,player.zoom_factor))
 	visible=modulate.a>0.001

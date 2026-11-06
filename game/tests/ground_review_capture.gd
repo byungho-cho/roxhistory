@@ -15,10 +15,15 @@ func run()->void:
 			var coverage:Rect2=terrain.get_global_transform()*terrain.get_rect()
 			var view:Rect2=app.world.get_canvas_transform().affine_inverse()*app.world.get_viewport_rect()
 			assert(coverage.encloses(view),"Single image covers viewport")
+			var mountains=app.world.get_node("NorthernMountains")
+			assert(mountains.get_child_count()==2)
+			for mountain in mountains.get_children():
+				var extent:Rect2=mountain.get_global_transform()*mountain.get_rect()
+				assert(extent.end.y<VillageBounds.WORLD_RECT.position.y)
 			var clouds=app.world.get_node("VillageEdgeClouds")
 			assert(clouds.get_child_count()==4)
-			assert(not clouds.visible if factor==DemoPlayer.MAX_ZOOM else clouds.modulate.a<=.241)
+			assert(not clouds.visible if factor==DemoPlayer.MAX_ZOOM else clouds.modulate.a<=.301)
 			await RenderingServer.frame_post_draw
-			root.get_texture().get_image().save_png("res://reports/ground-047-%dx%d-%s.png"%[dimensions.x,dimensions.y,str(factor)])
+			root.get_texture().get_image().save_png("res://reports/ground-049-%dx%d-%s.png"%[dimensions.x,dimensions.y,str(factor)])
 	print("Single background coverage, no tiled surround, four zoom/aspect captures: PASS")
 	app.queue_free();await process_frame;quit()

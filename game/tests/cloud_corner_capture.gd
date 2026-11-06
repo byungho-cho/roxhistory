@@ -11,7 +11,7 @@ func run()->void:
 			app.world.player.zoom_at(Vector2(app.w,app.h)*.5,factor);await frames(10)
 			var clouds=app.world.get_node("VillageEdgeClouds")
 			assert(clouds.get_child_count()==4)
-			assert(not clouds.visible if factor==DemoPlayer.MAX_ZOOM else clouds.modulate.a<=.241)
+			assert(not clouds.visible if factor==DemoPlayer.MAX_ZOOM else clouds.modulate.a<=.301)
 			await RenderingServer.frame_post_draw
 			root.get_texture().get_image().save_png("res://reports/cloud-%dx%d-%s.png"%[dimensions.x,dimensions.y,str(factor)])
 	print("Four corner-cloud captures and maximum zoom exclusion: PASS")

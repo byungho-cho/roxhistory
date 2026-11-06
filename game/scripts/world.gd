@@ -48,6 +48,15 @@ func _ready() -> void:
 	background.z_index = -20
 	add_child(background)
 
+	# Small natural silhouettes entirely outside the expanded movement boundary.
+	var mountains:=Node2D.new();mountains.name="NorthernMountains";mountains.z_index=-19;add_child(mountains)
+	for entry in [["mountain-a-green-peak.png",500.0,260.0],["mountain-b-low-ridge.png",1100.0,330.0]]:
+		var mountain:=Sprite2D.new();mountain.texture=load("res://assets/village-edge-v001/"+str(entry[0]))
+		var used:Rect2=mountain.texture.get_image().get_used_rect()
+		mountain.centered=false;mountain.offset=-Vector2(used.get_center().x,used.end.y)
+		mountain.scale=Vector2.ONE*float(entry[2])/used.size.x;mountain.position=Vector2(float(entry[1]),-420)
+		mountains.add_child(mountain)
+
 	water = Polygon2D.new()
 	water.name = "LivingWater"
 	water.polygon = PackedVector2Array(RIVER_POLYGON)
