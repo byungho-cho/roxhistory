@@ -932,10 +932,12 @@ func pause_game() -> void:
 		{"text":"개발 설정","action":show_development_settings}])
 
 func show_development_settings()->void:
-	var enabled:bool=model.debug_unlimited_builders
-	show_modal("개발용 건설자 설정","기획상 건설자는 1명입니다.\n테스트 기간에는 명수 제한 없이 건설·업그레이드할 수 있어요.\n무제한을 끄면 실제 1명 제한을 적용합니다.\n\n무제한 테스트: %s\n이 설정은 저장되지 않으며 다시 실행하면 켜집니다."%("켜짐" if enabled else "꺼짐"),[
-		{"text":"무제한 끄기" if enabled else "무제한 켜기","action":func():model.debug_unlimited_builders=not enabled;show_development_settings()},
-		{"text":"돌아가기","action":pause_game}],true,true)
+	DevelopmentSettings.open(self)
+
+func confirm_development_reset()->void:
+	show_modal("게임을 초기화할까요?","진행·씨앗·소리 설정을 모두 삭제하고 첫 실행 안내로 돌아갑니다.\n삭제한 데이터는 되돌릴 수 없습니다.",[
+		{"text":"취소","action":show_development_settings},
+		{"text":"완전 초기화","action":full_reset}],false,true)
 
 func show_about() -> void:
 	var c := DemoConfig.get_data()
@@ -947,7 +949,7 @@ func show_about() -> void:
 			else: sync_audio(); show_about()},
 		{"text":"돌아가기","primary":true,"action":close_modal}])
 
-func show_modal(title: String, body: String, actions: Array, compact: bool = false, preserve_work:bool=false, brief:bool=false) -> void:
+func show_modal(title: String, body: String, actions: Array, compact: bool = false, preserve_work:bool=false, brief:bool=false, panel_size:Vector2=Vector2.ZERO) -> ScrollContainer:
 	if is_instance_valid(region_selection):region_selection.cancel_input()
 	if gestures: gestures.clear()
 	if is_instance_valid(joystick): joystick.clear()
@@ -971,6 +973,9 @@ func show_modal(title: String, body: String, actions: Array, compact: bool = fal
 	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	var width := minf(300 if brief else 390 if compact else 680,w-safe.x*2)
 	var height := minf(h-safe.y*2,166 if brief else 290 if compact else 500)
+	if panel_size!=Vector2.ZERO:
+		width=minf(panel_size.x,w-safe.x*2)
+		height=minf(panel_size.y,h-safe.y*2)
 	var at := Vector2(w-safe.x-width,safe.y) if compact and not brief else Vector2((w-width)/2,(h-height)/2)
 	var p := box(overlay,Rect2(at,Vector2(width,height)))
 	var v := column(p,8 if brief else 12)
@@ -979,8 +984,9 @@ func show_modal(title: String, body: String, actions: Array, compact: bool = fal
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	v.add_child(scroll)
-	var text := paragraph(scroll,body,16 if brief else 20)
-	text.custom_minimum_size.x = width-60
+	if not body.is_empty():
+		var text := paragraph(scroll,body,16 if brief else 20)
+		text.custom_minimum_size.x = width-60
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation",12)
 	v.add_child(row)
@@ -994,6 +1000,7 @@ func show_modal(title: String, body: String, actions: Array, compact: bool = fal
 		var skin:=FigmaSlice.new("gold",42);skin.name="FigmaSkin";skin.show_behind_parent=true;b.add_child(skin);skin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		b.add_theme_font_size_override("font_size",17)
+	return scroll
 
 func close_modal() -> void:
 	if is_instance_valid(building_workflow):building_workflow.confirmation_target=-1
