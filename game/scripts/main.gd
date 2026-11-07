@@ -129,12 +129,15 @@ func queue_layout() -> void:
 	call_deferred("relayout")
 
 func relayout() -> void:
+	var guide_text:Array=[]
+	if overlay is CharacterGuide:guide_text=[overlay.heading,overlay.message]
 	if gestures: gestures.clear()
 	rebuilding = false
 	if modal:
 		close_modal()
 	cancel_task()
 	show_screen(screen)
+	if not guide_text.is_empty():show_character_guide(guide_text[0],guide_text[1])
 
 func clear_children(node: Node) -> void:
 	for child in node.get_children():
@@ -1030,6 +1033,16 @@ func show_modal(title: String, body: String, actions: Array, compact: bool = fal
 		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		b.add_theme_font_size_override("font_size",17)
 	return scroll
+
+func show_character_guide(title:String,body:String)->void:
+	# Informational overlay: no save mutation, reward or action cancellation.
+	close_modal()
+	if gestures:gestures.clear()
+	if is_instance_valid(world):
+		world.player.direction=Vector2.ZERO
+		world.player.presentation_paused=true
+	modal=true;toast_time=0
+	overlay=CharacterGuide.new(self,title,body);overlay.z_index=50;ui.add_child(overlay);sync_audio()
 
 func close_modal() -> void:
 	if is_instance_valid(building_workflow):building_workflow.confirmation_target=-1

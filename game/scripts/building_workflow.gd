@@ -14,6 +14,7 @@ var cancellation_confirmation:=""
 var cancellation_overlay:Control
 var owned_overlay:Control
 var owned_retry:=0.0
+var pending_growth_notice:=""
 func _init(owner_app:Node)->void:app=owner_app
 func _ready()->void:
 	app.model.changed.connect(refresh_visual)
@@ -81,7 +82,7 @@ func refresh_visual()->void:
 	var changed:=last_visual_level>=1 and level>last_visual_level
 	if changed:
 		scaffold_fade_left=.35
-		if app.screen=="play":app.toast("촌장집 %d단계 · 마을 경계가 넓어졌어요"%level,5.0)
+		pending_growth_notice="촌장집 %d단계 · 마을 경계가 넓어졌어요"%level
 	last_visual_level=level
 	if not is_instance_valid(scaffold):
 		scaffold=Sprite2D.new();scaffold.name="ChiefUpgradeScaffold";scaffold.visibility_layer=2
@@ -103,6 +104,9 @@ func update_scaffold()->void:
 		var progress:=clampf(1.0-app.model.chief_upgrade_remaining()/maxf(.001,duration),0,1)
 		scaffold.modulate.a=smoothstep(0,.12,progress)
 func _process(delta:float)->void:
+	if not pending_growth_notice.is_empty() and app.screen=="play" and not app.modal and not app.choosing_plot and not app.world_map_open and app.application_active:
+		app.show_character_guide(pending_growth_notice,"넓어진 마을에서 채집하고 새로운 건물을 지어 보세요.")
+		pending_growth_notice=""
 	scaffold_fade_left=maxf(0,scaffold_fade_left-delta);update_scaffold()
 	retry_after=maxf(0,retry_after-delta)
 	if retry_after<=0:

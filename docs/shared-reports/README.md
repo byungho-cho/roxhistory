@@ -1,3 +1,5 @@
+> 2026-11-08 WIP: [비용 HUD·캐릭터 안내 개발 인수인계](2026-11-08-hud-guide-wip/README.md). 사용자 요청으로 중지·임시 저장. 신규 검사 통과, 기존 Windows 회귀 실패 확인 필요. 새 빌드 없음.
+
 > 2026-11-07 v0.1.57: [이동·건물 이동 연출·5초 공사와 APK](2026-11-07-movement-review/README.md). Windows 308개 검사 통과, Android 실기기 미검증.
 
 > 2026-11-07 v0.1.56: [건물 롱프레스·보상·공사 취소·단계별 효과와 APK](2026-11-07-building-effects/README.md). 311개 검사 통과, Android 실기기 미검증.

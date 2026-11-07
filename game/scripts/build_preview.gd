@@ -10,6 +10,7 @@ var age:=0.0
 var ghost:EnvironmentProp
 var controls:HBoxContainer
 var confirm_button:DemoButton
+var move_confirm_button:DemoButton
 var cost_display:BuildCostDisplay
 var placement_active:=false
 var source_sprite:Sprite2D
@@ -28,17 +29,20 @@ func _ready()->void:
 		for state in ["normal","hover","pressed","focus","disabled"]:b.add_theme_stylebox_override(state,StyleBoxEmpty.new())
 		b.pressed.connect(app.confirm_build_preview if entry[2] else app.cancel_build_preview);b.unavailable.connect(app.toast)
 		controls.add_child(b)
-		if entry[2]:confirm_button=b
+		if entry[2]:move_confirm_button=b;confirm_button=b
 	cost_display=BuildCostDisplay.new();app.stage.add_child(cost_display);cost_display.z_index=9;cost_display.hide()
+	cost_display.confirm_button.pressed.connect(app.confirm_build_preview);cost_display.confirm_button.unavailable.connect(app.toast)
 	hide();controls.hide()
 func select(id:int)->void:
 	if id<0 or id>=DemoConfig.BUILD_SITES.size():return
 	select_position(DemoConfig.BUILD_SITES[id],app.build_kind)
 	site_id=id
 func select_position(at:Vector2,building_kind:String="",key:String="")->void:
+	app.toast_time=0 # Position is now selected; retire the previous placement prompt.
 	kind=app.build_kind if building_kind.is_empty() else building_kind
 	if moving_key!=key:restore_source()
 	moving_key=key
+	confirm_button=cost_display.confirm_button if key.is_empty() else move_confirm_button
 	if not key.is_empty() and not is_instance_valid(source_sprite):
 		source_sprite=app.world.building_sprite(key)
 		if is_instance_valid(source_sprite):
@@ -85,19 +89,19 @@ func update_overlay_layout()->void:
 	var viewport:=Rect2(app.safe,Vector2(app.w,app.h)-app.safe*2)
 	if not visible or not bounds.intersects(viewport):
 		controls.hide();cost_display.hide();return
-	var extent:=controls.get_combined_minimum_size().max(Vector2(104,48))
+	var factor:=minf(1.0,viewport.size.x/380.0)
+	cost_display.scale=Vector2.ONE*factor
+	var extent:=Vector2(380,65)*factor if moving_key.is_empty() else controls.get_combined_minimum_size().max(Vector2(104,48))
 	var top:=bounds.position.y-extent.y-8
 	var below:=top<viewport.position.y
 	var y:=bounds.end.y+8 if below else top
 	# If both sides are outside the viewport, stay on the visible building edge.
 	y=clampf(y,viewport.position.y,maxf(viewport.position.y,viewport.end.y-extent.y))
 	controls.position=Vector2(clampf(bounds.get_center().x-extent.x*.5,viewport.position.x,maxf(viewport.position.x,viewport.end.x-extent.x)),y)
-	controls.show()
-	var cost_y:float=bounds.end.y+8+(extent.y+6 if below else 0)
-	if cost_y+cost_display.size.y>viewport.end.y:
-		cost_y=controls.position.y-cost_display.size.y-6
-	cost_display.position=Vector2(clampf(bounds.get_center().x-115,viewport.position.x,maxf(viewport.position.x,viewport.end.x-230)),maxf(viewport.position.y,cost_y))
+	controls.visible=not moving_key.is_empty()
+	cost_display.position=controls.position
 	cost_display.visible=moving_key.is_empty();cost_display.update_cost(app.model.building_cost(kind,1))
+
 func _draw()->void:
 	if not placement_active:return
 	if not moving_key.is_empty():
