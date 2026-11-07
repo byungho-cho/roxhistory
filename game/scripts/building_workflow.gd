@@ -55,8 +55,14 @@ func request_upgrade()->void:
 	var reason:=upgrade_block_reason(target)
 	if not reason.is_empty():app.toast(reason);return
 	var cost:Dictionary=app.model.building_cost("chief",target)
-	app.show_modal("본부 %d단계 업그레이드"%target,upgrade_description(cost,target),[{"text":"취소","action":app.close_modal},{"text":"업그레이드","action":func():confirm_upgrade(target)}],true,true)
+	show_upgrade_confirmation("chief",cost,func():confirm_upgrade(target))
 	confirmation_target=target
+func show_upgrade_confirmation(key:String,cost:Dictionary,callback:Callable)->void:
+	app.close_modal();app.gestures.clear();app.navigation.cancel();app.toast_time=0
+	app.modal=true;app.world.player.presentation_paused=true
+	app.overlay=Control.new();app.overlay.name="CompactUpgradeOverlay";app.overlay.z_index=50
+	app.ui.add_child(app.overlay);app.overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT);app.overlay.mouse_filter=Control.MOUSE_FILTER_STOP
+	app.overlay.add_child(UpgradeConfirmation.new(app,key,cost,callback));app.sync_audio()
 func upgrade_description(cost:Dictionary,target:int)->String:
 	return "%s\n공사 시간 %d초\n앱을 닫아도 공사가 진행돼요"%[cost_text(cost),int(app.model.building_duration(target))]
 func confirm_upgrade(target:int)->bool:
@@ -124,7 +130,7 @@ func request_owned_upgrade(key:String)->void:
 	var target:=int(found.data.get("level",1))+1
 	owned_confirmation=key
 	var cost:Dictionary=app.model.building_cost(str(found.kind),target)
-	app.show_modal("%s %d단계 업그레이드"%[building_name(str(found.kind)),target],upgrade_description(cost,target),[{"text":"취소","action":app.close_modal},{"text":"업그레이드","action":func():confirm_owned_upgrade(key,target)}],true,true)
+	show_upgrade_confirmation(key,cost,func():confirm_owned_upgrade(key,target))
 	owned_overlay=app.overlay
 func confirm_owned_upgrade(key:String,target:int)->bool:
 	if not app.modal or not app.application_active or owned_confirmation!=key or not is_instance_valid(owned_overlay) or app.overlay!=owned_overlay:return false

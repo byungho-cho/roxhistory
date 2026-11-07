@@ -62,6 +62,9 @@ var action_row: Control
 var quest_expanded:=true
 var quest_arrow:Label
 var quest_accent:ColorRect
+var quest_detail:Control
+var quest_wood:Label
+var quest_stone:Label
 var demolition_key:=""
 var world_map:VillageWorldMap
 var world_map_open:=false
@@ -79,17 +82,17 @@ func toggle_quest()->void:
 func update_quest()->void:
 	if not is_instance_valid(objective):return
 	var level:=model.chief_level()
-	if level==0:
-		objective.text="본부를 건설해요"+("\n건설 메뉴에서 본부와 위치를 선택해요" if quest_expanded else "")
-	elif model.family_available():
-		objective.text="새 주민이 찾아왔어요"+("\n말풍선을 눌러 함께 살 곳을 마련해요" if quest_expanded else "")
-	else:
-		objective.text="주민 %d/%d명 · 본부 %d단계"%[model.resident_count(),model.resident_capacity(),level]
-		if quest_expanded:objective.text+="\n집을 늘리고 주민에게 일을 맡겨요"
-	objective.size=Vector2(153,48 if quest_expanded else 28)
-	objective.get_parent().size=Vector2(202,58 if quest_expanded else 38)
+	objective.text="본부를 건설해요" if level==0 else ("새 주민이 찾아왔어요" if model.family_available() else "주민 %d/%d명 · 본부 %d단계"%[model.resident_count(),model.resident_capacity(),level])
+	objective.size=Vector2(177,26)
+	objective.get_parent().size=Vector2(240,74 if quest_expanded else 40)
 	if is_instance_valid(quest_arrow):quest_arrow.text="⌃" if quest_expanded else "⌄"
-	if is_instance_valid(quest_accent):quest_accent.size.y=38 if quest_expanded else 18
+	if is_instance_valid(quest_accent):quest_accent.size.y=48 if quest_expanded else 18
+	if is_instance_valid(quest_detail):
+		quest_detail.visible=quest_expanded
+		var cost:=model.building_cost("chief" if level==0 else "hut",1)
+		quest_wood.text="%d/%d"%[mini(int(model.state.wood),int(cost.wood)),int(cost.wood)]
+		quest_stone.text="%d/%d"%[mini(int(model.state.stone),int(cost.stone)),int(cost.stone)]
+		objective.get_parent().tooltip_text="본부 건설 재료" if level==0 else "주민 움집 건설 재료 · 주민이 많으면 움집을 짓거나 업그레이드해 주세요"
 
 func has_pending_rewards()->bool:
 	for i in model.built_count():
@@ -367,7 +370,7 @@ func title_screen() -> void:
 	design_label(stage,"당신의 여정",design_rect(1178,334,260,36),int(25*k),Color("47240e"))
 	var continue_btn:=design_button(stage,"이어서 하기",design_rect(1108,401,388,90),enter_game,true,"hut");continue_btn.disabled=model.state.is_empty();continue_btn.hint_text="먼저 새 여정을 시작해 주세요."
 	design_button(stage,"새로 시작",design_rect(1108,513,388,82),new_game_prompt,false,"spear")
-	design_button(stage,"장 선택",design_rect(1108,617,388,82),chapter_menu,false,"compass")
+	design_button(stage,"설정",design_rect(1108,617,388,82),pause_game,false,"compass")
 	var horn:=design_button(stage,"",design_rect(1313,20,220,220),toggle_sound,false,"horn")
 	horn.name="SoundToggle";horn.set_meta("semantic_text","소리 켜기 / 끄기")
 	horn.get_node("FigmaSkin").hide()
@@ -388,13 +391,12 @@ func toggle_sound() -> void:
 	else:sync_audio();toast("소리 켜짐" if settings.get_value("app","sound",false) else "소리 꺼짐")
 
 func chapter_menu() -> void:
-	show_modal("장 선택","1장 · 선사시대의 첫 불씨\n암사동 강변에서 첫 보금자리를 지어 보세요.\n\n다음 장은 준비 중입니다.",[{"text":"돌아가기","action":close_modal},{"text":"1장 선택","primary":true,"action":func():close_modal();new_game_prompt()}])
+	show_modal("장 선택","1장 · 선사시대의 첫 불씨\n암사동 강변에서 첫 보금자리를 지어 보세요.\n\n다음 장은 준비 중입니다.",[{"text":"돌아가기","action":close_modal},{"text":"1장 선택","primary":true,"action":func():close_modal();show_screen("region")}])
 
 func new_game_prompt() -> void:
-	show_modal("새 여정 시작","새로 시작은 진행만 초기화하고 소리 설정을 유지합니다.\n\n완전 초기화는 진행·씨앗·설정을 모두 지우고 첫 실행 안내로 돌아갑니다.",[
+	show_modal("새 여정 시작","새 여정을 시작하면 기존 진행이 교체됩니다. 소리 설정은 유지합니다.",[
 		{"text":"돌아가기","action":close_modal},
-		{"text":"새로 시작","action":func():close_modal();show_screen("region"),"primary":true},
-		{"text":"완전 초기화","action":full_reset}])
+		{"text":"새로 시작","action":chapter_menu,"primary":true}])
 
 func full_reset() -> void:
 	if not model.store.erase_progress():show_error(model.store.message);return
@@ -440,14 +442,19 @@ func enter_game() -> void:
 
 func play_hud() -> void:
 	var quest_panel:=button(stage,"",toggle_quest);quest_panel.name="QuestPanel";quest_panel.custom_minimum_size=Vector2.ZERO
-	quest_panel.position=Vector2(safe.x,safe.y+(112 if w<h else 59));quest_panel.size=Vector2(202,58)
-	var dark:=StyleBoxFlat.new();dark.bg_color=Color(.12,.16,.13,.73);dark.set_corner_radius_all(10);dark.set_content_margin_all(6)
+	quest_panel.position=Vector2(safe.x,safe.y+(112 if w<h else 59));quest_panel.size=Vector2(240,74)
+	var dark:=StyleBoxFlat.new();dark.bg_color=Color(.14,.11,.075,.80);dark.set_corner_radius_all(12);dark.set_content_margin_all(6)
 	for state in ["normal","hover","pressed"]:quest_panel.add_theme_stylebox_override(state,dark)
-	dark.border_color=Color(.94,.79,.48,.12);dark.set_border_width_all(1)
+	dark.border_color=Color(.94,.79,.48,.22);dark.set_border_width_all(1)
 	quest_accent=ColorRect.new();quest_accent.color=Color(.95,.73,.34,.7);quest_accent.position=Vector2(0,12);quest_accent.size=Vector2(2,64);quest_accent.mouse_filter=Control.MOUSE_FILTER_IGNORE;quest_panel.add_child(quest_accent)
-	quest_arrow=label(quest_panel,"⌃",16,Color("fff0cd"));quest_arrow.position=Vector2(183,5)
-	picture(quest_panel,DemoArt.icon("hut"),Rect2(8,7,22,22))
-	objective=label(quest_panel,"",12,Color("fff0cd"));objective.position=Vector2(34,6);objective.size=Vector2(153,48)
+	quest_arrow=label(quest_panel,"⌃",16,Color("fff0cd"));quest_arrow.position=Vector2(215,9)
+	picture(quest_panel,DemoArt.icon("hut"),Rect2(9,10,35,35))
+	objective=label(quest_panel,"",14,Color("f9ead1"));objective.position=Vector2(49,9);objective.size=Vector2(177,26)
+	quest_detail=Control.new();quest_detail.mouse_filter=Control.MOUSE_FILTER_IGNORE;quest_panel.add_child(quest_detail)
+	var line:=ColorRect.new();line.color=Color(.94,.79,.48,.18);line.position=Vector2(49,38);line.size=Vector2(170,1);line.mouse_filter=Control.MOUSE_FILTER_IGNORE;quest_detail.add_child(line)
+	picture(quest_detail,DemoArt.icon("wood"),Rect2(49,46,24,22));picture(quest_detail,DemoArt.icon("stone"),Rect2(139,46,24,22))
+	quest_wood=label(quest_detail,"",16,Color("f9ead1"));quest_wood.position=Vector2(77,43)
+	quest_stone=label(quest_detail,"",16,Color("f9ead1"));quest_stone.position=Vector2(166,43)
 	quest_panel.set_meta("semantic_text","퀘스트 상세 펼침·접힘")
 	joystick=DemoJoystick.new();stage.add_child(joystick);joystick.position=Vector2(safe.x,h-safe.y-140);joystick.hide();joystick.set_process_input(false)
 	var action_width:=64.0 if w/h>2.2 else 60.0
@@ -734,6 +741,8 @@ func construction_menu()->void:
 	if modal or gestures.blocked:return
 	if is_instance_valid(building_menu):building_menu.close()
 	cancel_build_preview()
+	if model.chief_level()==0:
+		build_side.select_kind("chief");return
 	build_side.visible=not build_side.visible
 
 func cancel_build_preview()->void:
@@ -750,11 +759,13 @@ func confirm_build_preview()->void:
 	var key:String=build_preview.moving_key
 	if not key.is_empty():
 		if model.move_building(key,at):
+			world.evacuate_animals(at,build_preview.kind)
 			cancel_build_preview();toast("건물을 이동했어요")
 		else:toast("위치가 변경되었어요. 다시 확인해 주세요")
 		return
 	if not can_build_selected():return
 	if model.begin_construction(build_kind,at):
+		world.evacuate_animals(at,build_kind)
 		cancel_build_preview()
 		toast("건설을 시작했어요")
 	else:toast("건설 조건이 변경되었어요. 다시 확인해 주세요")
@@ -919,8 +930,8 @@ func quest_details() -> void:
 
 func pause_game() -> void:
 	cancel_task()
-	model.save_position(world.player.position)
-	show_modal("잠시 쉬어 가기","암사동 · 첫 보금자리\n진행은 기기에 자동 저장됩니다.",[
+	if is_instance_valid(world):model.save_position(world.player.position)
+	show_modal("설정","암사동 · 첫 보금자리\n진행은 기기에 자동 저장됩니다.",[
 		{"text":"계속하기","primary":true,"action":close_modal},
 		{"text":"시작 화면","action":func(): close_modal(); show_screen("title")},
 		{"text":"안내·소리","action":show_about},
@@ -930,6 +941,15 @@ func pause_game() -> void:
 func show_development_settings()->void:
 	DevelopmentSettings.open(self)
 	enable_settings_backdrop()
+
+func confirm_progress_reset()->void:
+	show_modal("진행을 초기화할까요?","진행과 씨앗을 지우고 소리 설정은 유지합니다. 삭제한 진행은 되돌릴 수 없습니다.",[
+		{"text":"취소","action":show_development_settings},{"text":"초기화","action":reset_progress}],false,true)
+func reset_progress()->void:
+	if not model.store.erase_progress():show_error(model.store.message);return
+	cancel_task();model.state.clear()
+	if is_instance_valid(world):remove_child(world);world.queue_free();world=null
+	close_modal();show_screen("title")
 
 func confirm_development_reset()->void:
 	show_modal("게임을 초기화할까요?","진행·씨앗·소리 설정을 모두 삭제하고 첫 실행 안내로 돌아갑니다.\n삭제한 데이터는 되돌릴 수 없습니다.",[

@@ -2106,6 +2106,36 @@
       "approved": true,
       "source": "https://github.com/byungho-cho/roxhistory/blob/b0699547a7addcef143c1bb879e9b70bfa5bf70c/assets/ui/building-menu/facility-side-v001/side-training-disabled.png",
       "notes": "Full 216x240 approved composition including Korean label; target 72x80. Disabled alpha already 35%."
+    },
+    "UI-BUILD-COST-BRUSH": {
+      "file": "res://assets/ui/review-v052/cost-brush.png",
+      "source_size": [
+        2172,
+        724
+      ],
+      "approved": true,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "figma_node": "1437:6984",
+      "usage": "Presentation only; resource values are data labels",
+      "sha256": "5e608f98000c804f91c67e2f01c01ba64f1ff38895c4fb29bd0f100377986ac2"
+    },
+    "UI-UPGRADE-COST-SLAB": {
+      "file": "res://assets/ui/review-v052/upgrade-slab.png",
+      "source_size": [
+        2172,
+        724
+      ],
+      "approved": true,
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "figma_node": "1427:6916",
+      "usage": "Presentation only; resource values are data labels",
+      "sha256": "31708bcea8298c31decad1e9a75d68f8732d90166d3431b6a58b0f6ceb980abb"
     }
   }
 }

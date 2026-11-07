@@ -14,6 +14,9 @@ var debug_unlimited_builders:bool:
 	get:return bool(state.get("debug_unlimited_builders",true))
 	set(value):set_debug_unlimited_builders(value)
 var construction_busy := false
+var debug_unlimited_buildings:bool:
+	get:return bool(state.get("debug_unlimited_buildings",false))
+	set(value):set_debug_unlimited_buildings(value)
 var debug_fast_build:bool:
 	get:return bool(state.get("debug_fast_build",false))
 var debug_show_boundary:bool:
@@ -361,7 +364,7 @@ func migrate_resources()->bool:
 
 # New-action rules intentionally do not invalidate legacy ownership or jobs.
 func home_limit()->int:
-	return mini(DemoConfig.MAX_RESIDENT_HOMES,chief_level())
+	return BuildingRules.MAX_ENTRIES if debug_unlimited_buildings else mini(DemoConfig.MAX_RESIDENT_HOMES,chief_level())
 
 func resident_capacity()->int:
 	var capacity:=0
@@ -396,8 +399,13 @@ func building_requirement(kind:String)->String:
 		if pending_construction_count(kind)>0:return "본부를 건설 중이에요"
 	if kind=="hut":
 		var reserved:=built_count()+pending_construction_count(kind)
-		if reserved>=DemoConfig.MAX_RESIDENT_HOMES:return "주민 움집은 최대 3채까지 지을 수 있어요"
+		if not debug_unlimited_buildings and reserved>=DemoConfig.MAX_RESIDENT_HOMES:return "주민 움집은 최대 3채까지 지을 수 있어요"
 		if reserved>=home_limit():return "본부 Lv.%d 필요 · 현재 움집 한도 %d채" % [chief_level()+1,home_limit()]
+	if not debug_unlimited_buildings and kind in ["hearth","shrine"]:
+		var count:=pending_construction_count(kind)
+		for entry in facilities():
+			if str(entry.kind)==kind:count+=1
+		if count>=1:return "%s은 1개만 지을 수 있어요" % BuildingWorkflow.building_name(kind)
 	if not builder_available():return "건설자 1명이 작업 중이에요"
 	if construction_jobs().size()>=BuildingRules.MAX_ENTRIES:return "건설 중인 건물이 너무 많아요"
 	if kind=="outpost" and outposts().size()+pending_construction_count(kind)>=BuildingRules.MAX_ENTRIES:return "초소 한도에 도달했어요"
@@ -524,6 +532,8 @@ func cancel_construction(uid:String)->bool:
 	var jobs:=construction_jobs()
 	for i in jobs.size():
 		if str(jobs[i].uid)!=uid:continue
+		if Time.get_unix_time_from_system()>=float(jobs[i].finishes_at):
+			finish_constructions();return false
 		var next:=state.duplicate(true)
 		next.wood+=int(jobs[i].cost.wood);next.stone+=int(jobs[i].cost.stone)
 		jobs.remove_at(i);next.construction_jobs=jobs
@@ -570,6 +580,7 @@ func finish_constructions(now:float=-1.0)->bool:
 func cancel_upgrade(key:String)->bool:
 	if key!="chief":return OwnedBuildingUpgrades.cancel(self,key)
 	if busy or not state.has("chief_upgrade"):return false
+	if chief_upgrade_remaining()<=0:finish_chief_upgrade();return false
 	var next:=state.duplicate(true)
 	next.wood+=int(next.chief_upgrade.cost.wood);next.stone+=int(next.chief_upgrade.cost.stone)
 	next.erase("chief_upgrade")
@@ -601,6 +612,14 @@ func set_debug_show_boundary(enabled:bool)->bool:
 	if busy or state.is_empty():return false
 	if enabled==debug_show_boundary:return true
 	var next:=state.duplicate(true);next.debug_show_boundary=enabled
+	busy=true
+	var ok:=commit(next)
+	busy=false
+	return ok
+
+func set_debug_unlimited_buildings(enabled:bool)->bool:
+	if busy or state.is_empty():return false
+	var next:=state.duplicate(true);next.debug_unlimited_buildings=enabled
 	busy=true
 	var ok:=commit(next)
 	busy=false

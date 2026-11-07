@@ -37,12 +37,12 @@ func run()->void:
 	var flow:BuildingWorkflow=app.building_workflow
 	var side:BuildSideMenu=app.build_side
 	side.show();side.refresh()
-	check(side.entries.size()==6,"All six building choices always present")
-	check(not side.entries.chief.disabled,"HQ0 can build chief")
+	check(side.entries.size()==5 and not side.entries.has("chief"),"HQ excluded from normal side menu")
+	check(app.model.can_construct("chief"),"HQ0 can build chief through dedicated entry")
 	for kind in ["hut","outpost","hearth","training","shrine"]:
 		check(side.entries[kind].visible and side.entries[kind].disabled and not side.entries[kind].hint_text.is_empty(),"Locked option is visible with reason: "+kind)
-	check(side.entries.hut.art_feedback.get_node("Cost").text=="나무 20 · 돌 10","Hut dynamic cost shown")
-	check(side.entries.shrine.art_feedback.get_node("Cost").text=="나무 10 · 돌 20","Shrine dynamic cost shown")
+	check(side.entries.hut.art_feedback.get_node_or_null("Cost")==null,"Side menu costs removed")
+	check(side.entries.shrine.art_feedback.get_node_or_null("Cost")==null,"Shrine costs are placement-only")
 	var before:=snapshot();side.select_kind("training")
 	check(snapshot()==before and not app.choosing_plot,"Locked selection cannot charge")
 	side.select_kind("chief");var at:=place("chief")
@@ -132,8 +132,8 @@ func run()->void:
 		for button in app.build_preview.controls.get_children():assert_viewport(button,"Preview "+button.name)
 		app.cancel_build_preview()
 	flow.request_cancel_upgrade(keys.shrine);check(flow.confirm_cancel(keys.shrine,true),"Viewport fixture upgrade cancelled")
-	var durable_at:=place("hearth")
-	check(app.model.begin_construction("hearth",durable_at),"Lifecycle fixture durable construction")
+	var durable_at:=place("training")
+	check(app.model.begin_construction("training",durable_at),"Lifecycle fixture durable construction")
 	uid=str(app.model.construction_jobs().back().uid)
 	flow.update_constructions();await frames()
 	progress=flow.construction_progress[uid]
@@ -151,7 +151,7 @@ func run()->void:
 	await frames()
 	check(not flow.construction_progress.has(uid),"Completed progress removed after race")
 	var settings:=DevelopmentSettings.entries(app)
-	check(settings.size()==4,"Three debug toggles and reset")
+	check(settings.size()==6,"Four debug toggles and two resets")
 	app.show_development_settings();await frames(3)
 	for id in ["UnlimitedBuilders","FastBuild","ShowBoundary"]:
 		var toggle:CheckBox=app.overlay.find_child(id+"Toggle",true,false)

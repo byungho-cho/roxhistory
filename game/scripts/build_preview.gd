@@ -10,6 +10,7 @@ var age:=0.0
 var ghost:EnvironmentProp
 var controls:HBoxContainer
 var confirm_button:DemoButton
+var cost_display:BuildCostDisplay
 var placement_active:=false
 func _init(owner_app:Node)->void:app=owner_app
 func _ready()->void:
@@ -25,6 +26,7 @@ func _ready()->void:
 		b.pressed.connect(app.confirm_build_preview if entry[2] else app.cancel_build_preview);b.unavailable.connect(app.toast)
 		controls.add_child(b)
 		if entry[2]:confirm_button=b
+	cost_display=BuildCostDisplay.new();app.stage.add_child(cost_display);cost_display.z_index=9;cost_display.hide()
 	hide();controls.hide()
 func select(id:int)->void:
 	if id<0 or id>=DemoConfig.BUILD_SITES.size():return
@@ -56,13 +58,17 @@ func refresh_validity()->void:
 func clear()->void:
 	site_id=-1;placement_active=false;moving_key="";hide()
 	if is_instance_valid(controls):controls.hide()
+	if is_instance_valid(cost_display):cost_display.hide()
 func _process(delta:float)->void:
 	if not placement_active:return
-	if not app.application_active or app.modal or app.world_map_open:controls.hide();return
+	if not app.application_active or app.modal or app.world_map_open:controls.hide();cost_display.hide();return
 	age+=delta;ghost.position.y=-4-3*sin(age*TAU/2.4)
 	refresh_validity()
 	var at:=get_global_transform_with_canvas()*Vector2(0,-165)
 	controls.position=Vector2(clampf(at.x-52,app.safe.x,maxf(app.safe.x,app.w-app.safe.x-104)),clampf(at.y-44,app.safe.y+110,maxf(app.safe.y+110,app.h-app.safe.y-140)))
+	var bottom:=get_global_transform_with_canvas()*Vector2(0,55)
+	cost_display.position=Vector2(clampf(bottom.x-115,app.safe.x,maxf(app.safe.x,app.w-app.safe.x-230)),clampf(bottom.y,app.safe.y+110,maxf(app.safe.y+110,app.h-app.safe.y-140)))
+	cost_display.visible=visible and moving_key.is_empty();cost_display.update_cost(app.model.building_cost(kind,1))
 	controls.visible=visible;queue_redraw()
 func _draw()->void:
 	if not placement_active:return
@@ -71,3 +77,4 @@ func _draw()->void:
 	draw_colored_polygon(outline,color);outline.append(outline[0]);color.a=.7;draw_polyline(outline,color,2,true)
 func _exit_tree()->void:
 	if is_instance_valid(controls):controls.queue_free()
+	if is_instance_valid(cost_display):cost_display.queue_free()

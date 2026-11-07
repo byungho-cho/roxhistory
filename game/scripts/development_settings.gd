@@ -4,6 +4,9 @@ extends RefCounted
 # Add future options here; rows share the same scrollable list and touch sizes.
 static func entries(app:Node)->Array[Dictionary]:
 	return [
+		{"id":"UnlimitedBuildings","title":"건축물 개수 제한 해제","kind":"toggle",
+			"value":app.model.debug_unlimited_buildings,"read":func():return app.model.debug_unlimited_buildings,
+			"changed":func(enabled:bool):app.model.debug_unlimited_buildings=enabled},
 		{"id":"UnlimitedBuilders","title":"건설자 무제한","kind":"toggle",
 			"value":app.model.debug_unlimited_builders,"read":func():return app.model.debug_unlimited_builders,
 			"changed":func(enabled:bool):app.model.debug_unlimited_builders=enabled},
@@ -13,7 +16,9 @@ static func entries(app:Node)->Array[Dictionary]:
 		{"id":"ShowBoundary","title":"빨간 마을 경계선","kind":"toggle",
 			"value":app.model.debug_show_boundary,"read":func():return app.model.debug_show_boundary,
 			"changed":func(enabled:bool):app.model.set_debug_show_boundary(enabled)},
-		{"id":"FullReset","title":"게임 초기화","kind":"action",
+		{"id":"ResetProgress","title":"진행 초기화 · 소리 설정 유지","kind":"action",
+			"button":"초기화","action":app.confirm_progress_reset},
+		{"id":"FullReset","title":"완전 초기화","kind":"action",
 			"button":"초기화","action":app.confirm_development_reset}
 	]
 
@@ -36,23 +41,26 @@ static func populate(app:Node,scroll:ScrollContainer,settings:Array[Dictionary])
 		var style:=StyleBoxFlat.new()
 		style.bg_color=Color("7c54241a")
 		style.set_corner_radius_all(8)
-		style.set_content_margin_all(10)
+		style.set_content_margin_all(6)
 		panel.add_theme_stylebox_override("panel",style)
 		list.add_child(panel)
 		var row:=HBoxContainer.new()
 		row.add_theme_constant_override("separation",12)
 		panel.add_child(row)
-		var title:Label=app.label(row,setting.title,20)
+		var title:Label=app.label(row,setting.title,18)
 		title.size_flags_horizontal=Control.SIZE_EXPAND_FILL
 		title.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
 		if setting.kind=="toggle":
 			var toggle:=DevelopmentSettingToggle.new()
 			toggle.name=setting.id+"Toggle"
-			toggle.custom_minimum_size=Vector2(116,52)
+			toggle.custom_minimum_size=Vector2(104,44)
+			var toggle_skin:=StyleBoxFlat.new();toggle_skin.bg_color=Color("59432d");toggle_skin.border_color=Color("b69a60");toggle_skin.set_border_width_all(1);toggle_skin.set_corner_radius_all(9);toggle_skin.content_margin_left=8;toggle_skin.content_margin_right=8;toggle_skin.content_margin_top=4;toggle_skin.content_margin_bottom=4
+			for variant in ["normal","hover","pressed","hover_pressed","focus"]:toggle.add_theme_stylebox_override(variant,toggle_skin)
+			toggle.add_theme_font_size_override("font_size",18)
 			toggle.set_pressed_no_signal(setting.value)
 			toggle.text="ON" if setting.value else "OFF"
 			for color in ["font_color","font_hover_color","font_pressed_color","font_focus_color"]:
-				toggle.add_theme_color_override(color,Color("49321e"))
+				toggle.add_theme_color_override(color,Color("fff2d3"))
 			toggle.toggled.connect(func(enabled:bool):
 				setting.changed.call(enabled)
 				var actual:bool=setting.read.call() if setting.has("read") else enabled
@@ -63,5 +71,5 @@ static func populate(app:Node,scroll:ScrollContainer,settings:Array[Dictionary])
 		else:
 			var action:DemoButton=app.button(row,setting.button,setting.action)
 			action.name=setting.id+"Button"
-			action.custom_minimum_size=Vector2(116,52)
+			action.custom_minimum_size=Vector2(104,44)
 			action.focus_mode=Control.FOCUS_ALL

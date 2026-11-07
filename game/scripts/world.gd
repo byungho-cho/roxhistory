@@ -445,9 +445,24 @@ func placement_requirement(kind:String,at:Vector2,ignore_key:String="")->String:
 			elif found.collection=="homes":body=get_node_or_null("HomeCollision"+str(found.index))
 			else:body=get_node_or_null(("Outpost_" if found.collection=="outposts" else "Facility_")+str(found.data.uid))
 			if body!=null:excluded.append(body.get_rid())
+	for animal in animals:
+		if is_instance_valid(animal.footprint_body):excluded.append(animal.footprint_body.get_rid())
 	query.exclude=excluded
 	if not get_world_2d().direct_space_state.intersect_shape(query,1).is_empty():return "건물·자원·주민과 겹치지 않는 곳을 선택해 주세요"
 	return ""
+
+func evacuate_animals(at:Vector2,kind:String)->void:
+	var width:=340.0 if kind=="chief" else 230.0
+	for animal in animals:
+		if ((animal.position-at)/Vector2(width*.65,width*.4)).length()>1.0:continue
+		var relocated:=false
+		for radius in [width, width*1.5, width*2.0, width*3.0, 1200.0]:
+			for i in 32:
+				var candidate:Vector2=at+Vector2.from_angle(i*TAU/32.0)*radius
+				if animal.safe_ground(candidate):
+					animal.position=candidate;animal.home_position=candidate;animal.destination=candidate;animal.resting=1.0
+					relocated=true;break
+			if relocated:break
 
 func refresh_boundary()->void:
 	if boundary_level==model.chief_level() and boundary_debug==model.debug_show_boundary:return

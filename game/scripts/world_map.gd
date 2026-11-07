@@ -6,6 +6,7 @@ var zoom:=1.0
 var center:=Vector2.ZERO
 var fingers:Dictionary={}
 var mouse_down:=false
+var middle_down:=false
 var last:=Vector2.ZERO
 var press_origin:=Vector2.ZERO
 var gesture_moved:=false
@@ -37,7 +38,7 @@ func _ready()->void:
 	set_process_input(false);hide()
 func activate(value:bool)->void:
 	visible=value;set_process_input(value);clear_input();clamp_camera();queue_redraw()
-func clear_input()->void:fingers.clear();mouse_down=false;gesture_moved=false
+func clear_input()->void:fingers.clear();mouse_down=false;middle_down=false;gesture_moved=false
 func factor()->float:return app.w/12.0/visible_fraction/village.get_width()*zoom
 func clamp_camera()->void:
 	# A finite 5-by-5 reference terrain field; mirrored borders avoid empty space.
@@ -54,7 +55,9 @@ func accepts(at:Vector2)->bool:
 func _input(event:InputEvent)->void:
 	if not app.application_active or app.modal or app.map_transition_active:return
 	if event is InputEventMouseButton and not OS.has_feature("android"):
-		if event.ctrl_pressed and event.pressed and event.button_index in [MOUSE_BUTTON_WHEEL_UP,MOUSE_BUTTON_WHEEL_DOWN] and accepts(event.position):
+		if event.button_index==MOUSE_BUTTON_MIDDLE:
+			middle_down=event.pressed and accepts(event.position);last=event.position;get_viewport().set_input_as_handled();return
+		if event.pressed and event.button_index in [MOUSE_BUTTON_WHEEL_UP,MOUSE_BUTTON_WHEEL_DOWN] and accepts(event.position):
 			zoom_at(event.position,zoom*(1.12 if event.button_index==MOUSE_BUTTON_WHEEL_UP else 1.0/1.12));get_viewport().set_input_as_handled()
 		elif event.button_index==MOUSE_BUTTON_LEFT:
 			if event.pressed:
@@ -62,6 +65,8 @@ func _input(event:InputEvent)->void:
 			else:
 				if mouse_down and not gesture_moved:enter_village(event.position)
 				mouse_down=false
+	elif event is InputEventMouseMotion and middle_down:
+		pan(event.position-last);last=event.position;get_viewport().set_input_as_handled()
 	elif event is InputEventMouseMotion and mouse_down:
 		gesture_moved=gesture_moved or event.position.distance_to(press_origin)>10
 		if gesture_moved:pan(event.position-last)

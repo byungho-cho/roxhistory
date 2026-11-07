@@ -19,6 +19,7 @@ func _init(owner_app: Node, for_gathering:bool=false,for_upgrade:bool=false) -> 
 
 func _ready() -> void:
 	name="ChiefUpgradeProgress" if upgrading else ("GatheringTimeProgress" if gathering else "ConstructionTimeProgress")
+	z_index=12
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	size = Vector2(410,72)
 	scale = Vector2.ONE*0.65

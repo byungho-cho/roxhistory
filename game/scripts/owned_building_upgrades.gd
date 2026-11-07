@@ -59,6 +59,7 @@ static func cancel(model:GameState,key:String)->bool:
 	if key=="chief":return model.cancel_upgrade(key)
 	var found:=lookup(model,key)
 	if model.busy or found.is_empty() or not found.data.has("upgrade"):return false
+	if Time.get_unix_time_from_system()>=float(found.data.upgrade.finishes_at):finish(model);return false
 	var next:=model.state.duplicate(true)
 	if found.collection=="homes":next.homes=model.stable_homes()
 	var entry:Dictionary=next[found.collection][found.index]
