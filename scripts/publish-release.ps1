@@ -18,8 +18,12 @@ if (& git -C $repo status --porcelain) { throw 'Commit source and release toolin
 & gh auth status --hostname github.com *> $null
 if ($LASTEXITCODE -ne 0) { throw 'GitHub CLI login is required for release uploads.' }
 $tag = "v$version"
-$releaseText = & gh api "repos/$Repository/releases/tags/$tag" 2>$null
-$exists = $LASTEXITCODE -eq 0
+$allReleasesText = & gh api "repos/$Repository/releases?per_page=100" --paginate --slurp
+if ($LASTEXITCODE -ne 0) { throw 'Cannot list releases.' }
+$allReleases = @(foreach ($page in (ConvertFrom-Json ($allReleasesText -join "`n"))) { foreach ($item in $page) { $item } })
+$matchingReleases = @($allReleases | Where-Object tag_name -CEQ $tag)
+if ($matchingReleases.Count -gt 1) { throw 'Multiple releases use this tag. Resolve them before publishing.' }
+$exists = $matchingReleases.Count -eq 1
 $notes = Join-Path $repo '.work/release-logs/release-notes.txt'
 New-Item -ItemType Directory (Split-Path $notes) -Force | Out-Null
 @"
@@ -32,9 +36,12 @@ Build and signature checks passed. Known legacy regression-test failures remain 
 if (-not $exists) {
     & gh release create $tag --repo $Repository --target $manifest.commit --title "RoxHistory $version" --notes-file $notes --draft --prerelease
     if ($LASTEXITCODE -ne 0) { throw 'Release creation failed.' }
-    $releaseText = & gh api "repos/$Repository/releases/tags/$tag"
+    $allReleasesText = & gh api "repos/$Repository/releases?per_page=100" --paginate --slurp
+    if ($LASTEXITCODE -ne 0) { throw 'Cannot find newly created draft.' }
+    $matchingReleases = @(foreach ($page in (ConvertFrom-Json ($allReleasesText -join "`n"))) { foreach ($item in $page) { if ($item.tag_name -ceq $tag) { $item } } })
 }
-$release = ConvertFrom-Json ($releaseText -join "`n")
+if ($matchingReleases.Count -ne 1) { throw 'Cannot uniquely identify release.' }
+$release = $matchingReleases[0]
 if (-not $release.draft) {
     $unchanged = $true
     foreach ($entry in $manifest.files) {
@@ -47,8 +54,13 @@ if (-not $release.draft) {
 $tagCommit = & gh api "repos/$Repository/commits/$tag" --jq '.sha' 2>$null
 if ($LASTEXITCODE -eq 0) {
     if ($tagCommit -ne $manifest.commit) { throw 'Release tag points to different source; preserve it and use a new version.' }
-} elseif (-not $release.draft -or $release.target_commitish -ne $manifest.commit) {
-    throw 'Cannot confirm the draft release source commit.'
+} elseif ($release.draft) {
+    if ($release.target_commitish -ne $manifest.commit) {
+        & gh api --method PATCH "repos/$Repository/releases/$($release.id)" -f target_commitish=$($manifest.commit) --silent
+        if ($LASTEXITCODE -ne 0) { throw 'Cannot update unpublished draft source commit.' }
+    }
+} else {
+    throw 'Cannot confirm the release source commit.'
 }
 if ($release.draft) {
     & gh release upload $tag (Join-Path $output $files[0]) (Join-Path $output $files[1]) --repo $Repository --clobber
