@@ -34,11 +34,9 @@ Both files were built and verified together. This Android APK uses the current M
 Build and signature checks passed. Known legacy regression-test failures remain documented; this is not a full gameplay approval.
 "@ | Set-Content -LiteralPath $notes -Encoding utf8
 if (-not $exists) {
-    & gh release create $tag --repo $Repository --target $manifest.commit --title "RoxHistory $version" --notes-file $notes --draft --prerelease
+    $created = & gh api --method POST "repos/$Repository/releases" -f "tag_name=$tag" -f "target_commitish=$($manifest.commit)" -f "name=RoxHistory $version" -F "body=@$notes" -F draft=true -F prerelease=true
     if ($LASTEXITCODE -ne 0) { throw 'Release creation failed.' }
-    $allReleasesText = & gh api "repos/$Repository/releases?per_page=100" --paginate --slurp
-    if ($LASTEXITCODE -ne 0) { throw 'Cannot find newly created draft.' }
-    $matchingReleases = @(foreach ($page in (ConvertFrom-Json ($allReleasesText -join "`n"))) { foreach ($item in $page) { if ($item.tag_name -ceq $tag) { $item } } })
+    $matchingReleases = @((ConvertFrom-Json ($created -join "`n")))
 }
 if ($matchingReleases.Count -ne 1) { throw 'Cannot uniquely identify release.' }
 $release = $matchingReleases[0]
@@ -63,8 +61,15 @@ if ($LASTEXITCODE -eq 0) {
     throw 'Cannot confirm the release source commit.'
 }
 if ($release.draft) {
-    & gh release upload $tag (Join-Path $output $files[0]) (Join-Path $output $files[1]) --repo $Repository --clobber
-    if ($LASTEXITCODE -ne 0) { throw 'Pair upload failed. Previous releases have not been cleaned.' }
+    foreach ($name in $files) {
+        foreach ($old in @($release.assets | Where-Object name -CEQ $name)) {
+            & gh api --method DELETE "repos/$Repository/releases/assets/$($old.id)" --silent
+            if ($LASTEXITCODE -ne 0) { throw 'Cannot replace unfinished draft asset.' }
+        }
+        $url = "https://uploads.github.com/repos/$Repository/releases/$($release.id)/assets?name=$([Uri]::EscapeDataString($name))"
+        & gh api --method POST $url --header 'Content-Type: application/octet-stream' --input (Join-Path $output $name) --silent
+        if ($LASTEXITCODE -ne 0) { throw 'Pair upload failed. Previous releases have not been cleaned.' }
+    }
 }
 $assetsText = & gh api "repos/$Repository/releases/$($release.id)/assets?per_page=100"
 if ($LASTEXITCODE -ne 0) { throw 'Cannot verify uploaded assets.' }
@@ -73,7 +78,7 @@ foreach ($entry in $manifest.files) {
     $asset = @($assets | Where-Object name -CEQ $entry.name)
     if ($asset.Count -ne 1 -or $asset[0].state -ne 'uploaded' -or $asset[0].size -ne $entry.size -or $asset[0].digest -ne "sha256:$($entry.sha256)") { throw 'Uploaded asset checksum verification failed. No cleanup performed.' }
 }
-& gh release edit $tag --repo $Repository --draft=false --prerelease --notes-file $notes
+& gh api --method PATCH "repos/$Repository/releases/$($release.id)" -F draft=false -F prerelease=true -F "body=@$notes" --silent
 if ($LASTEXITCODE -ne 0) { throw 'Publishing failed. No cleanup performed.' }
 $tagCommit = & gh api "repos/$Repository/commits/$tag" --jq '.sha'
 if ($LASTEXITCODE -ne 0 -or $tagCommit -ne $manifest.commit) { throw 'Published tag verification failed. No cleanup performed.' }
