@@ -66,6 +66,7 @@ var quest_detail:Control
 var quest_wood:Label
 var quest_stone:Label
 var demolition_key:=""
+var relocating_key:=""
 var world_map:VillageWorldMap
 var world_map_open:=false
 var map_toggle:DemoButton
@@ -758,10 +759,18 @@ func confirm_build_preview()->void:
 	var at:Vector2=build_preview.placement_position
 	var key:String=build_preview.moving_key
 	if not key.is_empty():
+		if not relocating_key.is_empty():return
+		var original:Sprite2D=world.building_sprite(key)
+		var snapshot:=Sprite2D.new();snapshot.texture=original.texture;snapshot.centered=original.centered;snapshot.offset=original.offset
+		snapshot.transform=original.global_transform
+		var from:=model.building_position(key)
+		build_preview.restore_source()
 		if model.move_building(key,at):
 			world.evacuate_animals(at,build_preview.kind)
-			cancel_build_preview();toast("건물을 이동했어요")
-		else:toast("위치가 변경되었어요. 다시 확인해 주세요")
+			cancel_build_preview();relocating_key=key
+			world.add_child(RelocationEffect.new(self,key,snapshot,from,at))
+		else:
+			snapshot.free();toast("위치가 변경되었어요. 다시 확인해 주세요")
 		return
 	if not can_build_selected():return
 	if model.begin_construction(build_kind,at):
@@ -771,6 +780,7 @@ func confirm_build_preview()->void:
 	else:toast("건설 조건이 변경되었어요. 다시 확인해 주세요")
 
 func start_building_move(key:String)->void:
+	if not relocating_key.is_empty():return
 	if modal or not application_active or world_map_open:return
 	var found:=model.lookup_building(key)
 	if found.is_empty():return
@@ -890,6 +900,7 @@ func world_tap(screen_point:Vector2) -> void:
 	if menu_animating and action_row.get_global_rect().has_point(screen_point):return
 	if world_map_open or modal or gestures.blocked:return
 	var at:Vector2=world.get_global_transform_with_canvas().affine_inverse()*screen_point
+	if not relocating_key.is_empty() and building_menu.hit_key(at)==relocating_key:return
 	if choosing_plot:
 		build_preview.select_position(at,build_kind,build_preview.moving_key)
 		return

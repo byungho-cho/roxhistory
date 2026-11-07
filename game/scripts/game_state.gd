@@ -185,6 +185,7 @@ func _init(save_store: SaveStore) -> void:
 	finish_constructions()
 	finish_chief_upgrade()
 	OwnedBuildingUpgrades.finish(self)
+	if debug_fast_build and state.get("fast_build_mode","")!="fixed5":set_debug_fast_build(true)
 
 func commit(next: Dictionary, reset: bool = false) -> bool:
 	if not store.save_game(next,reset):
@@ -434,7 +435,7 @@ func building_cost(kind:String,target:int=1)->Dictionary:
 	return BuildingRules.cost(kind,target)
 
 func building_duration(target:int)->float:
-	return BuildingRules.duration(target)/(10.0 if debug_fast_build else 1.0)
+	return 5.0 if debug_fast_build else BuildingRules.duration(target)
 
 func facilities()->Array:
 	return state.get("facilities",[]).duplicate(true)
@@ -591,18 +592,17 @@ func cancel_upgrade(key:String)->bool:
 
 func set_debug_fast_build(enabled:bool,now:float=-1.0)->bool:
 	if busy or state.is_empty():return false
-	if enabled==debug_fast_build:return true
+	if enabled==debug_fast_build and state.get("fast_build_mode","")=="fixed5":return true
 	if now<0:now=Time.get_unix_time_from_system()
 	if not is_finite(now):return false
 	var next:=state.duplicate(true)
-	var old_speed:=10.0 if debug_fast_build else 1.0
-	var new_speed:=10.0 if enabled else 1.0
-	if next.has("chief_upgrade"):BuildingRules.rescale_clock(next.chief_upgrade,now,old_speed,new_speed)
-	for job in next.get("construction_jobs",[]):BuildingRules.rescale_clock(job,now,old_speed,new_speed)
+	if next.has("chief_upgrade"):BuildingRules.set_clock_mode(next.chief_upgrade,now,enabled)
+	for job in next.get("construction_jobs",[]):BuildingRules.set_clock_mode(job,now,enabled)
 	for collection in ["homes","outposts","facilities"]:
 		for entry in next.get(collection,[]):
-			if entry.has("upgrade"):BuildingRules.rescale_clock(entry.upgrade,now,old_speed,new_speed)
+			if entry.has("upgrade"):BuildingRules.set_clock_mode(entry.upgrade,now,enabled)
 	next.debug_fast_build=enabled
+	next.fast_build_mode="fixed5"
 	busy=true
 	var ok:=commit(next)
 	busy=false

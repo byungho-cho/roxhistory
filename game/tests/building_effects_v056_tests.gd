@@ -18,7 +18,7 @@ func run()->void:
 	check(GameState.new(app.model.store).debug_fast_build,"Speed survives reload")
 	var at:=free_position("hut");check(app.model.begin_construction("hut",at),"Fast construction begins")
 	var job:Dictionary=app.model.construction_jobs()[0];var uid:=str(job.uid)
-	check(is_equal_approx(job.clock_duration,6.0),"New construction takes6 real seconds")
+	check(is_equal_approx(job.clock_duration,5.0),"New construction takes5 real seconds")
 	await frames();var progress:ConstructionProgress=app.building_workflow.construction_progress[uid]
 	var x:=progress.cancel_button.get_global_rect().get_center()
 	# Reproduce later overlapping GUI sibling (render Z alone does not fix picking).
@@ -29,8 +29,8 @@ func run()->void:
 	x=progress.cancel_button.get_global_rect().get_center();touch(x,0,true);touch(x,0,false);await frames()
 	check(app.modal,"Progress X receives touch")
 	app.close_modal()
-	await create_timer(6.2).timeout;await frames()
-	check(app.model.construction_jobs().is_empty() and app.model.built_count()==1,"Real-time6s completion")
+	await create_timer(5.2).timeout;await frames()
+	check(app.model.construction_jobs().is_empty() and app.model.built_count()==1,"Real-time5s completion")
 	var key:String=app.model.home_key(0);var tokens:int=app.model.state.tokens
 	app.world.player.zoom_at(Vector2(app.w,app.h)*.5,.9,at);await frames()
 	var sprite:Sprite2D=app.world.building_sprite(key)
@@ -39,7 +39,7 @@ func run()->void:
 	check(not app.model.reward_pending(0) and not app.building_menu.visible and app.model.state.tokens>tokens,"Building body claims reward before menu")
 	tokens=app.model.state.tokens;app.world_tap(point);await frames();check(app.building_menu.visible and app.model.state.tokens==tokens,"Next click menu, reward paid once")
 	app.building_menu.close();app.building_workflow.request_owned_upgrade(key);await frames();check(app.building_workflow.confirm_owned_upgrade(key,2),"Fast upgrade begins")
-	check(app.model.lookup_building(key).data.upgrade.clock_duration==60,"L2 upgrade takes60 instead600 seconds")
+	check(app.model.lookup_building(key).data.upgrade.clock_duration==5,"L2 upgrade takes5 instead600 seconds")
 	app.building_workflow.request_cancel_upgrade(key);check(app.building_workflow.confirm_cancel(key,true),"Upgrade cancellation/refund")
 	app.show_demolition_confirmation(key);await frames();var before:int=app.model.state.wood;app.confirm_demolition(key);await frames()
 	check(app.model.built_count()==0 and app.world.has_node("DemolitionEffect"),"Demolition commits once and retains animated image")

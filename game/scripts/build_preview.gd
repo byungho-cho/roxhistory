@@ -12,8 +12,11 @@ var controls:HBoxContainer
 var confirm_button:DemoButton
 var cost_display:BuildCostDisplay
 var placement_active:=false
+var source_sprite:Sprite2D
+var source_color:=Color.WHITE
 func _init(owner_app:Node)->void:app=owner_app
 func _ready()->void:
+	z_index=3 # Both the destination ghost and source move marker overlay buildings.
 	ghost=EnvironmentProp.new();ghost.configure("hut",230,Vector2.ZERO);ghost.set_hut_style(1);add_child(ghost)
 	ghost.modulate=Color(1,1,.87,.52)
 	controls=HBoxContainer.new();controls.name="BuildPreviewControls";controls.add_theme_constant_override("separation",8);app.stage.add_child(controls)
@@ -34,7 +37,13 @@ func select(id:int)->void:
 	site_id=id
 func select_position(at:Vector2,building_kind:String="",key:String="")->void:
 	kind=app.build_kind if building_kind.is_empty() else building_kind
+	if moving_key!=key:restore_source()
 	moving_key=key
+	if not key.is_empty() and not is_instance_valid(source_sprite):
+		source_sprite=app.world.building_sprite(key)
+		if is_instance_valid(source_sprite):
+			source_color=source_sprite.self_modulate
+			source_sprite.self_modulate=Color(.85,.85,.85,.85)
 	var level:=1
 	if not key.is_empty():level=int(app.model.lookup_building(key).get("data",{}).get("level",1))
 	var texture:=BuildingWorkflow.approved_texture(BuildingWorkflow.building_asset_id(kind,level))
@@ -54,8 +63,12 @@ func validity()->bool:return block_reason().is_empty()
 func refresh_validity()->void:
 	var reason:=block_reason()
 	confirm_button.disabled=not reason.is_empty();confirm_button.hint_text=reason
-	ghost.modulate=Color(1,1,.87,.52) if reason.is_empty() else Color(1,.45,.35,.48)
+	ghost.modulate=Color(1,1,.87,.85 if not moving_key.is_empty() else .52) if reason.is_empty() else Color(1,.45,.35,.48)
+func restore_source()->void:
+	if is_instance_valid(source_sprite):source_sprite.self_modulate=source_color
+	source_sprite=null
 func clear()->void:
+	restore_source()
 	site_id=-1;placement_active=false;moving_key="";hide()
 	if is_instance_valid(controls):controls.hide()
 	if is_instance_valid(cost_display):cost_display.hide()
@@ -87,9 +100,17 @@ func update_overlay_layout()->void:
 	cost_display.visible=moving_key.is_empty();cost_display.update_cost(app.model.building_cost(kind,1))
 func _draw()->void:
 	if not placement_active:return
+	if not moving_key.is_empty():
+		var at:Vector2=app.model.building_position(moving_key)-position+Vector2(0,-65)
+		draw_circle(at,14,Color(.18,.14,.08,.65))
+		var gold:=Color(1,.84,.4,.9)
+		draw_line(at+Vector2(-9,0),at+Vector2(9,0),gold,2,true)
+		for side in [-1,1]:
+			draw_polyline(PackedVector2Array([at+Vector2(side*4,-5),at+Vector2(side*9,0),at+Vector2(side*4,5)]),gold,2,true)
 	var outline:=EnvironmentProp.hut_footprint(340 if kind=="chief" else 230)
 	var color:=Color(.55,.85,.3,.16) if validity() else Color(1,.2,.1,.16)
 	draw_colored_polygon(outline,color);outline.append(outline[0]);color.a=.7;draw_polyline(outline,color,2,true)
 func _exit_tree()->void:
+	restore_source()
 	if is_instance_valid(controls):controls.queue_free()
 	if is_instance_valid(cost_display):cost_display.queue_free()

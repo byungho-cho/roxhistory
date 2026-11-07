@@ -10,7 +10,7 @@ static func entries(app:Node)->Array[Dictionary]:
 		{"id":"UnlimitedBuilders","title":"건설자 무제한","kind":"toggle",
 			"value":app.model.debug_unlimited_builders,"read":func():return app.model.debug_unlimited_builders,
 			"changed":func(enabled:bool):app.model.debug_unlimited_builders=enabled},
-		{"id":"FastBuild","title":"건설·업그레이드 10배속","kind":"toggle",
+		{"id":"FastBuild","title":"건설·업그레이드 5초 완료","kind":"toggle",
 			"value":app.model.debug_fast_build,"read":func():return app.model.debug_fast_build,
 			"changed":func(enabled:bool):app.model.set_debug_fast_build(enabled)},
 		{"id":"ShowBoundary","title":"빨간 마을 경계선","kind":"toggle",
