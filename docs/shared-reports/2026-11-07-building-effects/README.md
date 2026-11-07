@@ -42,6 +42,8 @@ Android APK 빌드와 v2/v3 서명 검증 통과. 기존 v0.1.36 인증서와 SH
 
 ## APK
 
+**설치 호환:** 이번 APK는 원래 로컬 서명(v0.1.36 계열)입니다. 별도 서명으로 배포된 v0.1.50·v0.1.51 Cloud TEST와는 서명이 달라 덮어쓰기 업데이트가 불가능합니다. 해당 클라우드 서명키는 이 로컬 환경에 없으며 앱 삭제·저장 초기화는 수행하지 않았습니다. Cloud TEST 사용자는 기존 저장을 유지하려면 동일 클라우드 키로 재서명한 배포본이 필요합니다.
+
 [단일 APK 다운로드](https://github.com/byungho-cho/roxhistory/releases/download/v0.1.56/RoxHistory-0.1.56-20261107-182904.apk)
 
 SHA-256: `557e65fb64104fe5026cb48a1f7df4a9099720a1d1c14546765c9317c1262ab3`
