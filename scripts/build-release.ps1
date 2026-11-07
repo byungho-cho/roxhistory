@@ -43,6 +43,17 @@ $apk = Join-Path $output "Roxhistory_$version.apk"
 $exe = Join-Path $output "Roxhistory_$version.exe"
 $pendingApk = Join-Path $output "Roxhistory_$version.pending.apk"
 $pendingExe = Join-Path $output "Roxhistory_$version.pending.exe"
+function Assert-Replaceable {
+    foreach ($path in @($apk,$exe)) {
+        if (Test-Path -LiteralPath $path) {
+            try {
+                $handle = [IO.File]::Open($path,[IO.FileMode]::Open,[IO.FileAccess]::ReadWrite,[IO.FileShare]::None)
+                $handle.Dispose()
+            } catch { throw 'A release file is in use. Save progress and close the game before rebuilding.' }
+        }
+    }
+}
+Assert-Replaceable
 $variableNames = @('JAVA_HOME','GODOT_ANDROID_KEYSTORE_DEBUG_PATH','GODOT_ANDROID_KEYSTORE_DEBUG_USER','GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD')
 $savedEnvironment = @{}
 foreach ($name in $variableNames) { $savedEnvironment[$name] = [Environment]::GetEnvironmentVariable($name) }
@@ -70,6 +81,7 @@ try {
     $process = Start-Process -FilePath $pendingExe -ArgumentList @('--headless','--quit-after','120','--log-file',(Join-Path $logs 'windows-runtime.log')) -WindowStyle Hidden -PassThru -Wait
     if ($process.ExitCode -ne 0) { throw 'Windows runtime smoke check failed.' }
     if ((Get-FileHash -LiteralPath $key).Hash -ne $keyHash) { throw 'Signing key unexpectedly changed.' }
+    Assert-Replaceable
     Move-Item -LiteralPath $pendingApk -Destination $apk -Force
     Move-Item -LiteralPath $pendingExe -Destination $exe -Force
     $commit = & git -C $repo rev-parse HEAD
