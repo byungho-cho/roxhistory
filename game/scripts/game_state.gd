@@ -185,7 +185,7 @@ func _init(save_store: SaveStore) -> void:
 	finish_constructions()
 	finish_chief_upgrade()
 	OwnedBuildingUpgrades.finish(self)
-	if debug_fast_build and state.get("fast_build_mode","")!="fixed5":set_debug_fast_build(true)
+	if debug_fast_build and state.get("fast_build_mode","")!="speed10":set_debug_fast_build(true)
 
 func commit(next: Dictionary, reset: bool = false) -> bool:
 	if not store.save_game(next,reset):
@@ -394,14 +394,14 @@ func building_requirement(kind:String)->String:
 	kind=BuildingRules.canonical(kind)
 	if state.is_empty():return "게임을 먼저 시작해 주세요"
 	if not BuildingRules.REQUIRED_HQ.has(kind):return "아직 지원하지 않는 건물이에요"
-	if not building_unlocked(kind):return "본부 Lv.%d 필요" % int(BuildingRules.REQUIRED_HQ[kind])
+	if not building_unlocked(kind):return "촌장집 Lv.%d 필요" % int(BuildingRules.REQUIRED_HQ[kind])
 	if kind=="chief":
-		if chief_level()>0:return "본부가 이미 있어요"
-		if pending_construction_count(kind)>0:return "본부를 건설 중이에요"
+		if chief_level()>0:return "촌장집가 이미 있어요"
+		if pending_construction_count(kind)>0:return "촌장집를 건설 중이에요"
 	if kind=="hut":
 		var reserved:=built_count()+pending_construction_count(kind)
 		if not debug_unlimited_buildings and reserved>=DemoConfig.MAX_RESIDENT_HOMES:return "주민 움집은 최대 3채까지 지을 수 있어요"
-		if reserved>=home_limit():return "본부 Lv.%d 필요 · 현재 움집 한도 %d채" % [chief_level()+1,home_limit()]
+		if reserved>=home_limit():return "촌장집 Lv.%d 필요 · 현재 움집 한도 %d채" % [chief_level()+1,home_limit()]
 	if not debug_unlimited_buildings and kind in ["hearth","shrine"]:
 		var count:=pending_construction_count(kind)
 		for entry in facilities():
@@ -425,7 +425,7 @@ func upgrade_requirement(key:String="chief")->String:
 	var level:=int(found.data.get("level",1))
 	if found.data.has("upgrade"):return "이미 업그레이드 중이에요"
 	if level>=4:return "최고 레벨이에요"
-	if key!="chief" and level>=chief_level():return "본부 Lv.%d 필요" % (level+1)
+	if key!="chief" and level>=chief_level():return "촌장집 Lv.%d 필요" % (level+1)
 	if not builder_available():return "건설자 1명이 작업 중이에요"
 	var cost:=building_cost(found.kind,level+1)
 	if state.wood<cost.wood or state.stone<cost.stone:return "나무 %d개와 돌 %d개가 필요해요" % [cost.wood,cost.stone]
@@ -435,7 +435,7 @@ func building_cost(kind:String,target:int=1)->Dictionary:
 	return BuildingRules.cost(kind,target)
 
 func building_duration(target:int)->float:
-	return 5.0 if debug_fast_build else BuildingRules.duration(target)
+	return BuildingRules.duration(target)/(10.0 if debug_fast_build else 1.0)
 
 func facilities()->Array:
 	return state.get("facilities",[]).duplicate(true)
@@ -592,7 +592,7 @@ func cancel_upgrade(key:String)->bool:
 
 func set_debug_fast_build(enabled:bool,now:float=-1.0)->bool:
 	if busy or state.is_empty():return false
-	if enabled==debug_fast_build and state.get("fast_build_mode","")=="fixed5":return true
+	if enabled==debug_fast_build and state.get("fast_build_mode","")=="speed10":return true
 	if now<0:now=Time.get_unix_time_from_system()
 	if not is_finite(now):return false
 	var next:=state.duplicate(true)
@@ -602,7 +602,7 @@ func set_debug_fast_build(enabled:bool,now:float=-1.0)->bool:
 		for entry in next.get(collection,[]):
 			if entry.has("upgrade"):BuildingRules.set_clock_mode(entry.upgrade,now,enabled)
 	next.debug_fast_build=enabled
-	next.fast_build_mode="fixed5"
+	next.fast_build_mode="speed10"
 	busy=true
 	var ok:=commit(next)
 	busy=false

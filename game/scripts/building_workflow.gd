@@ -34,7 +34,7 @@ static func approved_texture(id:String)->Texture2D:
 static func building_asset_id(kind:String,level:int=1)->String:
 	return "BLD-%s-L%d"%[{"chief":"CHIEF","hut":"HUT","home":"HUT","outpost":"OUTPOST","hearth":"HEARTH","training":"TRAINING","shrine":"SHRINE"}.get(kind,"HUT"),clampi(level,1,4)]
 static func building_name(kind:String)->String:
-	return {"chief":"본부","hut":"주민 움집","home":"주민 움집","outpost":"초소","hearth":"화덕","training":"훈련소","shrine":"신당"}.get(kind,"건물")
+	return {"chief":"촌장집","hut":"주민 움집","home":"주민 움집","outpost":"초소","hearth":"화덕","training":"훈련소","shrine":"신당"}.get(kind,"건물")
 static func cost_text(cost:Dictionary)->String:return "나무 %d개 · 돌 %d개"%[int(cost.get("wood",0)),int(cost.get("stone",0))]
 func build_block_reason(kind:String)->String:
 	var reason:String=app.model.building_requirement(kind)
@@ -47,7 +47,7 @@ func upgrade_block_reason(target:int)->String:
 	var reason:String=app.model.upgrade_requirement("chief")
 	if not reason.is_empty():return reason
 	if not app.model.can_upgrade_chief():return cost_text(app.model.building_cost("chief",target))+"가 필요해요"
-	if approved_texture(building_asset_id("chief",target))==null:return "%d단계 본부 에셋 준비 중"%target
+	if approved_texture(building_asset_id("chief",target))==null:return "%d단계 촌장집 에셋 준비 중"%target
 	return ""
 func request_upgrade()->void:
 	if app.modal or not app.application_active or app.screen!="play" or app.world_map_open:return
@@ -81,7 +81,7 @@ func refresh_visual()->void:
 	var changed:=last_visual_level>=1 and level>last_visual_level
 	if changed:
 		scaffold_fade_left=.35
-		if app.screen=="play":app.toast("본부 %d단계 · 마을 경계가 넓어졌어요"%level,5.0)
+		if app.screen=="play":app.toast("촌장집 %d단계 · 마을 경계가 넓어졌어요"%level,5.0)
 	last_visual_level=level
 	if not is_instance_valid(scaffold):
 		scaffold=Sprite2D.new();scaffold.name="ChiefUpgradeScaffold";scaffold.visibility_layer=2

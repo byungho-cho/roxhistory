@@ -60,7 +60,7 @@ var region_snapshot := {}
 var navigation: AutoTravel
 var action_row: Control
 var quest_expanded:=true
-var quest_arrow:Label
+var quest_arrow:TextureRect
 var quest_accent:ColorRect
 var quest_detail:Control
 var quest_wood:Label
@@ -83,17 +83,17 @@ func toggle_quest()->void:
 func update_quest()->void:
 	if not is_instance_valid(objective):return
 	var level:=model.chief_level()
-	objective.text="본부를 건설해요" if level==0 else ("새 주민이 찾아왔어요" if model.family_available() else "주민 %d/%d명 · 본부 %d단계"%[model.resident_count(),model.resident_capacity(),level])
+	objective.text="촌장집를 건설해요" if level==0 else ("새 주민이 찾아왔어요" if model.family_available() else "주민 %d/%d명 · 촌장집 %d단계"%[model.resident_count(),model.resident_capacity(),level])
 	objective.size=Vector2(177,26)
 	objective.get_parent().size=Vector2(240,74 if quest_expanded else 40)
-	if is_instance_valid(quest_arrow):quest_arrow.text="⌃" if quest_expanded else "⌄"
+	if is_instance_valid(quest_arrow):quest_arrow.rotation=0.0 if quest_expanded else PI
 	if is_instance_valid(quest_accent):quest_accent.size.y=48 if quest_expanded else 18
 	if is_instance_valid(quest_detail):
 		quest_detail.visible=quest_expanded
 		var cost:=model.building_cost("chief" if level==0 else "hut",1)
 		quest_wood.text="%d/%d"%[mini(int(model.state.wood),int(cost.wood)),int(cost.wood)]
 		quest_stone.text="%d/%d"%[mini(int(model.state.stone),int(cost.stone)),int(cost.stone)]
-		objective.get_parent().tooltip_text="본부 건설 재료" if level==0 else "주민 움집 건설 재료 · 주민이 많으면 움집을 짓거나 업그레이드해 주세요"
+		objective.get_parent().tooltip_text="촌장집 건설 재료" if level==0 else "주민 움집 건설 재료 · 주민이 많으면 움집을 짓거나 업그레이드해 주세요"
 
 func has_pending_rewards()->bool:
 	for i in model.built_count():
@@ -120,7 +120,7 @@ func _ready() -> void:
 	canvas.add_child(ui)
 	ui.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	get_viewport().size_changed.connect(queue_layout)
-	show_screen("onboarding" if not settings.get_value("app","welcomed",false) else "title")
+	show_screen("title")
 
 func queue_layout() -> void:
 	if rebuilding:
@@ -181,6 +181,7 @@ func show_screen(next: String) -> void:
 		"onboarding": onboarding()
 		"title": title_screen()
 		"region": region_screen()
+		"chapter": ChapterSelection.new(self).open()
 		"play": play_hud()
 	toast_panel=PanelContainer.new();stage.add_child(toast_panel)
 	toast_panel.position=Vector2(w*.5-120,safe.y+(190 if w<h else 118) if screen=="play" else safe.y+8);toast_panel.size=Vector2(240,38)
@@ -364,27 +365,27 @@ func welcome(sound: bool) -> void:
 
 func title_screen() -> void:
 	var k:=minf(w/1600,h/900)
-	var title:=design_label(stage,"RoxHistory",design_rect(68,65,600,96),int(88*k),Color("fff0d0"));title.add_theme_constant_override("outline_size",3);title.add_theme_color_override("font_outline_color",Color("49321e"))
-	design_label(stage,"작은 불씨에서 시작되는 우리의 역사",design_rect(78,175,970,48),int(34*k),Color("ffedc7"))
-	design_panel(design_rect(1082,300,440,430))
-	picture(stage,DemoArt.icon("scroll"),design_rect(1108,326,58,53))
-	design_label(stage,"당신의 여정",design_rect(1178,334,260,36),int(25*k),Color("47240e"))
-	var continue_btn:=design_button(stage,"이어서 하기",design_rect(1108,401,388,90),enter_game,true,"hut");continue_btn.disabled=model.state.is_empty();continue_btn.hint_text="먼저 새 여정을 시작해 주세요."
-	design_button(stage,"새로 시작",design_rect(1108,513,388,82),new_game_prompt,false,"spear")
-	design_button(stage,"설정",design_rect(1108,617,388,82),pause_game,false,"compass")
-	var horn:=design_button(stage,"",design_rect(1313,20,220,220),toggle_sound,false,"horn")
-	horn.name="SoundToggle";horn.set_meta("semantic_text","소리 켜기 / 끄기")
-	horn.get_node("FigmaSkin").hide()
-	for state in ["normal","hover","pressed","disabled","focus"]:horn.add_theme_stylebox_override(state,StyleBoxEmpty.new())
-	for child in horn.get_children():
-		if child is TextureRect:
-			child.size=Vector2.ONE*176*.54*2*.7*minf(w/1600,h/900)
-			child.position=(horn.size-child.size)*.5
-			var cast:=child.duplicate();cast.name="HornShadow";cast.position+=Vector2(1,3);cast.modulate=Color(0.12,0.07,0.02,.35);horn.add_child(cast);horn.move_child(cast,child.get_index())
-	horn.enable_art_feedback()
-	design_panel(design_rect(76,744,360,78),false)
-	picture(stage,DemoArt.icon("hut"),design_rect(95,760,50,46))
-	design_label(stage,"1장 · 선사시대의 첫 불씨",design_rect(157,767,270,32),int(21*k),Color("49321e"))
+	var title:=design_label(stage,"RoxHistory",design_rect(68,65,900,100),maxi(32,int(88*k)),Color("fff0d0"))
+	title.add_theme_constant_override("outline_size",3)
+	title.add_theme_color_override("font_outline_color",Color("49321e"))
+	design_label(stage,"작은 불씨에서 시작되는 우리의 역사",design_rect(78,175,1100,48),maxi(18,int(34*k)),Color("ffedc7"))
+	var start:=button(stage,"화면을 터치하여 시작",start_or_continue)
+	start.name="StartGame";start.custom_minimum_size=Vector2.ZERO
+	start.position=Vector2(w*.5-180,h-safe.y-100);start.size=Vector2(360,64)
+	for state in ["normal","hover","pressed","focus"]:start.add_theme_stylebox_override(state,StyleBoxEmpty.new())
+	start.add_theme_font_size_override("font_size",24)
+	start.add_theme_color_override("font_color",Color("fff0d0"))
+	start.add_theme_color_override("font_outline_color",Color("49321e"));start.add_theme_constant_override("outline_size",3)
+	var config:=button(stage,"",pause_game)
+	config.name="TitleSettings";config.custom_minimum_size=Vector2.ZERO;config.position=Vector2(w-safe.x-60,h-safe.y-64);config.size=Vector2(56,56)
+	for state in ["normal","hover","pressed","focus"]:config.add_theme_stylebox_override(state,StyleBoxEmpty.new())
+	picture(config,preload("res://assets/ui/v0158/settings.svg"),Rect2(4,4,48,48))
+	config.set_meta("semantic_text","설정")
+
+func start_or_continue()->void:
+	if modal:return
+	if model.state.is_empty():chapter_menu()
+	else:enter_game()
 
 func toggle_sound() -> void:
 	settings.set_value("app","sound",not settings.get_value("app","sound",false))
@@ -392,7 +393,8 @@ func toggle_sound() -> void:
 	else:sync_audio();toast("소리 켜짐" if settings.get_value("app","sound",false) else "소리 꺼짐")
 
 func chapter_menu() -> void:
-	show_modal("장 선택","1장 · 선사시대의 첫 불씨\n암사동 강변에서 첫 보금자리를 지어 보세요.\n\n다음 장은 준비 중입니다.",[{"text":"돌아가기","action":close_modal},{"text":"1장 선택","primary":true,"action":func():close_modal();show_screen("region")}])
+	close_modal()
+	show_screen("chapter")
 
 func new_game_prompt() -> void:
 	show_modal("새 여정 시작","새 여정을 시작하면 기존 진행이 교체됩니다. 소리 설정은 유지합니다.",[
@@ -405,7 +407,7 @@ func full_reset() -> void:
 	if settings.save(prefs_path)!=OK:show_error("설정 초기화를 저장하지 못했습니다.");return
 	model.state.clear();cancel_task()
 	if is_instance_valid(world):remove_child(world);world.queue_free();world=null
-	close_modal();show_screen("onboarding")
+	close_modal();show_screen("title")
 
 func region_screen() -> void:
 	region_selection=RegionSelection.new(self,region_snapshot)
@@ -444,18 +446,16 @@ func enter_game() -> void:
 func play_hud() -> void:
 	var quest_panel:=button(stage,"",toggle_quest);quest_panel.name="QuestPanel";quest_panel.custom_minimum_size=Vector2.ZERO
 	quest_panel.position=Vector2(safe.x,safe.y+(112 if w<h else 59));quest_panel.size=Vector2(240,74)
-	var dark:=StyleBoxFlat.new();dark.bg_color=Color(.14,.11,.075,.80);dark.set_corner_radius_all(12);dark.set_content_margin_all(6)
-	for state in ["normal","hover","pressed"]:quest_panel.add_theme_stylebox_override(state,dark)
-	dark.border_color=Color(.94,.79,.48,.22);dark.set_border_width_all(1)
-	quest_accent=ColorRect.new();quest_accent.color=Color(.95,.73,.34,.7);quest_accent.position=Vector2(0,12);quest_accent.size=Vector2(2,64);quest_accent.mouse_filter=Control.MOUSE_FILTER_IGNORE;quest_panel.add_child(quest_accent)
-	quest_arrow=label(quest_panel,"⌃",16,Color("fff0cd"));quest_arrow.position=Vector2(215,9)
-	picture(quest_panel,DemoArt.icon("hut"),Rect2(9,10,35,35))
-	objective=label(quest_panel,"",14,Color("f9ead1"));objective.position=Vector2(49,9);objective.size=Vector2(177,26)
+	for state in ["normal","hover","pressed","focus"]:quest_panel.add_theme_stylebox_override(state,StyleBoxEmpty.new())
+	var quest_bg:=picture(quest_panel,preload("res://assets/ui/v0158/quest-hud-paper.png"),Rect2(-4,-3,248,80))
+	quest_bg.stretch_mode=TextureRect.STRETCH_SCALE;quest_bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT);quest_bg.modulate.a=.9
+	quest_arrow=picture(quest_panel,preload("res://assets/ui/v0158/quest-hud-fold.png"),Rect2(210,12,28,28));quest_arrow.pivot_offset=Vector2(14,14)
+	picture(quest_panel,DemoArt.facility_icon("chief",1),Rect2(8,9,36,36))
+	objective=label(quest_panel,"",13,Color("49321e"));objective.position=Vector2(48,9);objective.size=Vector2(161,26)
 	quest_detail=Control.new();quest_detail.mouse_filter=Control.MOUSE_FILTER_IGNORE;quest_panel.add_child(quest_detail)
-	var line:=ColorRect.new();line.color=Color(.94,.79,.48,.18);line.position=Vector2(49,38);line.size=Vector2(170,1);line.mouse_filter=Control.MOUSE_FILTER_IGNORE;quest_detail.add_child(line)
 	picture(quest_detail,DemoArt.icon("wood"),Rect2(49,46,24,22));picture(quest_detail,DemoArt.icon("stone"),Rect2(139,46,24,22))
-	quest_wood=label(quest_detail,"",16,Color("f9ead1"));quest_wood.position=Vector2(77,43)
-	quest_stone=label(quest_detail,"",16,Color("f9ead1"));quest_stone.position=Vector2(166,43)
+	quest_wood=label(quest_detail,"",14,Color("49321e"));quest_wood.position=Vector2(77,43)
+	quest_stone=label(quest_detail,"",14,Color("49321e"));quest_stone.position=Vector2(166,43)
 	quest_panel.set_meta("semantic_text","퀘스트 상세 펼침·접힘")
 	joystick=DemoJoystick.new();stage.add_child(joystick);joystick.position=Vector2(safe.x,h-safe.y-140);joystick.hide();joystick.set_process_input(false)
 	var action_width:=64.0 if w/h>2.2 else 60.0
@@ -498,6 +498,7 @@ func play_hud() -> void:
 	cancel_site_button.add_theme_font_size_override("font_size",13)
 	var cancel_skin:=StyleBoxFlat.new();cancel_skin.bg_color=Color(.10,.12,.10,.78);cancel_skin.border_color=Color(.8,.65,.39,.5);cancel_skin.set_border_width_all(1);cancel_skin.set_corner_radius_all(10)
 	for state in ["normal","hover","pressed"]:cancel_site_button.add_theme_stylebox_override(state,cancel_skin)
+	var dark:=DemoArt.panel(true)
 	context_panel=PanelContainer.new();stage.add_child(context_panel);context_panel.position=Vector2(w*.5-145,h-safe.y-108);context_panel.size=Vector2(290,32);context_panel.add_theme_stylebox_override("panel",dark);context_panel.mouse_filter=Control.MOUSE_FILTER_IGNORE
 	context=label(context_panel,"",13,Color("fff0cd"));context.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
 	task_bar=ProgressBar.new();task_bar.mouse_filter=Control.MOUSE_FILTER_IGNORE;task_bar.show_percentage=false;task_bar.position=Vector2(w*.5-100,h-safe.y-120);task_bar.size=Vector2(200,7);stage.add_child(task_bar);task_bar.visible=false
@@ -935,7 +936,7 @@ func focus_objective() -> void:
 	if not Rect2(Vector2(80,90),Vector2(w-160,h-190)).has_point(screen_point): world.player.guide_to(point+Vector2(0,-35))
 
 func quest_details() -> void:
-	show_modal("마을을 키워요","본부를 건설하고 주민을 맞이할 집을 마련해 주세요.\n본부 2단계: 화덕·훈련소\n본부 3단계: 신당·초소\n\n본부 단계별 이동 범위: 60% → 70% → 80% → 90%\n상단 주민 표시를 누르면 주민에게 일을 맡길 수 있어요.",[{"text":"돌아가기","action":close_modal}],false,true)
+	QuestScreen.new(self).open()
 
 func pause_game() -> void:
 	cancel_task()

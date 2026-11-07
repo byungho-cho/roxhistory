@@ -1169,239 +1169,103 @@
       }
     },
     "BLD-TRAINING-L1": {
-      "file": "res://assets/buildings/approved-v001/training/training-l1-structure.png",
+      "file": "res://assets/buildings/v0158/training-l1.png",
       "source_size": [
-        1254,
-        1254
+        498,
+        572
       ],
-      "sha256": "0781ec11fe905cfb34c09b50c8c2fb74832e5697e44f959db21e36faf3b9a52d",
-      "source": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=1227-13",
+      "sha256": "16c77b6194e954c4d69a870fe76fe48639a53db360b68720c74d8e7fc1f89eed",
+      "source": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=1328-5210",
       "approved": true,
       "review_only": false,
-      "source_status": "review_candidate_not_pixel_exact",
-      "integration_authorization": "Current approved game-improvement task, 2026-11-07; source audit metadata retained.",
-      "content_bbox_alpha8": [
-        512,
-        170,
-        729,
-        1016
-      ],
-      "alignment": "bottom",
-      "notes": "Original PNG bytes preserved. Runtime crop and uniform scale are presentation metadata; no generative edits.",
+      "source_status": "approved_figma_transparent_export",
+      "notes": "Latest approved training-ground retouch. Separate common floor retained. Uniform scale and common bottom anchor.",
       "crop": [
-        508,
-        166,
-        225,
-        854
+        3,
+        0,
+        486,
+        566
       ],
       "anchor": [
         0.5,
         1.0
       ],
-      "figma_preview": {
-        "node_id": "1221:63",
-        "frame_node_id": "1229:25",
-        "frame_dimensions_px": [
-          320,
-          280
-        ],
-        "x": 146.29977,
-        "y": 86,
-        "width": 27.40047,
-        "height": 104,
-        "image_scale_mode": "CROP",
-        "image_transform": [
-          [
-            0.17942583560943604,
-            0,
-            0.4051036536693573
-          ],
-          [
-            0,
-            0.6810207366943359,
-            0.13237640261650085
-          ]
-        ],
-        "display_px_per_cropped_source_px": 0.12177986
-      },
-      "runtime_height_at_reference_width_320": 104.0,
+      "runtime_height_at_reference_width_320": 180,
       "runtime_alignment": "bottom"
     },
     "BLD-TRAINING-L2": {
-      "file": "res://assets/buildings/approved-v001/training/training-l2-structure.png",
+      "file": "res://assets/buildings/v0158/training-l2.png",
       "source_size": [
-        1254,
-        1254
+        643,
+        643
       ],
-      "sha256": "1baf11f5a04cceec16ddfad00c7134a62a58a5e25fb6a7c09f28dd9b1d1115c0",
-      "source": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=1227-13",
+      "sha256": "bb49ed3259307729e2bd56340b49bb276337f8d6316a8588fa19f5b5a99a315b",
+      "source": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=1328-5210",
       "approved": true,
       "review_only": false,
-      "source_status": "review_candidate_not_pixel_exact",
-      "integration_authorization": "Current approved game-improvement task, 2026-11-07; source audit metadata retained.",
-      "content_bbox_alpha8": [
-        132,
-        40,
-        1132,
-        1225
-      ],
-      "alignment": "bottom",
-      "notes": "Original PNG bytes preserved. Runtime crop and uniform scale are presentation metadata; no generative edits.",
+      "source_status": "approved_figma_transparent_export",
+      "notes": "Latest approved training-ground retouch. Separate common floor retained. Uniform scale and common bottom anchor.",
       "crop": [
-        128,
-        36,
-        1008,
-        1193
+        4,
+        9,
+        632,
+        629
       ],
       "anchor": [
         0.5,
         1.0
       ],
-      "figma_preview": {
-        "node_id": "1221:66",
-        "frame_node_id": "1229:26",
-        "frame_dimensions_px": [
-          320,
-          280
-        ],
-        "x": 124.17502,
-        "y": 105.2,
-        "width": 71.64996,
-        "height": 84.8,
-        "image_scale_mode": "CROP",
-        "image_transform": [
-          [
-            0.8038277626037598,
-            0,
-            0.10207336395978928
-          ],
-          [
-            0,
-            0.9513556361198425,
-            0.028708133846521378
-          ]
-        ],
-        "display_px_per_cropped_source_px": 0.07108131
-      },
-      "runtime_height_at_reference_width_320": 84.8,
+      "runtime_height_at_reference_width_320": 202.5,
       "runtime_alignment": "bottom"
     },
     "BLD-TRAINING-L3": {
-      "file": "res://assets/buildings/approved-v001/training/training-l3-structure.png",
+      "file": "res://assets/buildings/v0158/training-l3.png",
       "source_size": [
-        1774,
-        887
+        664,
+        672
       ],
-      "sha256": "0c0433f074845ebac85c6b31203be6a4edbc0578ca75fd0d7068ccf5f0fb588d",
-      "source": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=1227-13",
+      "sha256": "6fc9e11acda3c46f00734cbbc4082294c95f625bb56600d50a1983a55e8682ce",
+      "source": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=1328-5210",
       "approved": true,
       "review_only": false,
-      "source_status": "review_candidate_not_pixel_exact",
-      "integration_authorization": "Current approved game-improvement task, 2026-11-07; source audit metadata retained.",
-      "content_bbox_alpha8": [
-        277,
-        72,
-        1471,
-        811
-      ],
-      "alignment": "bottom",
-      "notes": "Original PNG bytes preserved. Runtime crop and uniform scale are presentation metadata; no generative edits.",
+      "source_status": "approved_figma_transparent_export",
+      "notes": "Latest approved training-ground retouch. Separate common floor retained. Uniform scale and common bottom anchor.",
       "crop": [
-        273,
-        68,
-        1202,
-        747
+        6,
+        0,
+        651,
+        666
       ],
       "anchor": [
         0.5,
         1.0
       ],
-      "figma_preview": {
-        "node_id": "1221:69",
-        "frame_node_id": "1229:27",
-        "frame_dimensions_px": [
-          320,
-          280
-        ],
-        "x": 85.98125,
-        "y": 98,
-        "width": 148.03749,
-        "height": 92,
-        "image_scale_mode": "CROP",
-        "image_transform": [
-          [
-            0.677564799785614,
-            0,
-            0.1538895219564438
-          ],
-          [
-            0,
-            0.8421645760536194,
-            0.07666290551424026
-          ]
-        ],
-        "display_px_per_cropped_source_px": 0.12315931
-      },
-      "runtime_height_at_reference_width_320": 92.0,
+      "runtime_height_at_reference_width_320": 211.5,
       "runtime_alignment": "bottom"
     },
     "BLD-TRAINING-L4": {
-      "file": "res://assets/buildings/approved-v001/training/training-l4-structure.png",
+      "file": "res://assets/buildings/v0158/training-l4.png",
       "source_size": [
-        1254,
-        1254
+        362,
+        365
       ],
-      "sha256": "d70b0eb1f13cd77bd6cf2034e3792c72ca2568c15acc2fe3c9d8a1db991d45e6",
-      "source": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=1227-13",
+      "sha256": "94cb1999f53fc3c44344389964b49c1a38e764f71c4c249e93ddc17801e0042f",
+      "source": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=1328-5210",
       "approved": true,
       "review_only": false,
-      "source_status": "review_candidate_not_pixel_exact",
-      "integration_authorization": "Current approved game-improvement task, 2026-11-07; source audit metadata retained.",
-      "content_bbox_alpha8": [
-        51,
-        201,
-        1211,
-        1049
-      ],
-      "alignment": "bottom",
-      "notes": "Original PNG bytes preserved. Runtime crop and uniform scale are presentation metadata; no generative edits.",
+      "source_status": "approved_figma_transparent_export",
+      "notes": "Latest approved training-ground retouch. Separate common floor retained. Uniform scale and common bottom anchor.",
       "crop": [
-        47,
-        197,
-        1168,
-        856
+        1,
+        1,
+        358,
+        359
       ],
       "anchor": [
         0.5,
         1.0
       ],
-      "figma_preview": {
-        "node_id": "1221:72",
-        "frame_node_id": "1229:28",
-        "frame_dimensions_px": [
-          320,
-          280
-        ],
-        "x": 78.13084,
-        "y": 70,
-        "width": 163.73831,
-        "height": 120,
-        "image_scale_mode": "CROP",
-        "image_transform": [
-          [
-            0.9314194321632385,
-            0,
-            0.03748006373643875
-          ],
-          [
-            0,
-            0.6826156377792358,
-            0.15709729492664337
-          ]
-        ],
-        "display_px_per_cropped_source_px": 0.14018691
-      },
-      "runtime_height_at_reference_width_320": 120.0,
+      "runtime_height_at_reference_width_320": 229.5,
       "runtime_alignment": "bottom"
     },
     "BLD-SHRINE-L1": {

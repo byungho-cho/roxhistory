@@ -14,7 +14,7 @@ func _ready()->void:
 		button.custom_minimum_size=TILE_SIZE;button.size=TILE_SIZE
 		for state in ["normal","hover","pressed","disabled","focus"]:button.add_theme_stylebox_override(state,StyleBoxEmpty.new())
 		IntegratedMenuArt.install(button,"side-"+kind,Vector2(92,102))
-		var locked:Label=app.label(button.art_feedback,"잠김",11,Color("fff5d6"));locked.name="Locked";locked.position=Vector2(25,47);locked.size=Vector2(42,20);locked.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER;style_label(locked)
+		var locked:=TextureRect.new();locked.name="Locked";locked.texture=IntegratedMenuArt.trimmed(load("res://assets/ui/v0158/lock.png"));locked.expand_mode=TextureRect.EXPAND_IGNORE_SIZE;locked.stretch_mode=TextureRect.STRETCH_KEEP_ASPECT_CENTERED;locked.position=Vector2(30,36);locked.size=Vector2(32,34);locked.mouse_filter=Control.MOUSE_FILTER_IGNORE;button.art_feedback.add_child(locked)
 		button.enable_art_feedback();entries[kind]=button
 	hut=entries.hut;outpost_button=entries.outpost
 	refresh()

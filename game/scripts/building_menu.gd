@@ -9,7 +9,7 @@ var close_button:DemoButton
 var saved_camera_offset:=Vector2.ZERO
 var framing_active:=false
 static var textures:Dictionary={}
-const ANCHOR_Y:=-42.0 # Previous +8 shifted up by 50 logical UI pixels.
+const ANCHOR_Y:=-62.0 # Approved menu raised another 20 logical UI pixels to overlap the building.
 const ROOT:="res://assets/ui/building-menu-v001/"
 func _init(owner_app:Node)->void:app=owner_app
 static func art(file:String)->Texture2D:
@@ -90,7 +90,7 @@ func refresh()->void:
 	upgrade_button.disabled=not upgrade_reason.is_empty();upgrade_button.hint_text=upgrade_reason
 	var quote:Dictionary=app.model.demolition_quote(selected_key)
 	demolish_button.disabled=selected_key=="chief" or quote.is_empty() or not quote.get("supported",false) or owned.get("data",{}).has("upgrade") or (i>=0 and app.model.reward_pending(i))
-	demolish_button.hint_text="주인공 본부는 철거할 수 없어요" if selected_key=="chief" else "건물 위 씨앗 보상을 먼저 받아 주세요"
+	demolish_button.hint_text="촌장집은 철거할 수 없어요" if selected_key=="chief" else "건물 위 씨앗 보상을 먼저 받아 주세요"
 	if owned.get("data",{}).has("upgrade"):demolish_button.hint_text="공사 완료 후 철거할 수 있어요"
 	elif i>=0 and app.model.resident_capacity()-[1,2,3,5][clampi(int(owned.data.get("level",1)),1,4)-1]<app.model.resident_count():demolish_button.hint_text="주민이 살 집이 부족해져요. 다른 움집을 먼저 마련해 주세요"
 	elif selected_key!="chief" and (quote.is_empty() or not quote.get("supported",false)):demolish_button.hint_text="이 건물은 지금 철거할 수 없어요"
@@ -113,7 +113,8 @@ func refresh()->void:
 		bounds=sprite.get_global_transform_with_canvas()*sprite.get_rect()
 		anchor=Vector2(bounds.get_center().x,bounds.end.y)
 	position=anchor+Vector2(-size.x*.5,ANCHOR_Y)
-	close_button.global_position=Vector2(bounds.end.x+4,bounds.end.y-98)
+	close_button.position=Vector2(240,-32)
+	queue_redraw()
 
 func _process(_delta:float)->void:
 	if not visible:return
@@ -133,3 +134,9 @@ func demolish()->void:
 	var key:=selected_key
 	if key=="chief" or app.model.demolition_quote(key).is_empty():return
 	close();app.show_demolition_confirmation(key)
+
+func _draw()->void:
+	# Connect only the action buttons through the close endpoint, never the building.
+	var points:=PackedVector2Array([Vector2(48,38),Vector2(75,62),Vector2(110,76),Vector2(144,74),Vector2(180,64),Vector2(214,47),Vector2(240,38),Vector2(255,18),Vector2(264,-8)])
+	draw_polyline(points,Color("765021"),7,true)
+	draw_polyline(points,Color("e9b64f"),4,true)

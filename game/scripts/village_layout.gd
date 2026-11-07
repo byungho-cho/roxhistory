@@ -66,11 +66,13 @@ func foundation(cell:Vector2,span:int,level:int=1)->void:
 func road(a:Vector2,b:Vector2)->void:
 	if a==b:return
 	var delta:=b-a
-	var steps:=maxi(1,ceili(maxf(absf(delta.x),absf(delta.y))))
-	for i in steps:
-		var c:=a+delta*(float(i)+.5)/steps
-		var s:=Sprite2D.new();s.texture=AssetCatalog.texture("GROUND-ROAD");s.position=project(c)
-		# Extract the central connecting section in the shader; consistent 1-cell width.
-		var material:=ShaderMaterial.new();material.shader=preload("res://shaders/road_tile.gdshader");s.material=material;s.z_index=1;s.texture_filter=CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
-		s.scale=Vector2(64.0/s.texture.get_width(),32.0/s.texture.get_height());s.flip_h=delta.x!=0
-		add_child(s)
+	# Continuous one-cell-wide ribbon in the same isometric grid as the floor.
+	# Old diamond stamps narrowed to a point where neighbouring tiles met.
+	var along:=delta.normalized();var across:=Vector2(-along.y,along.x)*.5
+	var polygon:=Polygon2D.new();polygon.name="RoadCellRibbon"
+	polygon.polygon=PackedVector2Array([project(a-along*.5-across),project(b+along*.5-across),project(b+along*.5+across),project(a-along*.5+across)])
+	polygon.texture=AssetCatalog.texture("GROUND-ROAD")
+	var tex_size:=polygon.texture.get_size()
+	polygon.uv=PackedVector2Array([Vector2.ZERO,Vector2(tex_size.x,0),tex_size,Vector2(0,tex_size.y)])
+	var material:=ShaderMaterial.new();material.shader=load("res://assets/ui/v0158/road_ribbon.gdshader");polygon.material=material
+	polygon.antialiased=true;polygon.z_index=1;polygon.set_meta("grid_width",1.0);add_child(polygon)

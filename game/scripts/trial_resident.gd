@@ -64,6 +64,17 @@ func _physics_process(delta:float)->void:
 		visual.viewport.render_target_update_mode=SubViewport.UPDATE_ONCE
 		visual_elapsed=0
 
+# Read-only status used by the resident assignment panel. No rewards occur here.
+func work_status()->String:
+	if not jobs.available(resident_id):return "방문 중"
+	if jobs.model.chief_level()<=0:return "촌장집 필요"
+	var item:=jobs.entry(resident_id)
+	if not item.cargo.is_empty():
+		if job_phase=="wait":return "전달 대기"
+		return "촌장집으로 이동 중"
+	if item.job=="idle":return "쉬는 중"
+	return {"travel":"자원으로 이동 중","harvest":"채집 중","wait":"자원·경로 대기"}.get(job_phase,"작업 준비 중")
+
 # A stopped/reassigned worker first delivers the existing load, never discards it.
 func _job_tick(delta:float)->bool:
 	var item:=jobs.entry(resident_id)

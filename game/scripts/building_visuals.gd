@@ -3,7 +3,7 @@ extends RefCounted
 ## One presentation transform for completed structures and placement previews.
 ## Does not change collision, saved positions, plot geometry or occupation.
 const REFERENCE_WIDTH := 320.0
-const TRAINING_HEIGHTS := [104.0, 84.8, 92.0, 120.0]
+const TRAINING_HEIGHTS := [180.0, 202.5, 211.5, 229.5]
 const SHRINE_HEIGHTS := [166.0, 184.0, 202.0, 222.0]
 const HEARTH_HEIGHTS := [114.57, 139.37, 182.4, 184.3]
 const OUTPOST_GROUND_SPANS := [800.0, 780.0, 790.0, 830.0]
@@ -24,7 +24,7 @@ static func display_size(kind: String, level: int = 1, ground_width: float = 230
 	var scale_factor: float
 	match kind:
 		"training":
-			# The approved L2 is already 0.8 of the preceding proposal. Do not dim/scale twice.
+			# Approved broad silhouette, progressive stages, and requested 10% display reduction.
 			scale_factor = float(TRAINING_HEIGHTS[stage]) * ground_width / REFERENCE_WIDTH / source.get_height()
 		"shrine":
 			scale_factor = float(SHRINE_HEIGHTS[stage]) * ground_width / REFERENCE_WIDTH / source.get_height()
