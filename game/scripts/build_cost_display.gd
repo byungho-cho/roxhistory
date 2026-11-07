@@ -25,3 +25,8 @@ func update_cost(cost:Dictionary)->void:
 	for i in amounts.size():
 		amounts[i].text=str(int(cost.get("wood" if i==0 else "stone",0)))
 		amounts[i].add_theme_font_size_override("font_size",36 if amounts[i].text.length()<=3 else 27)
+		var font:Font=amounts[i].get_theme_font("font")
+		var font_size:int=amounts[i].get_theme_font_size("font_size")
+		while font_size>8 and font.get_string_size(amounts[i].text,HORIZONTAL_ALIGNMENT_LEFT,-1,font_size).x>amounts[i].size.x:
+			font_size-=1
+		amounts[i].add_theme_font_size_override("font_size",font_size)

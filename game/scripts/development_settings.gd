@@ -28,6 +28,8 @@ static func open(app:Node)->void:
 	scroll.name="DevelopmentSettingsScroll"
 	scroll.follow_focus=true
 	populate(app,scroll,entries(app))
+	var padding:=Control.new();padding.custom_minimum_size=Vector2(1,8)
+	scroll.get_node("SettingsList").add_child(padding)
 
 static func populate(app:Node,scroll:ScrollContainer,settings:Array[Dictionary])->void:
 	var list:=VBoxContainer.new()

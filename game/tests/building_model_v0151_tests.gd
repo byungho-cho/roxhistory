@@ -15,7 +15,8 @@ func run()->void:
 	check(model.state.wood==99999 and model.state.stone==99999 and model.state.tokens==99999,"All test balances99999")
 	check(not model.can_build() and not model.can_upgrade_chief(),"HQ0 locks resident build and upgrade")
 	check(model.can_construct("chief") and model.building_unlocked("chief"),"HQ0 permits first HQ")
-	check(model.debug_unlimited_builders and not model.debug_fast_build,"Fresh unlimited preserved; normal clocks default")
+	check(model.debug_unlimited_builders and model.debug_fast_build and model.debug_unlimited_buildings and model.debug_show_boundary,"All development switches default ON for a fresh game")
+	model.set_debug_fast_build(false);model.debug_unlimited_buildings=false;model.debug_show_boundary=false
 	model.debug_unlimited_builders=false
 	check(not model.debug_unlimited_builders and model.state.debug_unlimited_builders==false,"Direct builder toggle saves and reads back")
 	model=GameState.new(store)
@@ -180,6 +181,7 @@ func run()->void:
 	invalid=model.state.duplicate(true);invalid.pending_family_count=4;check(not store.valid(invalid),"Party above3 rejected")
 	invalid=model.state.duplicate(true);invalid.family_next_at=NAN;check(not store.valid(invalid),"Nonfinite family timer rejected")
 	# Failed writes never charge/refund/apply settings or remove jobs in memory.
+	model.set_debug_fast_build(false)
 	check(model.begin_construction("hut",DemoConfig.BUILD_SITES[0],now),"Prepare save-failure job")
 	uid=str(model.construction_jobs()[0].uid)
 	var original:=model.state.duplicate(true)

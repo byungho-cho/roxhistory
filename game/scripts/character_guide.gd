@@ -32,7 +32,7 @@ func _ready()->void:
 		var text:=Label.new();text.theme=DemoArt.theme();text.text=item[0];
 		var font:=FontVariation.new();font.base_font=FigmaArt.NOTO;font.variation_opentype={TextServerManager.get_primary_interface().name_to_tag("wght"):700.0 if item[1]==30 else 400.0};text.add_theme_font_override("font",font);text.add_theme_font_size_override("font_size",item[1]);text.add_theme_color_override("font_color",Color("1f1c17"));text.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART;text.size_flags_horizontal=Control.SIZE_EXPAND_FILL;column.add_child(text)
 	character=picture(layout,preload("res://assets/ui/v0159/guide-character.png"),Rect2(-67,202,468,425));character.name="GuideCharacter";character.stretch_mode=TextureRect.STRETCH_KEEP_ASPECT_COVERED;character.pivot_offset=Vector2(234,425)
-	close_button=Button.new();close_button.name="CloseGuide";close_button.position=Vector2(1034,415);close_button.size=Vector2(58,54);close_button.focus_mode=Control.FOCUS_NONE;close_button.tooltip_text="안내 닫기";panel_group.add_child(close_button)
+	close_button=DemoButton.new();close_button.name="CloseGuide";close_button.position=Vector2(1034,415);close_button.size=Vector2(58,54);close_button.focus_mode=Control.FOCUS_NONE;close_button.tooltip_text="안내 닫기";panel_group.add_child(close_button)
 	for state in ["normal","hover","pressed","disabled","focus"]:close_button.add_theme_stylebox_override(state,StyleBoxEmpty.new())
 	var close_art:=AtlasTexture.new();close_art.atlas=preload("res://assets/ui/v0159/guide-close.png");close_art.region=Rect2(270,290,480,480);close_art.filter_clip=true
 	picture(close_button,close_art,Rect2(15,13,28,28))

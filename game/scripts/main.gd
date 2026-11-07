@@ -83,9 +83,9 @@ func toggle_quest()->void:
 func update_quest()->void:
 	if not is_instance_valid(objective):return
 	var level:=model.chief_level()
-	objective.text="촌장집를 건설해요" if level==0 else ("새 주민이 찾아왔어요" if model.family_available() else "주민 %d/%d명 · 촌장집 %d단계"%[model.resident_count(),model.resident_capacity(),level])
-	objective.size=Vector2(177,26)
-	objective.get_parent().size=Vector2(240,74 if quest_expanded else 40)
+	objective.text="촌장집을 건설해요" if level==0 else ("새 주민이 찾아왔어요" if model.family_available() else "주민 %d/%d명 · 촌장집 %d단계"%[model.resident_count(),model.resident_capacity(),level])
+	objective.size=Vector2(152,24)
+	objective.get_parent().size=Vector2(240,80 if quest_expanded else 48)
 	if is_instance_valid(quest_arrow):quest_arrow.rotation=0.0 if quest_expanded else PI
 	if is_instance_valid(quest_accent):quest_accent.size.y=48 if quest_expanded else 18
 	if is_instance_valid(quest_detail):
@@ -448,17 +448,17 @@ func enter_game() -> void:
 
 func play_hud() -> void:
 	var quest_panel:=button(stage,"",toggle_quest);quest_panel.name="QuestPanel";quest_panel.custom_minimum_size=Vector2.ZERO
-	quest_panel.position=Vector2(safe.x,safe.y+(112 if w<h else 59));quest_panel.size=Vector2(240,74)
+	quest_panel.position=Vector2(safe.x,safe.y+(112 if w<h else 59));quest_panel.size=Vector2(240,80)
 	for state in ["normal","hover","pressed","focus"]:quest_panel.add_theme_stylebox_override(state,StyleBoxEmpty.new())
-	var quest_bg:=picture(quest_panel,preload("res://assets/ui/v0158/quest-hud-paper.png"),Rect2(-4,-3,248,80))
+	var quest_bg:=picture(quest_panel,preload("res://assets/ui/v0158/quest-hud-paper.png"),Rect2(0,0,240,80))
 	quest_bg.stretch_mode=TextureRect.STRETCH_SCALE;quest_bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT);quest_bg.modulate.a=.9
-	quest_arrow=picture(quest_panel,preload("res://assets/ui/v0158/quest-hud-fold.png"),Rect2(210,12,28,28));quest_arrow.pivot_offset=Vector2(14,14)
-	picture(quest_panel,DemoArt.facility_icon("chief",1),Rect2(8,9,36,36))
-	objective=label(quest_panel,"",13,Color("49321e"));objective.position=Vector2(48,9);objective.size=Vector2(161,26)
+	quest_arrow=picture(quest_panel,preload("res://assets/ui/v0158/quest-hud-fold.png"),Rect2(208,8,24,24));quest_arrow.pivot_offset=Vector2(12,12)
+	picture(quest_panel,DemoArt.facility_icon("chief",1),Rect2(8,8,32,32))
+	objective=label(quest_panel,"",13,Color("49321e"));objective.position=Vector2(48,8);objective.size=Vector2(152,24);objective.clip_text=true
 	quest_detail=Control.new();quest_detail.mouse_filter=Control.MOUSE_FILTER_IGNORE;quest_panel.add_child(quest_detail)
-	picture(quest_detail,DemoArt.icon("wood"),Rect2(49,46,24,22));picture(quest_detail,DemoArt.icon("stone"),Rect2(139,46,24,22))
-	quest_wood=label(quest_detail,"",14,Color("49321e"));quest_wood.position=Vector2(77,43)
-	quest_stone=label(quest_detail,"",14,Color("49321e"));quest_stone.position=Vector2(166,43)
+	picture(quest_detail,DemoArt.icon("wood"),Rect2(48,48,24,24));picture(quest_detail,DemoArt.icon("stone"),Rect2(142,48,24,24))
+	quest_wood=label(quest_detail,"",12,Color("49321e"));quest_wood.position=Vector2(76,48);quest_wood.size=Vector2(58,24)
+	quest_stone=label(quest_detail,"",12,Color("49321e"));quest_stone.position=Vector2(170,48);quest_stone.size=Vector2(62,24)
 	quest_panel.set_meta("semantic_text","퀘스트 상세 펼침·접힘")
 	joystick=DemoJoystick.new();stage.add_child(joystick);joystick.position=Vector2(safe.x,h-safe.y-140);joystick.hide();joystick.set_process_input(false)
 	var action_width:=64.0 if w/h>2.2 else 60.0
@@ -1012,7 +1012,7 @@ func show_modal(title: String, body: String, actions: Array, compact: bool = fal
 	var p := box(overlay,Rect2(at,Vector2(width,height)))
 	var v := column(p,8 if brief else 12)
 	var modal_title:=label(v,title,20 if brief else 28,Color("47240e"));modal_title.add_theme_font_override("font",FigmaArt.TITLE)
-	var scroll := ScrollContainer.new()
+	var scroll:ScrollContainer = DevelopmentSettingsScroll.new() if title=="개발 설정" else ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	v.add_child(scroll)
@@ -1102,7 +1102,7 @@ func _notification(what: int) -> void:
 		sync_audio()
 		if is_instance_valid(world): world.feedback.clear_transients()
 		if is_instance_valid(joystick): joystick.clear()
-		cancel_task()
+		if not overlay is CharacterGuide:cancel_task()
 		if is_instance_valid(world) and screen == "play":
 			world.player.direction = Vector2.ZERO
 			world.player.presentation_paused = true

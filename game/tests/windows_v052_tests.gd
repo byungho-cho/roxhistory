@@ -26,6 +26,8 @@ func capture(file:String)->void:
 func run()->void:
 	app=load("res://scenes/main.tscn").instantiate();root.add_child(app);await frames()
 	app.test_mode=true;app.model=GameState.new(SaveStore.new("user://v052_%d"%Time.get_ticks_usec()));app.model.start_new();app.model.changed.connect(app.update_hud)
+	app.model.set_debug_fast_build(false);app.model.debug_unlimited_buildings=false
+	var fixture:Dictionary=app.model.state.duplicate(true);fixture.resident_guide_seen=true;app.model.commit(fixture)
 	app.enter_game();await frames(8)
 	for animal in app.world.animals:animal.set_physics_process(false)
 	check(not app.model.debug_unlimited_buildings,"Normal building caps default")
@@ -69,10 +71,18 @@ func run()->void:
 		state=app.model.state.duplicate(true);state.chief_level=tier;app.model.commit(state)
 		check(app.model.home_limit()==[1,2,3,3][tier-1],"HQ%d hut cap"%tier)
 	state=app.model.state.duplicate(true);state.chief_level=3;app.model.commit(state);await frames()
+	# Tier changes now show the reusable growth guide before other modal actions.
+	for notice in 3:
+		if not app.overlay is CharacterGuide:break
+		check(app.overlay.heading.begins_with("촌장집"),"Growth guide owns input before upgrade")
+		var dismiss:Vector2=app.overlay.close_button.get_global_rect().get_center()
+		mouse(dismiss,MOUSE_BUTTON_LEFT,true);mouse(dismiss,MOUSE_BUTTON_LEFT,false);await frames()
 	app.building_workflow.request_upgrade();await frames()
 	check(app.overlay.find_child("UpgradeConfirmation",true,false)!=null,"Compact approved upgrade panel")
 	await capture("upgrade")
 	var confirm:Button=app.overlay.find_child("ConfirmUpgrade",true,false)
+	if confirm==null:
+		app.queue_free();await frames();quit(1);return
 	var price:int=app.model.state.wood
 	var click:=confirm.get_global_rect().get_center();mouse(click,MOUSE_BUTTON_LEFT,true);mouse(click,MOUSE_BUTTON_LEFT,false);await frames()
 	check(app.model.state.has("chief_upgrade") and app.model.state.wood==price-300,"Actual compact confirm starts upgrade")

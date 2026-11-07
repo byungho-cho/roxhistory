@@ -39,15 +39,16 @@ func item(title:String,file:String,at:Vector2,diameter:float,callback:Callable)-
 		caption.add_theme_color_override("font_outline_color",Color("231b12"));caption.add_theme_constant_override("outline_size",4);caption.mouse_filter=Control.MOUSE_FILTER_IGNORE
 	b.enable_art_feedback();return b
 func _ready()->void:
-	name="BuildingMenu";mouse_filter=Control.MOUSE_FILTER_IGNORE;z_index=8;size=Vector2(288,132)
+	name="BuildingMenu";mouse_filter=Control.MOUSE_FILTER_IGNORE;z_index=8;size=Vector2(288,132)*.8
 	move_button=app.button(self,"",move_selected);move_button.name="Move"
-	IntegratedMenuArt.install(move_button,"move",Vector2(96,96));move_button.position=Vector2.ZERO
+	IntegratedMenuArt.install(move_button,"move",Vector2(96,96)*.8);move_button.position=Vector2.ZERO
 	upgrade_button=app.button(self,"",upgrade);upgrade_button.name="Upgrade"
-	IntegratedMenuArt.install(upgrade_button,"upgrade",Vector2(96,96));upgrade_button.position=Vector2(96,36)
+	IntegratedMenuArt.install(upgrade_button,"upgrade",Vector2(96,96)*.8);upgrade_button.position=Vector2(96,36)*.8
 	demolish_button=app.button(self,"",demolish);demolish_button.name="Demolish"
-	IntegratedMenuArt.install(demolish_button,"demolish",Vector2(96,96));demolish_button.position=Vector2(192,0)
+	IntegratedMenuArt.install(demolish_button,"demolish",Vector2(96,96)*.8);demolish_button.position=Vector2(192,0)*.8
 	close_button=app.button(self,"",close);close_button.name="Close"
-	IntegratedMenuArt.install(close_button,"close",Vector2(48,48))
+	IntegratedMenuArt.install(close_button,"close",Vector2(48,48)*.8);close_button.custom_minimum_size=Vector2(44,44);close_button.size=Vector2(44,44)
+	close_button.art_feedback.get_node("IntegratedImage").position=Vector2(2.8,2.8)
 	hide()
 func close()->void:
 	selected_key="";hide()
@@ -113,7 +114,7 @@ func refresh()->void:
 		bounds=sprite.get_global_transform_with_canvas()*sprite.get_rect()
 		anchor=Vector2(bounds.get_center().x,bounds.end.y)
 	position=anchor+Vector2(-size.x*.5,ANCHOR_Y)
-	close_button.position=Vector2(240,-32)
+	close_button.position=Vector2(size.x+8,-12)
 	queue_redraw()
 
 func _process(_delta:float)->void:
@@ -138,5 +139,7 @@ func demolish()->void:
 func _draw()->void:
 	# Connect only the action buttons through the close endpoint, never the building.
 	var points:=PackedVector2Array([Vector2(48,38),Vector2(75,62),Vector2(110,76),Vector2(144,74),Vector2(180,64),Vector2(214,47),Vector2(240,38),Vector2(255,18),Vector2(264,-8)])
+	for i in points.size():points[i]*=.8
+	points[points.size()-1]=close_button.position+close_button.size*.5
 	draw_polyline(points,Color("765021"),7,true)
 	draw_polyline(points,Color("e9b64f"),4,true)
