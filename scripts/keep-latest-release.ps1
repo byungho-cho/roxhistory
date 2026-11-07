@@ -33,8 +33,11 @@ foreach ($release in $releases) {
         if ([version]$Matches[1] -gt $keep.version) { continue }
         Write-Output "$(if($Apply){'Remove'}else{'Would remove'}): $($release.tag_name)/$($asset.name)"
         if ($Apply) {
-            & gh api --method DELETE "repos/$Repository/releases/assets/$($asset.id)"
-            if ($LASTEXITCODE -ne 0) { throw 'Asset cleanup failed; release records and tags remain intact.' }
+            $deleteResponse = & gh api --method DELETE "repos/$Repository/releases/assets/$($asset.id)" 2>&1
+            # A release event and local publish can reach the same asset concurrently.
+            if ($LASTEXITCODE -ne 0 -and ($deleteResponse -join "`n") -notmatch 'HTTP 404|"status"\s*:\s*"?404') {
+                throw 'Asset cleanup failed; release records and tags remain intact.'
+            }
         }
     }
 }
