@@ -1,0 +1,31 @@
+name: Keep latest Android and Windows release
+
+on:
+  push:
+    branches: [main]
+  release:
+    types: [published, edited]
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-asset-retention
+  cancel-in-progress: false
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          sparse-checkout: scripts/keep-latest-release.ps1
+          sparse-checkout-cone-mode: false
+      - name: Preserve latest complete APK and EXE pair
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: ./scripts/keep-latest-release.ps1 -Repository '${{ github.repository }}' -Apply

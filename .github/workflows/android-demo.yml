@@ -1,3 +1,4 @@
+# Validation only. Build/publish both platforms with scripts/build-release.ps1 and scripts/publish-release.ps1.
 name: Android playable demo
 on:
   push:
@@ -9,10 +10,6 @@ on:
     inputs:
       legacy_scene_checks:
         description: "Run historical scene-coordinate checks (pre-isometric terrain)"
-        type: boolean
-        default: false
-      build_android:
-        description: "Build APK only after an explicit user request"
         type: boolean
         default: false
 permissions:
@@ -156,20 +153,6 @@ jobs:
           ! grep -E 'SCRIPT ERROR:|ERROR:' build-preview-tests.log
           timeout 180 xvfb-run -a godot --fixed-fps 60 --audio-driver Dummy --path game --resolution 1280x720 --script res://tests/clean_terrain_tests.gd -- --test-ui 2>&1 | tee clean-terrain-tests.log
           ! grep -E 'SCRIPT ERROR:|ERROR:' clean-terrain-tests.log
-      - name: Export signed debug APK
-        if: github.event_name == 'workflow_dispatch' && inputs.build_android
-        run: |
-          set -euo pipefail
-          mkdir -p build
-          keytool -genkeypair -keystore "$RUNNER_TEMP/debug.keystore" -alias androiddebugkey -storepass android -keypass android -dname "CN=Android Debug,O=Android,C=US" -keyalg RSA -validity 10000
-          export GODOT_ANDROID_KEYSTORE_DEBUG_PATH="$RUNNER_TEMP/debug.keystore"
-          export GODOT_ANDROID_KEYSTORE_DEBUG_USER=androiddebugkey
-          export GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD=android
-          godot --headless --path game --export-debug Android "$PWD/build/RoxHistory-0.1.22.apk" 2>&1 | tee build/export.log
-          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose build/RoxHistory-0.1.22.apk | tee build/signature.txt
-          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging build/RoxHistory-0.1.22.apk > build/package.txt
-          sha256sum build/RoxHistory-0.1.22.apk > build/SHA256SUMS
-          git rev-parse HEAD > build/SOURCE_COMMIT
       - name: Complete source package
         if: always()
         run: |
@@ -185,10 +168,4 @@ jobs:
             *-tests.log
             import.log
             docs/stage1/
-          retention-days: 30
-      - uses: actions/upload-artifact@v4
-        if: github.event_name == 'workflow_dispatch' && inputs.build_android
-        with:
-          name: RoxHistory-0.1.22-APK
-          path: build/RoxHistory-0.1.22.apk
           retention-days: 30
