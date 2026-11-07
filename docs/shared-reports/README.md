@@ -72,3 +72,5 @@
 
 팀장 검토용 추가 자료: [Lordrush 외부 플레이 영상 MP4와 출처](2026-10-31-lordrush-playtest/evidence/external-video/README.md). 다운로드·공유 완료, 장면별 분석 대기.
 
+
+2026-11-08 추가: [0.1.60 카메라·5초 개발 설정·퀘스트·팝업](2026-11-08-ui-camera-v0160/README.md).

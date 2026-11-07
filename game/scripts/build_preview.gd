@@ -22,16 +22,12 @@ func _ready()->void:
 	ghost.modulate=Color(1,1,.87,.52)
 	controls=HBoxContainer.new();controls.name="BuildPreviewControls";controls.add_theme_constant_override("separation",8);app.stage.add_child(controls)
 	for entry in [["✕","취소",false],["✓","건설 확인",true]]:
-		var b:=DemoButton.new();b.custom_minimum_size=Vector2(48,48);b.focus_mode=Control.FOCUS_NONE;b.name="Confirm" if entry[2] else "Cancel"
-		b.icon=preload("res://assets/ui/v034/build-confirm.png") if entry[2] else preload("res://assets/ui/v034/build-cancel.png")
-		var cropped:=AtlasTexture.new();cropped.atlas=b.icon;cropped.region=b.icon.get_image().get_used_rect();b.icon=cropped
-		b.expand_icon=true;b.add_theme_constant_override("icon_max_width",58)
-		for state in ["normal","hover","pressed","focus","disabled"]:b.add_theme_stylebox_override(state,StyleBoxEmpty.new())
-		b.pressed.connect(app.confirm_build_preview if entry[2] else app.cancel_build_preview);b.unavailable.connect(app.toast)
-		controls.add_child(b)
+		var b:=HudButtons.create(controls,entry[2],app.confirm_build_preview if entry[2] else app.cancel_build_preview,"Confirm" if entry[2] else "Cancel")
+		b.unavailable.connect(app.toast)
 		if entry[2]:move_confirm_button=b;confirm_button=b
 	cost_display=BuildCostDisplay.new();app.stage.add_child(cost_display);cost_display.z_index=9;cost_display.hide()
 	cost_display.confirm_button.pressed.connect(app.confirm_build_preview);cost_display.confirm_button.unavailable.connect(app.toast)
+	cost_display.cancel_button.pressed.connect(app.cancel_build_preview)
 	hide();controls.hide()
 func select(id:int)->void:
 	if id<0 or id>=DemoConfig.BUILD_SITES.size():return
@@ -89,9 +85,8 @@ func update_overlay_layout()->void:
 	var viewport:=Rect2(app.safe,Vector2(app.w,app.h)-app.safe*2)
 	if not visible or not bounds.intersects(viewport):
 		controls.hide();cost_display.hide();return
-	var factor:=minf(1.0,viewport.size.x/380.0)
-	cost_display.scale=Vector2.ONE*factor
-	var extent:=Vector2(380,65)*factor if moving_key.is_empty() else controls.get_combined_minimum_size().max(Vector2(104,48))
+	cost_display.set_world_scale(app.world.get_global_transform_with_canvas().get_scale().x)
+	var extent:=cost_display.screen_extent if moving_key.is_empty() else controls.get_combined_minimum_size().max(Vector2(96,44))
 	var top:=bounds.position.y-extent.y-8
 	var below:=top<viewport.position.y
 	var y:=bounds.end.y+8 if below else top

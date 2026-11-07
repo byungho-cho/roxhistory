@@ -3,6 +3,7 @@ extends Node
 ## Persisted building work is independent of hero movement, map and app visibility.
 var app:Node
 var confirmation_target:=-1
+var confirmation_overlay:Control
 var scaffold:Sprite2D
 var retry_after:=0.0
 var last_visual_level:=-1
@@ -62,16 +63,13 @@ func show_upgrade_confirmation(key:String,cost:Dictionary,callback:Callable)->vo
 	app.close_modal();app.gestures.clear();app.navigation.cancel();app.toast_time=0
 	app.modal=true;app.world.player.presentation_paused=true
 	app.overlay=Control.new();app.overlay.name="CompactUpgradeOverlay";app.overlay.z_index=50
-	app.ui.add_child(app.overlay);app.overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT);app.overlay.mouse_filter=Control.MOUSE_FILTER_STOP
+	app.ui.add_child(app.overlay);app.overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT);app.overlay.mouse_filter=Control.MOUSE_FILTER_IGNORE
 	app.overlay.add_child(UpgradeConfirmation.new(app,key,cost,callback));app.sync_audio()
-	app.overlay.gui_input.connect(func(event:InputEvent):
-		if (event is InputEventMouseButton and event.button_index==MOUSE_BUTTON_LEFT and not event.pressed) or (event is InputEventScreenTouch and not event.pressed):
-			app.get_viewport().set_input_as_handled()
-			app.close_modal())
+	confirmation_overlay=app.overlay
 func upgrade_description(cost:Dictionary,target:int)->String:
 	return "%s\n공사 시간 %d초\n앱을 닫아도 공사가 진행돼요"%[cost_text(cost),int(app.model.building_duration(target))]
 func confirm_upgrade(target:int)->bool:
-	if not app.modal or not app.application_active or confirmation_target!=target:return false
+	if not app.modal or not app.application_active or confirmation_target!=target or not is_instance_valid(confirmation_overlay) or app.overlay!=confirmation_overlay:return false
 	var reason:=upgrade_block_reason(target)
 	if not reason.is_empty():app.close_modal();app.toast(reason);return false
 	if not app.model.upgrade_chief():return false
@@ -182,13 +180,14 @@ func update_constructions()->void:
 func request_cancel_construction(uid:String)->void:request_cancel(uid,false)
 func request_cancel_upgrade(key:String)->void:request_cancel(key,true)
 func request_cancel(key:String,upgrade:bool)->void:
+	if app.camera_modal():app.close_modal()
 	if app.modal or not app.application_active or app.screen!="play" or app.world_map_open:return
 	var job:Dictionary
 	if upgrade:job=app.model.state.get("chief_upgrade",{}) if key=="chief" else app.model.lookup_building(key).get("data",{}).get("upgrade",{})
 	else:job=construction_job(key)
 	if job.is_empty():return
 	cancellation_confirmation=("upgrade:" if upgrade else "build:")+key
-	app.show_modal("공사를 취소할까요?","사용한 재료를 100% 돌려드려요\n반환: "+cost_text(job.get("cost",{})),[{"text":"계속 공사","action":app.close_modal},{"text":"공사 취소","action":func():confirm_cancel(key,upgrade)}],true,true)
+	app.show_modal("공사를 취소할까요?","사용한 재료를 100% 돌려드려요\n반환: "+cost_text(job.get("cost",{})),[{"text":"계속 공사","action":app.close_modal},{"text":"공사 취소","action":func():confirm_cancel(key,upgrade)}],true,true,false,Vector2.ZERO,true)
 	cancellation_overlay=app.overlay
 func confirm_cancel(key:String,upgrade:bool)->bool:
 	var token:=("upgrade:" if upgrade else "build:")+key

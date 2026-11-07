@@ -76,6 +76,9 @@ var building_workflow:BuildingWorkflow
 var building_menu:BuildingMenu
 var resident_panel:ResidentPanel
 
+func camera_modal()->bool:
+	return modal and is_instance_valid(overlay) and overlay.name=="CompactUpgradeOverlay"
+
 func toggle_quest()->void:
 	quest_expanded=not quest_expanded
 	update_quest()
@@ -84,8 +87,8 @@ func update_quest()->void:
 	if not is_instance_valid(objective):return
 	var level:=model.chief_level()
 	objective.text="촌장집을 건설해요" if level==0 else ("새 주민이 찾아왔어요" if model.family_available() else "주민 %d/%d명 · 촌장집 %d단계"%[model.resident_count(),model.resident_capacity(),level])
-	objective.size=Vector2(152,24)
-	objective.get_parent().size=Vector2(240,80 if quest_expanded else 48)
+	objective.size=Vector2(144,24)
+	objective.get_parent().size=Vector2(240,84 if quest_expanded else 52)
 	if is_instance_valid(quest_arrow):quest_arrow.rotation=0.0 if quest_expanded else PI
 	if is_instance_valid(quest_accent):quest_accent.size.y=48 if quest_expanded else 18
 	if is_instance_valid(quest_detail):
@@ -402,7 +405,7 @@ func chapter_menu() -> void:
 func new_game_prompt() -> void:
 	show_modal("새 여정 시작","새 여정을 시작하면 기존 진행이 교체됩니다. 소리 설정은 유지합니다.",[
 		{"text":"돌아가기","action":close_modal},
-		{"text":"새로 시작","action":chapter_menu,"primary":true}])
+		{"text":"새로 시작","action":chapter_menu,"primary":true}],false,false,false,Vector2.ZERO,true)
 
 func full_reset() -> void:
 	if not model.store.erase_progress():show_error(model.store.message);return
@@ -448,17 +451,17 @@ func enter_game() -> void:
 
 func play_hud() -> void:
 	var quest_panel:=button(stage,"",toggle_quest);quest_panel.name="QuestPanel";quest_panel.custom_minimum_size=Vector2.ZERO
-	quest_panel.position=Vector2(safe.x,safe.y+(112 if w<h else 59));quest_panel.size=Vector2(240,80)
+	quest_panel.position=Vector2(safe.x,safe.y+(112 if w<h else 59));quest_panel.size=Vector2(240,84)
 	for state in ["normal","hover","pressed","focus"]:quest_panel.add_theme_stylebox_override(state,StyleBoxEmpty.new())
-	var quest_bg:=picture(quest_panel,preload("res://assets/ui/v0158/quest-hud-paper.png"),Rect2(0,0,240,80))
+	var quest_bg:=picture(quest_panel,preload("res://assets/ui/v0158/quest-hud-paper.png"),Rect2(0,0,240,84))
 	quest_bg.stretch_mode=TextureRect.STRETCH_SCALE;quest_bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT);quest_bg.modulate.a=.9
-	quest_arrow=picture(quest_panel,preload("res://assets/ui/v0158/quest-hud-fold.png"),Rect2(208,8,24,24));quest_arrow.pivot_offset=Vector2(12,12)
-	picture(quest_panel,DemoArt.facility_icon("chief",1),Rect2(8,8,32,32))
-	objective=label(quest_panel,"",13,Color("49321e"));objective.position=Vector2(48,8);objective.size=Vector2(152,24);objective.clip_text=true
+	quest_arrow=picture(quest_panel,preload("res://assets/ui/v0158/quest-hud-fold.png"),Rect2(206,10,24,24));quest_arrow.pivot_offset=Vector2(12,12)
+	picture(quest_panel,DemoArt.facility_icon("chief",1),Rect2(10,10,32,32))
+	objective=label(quest_panel,"",13,Color("49321e"));objective.position=Vector2(52,10);objective.size=Vector2(144,24);objective.clip_text=true
 	quest_detail=Control.new();quest_detail.mouse_filter=Control.MOUSE_FILTER_IGNORE;quest_panel.add_child(quest_detail)
-	picture(quest_detail,DemoArt.icon("wood"),Rect2(48,48,24,24));picture(quest_detail,DemoArt.icon("stone"),Rect2(142,48,24,24))
-	quest_wood=label(quest_detail,"",12,Color("49321e"));quest_wood.position=Vector2(76,48);quest_wood.size=Vector2(58,24)
-	quest_stone=label(quest_detail,"",12,Color("49321e"));quest_stone.position=Vector2(170,48);quest_stone.size=Vector2(62,24)
+	picture(quest_detail,DemoArt.icon("wood"),Rect2(52,50,24,24));picture(quest_detail,DemoArt.icon("stone"),Rect2(142,50,24,24))
+	quest_wood=label(quest_detail,"",12,Color("49321e"));quest_wood.position=Vector2(80,50);quest_wood.size=Vector2(54,24)
+	quest_stone=label(quest_detail,"",12,Color("49321e"));quest_stone.position=Vector2(176,50);quest_stone.size=Vector2(54,24)
 	quest_panel.set_meta("semantic_text","퀘스트 상세 펼침·접힘")
 	joystick=DemoJoystick.new();stage.add_child(joystick);joystick.position=Vector2(safe.x,h-safe.y-140);joystick.hide();joystick.set_process_input(false)
 	var action_width:=64.0 if w/h>2.2 else 60.0
@@ -679,7 +682,7 @@ func _process(delta: float) -> void:
 			world.feedback.update_work(task_total-task_remaining,task_total)
 			task_bar.value = (1.0-task_remaining/task_total)*100
 			if task_remaining <= 0: finish_task()
-	cancel_site_button.visible=choosing_plot and not modal
+	cancel_site_button.visible=choosing_plot and not modal and not (is_instance_valid(build_preview) and build_preview.active())
 	var near := world.nearest()
 	var working_hint := "채집 중… 이동하면 멈춥니다" if task=="gather" else "보금자리 건설 중…"
 	gather_button.hint_text=working_hint if task!="" else ("자원 가까이 이동해 주세요" if near.is_empty() else "작업을 마친 뒤 사용할 수 있어요")
@@ -871,7 +874,7 @@ func show_demolition_confirmation(key:String)->void:
 	var found:=model.lookup_building(key)
 	if found.get("collection","")=="homes" and model.reward_pending(int(found.index)):
 		toast("건물 위 씨앗 보상을 먼저 받아 주세요");return
-	show_modal("건물을 철거할까요?","반환: 나무 %d개 · 돌 %d개"%[quote.wood,quote.stone],[{"text":"취소","action":close_modal},{"text":"철거","action":func():confirm_demolition(key)}],true,true,true)
+	show_modal("건물을 철거할까요?","반환: 나무 %d개 · 돌 %d개"%[quote.wood,quote.stone],[{"text":"취소","action":close_modal},{"text":"철거","action":func():confirm_demolition(key)}],true,true,true,Vector2.ZERO,true)
 	demolition_key=key
 
 func confirm_demolition(key:String)->void:
@@ -957,7 +960,7 @@ func show_development_settings()->void:
 
 func confirm_progress_reset()->void:
 	show_modal("진행을 초기화할까요?","진행과 씨앗을 지우고 소리 설정은 유지합니다. 삭제한 진행은 되돌릴 수 없습니다.",[
-		{"text":"취소","action":show_development_settings},{"text":"초기화","action":reset_progress}],false,true)
+		{"text":"취소","action":show_development_settings},{"text":"초기화","action":reset_progress}],false,true,false,Vector2.ZERO,true)
 func reset_progress()->void:
 	if not model.store.erase_progress():show_error(model.store.message);return
 	cancel_task();model.state.clear()
@@ -967,7 +970,7 @@ func reset_progress()->void:
 func confirm_development_reset()->void:
 	show_modal("게임을 초기화할까요?","진행·씨앗·소리 설정을 모두 삭제하고 첫 실행 안내로 돌아갑니다.\n삭제한 데이터는 되돌릴 수 없습니다.",[
 		{"text":"취소","action":show_development_settings},
-		{"text":"완전 초기화","action":full_reset}],false,true)
+		{"text":"완전 초기화","action":full_reset}],false,true,false,Vector2.ZERO,true)
 	enable_settings_backdrop()
 
 func show_about() -> void:
@@ -981,7 +984,7 @@ func show_about() -> void:
 		{"text":"돌아가기","primary":true,"action":close_modal}])
 	enable_settings_backdrop()
 
-func show_modal(title: String, body: String, actions: Array, compact: bool = false, preserve_work:bool=false, brief:bool=false, panel_size:Vector2=Vector2.ZERO) -> ScrollContainer:
+func show_modal(title: String, body: String, actions: Array, compact: bool = false, preserve_work:bool=false, brief:bool=false, panel_size:Vector2=Vector2.ZERO,confirmation:bool=false) -> ScrollContainer:
 	if is_instance_valid(region_selection):region_selection.cancel_input()
 	if gestures: gestures.clear()
 	if is_instance_valid(joystick): joystick.clear()
@@ -990,6 +993,7 @@ func show_modal(title: String, body: String, actions: Array, compact: bool = fal
 		world.player.direction = Vector2.ZERO
 		world.player.presentation_paused = true
 	if is_instance_valid(overlay):
+		if overlay.has_meta("restore_stage_visibility") and is_instance_valid(stage):stage.visible=overlay.get_meta("restore_stage_visibility")
 		ui.remove_child(overlay)
 		overlay.queue_free()
 	modal = true
@@ -998,7 +1002,9 @@ func show_modal(title: String, body: String, actions: Array, compact: bool = fal
 	ui.add_child(overlay)
 	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
-	var shade := ColorRect.new()
+	var dismiss:Callable=actions[0].action if confirmation and actions.size()>1 else close_modal
+	var displayed_actions:Array=[actions[-1]] if confirmation and not actions.is_empty() else actions
+	var shade := ModalBackdrop.new();shade.name="ModalBackdrop";shade.dismiss=dismiss
 	shade.color = Color(0,0,0,0.18 if compact else 0.55)
 	shade.mouse_filter = Control.MOUSE_FILTER_STOP
 	overlay.add_child(shade)
@@ -1011,7 +1017,9 @@ func show_modal(title: String, body: String, actions: Array, compact: bool = fal
 	var at := Vector2(w-safe.x-width,safe.y) if compact and not brief else Vector2((w-width)/2,(h-height)/2)
 	var p := box(overlay,Rect2(at,Vector2(width,height)))
 	var v := column(p,8 if brief else 12)
-	var modal_title:=label(v,title,20 if brief else 28,Color("47240e"));modal_title.add_theme_font_override("font",FigmaArt.TITLE)
+	var header:=HBoxContainer.new();header.name="ModalHeader";header.add_theme_constant_override("separation",10);v.add_child(header)
+	var modal_title:=label(header,title,20 if brief else 28,Color("47240e"));modal_title.add_theme_font_override("font",FigmaArt.TITLE);modal_title.size_flags_horizontal=Control.SIZE_EXPAND_FILL;modal_title.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
+	HudButtons.create(header,false,dismiss,"ModalClose")
 	var scroll:ScrollContainer = DevelopmentSettingsScroll.new() if title=="개발 설정" else ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -1022,10 +1030,12 @@ func show_modal(title: String, body: String, actions: Array, compact: bool = fal
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation",12)
 	v.add_child(row)
-	for a in actions:
+	row.name="ModalActions"
+	for a in displayed_actions:
 		var b := button(row,a.text,a.action,a.get("primary",false))
 		b.disabled=a.get("disabled",false)
 		if brief:b.custom_minimum_size=Vector2(80,44)
+		if confirmation:b.custom_minimum_size.y=58
 		for state in ["normal","hover","pressed","disabled","focus"]:b.add_theme_stylebox_override(state,StyleBoxEmpty.new())
 		for color_key in ["font_color","font_hover_color","font_pressed_color","font_disabled_color"]:b.add_theme_color_override(color_key,Color("47240e"))
 		b.add_theme_font_override("font",FigmaArt.BODY)
@@ -1048,6 +1058,7 @@ func close_modal() -> void:
 	if is_instance_valid(building_workflow):building_workflow.confirmation_target=-1
 	demolition_key=""
 	if is_instance_valid(overlay):
+		if overlay.has_meta("restore_stage_visibility") and is_instance_valid(stage):stage.visible=overlay.get_meta("restore_stage_visibility")
 		ui.remove_child(overlay)
 		overlay.queue_free()
 	overlay = null
@@ -1076,7 +1087,7 @@ func go_back() -> void:
 	elif screen == "play": pause_game()
 	elif screen == "region": show_screen("title")
 	else:
-		show_modal("여정을 나갈까요?","앱을 종료합니다.",[{"text":"돌아가기","action":close_modal},{"text":"종료","action":func(): get_tree().quit()}])
+		show_modal("여정을 나갈까요?","앱을 종료합니다.",[{"text":"돌아가기","action":close_modal},{"text":"종료","action":func(): get_tree().quit()}],false,false,false,Vector2.ZERO,true)
 
 func _unhandled_input(event: InputEvent) -> void:
 	if map_transition_active:return
@@ -1132,7 +1143,8 @@ func can_build_selected()->bool:
 func enable_settings_backdrop()->void:
 	if not is_instance_valid(overlay) or overlay.get_child_count()==0:return
 	var shade:Control=overlay.get_child(0)
-	shade.gui_input.connect(func(event:InputEvent):
-		if (event is InputEventScreenTouch and event.pressed) or (event is InputEventMouseButton and event.pressed and event.button_index==MOUSE_BUTTON_LEFT):
-			get_viewport().set_input_as_handled()
-			close_modal())
+	if not shade is ModalBackdrop:
+		shade.gui_input.connect(func(event:InputEvent):
+			if (event is InputEventScreenTouch and event.pressed) or (event is InputEventMouseButton and event.pressed and event.button_index==MOUSE_BUTTON_LEFT):
+				get_viewport().set_input_as_handled()
+				close_modal())

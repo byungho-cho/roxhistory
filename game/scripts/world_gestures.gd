@@ -55,7 +55,10 @@ func clear() -> void:
 		app.world.player.camera.position_smoothing_enabled=true
 		app.world.player.cancel_camera_guide()
 func ui_hit(at: Vector2) -> bool:
-	if app.modal: return true
+	if app.modal and not app.camera_modal(): return true
+	if app.camera_modal():
+		var hud:UpgradeConfirmation=app.overlay.get_node_or_null("UpgradeConfirmation")
+		if hud and Rect2(hud.global_position,hud.cost_display.screen_extent).has_point(at):return true
 	if at.y < app.safe.y+(112 if app.w<app.h else 76): return true
 	for c in [app.joystick,app.gather_button,app.build_button,app.objective.get_parent()]:
 		if is_instance_valid(c) and c.is_visible_in_tree() and c.get_global_rect().has_point(at): return true
@@ -83,7 +86,7 @@ func _input(event: InputEvent) -> void:
 			if event.pressed:
 				mouse_start=event.position if not ui_hit(event.position) else Vector2.INF
 				hold_at=mouse_start;hold_time=0.0;hold_consumed=false;hold_pointer=-1
-				mouse_last=event.position;mouse_can_pan=not app.world.interaction_at(event.position)
+				mouse_last=event.position;mouse_can_pan=app.camera_modal() or not app.world.interaction_at(event.position)
 			else:
 				hold_at=Vector2.INF
 				if not hold_consumed and not mouse_dragging and mouse_start.is_finite() and mouse_start.distance_to(event.position)<12:app.world_tap(event.position)
@@ -102,7 +105,7 @@ func _input(event: InputEvent) -> void:
 	if event is InputEventMouseMotion and hold_at.is_finite() and hold_at.distance_to(event.position)>12:hold_at=Vector2.INF
 	if event is InputEventScreenTouch:
 		if event.pressed:
-			touches[event.index]={"at":event.position,"start":event.position,"ui":ui_hit(event.position),"moved":false,"pan":not app.world.interaction_at(event.position)}
+			touches[event.index]={"at":event.position,"start":event.position,"ui":ui_hit(event.position),"moved":false,"pan":app.camera_modal() or not app.world.interaction_at(event.position)}
 			hold_at=event.position if touches.size()==1 and not ui_hit(event.position) else Vector2.INF
 			hold_time=0.0;hold_consumed=false;hold_pointer=event.index
 			var world_fingers: Array=[]

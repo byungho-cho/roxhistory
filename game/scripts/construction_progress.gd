@@ -67,15 +67,14 @@ func _ready() -> void:
 	for child in get_children(): child.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	if upgrading or not construction_uid.is_empty():
 		cancel_holder=Control.new();cancel_holder.mouse_filter=Control.MOUSE_FILTER_IGNORE;add_child(cancel_holder)
-		cancel_button=app.button(cancel_holder,"",request_cancel);cancel_button.name="CancelConstruction"
-		IntegratedMenuArt.install(cancel_button,"close",Vector2(44,44))
+		cancel_button=HudButtons.create(cancel_holder,false,request_cancel,"CancelConstruction")
 		cancel_button.tooltip_text="공사 취소 · 재료 100% 반환"
 	visible = false
 
 func _process(delta: float) -> void:
-	visible = app.task == ("gather" if gathering else "build") and is_instance_valid(app.world) and not app.modal and not app.world_map_open and app.application_active
-	if upgrading:visible=app.screen=="play" and not upgrade_job().is_empty() and is_instance_valid(app.world) and not app.modal and not app.world_map_open and app.application_active
-	if not construction_uid.is_empty():visible=app.screen=="play" and not durable_job().is_empty() and is_instance_valid(app.world) and not app.modal and not app.world_map_open and app.application_active
+	visible = app.task == ("gather" if gathering else "build") and is_instance_valid(app.world) and (not app.modal or app.camera_modal()) and not app.world_map_open and app.application_active
+	if upgrading:visible=app.screen=="play" and not upgrade_job().is_empty() and is_instance_valid(app.world) and (not app.modal or app.camera_modal()) and not app.world_map_open and app.application_active
+	if not construction_uid.is_empty():visible=app.screen=="play" and not durable_job().is_empty() and is_instance_valid(app.world) and (not app.modal or app.camera_modal()) and not app.world_map_open and app.application_active
 	if gathering:visible=visible and not app.gather_approach and app.world.art_nodes.has(app.task_target)
 	if gathering and visible:visible=app.world.art_nodes[app.task_target].visible
 	if not visible: clock = 0; cancel_pointer=-2; return
@@ -97,7 +96,7 @@ func _process(delta: float) -> void:
 			if str(node.id)==app.task_target:hammer.texture=DemoArt.icon(str(node.kind));break
 	var point: Vector2 = app.world.get_global_transform_with_canvas()*app.world.site.position
 	var world_zoom:float=app.world.get_global_transform_with_canvas().get_scale().x
-	scale=Vector2.ONE*clampf(world_zoom*.85,.34,.68)
+	scale=Vector2.ONE*HudButtons.world_scale(world_zoom)
 	position = point-Vector2(size.x*scale.x*.5,150*world_zoom+size.y*scale.y)
 	if not construction_uid.is_empty():
 		var job:=durable_job()
@@ -134,7 +133,7 @@ func upgrade_sprite()->Sprite2D:
 # Explicit ownership for the detached X hit target: it can lie outside the
 # scaled progress Control bounds and behind later full-screen GUI siblings.
 func _input(event:InputEvent)->void:
-	if not is_instance_valid(cancel_button) or not is_visible_in_tree() or app.modal or not app.application_active:
+	if not is_instance_valid(cancel_button) or not is_visible_in_tree() or (app.modal and not app.camera_modal()) or not app.application_active:
 		cancel_pointer=-2
 		return
 	var pointer:=-2

@@ -4,6 +4,7 @@ extends Node
 var app:Node
 var bubble:Button
 var headline:Label
+var background:TextureRect
 var progress:ProgressBar
 var talking:=false
 var elapsed:=0.0
@@ -11,7 +12,7 @@ var visit_check_elapsed:=0.0
 const MEETING := Vector2(1540,975)
 func _init(owner_app:Node)->void:app=owner_app
 func _ready()->void:
-	bubble=DemoButton.new();bubble.name="FamilyConversation";bubble.text="";bubble.custom_minimum_size=Vector2(270,40);bubble.focus_mode=Control.FOCUS_NONE
+	bubble=DemoButton.new();bubble.name="FamilyConversation";bubble.text="";bubble.custom_minimum_size=Vector2(0,44);bubble.focus_mode=Control.FOCUS_NONE
 	bubble.add_theme_font_size_override("font_size",14)
 	# The shared button theme has pale hover text for dark buttons, unlike this bubble.
 	for state in ["font_color","font_hover_color","font_pressed_color","font_hover_pressed_color","font_focus_color","font_disabled_color"]:
@@ -19,10 +20,10 @@ func _ready()->void:
 	for state in ["normal","hover","pressed","focus"]:bubble.add_theme_stylebox_override(state,StyleBoxEmpty.new())
 	bubble.pressed.connect(request);app.stage.add_child(bubble)
 	var atlas:=AtlasTexture.new();atlas.atlas=preload("res://assets/ui/v0158/resident-bubble-bg.png");atlas.region=Rect2(211,11,345,105);atlas.filter_clip=true
-	var background:TextureRect=app.picture(bubble,atlas,Rect2(0,0,270,40));background.stretch_mode=TextureRect.STRETCH_SCALE
-	app.picture(bubble,preload("res://assets/ui/v0158/resident-icon.png"),Rect2(-15,-12,42,42))
-	headline=Label.new();headline.theme=DemoArt.theme();headline.position=Vector2(32,8);headline.size=Vector2(230,24);headline.add_theme_font_size_override("font_size",14);headline.add_theme_color_override("font_color",Color("49321e"));headline.mouse_filter=Control.MOUSE_FILTER_IGNORE;bubble.add_child(headline)
-	progress=ProgressBar.new();progress.show_percentage=false;progress.size=Vector2(250,3);progress.mouse_filter=Control.MOUSE_FILTER_IGNORE;bubble.add_child(progress);progress.position=Vector2(10,35);progress.hide()
+	background=app.picture(bubble,atlas,Rect2(0,0,270,44));background.stretch_mode=TextureRect.STRETCH_SCALE
+	app.picture(bubble,preload("res://assets/ui/v0158/resident-icon.png"),Rect2(10,6,32,32))
+	headline=Label.new();headline.theme=DemoArt.theme();headline.position=Vector2(50,10);headline.size=Vector2(210,24);headline.vertical_alignment=VERTICAL_ALIGNMENT_CENTER;headline.add_theme_font_size_override("font_size",14);headline.add_theme_color_override("font_color",Color("49321e"));headline.mouse_filter=Control.MOUSE_FILTER_IGNORE;bubble.add_child(headline)
+	progress=ProgressBar.new();progress.show_percentage=false;progress.size=Vector2(250,3);progress.mouse_filter=Control.MOUSE_FILTER_IGNORE;bubble.add_child(progress);progress.position=Vector2(10,40);progress.hide()
 func request()->void:
 	if talking or app.modal or not app.model.family_available():return
 	var needed:int=app.model.family_visitor_count()
@@ -54,6 +55,10 @@ func _process(delta:float)->void:
 			visit_check_elapsed=0.0;app.model.ensure_family_visit()
 	bubble.visible=app.model.family_available() and not app.modal and not app.world_map_open
 	if not bubble.visible:return
+	headline.text="함께 마을을 가꾸어요…" if talking else "함께 머물 곳을 찾고 있어요"
+	var width:float=headline.get_theme_font("font").get_string_size(headline.text,HORIZONTAL_ALIGNMENT_LEFT,-1,14).x+60
+	bubble.size=Vector2(minf(width,app.w-app.safe.x*2),44);background.size=bubble.size
+	headline.size.x=bubble.size.x-60;progress.size.x=bubble.size.x-20
 	var head:=Vector2(1590,745)
 	if not app.world.visitors.is_empty():
 		head.x=0;head.y=INF
@@ -61,9 +66,8 @@ func _process(delta:float)->void:
 			head.x+=resident.position.x;head.y=minf(head.y,resident.position.y-150)
 		head.x/=app.world.visitors.size()
 	var at:Vector2=app.world.get_global_transform_with_canvas()*head
-	bubble.position=Vector2(clampf(at.x-135,app.safe.x,app.w-app.safe.x-270),clampf(at.y-bubble.size.y,app.safe.y+90,app.h-app.safe.y-160))
+	bubble.position=Vector2(clampf(at.x-bubble.size.x*.5,app.safe.x,app.w-app.safe.x-bubble.size.x),clampf(at.y-bubble.size.y,app.safe.y+90,app.h-app.safe.y-160))
 	if talking and app.task!="family":talking=false;progress.hide()
-	headline.text="함께 마을을 가꾸어요…" if talking else "함께 머물 곳을 찾고 있어요"
 	bubble.set_meta("semantic_text",headline.text)
 	progress.value=100*(1-app.task_remaining/1.5) if talking else 0
 func _exit_tree()->void:

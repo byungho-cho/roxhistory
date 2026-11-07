@@ -5,6 +5,7 @@ const KINDS := ["chief", "hut", "outpost", "hearth", "training", "shrine"]
 const FACILITY_KINDS := ["hearth", "training", "shrine"]
 const REQUIRED_HQ := {"chief":0,"hut":1,"hearth":2,"training":2,"shrine":3,"outpost":3}
 const DURATIONS := [60.0,600.0,1800.0,10800.0]
+const DEVELOPMENT_DURATION := 5.0
 const COSTS := {
 	"chief":[[20,20],[50,50],[100,100],[300,300]],
 	"hut":[[20,10],[30,20],[50,30],[100,50]],
@@ -49,7 +50,7 @@ static func valid_clock(job:Variant)->bool:
 	return job.finishes_at>job.started_at and valid_cost(job.get("cost"))
 
 static func new_job(kind:String,from_level:int,now:float,fast:bool=false)->Dictionary:
-	var full_duration:=duration(from_level+1)/(10.0 if fast else 1.0)
+	var full_duration:=DEVELOPMENT_DURATION if fast else duration(from_level+1)
 	return {"kind":canonical(kind),"from":from_level,"to":from_level+1,"started_at":now,
 		"finishes_at":now+full_duration,"clock_duration":full_duration,"cost":cost(kind,from_level+1)}
 
@@ -71,7 +72,7 @@ static func set_clock_mode(job:Dictionary,now:float,fast:bool)->void:
 	if float(job.finishes_at)<=now:return
 	var remaining:=maxf(0.0,float(job.finishes_at)-maxf(now,float(job.started_at)))
 	var old_duration:=float(job.get("clock_duration",float(job.finishes_at)-float(job.started_at)))
-	var duration:float=BuildingRules.duration(int(job.get("to",1)))/(10.0 if fast else 1.0)
+	var duration:float=DEVELOPMENT_DURATION if fast else BuildingRules.duration(int(job.get("to",1)))
 	var next_remaining:=duration*clampf(remaining/maxf(.001,old_duration),0,1)
 	job.clock_duration=duration
 	job.started_at=now-(duration-next_remaining)
