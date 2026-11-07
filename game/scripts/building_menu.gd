@@ -40,8 +40,7 @@ func item(title:String,file:String,at:Vector2,diameter:float,callback:Callable)-
 	b.enable_art_feedback();return b
 func _ready()->void:
 	name="BuildingMenu";mouse_filter=Control.MOUSE_FILTER_IGNORE;z_index=8;size=Vector2(288,132)
-	move_button=BuildingMoveButton.new();add_child(move_button);move_button.pressed.connect(move_selected);move_button.unavailable.connect(app.toast);move_button.name="Move"
-	move_button.drag_started.connect(begin_drag_move);move_button.drag_moved.connect(drag_move)
+	move_button=app.button(self,"",move_selected);move_button.name="Move"
 	IntegratedMenuArt.install(move_button,"move",Vector2(96,96));move_button.position=Vector2.ZERO
 	upgrade_button=app.button(self,"",upgrade);upgrade_button.name="Upgrade"
 	IntegratedMenuArt.install(upgrade_button,"upgrade",Vector2(96,96));upgrade_button.position=Vector2(96,36)
@@ -125,16 +124,7 @@ func upgrade()->void:
 	close()
 	if key=="chief":app.building_workflow.request_upgrade()
 	else:app.building_workflow.request_owned_upgrade(key)
-func begin_drag_move()->void:
-	var key:=selected_key
-	if app.model.lookup_building(key).is_empty():return
-	close();app.start_building_move(key)
-func drag_move(at:Vector2)->void:
-	if not is_instance_valid(app.build_preview) or not app.build_preview.active():return
-	var point:Vector2=app.world.get_global_transform_with_canvas().affine_inverse()*at
-	app.build_preview.select_position(point,app.build_preview.kind,app.build_preview.moving_key)
 func move_selected()->void:
-	if move_button.suppress_click():return
 	var key:=selected_key
 	if app.model.lookup_building(key).is_empty():return
 	if app.model.lookup_building(key).get("data",{}).has("upgrade"):app.toast("공사 완료 후 이동할 수 있어요");return

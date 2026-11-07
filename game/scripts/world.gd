@@ -396,6 +396,15 @@ func refresh_facilities()->void:
 		body.position=model.building_position(kind+":"+str(entry.uid))
 		var sprite:=body.get_child(0) as Sprite2D
 		BuildingVisuals.apply(sprite,kind,int(entry.get("level",1)),230)
+		var life:=body.get_node_or_null("BuildingLifeEffects")
+		if life==null:
+			life=BuildingLifeEffects.new(sprite,kind,int(entry.get("level",1)));body.add_child(life)
+		life.level=int(entry.get("level",1))
+		life.visible=not entry.has("upgrade")
+		if kind=="hearth":
+			if sprite.material==null:
+				var flame:=ShaderMaterial.new();flame.shader=preload("res://shaders/hearth_flame.gdshader");sprite.material=flame
+			sprite.material.set_shader_parameter("strength",.55+life.level*.15)
 	remove_stale_buildings("Facility_",wanted)
 
 func add_building_collision(body:StaticBody2D,width:float)->void:

@@ -874,11 +874,9 @@ func confirm_demolition(key:String)->void:
 	if model.demolish(key):
 		close_modal()
 		if is_instance_valid(ghost):
-			world.add_child(ghost);ghost.global_transform=ghost_transform;ghost.z_index=2
-			var fade:=ghost.create_tween().set_parallel(true)
-			fade.tween_property(ghost,"modulate:a",0.0,.32)
-			fade.tween_property(ghost,"position:y",ghost.position.y+8,.32)
-			fade.chain().tween_callback(ghost.queue_free)
+			var effect:=DemolitionEffect.new(ghost)
+			world.add_child(effect);effect.position=at
+			effect.add_child(ghost);ghost.global_transform=ghost_transform
 		world.feedback.sound_cue.emit("demolish")
 		toast("나무 %d개 · 돌 %d개 반환"%[quote.wood,quote.stone],2)
 	elif is_instance_valid(ghost):ghost.free()
@@ -896,7 +894,7 @@ func world_tap(screen_point:Vector2) -> void:
 		build_preview.select_position(at,build_kind,build_preview.moving_key)
 		return
 	for i in model.built_count():
-		if model.reward_pending(i) and world.reward_marker_rect(i).grow(6).has_point(at):claim_home(i);return
+		if model.reward_pending(i) and (world.reward_marker_rect(i).grow(6).has_point(at) or building_menu.hit_key(at)==model.home_key(i)):claim_home(i);return
 	if is_instance_valid(building_menu):
 		if building_menu.show_at(screen_point):return
 		if building_menu.visible:building_menu.close();return

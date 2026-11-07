@@ -43,7 +43,7 @@ func select_kind(kind:String)->void:
 	var reason:String=app.building_workflow.build_block_reason(kind)
 	if not reason.is_empty():app.toast(reason);return
 	app.cancel_build_preview();app.build_kind=kind
-	hide();app.choosing_plot=true;app.world.show_candidates=true;app.world.queue_redraw()
+	hide();app.choosing_plot=true;app.world.show_candidates=false;app.world.queue_redraw()
 	app.toast("%s을 지을 위치를 눌러 주세요"%BuildingWorkflow.building_name(kind))
 func select_hut()->void:select_kind("hut")
 func select_outpost()->void:select_kind("outpost")

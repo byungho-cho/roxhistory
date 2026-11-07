@@ -63,6 +63,10 @@ func show_upgrade_confirmation(key:String,cost:Dictionary,callback:Callable)->vo
 	app.overlay=Control.new();app.overlay.name="CompactUpgradeOverlay";app.overlay.z_index=50
 	app.ui.add_child(app.overlay);app.overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT);app.overlay.mouse_filter=Control.MOUSE_FILTER_STOP
 	app.overlay.add_child(UpgradeConfirmation.new(app,key,cost,callback));app.sync_audio()
+	app.overlay.gui_input.connect(func(event:InputEvent):
+		if (event is InputEventMouseButton and event.button_index==MOUSE_BUTTON_LEFT and not event.pressed) or (event is InputEventScreenTouch and not event.pressed):
+			app.get_viewport().set_input_as_handled()
+			app.close_modal())
 func upgrade_description(cost:Dictionary,target:int)->String:
 	return "%s\n공사 시간 %d초\n앱을 닫아도 공사가 진행돼요"%[cost_text(cost),int(app.model.building_duration(target))]
 func confirm_upgrade(target:int)->bool:

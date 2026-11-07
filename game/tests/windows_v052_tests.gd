@@ -89,15 +89,10 @@ func run()->void:
 	var sprite:Sprite2D=app.world.building_sprite("chief")
 	check(app.building_menu.show_at(sprite.get_global_transform_with_canvas()*Vector2.ZERO),"Building menu opens for roof")
 	await frames()
-	var button:BuildingMoveButton=app.building_menu.move_button
-	var press:=button.get_global_rect().get_center();mouse(press,MOUSE_BUTTON_LEFT,true)
-	await create_timer(.6).timeout;await frames()
-	check(button.dragging and app.build_preview.moving_key=="chief","Move button long press starts drag")
-	var target:=Vector2(app.w*.57,app.h*.52);motion(target);await frames()
-	var expected:Vector2=app.world.get_global_transform_with_canvas().affine_inverse()*target
-	check(app.build_preview.placement_position.distance_to(expected)<1,"Held move follows screen pointer")
-	mouse(target,MOUSE_BUTTON_LEFT,false);await frames()
-	check(not button.dragging and app.build_preview.active() and app.model.building_position("chief")==base,"Release keeps uncommitted O/X preview")
+	var button:DemoButton=app.building_menu.move_button
+	var press:=button.get_global_rect().get_center();mouse(press,MOUSE_BUTTON_LEFT,true);mouse(press,MOUSE_BUTTON_LEFT,false);await frames()
+	check(app.build_preview.moving_key=="chief","Move menu click starts preview")
+	check(app.model.building_position("chief")==base,"Move preview preserves saved position")
 	app.cancel_build_preview();await create_timer(.2).timeout
 	var hero:Vector2=app.world.player.position
 	var center:=Vector2(app.w*.55,app.h*.5)

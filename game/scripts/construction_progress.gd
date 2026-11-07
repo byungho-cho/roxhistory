@@ -13,6 +13,7 @@ var building_key:="chief"
 var construction_uid:=""
 var cancel_button:DemoButton
 var cancel_holder:Control
+var cancel_pointer:=-2
 
 func _init(owner_app: Node, for_gathering:bool=false,for_upgrade:bool=false) -> void:
 	app = owner_app;gathering=for_gathering;upgrading=for_upgrade
@@ -77,7 +78,7 @@ func _process(delta: float) -> void:
 	if not construction_uid.is_empty():visible=app.screen=="play" and not durable_job().is_empty() and is_instance_valid(app.world) and not app.modal and not app.world_map_open and app.application_active
 	if gathering:visible=visible and not app.gather_approach and app.world.art_nodes.has(app.task_target)
 	if gathering and visible:visible=app.world.art_nodes[app.task_target].visible
-	if not visible: clock = 0; return
+	if not visible: clock = 0; cancel_pointer=-2; return
 	clock += delta
 	var remaining:float=app.task_remaining
 	var total:float=app.task_total
@@ -129,3 +130,25 @@ func upgrade_job()->Dictionary:
 	return app.model.lookup_building(building_key).get("data",{}).get("upgrade",{})
 func upgrade_sprite()->Sprite2D:
 	return app.world.building_sprite(building_key)
+
+# Explicit ownership for the detached X hit target: it can lie outside the
+# scaled progress Control bounds and behind later full-screen GUI siblings.
+func _input(event:InputEvent)->void:
+	if not is_instance_valid(cancel_button) or not is_visible_in_tree() or app.modal or not app.application_active:
+		cancel_pointer=-2
+		return
+	var pointer:=-2
+	var down:=false
+	if event is InputEventMouseButton and event.button_index==MOUSE_BUTTON_LEFT:
+		pointer=-1;down=event.pressed
+	elif event is InputEventScreenTouch:
+		pointer=event.index;down=event.pressed
+	else:return
+	var inside:=cancel_button.get_global_rect().has_point(event.position)
+	if down and inside and cancel_pointer==-2:
+		cancel_pointer=pointer
+		get_viewport().set_input_as_handled()
+	elif not down and cancel_pointer==pointer:
+		cancel_pointer=-2
+		get_viewport().set_input_as_handled()
+		if inside and not (event is InputEventScreenTouch and event.canceled):request_cancel()
