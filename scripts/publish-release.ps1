@@ -35,6 +35,14 @@ if (-not $exists) {
     $releaseText = & gh api "repos/$Repository/releases/tags/$tag"
 }
 $release = ConvertFrom-Json ($releaseText -join "`n")
+if (-not $release.draft) {
+    $unchanged = $true
+    foreach ($entry in $manifest.files) {
+        $existing = @($release.assets | Where-Object name -CEQ $entry.name)
+        if ($existing.Count -ne 1 -or $existing[0].digest -ne "sha256:$($entry.sha256)") { $unchanged=$false }
+    }
+    if (-not $unchanged) { throw 'This version is already published. Use a new version instead of replacing a live release pair.' }
+}
 # Verify an existing tag rather than publishing a pair against unrelated source.
 $tagCommit = & gh api "repos/$Repository/commits/$tag" --jq '.sha' 2>$null
 if ($LASTEXITCODE -eq 0) {
@@ -42,8 +50,10 @@ if ($LASTEXITCODE -eq 0) {
 } elseif (-not $release.draft -or $release.target_commitish -ne $manifest.commit) {
     throw 'Cannot confirm the draft release source commit.'
 }
-& gh release upload $tag (Join-Path $output $files[0]) (Join-Path $output $files[1]) --repo $Repository --clobber
-if ($LASTEXITCODE -ne 0) { throw 'Pair upload failed. Previous releases have not been cleaned.' }
+if ($release.draft) {
+    & gh release upload $tag (Join-Path $output $files[0]) (Join-Path $output $files[1]) --repo $Repository --clobber
+    if ($LASTEXITCODE -ne 0) { throw 'Pair upload failed. Previous releases have not been cleaned.' }
+}
 $assetsText = & gh api "repos/$Repository/releases/$($release.id)/assets?per_page=100"
 if ($LASTEXITCODE -ne 0) { throw 'Cannot verify uploaded assets.' }
 $assets = ConvertFrom-Json ($assetsText -join "`n")
