@@ -40,8 +40,8 @@ func item(title:String,file:String,at:Vector2,diameter:float,callback:Callable)-
 	b.enable_art_feedback();return b
 func _ready()->void:
 	name="BuildingMenu";mouse_filter=Control.MOUSE_FILTER_IGNORE;z_index=8;size=Vector2(288,132)
-	# Hold artwork/function is not connected until its display wording is confirmed.
-	move_button=app.button(self,"",func():pass);move_button.disabled=true;move_button.hide()
+	move_button=app.button(self,"",move_selected);move_button.name="Move"
+	IntegratedMenuArt.install(move_button,"move",Vector2(96,96));move_button.position=Vector2.ZERO
 	upgrade_button=app.button(self,"",upgrade);upgrade_button.name="Upgrade"
 	IntegratedMenuArt.install(upgrade_button,"upgrade",Vector2(96,96));upgrade_button.position=Vector2(96,36)
 	demolish_button=app.button(self,"",demolish);demolish_button.name="Demolish"
@@ -57,28 +57,20 @@ func close()->void:
 func _exit_tree()->void:
 	if framing_active and is_instance_valid(app.world):app.world.player.camera.offset=saved_camera_offset
 func selected_sprite()->Sprite2D:
-	if selected_key=="chief":return app.world.get_node("ExistingHut").sprite
-	var found:=OwnedBuildingUpgrades.lookup(app.model,selected_key)
-	if found.is_empty():return null
-	if found.collection=="homes":return app.world.homes[found.index].sprite
-	var outpost=app.world.get_node_or_null("Outpost_"+str(found.data.uid))
-	return outpost.get_child(0) if outpost else null
+	return app.world.building_sprite(selected_key)
 func index()->int:
 	for i in app.model.built_count():
 		if app.model.home_key(i)==selected_key:return i
 	return -1
 func hit_key(at:Vector2)->String:
-	# Reverse draw order, using actual scaled sprite rectangles rather than broad reward areas.
-	for i in range(app.model.built_count()-1,-1,-1):
-		var sprite:Sprite2D=app.world.homes[i].sprite
-		if sprite.get_rect().has_point(sprite.to_local(at)):return app.model.home_key(i)
-	for entry in app.model.outposts():
-		var outpost=app.world.get_node_or_null("Outpost_"+str(entry.uid))
-		if outpost:
-			var image:Sprite2D=outpost.get_child(0)
-			if image.get_rect().has_point(image.to_local(at)):return "outpost:"+str(entry.uid)
-	var chief:Sprite2D=app.world.get_node("ExistingHut").sprite
-	return "chief" if chief.get_rect().has_point(chief.to_local(at)) else ""
+	var keys:Array[String]=OwnedBuildingUpgrades.keys(app.model)
+	if app.model.chief_level()>0:keys.append("chief")
+	# The frontmost rendered building owns overlapping roof taps.
+	keys.sort_custom(func(a:String,b:String):return app.model.building_position(a).y>app.model.building_position(b).y)
+	for key in keys:
+		var sprite:Sprite2D=app.world.building_sprite(key)
+		if is_instance_valid(sprite) and sprite.is_visible_in_tree() and sprite.get_rect().has_point(sprite.to_local(at)):return key
+	return ""
 func show_at(screen_point:Vector2)->bool:
 	if app.modal or app.world_map_open or not app.application_active:return false
 	var at:Vector2=app.world.get_global_transform_with_canvas().affine_inverse()*screen_point
@@ -89,16 +81,18 @@ func show_at(screen_point:Vector2)->bool:
 	selected_key=key;show();refresh();return true
 func refresh()->void:
 	var i:=index()
-	var owned:=OwnedBuildingUpgrades.lookup(app.model,selected_key)
-	if selected_key!="chief" and owned.is_empty():close();return
-	move_button.disabled=true;move_button.hint_text="건물 이동은 다음 버전에서 제공할 예정이에요"
+	var owned:Dictionary=app.model.lookup_building(selected_key)
+	if owned.is_empty():close();return
+	move_button.disabled=owned.get("data",{}).has("upgrade");move_button.hint_text="공사 완료 후 이동할 수 있어요" if move_button.disabled else "옮길 위치를 선택해 주세요"
 	var upgrade_reason:String=app.building_workflow.upgrade_block_reason(app.model.chief_level()+1) if selected_key=="chief" else app.building_workflow.owned_upgrade_reason(selected_key)
 	upgrade_button.disabled=not upgrade_reason.is_empty();upgrade_button.hint_text=upgrade_reason
-	demolish_button.disabled=selected_key=="chief" or selected_key.begins_with("outpost:") or owned.get("data",{}).has("upgrade") or (i>=0 and app.model.reward_pending(i))
-	demolish_button.hint_text="주인공 움집은 철거할 수 없어요" if selected_key=="chief" else "건물 위 씨앗 보상을 먼저 받아 주세요"
-	if selected_key.begins_with("outpost:"):demolish_button.hint_text="초소 철거는 아직 지원하지 않아요"
-	elif owned.get("data",{}).has("upgrade"):demolish_button.hint_text="공사 완료 후 철거할 수 있어요"
-	IntegratedMenuArt.refresh(upgrade_button,not upgrade_button.disabled)
+	var quote:Dictionary=app.model.demolition_quote(selected_key)
+	demolish_button.disabled=selected_key=="chief" or quote.is_empty() or not quote.get("supported",false) or owned.get("data",{}).has("upgrade") or (i>=0 and app.model.reward_pending(i))
+	demolish_button.hint_text="주인공 본부는 철거할 수 없어요" if selected_key=="chief" else "건물 위 씨앗 보상을 먼저 받아 주세요"
+	if owned.get("data",{}).has("upgrade"):demolish_button.hint_text="공사 완료 후 철거할 수 있어요"
+	elif i>=0 and app.model.resident_capacity()-[1,2,3,5][clampi(int(owned.data.get("level",1)),1,4)-1]<app.model.resident_count():demolish_button.hint_text="주민이 살 집이 부족해져요. 다른 움집을 먼저 마련해 주세요"
+	elif selected_key!="chief" and (quote.is_empty() or not quote.get("supported",false)):demolish_button.hint_text="이 건물은 지금 철거할 수 없어요"
+	IntegratedMenuArt.refresh(move_button);IntegratedMenuArt.refresh(upgrade_button,not upgrade_button.disabled)
 	IntegratedMenuArt.refresh(demolish_button);IntegratedMenuArt.refresh(close_button)
 	var sprite:=selected_sprite()
 	if sprite==null:close();return
@@ -128,7 +122,12 @@ func upgrade()->void:
 	close()
 	if key=="chief":app.building_workflow.request_upgrade()
 	else:app.building_workflow.request_owned_upgrade(key)
+func move_selected()->void:
+	var key:=selected_key
+	if app.model.lookup_building(key).is_empty():return
+	if app.model.lookup_building(key).get("data",{}).has("upgrade"):app.toast("공사 완료 후 이동할 수 있어요");return
+	close();app.start_building_move(key)
 func demolish()->void:
 	var key:=selected_key
-	if key=="chief" or index()<0:return
+	if key=="chief" or app.model.demolition_quote(key).is_empty():return
 	close();app.show_demolition_confirmation(key)

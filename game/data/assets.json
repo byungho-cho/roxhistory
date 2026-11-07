@@ -1,26 +1,62 @@
 {
-  "version": 1,
+  "version": 2,
   "assets": {
     "BLD-HUT-L1": {
-      "file": "res://assets/refactor-v035/hut-stages.png",
+      "file": "res://assets/buildings/approved-v001/hut/hut-l1.png",
+      "source_size": [
+        340,
+        294
+      ],
+      "sha256": "f9573cdb41d5212a9f1e84f666e3e67e6c45d0aa1ecffd976663a37a885a2898",
+      "source": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=1191-17",
+      "approved": true,
+      "review_only": false,
+      "source_status": "reused_alpha_qa_passed",
+      "integration_authorization": "Current approved game-improvement task, 2026-11-07; source audit metadata retained.",
+      "content_bbox_alpha8": [
+        10,
+        10,
+        330,
+        284
+      ],
+      "alignment": "center",
+      "notes": "Original PNG bytes preserved. Runtime crop and uniform scale are presentation metadata; no generative edits.",
       "crop": [
-        84,
-        281,
-        338,
-        292
+        6,
+        6,
+        328,
+        282
       ],
       "anchor": [
         0.5,
-        0.8
+        0.5
       ],
-      "fallback": "BLD-HUT-LEGACY",
-      "source": "Figma 957:293",
-      "notes": "First stage only; transparent atlas padding preserved. No chimney. Footprint is independent.",
-      "source_size": [
-        2172,
-        724
-      ],
-      "sha256": "02a93a4e37cd99f7d103b550e1261d737a4b31a778519e5473ed26f92f41d5bc"
+      "figma_preview": {
+        "node_id": "1221:18",
+        "frame_node_id": "1229:13",
+        "frame_dimensions_px": [
+          648,
+          330
+        ],
+        "x": 159,
+        "y": 22.32353,
+        "width": 330,
+        "height": 285.35294,
+        "image_scale_mode": "FIT",
+        "image_transform": [
+          [
+            1,
+            0,
+            0
+          ],
+          [
+            0,
+            1,
+            0
+          ]
+        ],
+        "display_px_per_source_px": 0.97058822
+      }
     },
     "BLD-HUT-LEGACY": {
       "file": "res://assets/environment/hut-round.png",
@@ -192,17 +228,25 @@
       "sha256": "d177670a86aab56976e18ae4dee90db6edc47d6b433d5099fe07f98a99f81359"
     },
     "UI-SEED": {
-      "file": "res://assets/refactor-v035/seeds.png",
-      "anchor": [
-        0.5,
-        0.5
-      ],
-      "source": "Figma 988:39",
+      "file": "res://assets/ui/resources-approved-v001/seeds.png",
       "source_size": [
         1254,
         1254
       ],
-      "sha256": "0dfba74f6139fb0144647cac89a43fd7bfd45fb4045be83c825a7ec3c2d536bf"
+      "crop": [
+        181,
+        232,
+        876,
+        783
+      ],
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "approved": true,
+      "source": "User-approved two-seed icon, 2026-11-07",
+      "sha256": "59f54e074e903133e2b04a305fe0bbefe50ff001976b23460cd095f2ee563b67",
+      "notes": "Original approved PNG bytes preserved; metadata crop removes only transparent/low-alpha perimeter padding."
     },
     "WORLD-RIVER": {
       "file": "res://assets/refactor-v035/world-river.png",
@@ -256,18 +300,62 @@
       "sha256": "64170ffb72632d32dc93d6a560dae0432dfd4e4699a6d8ea7afe09a1be87a033"
     },
     "BLD-OUTPOST": {
-      "file": "res://assets/refactor-v036/watchtower.png",
-      "source": "Figma 886:36",
+      "file": "res://assets/buildings/approved-v001/outpost/outpost-l1.png",
+      "source_size": [
+        1448,
+        1086
+      ],
+      "sha256": "a34fb3fe9beea797137da797554979c64565768a428a7211db841b71157640e8",
+      "source": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=1091-515",
+      "approved": true,
+      "review_only": false,
+      "source_status": "reused_alpha_qa_passed",
+      "integration_authorization": "Current approved game-improvement task, 2026-11-07; source audit metadata retained.",
+      "content_bbox_alpha8": [
+        306,
+        147,
+        1130,
+        904
+      ],
+      "alignment": "center",
+      "notes": "Original PNG bytes preserved. Runtime crop and uniform scale are presentation metadata; no generative edits.",
+      "crop": [
+        302,
+        143,
+        832,
+        765
+      ],
       "anchor": [
         0.5,
         0.5
       ],
-      "sha256": "87d68ae68bbc9702ac0a2aa20cddde7693fd4a21fc9dcd2bdc76f9cf8674e942",
-      "notes": "Authored transparent image. Keep padding and aspect ratio; no duplicate background.",
-      "source_size": [
-        1254,
-        1254
-      ]
+      "figma_preview": {
+        "node_id": "1221:33",
+        "frame_node_id": "1229:17",
+        "frame_dimensions_px": [
+          320,
+          240
+        ],
+        "x": 0,
+        "y": 0,
+        "width": 320,
+        "height": 240,
+        "image_scale_mode": "FILL",
+        "image_transform": [
+          [
+            1,
+            0,
+            0
+          ],
+          [
+            0,
+            1,
+            0
+          ]
+        ],
+        "display_px_per_source_px": 0.22099448
+      },
+      "alias_of": "BLD-OUTPOST-L1"
     },
     "UI-MENU-COLLAPSE": {
       "file": "res://assets/ui/review-v037/menu-open-861-source.png",
@@ -308,83 +396,256 @@
       "sha256": "5cee73bd7445e357b43cff2d39c554e834812e9c9cc36428ff4661856feb66f8"
     },
     "BLD-CHIEF-L2": {
-      "file": "res://assets/refactor-v035/hut-stages.png",
-      "crop": [
-        527,
-        220,
-        402,
-        360
-      ],
+      "file": "res://assets/buildings/approved-v001/hut/hut-l2.png",
       "source_size": [
-        2172,
-        724
+        396,
+        352
       ],
+      "sha256": "03a2dc2885a0c2f4a86511587ad5e69fde3e70496102105293ac02f85c88e614",
+      "source": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=1191-24",
       "approved": true,
-      "review_only": true,
-      "qa": "Edge color residue; not release approved",
-      "source_commit": "a84985267dd8f282403b6f9ad3c4778446308698"
+      "review_only": false,
+      "source_status": "reused_alpha_qa_passed",
+      "integration_authorization": "Current approved game-improvement task, 2026-11-07; source audit metadata retained.",
+      "content_bbox_alpha8": [
+        10,
+        10,
+        386,
+        342
+      ],
+      "alignment": "center",
+      "notes": "Original PNG bytes preserved. Runtime crop and uniform scale are presentation metadata; no generative edits.",
+      "crop": [
+        6,
+        6,
+        384,
+        340
+      ],
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "figma_preview": {
+        "node_id": "1221:21",
+        "frame_node_id": "1229:14",
+        "frame_dimensions_px": [
+          648,
+          330
+        ],
+        "x": 159,
+        "y": 18.33333,
+        "width": 330,
+        "height": 293.33334,
+        "image_scale_mode": "FIT",
+        "image_transform": [
+          [
+            1,
+            0,
+            0
+          ],
+          [
+            0,
+            1,
+            0
+          ]
+        ],
+        "display_px_per_source_px": 0.83333333
+      },
+      "alias_of": "BLD-HUT-L2"
     },
     "BLD-CHIEF-L3": {
-      "file": "res://assets/refactor-v035/hut-stages.png",
-      "crop": [
-        1009,
-        166,
-        455,
-        415
-      ],
+      "file": "res://assets/buildings/approved-v001/hut/hut-l3.png",
       "source_size": [
-        2172,
-        724
+        1312,
+        1199
       ],
+      "sha256": "5de337e42f04ac29d37377955c73e6485b2f9836d2074c6a619a30313049083b",
+      "source": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=1188-406",
       "approved": true,
-      "review_only": true,
-      "qa": "Edge color residue; not release approved",
-      "source_commit": "a84985267dd8f282403b6f9ad3c4778446308698"
+      "review_only": false,
+      "source_status": "reused_alpha_qa_passed",
+      "integration_authorization": "Current approved game-improvement task, 2026-11-07; source audit metadata retained.",
+      "content_bbox_alpha8": [
+        175,
+        187,
+        1136,
+        1004
+      ],
+      "alignment": "center",
+      "notes": "Original PNG bytes preserved. Runtime crop and uniform scale are presentation metadata; no generative edits.",
+      "crop": [
+        171,
+        183,
+        969,
+        825
+      ],
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "figma_preview": {
+        "node_id": "1221:24",
+        "frame_node_id": "1229:15",
+        "frame_dimensions_px": [
+          648,
+          330
+        ],
+        "x": 159,
+        "y": 23.645,
+        "width": 330,
+        "height": 282.70999,
+        "image_scale_mode": "CROP",
+        "image_transform": [
+          [
+            0.7393292784690857,
+            0,
+            0.13033536076545715
+          ],
+          [
+            0,
+            0.693077564239502,
+            0.15012510120868683
+          ]
+        ],
+        "display_px_per_cropped_source_px": 0.34020456
+      },
+      "alias_of": "BLD-HUT-L3"
     },
     "BLD-CHIEF-L4": {
-      "file": "res://assets/refactor-v035/hut-stages.png",
-      "crop": [
-        1537,
-        103,
-        609,
-        478
-      ],
+      "file": "res://assets/buildings/approved-v001/hut/hut-l4.png",
       "source_size": [
-        2172,
-        724
+        602,
+        470
       ],
+      "sha256": "5d9006a9f2d2ac102ab3dd452077c3757db5fd1333d284306e0a8cab0bc30fc6",
+      "source": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=1191-36",
       "approved": true,
-      "review_only": true,
-      "qa": "Edge color residue; not release approved",
-      "source_commit": "a84985267dd8f282403b6f9ad3c4778446308698"
+      "review_only": false,
+      "source_status": "reused_alpha_qa_passed",
+      "integration_authorization": "Current approved game-improvement task, 2026-11-07; source audit metadata retained.",
+      "content_bbox_alpha8": [
+        10,
+        10,
+        592,
+        461
+      ],
+      "alignment": "center",
+      "notes": "Original PNG bytes preserved. Runtime crop and uniform scale are presentation metadata; no generative edits.",
+      "crop": [
+        6,
+        6,
+        590,
+        459
+      ],
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "figma_preview": {
+        "node_id": "1221:27",
+        "frame_node_id": "1229:16",
+        "frame_dimensions_px": [
+          648,
+          330
+        ],
+        "x": 159,
+        "y": 36.1794,
+        "width": 330,
+        "height": 257.6412,
+        "image_scale_mode": "FIT",
+        "image_transform": [
+          [
+            1,
+            0,
+            0
+          ],
+          [
+            0,
+            1,
+            0
+          ]
+        ],
+        "display_px_per_source_px": 0.54817276
+      },
+      "alias_of": "BLD-HUT-L4"
     },
     "BLD-OUTPOST-L1": {
-      "crop": [
-        280,
-        130,
-        870,
-        800
-      ],
+      "file": "res://assets/buildings/approved-v001/outpost/outpost-l1.png",
       "source_size": [
         1448,
         1086
       ],
+      "sha256": "a34fb3fe9beea797137da797554979c64565768a428a7211db841b71157640e8",
+      "source": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=1091-515",
+      "approved": true,
+      "review_only": false,
+      "source_status": "reused_alpha_qa_passed",
+      "integration_authorization": "Current approved game-improvement task, 2026-11-07; source audit metadata retained.",
+      "content_bbox_alpha8": [
+        306,
+        147,
+        1130,
+        904
+      ],
+      "alignment": "center",
+      "notes": "Original PNG bytes preserved. Runtime crop and uniform scale are presentation metadata; no generative edits.",
+      "crop": [
+        302,
+        143,
+        832,
+        765
+      ],
       "anchor": [
         0.5,
-        0.8
+        0.5
       ],
-      "file": "res://assets/buildings-review-v001/outpost-level1.png",
-      "approved": true,
-      "review_only": true,
-      "qa": "Edge color residue; not release approved",
-      "source_commit": "a84985267dd8f282403b6f9ad3c4778446308698"
+      "figma_preview": {
+        "node_id": "1221:33",
+        "frame_node_id": "1229:17",
+        "frame_dimensions_px": [
+          320,
+          240
+        ],
+        "x": 0,
+        "y": 0,
+        "width": 320,
+        "height": 240,
+        "image_scale_mode": "FILL",
+        "image_transform": [
+          [
+            1,
+            0,
+            0
+          ],
+          [
+            0,
+            1,
+            0
+          ]
+        ],
+        "display_px_per_source_px": 0.22099448
+      }
     },
     "GROUND-PAD-L1": {
-      "file": "res://assets/foundations-v001/level-1.png",
+      "file": "res://assets/buildings/approved-v001/foundation/foundation-l1.png",
       "source_size": [
         1774,
         887
       ],
+      "sha256": "223557b646fc7108e94468eb52451d45e17f69dc604cff58f3a12dd634afe33d",
+      "source": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=1091-519",
+      "approved": true,
+      "review_only": false,
+      "source_status": "reused_alpha_qa_passed",
+      "integration_authorization": "Current approved game-improvement task, 2026-11-07; source audit metadata retained.",
+      "content_bbox_alpha8": [
+        68,
+        65,
+        1692,
+        824
+      ],
+      "alignment": "center",
+      "notes": "Original PNG bytes preserved. Runtime crop and uniform scale are presentation metadata; no generative edits.",
       "alpha_bounds": [
         71,
         66,
@@ -394,17 +655,28 @@
       "anchor": [
         0.5,
         0.5
-      ],
-      "source": "Figma zkbflw9fCdAlWbphhw5pSS / 1092:49 / 1091:519",
-      "level_mapping": "L1=B dirt",
-      "sha256": "223557b646fc7108e94468eb52451d45e17f69dc604cff58f3a12dd634afe33d"
+      ]
     },
     "GROUND-PAD-L2": {
-      "file": "res://assets/foundations-v001/level-2.png",
+      "file": "res://assets/buildings/approved-v001/foundation/foundation-l2.png",
       "source_size": [
         1774,
         887
       ],
+      "sha256": "f618c56c6292e73e7c6cdd8d952de4b577fe1aac19c570a55187e05872fd0420",
+      "source": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=1091-518",
+      "approved": true,
+      "review_only": false,
+      "source_status": "reused_alpha_qa_passed",
+      "integration_authorization": "Current approved game-improvement task, 2026-11-07; source audit metadata retained.",
+      "content_bbox_alpha8": [
+        63,
+        67,
+        1691,
+        825
+      ],
+      "alignment": "center",
+      "notes": "Original PNG bytes preserved. Runtime crop and uniform scale are presentation metadata; no generative edits.",
       "alpha_bounds": [
         71,
         69,
@@ -414,17 +686,28 @@
       "anchor": [
         0.5,
         0.5
-      ],
-      "source": "Figma zkbflw9fCdAlWbphhw5pSS / 1092:49 / 1091:518",
-      "level_mapping": "L2=A dirt",
-      "sha256": "f618c56c6292e73e7c6cdd8d952de4b577fe1aac19c570a55187e05872fd0420"
+      ]
     },
     "GROUND-PAD-L3": {
-      "file": "res://assets/foundations-v001/level-3.png",
+      "file": "res://assets/buildings/approved-v001/foundation/foundation-l3.png",
       "source_size": [
         1774,
         887
       ],
+      "sha256": "9aba2a2627d772ead2e6a81fbdfa62afb7236fb38e593c7f2371738e2566d20c",
+      "source": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=1091-517",
+      "approved": true,
+      "review_only": false,
+      "source_status": "reused_alpha_qa_passed",
+      "integration_authorization": "Current approved game-improvement task, 2026-11-07; source audit metadata retained.",
+      "content_bbox_alpha8": [
+        65,
+        57,
+        1697,
+        828
+      ],
+      "alignment": "center",
+      "notes": "Original PNG bytes preserved. Runtime crop and uniform scale are presentation metadata; no generative edits.",
       "alpha_bounds": [
         69,
         58,
@@ -434,17 +717,28 @@
       "anchor": [
         0.5,
         0.5
-      ],
-      "source": "Figma zkbflw9fCdAlWbphhw5pSS / 1092:49 / 1091:517",
-      "level_mapping": "L3=gravel",
-      "sha256": "9aba2a2627d772ead2e6a81fbdfa62afb7236fb38e593c7f2371738e2566d20c"
+      ]
     },
     "GROUND-PAD-L4": {
-      "file": "res://assets/foundations-v001/level-4.png",
+      "file": "res://assets/buildings/approved-v001/foundation/foundation-l4.png",
       "source_size": [
         1774,
         887
       ],
+      "sha256": "cb18aacdc9d0669738c780d184a7926c8fb6219492f328dd51d5d45af6f3f610",
+      "source": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=1098-38",
+      "approved": true,
+      "review_only": false,
+      "source_status": "reused_alpha_qa_passed",
+      "integration_authorization": "Current approved game-improvement task, 2026-11-07; source audit metadata retained.",
+      "content_bbox_alpha8": [
+        66,
+        46,
+        1698,
+        830
+      ],
+      "alignment": "center",
+      "notes": "Original PNG bytes preserved. Runtime crop and uniform scale are presentation metadata; no generative edits.",
       "alpha_bounds": [
         67,
         57,
@@ -454,76 +748,1364 @@
       "anchor": [
         0.5,
         0.5
-      ],
-      "source": "Figma zkbflw9fCdAlWbphhw5pSS / 1092:49 / 1098:38",
-      "level_mapping": "L4=ordered natural stone",
-      "sha256": "cb18aacdc9d0669738c780d184a7926c8fb6219492f328dd51d5d45af6f3f610"
+      ]
     },
     "BLD-OUTPOST-L2": {
-      "file": "res://assets/outposts-v002/outpost-level2.png",
+      "file": "res://assets/buildings/approved-v001/outpost/outpost-l2.png",
       "source_size": [
         1448,
         1086
       ],
-      "crop": [
-        238,
-        9,
-        905,
-        946
+      "sha256": "7942ec5fe15c516163d330ee4e544f88d4622f800045458ca69cc9232c68866c",
+      "source": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=1091-516",
+      "approved": true,
+      "review_only": false,
+      "source_status": "reused_alpha_qa_passed",
+      "integration_authorization": "Current approved game-improvement task, 2026-11-07; source audit metadata retained.",
+      "content_bbox_alpha8": [
+        257,
+        28,
+        1124,
+        936
       ],
+      "alignment": "center",
+      "notes": "Original PNG bytes preserved. Runtime crop and uniform scale are presentation metadata; no generative edits.",
+      "crop": [
+        253,
+        24,
+        875,
+        916
+      ],
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "figma_preview": {
+        "node_id": "1221:36",
+        "frame_node_id": "1229:18",
+        "frame_dimensions_px": [
+          320,
+          240
+        ],
+        "x": 0,
+        "y": 0,
+        "width": 320,
+        "height": 240,
+        "image_scale_mode": "FILL",
+        "image_transform": [
+          [
+            1,
+            0,
+            0
+          ],
+          [
+            0,
+            1,
+            0
+          ]
+        ],
+        "display_px_per_source_px": 0.22099448
+      },
       "ground_pivot": [
-        472,
-        791
+        457,
+        776
       ],
       "ground_span": 780,
-      "display_ground_width": 180,
-      "approved": true,
-      "source_commit": "b046bf0f491290a42e4a0f67b22b6e336a829d14",
-      "qa": "User approved AI-separated building; structural floor/stairs retained, separate terrain foundation. Source pixels unchanged."
+      "display_ground_width": 180
     },
     "BLD-OUTPOST-L3": {
-      "file": "res://assets/outposts-v002/outpost-level3.png",
+      "file": "res://assets/buildings/approved-v001/outpost/outpost-l3.png",
       "source_size": [
         1448,
         1086
       ],
-      "crop": [
-        216,
-        51,
-        954,
-        990
+      "sha256": "1a1b0706ad26df37683ec7b83016a73207cbd7dfcf0691a05440e2a6bb66d521",
+      "source": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=1091-513",
+      "approved": true,
+      "review_only": false,
+      "source_status": "reused_alpha_qa_passed",
+      "integration_authorization": "Current approved game-improvement task, 2026-11-07; source audit metadata retained.",
+      "content_bbox_alpha8": [
+        235,
+        70,
+        1151,
+        1023
       ],
+      "alignment": "center",
+      "notes": "Original PNG bytes preserved. Runtime crop and uniform scale are presentation metadata; no generative edits.",
+      "crop": [
+        231,
+        66,
+        924,
+        961
+      ],
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "figma_preview": {
+        "node_id": "1221:39",
+        "frame_node_id": "1229:19",
+        "frame_dimensions_px": [
+          320,
+          240
+        ],
+        "x": 0,
+        "y": 0,
+        "width": 320,
+        "height": 240,
+        "image_scale_mode": "FILL",
+        "image_transform": [
+          [
+            1,
+            0,
+            0
+          ],
+          [
+            0,
+            1,
+            0
+          ]
+        ],
+        "display_px_per_source_px": 0.22099448
+      },
       "ground_pivot": [
-        504,
-        829
+        489,
+        814
       ],
       "ground_span": 790,
-      "display_ground_width": 180,
-      "approved": true,
-      "source_commit": "b046bf0f491290a42e4a0f67b22b6e336a829d14",
-      "qa": "User approved AI-separated building; structural floor/stairs retained, separate terrain foundation. Source pixels unchanged."
+      "display_ground_width": 180
     },
     "BLD-OUTPOST-L4": {
-      "file": "res://assets/outposts-v002/outpost-level4.png",
+      "file": "res://assets/buildings/approved-v001/outpost/outpost-l4.png",
       "source_size": [
         1448,
         1086
       ],
-      "crop": [
-        179,
-        30,
-        1054,
-        924
+      "sha256": "a4e1965e7287f5469156a1d307d59db79e4451c2482596e6ac06b9c671fe25a0",
+      "source": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=1091-514",
+      "approved": true,
+      "review_only": false,
+      "source_status": "reused_alpha_qa_passed",
+      "integration_authorization": "Current approved game-improvement task, 2026-11-07; source audit metadata retained.",
+      "content_bbox_alpha8": [
+        198,
+        49,
+        1214,
+        936
       ],
+      "alignment": "center",
+      "notes": "Original PNG bytes preserved. Runtime crop and uniform scale are presentation metadata; no generative edits.",
+      "crop": [
+        194,
+        45,
+        1024,
+        895
+      ],
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "figma_preview": {
+        "node_id": "1221:42",
+        "frame_node_id": "1229:20",
+        "frame_dimensions_px": [
+          320,
+          240
+        ],
+        "x": 0,
+        "y": 0,
+        "width": 320,
+        "height": 240,
+        "image_scale_mode": "FILL",
+        "image_transform": [
+          [
+            1,
+            0,
+            0
+          ],
+          [
+            0,
+            1,
+            0
+          ]
+        ],
+        "display_px_per_source_px": 0.22099448
+      },
       "ground_pivot": [
-        531,
-        770
+        516,
+        755
       ],
       "ground_span": 830,
-      "display_ground_width": 180,
+      "display_ground_width": 180
+    },
+    "BLD-CHIEF-L1": {
+      "file": "res://assets/buildings/approved-v001/hut/hut-l1.png",
+      "source_size": [
+        340,
+        294
+      ],
+      "sha256": "f9573cdb41d5212a9f1e84f666e3e67e6c45d0aa1ecffd976663a37a885a2898",
+      "source": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=1191-17",
       "approved": true,
-      "source_commit": "b046bf0f491290a42e4a0f67b22b6e336a829d14",
-      "qa": "User approved AI-separated building; structural floor/stairs retained, separate terrain foundation. Source pixels unchanged."
+      "review_only": false,
+      "source_status": "reused_alpha_qa_passed",
+      "integration_authorization": "Current approved game-improvement task, 2026-11-07; source audit metadata retained.",
+      "content_bbox_alpha8": [
+        10,
+        10,
+        330,
+        284
+      ],
+      "alignment": "center",
+      "notes": "Original PNG bytes preserved. Runtime crop and uniform scale are presentation metadata; no generative edits.",
+      "crop": [
+        6,
+        6,
+        328,
+        282
+      ],
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "figma_preview": {
+        "node_id": "1221:18",
+        "frame_node_id": "1229:13",
+        "frame_dimensions_px": [
+          648,
+          330
+        ],
+        "x": 159,
+        "y": 22.32353,
+        "width": 330,
+        "height": 285.35294,
+        "image_scale_mode": "FIT",
+        "image_transform": [
+          [
+            1,
+            0,
+            0
+          ],
+          [
+            0,
+            1,
+            0
+          ]
+        ],
+        "display_px_per_source_px": 0.97058822
+      },
+      "alias_of": "BLD-HUT-L1"
+    },
+    "BLD-HUT-L2": {
+      "file": "res://assets/buildings/approved-v001/hut/hut-l2.png",
+      "source_size": [
+        396,
+        352
+      ],
+      "sha256": "03a2dc2885a0c2f4a86511587ad5e69fde3e70496102105293ac02f85c88e614",
+      "source": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=1191-24",
+      "approved": true,
+      "review_only": false,
+      "source_status": "reused_alpha_qa_passed",
+      "integration_authorization": "Current approved game-improvement task, 2026-11-07; source audit metadata retained.",
+      "content_bbox_alpha8": [
+        10,
+        10,
+        386,
+        342
+      ],
+      "alignment": "center",
+      "notes": "Original PNG bytes preserved. Runtime crop and uniform scale are presentation metadata; no generative edits.",
+      "crop": [
+        6,
+        6,
+        384,
+        340
+      ],
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "figma_preview": {
+        "node_id": "1221:21",
+        "frame_node_id": "1229:14",
+        "frame_dimensions_px": [
+          648,
+          330
+        ],
+        "x": 159,
+        "y": 18.33333,
+        "width": 330,
+        "height": 293.33334,
+        "image_scale_mode": "FIT",
+        "image_transform": [
+          [
+            1,
+            0,
+            0
+          ],
+          [
+            0,
+            1,
+            0
+          ]
+        ],
+        "display_px_per_source_px": 0.83333333
+      }
+    },
+    "BLD-HUT-L3": {
+      "file": "res://assets/buildings/approved-v001/hut/hut-l3.png",
+      "source_size": [
+        1312,
+        1199
+      ],
+      "sha256": "5de337e42f04ac29d37377955c73e6485b2f9836d2074c6a619a30313049083b",
+      "source": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=1188-406",
+      "approved": true,
+      "review_only": false,
+      "source_status": "reused_alpha_qa_passed",
+      "integration_authorization": "Current approved game-improvement task, 2026-11-07; source audit metadata retained.",
+      "content_bbox_alpha8": [
+        175,
+        187,
+        1136,
+        1004
+      ],
+      "alignment": "center",
+      "notes": "Original PNG bytes preserved. Runtime crop and uniform scale are presentation metadata; no generative edits.",
+      "crop": [
+        171,
+        183,
+        969,
+        825
+      ],
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "figma_preview": {
+        "node_id": "1221:24",
+        "frame_node_id": "1229:15",
+        "frame_dimensions_px": [
+          648,
+          330
+        ],
+        "x": 159,
+        "y": 23.645,
+        "width": 330,
+        "height": 282.70999,
+        "image_scale_mode": "CROP",
+        "image_transform": [
+          [
+            0.7393292784690857,
+            0,
+            0.13033536076545715
+          ],
+          [
+            0,
+            0.693077564239502,
+            0.15012510120868683
+          ]
+        ],
+        "display_px_per_cropped_source_px": 0.34020456
+      }
+    },
+    "BLD-HUT-L4": {
+      "file": "res://assets/buildings/approved-v001/hut/hut-l4.png",
+      "source_size": [
+        602,
+        470
+      ],
+      "sha256": "5d9006a9f2d2ac102ab3dd452077c3757db5fd1333d284306e0a8cab0bc30fc6",
+      "source": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=1191-36",
+      "approved": true,
+      "review_only": false,
+      "source_status": "reused_alpha_qa_passed",
+      "integration_authorization": "Current approved game-improvement task, 2026-11-07; source audit metadata retained.",
+      "content_bbox_alpha8": [
+        10,
+        10,
+        592,
+        461
+      ],
+      "alignment": "center",
+      "notes": "Original PNG bytes preserved. Runtime crop and uniform scale are presentation metadata; no generative edits.",
+      "crop": [
+        6,
+        6,
+        590,
+        459
+      ],
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "figma_preview": {
+        "node_id": "1221:27",
+        "frame_node_id": "1229:16",
+        "frame_dimensions_px": [
+          648,
+          330
+        ],
+        "x": 159,
+        "y": 36.1794,
+        "width": 330,
+        "height": 257.6412,
+        "image_scale_mode": "FIT",
+        "image_transform": [
+          [
+            1,
+            0,
+            0
+          ],
+          [
+            0,
+            1,
+            0
+          ]
+        ],
+        "display_px_per_source_px": 0.54817276
+      }
+    },
+    "BLD-TRAINING-L1": {
+      "file": "res://assets/buildings/approved-v001/training/training-l1-structure.png",
+      "source_size": [
+        1254,
+        1254
+      ],
+      "sha256": "0781ec11fe905cfb34c09b50c8c2fb74832e5697e44f959db21e36faf3b9a52d",
+      "source": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=1227-13",
+      "approved": true,
+      "review_only": false,
+      "source_status": "review_candidate_not_pixel_exact",
+      "integration_authorization": "Current approved game-improvement task, 2026-11-07; source audit metadata retained.",
+      "content_bbox_alpha8": [
+        512,
+        170,
+        729,
+        1016
+      ],
+      "alignment": "bottom",
+      "notes": "Original PNG bytes preserved. Runtime crop and uniform scale are presentation metadata; no generative edits.",
+      "crop": [
+        508,
+        166,
+        225,
+        854
+      ],
+      "anchor": [
+        0.5,
+        1.0
+      ],
+      "figma_preview": {
+        "node_id": "1221:63",
+        "frame_node_id": "1229:25",
+        "frame_dimensions_px": [
+          320,
+          280
+        ],
+        "x": 146.29977,
+        "y": 86,
+        "width": 27.40047,
+        "height": 104,
+        "image_scale_mode": "CROP",
+        "image_transform": [
+          [
+            0.17942583560943604,
+            0,
+            0.4051036536693573
+          ],
+          [
+            0,
+            0.6810207366943359,
+            0.13237640261650085
+          ]
+        ],
+        "display_px_per_cropped_source_px": 0.12177986
+      },
+      "runtime_height_at_reference_width_320": 104.0,
+      "runtime_alignment": "bottom"
+    },
+    "BLD-TRAINING-L2": {
+      "file": "res://assets/buildings/approved-v001/training/training-l2-structure.png",
+      "source_size": [
+        1254,
+        1254
+      ],
+      "sha256": "1baf11f5a04cceec16ddfad00c7134a62a58a5e25fb6a7c09f28dd9b1d1115c0",
+      "source": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=1227-13",
+      "approved": true,
+      "review_only": false,
+      "source_status": "review_candidate_not_pixel_exact",
+      "integration_authorization": "Current approved game-improvement task, 2026-11-07; source audit metadata retained.",
+      "content_bbox_alpha8": [
+        132,
+        40,
+        1132,
+        1225
+      ],
+      "alignment": "bottom",
+      "notes": "Original PNG bytes preserved. Runtime crop and uniform scale are presentation metadata; no generative edits.",
+      "crop": [
+        128,
+        36,
+        1008,
+        1193
+      ],
+      "anchor": [
+        0.5,
+        1.0
+      ],
+      "figma_preview": {
+        "node_id": "1221:66",
+        "frame_node_id": "1229:26",
+        "frame_dimensions_px": [
+          320,
+          280
+        ],
+        "x": 124.17502,
+        "y": 105.2,
+        "width": 71.64996,
+        "height": 84.8,
+        "image_scale_mode": "CROP",
+        "image_transform": [
+          [
+            0.8038277626037598,
+            0,
+            0.10207336395978928
+          ],
+          [
+            0,
+            0.9513556361198425,
+            0.028708133846521378
+          ]
+        ],
+        "display_px_per_cropped_source_px": 0.07108131
+      },
+      "runtime_height_at_reference_width_320": 84.8,
+      "runtime_alignment": "bottom"
+    },
+    "BLD-TRAINING-L3": {
+      "file": "res://assets/buildings/approved-v001/training/training-l3-structure.png",
+      "source_size": [
+        1774,
+        887
+      ],
+      "sha256": "0c0433f074845ebac85c6b31203be6a4edbc0578ca75fd0d7068ccf5f0fb588d",
+      "source": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=1227-13",
+      "approved": true,
+      "review_only": false,
+      "source_status": "review_candidate_not_pixel_exact",
+      "integration_authorization": "Current approved game-improvement task, 2026-11-07; source audit metadata retained.",
+      "content_bbox_alpha8": [
+        277,
+        72,
+        1471,
+        811
+      ],
+      "alignment": "bottom",
+      "notes": "Original PNG bytes preserved. Runtime crop and uniform scale are presentation metadata; no generative edits.",
+      "crop": [
+        273,
+        68,
+        1202,
+        747
+      ],
+      "anchor": [
+        0.5,
+        1.0
+      ],
+      "figma_preview": {
+        "node_id": "1221:69",
+        "frame_node_id": "1229:27",
+        "frame_dimensions_px": [
+          320,
+          280
+        ],
+        "x": 85.98125,
+        "y": 98,
+        "width": 148.03749,
+        "height": 92,
+        "image_scale_mode": "CROP",
+        "image_transform": [
+          [
+            0.677564799785614,
+            0,
+            0.1538895219564438
+          ],
+          [
+            0,
+            0.8421645760536194,
+            0.07666290551424026
+          ]
+        ],
+        "display_px_per_cropped_source_px": 0.12315931
+      },
+      "runtime_height_at_reference_width_320": 92.0,
+      "runtime_alignment": "bottom"
+    },
+    "BLD-TRAINING-L4": {
+      "file": "res://assets/buildings/approved-v001/training/training-l4-structure.png",
+      "source_size": [
+        1254,
+        1254
+      ],
+      "sha256": "d70b0eb1f13cd77bd6cf2034e3792c72ca2568c15acc2fe3c9d8a1db991d45e6",
+      "source": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=1227-13",
+      "approved": true,
+      "review_only": false,
+      "source_status": "review_candidate_not_pixel_exact",
+      "integration_authorization": "Current approved game-improvement task, 2026-11-07; source audit metadata retained.",
+      "content_bbox_alpha8": [
+        51,
+        201,
+        1211,
+        1049
+      ],
+      "alignment": "bottom",
+      "notes": "Original PNG bytes preserved. Runtime crop and uniform scale are presentation metadata; no generative edits.",
+      "crop": [
+        47,
+        197,
+        1168,
+        856
+      ],
+      "anchor": [
+        0.5,
+        1.0
+      ],
+      "figma_preview": {
+        "node_id": "1221:72",
+        "frame_node_id": "1229:28",
+        "frame_dimensions_px": [
+          320,
+          280
+        ],
+        "x": 78.13084,
+        "y": 70,
+        "width": 163.73831,
+        "height": 120,
+        "image_scale_mode": "CROP",
+        "image_transform": [
+          [
+            0.9314194321632385,
+            0,
+            0.03748006373643875
+          ],
+          [
+            0,
+            0.6826156377792358,
+            0.15709729492664337
+          ]
+        ],
+        "display_px_per_cropped_source_px": 0.14018691
+      },
+      "runtime_height_at_reference_width_320": 120.0,
+      "runtime_alignment": "bottom"
+    },
+    "BLD-SHRINE-L1": {
+      "file": "res://assets/buildings/approved-v001/shrine/shrine-l1.png",
+      "source_size": [
+        1254,
+        1254
+      ],
+      "sha256": "7fc3fb2663d3a0c69292f193941a563052df8a92a5c7a356f0673cc457aa9bc8",
+      "source": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=1165-43",
+      "approved": true,
+      "review_only": false,
+      "source_status": "review_candidate_not_pixel_exact",
+      "integration_authorization": "Current approved game-improvement task, 2026-11-07; source audit metadata retained.",
+      "content_bbox_alpha8": [
+        118,
+        70,
+        1146,
+        1225
+      ],
+      "alignment": "bottom",
+      "notes": "Original PNG bytes preserved. Runtime crop and uniform scale are presentation metadata; no generative edits.",
+      "crop": [
+        114,
+        66,
+        1036,
+        1163
+      ],
+      "anchor": [
+        0.5,
+        1.0
+      ],
+      "figma_preview": {
+        "node_id": "1221:91",
+        "frame_node_id": "1232:13",
+        "frame_dimensions_px": [
+          320,
+          280
+        ],
+        "x": 86.06363,
+        "y": 98,
+        "width": 147.87274,
+        "height": 166,
+        "image_scale_mode": "CROP",
+        "image_transform": [
+          [
+            0.8261563181877136,
+            0,
+            0.09090909361839294
+          ],
+          [
+            0,
+            0.9274322390556335,
+            0.05263157933950424
+          ]
+        ],
+        "display_px_per_cropped_source_px": 0.1427343
+      },
+      "runtime_height_at_reference_width_320": 166.0,
+      "runtime_alignment": "bottom"
+    },
+    "BLD-SHRINE-L2": {
+      "file": "res://assets/buildings/approved-v001/shrine/shrine-l2.png",
+      "source_size": [
+        1254,
+        1254
+      ],
+      "sha256": "6c071bf3e03987bf8776223a4183de56724a02f1f512948be2a087146d176471",
+      "source": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=1165-48",
+      "approved": true,
+      "review_only": false,
+      "source_status": "review_candidate_not_pixel_exact",
+      "integration_authorization": "Current approved game-improvement task, 2026-11-07; source audit metadata retained.",
+      "content_bbox_alpha8": [
+        97,
+        68,
+        1128,
+        1207
+      ],
+      "alignment": "bottom",
+      "notes": "Original PNG bytes preserved. Runtime crop and uniform scale are presentation metadata; no generative edits.",
+      "crop": [
+        93,
+        64,
+        1039,
+        1147
+      ],
+      "anchor": [
+        0.5,
+        1.0
+      ],
+      "figma_preview": {
+        "node_id": "1221:94",
+        "frame_node_id": "1232:14",
+        "frame_dimensions_px": [
+          320,
+          280
+        ],
+        "x": 76.6626,
+        "y": 80,
+        "width": 166.6748,
+        "height": 184,
+        "image_scale_mode": "CROP",
+        "image_transform": [
+          [
+            0.8285486698150635,
+            0,
+            0.07416267693042755
+          ],
+          [
+            0,
+            0.9146730303764343,
+            0.05103668197989464
+          ]
+        ],
+        "display_px_per_cropped_source_px": 0.16041849
+      },
+      "runtime_height_at_reference_width_320": 184.0,
+      "runtime_alignment": "bottom"
+    },
+    "BLD-SHRINE-L3": {
+      "file": "res://assets/buildings/approved-v001/shrine/shrine-l3.png",
+      "source_size": [
+        1254,
+        1254
+      ],
+      "sha256": "ae5c00dca6abf398541f4194764cb0888b5f7e2eee8412dd411fec81d077705c",
+      "source": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=1165-58",
+      "approved": true,
+      "review_only": false,
+      "source_status": "review_candidate_not_pixel_exact",
+      "integration_authorization": "Current approved game-improvement task, 2026-11-07; source audit metadata retained.",
+      "content_bbox_alpha8": [
+        41,
+        103,
+        1205,
+        1143
+      ],
+      "alignment": "bottom",
+      "notes": "Original PNG bytes preserved. Runtime crop and uniform scale are presentation metadata; no generative edits.",
+      "crop": [
+        37,
+        99,
+        1172,
+        1048
+      ],
+      "anchor": [
+        0.5,
+        1.0
+      ],
+      "figma_preview": {
+        "node_id": "1221:97",
+        "frame_node_id": "1232:15",
+        "frame_dimensions_px": [
+          320,
+          280
+        ],
+        "x": 47.04961,
+        "y": 62,
+        "width": 225.90077,
+        "height": 202,
+        "image_scale_mode": "CROP",
+        "image_transform": [
+          [
+            0.9346092343330383,
+            0,
+            0.02950558252632618
+          ],
+          [
+            0,
+            0.8357256650924683,
+            0.07894736528396606
+          ]
+        ],
+        "display_px_per_cropped_source_px": 0.19274809
+      },
+      "runtime_height_at_reference_width_320": 202.0,
+      "runtime_alignment": "bottom"
+    },
+    "BLD-SHRINE-L4": {
+      "file": "res://assets/buildings/approved-v001/shrine/shrine-l4.png",
+      "source_size": [
+        1086,
+        1448
+      ],
+      "sha256": "eaf7ed7a49d8c11a1ec6d7d00783ef0d2e9d6bdb1b3e6174dc61e887a86d7126",
+      "source": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=1191-71",
+      "approved": true,
+      "review_only": false,
+      "source_status": "review_candidate_not_pixel_exact",
+      "integration_authorization": "Current approved game-improvement task, 2026-11-07; source audit metadata retained.",
+      "content_bbox_alpha8": [
+        35,
+        156,
+        1063,
+        1344
+      ],
+      "alignment": "bottom",
+      "notes": "Original PNG bytes preserved. Runtime crop and uniform scale are presentation metadata; no generative edits.",
+      "crop": [
+        31,
+        152,
+        1036,
+        1196
+      ],
+      "anchor": [
+        0.5,
+        1.0
+      ],
+      "figma_preview": {
+        "node_id": "1221:100",
+        "frame_node_id": "1232:16",
+        "frame_dimensions_px": [
+          320,
+          280
+        ],
+        "x": 63.8495,
+        "y": 42,
+        "width": 192.30101,
+        "height": 222,
+        "image_scale_mode": "CROP",
+        "image_transform": [
+          [
+            0.9539594650268555,
+            0,
+            0.028545118868350983
+          ],
+          [
+            0,
+            0.8259668350219727,
+            0.10497237741947174
+          ]
+        ],
+        "display_px_per_cropped_source_px": 0.18561873
+      },
+      "runtime_height_at_reference_width_320": 222.0,
+      "runtime_alignment": "bottom"
+    },
+    "BLD-HEARTH-L1": {
+      "file": "res://assets/buildings/approved-v001/hearth/hearth-l1.png",
+      "source_size": [
+        1254,
+        1254
+      ],
+      "sha256": "de03113057a68e289621a538724964add2c3f6badb5a2af73757583561e4d3c7",
+      "source": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=1165-69",
+      "approved": true,
+      "review_only": false,
+      "source_status": "review_candidate_not_pixel_exact",
+      "integration_authorization": "Current approved game-improvement task, 2026-11-07; source audit metadata retained.",
+      "content_bbox_alpha8": [
+        64,
+        224,
+        1185,
+        1018
+      ],
+      "alignment": "center",
+      "notes": "Original PNG bytes preserved. Runtime crop and uniform scale are presentation metadata; no generative edits.",
+      "crop": [
+        60,
+        220,
+        1129,
+        802
+      ],
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "figma_preview": {
+        "node_id": "1221:106",
+        "frame_node_id": "1230:13",
+        "frame_dimensions_px": [
+          320,
+          280
+        ],
+        "x": 79.35815,
+        "y": 82.715,
+        "width": 161.28371,
+        "height": 114.57,
+        "image_scale_mode": "CROP",
+        "image_transform": [
+          [
+            0.90031898021698,
+            0,
+            0.04784689098596573
+          ],
+          [
+            0,
+            0.639553427696228,
+            0.17543859779834747
+          ]
+        ],
+        "display_px_per_cropped_source_px": 0.14285536
+      },
+      "runtime_height_at_reference_width_320": 114.57,
+      "runtime_alignment": "center"
+    },
+    "BLD-HEARTH-L2": {
+      "file": "res://assets/buildings/approved-v001/hearth/hearth-l2.png",
+      "source_size": [
+        1254,
+        1254
+      ],
+      "sha256": "dbb43d9ea377f2cd361293ad5f133b2a63323e92ee207cd0acfefd70485194c8",
+      "source": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=1165-74",
+      "approved": true,
+      "review_only": false,
+      "source_status": "review_candidate_not_pixel_exact",
+      "integration_authorization": "Current approved game-improvement task, 2026-11-07; source audit metadata retained.",
+      "content_bbox_alpha8": [
+        15,
+        245,
+        1242,
+        984
+      ],
+      "alignment": "center",
+      "notes": "Original PNG bytes preserved. Runtime crop and uniform scale are presentation metadata; no generative edits.",
+      "crop": [
+        11,
+        241,
+        1235,
+        747
+      ],
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "figma_preview": {
+        "node_id": "1221:109",
+        "frame_node_id": "1230:14",
+        "frame_dimensions_px": [
+          320,
+          280
+        ],
+        "x": 44.7912,
+        "y": 70.315,
+        "width": 230.4176,
+        "height": 139.37,
+        "image_scale_mode": "CROP",
+        "image_transform": [
+          [
+            0.9848484992980957,
+            0,
+            0.008771929889917374
+          ],
+          [
+            0,
+            0.5956937670707703,
+            0.19218501448631287
+          ]
+        ],
+        "display_px_per_cropped_source_px": 0.18657296
+      },
+      "runtime_height_at_reference_width_320": 139.37,
+      "runtime_alignment": "center"
+    },
+    "BLD-HEARTH-L3": {
+      "file": "res://assets/buildings/approved-v001/hearth/hearth-l3.png",
+      "source_size": [
+        1254,
+        1254
+      ],
+      "sha256": "7711ca4a8ef79fb74bf4809f4a65f45a8e6be6b8cc2e98915880b7de957a83aa",
+      "source": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=1165-79",
+      "approved": true,
+      "review_only": false,
+      "source_status": "review_candidate_not_pixel_exact",
+      "integration_authorization": "Current approved game-improvement task, 2026-11-07; source audit metadata retained.",
+      "content_bbox_alpha8": [
+        10,
+        88,
+        1245,
+        1113
+      ],
+      "alignment": "center",
+      "notes": "Original PNG bytes preserved. Runtime crop and uniform scale are presentation metadata; no generative edits.",
+      "crop": [
+        6,
+        84,
+        1243,
+        1033
+      ],
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "figma_preview": {
+        "node_id": "1221:112",
+        "frame_node_id": "1230:15",
+        "frame_dimensions_px": [
+          320,
+          280
+        ],
+        "x": 50.25982,
+        "y": 48.8,
+        "width": 219.48036,
+        "height": 182.39999,
+        "image_scale_mode": "CROP",
+        "image_transform": [
+          [
+            0.9912280440330505,
+            0,
+            0.0047846888191998005
+          ],
+          [
+            0,
+            0.8237639665603638,
+            0.06698564440011978
+          ]
+        ],
+        "display_px_per_cropped_source_px": 0.17657308
+      },
+      "runtime_height_at_reference_width_320": 182.4,
+      "runtime_alignment": "center"
+    },
+    "BLD-HEARTH-L4": {
+      "file": "res://assets/buildings/approved-v001/hearth/hearth-l4.png",
+      "source_size": [
+        1254,
+        1254
+      ],
+      "sha256": "4808ef2019596d585cdf4faed5a40973ad53be38c12a8bfe4c27b3937450938d",
+      "source": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=1165-84",
+      "approved": true,
+      "review_only": false,
+      "source_status": "review_candidate_not_pixel_exact",
+      "integration_authorization": "Current approved game-improvement task, 2026-11-07; source audit metadata retained.",
+      "content_bbox_alpha8": [
+        47,
+        127,
+        1228,
+        1054
+      ],
+      "alignment": "center",
+      "notes": "Original PNG bytes preserved. Runtime crop and uniform scale are presentation metadata; no generative edits.",
+      "crop": [
+        43,
+        123,
+        1189,
+        935
+      ],
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "figma_preview": {
+        "node_id": "1221:115",
+        "frame_node_id": "1230:16",
+        "frame_dimensions_px": [
+          320,
+          280
+        ],
+        "x": 42.81674,
+        "y": 47.85,
+        "width": 234.36652,
+        "height": 184.3,
+        "image_scale_mode": "CROP",
+        "image_transform": [
+          [
+            0.9481658935546875,
+            0,
+            0.03429027274250984
+          ],
+          [
+            0,
+            0.7456140518188477,
+            0.09808612614870071
+          ]
+        ],
+        "display_px_per_cropped_source_px": 0.1971123
+      },
+      "runtime_height_at_reference_width_320": 184.3,
+      "runtime_alignment": "center"
+    },
+    "UI-RESIDENT": {
+      "file": "res://assets/ui/resources-approved-v001/resident.png",
+      "source_size": [
+        1254,
+        1254
+      ],
+      "crop": [
+        228,
+        77,
+        794,
+        1127
+      ],
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "approved": true,
+      "source": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=1244-42",
+      "sha256": "2a0f5590445ca57519f1154da991b07b4cdb67ca2f2f9fabe916d55c676b5b8e",
+      "notes": "Original approved PNG bytes preserved; metadata crop removes only transparent/low-alpha perimeter padding."
+    },
+    "UI-BUILDING-MENU-CLOSE-NORMAL": {
+      "file": "res://assets/ui/building-menu-integrated-v004/close-normal.png",
+      "source_size": [
+        144,
+        144
+      ],
+      "sha256": "00b57c249424d9d4a55449c4e228348a636a95286060feffe9949950d4b12096",
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "approved": true,
+      "source": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=1376-6583",
+      "notes": "Preserve full canvas. Disabled artwork already contains 35% opacity; node must remain full opacity."
+    },
+    "UI-BUILDING-MENU-DEMOLISH-DISABLED": {
+      "file": "res://assets/ui/building-menu-integrated-v004/demolish-disabled.png",
+      "source_size": [
+        288,
+        288
+      ],
+      "sha256": "dc01683554f711f0aad73f012aecc830191baa869be3272e9a095ba13cde0741",
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "approved": true,
+      "source": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=1376-6583",
+      "notes": "Preserve full canvas. Disabled artwork already contains 35% opacity; node must remain full opacity."
+    },
+    "UI-BUILDING-MENU-DEMOLISH-NORMAL": {
+      "file": "res://assets/ui/building-menu-integrated-v004/demolish-normal.png",
+      "source_size": [
+        288,
+        288
+      ],
+      "sha256": "0b12754f09ef8a9c1b15043007f92a2c3c77ba53032a614d127f75d09442d932",
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "approved": true,
+      "source": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=1376-6583",
+      "notes": "Preserve full canvas. Disabled artwork already contains 35% opacity; node must remain full opacity."
+    },
+    "UI-BUILDING-MENU-UPGRADE-DISABLED": {
+      "file": "res://assets/ui/building-menu-integrated-v004/upgrade-disabled.png",
+      "source_size": [
+        288,
+        288
+      ],
+      "sha256": "ea3383ae872b46f921a3ce51f49151aec081bc2b61a4afabcdebfc689ed6bb23",
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "approved": true,
+      "source": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=1376-6583",
+      "notes": "Preserve full canvas. Disabled artwork already contains 35% opacity; node must remain full opacity."
+    },
+    "UI-BUILDING-MENU-UPGRADE-HIGHLIGHT": {
+      "file": "res://assets/ui/building-menu-integrated-v004/upgrade-highlight.png",
+      "source_size": [
+        288,
+        288
+      ],
+      "sha256": "0aa42d4415eb8e1b249c4168592de4b148c4bb504be052aaca147db1cc463915",
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "approved": true,
+      "source": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=1376-6583",
+      "notes": "Preserve full canvas. Disabled artwork already contains 35% opacity; node must remain full opacity."
+    },
+    "UI-BUILDING-MENU-UPGRADE-NORMAL": {
+      "file": "res://assets/ui/building-menu-integrated-v004/upgrade-normal.png",
+      "source_size": [
+        288,
+        288
+      ],
+      "sha256": "7e3699900e087f5e97d8568addfef4f56cd27d9d7adf4860581df50a8de4bc99",
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "approved": true,
+      "source": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=1376-6583",
+      "notes": "Preserve full canvas. Disabled artwork already contains 35% opacity; node must remain full opacity."
+    },
+    "UI-BUILDING-MENU-MOVE-DISABLED": {
+      "file": "res://assets/ui/building-menu-integrated-v004/move-disabled.png",
+      "source_size": [
+        288,
+        288
+      ],
+      "sha256": "af5f053d2ba200e3de87a43d4b5c2f9c186f1839d56c0dea5e921b2584f54407",
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "approved": true,
+      "source": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=1376-6583",
+      "notes": "Preserve full canvas. Disabled artwork already contains 35% opacity; node must remain full opacity."
+    },
+    "UI-BUILDING-MENU-MOVE-NORMAL": {
+      "file": "res://assets/ui/building-menu-integrated-v004/move-normal.png",
+      "source_size": [
+        288,
+        288
+      ],
+      "sha256": "86bdfa2628f88209b8d5fb7e0336b2eb1f83a0430176e932e388f45c24cabbb4",
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "approved": true,
+      "source": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=1376-6583",
+      "notes": "Preserve full canvas. Disabled artwork already contains 35% opacity; node must remain full opacity."
+    },
+    "UI-SIDE-HEARTH-NORMAL": {
+      "file": "res://assets/ui/facility-side-v001/side-hearth-normal.png",
+      "source_size": [
+        216,
+        240
+      ],
+      "sha256": "4e2adf32abffc83010b5d08ce80c17932bc3bc80bfbbcc9220163d315ed21112",
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "approved": true,
+      "source": "https://github.com/byungho-cho/roxhistory/blob/b0699547a7addcef143c1bb879e9b70bfa5bf70c/assets/ui/building-menu/facility-side-v001/side-hearth-normal.png",
+      "notes": "Full 216x240 approved composition including Korean label; target 72x80. Disabled alpha already 35%."
+    },
+    "UI-SIDE-HEARTH-DISABLED": {
+      "file": "res://assets/ui/facility-side-v001/side-hearth-disabled.png",
+      "source_size": [
+        216,
+        240
+      ],
+      "sha256": "560c0d846dbc2551ba33298bce57e95427441b3016a45276ea4fdb49df1916ea",
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "approved": true,
+      "source": "https://github.com/byungho-cho/roxhistory/blob/b0699547a7addcef143c1bb879e9b70bfa5bf70c/assets/ui/building-menu/facility-side-v001/side-hearth-disabled.png",
+      "notes": "Full 216x240 approved composition including Korean label; target 72x80. Disabled alpha already 35%."
+    },
+    "UI-SIDE-SHRINE-NORMAL": {
+      "file": "res://assets/ui/facility-side-v001/side-shrine-normal.png",
+      "source_size": [
+        216,
+        240
+      ],
+      "sha256": "b25c29914699472ac7ffa93e0c6f11d47841dba04e1cd3c65af71d66a2d3ec3f",
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "approved": true,
+      "source": "https://github.com/byungho-cho/roxhistory/blob/b0699547a7addcef143c1bb879e9b70bfa5bf70c/assets/ui/building-menu/facility-side-v001/side-shrine-normal.png",
+      "notes": "Full 216x240 approved composition including Korean label; target 72x80. Disabled alpha already 35%."
+    },
+    "UI-SIDE-SHRINE-DISABLED": {
+      "file": "res://assets/ui/facility-side-v001/side-shrine-disabled.png",
+      "source_size": [
+        216,
+        240
+      ],
+      "sha256": "30f2ea25371fb43d8c2720ab549c530e9b2f4dfed5295b84dc7131069e7698a6",
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "approved": true,
+      "source": "https://github.com/byungho-cho/roxhistory/blob/b0699547a7addcef143c1bb879e9b70bfa5bf70c/assets/ui/building-menu/facility-side-v001/side-shrine-disabled.png",
+      "notes": "Full 216x240 approved composition including Korean label; target 72x80. Disabled alpha already 35%."
+    },
+    "UI-SIDE-TRAINING-NORMAL": {
+      "file": "res://assets/ui/facility-side-v001/side-training-normal.png",
+      "source_size": [
+        216,
+        240
+      ],
+      "sha256": "02c99d017c55be344244d61eaf70313d47a223e2c145d0ad05bb62cc87a7d0d3",
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "approved": true,
+      "source": "https://github.com/byungho-cho/roxhistory/blob/b0699547a7addcef143c1bb879e9b70bfa5bf70c/assets/ui/building-menu/facility-side-v001/side-training-normal.png",
+      "notes": "Full 216x240 approved composition including Korean label; target 72x80. Disabled alpha already 35%."
+    },
+    "UI-SIDE-TRAINING-DISABLED": {
+      "file": "res://assets/ui/facility-side-v001/side-training-disabled.png",
+      "source_size": [
+        216,
+        240
+      ],
+      "sha256": "024d96e869a2641b6c922dfb126440bb4e362d6cf8c3591c90a0a3b3ef4329a4",
+      "anchor": [
+        0.5,
+        0.5
+      ],
+      "approved": true,
+      "source": "https://github.com/byungho-cho/roxhistory/blob/b0699547a7addcef143c1bb879e9b70bfa5bf70c/assets/ui/building-menu/facility-side-v001/side-training-disabled.png",
+      "notes": "Full 216x240 approved composition including Korean label; target 72x80. Disabled alpha already 35%."
     }
   }
 }

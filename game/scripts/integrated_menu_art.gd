@@ -1,9 +1,13 @@
 class_name IntegratedMenuArt
 extends RefCounted
-const ROOT:="res://assets/ui/building-menu-integrated-v002/exports/"
+const ROOT:="res://assets/ui/building-menu-integrated-v004/"
+const LEGACY_ROOT:="res://assets/ui/building-menu-integrated-v002/exports/"
 static var cache:Dictionary={}
 static func texture(key:String,state:String)->Texture2D:
 	var path:=ROOT+key+"-"+state+".png"
+	if not ResourceLoader.exists(path):path="res://assets/ui/facility-side-v001/"+key+"-"+state+".png"
+	if not ResourceLoader.exists(path):path=LEGACY_ROOT+key+"-"+state+".png"
+	if not ResourceLoader.exists(path):return null
 	if not cache.has(path):cache[path]=load(path)
 	return cache[path]
 static func install(button:DemoButton,key:String,dimensions:Vector2)->void:
@@ -15,5 +19,9 @@ static func install(button:DemoButton,key:String,dimensions:Vector2)->void:
 	image.size=dimensions;image.mouse_filter=Control.MOUSE_FILTER_IGNORE;button.add_child(image)
 	button.enable_art_feedback()
 static func refresh(button:DemoButton,highlight:bool=false)->void:
+	if not is_instance_valid(button.art_feedback):return
 	var image:TextureRect=button.art_feedback.get_node("IntegratedImage")
-	image.texture=texture(str(button.get_meta("integrated_key")),"disabled" if button.disabled else ("highlight" if highlight else "normal"))
+	var state:="disabled" if button.disabled else ("highlight" if highlight else "normal")
+	var result:=texture(str(button.get_meta("integrated_key")),state)
+	if result==null:result=texture(str(button.get_meta("integrated_key")),"normal")
+	image.texture=result

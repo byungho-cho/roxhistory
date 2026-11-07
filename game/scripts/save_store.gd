@@ -11,114 +11,35 @@ func _init(folder: String = "user://") -> void:
 	DirAccess.make_dir_recursive_absolute(directory)
 
 func valid(s: Variant) -> bool:
-	if not s is Dictionary:
-		return false
+	if not s is Dictionary:return false
 	for k in ["schema","region","position","wood","stone","depleted","built","reward_claimed","tokens","intro_seen"]:
-		if not s.has(k):
-			return false
-	if s.schema != 1 or s.region != "amsa" or not s.position is Array or s.position.size() != 2:
-		return false
-	for n in s.position:
-		if not (n is int or n is float) or not is_finite(float(n)):
-			return false
-	var p := DemoConfig.point(s.position)
-	if not VillageBounds.valid_saved_position(p):
-		return false
+		if not s.has(k):return false
+	if s.schema!=1 or s.region!="amsa" or not BuildingRules.valid_position(s.position):return false
 	for k in ["wood","stone","tokens"]:
-		if not (s[k] is int or s[k] is float) or s[k] < 0 or s[k] != int(s[k]) or s[k] > 10000:
-			return false
-	for k in ["built","reward_claimed","intro_seen"]:
-		if not s[k] is bool:
-			return false
-	if not s.depleted is Dictionary or (s.reward_claimed and not s.built):
-		return false
-	if s.has("hut_style") and (not (s.hut_style is int or s.hut_style is float) or s.hut_style != int(s.hut_style) or s.hut_style < 0 or s.hut_style > 2):
-		return false
-	if s.has("homes"):
-		if not s.homes is Array or s.homes.size() > DemoConfig.MAX_SAVED_RESIDENT_HOMES: return false
-		var occupied_sites:=[]
-		var home_ids:=[]
-		var legacy_slots:=[]
-		for home in s.homes:
-			if not home is Dictionary or not home.get("claimed") is bool: return false
-			if not OwnedBuildingUpgrades.valid(home):return false
-			if home.has("uid"):
-				if not home.uid is String or home.uid.is_empty() or home.uid in home_ids:return false
-				home_ids.append(home.uid)
-			if home.has("legacy_slot"):
-				var slot:Variant=home.legacy_slot
-				if not (slot is int or slot is float) or slot!=int(slot) or slot<0 or slot>=DemoConfig.HOME_SITES.size() or slot in legacy_slots:return false
-				legacy_slots.append(slot)
-			if home.has("site"):
-				var id:Variant=home.site
-				if not (id is int or id is float) or id!=int(id) or id<0 or id>=DemoConfig.BUILD_SITES.size() or int(id) in occupied_sites:return false
-				occupied_sites.append(int(id))
-			if home.has("cost"):
-				if not home.cost is Dictionary:return false
-				for kind in ["wood","stone"]:
-					var amount:Variant=home.cost.get(kind)
-					if not (amount is int or amount is float) or amount!=int(amount) or amount<0 or amount>10000:return false
-			var style: Variant = home.get("style")
-			if not (style is int or style is float) or style != int(style) or style < 0 or style > 2: return false
-		if s.built != (s.homes.size()>0): return false
-		if not s.homes.is_empty() and s.reward_claimed != s.homes[0].claimed: return false
-	# Optional field preserves all older saves. Do not require the unlock count
-	# here: demolishing a hut must not invalidate an already completed outpost.
-	if s.has("outposts"):
-		if not s.outposts is Array or s.outposts.size()>DemoConfig.BUILD_SITES.size():return false
-		var sites:=[]
-		var ids:=[]
-		for home in s.get("homes",[]):
-			if home.has("site"):sites.append(int(home.site))
-		for outpost in s.outposts:
-			if not outpost is Dictionary:return false
-			var id:Variant=outpost.get("site")
-			if not (id is int or id is float) or id!=int(id) or id<0 or id>=DemoConfig.BUILD_SITES.size() or int(id) in sites:return false
-			sites.append(int(id))
-			var uid:Variant=outpost.get("uid")
-			if not uid is String or uid.is_empty() or uid in ids:return false
-			ids.append(uid)
-			var level:Variant=outpost.get("level")
-			if not OwnedBuildingUpgrades.valid(outpost):return false
-			if not outpost.get("cost") is Dictionary:return false
-			for kind in ["wood","stone"]:
-				var amount:Variant=outpost.cost.get(kind)
-				if not (amount is int or amount is float) or amount!=int(amount) or amount<0 or amount>10000:return false
-	if s.has("chief_level"):
-		var level:Variant=s.chief_level
-		if not (level is int or level is float) or level!=int(level) or level<1 or level>4:return false
+		if not BuildingRules.valid_number(s[k],0,BuildingRules.MAX_RESOURCE,true):return false
+	for k in ["built","reward_claimed","intro_seen","family_joined","family_unlocked","hq_can_be_absent","debug_fast_build","debug_show_boundary","debug_unlimited_builders"]:
+		if s.has(k) and not s[k] is bool:return false
+	if not s.depleted is Dictionary or (s.reward_claimed and not s.built):return false
+	if s.has("hut_style") and not BuildingRules.valid_number(s.hut_style,0,2,true):return false
+	var hq:Variant=s.get("chief_level",0 if s.get("hq_can_be_absent",false) else 1)
+	if not BuildingRules.valid_number(hq,0 if s.get("hq_can_be_absent",false) else 1,4,true):return false
+	if s.has("chief_position") and not BuildingRules.valid_position(s.chief_position):return false
 	if s.has("chief_upgrade"):
 		var job:Variant=s.chief_upgrade
-		if not job is Dictionary:return false
-		for key in ["from","to","started_at","finishes_at"]:
-			var value:Variant=job.get(key)
-			if not (value is int or value is float) or not is_finite(float(value)):return false
-		if job.from!=int(s.get("chief_level",1)) or job.to!=job.from+1 or job.to>4 or job.from<1:return false
-		if job.started_at<0 or job.finishes_at<=job.started_at:return false
-		if not job.get("cost") is Dictionary:return false
-		for kind in ["wood","stone"]:
-			var amount:Variant=job.cost.get(kind)
-			if not (amount is int or amount is float) or amount!=int(amount) or amount<0 or amount>10000:return false
-	if s.has("outpost_serial"):
-		var serial:Variant=s.outpost_serial
-		if not (serial is int or serial is float) or serial!=int(serial) or serial<0:return false
-	if s.has("home_serial"):
-		var serial:Variant=s.home_serial
-		if not (serial is int or serial is float) or serial!=int(serial) or serial<0:return false
-	for flag in ["family_joined","family_unlocked"]:
-		if s.has(flag) and not s[flag] is bool:return false
+		if not BuildingRules.valid_clock(job):return false
+		if not BuildingRules.valid_number(job.get("from"),1,3,true) or not BuildingRules.valid_number(job.get("to"),2,4,true):return false
+		if job.from!=hq or job.to!=hq+1:return false
+	for serial in ["outpost_serial","home_serial","construction_serial"]:
+		if s.has(serial) and not BuildingRules.valid_number(s[serial],0,BuildingRules.MAX_RESOURCE,true):return false
+	if not _valid_buildings(s,int(hq)):return false
+	if not ResidentAdmission.valid_saved_population(s):return false
 	if not ResidentJobs.valid_saved_jobs(s):return false
-	if s.has("resource_seed"):
-		var seed_value:Variant=s.resource_seed
-		if not (seed_value is int or seed_value is float) or not is_finite(float(seed_value)) or seed_value!=int(seed_value) or seed_value<1 or seed_value>2147483646:return false
+	if s.has("resource_seed") and not BuildingRules.valid_number(s.resource_seed,1,2147483646,true):return false
 	var allowed := {}
 	for n in DemoConfig.get_data().nodes:
 		allowed[n.id] = n.charges if int(s.get("resource_revision",0))>=35 else (5 if n.kind=="wood" else 4)
 	for k in s.depleted:
-		if not allowed.has(k) or not (s.depleted[k] is int or s.depleted[k] is float):
-			return false
-		if s.depleted[k] < 0 or s.depleted[k] > allowed[k] or s.depleted[k] != int(s.depleted[k]):
-			return false
+		if not allowed.has(k) or not BuildingRules.valid_number(s.depleted[k],0,allowed[k],true):return false
 	for key in ["node_positions","respawn_due"]:
 		if not s.get(key,{}) is Dictionary:return false
 		for id in s.get(key,{}):
@@ -127,10 +48,63 @@ func valid(s: Variant) -> bool:
 			if key=="node_positions":
 				if not value is Array or value.size()!=2:return false
 				for coordinate in value:
-					if not (coordinate is int or coordinate is float) or not is_finite(coordinate):return false
+					if not BuildingRules.valid_number(coordinate,-BuildingRules.MAX_RESOURCE,BuildingRules.MAX_RESOURCE):return false
 				if not VillageBounds.RESOURCE_RELOCATION_RECT.has_point(DemoConfig.point(value)):return false
-			else:
-				if not (value is int or value is float) or not is_finite(value) or value<0:return false
+			elif not BuildingRules.valid_number(value):return false
+	return true
+
+func _valid_buildings(s:Dictionary,hq:int)->bool:
+	var sites:Array=[]
+	var occupied_uids:Array=[]
+	for collection in ["homes","outposts","facilities"]:
+		var entries:Variant=s.get(collection,[])
+		var limit:=DemoConfig.MAX_SAVED_RESIDENT_HOMES if collection=="homes" else BuildingRules.MAX_ENTRIES
+		if not entries is Array or entries.size()>limit:return false
+		var ids:Array=[];var legacy_slots:Array=[]
+		for entry in entries:
+			if not entry is Dictionary or not OwnedBuildingUpgrades.valid(entry):return false
+			if entry.has("uid"):
+				if not entry.uid is String or entry.uid.is_empty() or entry.uid in ids:return false
+				ids.append(entry.uid);occupied_uids.append(entry.uid)
+			elif collection!="homes":return false
+			if entry.has("position") and not BuildingRules.valid_position(entry.position):return false
+			if entry.has("site"):
+				var id:Variant=entry.site
+				if not BuildingRules.valid_number(id,0,DemoConfig.BUILD_SITES.size()-1,true) or int(id) in sites:return false
+				sites.append(int(id))
+			elif collection!="homes" and not entry.has("position"):return false
+			if entry.has("cost"):
+				if not BuildingRules.valid_cost(entry.cost):return false
+			elif collection!="homes":return false
+			if collection=="homes":
+				if not entry.get("claimed") is bool or not BuildingRules.valid_number(entry.get("style"),0,2,true):return false
+				if entry.has("legacy_slot"):
+					var slot:Variant=entry.legacy_slot
+					if not BuildingRules.valid_number(slot,0,DemoConfig.HOME_SITES.size()-1,true) or int(slot) in legacy_slots:return false
+					legacy_slots.append(int(slot))
+			elif collection=="facilities":
+				if not entry.get("kind") is String or not entry.kind in BuildingRules.FACILITY_KINDS:return false
+	if s.has("homes"):
+		if s.built!=(s.homes.size()>0):return false
+		if not s.homes.is_empty() and s.reward_claimed!=s.homes[0].claimed:return false
+	var jobs:Variant=s.get("construction_jobs",[])
+	if not jobs is Array or jobs.size()>BuildingRules.MAX_ENTRIES:return false
+	var job_ids:Array=[]
+	var chief_jobs:=0
+	for job in jobs:
+		if not BuildingRules.valid_clock(job):return false
+		if not job.get("uid") is String or job.uid.is_empty() or job.uid in job_ids or job.uid in occupied_uids:return false
+		job_ids.append(job.uid)
+		if not job.get("kind") is String or not job.kind in BuildingRules.KINDS:return false
+		if not BuildingRules.valid_number(job.get("from"),0,0,true) or not BuildingRules.valid_number(job.get("to"),1,1,true):return false
+		if not BuildingRules.valid_position(job.get("position")):return false
+		if job.has("site"):
+			if not BuildingRules.valid_number(job.site,0,DemoConfig.BUILD_SITES.size()-1,true) or int(job.site) in sites:return false
+			sites.append(int(job.site))
+		if job.kind=="chief":
+			chief_jobs+=1
+			if hq!=0 or chief_jobs>1:return false
+		if job.kind=="hut" and not BuildingRules.valid_number(job.get("style",1),0,2,true):return false
 	return true
 
 func erase_progress() -> bool:

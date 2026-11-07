@@ -1,0 +1,164 @@
+{
+  "source_library_file_id": "libfile_fde3_f-aa50d6066bdc8191b699c18883701281_bdcff85a9cd081919d18633531a19fe1",
+  "source_version": 1,
+  "canvas": [
+    216,
+    240
+  ],
+  "display": [
+    72,
+    80
+  ],
+  "anchor": [
+    0.5,
+    0.5
+  ],
+  "art_baseline": 180,
+  "label_center_y": 209,
+  "disabled_alpha": 0.35,
+  "differences": "Approved composition and Korean names retained. Background extraction slightly reconstructed surface, grass and brush-edge pixels; not pixel-identical to the RGB concept sheet. No gameplay or Figma edits.",
+  "assets": [
+    {
+      "name": "side-hearth-normal.png",
+      "size": [
+        216,
+        240
+      ],
+      "mode": "RGBA",
+      "bytes": 52870,
+      "sha256": "4e2adf32abffc83010b5d08ce80c17932bc3bc80bfbbcc9220163d315ed21112",
+      "git_blob_sha": "693747b2feef1484fdd31fb13b290e1849262a2b",
+      "alpha_range": [
+        0,
+        255
+      ],
+      "visible_bounds_alpha_gt_16": [
+        15,
+        27,
+        200,
+        227
+      ],
+      "library_file_id": "libfile_fde3_f-9667bf71d3948191989698e0d26862f1_bdcff85a9cd081919d18633531a19fe1",
+      "git_url": "https://github.com/byungho-cho/roxhistory/blob/b0699547a7addcef143c1bb879e9b70bfa5bf70c/assets/ui/building-menu/facility-side-v001/side-hearth-normal.png"
+    },
+    {
+      "name": "side-hearth-disabled.png",
+      "size": [
+        216,
+        240
+      ],
+      "mode": "RGBA",
+      "bytes": 51368,
+      "sha256": "560c0d846dbc2551ba33298bce57e95427441b3016a45276ea4fdb49df1916ea",
+      "git_blob_sha": "98754d9c2f6bc4ed177d4be8ad37ed7e15cb8635",
+      "alpha_range": [
+        0,
+        89
+      ],
+      "visible_bounds_alpha_gt_16": [
+        16,
+        28,
+        199,
+        227
+      ],
+      "library_file_id": "libfile_fde3_f-f4885063d98c8191a51991932f4512a9_bdcff85a9cd081919d18633531a19fe1",
+      "git_url": "https://github.com/byungho-cho/roxhistory/blob/b0699547a7addcef143c1bb879e9b70bfa5bf70c/assets/ui/building-menu/facility-side-v001/side-hearth-disabled.png"
+    },
+    {
+      "name": "side-shrine-normal.png",
+      "size": [
+        216,
+        240
+      ],
+      "mode": "RGBA",
+      "bytes": 55264,
+      "sha256": "b25c29914699472ac7ffa93e0c6f11d47841dba04e1cd3c65af71d66a2d3ec3f",
+      "git_blob_sha": "c8285062b0ed2c3599800c94cb9db30fc5311918",
+      "alpha_range": [
+        0,
+        255
+      ],
+      "visible_bounds_alpha_gt_16": [
+        14,
+        27,
+        204,
+        228
+      ],
+      "library_file_id": "libfile_fde3_f-adc79bd7de288191ba9bd6da22a475f6_bdcff85a9cd081919d18633531a19fe1",
+      "git_url": "https://github.com/byungho-cho/roxhistory/blob/b0699547a7addcef143c1bb879e9b70bfa5bf70c/assets/ui/building-menu/facility-side-v001/side-shrine-normal.png"
+    },
+    {
+      "name": "side-shrine-disabled.png",
+      "size": [
+        216,
+        240
+      ],
+      "mode": "RGBA",
+      "bytes": 53832,
+      "sha256": "30f2ea25371fb43d8c2720ab549c530e9b2f4dfed5295b84dc7131069e7698a6",
+      "git_blob_sha": "0631c9db683618d512eb602582f33440d1e0264a",
+      "alpha_range": [
+        0,
+        89
+      ],
+      "visible_bounds_alpha_gt_16": [
+        14,
+        27,
+        204,
+        227
+      ],
+      "library_file_id": "libfile_fde3_f-e7baed6c3ab08191b9cc187a3681ad54_bdcff85a9cd081919d18633531a19fe1",
+      "git_url": "https://github.com/byungho-cho/roxhistory/blob/b0699547a7addcef143c1bb879e9b70bfa5bf70c/assets/ui/building-menu/facility-side-v001/side-shrine-disabled.png"
+    },
+    {
+      "name": "side-training-normal.png",
+      "size": [
+        216,
+        240
+      ],
+      "mode": "RGBA",
+      "bytes": 53406,
+      "sha256": "02c99d017c55be344244d61eaf70313d47a223e2c145d0ad05bb62cc87a7d0d3",
+      "git_blob_sha": "0bca82ed5274c490a38bdacbffdfd41cc3efe807",
+      "alpha_range": [
+        0,
+        255
+      ],
+      "visible_bounds_alpha_gt_16": [
+        12,
+        28,
+        203,
+        228
+      ],
+      "library_file_id": "libfile_fde3_f-cb4c5cf8ff9881918e89343e4b29ce1f_bdcff85a9cd081919d18633531a19fe1",
+      "git_url": "https://github.com/byungho-cho/roxhistory/blob/b0699547a7addcef143c1bb879e9b70bfa5bf70c/assets/ui/building-menu/facility-side-v001/side-training-normal.png"
+    },
+    {
+      "name": "side-training-disabled.png",
+      "size": [
+        216,
+        240
+      ],
+      "mode": "RGBA",
+      "bytes": 51762,
+      "sha256": "024d96e869a2641b6c922dfb126440bb4e362d6cf8c3591c90a0a3b3ef4329a4",
+      "git_blob_sha": "e63fa3a9d3f516c5a489e740307b9c90c1996200",
+      "alpha_range": [
+        0,
+        89
+      ],
+      "visible_bounds_alpha_gt_16": [
+        12,
+        28,
+        202,
+        227
+      ],
+      "library_file_id": "libfile_fde3_f-478dc841ccec819185c69751aeb334a5_bdcff85a9cd081919d18633531a19fe1",
+      "git_url": "https://github.com/byungho-cho/roxhistory/blob/b0699547a7addcef143c1bb879e9b70bfa5bf70c/assets/ui/building-menu/facility-side-v001/side-training-disabled.png"
+    }
+  ],
+  "published_commit": "b0699547a7addcef143c1bb879e9b70bfa5bf70c",
+  "branch": "share/reference-assets",
+  "main_unchanged": "ed31a1ce6440be893fbefadf1cdee5f628e1e406",
+  "zip_library_file_id": "libfile_fde3_f-71e32a1782888191b471b8b96f2d471f_bdcff85a9cd081919d18633531a19fe1"
+}

@@ -67,6 +67,7 @@ var world_map:VillageWorldMap
 var world_map_open:=false
 var map_toggle:DemoButton
 var family:FamilyArrival
+var building_work_audio:BuildingWorkAudio
 var building_workflow:BuildingWorkflow
 var building_menu:BuildingMenu
 var resident_panel:ResidentPanel
@@ -77,13 +78,14 @@ func toggle_quest()->void:
 
 func update_quest()->void:
 	if not is_instance_valid(objective):return
-	var count:=model.built_count()
-	objective.text=("움막을 지어라 · %d/3채"%count) if count<3 else "정착지 완성 · 3/3채"
-	if quest_expanded:
-		objective.text+=("\n나무 %d/20 · 돌 %d/20"%[mini(model.state.wood,20),mini(model.state.stone,20)]) if count<3 else ("\n건물 위 씨앗을 받아 주세요" if has_pending_rewards() else "\n씨앗 보상을 모두 받았어요")
-	if model.family_available():objective.text="낯선 가족 · 말풍선으로 대화"+("\n함께 살 곳을 찾고 있어요" if quest_expanded else "")
-	elif model.state.get("family_joined",false):objective.text="주민 %d/%d명 · 본부 %d단계"%[model.resident_count(),model.resident_capacity(),model.chief_level()]+("\n상단 주민을 눌러 일을 맡겨요" if quest_expanded else "")
-	elif count>=model.home_limit() and model.chief_level()<3:objective.text="본부를 업그레이드해요"+("\n주민 움집 한도 %d/%d채"%[count,model.home_limit()] if quest_expanded else "")
+	var level:=model.chief_level()
+	if level==0:
+		objective.text="본부를 건설해요"+("\n건설 메뉴에서 본부와 위치를 선택해요" if quest_expanded else "")
+	elif model.family_available():
+		objective.text="새 주민이 찾아왔어요"+("\n말풍선을 눌러 함께 살 곳을 마련해요" if quest_expanded else "")
+	else:
+		objective.text="주민 %d/%d명 · 본부 %d단계"%[model.resident_count(),model.resident_capacity(),level]
+		if quest_expanded:objective.text+="\n집을 늘리고 주민에게 일을 맡겨요"
 	objective.size=Vector2(153,48 if quest_expanded else 28)
 	objective.get_parent().size=Vector2(202,58 if quest_expanded else 38)
 	if is_instance_valid(quest_arrow):quest_arrow.text="⌃" if quest_expanded else "⌄"
@@ -426,6 +428,8 @@ func enter_game() -> void:
 	if not is_instance_valid(building_workflow):
 		building_workflow=BuildingWorkflow.new(self);add_child(building_workflow)
 	else:building_workflow.refresh_visual()
+	if not is_instance_valid(building_work_audio):
+		building_work_audio=BuildingWorkAudio.new(self);add_child(building_work_audio)
 	if not is_instance_valid(navigation):
 		navigation=AutoTravel.new(self);add_child(navigation)
 	world.player.set_character_3d(true)
@@ -739,13 +743,29 @@ func cancel_build_preview()->void:
 	if is_instance_valid(world):world.show_candidates=false;world.queue_redraw()
 
 func confirm_build_preview()->void:
-	if not is_instance_valid(build_preview) or build_preview.site_id<0 or not application_active or modal:return
-	var id:=build_preview.site_id
-	if not world.site_available(id):cancel_build_preview();toast("이 부지는 지금 사용할 수 없어요");return
+	if not is_instance_valid(build_preview) or not build_preview.active() or not application_active or modal:return
+	var reason:String=build_preview.block_reason()
+	if not reason.is_empty():toast(reason);return
+	var at:Vector2=build_preview.placement_position
+	var key:String=build_preview.moving_key
+	if not key.is_empty():
+		if model.move_building(key,at):
+			cancel_build_preview();toast("건물을 이동했어요")
+		else:toast("위치가 변경되었어요. 다시 확인해 주세요")
+		return
 	if not can_build_selected():return
-	cancel_build_preview()
-	if task!="":reserve_action({"kind":"build","id":id,"building":build_kind});return
-	if world.select_site(id):build_action()
+	if model.begin_construction(build_kind,at):
+		cancel_build_preview()
+		toast("건설을 시작했어요")
+	else:toast("건설 조건이 변경되었어요. 다시 확인해 주세요")
+
+func start_building_move(key:String)->void:
+	if modal or not application_active or world_map_open:return
+	var found:=model.lookup_building(key)
+	if found.is_empty():return
+	cancel_task();build_side.hide();building_menu.close()
+	build_kind=str(found.get("kind","hut"));choosing_plot=true
+	build_preview.select_position(model.building_position(key),build_kind,key)
 
 func reserve_action(request:Dictionary)->void:
 	pending_action=request.duplicate(true)
@@ -770,40 +790,23 @@ func run_reserved_action()->void:
 	queued_action_indicator.observe_dispatch(receipt_generation)
 
 func build_action() -> void:
-	if modal or gestures.blocked or task!="":return
-	if world.selected_site<0:toast("건설할 격자 부지를 먼저 선택해 주세요");return
+	if modal or gestures.blocked:return
+	if world.selected_site<0:toast("건설할 위치를 선택해 주세요");return
 	if not can_build_selected():return
-	if not world.site_available(world.selected_site):toast("이 부지에 장애물이 있어요. 다른 부지를 선택해 주세요");return
-	navigation.cancel();choosing_plot=false;world.show_candidates=false;world.queue_redraw()
-	task_site=world.selected_site;task_build_kind=build_kind
-	model.construction_busy=true
-	task="build";world.feedback.begin("build");world.player.set_activity("")
-	task_total=float(DemoConfig.get_data().build_seconds);task_remaining=task_total;task_bar.visible=false;toast("",0)
+	build_preview.select_position(DemoConfig.BUILD_SITES[world.selected_site],build_kind)
+	confirm_build_preview()
 
 func finish_task() -> void:
-	var kind := task
-	var target := task_target
-	var built_at:=world.site.position
-	var built_site:=task_site
-	var built_kind:=task_build_kind
-	var site_valid:=world.site_available(built_site) if kind=="build" else true
+	var kind:=task
+	var target:=task_target
 	cancel_task(false)
-	if kind == "gather":
+	if kind=="gather":
 		if model.gather(target,world.player.position):
 			world.feedback.gathered(target)
-			var resource_kind: String="wood" if target.begins_with("wood") else "stone"
+			var resource_kind:String="wood" if target.begins_with("wood") else "stone"
 			chrome.gained(resource_kind,world.art_nodes[target].position+Vector2(0,-70))
 			toast("",0)
-
 	elif kind=="family":family.finish()
-	elif kind == "build" and site_valid:
-		var completed:bool=false
-		if built_kind=="outpost":
-			if building_workflow.outpost_block_reason().is_empty():completed=model.build_outpost(world.player.position,built_site)
-		else:completed=model.build(world.player.position,built_site)
-		if completed:world.feedback.built(built_at)
-		else:toast("건설 조건이 변경되어 취소했어요. 재료는 사용하지 않았어요")
-	elif kind=="build" and not site_valid:toast("부지가 막혀 건설을 멈췄습니다. 재료는 사용하지 않았어요")
 	call_deferred("run_reserved_action")
 
 func cancel_task(clear_reservation:bool=true,preserve_receipt:bool=false) -> void:
@@ -839,41 +842,35 @@ func request_demolition(screen_point:Vector2)->void:
 func show_demolition_confirmation(key:String)->void:
 	if modal or not application_active or screen!="play":return
 	var quote:=model.demolition_quote(key)
-	if quote.is_empty():return
-	if model.reward_pending(int(quote.index)):toast("건물 위 씨앗 보상을 먼저 받아 주세요");return
-	show_modal("이 움집을 철거할까요?","반환: 나무 %d개 · 돌 %d개"%[quote.wood,quote.stone],[{"text":"취소","action":close_modal},{"text":"철거","action":func():confirm_demolition(key)}],true,true,true)
+	if quote.is_empty():toast("현재 철거할 수 없는 건물이에요");return
+	var found:=model.lookup_building(key)
+	if found.get("collection","")=="homes" and model.reward_pending(int(found.index)):
+		toast("건물 위 씨앗 보상을 먼저 받아 주세요");return
+	show_modal("건물을 철거할까요?","반환: 나무 %d개 · 돌 %d개"%[quote.wood,quote.stone],[{"text":"취소","action":close_modal},{"text":"철거","action":func():confirm_demolition(key)}],true,true,true)
 	demolition_key=key
-	var buttons:=overlay.find_children("*","Button",true,false)
-	for i in buttons.size():
-		var b:Button=buttons[i];b.text="";b.custom_minimum_size.y=56
-		var skin:=b.get_node_or_null("FigmaSkin")
-		if skin:skin.hide()
-		BuildingMenu.decorate(b,"icon-close.png" if i==0 else "icon-demolish.png",44)
-	var shade:=overlay.get_child(0)
-	shade.gui_input.connect(func(event:InputEvent):
-		if event is InputEventMouseButton and event.pressed and event.button_index==MOUSE_BUTTON_LEFT:close_modal())
 
 func confirm_demolition(key:String)->void:
 	if not application_active or not modal or demolition_key!=key:return
 	var quote:=model.demolition_quote(key)
 	if quote.is_empty():close_modal();return
-	var at:=model.home_position(int(quote.index))
-	var prior:Sprite2D=world.homes[int(quote.index)].sprite
-	var ghost:=Sprite2D.new();ghost.texture=prior.texture;ghost.material=prior.material
-	var ghost_transform:=prior.global_transform
+	var at:=model.building_position(key)
+	var prior:Sprite2D=world.building_sprite(key)
+	var ghost:Sprite2D
+	var ghost_transform:=Transform2D.IDENTITY
+	if is_instance_valid(prior):
+		ghost=Sprite2D.new();ghost.texture=prior.texture;ghost.material=prior.material
+		ghost.centered=prior.centered;ghost.offset=prior.offset;ghost_transform=prior.global_transform
 	if model.demolish(key):
 		close_modal()
-		world.add_child(ghost);ghost.global_transform=ghost_transform;ghost.z_index=2
-		var fade:=ghost.create_tween().set_parallel(true)
-		fade.tween_property(ghost,"modulate:a",0.0,.32)
-		fade.tween_property(ghost,"position:y",ghost.position.y+8,.32)
-		fade.chain().tween_callback(ghost.queue_free)
-		for i in 16:
-			var angle:=TAU*i/16.0
-			world.feedback.particles.append({"p":at+Vector2(cos(angle)*105,sin(angle)*22-24),"v":Vector2(cos(angle)*28,-22-absf(sin(angle))*18),"age":0.0,"life":.85,"color":Color(.72,.61,.43,.34),"size":12.0+i%4*3,"material":"dust","spin":0.0})
+		if is_instance_valid(ghost):
+			world.add_child(ghost);ghost.global_transform=ghost_transform;ghost.z_index=2
+			var fade:=ghost.create_tween().set_parallel(true)
+			fade.tween_property(ghost,"modulate:a",0.0,.32)
+			fade.tween_property(ghost,"position:y",ghost.position.y+8,.32)
+			fade.chain().tween_callback(ghost.queue_free)
 		world.feedback.sound_cue.emit("demolish")
 		toast("나무 %d개 · 돌 %d개 반환"%[quote.wood,quote.stone],2)
-	else:ghost.free()
+	elif is_instance_valid(ghost):ghost.free()
 
 func claim_home(index:int) -> void:
 	if model.claim_reward(index):
@@ -884,6 +881,9 @@ func world_tap(screen_point:Vector2) -> void:
 	if menu_animating and action_row.get_global_rect().has_point(screen_point):return
 	if world_map_open or modal or gestures.blocked:return
 	var at:Vector2=world.get_global_transform_with_canvas().affine_inverse()*screen_point
+	if choosing_plot:
+		build_preview.select_position(at,build_kind,build_preview.moving_key)
+		return
 	for i in model.built_count():
 		if model.reward_pending(i) and world.reward_marker_rect(i).grow(6).has_point(at):claim_home(i);return
 	if is_instance_valid(building_menu):
@@ -900,11 +900,6 @@ func world_tap(screen_point:Vector2) -> void:
 			if world.player.position.distance_to(point)<=float(DemoConfig.get_data().interact_radius):gather_action(n.id)
 			else:navigation.start("gather",n.id,world.gather_stand(point,n.kind))
 			return
-	var site_id:=world.site_at(at) if choosing_plot else -1
-	if site_id>=0:
-		if not world.site_available(site_id):toast("이 부지는 지금 사용할 수 없어요");return
-		build_preview.select(site_id)
-		return
 	# Building images own their taps even after their reward has been claimed.
 	for prop in world.environment_props:
 		if prop.kind=="hut" and prop.visible and Rect2(prop.position-Vector2(170,245),Vector2(340,260)).has_point(at):return
@@ -920,7 +915,7 @@ func focus_objective() -> void:
 	if not Rect2(Vector2(80,90),Vector2(w-160,h-190)).has_point(screen_point): world.player.guide_to(point+Vector2(0,-35))
 
 func quest_details() -> void:
-	show_modal("정착지를 만들어요","본부 단계에 따라 주민 움집 한도가 1 → 2 → 3채로 늘어요.\n본부를 먼저 업그레이드하면 마을 경계도 확장됩니다.\n\n진행 %d/3 · 건설마다 나무 20개 + 돌 20개\n자원을 누르면 자동 이동하여 채집합니다.\n건설 → 움집 선택 후 부지를 고르고 미리보기에서 확인하면 건설합니다.\n%s"%[model.built_count(),("미수령 건물을 누르면 씨앗 10개를 받습니다." if has_pending_rewards() else "모든 완료 보상을 받았습니다." if model.built_count()>=3 else "건설 완료 후 건물에서 씨앗을 받을 수 있습니다.")],[{"text":"돌아가기","action":close_modal}],false,true)
+	show_modal("마을을 키워요","본부를 건설하고 주민을 맞이할 집을 마련해 주세요.\n본부 2단계: 화덕·훈련소\n본부 3단계: 신당·초소\n\n본부 단계별 이동 범위: 60% → 70% → 80% → 90%\n상단 주민 표시를 누르면 주민에게 일을 맡길 수 있어요.",[{"text":"돌아가기","action":close_modal}],false,true)
 
 func pause_game() -> void:
 	cancel_task()
@@ -930,14 +925,17 @@ func pause_game() -> void:
 		{"text":"시작 화면","action":func(): close_modal(); show_screen("title")},
 		{"text":"안내·소리","action":show_about},
 		{"text":"개발 설정","action":show_development_settings}])
+	enable_settings_backdrop()
 
 func show_development_settings()->void:
 	DevelopmentSettings.open(self)
+	enable_settings_backdrop()
 
 func confirm_development_reset()->void:
 	show_modal("게임을 초기화할까요?","진행·씨앗·소리 설정을 모두 삭제하고 첫 실행 안내로 돌아갑니다.\n삭제한 데이터는 되돌릴 수 없습니다.",[
 		{"text":"취소","action":show_development_settings},
 		{"text":"완전 초기화","action":full_reset}],false,true)
+	enable_settings_backdrop()
 
 func show_about() -> void:
 	var c := DemoConfig.get_data()
@@ -948,6 +946,7 @@ func show_about() -> void:
 			if settings.save(prefs_path) != OK: show_error("소리 설정을 저장하지 못했습니다.")
 			else: sync_audio(); show_about()},
 		{"text":"돌아가기","primary":true,"action":close_modal}])
+	enable_settings_backdrop()
 
 func show_modal(title: String, body: String, actions: Array, compact: bool = false, preserve_work:bool=false, brief:bool=false, panel_size:Vector2=Vector2.ZERO) -> ScrollContainer:
 	if is_instance_valid(region_selection):region_selection.cancel_input()
@@ -1083,9 +1082,14 @@ func style_action_state(control:DemoButton)->void:
 	for variant in ["normal","hover","pressed","disabled"]:control.add_theme_stylebox_override(variant,StyleBoxEmpty.new())
 
 func can_build_selected()->bool:
-	if build_kind=="outpost":
-		var reason:String=building_workflow.outpost_block_reason()
-		if not reason.is_empty():toast(reason);return false
-		return true
-	if not model.can_build():toast(model.building_requirement("hut"));return false
+	var reason:String=building_workflow.build_block_reason(build_kind)
+	if not reason.is_empty():toast(reason);return false
 	return true
+
+func enable_settings_backdrop()->void:
+	if not is_instance_valid(overlay) or overlay.get_child_count()==0:return
+	var shade:Control=overlay.get_child(0)
+	shade.gui_input.connect(func(event:InputEvent):
+		if (event is InputEventScreenTouch and event.pressed) or (event is InputEventMouseButton and event.pressed and event.button_index==MOUSE_BUTTON_LEFT):
+			get_viewport().set_input_as_handled()
+			close_modal())

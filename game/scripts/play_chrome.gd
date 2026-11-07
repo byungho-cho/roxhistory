@@ -105,7 +105,8 @@ func _draw() -> void:
 		draw_texture_rect_region(RESOURCE_BRUSH,Rect2(brush_rect.end-Vector2(right,27),Vector2(right,27)),Rect2(336,0,176,112))
 
 		if key=="residents":
-			draw_string(font,rect.position+Vector2(7,25),"주민 %d/%d"%[app.model.resident_count(),app.model.resident_capacity()],HORIZONTAL_ALIGNMENT_LEFT,rect.size.x-5,12,Color(1,.98,.90,1))
+			draw_texture_rect(DemoArt.icon("resident"),Rect2(rect.position+Vector2(3,3),Vector2(28,28)),false)
+			draw_string(font,rect.position+Vector2(34,25),"%d/%d"%[app.model.resident_count(),app.model.resident_capacity()],HORIZONTAL_ALIGNMENT_LEFT,rect.size.x-34,13,Color(1,.98,.90,1))
 			continue
 		var extent:=28.0+beat*4
 		draw_texture_rect(DemoArt.icon(key),Rect2(rect.position+Vector2(3,3),Vector2(extent,extent)),false)

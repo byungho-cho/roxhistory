@@ -36,8 +36,10 @@ func find_position(old:Vector2)->Vector2:
 		var clear:=true
 		for rock in SceneStyle.PAINTED_ROCKS:
 			if at.distance_to(rock)<110:clear=false
-		for home in (DemoConfig.HOME_SITES+DemoConfig.BUILD_SITES)+[DemoConfig.CHIEF_POSITION]:
+		for home in world.completed_building_positions():
 			if at.distance_to(home+Vector2(0,-40))<240:clear=false
+		for job in world.model.construction_jobs():
+			if at.distance_to(DemoConfig.point(job.position))<240:clear=false
 		for n in world.model.nodes():
 			if not world.exhausted(n) and at.distance_to(DemoConfig.point(n.position))<150:clear=false
 		for i in world.SHORE.size()-1:

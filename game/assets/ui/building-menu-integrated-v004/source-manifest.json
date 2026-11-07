@@ -1,0 +1,304 @@
+{
+  "version": "v004",
+  "purpose": "Deferred game integration handoff; no game repository changes",
+  "source_commit": "df9c0d5aeaee2b2dbd959aced6c96ba042a28e03",
+  "source_game_version": "0.1.50",
+  "figma": {
+    "screen": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=1360-98",
+    "exports": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=1376-6583",
+    "gold": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=1368-127",
+    "preserved_original": "1091:520",
+    "gold_master_node": "1368:127",
+    "gold_floor_node": "1368:128",
+    "gold_brush_ring_node": "1391:276",
+    "gold_instance_node": "1368:131"
+  },
+  "geometry": {
+    "source_canvas": [
+      288,
+      288
+    ],
+    "runtime_baseline_display": [
+      96,
+      96
+    ],
+    "circle_bottom_y": 204,
+    "label_center_target_y": 204,
+    "label_slot_y_old": 216,
+    "label_slot_y_new": 172,
+    "label_shift_y": -44
+  },
+  "preview_only": {
+    "scene_size": [
+      640,
+      480
+    ],
+    "menu_anchor_delta_y": -20,
+    "hut": [
+      198,
+      120
+    ],
+    "pad": [
+      164,
+      217
+    ],
+    "upgrade": [
+      251,
+      317,
+      138,
+      138
+    ],
+    "demolish": [
+      397,
+      284,
+      128,
+      128
+    ],
+    "close": [
+      511,
+      250,
+      42,
+      42
+    ],
+    "move": {
+      "x": 115,
+      "y": 284,
+      "visible": true
+    },
+    "state": "Future development target: move, upgrade and demolish are active; separate 35% disabled assets are reference states, not the representative scene."
+  },
+  "gold_note": "Fresh v004 PNG: 366x195 RGBA, 55652 bytes; alpha bounds [0, 2, 365, 180]. Preserve full canvas and effects. Nominal component 354x189; render origin offset [-5.2689209,-5.5498047].",
+  "files": [
+    {
+      "path": "exports/close-normal.png",
+      "bytes": 25165,
+      "sha256": "00b57c249424d9d4a55449c4e228348a636a95286060feffe9949950d4b12096",
+      "width": 144,
+      "height": 144,
+      "mode": "RGBA",
+      "alpha_range": [
+        0,
+        255
+      ],
+      "alpha_bounds": [
+        3,
+        3,
+        143,
+        144
+      ]
+    },
+    {
+      "path": "exports/demolish-disabled.png",
+      "bytes": 76130,
+      "sha256": "dc01683554f711f0aad73f012aecc830191baa869be3272e9a095ba13cde0741",
+      "width": 288,
+      "height": 288,
+      "mode": "RGBA",
+      "alpha_range": [
+        0,
+        89
+      ],
+      "alpha_bounds": [
+        0,
+        10,
+        288,
+        229
+      ]
+    },
+    {
+      "path": "exports/demolish-normal.png",
+      "bytes": 86132,
+      "sha256": "0b12754f09ef8a9c1b15043007f92a2c3c77ba53032a614d127f75d09442d932",
+      "width": 288,
+      "height": 288,
+      "mode": "RGBA",
+      "alpha_range": [
+        0,
+        255
+      ],
+      "alpha_bounds": [
+        0,
+        9,
+        288,
+        243
+      ]
+    },
+    {
+      "path": "exports/upgrade-disabled.png",
+      "bytes": 78528,
+      "sha256": "ea3383ae872b46f921a3ce51f49151aec081bc2b61a4afabcdebfc689ed6bb23",
+      "width": 288,
+      "height": 288,
+      "mode": "RGBA",
+      "alpha_range": [
+        0,
+        89
+      ],
+      "alpha_bounds": [
+        0,
+        10,
+        288,
+        229
+      ]
+    },
+    {
+      "path": "exports/upgrade-highlight.png",
+      "bytes": 106823,
+      "sha256": "0aa42d4415eb8e1b249c4168592de4b148c4bb504be052aaca147db1cc463915",
+      "width": 288,
+      "height": 288,
+      "mode": "RGBA",
+      "alpha_range": [
+        0,
+        255
+      ],
+      "alpha_bounds": [
+        0,
+        0,
+        288,
+        243
+      ]
+    },
+    {
+      "path": "exports/upgrade-normal.png",
+      "bytes": 89287,
+      "sha256": "7e3699900e087f5e97d8568addfef4f56cd27d9d7adf4860581df50a8de4bc99",
+      "width": 288,
+      "height": 288,
+      "mode": "RGBA",
+      "alpha_range": [
+        0,
+        255
+      ],
+      "alpha_bounds": [
+        0,
+        9,
+        288,
+        243
+      ]
+    },
+    {
+      "path": "gold/gold-line.png",
+      "bytes": 55652,
+      "sha256": "0799b59e674b342bfb392e527272ccc855be07ddcb52bad3dace62ea1d977104",
+      "width": 366,
+      "height": 195,
+      "mode": "RGBA",
+      "alpha_range": [
+        0,
+        255
+      ],
+      "alpha_bounds": [
+        0,
+        2,
+        365,
+        180
+      ]
+    },
+    {
+      "path": "gold/ground-outline-brush.svg",
+      "bytes": 29136,
+      "sha256": "7e6be56c102ee07dae96e56e879437e2ad9cf2ac0a917859ff318b8e2e90f835",
+      "viewBox": "0 0 276.367 151.867",
+      "width": "276.367",
+      "height": "151.867"
+    },
+    {
+      "path": "gold/menu-connector-brush.svg",
+      "bytes": 21020,
+      "sha256": "ef88d5119ef5f6cb7e5bbc581487ae7a8cbee9c038c1055520ec04f188605aa3",
+      "viewBox": "0 0 305.661 96.8907",
+      "width": "305.661",
+      "height": "96.8907"
+    },
+    {
+      "path": "planned/move-disabled.png",
+      "bytes": 73898,
+      "sha256": "af5f053d2ba200e3de87a43d4b5c2f9c186f1839d56c0dea5e921b2584f54407",
+      "width": 288,
+      "height": 288,
+      "mode": "RGBA",
+      "alpha_range": [
+        0,
+        89
+      ],
+      "alpha_bounds": [
+        0,
+        10,
+        288,
+        229
+      ]
+    },
+    {
+      "path": "planned/move-normal.png",
+      "bytes": 83937,
+      "sha256": "86bdfa2628f88209b8d5fb7e0336b2eb1f83a0430176e932e388f45c24cabbb4",
+      "width": 288,
+      "height": 288,
+      "mode": "RGBA",
+      "alpha_range": [
+        0,
+        255
+      ],
+      "alpha_bounds": [
+        0,
+        9,
+        288,
+        243
+      ]
+    },
+    {
+      "path": "preview/building-menu.png",
+      "bytes": 656728,
+      "sha256": "59cc0b7fac2acac4839654dbfb2a90e0a83dd1916fb44d7b7c748213c3d3cddb",
+      "width": 640,
+      "height": 749,
+      "mode": "RGBA",
+      "alpha_range": [
+        255,
+        255
+      ],
+      "alpha_bounds": [
+        0,
+        0,
+        640,
+        749
+      ]
+    }
+  ],
+  "gold_figma_geometry_reported": {
+    "nominal_scene_size": [
+      354,
+      189
+    ],
+    "instance_render_size": [
+      365.5535889,
+      194.5498199
+    ],
+    "render_origin_offset": [
+      -5.2689209,
+      -5.5498047
+    ],
+    "observed_png_size": [
+      366,
+      195
+    ],
+    "example_nominal_scene_origin": [
+      143,
+      211
+    ],
+    "example_render_origin": [
+      137.7310791,
+      205.4501953
+    ]
+  },
+  "planned_functionality": {
+    "move": "Shown active in target design; current v0.1.50 still hides/disables move. Implement separately before gameplay enablement.",
+    "move_component": "1387:270"
+  },
+  "goldStyle": "Thicker irregular solid brushwork: amber edge, gold body, bright core; irregular menu connector",
+  "preserved_buttons": {
+    "count": 8,
+    "identical_to_v003_sha256": true
+  }
+}

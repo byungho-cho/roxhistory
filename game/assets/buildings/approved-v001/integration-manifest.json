@@ -1,0 +1,387 @@
+{
+  "version": "approved-v001",
+  "integrated_on": "2026-11-07",
+  "source": "building_asset_release/separated-v003",
+  "authorization": "Final cleaned extracted artwork and stage sizing approved in current implementation request. Source statuses are historical and retained, not relabeled as pixel-identical.",
+  "original_pngs_unchanged": true,
+  "excluded": [
+    "roads/road-source-current-reference.png (existing reference, not approved replacement)",
+    "gold building-menu lines (approval not established)",
+    "character review proposals"
+  ],
+  "ground_rule": "All facilities use the existing approved common square foundations; no circular training ground.",
+  "display_rules": {
+    "shrine": {
+      "stage_frame_px": [
+        320,
+        280
+      ],
+      "height_px_by_level": [
+        166,
+        184,
+        202,
+        222
+      ],
+      "center_x": 160,
+      "bottom_y": 264,
+      "source_art_bounds_include_ground": true
+    },
+    "hearth": {
+      "stage_frame_px": [
+        320,
+        280
+      ],
+      "source_bounds_wh_px": [
+        [
+          196.65,
+          114.57
+        ],
+        [
+          235.13,
+          139.37
+        ],
+        [
+          254.6,
+          182.4
+        ],
+        [
+          254.6,
+          184.3
+        ]
+      ],
+      "center": [
+        160,
+        140
+      ],
+      "source_L1_L2_adjustment": 0.9,
+      "preserve_sprite_aspect_ratio": true
+    },
+    "training": {
+      "stage_frame_px": [
+        320,
+        280
+      ],
+      "structure_bottom_y": 190,
+      "L2_placement_scale": 0.8,
+      "ground": "Approved shared square foundation; no dedicated circular training ground included."
+    }
+  },
+  "assets": [
+    {
+      "id": "BLD-HUT-L1",
+      "file": "hut/hut-l1.png",
+      "sha256": "f9573cdb41d5212a9f1e84f666e3e67e6c45d0aa1ecffd976663a37a885a2898",
+      "source_status": "reused_alpha_qa_passed",
+      "integration_approved": true,
+      "crop": [
+        6,
+        6,
+        328,
+        282
+      ],
+      "alignment": "center"
+    },
+    {
+      "id": "BLD-HUT-L2",
+      "file": "hut/hut-l2.png",
+      "sha256": "03a2dc2885a0c2f4a86511587ad5e69fde3e70496102105293ac02f85c88e614",
+      "source_status": "reused_alpha_qa_passed",
+      "integration_approved": true,
+      "crop": [
+        6,
+        6,
+        384,
+        340
+      ],
+      "alignment": "center"
+    },
+    {
+      "id": "BLD-HUT-L3",
+      "file": "hut/hut-l3.png",
+      "sha256": "5de337e42f04ac29d37377955c73e6485b2f9836d2074c6a619a30313049083b",
+      "source_status": "reused_alpha_qa_passed",
+      "integration_approved": true,
+      "crop": [
+        171,
+        183,
+        969,
+        825
+      ],
+      "alignment": "center"
+    },
+    {
+      "id": "BLD-HUT-L4",
+      "file": "hut/hut-l4.png",
+      "sha256": "5d9006a9f2d2ac102ab3dd452077c3757db5fd1333d284306e0a8cab0bc30fc6",
+      "source_status": "reused_alpha_qa_passed",
+      "integration_approved": true,
+      "crop": [
+        6,
+        6,
+        590,
+        459
+      ],
+      "alignment": "center"
+    },
+    {
+      "id": "BLD-OUTPOST-L1",
+      "file": "outpost/outpost-l1.png",
+      "sha256": "a34fb3fe9beea797137da797554979c64565768a428a7211db841b71157640e8",
+      "source_status": "reused_alpha_qa_passed",
+      "integration_approved": true,
+      "crop": [
+        302,
+        143,
+        832,
+        765
+      ],
+      "alignment": "center"
+    },
+    {
+      "id": "BLD-OUTPOST-L2",
+      "file": "outpost/outpost-l2.png",
+      "sha256": "7942ec5fe15c516163d330ee4e544f88d4622f800045458ca69cc9232c68866c",
+      "source_status": "reused_alpha_qa_passed",
+      "integration_approved": true,
+      "crop": [
+        253,
+        24,
+        875,
+        916
+      ],
+      "alignment": "center"
+    },
+    {
+      "id": "BLD-OUTPOST-L3",
+      "file": "outpost/outpost-l3.png",
+      "sha256": "1a1b0706ad26df37683ec7b83016a73207cbd7dfcf0691a05440e2a6bb66d521",
+      "source_status": "reused_alpha_qa_passed",
+      "integration_approved": true,
+      "crop": [
+        231,
+        66,
+        924,
+        961
+      ],
+      "alignment": "center"
+    },
+    {
+      "id": "BLD-OUTPOST-L4",
+      "file": "outpost/outpost-l4.png",
+      "sha256": "a4e1965e7287f5469156a1d307d59db79e4451c2482596e6ac06b9c671fe25a0",
+      "source_status": "reused_alpha_qa_passed",
+      "integration_approved": true,
+      "crop": [
+        194,
+        45,
+        1024,
+        895
+      ],
+      "alignment": "center"
+    },
+    {
+      "id": "GROUND-PAD-L1",
+      "file": "foundation/foundation-l1.png",
+      "sha256": "223557b646fc7108e94468eb52451d45e17f69dc604cff58f3a12dd634afe33d",
+      "source_status": "reused_alpha_qa_passed",
+      "integration_approved": true,
+      "crop": null,
+      "alignment": "center"
+    },
+    {
+      "id": "GROUND-PAD-L2",
+      "file": "foundation/foundation-l2.png",
+      "sha256": "f618c56c6292e73e7c6cdd8d952de4b577fe1aac19c570a55187e05872fd0420",
+      "source_status": "reused_alpha_qa_passed",
+      "integration_approved": true,
+      "crop": null,
+      "alignment": "center"
+    },
+    {
+      "id": "GROUND-PAD-L3",
+      "file": "foundation/foundation-l3.png",
+      "sha256": "9aba2a2627d772ead2e6a81fbdfa62afb7236fb38e593c7f2371738e2566d20c",
+      "source_status": "reused_alpha_qa_passed",
+      "integration_approved": true,
+      "crop": null,
+      "alignment": "center"
+    },
+    {
+      "id": "GROUND-PAD-L4",
+      "file": "foundation/foundation-l4.png",
+      "sha256": "cb18aacdc9d0669738c780d184a7926c8fb6219492f328dd51d5d45af6f3f610",
+      "source_status": "reused_alpha_qa_passed",
+      "integration_approved": true,
+      "crop": null,
+      "alignment": "center"
+    },
+    {
+      "id": "BLD-TRAINING-L1",
+      "file": "training/training-l1-structure.png",
+      "sha256": "0781ec11fe905cfb34c09b50c8c2fb74832e5697e44f959db21e36faf3b9a52d",
+      "source_status": "review_candidate_not_pixel_exact",
+      "integration_approved": true,
+      "crop": [
+        508,
+        166,
+        225,
+        854
+      ],
+      "alignment": "bottom"
+    },
+    {
+      "id": "BLD-TRAINING-L2",
+      "file": "training/training-l2-structure.png",
+      "sha256": "1baf11f5a04cceec16ddfad00c7134a62a58a5e25fb6a7c09f28dd9b1d1115c0",
+      "source_status": "review_candidate_not_pixel_exact",
+      "integration_approved": true,
+      "crop": [
+        128,
+        36,
+        1008,
+        1193
+      ],
+      "alignment": "bottom"
+    },
+    {
+      "id": "BLD-TRAINING-L3",
+      "file": "training/training-l3-structure.png",
+      "sha256": "0c0433f074845ebac85c6b31203be6a4edbc0578ca75fd0d7068ccf5f0fb588d",
+      "source_status": "review_candidate_not_pixel_exact",
+      "integration_approved": true,
+      "crop": [
+        273,
+        68,
+        1202,
+        747
+      ],
+      "alignment": "bottom"
+    },
+    {
+      "id": "BLD-TRAINING-L4",
+      "file": "training/training-l4-structure.png",
+      "sha256": "d70b0eb1f13cd77bd6cf2034e3792c72ca2568c15acc2fe3c9d8a1db991d45e6",
+      "source_status": "review_candidate_not_pixel_exact",
+      "integration_approved": true,
+      "crop": [
+        47,
+        197,
+        1168,
+        856
+      ],
+      "alignment": "bottom"
+    },
+    {
+      "id": "BLD-SHRINE-L1",
+      "file": "shrine/shrine-l1.png",
+      "sha256": "7fc3fb2663d3a0c69292f193941a563052df8a92a5c7a356f0673cc457aa9bc8",
+      "source_status": "review_candidate_not_pixel_exact",
+      "integration_approved": true,
+      "crop": [
+        114,
+        66,
+        1036,
+        1163
+      ],
+      "alignment": "bottom"
+    },
+    {
+      "id": "BLD-SHRINE-L2",
+      "file": "shrine/shrine-l2.png",
+      "sha256": "6c071bf3e03987bf8776223a4183de56724a02f1f512948be2a087146d176471",
+      "source_status": "review_candidate_not_pixel_exact",
+      "integration_approved": true,
+      "crop": [
+        93,
+        64,
+        1039,
+        1147
+      ],
+      "alignment": "bottom"
+    },
+    {
+      "id": "BLD-SHRINE-L3",
+      "file": "shrine/shrine-l3.png",
+      "sha256": "ae5c00dca6abf398541f4194764cb0888b5f7e2eee8412dd411fec81d077705c",
+      "source_status": "review_candidate_not_pixel_exact",
+      "integration_approved": true,
+      "crop": [
+        37,
+        99,
+        1172,
+        1048
+      ],
+      "alignment": "bottom"
+    },
+    {
+      "id": "BLD-SHRINE-L4",
+      "file": "shrine/shrine-l4.png",
+      "sha256": "eaf7ed7a49d8c11a1ec6d7d00783ef0d2e9d6bdb1b3e6174dc61e887a86d7126",
+      "source_status": "review_candidate_not_pixel_exact",
+      "integration_approved": true,
+      "crop": [
+        31,
+        152,
+        1036,
+        1196
+      ],
+      "alignment": "bottom"
+    },
+    {
+      "id": "BLD-HEARTH-L1",
+      "file": "hearth/hearth-l1.png",
+      "sha256": "de03113057a68e289621a538724964add2c3f6badb5a2af73757583561e4d3c7",
+      "source_status": "review_candidate_not_pixel_exact",
+      "integration_approved": true,
+      "crop": [
+        60,
+        220,
+        1129,
+        802
+      ],
+      "alignment": "center"
+    },
+    {
+      "id": "BLD-HEARTH-L2",
+      "file": "hearth/hearth-l2.png",
+      "sha256": "dbb43d9ea377f2cd361293ad5f133b2a63323e92ee207cd0acfefd70485194c8",
+      "source_status": "review_candidate_not_pixel_exact",
+      "integration_approved": true,
+      "crop": [
+        11,
+        241,
+        1235,
+        747
+      ],
+      "alignment": "center"
+    },
+    {
+      "id": "BLD-HEARTH-L3",
+      "file": "hearth/hearth-l3.png",
+      "sha256": "7711ca4a8ef79fb74bf4809f4a65f45a8e6be6b8cc2e98915880b7de957a83aa",
+      "source_status": "review_candidate_not_pixel_exact",
+      "integration_approved": true,
+      "crop": [
+        6,
+        84,
+        1243,
+        1033
+      ],
+      "alignment": "center"
+    },
+    {
+      "id": "BLD-HEARTH-L4",
+      "file": "hearth/hearth-l4.png",
+      "sha256": "4808ef2019596d585cdf4faed5a40973ad53be38c12a8bfe4c27b3937450938d",
+      "source_status": "review_candidate_not_pixel_exact",
+      "integration_approved": true,
+      "crop": [
+        43,
+        123,
+        1189,
+        935
+      ],
+      "alignment": "center"
+    }
+  ]
+}

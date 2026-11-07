@@ -8,8 +8,12 @@ const CHIEF := Vector2(-5,-4)
 const PLOTS := [Vector2(2,-4),Vector2(-5,3),Vector2(2,3),Vector2(9,3),Vector2(2,10),Vector2(9,10)]
 const PLAYABLE := VillageBounds.PLAYABLE
 var model:GameState
+var layout_signature:=""
 static func project(cell:Vector2)->Vector2:return ORIGIN+AXIS_X*cell.x+AXIS_Y*cell.y
 static func anchor(cell:Vector2)->Vector2:return project(cell)+Vector2(0,24)
+static func unproject(point:Vector2)->Vector2:
+	var offset:=point-ORIGIN
+	return Vector2(offset.x/64.0+offset.y/32.0,offset.y/32.0-offset.x/64.0)
 static func polygon(cell:Vector2,span:int)->PackedVector2Array:
 	var h:=span*.5
 	return PackedVector2Array([project(cell+Vector2(-h,-h)),project(cell+Vector2(h,-h)),project(cell+Vector2(h,h)),project(cell+Vector2(-h,h))])
@@ -27,14 +31,24 @@ func _draw()->void:
 			if ground_ok(a) and ground_ok(c):draw_line(a,c,Color(.94,.87,.55,.10),1,true)
 
 func rebuild_art()->void:
+	var chief:=model.building_position("chief")
+	var signature:=str([model.chief_level(),chief,model.homes(),model.outposts(),model.facilities()])
+	if signature==layout_signature:return
+	layout_signature=signature
 	for child in get_children():remove_child(child);child.queue_free()
-	# Roads exist only between completed homes and the chief; sprites never own physics.
-	for home_data in model.homes()+model.outposts():
-		var target:Vector2=PLOTS[int(home_data.get("site",0))]
-		var elbow:=Vector2(target.x,CHIEF.y)
-		road(CHIEF,elbow);road(elbow,target)
-	foundation(CHIEF,6,model.chief_level())
-	for home_data in model.homes()+model.outposts():foundation(PLOTS[int(home_data.get("site",0))],4,int(home_data.get("level",1)))
+	var positions:Array=[];var levels:Array=[]
+	for i in model.built_count():positions.append(model.home_position(i));levels.append(int(model.homes()[i].get("level",1)))
+	for i in model.outposts().size():positions.append(model.outpost_position(i));levels.append(int(model.outposts()[i].get("level",1)))
+	for entry in model.facilities():
+		positions.append(model.building_position(str(entry.kind)+":"+str(entry.uid)));levels.append(int(entry.get("level",1)))
+	# Use actual saved building anchors, including free placement and moves.
+	if model.chief_level()>0 and chief.is_finite():
+		var start:=unproject(chief-Vector2(0,24))
+		for at in positions:
+			var target:=unproject(at-Vector2(0,24));var elbow:=Vector2(target.x,start.y)
+			road(start,elbow);road(elbow,target)
+		foundation(start,6,model.chief_level())
+	for i in positions.size():foundation(unproject(positions[i]-Vector2(0,24)),4,levels[i])
 	queue_redraw()
 func foundation(cell:Vector2,span:int,level:int=1)->void:
 	var id:="GROUND-PAD-L%d"%clampi(level,1,4)
@@ -52,7 +66,7 @@ func foundation(cell:Vector2,span:int,level:int=1)->void:
 func road(a:Vector2,b:Vector2)->void:
 	if a==b:return
 	var delta:=b-a
-	var steps:=int(maxf(absf(delta.x),absf(delta.y)))
+	var steps:=maxi(1,ceili(maxf(absf(delta.x),absf(delta.y))))
 	for i in steps:
 		var c:=a+delta*(float(i)+.5)/steps
 		var s:=Sprite2D.new();s.texture=AssetCatalog.texture("GROUND-ROAD");s.position=project(c)

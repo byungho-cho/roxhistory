@@ -1,0 +1,1652 @@
+{
+  "version": "separated-v003",
+  "date": "2026-11-06",
+  "summary": {
+    "building_sprites": 20,
+    "ground_sprites": 4,
+    "road_reference": 1,
+    "reused_qa_passed": 12,
+    "new_review_candidates": 12
+  },
+  "source_file": "zkbflw9fCdAlWbphhw5pSS",
+  "game_code_changed": false,
+  "game_integration_tested": false,
+  "preview_note": "Figma previews follow the stage artwork above, not a uniform enlarged inspection size. Native PNG pixels and resolution are preserved. Reused sprites and training copy source display geometry; shrine follows progressive source heights and bottom anchor; hearth fits the measured source artwork bounds with aspect ratio preserved. Ground removal and generative cutout differences mean shrine/hearth widths and silhouettes are not pixel-exact matches. Preview placement is not runtime world scale.",
+  "limitations": [
+    "New training/shrine/hearth cutouts are AI-assisted review candidates, not pixel-identical source exports. Fine textures, proportions and occluded parts can differ.",
+    "Low-alpha pixel residue exists in some sources and outputs. Light/dark/green display QA is not engine filtering or mipmap validation.",
+    "Current road reference retains a wide soft fringe and is not a newly approved road replacement.",
+    "Hut L4 white-cloth concept was not used because its approval was not established; current Figma L4 was retained."
+  ],
+  "assets": [
+    {
+      "file": "hut/hut-l1.png",
+      "kind": "hut",
+      "level": 1,
+      "part": "structure",
+      "status": "reused_alpha_qa_passed",
+      "source_url": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=1191-17",
+      "dimensions_px": [
+        340,
+        294
+      ],
+      "mode": "RGBA",
+      "bytes": 145118,
+      "sha256": "f9573cdb41d5212a9f1e84f666e3e67e6c45d0aa1ecffd976663a37a885a2898",
+      "alpha_range": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        4,
+        6,
+        340,
+        287
+      ],
+      "content_bbox_alpha8": [
+        10,
+        10,
+        330,
+        284
+      ],
+      "suggested_display_anchor_normalized": [
+        0.5,
+        0.965986
+      ],
+      "anchor_note": "Provisional display anchor only, not runtime grid center, collision, footprint or Y-sort pivot.",
+      "external_shadow": "not delivered separately; retain intrinsic object shading only",
+      "figma_preview": {
+        "node_id": "1221:18",
+        "frame_node_id": "1229:13",
+        "frame_dimensions_px": [
+          648,
+          330
+        ],
+        "x": 159,
+        "y": 22.32353,
+        "width": 330,
+        "height": 285.35294,
+        "image_scale_mode": "FIT",
+        "image_transform": [
+          [
+            1,
+            0,
+            0
+          ],
+          [
+            0,
+            1,
+            0
+          ]
+        ],
+        "display_px_per_source_px": 0.97058822
+      }
+    },
+    {
+      "file": "hut/hut-l2.png",
+      "kind": "hut",
+      "level": 2,
+      "part": "structure",
+      "status": "reused_alpha_qa_passed",
+      "source_url": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=1191-24",
+      "dimensions_px": [
+        396,
+        352
+      ],
+      "mode": "RGBA",
+      "bytes": 210631,
+      "sha256": "03a2dc2885a0c2f4a86511587ad5e69fde3e70496102105293ac02f85c88e614",
+      "alpha_range": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        0,
+        0,
+        393,
+        344
+      ],
+      "content_bbox_alpha8": [
+        10,
+        10,
+        386,
+        342
+      ],
+      "suggested_display_anchor_normalized": [
+        0.5,
+        0.971591
+      ],
+      "anchor_note": "Provisional display anchor only, not runtime grid center, collision, footprint or Y-sort pivot.",
+      "external_shadow": "not delivered separately; retain intrinsic object shading only",
+      "figma_preview": {
+        "node_id": "1221:21",
+        "frame_node_id": "1229:14",
+        "frame_dimensions_px": [
+          648,
+          330
+        ],
+        "x": 159,
+        "y": 18.33333,
+        "width": 330,
+        "height": 293.33334,
+        "image_scale_mode": "FIT",
+        "image_transform": [
+          [
+            1,
+            0,
+            0
+          ],
+          [
+            0,
+            1,
+            0
+          ]
+        ],
+        "display_px_per_source_px": 0.83333333
+      }
+    },
+    {
+      "file": "hut/hut-l3.png",
+      "kind": "hut",
+      "level": 3,
+      "part": "structure",
+      "status": "reused_alpha_qa_passed",
+      "source_url": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=1188-406",
+      "dimensions_px": [
+        1312,
+        1199
+      ],
+      "mode": "RGBA",
+      "bytes": 1029916,
+      "sha256": "5de337e42f04ac29d37377955c73e6485b2f9836d2074c6a619a30313049083b",
+      "alpha_range": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        0,
+        21,
+        1284,
+        1179
+      ],
+      "content_bbox_alpha8": [
+        175,
+        187,
+        1136,
+        1004
+      ],
+      "suggested_display_anchor_normalized": [
+        0.499619,
+        0.837364
+      ],
+      "anchor_note": "Provisional display anchor only, not runtime grid center, collision, footprint or Y-sort pivot.",
+      "external_shadow": "not delivered separately; retain intrinsic object shading only",
+      "figma_preview": {
+        "node_id": "1221:24",
+        "frame_node_id": "1229:15",
+        "frame_dimensions_px": [
+          648,
+          330
+        ],
+        "x": 159,
+        "y": 23.645,
+        "width": 330,
+        "height": 282.70999,
+        "image_scale_mode": "CROP",
+        "image_transform": [
+          [
+            0.7393292784690857,
+            0,
+            0.13033536076545715
+          ],
+          [
+            0,
+            0.693077564239502,
+            0.15012510120868683
+          ]
+        ],
+        "display_px_per_cropped_source_px": 0.34020456
+      }
+    },
+    {
+      "file": "hut/hut-l4.png",
+      "kind": "hut",
+      "level": 4,
+      "part": "structure",
+      "status": "reused_alpha_qa_passed",
+      "source_url": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=1191-36",
+      "dimensions_px": [
+        602,
+        470
+      ],
+      "mode": "RGBA",
+      "bytes": 454489,
+      "sha256": "5d9006a9f2d2ac102ab3dd452077c3757db5fd1333d284306e0a8cab0bc30fc6",
+      "alpha_range": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        0,
+        1,
+        602,
+        470
+      ],
+      "content_bbox_alpha8": [
+        10,
+        10,
+        592,
+        461
+      ],
+      "suggested_display_anchor_normalized": [
+        0.5,
+        0.980851
+      ],
+      "anchor_note": "Provisional display anchor only, not runtime grid center, collision, footprint or Y-sort pivot.",
+      "external_shadow": "not delivered separately; retain intrinsic object shading only",
+      "figma_preview": {
+        "node_id": "1221:27",
+        "frame_node_id": "1229:16",
+        "frame_dimensions_px": [
+          648,
+          330
+        ],
+        "x": 159,
+        "y": 36.1794,
+        "width": 330,
+        "height": 257.6412,
+        "image_scale_mode": "FIT",
+        "image_transform": [
+          [
+            1,
+            0,
+            0
+          ],
+          [
+            0,
+            1,
+            0
+          ]
+        ],
+        "display_px_per_source_px": 0.54817276
+      }
+    },
+    {
+      "file": "outpost/outpost-l1.png",
+      "kind": "outpost",
+      "level": 1,
+      "part": "structure",
+      "status": "reused_alpha_qa_passed",
+      "source_url": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=1091-515",
+      "dimensions_px": [
+        1448,
+        1086
+      ],
+      "mode": "RGBA",
+      "bytes": 997408,
+      "sha256": "a34fb3fe9beea797137da797554979c64565768a428a7211db841b71157640e8",
+      "alpha_range": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        33,
+        23,
+        1434,
+        1066
+      ],
+      "content_bbox_alpha8": [
+        306,
+        147,
+        1130,
+        904
+      ],
+      "suggested_display_anchor_normalized": [
+        0.495856,
+        0.832413
+      ],
+      "anchor_note": "Provisional display anchor only, not runtime grid center, collision, footprint or Y-sort pivot.",
+      "external_shadow": "not delivered separately; retain intrinsic object shading only",
+      "figma_preview": {
+        "node_id": "1221:33",
+        "frame_node_id": "1229:17",
+        "frame_dimensions_px": [
+          320,
+          240
+        ],
+        "x": 0,
+        "y": 0,
+        "width": 320,
+        "height": 240,
+        "image_scale_mode": "FILL",
+        "image_transform": [
+          [
+            1,
+            0,
+            0
+          ],
+          [
+            0,
+            1,
+            0
+          ]
+        ],
+        "display_px_per_source_px": 0.22099448
+      }
+    },
+    {
+      "file": "outpost/outpost-l2.png",
+      "kind": "outpost",
+      "level": 2,
+      "part": "structure",
+      "status": "reused_alpha_qa_passed",
+      "source_url": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=1091-516",
+      "dimensions_px": [
+        1448,
+        1086
+      ],
+      "mode": "RGBA",
+      "bytes": 1251079,
+      "sha256": "7942ec5fe15c516163d330ee4e544f88d4622f800045458ca69cc9232c68866c",
+      "alpha_range": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        0,
+        25,
+        1412,
+        1086
+      ],
+      "content_bbox_alpha8": [
+        257,
+        28,
+        1124,
+        936
+      ],
+      "suggested_display_anchor_normalized": [
+        0.476865,
+        0.861878
+      ],
+      "anchor_note": "Provisional display anchor only, not runtime grid center, collision, footprint or Y-sort pivot.",
+      "external_shadow": "not delivered separately; retain intrinsic object shading only",
+      "figma_preview": {
+        "node_id": "1221:36",
+        "frame_node_id": "1229:18",
+        "frame_dimensions_px": [
+          320,
+          240
+        ],
+        "x": 0,
+        "y": 0,
+        "width": 320,
+        "height": 240,
+        "image_scale_mode": "FILL",
+        "image_transform": [
+          [
+            1,
+            0,
+            0
+          ],
+          [
+            0,
+            1,
+            0
+          ]
+        ],
+        "display_px_per_source_px": 0.22099448
+      }
+    },
+    {
+      "file": "outpost/outpost-l3.png",
+      "kind": "outpost",
+      "level": 3,
+      "part": "structure",
+      "status": "reused_alpha_qa_passed",
+      "source_url": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=1091-513",
+      "dimensions_px": [
+        1448,
+        1086
+      ],
+      "mode": "RGBA",
+      "bytes": 1217066,
+      "sha256": "1a1b0706ad26df37683ec7b83016a73207cbd7dfcf0691a05440e2a6bb66d521",
+      "alpha_range": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        0,
+        10,
+        1418,
+        1061
+      ],
+      "content_bbox_alpha8": [
+        235,
+        70,
+        1151,
+        1023
+      ],
+      "suggested_display_anchor_normalized": [
+        0.478591,
+        0.941989
+      ],
+      "anchor_note": "Provisional display anchor only, not runtime grid center, collision, footprint or Y-sort pivot.",
+      "external_shadow": "not delivered separately; retain intrinsic object shading only",
+      "figma_preview": {
+        "node_id": "1221:39",
+        "frame_node_id": "1229:19",
+        "frame_dimensions_px": [
+          320,
+          240
+        ],
+        "x": 0,
+        "y": 0,
+        "width": 320,
+        "height": 240,
+        "image_scale_mode": "FILL",
+        "image_transform": [
+          [
+            1,
+            0,
+            0
+          ],
+          [
+            0,
+            1,
+            0
+          ]
+        ],
+        "display_px_per_source_px": 0.22099448
+      }
+    },
+    {
+      "file": "outpost/outpost-l4.png",
+      "kind": "outpost",
+      "level": 4,
+      "part": "structure",
+      "status": "reused_alpha_qa_passed",
+      "source_url": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=1091-514",
+      "dimensions_px": [
+        1448,
+        1086
+      ],
+      "mode": "RGBA",
+      "bytes": 1435133,
+      "sha256": "a4e1965e7287f5469156a1d307d59db79e4451c2482596e6ac06b9c671fe25a0",
+      "alpha_range": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        0,
+        19,
+        1394,
+        1086
+      ],
+      "content_bbox_alpha8": [
+        198,
+        49,
+        1214,
+        936
+      ],
+      "suggested_display_anchor_normalized": [
+        0.487569,
+        0.861878
+      ],
+      "anchor_note": "Provisional display anchor only, not runtime grid center, collision, footprint or Y-sort pivot.",
+      "external_shadow": "not delivered separately; retain intrinsic object shading only",
+      "figma_preview": {
+        "node_id": "1221:42",
+        "frame_node_id": "1229:20",
+        "frame_dimensions_px": [
+          320,
+          240
+        ],
+        "x": 0,
+        "y": 0,
+        "width": 320,
+        "height": 240,
+        "image_scale_mode": "FILL",
+        "image_transform": [
+          [
+            1,
+            0,
+            0
+          ],
+          [
+            0,
+            1,
+            0
+          ]
+        ],
+        "display_px_per_source_px": 0.22099448
+      }
+    },
+    {
+      "file": "foundation/foundation-l1.png",
+      "kind": "foundation",
+      "level": 1,
+      "part": "ground",
+      "status": "reused_alpha_qa_passed",
+      "source_url": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=1091-519",
+      "dimensions_px": [
+        1774,
+        887
+      ],
+      "mode": "RGBA",
+      "bytes": 1369062,
+      "sha256": "223557b646fc7108e94468eb52451d45e17f69dc604cff58f3a12dd634afe33d",
+      "alpha_range": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        0,
+        21,
+        1695,
+        883
+      ],
+      "content_bbox_alpha8": [
+        68,
+        65,
+        1692,
+        824
+      ],
+      "suggested_display_anchor_normalized": [
+        0.496054,
+        0.501127
+      ],
+      "anchor_note": "Provisional display anchor only, not runtime grid center, collision, footprint or Y-sort pivot.",
+      "external_shadow": "not applicable",
+      "figma_preview": {
+        "node_id": "1221:48",
+        "frame_node_id": "1229:21",
+        "frame_dimensions_px": [
+          320,
+          240
+        ],
+        "x": 0,
+        "y": 0,
+        "width": 320,
+        "height": 240,
+        "image_scale_mode": "FIT",
+        "image_transform": [
+          [
+            1,
+            0,
+            0
+          ],
+          [
+            0,
+            1,
+            0
+          ]
+        ],
+        "display_px_per_source_px": 0.18038331
+      }
+    },
+    {
+      "file": "foundation/foundation-l2.png",
+      "kind": "foundation",
+      "level": 2,
+      "part": "ground",
+      "status": "reused_alpha_qa_passed",
+      "source_url": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=1091-518",
+      "dimensions_px": [
+        1774,
+        887
+      ],
+      "mode": "RGBA",
+      "bytes": 1611830,
+      "sha256": "f618c56c6292e73e7c6cdd8d952de4b577fe1aac19c570a55187e05872fd0420",
+      "alpha_range": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        0,
+        14,
+        1758,
+        887
+      ],
+      "content_bbox_alpha8": [
+        63,
+        67,
+        1691,
+        825
+      ],
+      "suggested_display_anchor_normalized": [
+        0.494363,
+        0.502818
+      ],
+      "anchor_note": "Provisional display anchor only, not runtime grid center, collision, footprint or Y-sort pivot.",
+      "external_shadow": "not applicable",
+      "figma_preview": {
+        "node_id": "1221:51",
+        "frame_node_id": "1229:22",
+        "frame_dimensions_px": [
+          320,
+          240
+        ],
+        "x": 0,
+        "y": 0,
+        "width": 320,
+        "height": 240,
+        "image_scale_mode": "FIT",
+        "image_transform": [
+          [
+            1,
+            0,
+            0
+          ],
+          [
+            0,
+            1,
+            0
+          ]
+        ],
+        "display_px_per_source_px": 0.18038331
+      }
+    },
+    {
+      "file": "foundation/foundation-l3.png",
+      "kind": "foundation",
+      "level": 3,
+      "part": "ground",
+      "status": "reused_alpha_qa_passed",
+      "source_url": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=1091-517",
+      "dimensions_px": [
+        1774,
+        887
+      ],
+      "mode": "RGBA",
+      "bytes": 1865046,
+      "sha256": "9aba2a2627d772ead2e6a81fbdfa62afb7236fb38e593c7f2371738e2566d20c",
+      "alpha_range": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        0,
+        3,
+        1752,
+        887
+      ],
+      "content_bbox_alpha8": [
+        65,
+        57,
+        1697,
+        828
+      ],
+      "suggested_display_anchor_normalized": [
+        0.496618,
+        0.498873
+      ],
+      "anchor_note": "Provisional display anchor only, not runtime grid center, collision, footprint or Y-sort pivot.",
+      "external_shadow": "not applicable",
+      "figma_preview": {
+        "node_id": "1221:54",
+        "frame_node_id": "1229:23",
+        "frame_dimensions_px": [
+          320,
+          240
+        ],
+        "x": 0,
+        "y": 0,
+        "width": 320,
+        "height": 240,
+        "image_scale_mode": "FIT",
+        "image_transform": [
+          [
+            1,
+            0,
+            0
+          ],
+          [
+            0,
+            1,
+            0
+          ]
+        ],
+        "display_px_per_source_px": 0.18038331
+      }
+    },
+    {
+      "file": "foundation/foundation-l4.png",
+      "kind": "foundation",
+      "level": 4,
+      "part": "ground",
+      "status": "reused_alpha_qa_passed",
+      "source_url": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=1098-38",
+      "dimensions_px": [
+        1774,
+        887
+      ],
+      "mode": "RGBA",
+      "bytes": 1826507,
+      "sha256": "cb18aacdc9d0669738c780d184a7926c8fb6219492f328dd51d5d45af6f3f610",
+      "alpha_range": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        0,
+        0,
+        1764,
+        887
+      ],
+      "content_bbox_alpha8": [
+        66,
+        46,
+        1698,
+        830
+      ],
+      "suggested_display_anchor_normalized": [
+        0.497182,
+        0.493799
+      ],
+      "anchor_note": "Provisional display anchor only, not runtime grid center, collision, footprint or Y-sort pivot.",
+      "external_shadow": "not applicable",
+      "figma_preview": {
+        "node_id": "1221:57",
+        "frame_node_id": "1229:24",
+        "frame_dimensions_px": [
+          320,
+          240
+        ],
+        "x": 0,
+        "y": 0,
+        "width": 320,
+        "height": 240,
+        "image_scale_mode": "FIT",
+        "image_transform": [
+          [
+            1,
+            0,
+            0
+          ],
+          [
+            0,
+            1,
+            0
+          ]
+        ],
+        "display_px_per_source_px": 0.18038331
+      }
+    },
+    {
+      "file": "training/training-l1-structure.png",
+      "kind": "training",
+      "level": 1,
+      "part": "structure",
+      "status": "review_candidate_not_pixel_exact",
+      "source_url": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=1227-13",
+      "dimensions_px": [
+        1254,
+        1254
+      ],
+      "mode": "RGBA",
+      "bytes": 348006,
+      "sha256": "0781ec11fe905cfb34c09b50c8c2fb74832e5697e44f959db21e36faf3b9a52d",
+      "alpha_range": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        105,
+        55,
+        1234,
+        1230
+      ],
+      "content_bbox_alpha8": [
+        512,
+        170,
+        729,
+        1016
+      ],
+      "suggested_display_anchor_normalized": [
+        0.494817,
+        0.810207
+      ],
+      "anchor_note": "Provisional display anchor only, not runtime grid center, collision, footprint or Y-sort pivot.",
+      "external_shadow": "not delivered separately; retain intrinsic object shading only",
+      "foundation": "common square foundation at matching level",
+      "placement_scale_relative_to_previous_concept": 1.0,
+      "figma_preview": {
+        "node_id": "1221:63",
+        "frame_node_id": "1229:25",
+        "frame_dimensions_px": [
+          320,
+          280
+        ],
+        "x": 146.29977,
+        "y": 86,
+        "width": 27.40047,
+        "height": 104,
+        "image_scale_mode": "CROP",
+        "image_transform": [
+          [
+            0.17942583560943604,
+            0,
+            0.4051036536693573
+          ],
+          [
+            0,
+            0.6810207366943359,
+            0.13237640261650085
+          ]
+        ],
+        "display_px_per_cropped_source_px": 0.12177986
+      },
+      "current_composition_url": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=1165-10",
+      "current_structure_node_id": "1227:53",
+      "source_note": "Original round-ground artwork is preserved in the archive. Current board composes this generated structure candidate with the approved square foundation."
+    },
+    {
+      "file": "training/training-l2-structure.png",
+      "kind": "training",
+      "level": 2,
+      "part": "structure",
+      "status": "review_candidate_not_pixel_exact",
+      "source_url": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=1227-13",
+      "dimensions_px": [
+        1254,
+        1254
+      ],
+      "mode": "RGBA",
+      "bytes": 1427753,
+      "sha256": "1baf11f5a04cceec16ddfad00c7134a62a58a5e25fb6a7c09f28dd9b1d1115c0",
+      "alpha_range": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        0,
+        21,
+        1232,
+        1254
+      ],
+      "content_bbox_alpha8": [
+        132,
+        40,
+        1132,
+        1225
+      ],
+      "suggested_display_anchor_normalized": [
+        0.503987,
+        0.976874
+      ],
+      "anchor_note": "Provisional display anchor only, not runtime grid center, collision, footprint or Y-sort pivot.",
+      "external_shadow": "not delivered separately; retain intrinsic object shading only",
+      "foundation": "common square foundation at matching level",
+      "placement_scale_relative_to_previous_concept": 0.8,
+      "figma_preview": {
+        "node_id": "1221:66",
+        "frame_node_id": "1229:26",
+        "frame_dimensions_px": [
+          320,
+          280
+        ],
+        "x": 124.17502,
+        "y": 105.2,
+        "width": 71.64996,
+        "height": 84.8,
+        "image_scale_mode": "CROP",
+        "image_transform": [
+          [
+            0.8038277626037598,
+            0,
+            0.10207336395978928
+          ],
+          [
+            0,
+            0.9513556361198425,
+            0.028708133846521378
+          ]
+        ],
+        "display_px_per_cropped_source_px": 0.07108131
+      },
+      "current_composition_url": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=1165-10",
+      "current_structure_node_id": "1227:55",
+      "source_note": "Original round-ground artwork is preserved in the archive. Current board composes this generated structure candidate with the approved square foundation."
+    },
+    {
+      "file": "training/training-l3-structure.png",
+      "kind": "training",
+      "level": 3,
+      "part": "structure",
+      "status": "review_candidate_not_pixel_exact",
+      "source_url": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=1227-13",
+      "dimensions_px": [
+        1774,
+        887
+      ],
+      "mode": "RGBA",
+      "bytes": 551696,
+      "sha256": "0c0433f074845ebac85c6b31203be6a4edbc0578ca75fd0d7068ccf5f0fb588d",
+      "alpha_range": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        47,
+        33,
+        1693,
+        823
+      ],
+      "content_bbox_alpha8": [
+        277,
+        72,
+        1471,
+        811
+      ],
+      "suggested_display_anchor_normalized": [
+        0.492672,
+        0.914318
+      ],
+      "anchor_note": "Provisional display anchor only, not runtime grid center, collision, footprint or Y-sort pivot.",
+      "external_shadow": "not delivered separately; retain intrinsic object shading only",
+      "foundation": "common square foundation at matching level",
+      "placement_scale_relative_to_previous_concept": 1.0,
+      "figma_preview": {
+        "node_id": "1221:69",
+        "frame_node_id": "1229:27",
+        "frame_dimensions_px": [
+          320,
+          280
+        ],
+        "x": 85.98125,
+        "y": 98,
+        "width": 148.03749,
+        "height": 92,
+        "image_scale_mode": "CROP",
+        "image_transform": [
+          [
+            0.677564799785614,
+            0,
+            0.1538895219564438
+          ],
+          [
+            0,
+            0.8421645760536194,
+            0.07666290551424026
+          ]
+        ],
+        "display_px_per_cropped_source_px": 0.12315931
+      },
+      "current_composition_url": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=1165-10",
+      "current_structure_node_id": "1227:57",
+      "source_note": "Original round-ground artwork is preserved in the archive. Current board composes this generated structure candidate with the approved square foundation."
+    },
+    {
+      "file": "training/training-l4-structure.png",
+      "kind": "training",
+      "level": 4,
+      "part": "structure",
+      "status": "review_candidate_not_pixel_exact",
+      "source_url": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=1227-13",
+      "dimensions_px": [
+        1254,
+        1254
+      ],
+      "mode": "RGBA",
+      "bytes": 1261386,
+      "sha256": "d70b0eb1f13cd77bd6cf2034e3792c72ca2568c15acc2fe3c9d8a1db991d45e6",
+      "alpha_range": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        0,
+        21,
+        1244,
+        1254
+      ],
+      "content_bbox_alpha8": [
+        51,
+        201,
+        1211,
+        1049
+      ],
+      "suggested_display_anchor_normalized": [
+        0.50319,
+        0.836523
+      ],
+      "anchor_note": "Provisional display anchor only, not runtime grid center, collision, footprint or Y-sort pivot.",
+      "external_shadow": "not delivered separately; retain intrinsic object shading only",
+      "foundation": "common square foundation at matching level",
+      "placement_scale_relative_to_previous_concept": 1.0,
+      "figma_preview": {
+        "node_id": "1221:72",
+        "frame_node_id": "1229:28",
+        "frame_dimensions_px": [
+          320,
+          280
+        ],
+        "x": 78.13084,
+        "y": 70,
+        "width": 163.73831,
+        "height": 120,
+        "image_scale_mode": "CROP",
+        "image_transform": [
+          [
+            0.9314194321632385,
+            0,
+            0.03748006373643875
+          ],
+          [
+            0,
+            0.6826156377792358,
+            0.15709729492664337
+          ]
+        ],
+        "display_px_per_cropped_source_px": 0.14018691
+      },
+      "current_composition_url": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=1165-10",
+      "current_structure_node_id": "1227:59",
+      "source_note": "Original round-ground artwork is preserved in the archive. Current board composes this generated structure candidate with the approved square foundation."
+    },
+    {
+      "file": "shrine/shrine-l1.png",
+      "kind": "shrine",
+      "level": 1,
+      "part": "structure",
+      "status": "review_candidate_not_pixel_exact",
+      "source_url": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=1165-43",
+      "dimensions_px": [
+        1254,
+        1254
+      ],
+      "mode": "RGBA",
+      "bytes": 1490527,
+      "sha256": "7fc3fb2663d3a0c69292f193941a563052df8a92a5c7a356f0673cc457aa9bc8",
+      "alpha_range": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        0,
+        59,
+        1226,
+        1228
+      ],
+      "content_bbox_alpha8": [
+        118,
+        70,
+        1146,
+        1225
+      ],
+      "suggested_display_anchor_normalized": [
+        0.503987,
+        0.976874
+      ],
+      "anchor_note": "Provisional display anchor only, not runtime grid center, collision, footprint or Y-sort pivot.",
+      "external_shadow": "not delivered separately; retain intrinsic object shading only",
+      "figma_preview": {
+        "node_id": "1221:91",
+        "frame_node_id": "1232:13",
+        "frame_dimensions_px": [
+          320,
+          280
+        ],
+        "x": 86.06363,
+        "y": 98,
+        "width": 147.87274,
+        "height": 166,
+        "image_scale_mode": "CROP",
+        "image_transform": [
+          [
+            0.8261563181877136,
+            0,
+            0.09090909361839294
+          ],
+          [
+            0,
+            0.9274322390556335,
+            0.05263157933950424
+          ]
+        ],
+        "display_px_per_cropped_source_px": 0.1427343
+      }
+    },
+    {
+      "file": "shrine/shrine-l2.png",
+      "kind": "shrine",
+      "level": 2,
+      "part": "structure",
+      "status": "review_candidate_not_pixel_exact",
+      "source_url": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=1165-48",
+      "dimensions_px": [
+        1254,
+        1254
+      ],
+      "mode": "RGBA",
+      "bytes": 1633238,
+      "sha256": "6c071bf3e03987bf8776223a4183de56724a02f1f512948be2a087146d176471",
+      "alpha_range": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        2,
+        64,
+        1234,
+        1230
+      ],
+      "content_bbox_alpha8": [
+        97,
+        68,
+        1128,
+        1207
+      ],
+      "suggested_display_anchor_normalized": [
+        0.488437,
+        0.96252
+      ],
+      "anchor_note": "Provisional display anchor only, not runtime grid center, collision, footprint or Y-sort pivot.",
+      "external_shadow": "not delivered separately; retain intrinsic object shading only",
+      "figma_preview": {
+        "node_id": "1221:94",
+        "frame_node_id": "1232:14",
+        "frame_dimensions_px": [
+          320,
+          280
+        ],
+        "x": 76.6626,
+        "y": 80,
+        "width": 166.6748,
+        "height": 184,
+        "image_scale_mode": "CROP",
+        "image_transform": [
+          [
+            0.8285486698150635,
+            0,
+            0.07416267693042755
+          ],
+          [
+            0,
+            0.9146730303764343,
+            0.05103668197989464
+          ]
+        ],
+        "display_px_per_cropped_source_px": 0.16041849
+      }
+    },
+    {
+      "file": "shrine/shrine-l3.png",
+      "kind": "shrine",
+      "level": 3,
+      "part": "structure",
+      "status": "review_candidate_not_pixel_exact",
+      "source_url": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=1165-58",
+      "dimensions_px": [
+        1254,
+        1254
+      ],
+      "mode": "RGBA",
+      "bytes": 1872478,
+      "sha256": "ae5c00dca6abf398541f4194764cb0888b5f7e2eee8412dd411fec81d077705c",
+      "alpha_range": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        0,
+        21,
+        1238,
+        1254
+      ],
+      "content_bbox_alpha8": [
+        41,
+        103,
+        1205,
+        1143
+      ],
+      "suggested_display_anchor_normalized": [
+        0.49681,
+        0.911483
+      ],
+      "anchor_note": "Provisional display anchor only, not runtime grid center, collision, footprint or Y-sort pivot.",
+      "external_shadow": "not delivered separately; retain intrinsic object shading only",
+      "figma_preview": {
+        "node_id": "1221:97",
+        "frame_node_id": "1232:15",
+        "frame_dimensions_px": [
+          320,
+          280
+        ],
+        "x": 47.04961,
+        "y": 62,
+        "width": 225.90077,
+        "height": 202,
+        "image_scale_mode": "CROP",
+        "image_transform": [
+          [
+            0.9346092343330383,
+            0,
+            0.02950558252632618
+          ],
+          [
+            0,
+            0.8357256650924683,
+            0.07894736528396606
+          ]
+        ],
+        "display_px_per_cropped_source_px": 0.19274809
+      }
+    },
+    {
+      "file": "shrine/shrine-l4.png",
+      "kind": "shrine",
+      "level": 4,
+      "part": "structure",
+      "status": "review_candidate_not_pixel_exact",
+      "source_url": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=1191-71",
+      "dimensions_px": [
+        1086,
+        1448
+      ],
+      "mode": "RGBA",
+      "bytes": 1773527,
+      "sha256": "eaf7ed7a49d8c11a1ec6d7d00783ef0d2e9d6bdb1b3e6174dc61e887a86d7126",
+      "alpha_range": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        23,
+        25,
+        1070,
+        1448
+      ],
+      "content_bbox_alpha8": [
+        35,
+        156,
+        1063,
+        1344
+      ],
+      "suggested_display_anchor_normalized": [
+        0.505525,
+        0.928177
+      ],
+      "anchor_note": "Provisional display anchor only, not runtime grid center, collision, footprint or Y-sort pivot.",
+      "external_shadow": "not delivered separately; retain intrinsic object shading only",
+      "figma_preview": {
+        "node_id": "1221:100",
+        "frame_node_id": "1232:16",
+        "frame_dimensions_px": [
+          320,
+          280
+        ],
+        "x": 63.8495,
+        "y": 42,
+        "width": 192.30101,
+        "height": 222,
+        "image_scale_mode": "CROP",
+        "image_transform": [
+          [
+            0.9539594650268555,
+            0,
+            0.028545118868350983
+          ],
+          [
+            0,
+            0.8259668350219727,
+            0.10497237741947174
+          ]
+        ],
+        "display_px_per_cropped_source_px": 0.18561873
+      }
+    },
+    {
+      "file": "hearth/hearth-l1.png",
+      "kind": "hearth",
+      "level": 1,
+      "part": "structure",
+      "status": "review_candidate_not_pixel_exact",
+      "source_url": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=1165-69",
+      "dimensions_px": [
+        1254,
+        1254
+      ],
+      "mode": "RGBA",
+      "bytes": 876232,
+      "sha256": "de03113057a68e289621a538724964add2c3f6badb5a2af73757583561e4d3c7",
+      "alpha_range": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        0,
+        21,
+        1254,
+        1254
+      ],
+      "content_bbox_alpha8": [
+        64,
+        224,
+        1185,
+        1018
+      ],
+      "suggested_display_anchor_normalized": [
+        0.498006,
+        0.811802
+      ],
+      "anchor_note": "Provisional display anchor only, not runtime grid center, collision, footprint or Y-sort pivot.",
+      "external_shadow": "not delivered separately; retain intrinsic object shading only",
+      "figma_preview": {
+        "node_id": "1221:106",
+        "frame_node_id": "1230:13",
+        "frame_dimensions_px": [
+          320,
+          280
+        ],
+        "x": 79.35815,
+        "y": 82.715,
+        "width": 161.28371,
+        "height": 114.57,
+        "image_scale_mode": "CROP",
+        "image_transform": [
+          [
+            0.90031898021698,
+            0,
+            0.04784689098596573
+          ],
+          [
+            0,
+            0.639553427696228,
+            0.17543859779834747
+          ]
+        ],
+        "display_px_per_cropped_source_px": 0.14285536
+      }
+    },
+    {
+      "file": "hearth/hearth-l2.png",
+      "kind": "hearth",
+      "level": 2,
+      "part": "structure",
+      "status": "review_candidate_not_pixel_exact",
+      "source_url": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=1165-74",
+      "dimensions_px": [
+        1254,
+        1254
+      ],
+      "mode": "RGBA",
+      "bytes": 1703155,
+      "sha256": "dbb43d9ea377f2cd361293ad5f133b2a63323e92ee207cd0acfefd70485194c8",
+      "alpha_range": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        0,
+        27,
+        1253,
+        1254
+      ],
+      "content_bbox_alpha8": [
+        15,
+        245,
+        1242,
+        984
+      ],
+      "suggested_display_anchor_normalized": [
+        0.501196,
+        0.784689
+      ],
+      "anchor_note": "Provisional display anchor only, not runtime grid center, collision, footprint or Y-sort pivot.",
+      "external_shadow": "not delivered separately; retain intrinsic object shading only",
+      "figma_preview": {
+        "node_id": "1221:109",
+        "frame_node_id": "1230:14",
+        "frame_dimensions_px": [
+          320,
+          280
+        ],
+        "x": 44.7912,
+        "y": 70.315,
+        "width": 230.4176,
+        "height": 139.37,
+        "image_scale_mode": "CROP",
+        "image_transform": [
+          [
+            0.9848484992980957,
+            0,
+            0.008771929889917374
+          ],
+          [
+            0,
+            0.5956937670707703,
+            0.19218501448631287
+          ]
+        ],
+        "display_px_per_cropped_source_px": 0.18657296
+      }
+    },
+    {
+      "file": "hearth/hearth-l3.png",
+      "kind": "hearth",
+      "level": 3,
+      "part": "structure",
+      "status": "review_candidate_not_pixel_exact",
+      "source_url": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=1165-79",
+      "dimensions_px": [
+        1254,
+        1254
+      ],
+      "mode": "RGBA",
+      "bytes": 2009810,
+      "sha256": "7711ca4a8ef79fb74bf4809f4a65f45a8e6be6b8cc2e98915880b7de957a83aa",
+      "alpha_range": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        8,
+        31,
+        1254,
+        1254
+      ],
+      "content_bbox_alpha8": [
+        10,
+        88,
+        1245,
+        1113
+      ],
+      "suggested_display_anchor_normalized": [
+        0.500399,
+        0.88756
+      ],
+      "anchor_note": "Provisional display anchor only, not runtime grid center, collision, footprint or Y-sort pivot.",
+      "external_shadow": "not delivered separately; retain intrinsic object shading only",
+      "figma_preview": {
+        "node_id": "1221:112",
+        "frame_node_id": "1230:15",
+        "frame_dimensions_px": [
+          320,
+          280
+        ],
+        "x": 50.25982,
+        "y": 48.8,
+        "width": 219.48036,
+        "height": 182.39999,
+        "image_scale_mode": "CROP",
+        "image_transform": [
+          [
+            0.9912280440330505,
+            0,
+            0.0047846888191998005
+          ],
+          [
+            0,
+            0.8237639665603638,
+            0.06698564440011978
+          ]
+        ],
+        "display_px_per_cropped_source_px": 0.17657308
+      }
+    },
+    {
+      "file": "hearth/hearth-l4.png",
+      "kind": "hearth",
+      "level": 4,
+      "part": "structure",
+      "status": "review_candidate_not_pixel_exact",
+      "source_url": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=1165-84",
+      "dimensions_px": [
+        1254,
+        1254
+      ],
+      "mode": "RGBA",
+      "bytes": 1763344,
+      "sha256": "4808ef2019596d585cdf4faed5a40973ad53be38c12a8bfe4c27b3937450938d",
+      "alpha_range": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        44,
+        21,
+        1231,
+        1230
+      ],
+      "content_bbox_alpha8": [
+        47,
+        127,
+        1228,
+        1054
+      ],
+      "suggested_display_anchor_normalized": [
+        0.508373,
+        0.84051
+      ],
+      "anchor_note": "Provisional display anchor only, not runtime grid center, collision, footprint or Y-sort pivot.",
+      "external_shadow": "not delivered separately; retain intrinsic object shading only",
+      "figma_preview": {
+        "node_id": "1221:115",
+        "frame_node_id": "1230:16",
+        "frame_dimensions_px": [
+          320,
+          280
+        ],
+        "x": 42.81674,
+        "y": 47.85,
+        "width": 234.36652,
+        "height": 184.3,
+        "image_scale_mode": "CROP",
+        "image_transform": [
+          [
+            0.9481658935546875,
+            0,
+            0.03429027274250984
+          ],
+          [
+            0,
+            0.7456140518188477,
+            0.09808612614870071
+          ]
+        ],
+        "display_px_per_cropped_source_px": 0.1971123
+      }
+    },
+    {
+      "file": "roads/road-source-current-reference.png",
+      "kind": "roads",
+      "level": null,
+      "part": "structure",
+      "status": "existing_reference_needs_edge_and_connection_review",
+      "source_url": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=826-107",
+      "dimensions_px": [
+        1536,
+        1024
+      ],
+      "mode": "RGBA",
+      "bytes": 1120864,
+      "sha256": "3beadf926ca94db77cbdb57944d02a94a4f0a17408f72488573d5762a42eda74",
+      "alpha_range": [
+        0,
+        254
+      ],
+      "alpha_bbox": [
+        97,
+        53,
+        1535,
+        982
+      ],
+      "content_bbox_alpha8": [
+        185,
+        155,
+        1431,
+        918
+      ],
+      "suggested_display_anchor_normalized": [
+        0.526042,
+        0.896484
+      ],
+      "anchor_note": "Provisional display anchor only, not runtime grid center, collision, footprint or Y-sort pivot.",
+      "external_shadow": "not delivered separately; retain intrinsic object shading only"
+    }
+  ],
+  "training_latest_direction": "Separate circular training grounds withdrawn. Use the approved common square foundations. L2 wooden target placement scale is 0.8 relative to preceding concept; PNG master resolution retained.",
+  "display_rules": {
+    "shrine": {
+      "stage_frame_px": [
+        320,
+        280
+      ],
+      "height_px_by_level": [
+        166,
+        184,
+        202,
+        222
+      ],
+      "center_x": 160,
+      "bottom_y": 264,
+      "source_art_bounds_include_ground": true
+    },
+    "hearth": {
+      "stage_frame_px": [
+        320,
+        280
+      ],
+      "source_bounds_wh_px": [
+        [
+          196.65,
+          114.57
+        ],
+        [
+          235.13,
+          139.37
+        ],
+        [
+          254.6,
+          182.4
+        ],
+        [
+          254.6,
+          184.3
+        ]
+      ],
+      "center": [
+        160,
+        140
+      ],
+      "source_L1_L2_adjustment": 0.9,
+      "preserve_sprite_aspect_ratio": true
+    },
+    "training": {
+      "stage_frame_px": [
+        320,
+        280
+      ],
+      "structure_bottom_y": 190,
+      "L2_placement_scale": 0.8,
+      "ground": "Approved shared square foundation; no dedicated circular training ground included."
+    }
+  },
+  "asset_root": "assets/buildings/separated-v003",
+  "documentation_root": "docs/art/building-assets-v003",
+  "qa_note": "Local light/dark/green compositing QA completed; QA contact sheets are not shipped in the assets directory."
+}

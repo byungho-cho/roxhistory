@@ -10,6 +10,9 @@ var clock := 0.0
 var gathering:=false
 var upgrading:=false
 var building_key:="chief"
+var construction_uid:=""
+var cancel_button:DemoButton
+var cancel_holder:Control
 
 func _init(owner_app: Node, for_gathering:bool=false,for_upgrade:bool=false) -> void:
 	app = owner_app;gathering=for_gathering;upgrading=for_upgrade
@@ -60,21 +63,27 @@ func _ready() -> void:
 	hammer.pivot_offset = Vector2(25,65)
 	add_child(hammer)
 	for child in get_children(): child.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	if upgrading or not construction_uid.is_empty():
+		cancel_holder=Control.new();cancel_holder.mouse_filter=Control.MOUSE_FILTER_IGNORE;add_child(cancel_holder)
+		cancel_button=app.button(cancel_holder,"",request_cancel);cancel_button.name="CancelConstruction"
+		IntegratedMenuArt.install(cancel_button,"close",Vector2(44,44))
+		cancel_button.tooltip_text="공사 취소 · 재료 100% 반환"
 	visible = false
 
 func _process(delta: float) -> void:
 	visible = app.task == ("gather" if gathering else "build") and is_instance_valid(app.world) and not app.modal and not app.world_map_open and app.application_active
 	if upgrading:visible=app.screen=="play" and not upgrade_job().is_empty() and is_instance_valid(app.world) and not app.modal and not app.world_map_open and app.application_active
+	if not construction_uid.is_empty():visible=app.screen=="play" and not durable_job().is_empty() and is_instance_valid(app.world) and not app.modal and not app.world_map_open and app.application_active
 	if gathering:visible=visible and not app.gather_approach and app.world.art_nodes.has(app.task_target)
 	if gathering and visible:visible=app.world.art_nodes[app.task_target].visible
 	if not visible: clock = 0; return
 	clock += delta
 	var remaining:float=app.task_remaining
 	var total:float=app.task_total
-	if upgrading:
-		var job:=upgrade_job()
+	if upgrading or not construction_uid.is_empty():
+		var job:=durable_job()
 		remaining=maxf(0,float(job.finishes_at)-Time.get_unix_time_from_system())
-		total=job.finishes_at-job.started_at
+		total=float(job.get("clock_duration",job.finishes_at-job.started_at))
 	var ratio := clampf(1.0-remaining/maxf(0.001,total),0,1)
 	fill.size.x = maxf(0.01,320*ratio)
 	fill.material.set_shader_parameter("dimensions",fill.size)
@@ -88,6 +97,10 @@ func _process(delta: float) -> void:
 	var world_zoom:float=app.world.get_global_transform_with_canvas().get_scale().x
 	scale=Vector2.ONE*clampf(world_zoom*.85,.34,.68)
 	position = point-Vector2(size.x*scale.x*.5,150*world_zoom+size.y*scale.y)
+	if not construction_uid.is_empty():
+		var job:=durable_job()
+		var at:Vector2=app.world.get_global_transform_with_canvas()*DemoConfig.point(job.get("position",[0,0]))
+		position=at-Vector2(size.x*scale.x*.5,170*world_zoom+size.y*scale.y)
 	if upgrading:
 		var chief:Sprite2D=upgrade_sprite()
 		if chief==null:hide();return
@@ -98,17 +111,20 @@ func _process(delta: float) -> void:
 		var image:Sprite2D=app.world.art_nodes[app.task_target].get_child(0)
 		var bounds:Rect2=image.get_global_transform_with_canvas()*image.get_rect()
 		position=Vector2(bounds.get_center().x-size.x*scale.x*.5,bounds.position.y-size.y*scale.y-5)
-	position.x = clampf(position.x,app.safe.x,maxf(app.safe.x,app.w-app.safe.x-size.x*scale.x))
+	position.x = clampf(position.x,app.safe.x,maxf(app.safe.x,app.w-app.safe.x-size.x*scale.x-(50 if is_instance_valid(cancel_button) else 0)))
 	position.y = clampf(position.y,app.safe.y+90,maxf(app.safe.y+90,app.h-app.safe.y-100-size.y*scale.y))
 
+	if is_instance_valid(cancel_button):
+		cancel_holder.scale=Vector2.ONE/scale
+		cancel_holder.position=Vector2(size.x+4/scale.x,36-22/scale.y)
+
+func request_cancel()->void:
+	if upgrading:app.building_workflow.request_cancel_upgrade(building_key)
+	elif not construction_uid.is_empty():app.building_workflow.request_cancel_construction(construction_uid)
+func durable_job()->Dictionary:
+	return app.building_workflow.construction_job(construction_uid) if not construction_uid.is_empty() else upgrade_job()
 func upgrade_job()->Dictionary:
 	if building_key=="chief":return app.model.state.get("chief_upgrade",{})
-	var found:=OwnedBuildingUpgrades.lookup(app.model,building_key)
-	return found.get("data",{}).get("upgrade",{})
+	return app.model.lookup_building(building_key).get("data",{}).get("upgrade",{})
 func upgrade_sprite()->Sprite2D:
-	if building_key=="chief":return app.world.get_node("ExistingHut").sprite
-	var found:=OwnedBuildingUpgrades.lookup(app.model,building_key)
-	if found.is_empty():return null
-	if found.collection=="homes":return app.world.homes[found.index].sprite
-	var node=app.world.get_node_or_null("Outpost_"+str(found.data.uid))
-	return node.get_child(0) if node else null
+	return app.world.building_sprite(building_key)

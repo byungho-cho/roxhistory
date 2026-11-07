@@ -18,11 +18,15 @@ var feedback: WorldFeedback
 var objectives: WorldObjectives
 var animals: Array[WorldAnimal] = []
 var residents:Array[TrialResident]=[]
+var visitors:Array[TrialResident]=[]
+var resource_tweens:Dictionary={}
+var resources_initialized:=false
 var reward_pouch:AtlasTexture
 var reward_bubble:StyleBoxFlat
 var reward_markers:Node2D
 var reward_roof_bounds:=Rect2()
-var boundary_level:=0
+var boundary_level:=-1
+var boundary_debug:=false
 var boundary_root:Node2D
 var boundary_pulse:Tween
 # Water visuals and physics share the shoreline traced on terrain.png.
@@ -108,10 +112,6 @@ func _ready() -> void:
 		animal.heading = entry[4]
 		add_child(animal)
 		animals.append(animal)
-	for entry in [["female",1610,890],["sturdy_male",1570,920]]:
-		var resident:=TrialResident.new();resident.variant=entry[0];resident.resident_id="resident-"+str(residents.size());resident.name="TrialResident_"+str(entry[0]);resident.position=Vector2(entry[1],entry[2]);add_child(resident);residents.append(resident)
-		resident.visible=model.state.get("family_joined",false) or model.family_available()
-		resident.set_physics_process(model.state.get("family_joined",false))
 	objectives=WorldObjectives.new(self);add_child(objectives)
 	feedback = WorldFeedback.new(self)
 	add_child(feedback)
@@ -202,22 +202,13 @@ func polygon_body(points: PackedVector2Array) -> void:
 
 func refresh() -> void:
 	refresh_boundary()
-	for id in art_nodes:
-		art_nodes[id].visible=false
-		art_nodes[id].get_node("ResourceCollision").get_child(0).set_deferred("disabled",true)
-	for n in model.nodes():
-		if not art_nodes.has(n.id):add_resource_art(n)
-		art_nodes[n.id].position=DemoConfig.point(n.position)
-		art_nodes[n.id].visible=not exhausted(n)
-		art_nodes[n.id].modulate=Color.WHITE
-		art_nodes[n.id].get_node("ResourceCollision").get_child(0).set_deferred("disabled",exhausted(n))
-		if exhausted(n) and selected==str(n.id):selected=""
-		resource_labels[n.id].update_amount(float(n.charges)-float(model.state.depleted.get(n.id,0)),float(n.charges))
-	for resident in residents:
-		resident.visible=model.state.get("family_joined",false) or model.family_available()
-		resident.collision_layer=1 if resident.visible else 0
-		resident.set_physics_process(model.state.get("family_joined",false))
+	refresh_chief()
+	refresh_resources()
+	refresh_residents()
 	var saved_homes:=model.homes()
+	while homes.size()<saved_homes.size():
+		var hut:=prop("hut",Vector2.ZERO,230,Vector2.ZERO,"QuestHome"+str(homes.size()))
+		homes.append(hut)
 	for i in homes.size():
 		homes[i].visible=i<saved_homes.size()
 		if i>=saved_homes.size():
@@ -227,12 +218,8 @@ func refresh() -> void:
 		homes[i].position=model.home_position(i)
 		homes[i].set_hut_style(int(saved_homes[i].style))
 		var level:=int(saved_homes[i].get("level",1))
-		if level>1:
-			var upgraded:=BuildingWorkflow.approved_texture("BLD-CHIEF-L%d"%level)
-			if upgraded!=null:
-				var dimensions:=upgraded.get_size()*homes[i].configured_width*EnvironmentProp.BUILDING_IMAGE_SCALE/upgraded.get_width()
-				homes[i].sprite.texture=upgraded;homes[i].sprite.scale=(dimensions-Vector2(4,4))/upgraded.get_size()
-				homes[i].sprite.position.y=-dimensions.y*.30+3.0-homes[i].depth_visual.position.y
+		BuildingVisuals.apply(homes[i].sprite,"home",level,230)
+		homes[i].sprite.position.y-=homes[i].depth_visual.position.y
 		if not has_node("HomeCollision"+str(i)):
 			var body := StaticBody2D.new()
 			body.name = "HomeCollision"+str(i)
@@ -245,6 +232,7 @@ func refresh() -> void:
 			add_child(body)
 		get_node("HomeCollision"+str(i)).position=homes[i].position
 	refresh_outposts()
+	refresh_facilities()
 	if selected_site>=0 and not model.site_free(selected_site):selected_site=-1
 	if selected_site>=0:site.position=DemoConfig.BUILD_SITES[selected_site]
 	elif model.built_count()<DemoConfig.MAX_RESIDENT_HOMES:
@@ -372,25 +360,98 @@ func gather_stand(target: Vector2, resource_kind: String="wood") -> Vector2:
 	return Vector2.INF
 
 func refresh_outposts()->void:
+	var wanted:Array[String]=[]
 	for entry in model.outposts():
 		var node_name:String="Outpost_"+str(entry.uid)
+		wanted.append(node_name)
 		var texture:=BuildingWorkflow.approved_texture("BLD-OUTPOST-L%d"%int(entry.get("level",1)))
-		if has_node(node_name):
-			if texture!=null:
-				var existing:Sprite2D=get_node(node_name).get_child(0);BuildingWorkflow.apply_outpost_sprite(existing,int(entry.get("level",1)))
-			continue
 		if texture==null:continue
-		var body:=StaticBody2D.new();body.name=node_name;body.position=DemoConfig.BUILD_SITES[int(entry.site)];body.visibility_layer=2
-		var image:=Sprite2D.new();BuildingWorkflow.apply_outpost_sprite(image,int(entry.get("level",1)));image.visibility_layer=2
-		image.texture_filter=CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
-		body.add_child(image)
-		var collision:=CollisionShape2D.new();var shape:=ConvexPolygonShape2D.new();shape.points=EnvironmentProp.hut_footprint(230);collision.shape=shape;body.add_child(collision)
-		add_child(body)
+		var body:=get_node_or_null(node_name) as StaticBody2D
+		if body==null:
+			body=StaticBody2D.new();body.name=node_name;body.visibility_layer=2
+			var image:=Sprite2D.new();image.visibility_layer=2
+			image.texture_filter=CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS;body.add_child(image)
+			add_building_collision(body,230)
+			add_child(body)
+		body.position=model.building_position("outpost:"+str(entry.uid))
+		BuildingVisuals.apply(body.get_child(0),"outpost",int(entry.get("level",1)),230)
+	remove_stale_buildings("Outpost_",wanted)
+
+func refresh_facilities()->void:
+	var wanted:Array[String]=[]
+	for entry in model.facilities():
+		var node_name:String="Facility_"+str(entry.uid)
+		wanted.append(node_name)
+		var kind:=str(entry.kind)
+		var asset:="BLD-%s-L%d"%[kind.to_upper(),int(entry.get("level",1))]
+		var texture:=BuildingWorkflow.approved_texture(asset)
+		if texture==null:continue
+		var body:=get_node_or_null(node_name) as StaticBody2D
+		if body==null:
+			body=StaticBody2D.new();body.name=node_name;body.visibility_layer=2
+			var image:=Sprite2D.new();image.visibility_layer=2
+			image.texture_filter=CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS;body.add_child(image)
+			add_building_collision(body,230)
+			add_child(body)
+		body.position=model.building_position(kind+":"+str(entry.uid))
+		var sprite:=body.get_child(0) as Sprite2D
+		BuildingVisuals.apply(sprite,kind,int(entry.get("level",1)),230)
+	remove_stale_buildings("Facility_",wanted)
+
+func add_building_collision(body:StaticBody2D,width:float)->void:
+	var collision:=CollisionShape2D.new();var shape:=ConvexPolygonShape2D.new()
+	shape.points=EnvironmentProp.hut_footprint(width);collision.shape=shape;body.add_child(collision)
+
+func remove_stale_buildings(prefix:String,wanted:Array[String])->void:
+	for child in get_children():
+		if str(child.name).begins_with(prefix) and not str(child.name) in wanted:
+			remove_child(child);child.queue_free()
+
+func building_sprite(key:String)->Sprite2D:
+	if key=="chief":return get_node("ExistingHut").sprite if model.chief_level()>0 else null
+	var found:=model.lookup_building(key)
+	if found.is_empty():return null
+	if found.collection=="homes":
+		var index:=int(found.index)
+		return homes[index].sprite if index>=0 and index<homes.size() else null
+	var prefix:="Outpost_" if found.collection=="outposts" else "Facility_"
+	var body:=get_node_or_null(prefix+str(found.data.uid))
+	return body.get_child(0) as Sprite2D if body!=null else null
+
+func completed_building_positions()->Array:
+	var result:Array=[]
+	if model.chief_level()>0:result.append(model.building_position("chief"))
+	for i in model.built_count():result.append(model.home_position(i))
+	for i in model.outposts().size():result.append(model.outpost_position(i))
+	for entry in model.facilities():result.append(model.building_position(str(entry.kind)+":"+str(entry.uid)))
+	return result
+
+func placement_requirement(kind:String,at:Vector2,ignore_key:String="")->String:
+	var reason:=model.placement_requirement(kind,at,ignore_key)
+	if not reason.is_empty():return reason
+	if not at.is_finite():return "마을 안의 위치를 선택해 주세요"
+	var width:=340.0 if kind=="chief" else 230.0
+	var points:=EnvironmentProp.hut_footprint(width)
+	for point in points:
+		if not playable_rect().grow(-24).has_point(at+point):return "마을 경계 안에 지어 주세요"
+	var query:=PhysicsShapeQueryParameters2D.new();var shape:=ConvexPolygonShape2D.new()
+	shape.points=points;query.shape=shape;query.transform=Transform2D(0,at);query.margin=12
+	var excluded:Array[RID]=[]
+	if not ignore_key.is_empty():
+		var found:=model.lookup_building(ignore_key)
+		if not found.is_empty():
+			var body:CollisionObject2D
+			if ignore_key=="chief":body=get_node("ExistingHut/Footprint")
+			elif found.collection=="homes":body=get_node_or_null("HomeCollision"+str(found.index))
+			else:body=get_node_or_null(("Outpost_" if found.collection=="outposts" else "Facility_")+str(found.data.uid))
+			if body!=null:excluded.append(body.get_rid())
+	query.exclude=excluded
+	if not get_world_2d().direct_space_state.intersect_shape(query,1).is_empty():return "건물·자원·주민과 겹치지 않는 곳을 선택해 주세요"
+	return ""
 
 func refresh_boundary()->void:
-	if boundary_level==model.chief_level():return
-	var expanded:=boundary_level>0 and model.chief_level()>boundary_level
-	boundary_level=model.chief_level()
+	if boundary_level==model.chief_level() and boundary_debug==model.debug_show_boundary:return
+	boundary_level=model.chief_level();boundary_debug=model.debug_show_boundary
 	if boundary_pulse!=null:boundary_pulse.kill()
 	for child in boundary_root.get_children():
 		boundary_root.remove_child(child);child.queue_free()
@@ -401,16 +462,105 @@ func refresh_boundary()->void:
 		segment.a=polygon[i];segment.b=polygon[(i+1)%polygon.size()]
 		edge.shape=segment;boundary.add_child(edge);boundary_root.add_child(boundary)
 	var outline:=Line2D.new();outline.name="UnlockedPerimeter";outline.points=polygon;outline.closed=true
-	outline.width=3;outline.default_color=Color(.91,.82,.54,.32);outline.z_index=-14
-	boundary_root.add_child(outline)
-	# Quiet on load. Highlight only a newly unlocked perimeter, without moving
-	# collision edges, taking camera control, or pausing the player's input.
-	if expanded:
-		boundary_pulse=create_tween().set_parallel(true)
-		boundary_pulse.tween_property(outline,"default_color:a",.9,.22).set_trans(Tween.TRANS_SINE)
-		boundary_pulse.tween_property(outline,"width",8.0,.22).set_trans(Tween.TRANS_SINE)
-		boundary_pulse.chain().tween_property(outline,"default_color:a",.32,.85).set_trans(Tween.TRANS_SINE)
-		boundary_pulse.parallel().tween_property(outline,"width",3.0,.85).set_trans(Tween.TRANS_SINE)
+	outline.width=3;outline.default_color=Color("ed514b");outline.z_index=-14
+	outline.visible=boundary_debug;boundary_root.add_child(outline)
 
 func playable_rect()->Rect2:
 	return VillageBounds.rect_for_level(model.chief_level())
+
+func refresh_chief()->void:
+	var chief:=get_node("ExistingHut") as EnvironmentProp
+	var exists:=model.chief_level()>0
+	chief.visible=exists
+	if exists:
+		chief.position=model.building_position("chief")
+		BuildingVisuals.apply(chief.sprite,"chief",model.chief_level(),340)
+		chief.sprite.position.y-=chief.depth_visual.position.y
+	var body:=chief.get_node("Footprint") as StaticBody2D
+	body.collision_layer=1 if exists else 0
+	body.collision_mask=1 if exists else 0
+	body.get_child(0).set_deferred("disabled",not exists)
+
+func refresh_resources()->void:
+	var active:Array[String]=[]
+	var reveal_index:=0
+	for n in model.nodes():
+		active.append(str(n.id))
+		var created:=not art_nodes.has(n.id)
+		if created:add_resource_art(n)
+		var node:=art_nodes[n.id] as Node2D
+		var was_active:=bool(node.get_meta("resource_active",false))
+		var alive:=not exhausted(n)
+		node.position=DemoConfig.point(n.position)
+		node.set_meta("resource_active",alive)
+		# Harvestability and collision change immediately, independent of the fade.
+		var body:=node.get_node("ResourceCollision") as StaticBody2D
+		body.collision_layer=1 if alive else 0
+		body.collision_mask=1 if alive else 0
+		body.get_child(0).set_deferred("disabled",not alive)
+		if alive and (not was_active or created):
+			resource_transition(str(n.id),true,float(reveal_index)*.10 if resources_initialized else 0.0,resources_initialized)
+			reveal_index+=1
+		elif not alive and was_active:resource_transition(str(n.id),false)
+		elif not alive and not was_active and not resource_tweens.has(n.id):node.hide()
+		if not alive and selected==str(n.id):selected=""
+		resource_labels[n.id].update_amount(float(n.charges)-float(model.state.depleted.get(n.id,0)),float(n.charges))
+	for id in art_nodes:
+		if str(id) in active:continue
+		var node:=art_nodes[id] as Node2D
+		node.hide();node.set_meta("resource_active",false)
+		var body:=node.get_node("ResourceCollision") as StaticBody2D
+		body.collision_layer=0;body.collision_mask=0
+		body.get_child(0).set_deferred("disabled",true)
+	resources_initialized=true
+
+func resource_transition(id:String,reveal:bool,delay:float=0.0,animate:bool=true)->void:
+	if resource_tweens.has(id):
+		var old:=resource_tweens[id] as Tween
+		if old!=null:old.kill()
+		resource_tweens.erase(id)
+	var node:=art_nodes[id] as Node2D
+	if not animate:
+		node.visible=reveal;node.modulate=Color.WHITE;return
+	node.show()
+	var tween:=create_tween();resource_tweens[id]=tween
+	if reveal:
+		node.modulate=Color(1,1,1,0)
+		if delay>0:tween.tween_interval(delay)
+		tween.tween_property(node,"modulate:a",1.0,.55).set_trans(Tween.TRANS_SINE)
+	else:
+		tween.tween_property(node,"modulate:a",.22,.12)
+		tween.tween_property(node,"modulate:a",.85,.12)
+		tween.tween_property(node,"modulate:a",.18,.12)
+		tween.tween_property(node,"modulate:a",.7,.12)
+		tween.tween_property(node,"modulate:a",0.0,.32)
+		tween.tween_callback(node.hide)
+	tween.tween_callback(func():resource_tweens.erase(id))
+
+func refresh_residents()->void:
+	var admitted:=model.resident_count()
+	while residents.size()>admitted:
+		var actor:TrialResident=residents.pop_back();remove_child(actor);actor.queue_free()
+	while residents.size()<admitted:
+		var index:=residents.size()
+		var resident:=TrialResident.new();resident.variant="female" if index%2==0 else "sturdy_male"
+		resident.resident_id="resident-%d"%index;resident.name="Resident_%d"%index
+		resident.position=resident_spawn_position(index);add_child(resident);residents.append(resident)
+	var visiting:=model.family_visitor_count() if model.family_available() else 0
+	while visitors.size()>visiting:
+		var visitor:TrialResident=visitors.pop_back();remove_child(visitor);visitor.queue_free()
+	while visitors.size()<visiting:
+		var index:=visitors.size()
+		var visitor:=TrialResident.new();visitor.variant="female" if index%2==0 else "sturdy_male"
+		visitor.resident_id="visitor-%d"%index;visitor.name="Visitor_%d"%index
+		visitor.position=Vector2(1570+index*40,920-index%2*30);add_child(visitor)
+		visitor.collision_layer=0;visitor.collision_mask=0;visitor.set_physics_process(false);visitors.append(visitor)
+
+func resident_spawn_position(index:int)->Vector2:
+	var center:=model.home_position(index%model.built_count()) if model.built_count()>0 else DemoConfig.point(model.state.position)
+	for radius in [100.0,150.0,210.0,280.0]:
+		for step in 16:
+			var at:Vector2=center+Vector2.from_angle((step+index)*TAU/16.0)*radius
+			var pose:=player.transform;pose.origin=at
+			if playable_rect().grow(-32).has_point(at) and not player.test_move(pose,Vector2.ZERO,null,.08,true):return at
+	return DemoConfig.point(model.state.position)

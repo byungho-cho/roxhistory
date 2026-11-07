@@ -1,0 +1,24 @@
+{
+  "status": "approved-final",
+  "approved_on": "2026-11-07",
+  "asset_filename": "population-final.png",
+  "format": "PNG RGBA",
+  "size": [
+    1254,
+    1254
+  ],
+  "alpha": true,
+  "sha256": "2a0f5590445ca57519f1154da991b07b4cdb67ca2f2f9fabe916d55c676b5b8e",
+  "figma_master_id": "1244:59",
+  "figma_icon_url": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=1244-42",
+  "figma_resource_bar_url": "https://www.figma.com/design/zkbflw9fCdAlWbphhw5pSS?node-id=1308-257",
+  "original_component_id_preserved": true,
+  "live_instances_verified": 4,
+  "removed_review_boards": [
+    "1317:131",
+    "1327:184",
+    "1335:164",
+    "1340:6451"
+  ],
+  "game_code_modified": false
+}

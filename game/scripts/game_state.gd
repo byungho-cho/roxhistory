@@ -9,51 +9,54 @@ var store: SaveStore
 var busy := false
 const RESPAWN_MIN_SECONDS := 300.0
 const RESPAWN_MAX_SECONDS := 600.0
-# Runtime-only test-period default: builder count is shown, concurrency is unlimited.
-# Turning this off enforces the planned single-builder rule; never persisted.
-var debug_unlimited_builders := true
+# Test-period default remains unlimited; a chosen single-builder mode survives reload.
+var debug_unlimited_builders:bool:
+	get:return bool(state.get("debug_unlimited_builders",true))
+	set(value):set_debug_unlimited_builders(value)
 var construction_busy := false
-const OUTPOST_WOOD_COST := 15
+var debug_fast_build:bool:
+	get:return bool(state.get("debug_fast_build",false))
+var debug_show_boundary:bool:
+	get:return bool(state.get("debug_show_boundary",false))
+	set(value):set_debug_show_boundary(value)
+const OUTPOST_WOOD_COST := 10
 const OUTPOST_STONE_COST := 10
-const OUTPOST_UNLOCK_LEVEL := 4
+const OUTPOST_UNLOCK_LEVEL := 3
 
 # The chief's existing hut is not part of the resident-home save array.
 func completed_hut_count() -> int:
-	return 0 if state.is_empty() else 1+built_count()
+	return 0 if state.is_empty() else (1 if chief_level()>0 else 0)+built_count()
 
 func outpost_unlocked() -> bool:
 	return building_unlocked("outpost")
 
 func can_build_outpost() -> bool:
-	return not state.is_empty() and outpost_unlocked() and builder_available() and state.wood >= OUTPOST_WOOD_COST and state.stone >= OUTPOST_STONE_COST
+	return can_construct("outpost")
 
 func outpost_requirement() -> String:
-	if not outpost_unlocked():
-		return building_requirement("outpost")
-	if not builder_available():return "건설자 1명이 작업 중이에요"
-	return "나무 15개와 돌 10개가 필요해요"
+	return building_requirement("outpost")
 
 func outposts() -> Array:
 	return state.get("outposts",[]).duplicate(true)
 
 func outpost_position(index:int) -> Vector2:
 	var list:=outposts()
-	return DemoConfig.BUILD_SITES[int(list[index].site)] if index>=0 and index<list.size() else Vector2.INF
+	if index<0 or index>=list.size():return Vector2.INF
+	return entry_position(list[index])
 
 func chief_level() -> int:
-	return int(state.get("chief_level",1))
+	return int(state.get("chief_level",0 if state.get("hq_can_be_absent",false) else 1))
 
 func chief_upgrade_cost() -> Dictionary:
-	var c:=DemoConfig.get_data()
-	return {"wood":int(c.wood_cost),"stone":int(c.stone_cost)}
+	return building_cost("chief",chief_level()+1)
 
 func can_upgrade_chief() -> bool:
-	if state.is_empty() or chief_level()>=4 or state.has("chief_upgrade") or not builder_available():return false
+	if state.is_empty() or chief_level()<1 or chief_level()>=4 or state.has("chief_upgrade") or not builder_available():return false
 	var cost:=chief_upgrade_cost()
 	return state.wood>=cost.wood and state.stone>=cost.stone
 
 func chief_upgrade_duration(target_level:int) -> float:
-	return float(DemoConfig.get_data().build_seconds)*pow(2.0,target_level-1)
+	return BuildingRules.duration(target_level)
 
 func upgrade_chief(now:float=-1.0) -> bool:
 	if busy or not can_upgrade_chief():return false
@@ -61,10 +64,9 @@ func upgrade_chief(now:float=-1.0) -> bool:
 	if not is_finite(now):return false
 	busy=true
 	var next:=state.duplicate(true)
-	var cost:=chief_upgrade_cost()
-	next.wood-=cost.wood;next.stone-=cost.stone
-	var target:=chief_level()+1
-	next.chief_upgrade={"from":chief_level(),"to":target,"started_at":now,"finishes_at":now+chief_upgrade_duration(target),"cost":cost}
+	var job:=BuildingRules.new_job("chief",chief_level(),now,debug_fast_build)
+	next.wood-=job.cost.wood;next.stone-=job.cost.stone
+	next.chief_upgrade=job
 	var ok:=commit(next)
 	busy=false
 	return ok
@@ -89,18 +91,12 @@ func finish_chief_upgrade(now:float=-1.0) -> bool:
 
 # Same atomic payment/save transaction as huts. Outposts do not count toward
 # housing, family arrival or seed rewards. Existing towers survive relocking.
-func build_outpost(pos:Vector2=Vector2.ZERO, site_id:int=-1) -> bool:
-	if busy or not can_build_outpost() or not site_free(site_id):return false
-	busy=true
-	var next:=state.duplicate(true)
-	next.wood-=OUTPOST_WOOD_COST;next.stone-=OUTPOST_STONE_COST
-	next.outposts=outposts()
-	next.outpost_serial=int(next.get("outpost_serial",0))+1
-	next.outposts.append({"uid":"outpost-"+str(next.outpost_serial),"level":1,"site":site_id,"cost":{"wood":OUTPOST_WOOD_COST,"stone":OUTPOST_STONE_COST}})
-	if pos!=Vector2.ZERO:next.position=[pos.x,pos.y]
-	var ok:=commit(next)
-	busy=false
-	return ok
+func build_outpost(_pos:Vector2=Vector2.ZERO, site_id:int=-1) -> bool:
+	if site_id<0:
+		for i in DemoConfig.BUILD_SITES.size():
+			if site_free(i):site_id=i;break
+	if site_id<0 or not site_free(site_id):return false
+	return begin_construction("outpost",DemoConfig.BUILD_SITES[site_id],-1,site_id)
 
 func all_nodes() -> Array:
 	var result:Array=DemoConfig.get_data().nodes.duplicate(true)
@@ -136,7 +132,10 @@ func prepare_resource_positions(next:Dictionary)->void:
 		if next.node_positions.has(n.id) and bounds.has_point(DemoConfig.point(next.node_positions[n.id])):
 			occupied.append(DemoConfig.point(next.node_positions[n.id]))
 		else:missing.append(n.id)
-	var positions:=ResourcePlacement.generate(int(next.resource_seed),chief_level(),missing.size(),occupied)
+	var reserved:Array=[]
+	if chief_level()>0:reserved.append(building_position("chief"))
+	for key in OwnedBuildingUpgrades.keys(self):reserved.append(building_position(key))
+	var positions:=ResourcePlacement.generate(int(next.resource_seed),chief_level(),missing.size(),occupied,reserved)
 	for i in mini(missing.size(),positions.size()):next.node_positions[missing[i]]=[positions[i].x,positions[i].y]
 	next.resource_placement_revision=36
 	state=previous
@@ -180,6 +179,7 @@ func _init(save_store: SaveStore) -> void:
 	migrate_resources()
 	migrate_resource_positions()
 	ensure_respawn_timers()
+	finish_constructions()
 	finish_chief_upgrade()
 	OwnedBuildingUpgrades.finish(self)
 
@@ -236,8 +236,7 @@ func gather(node_id: String, pos: Vector2 = Vector2.ZERO, now:float=-1.0) -> boo
 	return false
 
 func can_build() -> bool:
-	var c := DemoConfig.get_data()
-	return not state.is_empty() and built_count() < home_limit() and builder_available() and state.wood >= c.wood_cost and state.stone >= c.stone_cost
+	return can_construct("hut")
 
 func homes() -> Array:
 	if state.has("homes"): return state.homes.duplicate(true)
@@ -253,7 +252,7 @@ func reward_pending(index: int) -> bool:
 func home_position(index:int)->Vector2:
 	var list:=homes()
 	if index<0 or index>=list.size():return Vector2.INF
-	return DemoConfig.BUILD_SITES[int(list[index].site)] if list[index].has("site") else DemoConfig.HOME_SITES[int(list[index].get("legacy_slot",index))]
+	return entry_position(list[index],int(list[index].get("legacy_slot",index)))
 
 func home_key(index:int)->String:
 	var list:=homes()
@@ -263,80 +262,53 @@ func home_key(index:int)->String:
 func stable_homes()->Array:
 	var list:=homes()
 	for i in list.size():
-		if not list[i].has("site"):list[i].legacy_slot=int(list[i].get("legacy_slot",i))
+		if not list[i].has("site") and not list[i].has("position"):list[i].legacy_slot=int(list[i].get("legacy_slot",i))
 		list[i].uid=home_key(i)
 	return list
 
 func demolition_quote(key:String)->Dictionary:
-	var list:=homes()
-	for i in list.size():
-		if home_key(i)!=key:continue
-		var cost:Dictionary=list[i].get("cost",{"wood":1,"stone":1}) # Historical demo cost.
-		var result:Dictionary={"index":i,"wood":0,"stone":0,"supported":true}
-		for kind in ["wood","stone"]:
-			var paid:=int(cost[kind])
-			var tenths:=paid*10 if paid<=10 else paid*9
-			# Approved policy: integer division floors each resource independently.
-			result[kind]=tenths/10
-		return result
-	return {}
+	if key=="chief":return {}
+	var found:=lookup_building(key)
+	if found.is_empty() or found.data.has("upgrade"):return {}
+	if found.collection=="homes":
+		var removed_capacity:int=[1,2,3,5][clampi(int(found.data.get("level",1)),1,4)-1]
+		if resident_capacity()-removed_capacity<resident_count():return {}
+	var cost:Dictionary=found.data.get("cost",{"wood":1,"stone":1})
+	var result:Dictionary={"index":int(found.index),"collection":found.collection,"kind":found.kind,"wood":0,"stone":0,"supported":true}
+	for resource in ["wood","stone"]:
+		var paid:=int(cost[resource])
+		var tenths:=paid*10 if paid<=10 else paid*9
+		# Preserve the approved demolition rule; cancelling a job is always100%.
+		result[resource]=tenths/10
+	return result
 
 func demolish(key:String)->bool:
 	if busy:return false
-	var owned:=OwnedBuildingUpgrades.lookup(self,key)
-	if not owned.is_empty() and owned.data.has("upgrade"):return false
 	var quote:=demolition_quote(key)
-	if quote.is_empty() or not quote.supported or reward_pending(int(quote.index)):return false
-	busy=true
+	if quote.is_empty() or not quote.supported:return false
+	if quote.collection=="homes" and reward_pending(int(quote.index)):return false
 	var next:=state.duplicate(true)
-	next.homes=stable_homes()
-	next.homes.remove_at(int(quote.index))
+	if quote.collection=="homes":next.homes=stable_homes()
+	next[quote.collection].remove_at(int(quote.index))
 	next.wood+=int(quote.wood);next.stone+=int(quote.stone)
-	next.built=not next.homes.is_empty()
-	next.reward_claimed=next.homes[0].claimed if next.built else false
-	next.hut_style=next.homes[0].style if next.built else 0
+	if quote.collection=="homes":
+		next.built=not next.homes.is_empty()
+		next.reward_claimed=next.homes[0].claimed if next.built else false
+		next.hut_style=next.homes[0].style if next.built else 0
+	busy=true
 	var ok:=commit(next)
 	busy=false
 	return ok
 
 func site_free(id:int)->bool:
-	if id<0 or id>=DemoConfig.BUILD_SITES.size():return false
-	var candidate:=EnvironmentProp.hut_footprint(230)
-	for k in candidate.size():candidate[k]+=DemoConfig.BUILD_SITES[id]
-	for i in built_count():
-		var occupied:=EnvironmentProp.hut_footprint(340)
-		for k in occupied.size():occupied[k]+=home_position(i)
-		if not Geometry2D.intersect_polygons(candidate,occupied).is_empty():return false
-	for i in outposts().size():
-		var occupied:=EnvironmentProp.hut_footprint(340)
-		for k in occupied.size():occupied[k]+=outpost_position(i)
-		if not Geometry2D.intersect_polygons(candidate,occupied).is_empty():return false
-	return true
+	return id>=0 and id<DemoConfig.BUILD_SITES.size() and placement_requirement("hut",DemoConfig.BUILD_SITES[id]).is_empty()
 
-func build(pos: Vector2 = Vector2.ZERO, site_id:int=-1) -> bool:
-	if site_id==-1:
+func build(_pos: Vector2 = Vector2.ZERO, site_id:int=-1) -> bool:
+	if site_id<0:
 		for i in DemoConfig.BUILD_SITES.size():
 			if site_free(i):site_id=i;break
-	if busy or not can_build() or not site_free(site_id):
-		return false
-	busy = true
-	var c := DemoConfig.get_data()
-	var next := state.duplicate(true)
-	next.wood -= int(c.wood_cost)
-	next.stone -= int(c.stone_cost)
-	next.built = true
-	# Choose once at the successful transaction; reload/visual effects never reroll.
-	next.hut_style = 1
-	next.homes = stable_homes()
-	next.home_serial=int(next.get("home_serial",0))+1
-	next.homes.append({"uid":"built-"+str(next.home_serial),"style":next.hut_style,"claimed":false,"site":site_id,"cost":{"wood":int(c.wood_cost),"stone":int(c.stone_cost)}})
-	next.hut_style = next.homes[0].style
-	if next.homes.size()>=DemoConfig.HOME_GOAL:next.family_unlocked=true
-	if pos != Vector2.ZERO:
-		next.position = [pos.x,pos.y]
-	var ok := commit(next)
-	busy = false
-	return ok
+	if site_id<0 or not site_free(site_id):return false
+	return begin_construction("hut",DemoConfig.BUILD_SITES[site_id],-1,site_id)
 
 func claim_reward(index: int = 0) -> bool:
 	if busy or state.is_empty() or not reward_pending(index):
@@ -365,11 +337,16 @@ func migrate_village()->bool:
 	return commit(next)
 
 func family_available()->bool:
-	return not state.get("family_joined",false) and (state.get("family_unlocked",false) or built_count()>=DemoConfig.HOME_GOAL)
+	return ResidentAdmission.available(self)
+
 func join_family()->bool:
-	if busy or not family_available():return false
-	var next:=state.duplicate(true);next.family_joined=true;next.family_unlocked=true
-	return commit(next)
+	return ResidentAdmission.join(self)
+
+func family_visitor_count()->int:
+	return ResidentAdmission.visitor_count(state)
+
+func ensure_family_visit(now:float=-1)->bool:
+	return ResidentAdmission.prepare_visit(self,now)
 
 func migrate_resources()->bool:
 	if state.is_empty() or int(state.get("resource_revision",0))>=35:return true
@@ -392,12 +369,12 @@ func resident_capacity()->int:
 	return capacity
 
 func resident_count()->int:
-	return 2 if state.get("family_joined",false) else 0
+	return ResidentAdmission.count(state)
 
 func active_builder_jobs()->int:
-	var count:=1 if state.has("chief_upgrade") else 0
+	var count:=(1 if state.has("chief_upgrade") else 0)+construction_jobs().size()
 	if construction_busy:count+=1
-	for collection in [homes(),outposts()]:
+	for collection in [homes(),outposts(),facilities()]:
 		for entry in collection:
 			if entry.has("upgrade"):count+=1
 	return count
@@ -406,35 +383,234 @@ func builder_available()->bool:
 	return debug_unlimited_builders or active_builder_jobs()==0
 
 func building_unlocked(kind:String)->bool:
-	if state.is_empty():return false
-	match kind:
-		"home", "hut", "chief":return true
-		"hearth":return chief_level()>=2
-		"shrine":return chief_level()>=3
-		"outpost":return chief_level()>=OUTPOST_UNLOCK_LEVEL
-	return false
+	kind=BuildingRules.canonical(kind)
+	return not state.is_empty() and BuildingRules.REQUIRED_HQ.has(kind) and chief_level()>=int(BuildingRules.REQUIRED_HQ[kind])
 
 func building_requirement(kind:String)->String:
-	var required:int={"home":1,"hut":1,"chief":1,"hearth":2,"shrine":3,"outpost":4}.get(kind,0)
-	if required==0:return "아직 지원하지 않는 건물이에요"
-	if not building_unlocked(kind):return "본부 Lv.%d 필요" % required
-	if kind in ["home","hut"]:
-		if built_count()>=DemoConfig.MAX_RESIDENT_HOMES:return "주민 움집은 최대 3채까지 지을 수 있어요"
-		if built_count()>=home_limit():return "본부 Lv.%d 필요 · 현재 움집 한도 %d채" % [chief_level()+1,home_limit()]
-		if not builder_available():return "건설자 1명이 작업 중이에요"
-		var cost:=chief_upgrade_cost()
-		if state.wood<cost.wood or state.stone<cost.stone:return "나무 %d개와 돌 %d개가 필요해요" % [cost.wood,cost.stone]
+	kind=BuildingRules.canonical(kind)
+	if state.is_empty():return "게임을 먼저 시작해 주세요"
+	if not BuildingRules.REQUIRED_HQ.has(kind):return "아직 지원하지 않는 건물이에요"
+	if not building_unlocked(kind):return "본부 Lv.%d 필요" % int(BuildingRules.REQUIRED_HQ[kind])
+	if kind=="chief":
+		if chief_level()>0:return "본부가 이미 있어요"
+		if pending_construction_count(kind)>0:return "본부를 건설 중이에요"
+	if kind=="hut":
+		var reserved:=built_count()+pending_construction_count(kind)
+		if reserved>=DemoConfig.MAX_RESIDENT_HOMES:return "주민 움집은 최대 3채까지 지을 수 있어요"
+		if reserved>=home_limit():return "본부 Lv.%d 필요 · 현재 움집 한도 %d채" % [chief_level()+1,home_limit()]
+	if not builder_available():return "건설자 1명이 작업 중이에요"
+	if construction_jobs().size()>=BuildingRules.MAX_ENTRIES:return "건설 중인 건물이 너무 많아요"
+	if kind=="outpost" and outposts().size()+pending_construction_count(kind)>=BuildingRules.MAX_ENTRIES:return "초소 한도에 도달했어요"
+	if kind in BuildingRules.FACILITY_KINDS:
+		var pending_facilities:=0
+		for job in construction_jobs():
+			if str(job.kind) in BuildingRules.FACILITY_KINDS:pending_facilities+=1
+		if facilities().size()+pending_facilities>=BuildingRules.MAX_ENTRIES:return "시설 한도에 도달했어요"
+	var cost:=building_cost(kind,1)
+	if state.wood<cost.wood or state.stone<cost.stone:return "나무 %d개와 돌 %d개가 필요해요" % [cost.wood,cost.stone]
 	return ""
 
 func upgrade_requirement(key:String="chief")->String:
-	var level:=chief_level()
-	if key!="chief":
-		var found:=OwnedBuildingUpgrades.lookup(self,key)
-		if found.is_empty():return "건물을 찾을 수 없어요"
-		level=int(found.data.get("level",1))
-		if found.data.has("upgrade"):return "이미 업그레이드 중이에요"
-		if level<4 and level>=chief_level():return "본부 Lv.%d 필요" % (level+1)
-	elif state.has("chief_upgrade"):return "이미 업그레이드 중이에요"
+	var found:=lookup_building(key)
+	if found.is_empty():return "건물을 찾을 수 없어요"
+	var level:=int(found.data.get("level",1))
+	if found.data.has("upgrade"):return "이미 업그레이드 중이에요"
 	if level>=4:return "최고 레벨이에요"
+	if key!="chief" and level>=chief_level():return "본부 Lv.%d 필요" % (level+1)
 	if not builder_available():return "건설자 1명이 작업 중이에요"
+	var cost:=building_cost(found.kind,level+1)
+	if state.wood<cost.wood or state.stone<cost.stone:return "나무 %d개와 돌 %d개가 필요해요" % [cost.wood,cost.stone]
 	return ""
+
+func building_cost(kind:String,target:int=1)->Dictionary:
+	return BuildingRules.cost(kind,target)
+
+func building_duration(target:int)->float:
+	return BuildingRules.duration(target)/(10.0 if debug_fast_build else 1.0)
+
+func facilities()->Array:
+	return state.get("facilities",[]).duplicate(true)
+
+func construction_jobs()->Array:
+	return state.get("construction_jobs",[]).duplicate(true)
+
+func pending_construction_count(kind:String)->int:
+	kind=BuildingRules.canonical(kind)
+	var count:=0
+	for job in construction_jobs():
+		if job.kind==kind:count+=1
+	return count
+
+func can_construct(kind:String)->bool:
+	return building_requirement(kind).is_empty()
+
+func entry_position(entry:Dictionary,legacy_slot:int=-1)->Vector2:
+	if entry.has("position"):return DemoConfig.point(entry.position)
+	if entry.has("site"):return DemoConfig.BUILD_SITES[int(entry.site)]
+	return DemoConfig.HOME_SITES[legacy_slot] if legacy_slot>=0 and legacy_slot<DemoConfig.HOME_SITES.size() else Vector2.INF
+
+func lookup_building(key:String)->Dictionary:
+	if key!="chief":return OwnedBuildingUpgrades.lookup(self,key)
+	if state.is_empty() or chief_level()<1:return {}
+	var data:Dictionary={"uid":"chief","kind":"chief","level":chief_level()}
+	if state.has("chief_upgrade"):data.upgrade=state.chief_upgrade.duplicate(true)
+	return {"collection":"chief","index":-1,"data":data,"position":building_position("chief"),"kind":"chief","key":"chief"}
+
+func building_position(key:String)->Vector2:
+	if key=="chief":return DemoConfig.point(state.chief_position) if state.has("chief_position") else DemoConfig.CHIEF_POSITION
+	var found:=OwnedBuildingUpgrades.lookup(self,key)
+	return found.position if not found.is_empty() else Vector2.INF
+
+func placement_requirement(kind:String,position:Vector2,ignore_key:String="")->String:
+	kind=BuildingRules.canonical(kind)
+	if not kind in BuildingRules.KINDS:return "지원하지 않는 건물이에요"
+	if not ignore_key.is_empty():
+		var moving:=lookup_building(ignore_key)
+		if not moving.is_empty() and moving.data.has("upgrade"):return "공사를 완료하거나 취소한 후 이동할 수 있어요"
+	if not position.is_finite() or not VillageBounds.rect_for_level(chief_level()).grow(-100).has_point(position):return "마을 경계 안에 배치해 주세요"
+	var candidate:=EnvironmentProp.hut_footprint(230)
+	for k in candidate.size():candidate[k]+=position
+	var occupied_positions:Array[Vector2]=[]
+	if chief_level()>0 and ignore_key!="chief":occupied_positions.append(building_position("chief"))
+	for key in OwnedBuildingUpgrades.keys(self):
+		if key!=ignore_key:occupied_positions.append(building_position(key))
+	for job in construction_jobs():
+		if str(job.uid)!=ignore_key:occupied_positions.append(DemoConfig.point(job.position))
+	for occupied_position in occupied_positions:
+		var occupied:=EnvironmentProp.hut_footprint(340)
+		for k in occupied.size():occupied[k]+=occupied_position
+		if not Geometry2D.intersect_polygons(candidate,occupied).is_empty():return "다른 건물과 겹쳐요"
+	return ""
+
+func move_building(key:String,position:Vector2)->bool:
+	if busy:return false
+	var found:=lookup_building(key)
+	if found.is_empty() or found.data.has("upgrade") or not placement_requirement(found.kind,position,key).is_empty():return false
+	var next:=state.duplicate(true)
+	if key=="chief":next.chief_position=[position.x,position.y]
+	else:
+		if found.collection=="homes":next.homes=stable_homes()
+		var entry:Dictionary=next[found.collection][found.index]
+		entry.position=[position.x,position.y]
+		entry.erase("site");entry.erase("legacy_slot")
+	busy=true
+	var ok:=commit(next)
+	busy=false
+	return ok
+
+func begin_construction(kind:String,position:Vector2,now:float=-1.0,site_id:int=-1)->bool:
+	kind=BuildingRules.canonical(kind)
+	if busy or not can_construct(kind) or not placement_requirement(kind,position).is_empty():return false
+	if site_id>=0 and (site_id>=DemoConfig.BUILD_SITES.size() or position!=DemoConfig.BUILD_SITES[site_id]):return false
+	if now<0:now=Time.get_unix_time_from_system()
+	if not is_finite(now):return false
+	var next:=state.duplicate(true)
+	next.construction_serial=int(next.get("construction_serial",0))+1
+	var job:=BuildingRules.new_job(kind,0,now,debug_fast_build)
+	job.uid="construction-"+str(next.construction_serial)
+	job.position=[position.x,position.y]
+	if site_id>=0:job.site=site_id
+	if kind=="hut":job.style=1
+	next.construction_jobs=construction_jobs()
+	next.construction_jobs.append(job)
+	next.wood-=int(job.cost.wood);next.stone-=int(job.cost.stone)
+	busy=true
+	var ok:=commit(next)
+	busy=false
+	return ok
+
+func cancel_construction(uid:String)->bool:
+	if busy:return false
+	var jobs:=construction_jobs()
+	for i in jobs.size():
+		if str(jobs[i].uid)!=uid:continue
+		var next:=state.duplicate(true)
+		next.wood+=int(jobs[i].cost.wood);next.stone+=int(jobs[i].cost.stone)
+		jobs.remove_at(i);next.construction_jobs=jobs
+		busy=true
+		var ok:=commit(next)
+		busy=false
+		return ok
+	return false
+
+func finish_constructions(now:float=-1.0)->bool:
+	if busy or state.is_empty():return false
+	if now<0:now=Time.get_unix_time_from_system()
+	if not is_finite(now):return false
+	var next:=state.duplicate(true)
+	var pending:Array=[]
+	next.homes=stable_homes()
+	var did_finish:=false
+	for job in construction_jobs():
+		if now<float(job.finishes_at):pending.append(job);continue
+		did_finish=true
+		if job.kind=="chief":
+			next.chief_level=1;next.chief_position=job.position.duplicate()
+			continue
+		var entry:Dictionary={"uid":job.uid,"kind":job.kind,"position":job.position.duplicate(),"level":1,"cost":job.cost.duplicate()}
+		if job.has("site"):entry.site=job.site
+		var collection:String="facilities"
+		if job.kind=="hut":
+			collection="homes";entry.style=int(job.get("style",1));entry.claimed=false
+			if not next.has("homes"):next.homes=stable_homes()
+		elif job.kind=="outpost":collection="outposts"
+		if not next.has(collection):next[collection]=[]
+		next[collection].append(entry)
+	if not did_finish:return false
+	next.construction_jobs=pending
+	next.built=not next.get("homes",[]).is_empty()
+	if next.built:
+		next.reward_claimed=next.homes[0].claimed;next.hut_style=next.homes[0].style
+	prepare_resource_positions(next)
+	busy=true
+	var ok:=commit(next)
+	busy=false
+	return ok
+
+func cancel_upgrade(key:String)->bool:
+	if key!="chief":return OwnedBuildingUpgrades.cancel(self,key)
+	if busy or not state.has("chief_upgrade"):return false
+	var next:=state.duplicate(true)
+	next.wood+=int(next.chief_upgrade.cost.wood);next.stone+=int(next.chief_upgrade.cost.stone)
+	next.erase("chief_upgrade")
+	busy=true
+	var ok:=commit(next)
+	busy=false
+	return ok
+
+func set_debug_fast_build(enabled:bool,now:float=-1.0)->bool:
+	if busy or state.is_empty():return false
+	if enabled==debug_fast_build:return true
+	if now<0:now=Time.get_unix_time_from_system()
+	if not is_finite(now):return false
+	var next:=state.duplicate(true)
+	var old_speed:=10.0 if debug_fast_build else 1.0
+	var new_speed:=10.0 if enabled else 1.0
+	if next.has("chief_upgrade"):BuildingRules.rescale_clock(next.chief_upgrade,now,old_speed,new_speed)
+	for job in next.get("construction_jobs",[]):BuildingRules.rescale_clock(job,now,old_speed,new_speed)
+	for collection in ["homes","outposts","facilities"]:
+		for entry in next.get(collection,[]):
+			if entry.has("upgrade"):BuildingRules.rescale_clock(entry.upgrade,now,old_speed,new_speed)
+	next.debug_fast_build=enabled
+	busy=true
+	var ok:=commit(next)
+	busy=false
+	return ok
+
+func set_debug_show_boundary(enabled:bool)->bool:
+	if busy or state.is_empty():return false
+	if enabled==debug_show_boundary:return true
+	var next:=state.duplicate(true);next.debug_show_boundary=enabled
+	busy=true
+	var ok:=commit(next)
+	busy=false
+	return ok
+
+func set_debug_unlimited_builders(enabled:bool)->bool:
+	if busy or state.is_empty():return false
+	if enabled==debug_unlimited_builders:return true
+	var next:=state.duplicate(true);next.debug_unlimited_builders=enabled
+	busy=true
+	var ok:=commit(next)
+	busy=false
+	return ok

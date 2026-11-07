@@ -20,7 +20,7 @@ func run()->void:
 	await create_timer(.9).timeout
 	check(audio.play_bgm.playing and audio.play_bgm.get_playback_position()<2,"Actual mixer crosses loop endpoint and continues")
 	audio.cue("wood");audio.cue("stone")
-	check(audio.events.has("wood_1") and audio.events.has("stone_0"),"Gather effects coexist with selected music")
+	check(audio.events.has("recorded_wood") and audio.events.has("recorded_stone"),"Gather effects coexist with selected music")
 	audio.configure(true,false,true,false);var paused:=audio.play_bgm.get_playback_position();await create_timer(.3).timeout
 	check(audio.play_bgm.stream_paused and absf(audio.play_bgm.get_playback_position()-paused)<.05,"Background pauses position")
 	audio.configure(true,true,true,false);await create_timer(.3).timeout

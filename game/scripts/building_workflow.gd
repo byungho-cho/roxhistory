@@ -1,25 +1,25 @@
 class_name BuildingWorkflow
 extends Node
-## Connects durable upgrade work to existing UI/scenery without placeholder art.
+## Persisted building work is independent of hero movement, map and app visibility.
 var app:Node
 var confirmation_target:=-1
 var scaffold:Sprite2D
 var retry_after:=0.0
 var last_visual_level:=-1
-var transition:Tween
-var previous_visual:Sprite2D
 var scaffold_fade_left:=0.0
 var owned_progress:Dictionary={}
+var construction_progress:Dictionary={}
 var owned_confirmation:=""
+var cancellation_confirmation:=""
+var cancellation_overlay:Control
+var owned_overlay:Control
 var owned_retry:=0.0
 func _init(owner_app:Node)->void:app=owner_app
 func _ready()->void:
 	app.model.changed.connect(refresh_visual)
 	refresh_visual()
-
 static func approved_texture(id:String)->Texture2D:
 	var entry:=AssetCatalog.entry(id)
-	# Explicit approval is required; catalog's generic rock fallback is forbidden.
 	if not entry.get("approved",false):return null
 	var path:String=entry.get("file","")
 	if path.is_empty() or not ResourceLoader.exists(path):return null
@@ -31,161 +31,167 @@ static func approved_texture(id:String)->Texture2D:
 		if crop.size()!=4:return null
 		if not Rect2(Vector2.ZERO,source.get_size()).encloses(Rect2(crop[0],crop[1],crop[2],crop[3])):return null
 	return AssetCatalog.texture(id)
-
-func outpost_block_reason()->String:
-	if not app.model.can_build_outpost():return app.model.outpost_requirement()
-	if approved_texture("BLD-OUTPOST-L1")==null:return "초소 1레벨 확정 게임 에셋 준비 중"
+static func building_asset_id(kind:String,level:int=1)->String:
+	return "BLD-%s-L%d"%[{"chief":"CHIEF","hut":"HUT","home":"HUT","outpost":"OUTPOST","hearth":"HEARTH","training":"TRAINING","shrine":"SHRINE"}.get(kind,"HUT"),clampi(level,1,4)]
+static func building_name(kind:String)->String:
+	return {"chief":"본부","hut":"주민 움집","home":"주민 움집","outpost":"초소","hearth":"화덕","training":"훈련소","shrine":"신당"}.get(kind,"건물")
+static func cost_text(cost:Dictionary)->String:return "나무 %d개 · 돌 %d개"%[int(cost.get("wood",0)),int(cost.get("stone",0))]
+func build_block_reason(kind:String)->String:
+	var reason:String=app.model.building_requirement(kind)
+	if not reason.is_empty():return reason
+	if approved_texture(building_asset_id(kind,1))==null:return "%s 확정 게임 에셋 준비 중"%building_name(kind)
 	return ""
-
+func outpost_block_reason()->String:return build_block_reason("outpost")
 func upgrade_block_reason(target:int)->String:
-	if app.model.state.has("chief_upgrade"):return "주인공 움집 업그레이드가 진행 중이에요"
-	if app.model.chief_level()>=4:return "최대 4단계 움집이에요"
-	if not app.model.builder_available():return "건설자 1명이 공사 중이에요"
 	if target!=app.model.chief_level()+1:return "건물 단계가 변경되었어요. 다시 선택해 주세요"
-	if not app.model.can_upgrade_chief():
-		var cost:Dictionary=app.model.chief_upgrade_cost()
-		return "나무 %d개와 돌 %d개가 필요해요"%[cost.wood,cost.stone]
-	if approved_texture("BLD-CHIEF-L%d"%target)==null:return "%d단계 주인공 움집 에셋 준비 중"%target
+	var reason:String=app.model.upgrade_requirement("chief")
+	if not reason.is_empty():return reason
+	if not app.model.can_upgrade_chief():return cost_text(app.model.building_cost("chief",target))+"가 필요해요"
+	if approved_texture(building_asset_id("chief",target))==null:return "%d단계 본부 에셋 준비 중"%target
 	return ""
-
-# Approved radial-menu upgrade action calls this guarded entry point.
 func request_upgrade()->void:
 	if app.modal or not app.application_active or app.screen!="play" or app.world_map_open:return
 	var target:int=app.model.chief_level()+1
 	var reason:=upgrade_block_reason(target)
 	if not reason.is_empty():app.toast(reason);return
-	var cost:Dictionary=app.model.chief_upgrade_cost()
-	app.show_modal("주인공 움집 %d단계 업그레이드"%target,"나무 %d개 · 돌 %d개\n공사 시간 %d초\n앱을 닫아도 공사가 진행돼요"%[cost.wood,cost.stone,int(app.model.chief_upgrade_duration(target))],[{"text":"취소","action":app.close_modal},{"text":"업그레이드","action":func():confirm_upgrade(target)}],true,true)
+	var cost:Dictionary=app.model.building_cost("chief",target)
+	app.show_modal("본부 %d단계 업그레이드"%target,upgrade_description(cost,target),[{"text":"취소","action":app.close_modal},{"text":"업그레이드","action":func():confirm_upgrade(target)}],true,true)
 	confirmation_target=target
-
+func upgrade_description(cost:Dictionary,target:int)->String:
+	return "%s\n공사 시간 %d초\n앱을 닫아도 공사가 진행돼요"%[cost_text(cost),int(app.model.building_duration(target))]
 func confirm_upgrade(target:int)->bool:
 	if not app.modal or not app.application_active or confirmation_target!=target:return false
 	var reason:=upgrade_block_reason(target)
 	if not reason.is_empty():app.close_modal();app.toast(reason);return false
 	if not app.model.upgrade_chief():return false
-	app.close_modal()
-	refresh_visual()
-	return true
-
+	confirmation_target=-1;app.close_modal();refresh_visual();return true
 func refresh_visual()->void:
 	if not is_instance_valid(app.world):return
-	var chief:EnvironmentProp=app.world.get_node("ExistingHut")
 	var level:int=app.model.chief_level()
-	var changed:=last_visual_level>=1 and level!=last_visual_level
-	var texture:=approved_texture("BLD-CHIEF-L%d"%level)
-	if changed and texture!=null:
-		if is_instance_valid(transition):transition.kill()
-		if is_instance_valid(previous_visual):previous_visual.queue_free()
-		previous_visual=Sprite2D.new();previous_visual.texture=chief.sprite.texture;previous_visual.transform=chief.sprite.transform;previous_visual.visibility_layer=2
-		previous_visual.texture_filter=chief.sprite.texture_filter;chief.sprite.get_parent().add_child(previous_visual)
-		chief.sprite.modulate.a=0
-		transition=create_tween().set_parallel(true)
-		transition.tween_property(previous_visual,"modulate:a",0.0,.35)
-		transition.tween_property(chief.sprite,"modulate:a",1.0,.35)
-		transition.chain().tween_callback(previous_visual.queue_free)
+	var changed:=last_visual_level>=1 and level>last_visual_level
+	if changed:
 		scaffold_fade_left=.35
-	if changed and app.screen=="play":
-		app.toast("본부 %d단계 · 마을 경계가 %d%%로 넓어졌어요"%[level,[60,70,80,90][level-1]],5.0)
+		if app.screen=="play":app.toast("본부 %d단계 · 마을 경계가 넓어졌어요"%level,5.0)
 	last_visual_level=level
-	if texture!=null:
-		var previous_size:=texture.get_size()*chief.configured_width*EnvironmentProp.BUILDING_IMAGE_SCALE/texture.get_width()
-		chief.sprite.texture=texture
-		chief.sprite.scale=(previous_size-Vector2(4,4))/texture.get_size()
-		chief.sprite.position.y=-previous_size.y*.30+6.0-chief.depth_visual.position.y
 	if not is_instance_valid(scaffold):
 		scaffold=Sprite2D.new();scaffold.name="ChiefUpgradeScaffold";scaffold.visibility_layer=2
 		scaffold.texture=preload("res://assets/effects/construction-scaffold.png")
 		scaffold.texture_filter=CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 		scaffold.scale=Vector2.ONE*300/scaffold.texture.get_width()
-		scaffold.position=DemoConfig.CHIEF_POSITION+Vector2(0,-scaffold.texture.get_height()*scaffold.scale.y*.5+55)
 		app.world.add_child(scaffold)
 	if not app.world.has_node("ChiefUpgradeEffects"):app.world.add_child(UpgradeConstructionEffect.new(app))
 	update_scaffold()
-
 func update_scaffold()->void:
 	if not is_instance_valid(scaffold):return
+	scaffold.position=app.model.building_position("chief")+Vector2(0,-scaffold.texture.get_height()*scaffold.scale.y*.5+55)
 	scaffold.visible=(app.model.state.has("chief_upgrade") or scaffold_fade_left>0) and app.screen=="play" and not app.world_map_open and app.application_active
 	if not app.model.state.has("chief_upgrade"):
-		scaffold.modulate.a=scaffold_fade_left/.35
-		return
+		scaffold.modulate.a=scaffold_fade_left/.35;return
 	if scaffold.visible:
 		var job:Dictionary=app.model.state.chief_upgrade
-		var duration:float=job.finishes_at-job.started_at
-		var progress:=clampf(1.0-app.model.chief_upgrade_remaining()/duration,0,1)
+		var duration:float=float(job.get("clock_duration",job.finishes_at-job.started_at))
+		var progress:=clampf(1.0-app.model.chief_upgrade_remaining()/maxf(.001,duration),0,1)
 		scaffold.modulate.a=smoothstep(0,.12,progress)
-
 func _process(delta:float)->void:
-	scaffold_fade_left=maxf(0,scaffold_fade_left-delta)
-	update_scaffold()
-	update_owned_upgrades()
-	if not app.model.state.has("chief_upgrade"):return
+	scaffold_fade_left=maxf(0,scaffold_fade_left-delta);update_scaffold()
 	retry_after=maxf(0,retry_after-delta)
-	if app.model.chief_upgrade_remaining()>0 or retry_after>0:return
-	# Durable completion is independent of map, modal, movement and ordinary work.
-	if app.model.finish_chief_upgrade():
-		if is_instance_valid(app.world) and app.screen=="play":app.world.feedback.built(DemoConfig.CHIEF_POSITION)
-	else:retry_after=1.0
-
+	if retry_after<=0:
+		var jobs:Array=app.model.construction_jobs().duplicate(true)
+		if app.model.finish_constructions():
+			for job in jobs:
+				if construction_job(str(job.uid)).is_empty() and is_instance_valid(app.world) and app.screen=="play":app.world.feedback.built(DemoConfig.point(job.position))
+		OwnedBuildingUpgrades.finish(app.model)
+		if app.model.state.has("chief_upgrade") and app.model.chief_upgrade_remaining()<=0:
+			if app.model.finish_chief_upgrade() and is_instance_valid(app.world) and app.screen=="play":app.world.feedback.built(app.model.building_position("chief"))
+		retry_after=.1
+	update_owned_upgrades();update_constructions()
 func owned_upgrade_reason(key:String)->String:
-	var found:=OwnedBuildingUpgrades.lookup(app.model,key)
+	var found:Dictionary=app.model.lookup_building(key)
 	if found.is_empty():return "건물을 찾을 수 없어요"
-	if found.data.has("upgrade"):return "업그레이드 공사 중이에요"
-	var level:=int(found.data.get("level",1))
-	if level>=4:return "최대 4단계 건물이에요"
-	if level>=app.model.chief_level():return "본부를 먼저 업그레이드해 주세요"
-	if not app.model.builder_available():return "건설자 1명이 공사 중이에요"
-	var asset:="BLD-OUTPOST-L%d"%(level+1) if found.collection=="outposts" else "BLD-CHIEF-L%d"%(level+1)
-	if approved_texture(asset)==null:return "초소 %d단계 확정 에셋 준비 중"%(level+1) if found.collection=="outposts" else "움집 단계 에셋 준비 중"
-	var rule_reason:String=app.model.upgrade_requirement(key)
-	if not rule_reason.is_empty():return rule_reason
-	if app.model.state.wood<20 or app.model.state.stone<20:return "나무 20개와 돌 20개가 필요해요"
+	var reason:String=app.model.upgrade_requirement(key)
+	if not reason.is_empty():return reason
+	var target:=int(found.data.get("level",1))+1
+	if approved_texture(building_asset_id(str(found.kind),target))==null:return "%s %d단계 확정 에셋 준비 중"%[building_name(str(found.kind)),target]
+	var cost:Dictionary=app.model.building_cost(str(found.kind),target)
+	if app.model.state.wood<int(cost.wood) or app.model.state.stone<int(cost.stone):return cost_text(cost)+"가 필요해요"
 	return ""
-
 func request_owned_upgrade(key:String)->void:
+	if key=="chief":request_upgrade();return
 	if app.modal or not app.application_active or app.screen!="play" or app.world_map_open:return
 	var reason:=owned_upgrade_reason(key)
 	if not reason.is_empty():app.toast(reason);return
-	var found:=OwnedBuildingUpgrades.lookup(app.model,key)
+	var found:Dictionary=app.model.lookup_building(key)
 	var target:=int(found.data.get("level",1))+1
 	owned_confirmation=key
-	app.show_modal("%s %d단계 업그레이드"%["초소" if found.collection=="outposts" else "주민 움집",target],"나무 20개 · 돌 20개\n공사 시간 %d초\n앱을 닫아도 공사가 진행돼요"%int(app.model.chief_upgrade_duration(target)),[{"text":"취소","action":app.close_modal},{"text":"업그레이드","action":func():confirm_owned_upgrade(key,target)}],true,true)
-
+	var cost:Dictionary=app.model.building_cost(str(found.kind),target)
+	app.show_modal("%s %d단계 업그레이드"%[building_name(str(found.kind)),target],upgrade_description(cost,target),[{"text":"취소","action":app.close_modal},{"text":"업그레이드","action":func():confirm_owned_upgrade(key,target)}],true,true)
+	owned_overlay=app.overlay
 func confirm_owned_upgrade(key:String,target:int)->bool:
-	if not app.modal or not app.application_active or owned_confirmation!=key:return false
-	var found:=OwnedBuildingUpgrades.lookup(app.model,key)
+	if not app.modal or not app.application_active or owned_confirmation!=key or not is_instance_valid(owned_overlay) or app.overlay!=owned_overlay:return false
+	var found:Dictionary=app.model.lookup_building(key)
 	if found.is_empty() or int(found.data.get("level",1))+1!=target:return false
 	var reason:=owned_upgrade_reason(key)
 	if not reason.is_empty():app.close_modal();app.toast(reason);return false
 	if not OwnedBuildingUpgrades.start(app.model,key):return false
 	owned_confirmation="";app.close_modal();return true
-
 func update_owned_upgrades()->void:
-	var now:=Time.get_ticks_msec()/1000.0
-	if now>=owned_retry:
-		OwnedBuildingUpgrades.finish(app.model);owned_retry=now+.1
 	for key in owned_progress.keys():
-		if OwnedBuildingUpgrades.lookup(app.model,key).get("data",{}).get("upgrade",{}).is_empty():
+		if app.model.lookup_building(key).get("data",{}).get("upgrade",{}).is_empty():
 			if is_instance_valid(owned_progress[key]):owned_progress[key].queue_free()
 			owned_progress.erase(key)
 	if not is_instance_valid(app.stage) or not is_instance_valid(app.world):return
 	for key in OwnedBuildingUpgrades.keys(app.model):
-		var found:=OwnedBuildingUpgrades.lookup(app.model,key)
+		var found:Dictionary=app.model.lookup_building(key)
 		if not found.data.has("upgrade"):continue
 		if not is_instance_valid(owned_progress.get(key)):
 			var progress:=ConstructionProgress.new(app,false,true);progress.building_key=key;app.stage.add_child(progress);owned_progress[key]=progress
 		var effect_name:="OwnedUpgradeEffects_"+key.replace(":","_")
 		if not app.world.has_node(effect_name):
 			var effect:=UpgradeConstructionEffect.new(app);effect.building_key=key;app.world.add_child(effect)
-
+func construction_job(uid:String)->Dictionary:
+	for job in app.model.construction_jobs():
+		if str(job.uid)==uid:return job
+	return {}
+func update_constructions()->void:
+	for uid in construction_progress.keys():
+		if construction_job(uid).is_empty():
+			if is_instance_valid(construction_progress[uid]):construction_progress[uid].queue_free()
+			construction_progress.erase(uid)
+	if not is_instance_valid(app.stage) or not is_instance_valid(app.world):return
+	for job in app.model.construction_jobs():
+		var uid:=str(job.uid)
+		if not is_instance_valid(construction_progress.get(uid)):
+			var progress:=ConstructionProgress.new(app);progress.construction_uid=uid;app.stage.add_child(progress);construction_progress[uid]=progress
+		var effect_name:="ConstructionEffects_"+uid.replace(":","_")
+		if not app.world.has_node(effect_name):
+			var effect:=UpgradeConstructionEffect.new(app);effect.construction_uid=uid;app.world.add_child(effect)
+func request_cancel_construction(uid:String)->void:request_cancel(uid,false)
+func request_cancel_upgrade(key:String)->void:request_cancel(key,true)
+func request_cancel(key:String,upgrade:bool)->void:
+	if app.modal or not app.application_active or app.screen!="play" or app.world_map_open:return
+	var job:Dictionary
+	if upgrade:job=app.model.state.get("chief_upgrade",{}) if key=="chief" else app.model.lookup_building(key).get("data",{}).get("upgrade",{})
+	else:job=construction_job(key)
+	if job.is_empty():return
+	cancellation_confirmation=("upgrade:" if upgrade else "build:")+key
+	app.show_modal("공사를 취소할까요?","사용한 재료를 100% 돌려드려요\n반환: "+cost_text(job.get("cost",{})),[{"text":"계속 공사","action":app.close_modal},{"text":"공사 취소","action":func():confirm_cancel(key,upgrade)}],true,true)
+	cancellation_overlay=app.overlay
+func confirm_cancel(key:String,upgrade:bool)->bool:
+	var token:=("upgrade:" if upgrade else "build:")+key
+	if not app.modal or not app.application_active or cancellation_confirmation!=token or not is_instance_valid(cancellation_overlay) or app.overlay!=cancellation_overlay:return false
+	var success:bool=app.model.cancel_upgrade(key) if upgrade else app.model.cancel_construction(key)
+	cancellation_confirmation="";app.close_modal()
+	if success:app.toast("공사를 취소하고 재료를 전부 돌려드렸어요")
+	else:app.toast("공사가 이미 완료되었거나 변경되었어요")
+	return success
 static func apply_outpost_sprite(image:Sprite2D,level:int)->void:
-	var id:="BLD-OUTPOST-L%d"%level
+	var id:=building_asset_id("outpost",level)
 	var texture:=approved_texture(id)
 	if texture==null:return
 	image.texture=texture
 	var entry:=AssetCatalog.entry(id)
 	if entry.has("ground_pivot"):
-		image.centered=false
-		image.scale=Vector2.ONE*float(entry.display_ground_width)/float(entry.ground_span)
+		image.centered=false;image.scale=Vector2.ONE*float(entry.display_ground_width)/float(entry.ground_span)
 		image.position=-Vector2(entry.ground_pivot[0],entry.ground_pivot[1])*image.scale+Vector2(0,3)
 	else:
 		image.centered=true;image.scale=Vector2.ONE*180/texture.get_width();image.position=Vector2(0,-texture.get_height()*image.scale.y*.3+3)

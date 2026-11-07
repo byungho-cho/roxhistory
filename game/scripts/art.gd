@@ -17,7 +17,8 @@ static func play_icon(key:String)->Texture2D:
 	play_cache[key]=source;return source
 
 static func icon(key: String) -> Texture2D:
-	if key=="tokens":return AssetCatalog.texture("UI-SEED")
+	if key in ["tokens","seed","seeds"]:return AssetCatalog.texture("UI-SEED")
+	if key in ["resident","population"]:return AssetCatalog.texture("UI-RESIDENT")
 	if FigmaArt.CROPS.has(key) or FigmaArt.CONTROL_CROPS.has(key):return FigmaArt.texture(key)
 	if key=="meat":return FigmaArt.texture("meat.png")
 	if cache.has(key):
@@ -31,6 +32,12 @@ static func icon(key: String) -> Texture2D:
 	tex.region = boxes.get(key,boxes.hut)
 	cache[key] = tex
 	return tex
+
+static func facility_icon(kind: String, level: int = 1) -> Texture2D:
+	var category := "HUT" if kind in ["chief", "hut", "home"] else kind.to_upper()
+	var id := "BLD-%s-L%d" % [category, clampi(level, 1, 4)]
+	if not AssetCatalog.entry(id).get("approved", false): return null
+	return AssetCatalog.texture(id)
 
 static func panel(dark: bool = false) -> StyleBoxFlat:
 	var s := StyleBoxFlat.new()

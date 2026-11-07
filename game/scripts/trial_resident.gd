@@ -9,6 +9,7 @@ var job_kind:="idle"
 var job_timer:=0.0
 var job_route:=PackedVector2Array()
 var job_stuck:=0.0
+var job_depot:=Vector2.INF
 var variant:="female"
 var visual:HybridCharacter
 var origin:=Vector2.ZERO
@@ -21,7 +22,7 @@ var visual_elapsed:=0.0
 func _ready()->void:
 	if resident_id.is_empty():resident_id="resident-0" if variant=="female" else "resident-1"
 	jobs=ResidentJobs.new(get_parent().model)
-	origin=position;destination=position;rng.seed=122 if variant=="female" else 347;rest_time=2 if variant=="female" else 4
+	origin=position;destination=position;rng.seed=abs(resident_id.hash())+122;rest_time=2.0+float(abs(resident_id.hash())%30)/10.0
 	var shape:=CollisionShape2D.new();var circle:=CircleShape2D.new();circle.radius=12;shape.shape=circle;add_child(shape)
 	visual=HybridCharacter.new();visual.model_path="res://assets/characters/residents/"+variant+".glb";visual.render_size_factor=.5;add_child(visual);visual.scale=Vector2.ONE*(1.08 if variant=="female" else 1.16);visual.set_enabled(true)
 	queue_redraw()
@@ -41,7 +42,7 @@ func _physics_process(delta:float)->void:
 			for i in 12:
 				var point:=origin+Vector2.from_angle(rng.randf()*TAU)*rng.randf_range(30,70)
 				var pose:=transform;pose.origin=point
-				if not test_move(pose,Vector2.ZERO,null,.08,true) and not test_move(transform,point-position):destination=point;break
+				if world.playable_rect().grow(-24).has_point(point) and not test_move(pose,Vector2.ZERO,null,.08,true) and not test_move(transform,point-position):destination=point;break
 	else:
 		var offset:=destination-position
 		velocity=offset.normalized()*48 if offset.length()>3 else Vector2.ZERO
@@ -69,12 +70,19 @@ func _job_tick(delta:float)->bool:
 	if not jobs.available(resident_id):return false
 	if item.job!=job_kind:
 		job_kind=item.job;job_route.clear();job_phase="idle";job_timer=0
+	if jobs.model.chief_level()<=0:
+		# Keep paid cargo and assigned intent intact until a depot exists again.
+		velocity=Vector2.ZERO;job_route.clear();job_phase="wait";job_timer=2.0;job_depot=Vector2.INF
+		return true
 	if item.cargo.is_empty() and job_kind=="idle":return false
 	velocity=Vector2.ZERO
 	if job_timer>0 and job_phase=="wait":
 		job_timer-=delta;return true
 	if not item.cargo.is_empty():
-		var depot:=DemoConfig.CHIEF_POSITION+Vector2(-35 if resident_id=="resident-0" else 35,110)
+		var index:=int(resident_id.trim_prefix("resident-"))
+		var x_offsets:=[-35,35,-70,0,70]
+		var depot:=jobs.model.building_position("chief")+Vector2(x_offsets[index%5],110+30*(index/5))
+		if depot!=job_depot:job_route.clear();job_depot=depot
 		if position.distance_to(depot)<=5:
 			jobs.deposit(resident_id);job_phase="wait";job_timer=2;job_route.clear();return true
 		if job_route.is_empty():
