@@ -64,12 +64,27 @@ func _process(delta:float)->void:
 	if not app.application_active or app.modal or app.world_map_open:controls.hide();cost_display.hide();return
 	age+=delta;ghost.position.y=-4-3*sin(age*TAU/2.4)
 	refresh_validity()
-	var at:=get_global_transform_with_canvas()*Vector2(0,-165)
-	controls.position=Vector2(clampf(at.x-52,app.safe.x,maxf(app.safe.x,app.w-app.safe.x-104)),clampf(at.y-44,app.safe.y+110,maxf(app.safe.y+110,app.h-app.safe.y-140)))
-	var bottom:=get_global_transform_with_canvas()*Vector2(0,55)
-	cost_display.position=Vector2(clampf(bottom.x-115,app.safe.x,maxf(app.safe.x,app.w-app.safe.x-230)),clampf(bottom.y,app.safe.y+110,maxf(app.safe.y+110,app.h-app.safe.y-140)))
-	cost_display.visible=visible and moving_key.is_empty();cost_display.update_cost(app.model.building_cost(kind,1))
-	controls.visible=visible;queue_redraw()
+	update_overlay_layout();queue_redraw()
+func update_overlay_layout()->void:
+	# Anchor to the rendered building, not a fixed world height or a separate HUD band.
+	# At an edge, flip the controls as a group instead of letting them stop following.
+	var bounds:Rect2=ghost.sprite.get_global_transform_with_canvas()*ghost.sprite.get_rect()
+	var viewport:=Rect2(app.safe,Vector2(app.w,app.h)-app.safe*2)
+	if not visible or not bounds.intersects(viewport):
+		controls.hide();cost_display.hide();return
+	var extent:=controls.get_combined_minimum_size().max(Vector2(104,48))
+	var top:=bounds.position.y-extent.y-8
+	var below:=top<viewport.position.y
+	var y:=bounds.end.y+8 if below else top
+	# If both sides are outside the viewport, stay on the visible building edge.
+	y=clampf(y,viewport.position.y,maxf(viewport.position.y,viewport.end.y-extent.y))
+	controls.position=Vector2(clampf(bounds.get_center().x-extent.x*.5,viewport.position.x,maxf(viewport.position.x,viewport.end.x-extent.x)),y)
+	controls.show()
+	var cost_y:float=bounds.end.y+8+(extent.y+6 if below else 0)
+	if cost_y+cost_display.size.y>viewport.end.y:
+		cost_y=controls.position.y-cost_display.size.y-6
+	cost_display.position=Vector2(clampf(bounds.get_center().x-115,viewport.position.x,maxf(viewport.position.x,viewport.end.x-230)),maxf(viewport.position.y,cost_y))
+	cost_display.visible=moving_key.is_empty();cost_display.update_cost(app.model.building_cost(kind,1))
 func _draw()->void:
 	if not placement_active:return
 	var outline:=EnvironmentProp.hut_footprint(340 if kind=="chief" else 230)
