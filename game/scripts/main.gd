@@ -88,7 +88,7 @@ func update_quest()->void:
 	if not is_instance_valid(objective):return
 	var level:=model.chief_level()
 	objective.text="촌장집을 건설해요" if level==0 else ("새 주민이 찾아왔어요" if model.family_available() else "주민 %d/%d명 · 촌장집 %d단계"%[model.resident_count(),model.resident_capacity(),level])
-	objective.size=Vector2(144,24)
+	objective.size=Vector2(168,24)
 	objective.get_parent().size=Vector2(240,84 if quest_expanded else 52)
 	if is_instance_valid(quest_arrow):quest_arrow.rotation=0.0 if quest_expanded else PI
 	if is_instance_valid(quest_accent):quest_accent.size.y=48 if quest_expanded else 18
@@ -457,12 +457,12 @@ func play_hud() -> void:
 	var quest_bg:=picture(quest_panel,preload("res://assets/ui/v0158/quest-hud-paper.png"),Rect2(0,0,240,84))
 	quest_bg.stretch_mode=TextureRect.STRETCH_SCALE;quest_bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT);quest_bg.modulate.a=.9
 	quest_arrow=picture(quest_panel,preload("res://assets/ui/v0158/quest-hud-fold.png"),Rect2(206,10,24,24));quest_arrow.pivot_offset=Vector2(12,12)
-	picture(quest_panel,DemoArt.facility_icon("chief",1),Rect2(10,10,32,32))
-	objective=label(quest_panel,"",13,Color("49321e"));objective.position=Vector2(52,10);objective.size=Vector2(144,24);objective.clip_text=true
+	picture(quest_panel,DemoArt.facility_icon("chief",1),Rect2(10,10,28,28))
+	objective=label(quest_panel,"",13,Color("49321e"));objective.position=Vector2(40,14.8);objective.size=Vector2(168,24);objective.clip_text=true
 	quest_detail=Control.new();quest_detail.mouse_filter=Control.MOUSE_FILTER_IGNORE;quest_panel.add_child(quest_detail)
-	picture(quest_detail,DemoArt.icon("wood"),Rect2(52,50,24,24));picture(quest_detail,DemoArt.icon("stone"),Rect2(142,50,24,24))
-	quest_wood=label(quest_detail,"",12,Color("49321e"));quest_wood.position=Vector2(80,50);quest_wood.size=Vector2(54,24)
-	quest_stone=label(quest_detail,"",12,Color("49321e"));quest_stone.position=Vector2(176,50);quest_stone.size=Vector2(54,24)
+	picture(quest_detail,DemoArt.icon("wood"),Rect2(40,40.4,24,24));picture(quest_detail,DemoArt.icon("stone"),Rect2(136,40.4,24,24))
+	quest_wood=label(quest_detail,"",12,Color("49321e"));quest_wood.position=Vector2(68,40.4);quest_wood.size=Vector2(54,24)
+	quest_stone=label(quest_detail,"",12,Color("49321e"));quest_stone.position=Vector2(164,40.4);quest_stone.size=Vector2(54,24)
 	quest_panel.set_meta("semantic_text","퀘스트 상세 펼침·접힘")
 	joystick=DemoJoystick.new();stage.add_child(joystick);joystick.position=Vector2(safe.x,h-safe.y-140);joystick.hide();joystick.set_process_input(false)
 	var action_width:=64.0 if w/h>2.2 else 60.0
@@ -648,9 +648,10 @@ func _process(delta: float) -> void:
 	if toast_time > 0:
 		toast_time -= delta
 		if toast_time <= 0 and is_instance_valid(toast_label): toast_label.text = ""
+	if is_instance_valid(world):world.simulation_paused=not application_active or world_map_open or map_transition_active
 	if screen != "play" or world_map_open or map_transition_active or not is_instance_valid(world):
 		return
-	if application_active and not modal:
+	if application_active:
 		farm_tick+=delta
 		if farm_tick>=1.0:
 			FarmProduction.tick(model,farm_tick);farm_tick=0.0
@@ -925,6 +926,7 @@ func claim_home(index:int) -> void:
 
 func world_tap(screen_point:Vector2) -> void:
 	if menu_animating and action_row.get_global_rect().has_point(screen_point):return
+	if camera_modal():close_modal();return
 	if world_map_open or modal or gestures.blocked:return
 	var at:Vector2=world.get_global_transform_with_canvas().affine_inverse()*screen_point
 	if not relocating_key.is_empty() and building_menu.hit_key(at)==relocating_key:return

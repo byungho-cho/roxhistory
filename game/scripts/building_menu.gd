@@ -9,7 +9,7 @@ var close_button:DemoButton
 var saved_camera_offset:=Vector2.ZERO
 var framing_active:=false
 static var textures:Dictionary={}
-const ANCHOR_Y:=-62.0 # Approved menu raised another 20 logical UI pixels to overlap the building.
+const ANCHOR_Y:=-35.0 # Approved menu raised another 20 logical UI pixels to overlap the building.
 const ROOT:="res://assets/ui/building-menu-v001/"
 func _init(owner_app:Node)->void:app=owner_app
 static func art(file:String)->Texture2D:
@@ -124,7 +124,7 @@ func refresh()->void:
 		bounds=sprite.get_global_transform_with_canvas()*sprite.get_rect()
 		anchor=Vector2(bounds.get_center().x,bounds.end.y)
 	position=anchor+Vector2(-size.x*.5,ANCHOR_Y)
-	close_button.position=Vector2(396,0)*.6
+	close_button.position=Vector2(396,0)*.6-Vector2(0,44*.2)
 	queue_redraw()
 
 func _process(_delta:float)->void:

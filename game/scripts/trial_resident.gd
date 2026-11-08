@@ -22,6 +22,9 @@ var rng:=RandomNumberGenerator.new()
 var idle_time:=0.0
 var visual_elapsed:=0.0
 const WORK_WALK_FACTOR:=.5
+const GATHER_SECONDS:=10.0
+var duty_clock:=0.0
+var patrol_step:=-1
 func _ready()->void:
 	if resident_id.is_empty():resident_id="resident-0" if variant=="female" else "resident-1"
 	jobs=ResidentJobs.new(get_parent().model)
@@ -34,12 +37,13 @@ func _draw()->void:
 	draw_set_transform(Vector2(4,-2),0,Vector2(1,.28));draw_circle(Vector2.ZERO,20,SceneStyle.CONTACT_COLOR);draw_set_transform(Vector2.ZERO)
 	if job_phase=="harvest":
 		draw_rect(Rect2(-20,-66,40,5),Color(0,0,0,.65))
-		draw_rect(Rect2(-19,-65,38*clampf(1-job_timer/1.2,0,1),3),Color("bfd274"))
+		draw_rect(Rect2(-19,-65,38*clampf(1-job_timer/(1.2 if job_kind=="farmer" else GATHER_SECONDS),0,1),3),Color("bfd274"))
 func _physics_process(delta:float)->void:
 	var world:DemoWorld=get_parent()
-	if world.player.presentation_paused:
+	if world.simulation_paused:
 		visual.viewport.render_target_update_mode=SubViewport.UPDATE_DISABLED
 		return
+	duty_clock+=delta
 	var before:=position
 	if _job_tick(delta):
 		pass
@@ -71,7 +75,8 @@ func _physics_process(delta:float)->void:
 	if visual_elapsed>=1.0/30.0:
 		visual.set_render_zoom(world.player.zoom_factor)
 		visual.work_kind=job_kind
-		visual.animate(visual_elapsed,velocity.normalized(),phase,travelled>.01,job_kind if job_phase=="harvest" else "",maxf(0,float(DemoConfig.get_data().gather_seconds)-job_timer),false)
+		var action:=job_kind if job_phase=="harvest" else "farm_care" if job_kind=="farmer" and job_phase=="farm_wait" else "guard" if job_kind=="guard" else ""
+		visual.animate(visual_elapsed,velocity.normalized(),phase,travelled>.01,action,duty_clock if action in ["farm_care","guard"] else maxf(0,(1.2 if job_kind=="farmer" else GATHER_SECONDS)-job_timer),false)
 		visual.viewport.render_target_update_mode=SubViewport.UPDATE_ONCE
 		visual_elapsed=0
 
@@ -87,7 +92,7 @@ func work_status()->String:
 	if item.job=="guard":return "초소 근무 중" if job_phase=="guard" else "초소로 이동 중"
 	if item.job=="farmer":
 		var cycle:=FarmProduction.entry(jobs.model,str(item.get("building","")))
-		return "수확 중" if job_phase=="harvest" else {"prepare":"재배 준비","grow":"성장 대기","ready":"수확 준비","harvest":"수확 준비"}.get(cycle.phase,"농장으로 이동 중")
+		return "수확 중" if job_phase=="harvest" else {"prepare":"재배 준비","grow":"농장 관리 중","ready":"수확 준비","harvest":"수확 준비"}.get(cycle.phase,"농장으로 이동 중")
 	return {"travel":"자원으로 이동 중","harvest":"채집 중","wait":"자원·경로 대기"}.get(job_phase,"작업 준비 중")
 
 # A stopped/reassigned worker first delivers the existing load, never discards it.
@@ -150,7 +155,7 @@ func _job_tick(delta:float)->bool:
 	var offset:=job_route[0]-position
 	if offset.length()<=3:
 		job_route.remove_at(0)
-		if job_route.is_empty() and job_phase=="travel":job_phase="harvest";job_timer=float(DemoConfig.get_data().gather_seconds)
+		if job_route.is_empty() and job_phase=="travel":job_phase="harvest";job_timer=GATHER_SECONDS
 		return true
 	var before:=position
 	ActorMovement.move(self,ActorMovement.direction_to(position,job_route[0],delta,job_walk_factor()),job_walk_factor())
@@ -193,6 +198,10 @@ func _station_tick(delta:float,item:Dictionary)->void:
 	if found.is_empty():_job_wait();return
 	if station_key!=key:station_key=key;job_phase="idle";job_route.clear();job_timer=0
 	var at:Vector2=found.position+Vector2(0,90)
+	if job_kind=="guard":
+		var step:=int(duty_clock/8.0)%3
+		if step!=patrol_step:patrol_step=step;job_route.clear()
+		at=found.position+[Vector2(-65,90),Vector2(0,115),Vector2(65,90)][step]
 	if position.distance_to(at)>5:
 		if job_route.is_empty() and not _plan_job_route(at):_job_wait();return
 		if not job_route.is_empty():

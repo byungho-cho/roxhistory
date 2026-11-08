@@ -21,15 +21,15 @@ func _ready()->void:
 	bubble.pressed.connect(request);app.stage.add_child(bubble)
 	var atlas:=AtlasTexture.new();atlas.atlas=preload("res://assets/ui/v0158/resident-bubble-bg.png");atlas.region=Rect2(211,11,345,105);atlas.filter_clip=true
 	background=app.picture(bubble,atlas,Rect2(0,0,270,44));background.stretch_mode=TextureRect.STRETCH_SCALE
-	app.picture(bubble,preload("res://assets/ui/v0158/resident-icon.png"),Rect2(10,6,32,32))
-	headline=Label.new();headline.theme=DemoArt.theme();headline.position=Vector2(50,10);headline.size=Vector2(210,24);headline.vertical_alignment=VERTICAL_ALIGNMENT_CENTER;headline.add_theme_font_size_override("font_size",14);headline.add_theme_color_override("font_color",Color("49321e"));headline.mouse_filter=Control.MOUSE_FILTER_IGNORE;bubble.add_child(headline)
+	app.picture(bubble,preload("res://assets/ui/v0158/resident-icon.png"),Rect2(3.6,2.8,38.4,38.4))
+	headline=Label.new();headline.theme=DemoArt.theme();headline.position=Vector2(50,5.2);headline.size=Vector2(210,24);headline.vertical_alignment=VERTICAL_ALIGNMENT_CENTER;headline.add_theme_font_size_override("font_size",14);headline.add_theme_color_override("font_color",Color("49321e"));headline.mouse_filter=Control.MOUSE_FILTER_IGNORE;bubble.add_child(headline)
 	progress=ProgressBar.new();progress.show_percentage=false;progress.size=Vector2(250,3);progress.mouse_filter=Control.MOUSE_FILTER_IGNORE;bubble.add_child(progress);progress.position=Vector2(10,40);progress.hide()
 func request()->void:
 	if talking or app.modal or not app.model.family_available():return
 	var needed:int=app.model.family_visitor_count()
 	if app.model.resident_capacity()-app.model.resident_count()<needed:
 		show_capacity_needed();return
-	app.navigation.start("family","first",MEETING)
+	finish()
 func begin()->void:
 	if not app.model.family_available():return
 	if app.model.resident_capacity()-app.model.resident_count()<app.model.family_visitor_count():show_capacity_needed();return
@@ -48,7 +48,7 @@ func _process(delta:float)->void:
 	if not is_instance_valid(app.world):return
 	if app.model.family_available() and not app.model.state.get("resident_guide_seen",false) and not app.modal and not app.choosing_plot and not app.world_map_open and app.application_active:
 		var next:Dictionary=app.model.state.duplicate(true);next.resident_guide_seen=true
-		if app.model.commit(next):app.show_character_guide("새 주민이 찾아왔어요","함께 머물 곳을 찾고 있어요.\n주민을 만나 마을로 맞이해 주세요.")
+		if app.model.commit(next):app.show_character_guide("새 주민이 찾아왔어요","함께 머물 곳을 찾고 있어요.\n주민 말풍선을 눌러 마을로 맞이해 주세요.")
 	if app.application_active and app.screen=="play":
 		visit_check_elapsed+=delta
 		if visit_check_elapsed>=1.0:
@@ -57,7 +57,7 @@ func _process(delta:float)->void:
 	if not bubble.visible:return
 	headline.text="함께 마을을 가꾸어요…" if talking else "함께 머물 곳을 찾고 있어요"
 	var width:float=headline.get_theme_font("font").get_string_size(headline.text,HORIZONTAL_ALIGNMENT_LEFT,-1,14).x+60
-	bubble.size=Vector2(minf(width,app.w-app.safe.x*2),44);background.size=bubble.size
+	bubble.size=Vector2(minf(width,app.w-app.safe.x*2),44);background.position.x=32*.2;background.size=Vector2(bubble.size.x-background.position.x,bubble.size.y)
 	headline.size.x=bubble.size.x-60;progress.size.x=bubble.size.x-20
 	var head:=Vector2(1590,745)
 	if not app.world.visitors.is_empty():

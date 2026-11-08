@@ -11,7 +11,7 @@ func _init(image:Sprite2D,category:String,tier:int)->void:
 	sprite=image;kind=category;level=tier;name="BuildingLifeEffects";visibility_layer=2
 func _process(delta:float)->void:
 	var world:=get_parent().get_parent() as DemoWorld
-	var paused:bool=not is_visible_in_tree() or (world!=null and world.player.presentation_paused)
+	var paused:bool=not is_visible_in_tree() or (world!=null and world.simulation_paused)
 	if not paused:clock+=delta
 	if kind=="hearth":
 		if fire==null:fire=HearthParticles.new();add_child(fire)
@@ -29,9 +29,13 @@ func glow_line(points:PackedVector2Array,strength:float)->void:
 		var color:=gold;color.a*=.10 if layer==3 else .28 if layer==2 else 1.0
 		draw_polyline(points,color,[2.8,6.0,10.0][layer-1],true)
 func draw_shrine()->void:
-	var strength:float=(.86 if level==3 else .98)*(.88+.12*sin(clock*1.7))
+	var pulse:=fposmod(clock,7.0)/5.5
+	if pulse>=1.0:return
+	var expansion:=1.0+pulse*2.8
+	var strength:float=(.86 if level==3 else .98)*pow(1.0-pulse,1.3)
 	var center:=Vector2(.455,.435) if level==3 else Vector2(.485,.418)
 	var radii:=Vector2(.073,.051) if level==3 else Vector2(.068,.048)
+	radii*=expansion
 	var points:=PackedVector2Array()
 	for i in 65:
 		var a:=TAU*i/64.0

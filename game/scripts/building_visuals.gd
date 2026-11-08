@@ -50,6 +50,7 @@ static func display_rect(kind: String, level: int = 1, ground_width: float = 230
 			center.y = -ground_width * 0.03
 		"outpost":
 			center.y = -ground_width * 0.3 + 3.0
+	if kind=="farm":center.y+=dimensions.y*.3
 	return Rect2(center - dimensions * 0.5, dimensions)
 
 static func apply(sprite: Sprite2D, kind: String, level: int = 1, ground_width: float = 230.0) -> void:

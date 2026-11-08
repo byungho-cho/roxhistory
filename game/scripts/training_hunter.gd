@@ -14,7 +14,7 @@ func _draw()->void:
 	draw_set_transform(Vector2(2,-1),0,Vector2(1,.28));draw_circle(Vector2.ZERO,17,SceneStyle.CONTACT_COLOR)
 func _process(delta:float)->void:
 	var world:=get_parent().get_parent().get_parent() as DemoWorld
-	if not is_visible_in_tree() or (world and world.player.presentation_paused):
+	if not is_visible_in_tree() or (world and world.simulation_paused):
 		visual.viewport.render_target_update_mode=SubViewport.UPDATE_DISABLED;return
 	clock+=delta;render_elapsed+=delta
 	var point:=get_global_transform_with_canvas().origin

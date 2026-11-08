@@ -28,6 +28,7 @@ var mesh_count := 0
 var skinned_limbs: Array[MeshInstance3D] = []
 var eye_nodes: Array[Node3D] = []
 var work_kind := "wood"
+var guard_weapon:Node3D
 var last_action_time := 0.0
 var idle_elapsed:=0.0
 var idle_looking:=false
@@ -185,7 +186,7 @@ func animate(delta: float, movement: Vector2, phase: float, walking: bool, actio
 	pivot.rotation.y = heading
 	if not paused: clock += delta
 	walk_blend = move_toward(walk_blend,1.0 if walking and not paused else 0.0,delta*6.0)
-	action_blend = move_toward(action_blend,1.0 if action != "" and not paused else 0.0,delta*10.0)
+	action_blend = move_toward(action_blend,1.0 if action != "" and action!="guard" and not paused else 0.0,delta*10.0)
 	# Retain the last work pose during release instead of jumping to t=0.
 	if action != "": last_action_time = action_time
 	var strike := HeroMotion.stroke(last_action_time)*action_blend
@@ -206,7 +207,11 @@ func animate(delta: float, movement: Vector2, phase: float, walking: bool, actio
 	walk_blend=walking_weight
 	apply_walk_clip(phase,walking_weight*(1.0-action_blend))
 	ambient_action=""
-	if action=="training":apply_training_pose(action_time)
+	if action=="farm_care":apply_farm_care(action_time)
+	elif action=="guard":
+		blend_bone("armR",Vector3(-.8,0,-.18),1)
+		blend_bone("forearmR",Vector3(-.7,0,0),1)
+	elif action=="training":apply_training_pose(action_time)
 	elif ambient_allowed and idle_elapsed>=1.5 and not walking and action=="":apply_ambient_idle(idle_elapsed)
 	idle_looking=false
 	if idle_elapsed>=2.5 and not walking and action=="" and ambient_action.is_empty():
@@ -217,7 +222,8 @@ func animate(delta: float, movement: Vector2, phase: float, walking: bool, actio
 			var glance:=sin(t/3.6*PI)*side
 			rotate_bone("head",Vector3(.025,glance*.28,0))
 			rotate_bone("spine",Vector3(0,glance*.055,0))
-	tool_3d.visible = action != "" and not paused
+	tool_3d.visible = action != "" and action!="farm_care" and not paused
+	update_guard_weapon(action=="guard")
 
 static func idle_gesture(elapsed:float,offset:float)->Dictionary:
 	var t:=fposmod(elapsed+offset,26.0)
@@ -333,3 +339,18 @@ func build_villager() -> void:
 	stone.mesh.radial_segments=7;stone.mesh.rings=3
 	for band in 3:cone(tool_3d,Vector3(0,0,.35+band*.024),.036,.036,.018,material("b98740")).rotation.x=PI/2
 
+
+func apply_farm_care(seconds:float)->void:
+	var weight:=pow(maxf(0,sin(seconds*TAU/4.5)),2)
+	blend_bone("spine",Vector3(.08+weight*.35,0,0),1)
+	blend_bone("head",Vector3(.12+weight*.15,0,0),1)
+	blend_bone("armR",Vector3(-.35-weight*.65,0,-.18),1)
+	blend_bone("armL",Vector3(-.2-weight*.45,0,.18),1)
+	blend_bone("forearmR",Vector3(-.5-weight*.35,0,0),1)
+func update_guard_weapon(active:bool)->void:
+	if active and guard_weapon==null:
+		guard_weapon=Node3D.new();guard_weapon.name="GuardSpear";tool_3d.add_child(guard_weapon)
+		cone(guard_weapon,Vector3(0,0,.48),.018,.022,1.15,material("775039")).rotation.x=PI/2
+		cone(guard_weapon,Vector3(0,0,1.13),0,.075,.23,material("b0b3a2")).rotation.x=PI/2
+	for child in tool_3d.get_children():
+		if child is Node3D:child.visible=active if child==guard_weapon else not active

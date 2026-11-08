@@ -2,6 +2,7 @@ class_name DemoWorld
 extends Node2D
 
 var model: GameState
+var simulation_paused:=false
 var player: DemoPlayer
 var selected := ""
 var art_nodes := {}
@@ -283,7 +284,7 @@ func reward_hit(index:int,at:Vector2)->bool:
 
 func _process(_delta: float) -> void:
 	if not is_instance_valid(player): return
-	for animal in animals: animal.presentation_paused = player.presentation_paused
+	for animal in animals: animal.presentation_paused = simulation_paused
 	var id := str(nearest().get("id",""))
 	if id != selected:
 		selected = id

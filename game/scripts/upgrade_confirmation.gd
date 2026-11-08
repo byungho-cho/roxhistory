@@ -19,5 +19,6 @@ func _process(_delta:float)->void:
 	if not is_instance_valid(sprite):app.close_modal();return
 	var bounds:Rect2=sprite.get_global_transform_with_canvas()*sprite.get_rect()
 	cost_display.set_world_scale(app.world.get_global_transform_with_canvas().get_scale().x)
+	cost_display.cancel_button.position.y=-HudButtons.DIAMETER*.2
 	var extent:=cost_display.screen_extent
-	position=Vector2(clampf(bounds.get_center().x-extent.x*.5,app.safe.x,maxf(app.safe.x,app.w-app.safe.x-extent.x)),clampf(bounds.position.y-extent.y-8,app.safe.y+100,maxf(app.safe.y+100,app.h-app.safe.y-extent.y)))
+	position=Vector2(clampf(bounds.get_center().x-extent.x*.5,app.safe.x,maxf(app.safe.x,app.w-app.safe.x-extent.x)),clampf(bounds.position.y-extent.y*.8-8,app.safe.y+100,maxf(app.safe.y+100,app.h-app.safe.y-extent.y)))
