@@ -78,7 +78,9 @@ try {
     $fingerprint = (Get-FileHash (Join-Path $logs 'signer-certificate.der')).Hash
     $signer = [regex]::Match($signatureLog, '(?m)^Signer #1 certificate SHA-256 digest: ([0-9a-fA-F]+)\r?$')
     if (-not $signer.Success -or $signer.Groups[1].Value -ne $fingerprint) { throw 'APK signer does not match the existing key.' }
-    $process = Start-Process -FilePath $pendingExe -ArgumentList @('--headless','--quit-after','120','--log-file',(Join-Path $logs 'windows-runtime.log')) -WindowStyle Hidden -PassThru -Wait
+    # The app's test mode uses a separate save/preferences directory. A smoke
+    # launch must never migrate or finish jobs in the player's live save.
+    $process = Start-Process -FilePath $pendingExe -ArgumentList @('--headless','--quit-after','120','--log-file',(Join-Path $logs 'windows-runtime.log'),'--','--test-ui') -WindowStyle Hidden -PassThru -Wait
     if ($process.ExitCode -ne 0) { throw 'Windows runtime smoke check failed.' }
     if ((Get-FileHash -LiteralPath $key).Hash -ne $keyHash) { throw 'Signing key unexpectedly changed.' }
     Assert-Replaceable
