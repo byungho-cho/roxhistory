@@ -1,5 +1,5 @@
 [CmdletBinding()]
-param([string]$Repository = 'byungho-cho/roxhistory')
+param([string]$Repository = 'byungho-cho/roxhistory', [string]$ReleaseNotesPath)
 $ErrorActionPreference = 'Stop'
 $repo = Split-Path $PSScriptRoot -Parent
 $output = Join-Path $repo 'build'
@@ -33,6 +33,9 @@ Source commit: $($manifest.commit)
 Both files were built and verified together. This Android APK uses the current MY-NUROX debug signing key. Older differently signed installations require reinstalling; uninstalling can erase saved progress.
 Build and signature checks passed. Known legacy regression-test failures remain documented; this is not a full gameplay approval.
 "@ | Set-Content -LiteralPath $notes -Encoding utf8
+if ($ReleaseNotesPath) {
+    Get-Content -Raw -LiteralPath $ReleaseNotesPath | Add-Content -LiteralPath $notes -Encoding utf8
+}
 if (-not $exists) {
     $created = & gh api --method POST "repos/$Repository/releases" -f "tag_name=$tag" -f "target_commitish=$($manifest.commit)" -f "name=RoxHistory $version" -F "body=@$notes" -F draft=true -F prerelease=true
     if ($LASTEXITCODE -ne 0) { throw 'Release creation failed.' }
