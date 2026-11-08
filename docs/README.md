@@ -1,6 +1,6 @@
 # RoxHistory 문서 안내
 
-2026-11-03 KST. **현재 개발 현황은 v0.1.19, 주민 8종은 외형 승인·Figma 등록 완료 / 게임 반영 대기**입니다.
+2026-11-09 KST. **최신 배포 0.1.67** 기준으로 현행화했습니다. 배포 소스와 main의 차이, Figma 완료·게임 반영 대기는 [현재 개발 현황](current-status.md)에서 구분합니다.
 
 | 문서 | 용도 |
 | --- | --- |
@@ -14,7 +14,7 @@
 | [디자인 에셋](../design/README.md) | 최신 Figma·원본·아카이브 |
 | [음악·효과음](../assets/audio/README.md) | 채택곡·백업·런타임 상태 |
 
-[v0.1.19 APK](https://github.com/byungho-cho/roxhistory/releases/download/v0.1.19/RoxHistory-0.1.19-20261103-062455.apk) · [최신 검증 보고서](shared-reports/2026-11-03-world-life/report.md).
+[0.1.67 Android·Windows 릴리스](https://github.com/byungho-cho/roxhistory/releases/tag/v0.1.67) · [배포 소스의 상세 보고서](https://github.com/byungho-cho/roxhistory/blob/208e02c9aa0b89631cc791b4d9fea515a5e06308/docs/integration-handoff-20261109.md).
 
 ## 이전 기획과 검증 기록
 
