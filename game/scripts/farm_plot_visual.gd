@@ -12,6 +12,7 @@ func _draw()->void:
 	var progress:=float(cycle.elapsed)/FarmProduction.GROWTH if cycle.phase=="grow" else (1.0 if cycle.phase in ["ready","harvest"] else 0.0)
 	var stage:=clampi(int(progress*4),0,3)
 	var count:=12 if int(found.data.get("level",1))==4 else 6
+	if cycle.phase=="harvest":count=ceili(count*(1.0-float(cycle.cuts)/FarmProduction.CUTS[int(cycle.cycle_level)-1]))
 	if cycle.phase!="prepare":
 		for i in count:
 			var at:=Vector2((i%4-1.5)*23,(i/4-1)*14-28)
@@ -29,4 +30,4 @@ func _draw()->void:
 	var caption:="준비 %02d:%02d"%[int(remaining)/60,int(remaining)%60] if cycle.phase=="prepare" else "성장 %d%% · %02d:%02d"%[roundi(progress*100),int(remaining)/60,int(remaining)%60]
 	if cycle.phase in ["ready","harvest"]:caption="수확 대기" if cycle.phase=="ready" else "수확 중"
 	draw_string(DemoArt.theme().default_font,Vector2(-94,40),caption,HORIZONTAL_ALIGNMENT_CENTER,188,18,Color("fff0d3"))
-	if int(cycle.stock)>0:draw_string(DemoArt.theme().default_font,Vector2(-110,62),"보관 %d · 운반 규칙 대기"%int(cycle.stock),HORIZONTAL_ALIGNMENT_CENTER,220,15,Color("fff0d3"))
+	if int(cycle.stock)>0:draw_string(DemoArt.theme().default_font,Vector2(-110,62),"보관 %d"%int(cycle.stock),HORIZONTAL_ALIGNMENT_CENTER,220,15,Color("fff0d3"))

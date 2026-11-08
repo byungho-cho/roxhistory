@@ -46,12 +46,17 @@ func run()->void:
 		check(FarmProduction.entry(model,"farm:f1").phase=="grow","Growth lasts ten minutes %d"%level)
 		FarmProduction.tick(model,1)
 		check(FarmProduction.entry(model,"farm:f1").phase=="ready","Ready at 100 percent %d"%level)
-		for i in FarmProduction.CUTS[level-1]:check(FarmProduction.harvest(model,"resident-0","farm:f1"),"Harvest cut %d-%d"%[level,i])
+		var cycle_grain:int=model.state.grain
+		for i in FarmProduction.CUTS[level-1]:
+			check(FarmProduction.harvest(model,"resident-0","farm:f1"),"Harvest cut %d-%d"%[level,i])
+			check(jobs.entry("resident-0").cargo.amount==FarmProduction.YIELDS[level-1]/FarmProduction.CUTS[level-1] and not FarmProduction.harvest(model,"resident-0","farm:f1"),"Each cut waits for exactly one load delivery %d-%d"%[level,i])
+			check(jobs.deposit("resident-0"),"Each load deposited %d-%d"%[level,i])
 		var cycle:=FarmProduction.entry(model,"farm:f1")
-		check(cycle.stock==FarmProduction.YIELDS[level-1] and cycle.phase=="prepare" and cycle.elapsed==0,"Exact yield and next cycle %d"%level)
+		check(cycle.stock==0 and model.state.grain==cycle_grain+FarmProduction.YIELDS[level-1] and cycle.phase=="prepare" and cycle.elapsed==0,"Exact yield and next cycle %d"%level)
 		check(not FarmProduction.harvest(model,"resident-0","farm:f1"),"No duplicate final cut %d"%level)
 	var grain:int=model.state.grain
-	check(not FarmProduction.collect_stock(model,"resident-0","farm:f1",0),"Unspecified transport amount stays pending")
+	var stock_fixture:=model.state.duplicate(true);stock_fixture.farm_cycles["farm:f1"].stock=10;model.commit(stock_fixture)
+	check(not FarmProduction.collect_stock(model,"resident-0","farm:f1",0),"Zero legacy stock transfer rejected")
 	check(FarmProduction.collect_stock(model,"resident-0","farm:f1",10),"Explicit transport load atomically leaves farm stock")
 	check(not FarmProduction.collect_stock(model,"resident-0","farm:f1",10),"One cargo at a time")
 	check(jobs.deposit("resident-0") and model.state.grain==grain+10 and not jobs.deposit("resident-0"),"Grain shares exact-once home deposit")
@@ -62,6 +67,7 @@ func run()->void:
 	model.commit(old);reloaded=GameState.new(SaveStore.new(folder))
 	check(reloaded.state.grain==123 and reloaded.state.tokens==123 and reloaded.state.copper==0,"Seed balance migrated without erasing old value or inventing copper income")
 	check(not reloaded.claim_reward(0) and not reloaded.state.homes[0].claimed,"Unspecified copper income not invented; legacy claim flags retained")
+	model=reloaded;jobs=ResidentJobs.new(model)
 	var node:Dictionary=model.nodes()[0]
 	while node.kind!="wood":node=model.nodes()[1]
 	var s:=model.state.duplicate(true);s.depleted[node.id]=int(node.charges)-1;model.commit(s)
@@ -78,10 +84,13 @@ func run()->void:
 	VillageNotifications.set_enabled(model,"construction",false);VillageNotifications.dispatch(model,"construction",{});check(events.size()==1,"OFF suppresses event")
 	check(not VillageNotifications.set_enabled(model,"harvest",true),"Automatic harvest excluded")
 	var quote:=model.demolition_quote("h1");check(quote.departures==5,"Preflight warns all five departures")
-	s=model.state.duplicate(true);s.resident_jobs["resident-3"].cargo={"kind":"wood","amount":10};model.commit(s)
+	s=model.state.duplicate(true);s.resident_jobs["resident-3"].cargo={"kind":"wood","amount":10};s.resident_jobs["resident-0"].cargo={"kind":"grain","amount":5};s.resident_jobs["resident-1"].cargo={"kind":"stone","amount":10};model.commit(s)
+	var departure_wood:int=model.state.wood;var departure_stone:int=model.state.stone;var departure_grain:int=model.state.grain
 	model.store.blocked=true;check(not model.demolish("h1") and model.resident_count()==5,"Failed demolition preserves homes and residents");model.store.blocked=false
 	check(model.demolish("h1") and model.resident_count()==0 and model.chief_level()==4,"Last home removal leaves chief and removes all residents")
-	check(model.state.resident_jobs.is_empty() and model.state.held_cargo.size()==1 and model.state.held_cargo[0].amount==10,"Departures clear assignments and hold carried goods without automatic credit or loss")
+	check(model.state.resident_jobs.is_empty() and model.state.held_cargo.is_empty() and model.state.wood==departure_wood+int(quote.wood)+10,"Departures immediately return carried resources once alongside demolition refund")
+	check(model.state.stone==departure_stone+int(quote.stone)+10 and model.state.grain==departure_grain+5,"Departing stone and grain loads return immediately without losing migrated balances")
+	var after_departure:=model.state.duplicate(true);check(not model.demolish("h1") and model.state==after_departure,"Repeated demolition cannot duplicate departure cargo refund")
 	check(ResidentJobs.new(model).assigned_to("farm:f1").is_empty(),"Farm assignment synchronized after departure")
 	check(model.store.valid(model.state),"Departed state valid")
 	model=fixture();jobs=ResidentJobs.new(model)
@@ -109,10 +118,10 @@ func run()->void:
 	var txn:=fixture();var txn_jobs:=ResidentJobs.new(txn);txn_jobs.assign("resident-0","farmer","farm:f1")
 	var txn_state:=txn.state.duplicate(true);txn_state.farm_cycles={"farm:f1":{"phase":"ready","elapsed":600.0,"cuts":0,"stock":0,"cycle_level":1}};txn.commit(txn_state);txn.store.blocked=true
 	check(not FarmProduction.harvest(txn,"resident-0","farm:f1") and FarmProduction.entry(txn,"farm:f1").stock==0,"Failed harvest save cannot consume crop or issue stock")
-	txn.store.blocked=false;FarmProduction.harvest(txn,"resident-0","farm:f1");txn.store.blocked=true
-	check(not FarmProduction.collect_stock(txn,"resident-0","farm:f1",5) and FarmProduction.entry(txn,"farm:f1").stock==5 and txn_jobs.entry("resident-0").cargo.is_empty(),"Failed load transfer retains exact farm stock")
-	txn.store.blocked=false
-	check(txn.demolish("farm:f1") and txn_jobs.entry("resident-0").job=="idle" and txn.state.held_cargo[0].amount==5,"Farm removal clears station and preserves gathered stock")
+	txn.store.blocked=false;FarmProduction.harvest(txn,"resident-0","farm:f1")
+	check(txn_jobs.entry("resident-0").cargo.amount==5 and FarmProduction.entry(txn,"farm:f1").stock==0,"Harvest directly creates one carried load without remote stock credit")
+	check(txn.demolish("farm:f1") and txn_jobs.entry("resident-0").job=="idle" and txn_jobs.entry("resident-0").cargo.amount==5,"Farm removal clears station and preserves cargo for home delivery")
+	check(txn_jobs.deposit("resident-0") and not txn_jobs.deposit("resident-0"),"Former farmer delivers remaining cargo exactly once")
 
 	var notified:=fixture();var emitted:Array=[]
 	notified.notification_requested.connect(func(event,payload):emitted.append({"event":event,"payload":payload}))

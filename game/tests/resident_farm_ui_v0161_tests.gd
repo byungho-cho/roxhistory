@@ -28,11 +28,23 @@ func run()->void:
 	app.resident_panel.show_assignment(2,"farmer","");await frames();check(app.overlay.find_child("ConfirmResidentAssignment",true,false).disabled,"No target farm cannot be assigned")
 	app.close_modal();var farmer:TrialResident=app.world.residents[0];farmer.position=Vector2(1300,1090)
 	s=app.model.state.duplicate(true);s.farm_cycles={"farm:f1":{"phase":"ready","elapsed":600.0,"cuts":0,"stock":0,"cycle_level":4}};app.model.commit(s)
-	for i in 4:
-		farmer._job_tick(.6);check(farmer.job_phase=="harvest","Harvest action active before 1.2 second cut %d"%i)
-		farmer._job_tick(.6)
-	check(FarmProduction.entry(app.model,"farm:f1").stock==40,"Farmer automatically completes four 1.2 second cuts")
-	check(FarmProduction.entry(app.model,"farm:f1").phase=="prepare","Automatic harvest returns to separate preparation phase")
+	var grain_before:int=app.model.state.grain
+	farmer._job_tick(.6);check(farmer.job_phase=="harvest" and ResidentJobs.new(app.model).entry(farmer.resident_id).cargo.is_empty(),"Harvest action active before 1.2 second cut")
+	farmer._job_tick(.6)
+	check(ResidentJobs.new(app.model).entry(farmer.resident_id).cargo.amount==10 and app.model.state.grain==grain_before,"First cut becomes one carried load without remote credit")
+	var loads:Array=[10];var carrying:=true;var early_credit:=false
+	farmer.set_physics_process(true)
+	for tick in 4800:
+		await physics_frame
+		var cargo:Dictionary=ResidentJobs.new(app.model).entry(farmer.resident_id).cargo
+		if not cargo.is_empty() and not carrying:loads.append(int(cargo.amount))
+		carrying=not cargo.is_empty()
+		if carrying and app.model.state.grain!=grain_before+10*(loads.size()-1):early_credit=true
+		if int(app.model.state.grain)>=grain_before+40:break
+	farmer.set_physics_process(false)
+	check(loads==[10,10,10,10] and not early_credit,"Four separate cuts produce four sequential home trips")
+	check(app.model.state.grain==grain_before+40 and FarmProduction.entry(app.model,"farm:f1").stock==0,"Farmer walks each load home and credits exactly forty")
+	check(FarmProduction.entry(app.model,"farm:f1").phase=="prepare","All four harvest trips lead to next preparation phase")
 	app.world.player.presentation_paused=false;await snap("farm")
 	s=app.model.state.duplicate(true);s.farm_cycles["farm:f1"].phase="grow";s.farm_cycles["farm:f1"].elapsed=450.0;app.model.commit(s)
 	app.world.player.zoom_at(Vector2(app.w,app.h)*.5,1.2,Vector2(1300,1000));await snap("farm-growth-temporary")
@@ -55,5 +67,15 @@ func run()->void:
 	var old_count:int=app.model.resident_count();app.close_modal();check(app.model.resident_count()==old_count,"Closing demolition popup never removes residents")
 	app.resident_panel.show_summary();await frames();root.size=Vector2i(1280,720);await frames(15);app.resident_panel.show_summary();await frames()
 	var scroll:ScrollContainer=app.overlay.find_child("ResidentAssignmentScroll",true,false);check(scroll.size.y>0,"Assignment remains usable at mobile landscape height")
+	app.close_modal();s=app.model.state.duplicate(true);s.resident_count=15;s.homes[1].level=4;s.homes.append({"uid":"h3","style":1,"claimed":true,"level":4,"position":[700,1100],"cost":{"wood":20,"stone":10}});app.model.commit(s)
+	for actor in app.world.residents:actor.set_physics_process(false)
+	app.resident_panel.show_summary();await frames(8);scroll=app.overlay.find_child("ResidentAssignmentScroll",true,false)
+	var row_button:Button
+	for button in app.overlay.find_children("*","Button",true,false):
+		if button.text=="변경":row_button=button;break
+	var start:=row_button.get_global_rect().get_center();touch(start,0,true);drag_touch(start-Vector2(0,320),0);touch(start-Vector2(0,320),0,false);await frames()
+	check(scroll.scroll_vertical>0 and app.overlay.find_child("ResidentAssignmentScroll",true,false)==scroll,"Dragging from resident change button scrolls instead of assigning")
+	scroll.scroll_vertical=100000;await frames();check(scroll.scroll_vertical>300,"Fifteen residents can scroll to bottom at mobile height")
+	await snap("residents-scroll-bottom")
 	print(JSON.stringify({"checks":checks,"failures":failures,"touch":"synthetic; Android hardware not tested"}));app.queue_free();await frames();quit(0 if failures.is_empty() else 1)
 

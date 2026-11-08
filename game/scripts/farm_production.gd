@@ -35,21 +35,23 @@ static func tick(model:GameState,seconds:float)->bool:
 static func harvest(model:GameState,id:String,key:String)->bool:
 	var jobs:=ResidentJobs.new(model);var worker:=jobs.entry(id)
 	var found:=model.lookup_building(key)
-	if model.busy or not jobs.available(id) or worker.job!="farmer" or worker.get("building","")!=key or found.is_empty() or found.data.has("upgrade"):return false
+	if model.busy or not jobs.available(id) or worker.job!="farmer" or worker.get("building","")!=key or not worker.cargo.is_empty() or model.built_count()==0 or found.is_empty() or found.data.has("upgrade"):return false
 	var cycle:=entry(model,key)
 	if cycle.phase not in ["ready","harvest"]:return false
 	var level:=clampi(int(cycle.cycle_level),1,4)-1
 	var amount:int=YIELDS[level]/CUTS[level]
-	if int(cycle.stock)+amount>BuildingRules.MAX_RESOURCE:return false
-	cycle.stock+=amount;cycle.cuts+=1;cycle.phase="harvest"
+	# Each cut becomes exactly one load; the next cut waits for actual delivery
+	# and the farmer's walk back to the field. No remote inventory credit.
+	worker.cargo={"kind":"grain","amount":amount}
+	cycle.cuts+=1;cycle.phase="harvest"
 	if int(cycle.cuts)>=CUTS[level]:cycle.phase="prepare";cycle.elapsed=0.0;cycle.cuts=0
 	var next:=model.state.duplicate(true)
 	if not next.has("farm_cycles"):next.farm_cycles={}
-	next.farm_cycles[key]=cycle
+	next.farm_cycles[key]=cycle;next.resident_jobs[id]=worker
 	return _commit(model,next)
 
-## Explicit load size is supplied by a future transport policy. Zero/unset does
-## nothing, so cut count is not silently turned into a number of round trips.
+## Recovery for stock recorded by earlier local development saves. Normal
+## production now creates one carried load atomically for every cut.
 static func collect_stock(model:GameState,id:String,key:String,amount:int)->bool:
 	var jobs:=ResidentJobs.new(model);var item:=jobs.entry(id)
 	if model.busy or not jobs.available(id) or item.job!="farmer" or item.get("building","")!=key or not item.cargo.is_empty() or amount<=0 or amount>10000:return false

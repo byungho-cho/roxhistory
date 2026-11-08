@@ -633,7 +633,7 @@ func inventory_summary() -> void:
 	var body:="나무 %d개 · 돌 %d개\n곡식 %d개 · 구리 %d개 (수입 규칙 미정)"%[model.state.wood,model.state.stone,model.state.get("grain",model.state.tokens),model.state.get("copper",0)]
 	var stock:=0
 	for cycle in model.state.get("farm_cycles",{}).values():stock+=int(cycle.stock)
-	if stock>0:body+="\n농장 보관 곡식 %d개 · 자동 운반 규칙 대기"%stock
+	if stock>0:body+="\n농장 보관 곡식 %d개"%stock
 	var held:={"wood":0,"stone":0,"grain":0}
 	for cargo in model.state.get("held_cargo",[]):held[cargo.kind]+=int(cargo.amount)
 	if not model.state.get("held_cargo",[]).is_empty():body+="\n별도 보관: 목재 %d · 석재 %d · 곡식 %d (처리 규칙 대기)"%[held.wood,held.stone,held.grain]
@@ -884,7 +884,7 @@ func show_demolition_confirmation(key:String)->void:
 	var quote:=model.demolition_quote(key)
 	if quote.is_empty():toast("현재 철거할 수 없는 건물이에요");return
 	var found:=model.lookup_building(key)
-	show_modal("건물을 철거할까요?","반환: 나무 %d개 · 돌 %d개"%[quote.wood,quote.stone]+("\n수용 인원이 줄어 주민 %d명이 무작위로 떠나며 배정이 해제됩니다. 운반 짐은 별도 보관합니다."%int(quote.departures) if int(quote.departures)>0 else ""),[{"text":"취소","action":close_modal},{"text":"철거","action":func():confirm_demolition(key)}],false,true,false,Vector2(480,380),true)
+	show_modal("건물을 철거할까요?","반환: 나무 %d개 · 돌 %d개"%[quote.wood,quote.stone]+("\n수용 인원이 줄어 주민 %d명이 무작위로 떠나며 배정이 해제됩니다. 운반 짐은 즉시 마을 자원에 반환합니다."%int(quote.departures) if int(quote.departures)>0 else ""),[{"text":"취소","action":close_modal},{"text":"철거","action":func():confirm_demolition(key)}],false,true,false,Vector2(480,380),true)
 	demolition_key=key
 
 func confirm_demolition(key:String)->void:
@@ -1031,7 +1031,7 @@ func show_modal(title: String, body: String, actions: Array, compact: bool = fal
 	var header:=HBoxContainer.new();header.name="ModalHeader";header.add_theme_constant_override("separation",10);v.add_child(header)
 	var modal_title:=label(header,title,20 if brief else 28,Color("47240e"));modal_title.add_theme_font_override("font",FigmaArt.TITLE);modal_title.size_flags_horizontal=Control.SIZE_EXPAND_FILL;modal_title.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
 	HudButtons.create(header,false,dismiss,"ModalClose")
-	var scroll:ScrollContainer = DevelopmentSettingsScroll.new() if title=="개발 설정" else ScrollContainer.new()
+	var scroll:ScrollContainer = DevelopmentSettingsScroll.new() if title in ["개발 설정","전체 주민 배분","일 선택"] or title.ends_with(" · 주민 배정") else ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	v.add_child(scroll)

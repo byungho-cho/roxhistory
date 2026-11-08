@@ -100,8 +100,8 @@ static func remove_excess(next:Dictionary,count:int)->void:
 		var index:=randi_range(0,roster.size()-1);var id:String=roster[index]
 		var item:Dictionary=next.get("resident_jobs",{}).get(id,{})
 		if not item.get("cargo",{}).is_empty():
-			var cargo:Dictionary=item.cargo.duplicate(true);cargo.reason="departed_resident";cargo.resident=id
-			next.held_cargo.append(cargo)
+			var cargo:Dictionary=item.cargo
+			next[cargo.kind]=int(next.get(cargo.kind,0))+int(cargo.amount)
 		if next.has("resident_jobs"):next.resident_jobs.erase(id)
 		departed.append(id);roster.remove_at(index)
 	next.resident_roster=roster;next.resident_count=roster.size();next.last_departed=departed
