@@ -1,0 +1,126 @@
+{
+  "export_date": "2026-11-08",
+  "figma_file": "zkbflw9fCdAlWbphhw5pSS",
+  "files": [
+    {
+      "file": "farm-l1.png",
+      "figma_node": "1706:36",
+      "width": 420,
+      "height": 320,
+      "mode": "RGBA",
+      "sha256": "502b683abcb792cfe920bc08ee854ab6dce4f102b16bfc0ba257d0ebf37302c3",
+      "alpha_range": [
+        0,
+        254
+      ]
+    },
+    {
+      "file": "farm-l2.png",
+      "figma_node": "1706:37",
+      "width": 440,
+      "height": 340,
+      "mode": "RGBA",
+      "sha256": "41df08d016e76b4c0f92e794f1af6dbc1de9c5e615c2a953f1765e87e6975ba8",
+      "alpha_range": [
+        0,
+        254
+      ]
+    },
+    {
+      "file": "farm-l3.png",
+      "figma_node": "1706:38",
+      "width": 480,
+      "height": 380,
+      "mode": "RGBA",
+      "sha256": "9142b484d2a8d7407b20c509c043e3bcf73eab71cb524252ee1e23e8a02e0976",
+      "alpha_range": [
+        0,
+        254
+      ]
+    },
+    {
+      "file": "farm-l4.png",
+      "figma_node": "1706:39",
+      "width": 520,
+      "height": 420,
+      "mode": "RGBA",
+      "sha256": "1febc2f30596aea258bb30cc6335e645c710e46691096d39bdf86612fce2b16b",
+      "alpha_range": [
+        0,
+        254
+      ]
+    },
+    {
+      "file": "grain-growth-01.png",
+      "figma_node": "1693:103",
+      "width": 580,
+      "height": 580,
+      "mode": "RGBA",
+      "sha256": "993a3dc7a135020bed7abde0c697c2a2c75d03fa4c114e0c8ec57449582af485",
+      "alpha_range": [
+        0,
+        254
+      ]
+    },
+    {
+      "file": "grain-growth-02.png",
+      "figma_node": "1693:108",
+      "width": 580,
+      "height": 580,
+      "mode": "RGBA",
+      "sha256": "9df42cf8bddc82c695d27d86379c80babec147cc5ef4609bcf4992964fac0118",
+      "alpha_range": [
+        0,
+        254
+      ]
+    },
+    {
+      "file": "grain-growth-03.png",
+      "figma_node": "1693:113",
+      "width": 580,
+      "height": 580,
+      "mode": "RGBA",
+      "sha256": "b316f101074e71ff99b8d55bcaeba0f64f874316974b7d6128eeefd257f5a757",
+      "alpha_range": [
+        0,
+        254
+      ]
+    },
+    {
+      "file": "grain-growth-04.png",
+      "figma_node": "1693:118",
+      "width": 580,
+      "height": 580,
+      "mode": "RGBA",
+      "sha256": "43ff69f5424aed2af9cd3f6d26307aa2c03b41be8ac9e47fe2ba465c63d5ac7e",
+      "alpha_range": [
+        0,
+        254
+      ]
+    },
+    {
+      "file": "menu-farm-locked.png",
+      "figma_node": "1712:347",
+      "width": 216,
+      "height": 240,
+      "mode": "RGBA",
+      "sha256": "74cc11cda3202ff60de6817676cc898a095477a67af12be8d6bc369087e91199",
+      "alpha_range": [
+        0,
+        210
+      ]
+    },
+    {
+      "file": "menu-farm-normal.png",
+      "figma_node": "1712:341",
+      "width": 216,
+      "height": 240,
+      "mode": "RGBA",
+      "sha256": "07715d36dd2522f2df5283786dd02710c056976efd4bc87f341989ece1ff0ee1",
+      "alpha_range": [
+        0,
+        255
+      ]
+    }
+  ]
+}
