@@ -20,7 +20,7 @@ func _init(owner_app: Node, for_gathering:bool=false,for_upgrade:bool=false) -> 
 
 func _ready() -> void:
 	name="ChiefUpgradeProgress" if upgrading else ("GatheringTimeProgress" if gathering else "ConstructionTimeProgress")
-	z_index=12
+	z_index=24
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	size = Vector2(410,72)
 	scale = Vector2.ONE*0.65
@@ -143,7 +143,7 @@ func _input(event:InputEvent)->void:
 	elif event is InputEventScreenTouch:
 		pointer=event.index;down=event.pressed
 	else:return
-	var inside:=cancel_button.get_global_rect().has_point(event.position)
+	var inside:bool=cancel_button.get_global_rect().has_point(event.position) and not (is_instance_valid(app.resident_panel) and app.resident_panel.fixed_hud_at(event.position))
 	if down and inside and cancel_pointer==-2:
 		cancel_pointer=pointer
 		get_viewport().set_input_as_handled()

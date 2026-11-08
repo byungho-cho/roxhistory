@@ -248,7 +248,7 @@ func nearest() -> Dictionary:
 	var distance := float(DemoConfig.get_data().interact_radius)
 	for n in model.nodes():
 		var d := player.position.distance_to(DemoConfig.point(n.position))
-		if not exhausted(n) and d < distance:
+		if not exhausted(n) and model.gather_available(n.id,"hero") and d < distance:
 			distance = d
 			result = n
 	return result
@@ -402,10 +402,7 @@ func refresh_facilities()->void:
 			life=BuildingLifeEffects.new(sprite,kind,int(entry.get("level",1)));body.add_child(life)
 		life.level=int(entry.get("level",1))
 		life.visible=not entry.has("upgrade")
-		if kind=="hearth":
-			if sprite.material==null:
-				var flame:=ShaderMaterial.new();flame.shader=preload("res://shaders/hearth_flame.gdshader");sprite.material=flame
-			sprite.material.set_shader_parameter("strength",.55+life.level*.15)
+		if kind=="hearth":sprite.material=null
 	remove_stale_buildings("Facility_",wanted)
 
 func add_building_collision(body:StaticBody2D,width:float)->void:

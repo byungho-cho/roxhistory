@@ -21,12 +21,14 @@ var rest_time:=2.0
 var rng:=RandomNumberGenerator.new()
 var idle_time:=0.0
 var visual_elapsed:=0.0
+const WORK_WALK_FACTOR:=.5
 func _ready()->void:
 	if resident_id.is_empty():resident_id="resident-0" if variant=="female" else "resident-1"
 	jobs=ResidentJobs.new(get_parent().model)
 	origin=position;destination=position;rng.seed=abs(resident_id.hash())+122;rest_time=2.0+float(abs(resident_id.hash())%30)/10.0
 	var shape:=CollisionShape2D.new();var circle:=CircleShape2D.new();circle.radius=12;shape.shape=circle;add_child(shape)
 	visual=HybridCharacter.new();visual.model_path="res://assets/characters/residents/"+variant+".glb";visual.render_size_factor=.5;add_child(visual);visual.scale=Vector2.ONE*(1.08 if variant=="female" else 1.16);visual.set_enabled(true)
+	visual.ambient_offset=float(abs(resident_id.hash())%2600)/100.0
 	queue_redraw()
 func _draw()->void:
 	draw_set_transform(Vector2(4,-2),0,Vector2(1,.28));draw_circle(Vector2.ZERO,20,SceneStyle.CONTACT_COLOR);draw_set_transform(Vector2.ZERO)
@@ -51,12 +53,15 @@ func _physics_process(delta:float)->void:
 	else:
 		var offset:=destination-position
 		ActorMovement.move(self,ActorMovement.direction_to(position,destination,delta) if offset.length()>3 else Vector2.ZERO)
-		if offset.length()<3 or position.distance_to(before)<.01:rest_time=rng.randf_range(2.5,5.0)
+		if offset.length()<3 or position.distance_to(before)<.01:
+			rest_time=rng.randf_range(2.5,5.0)
+			visual.ambient_offset=fposmod(visual.ambient_offset+9.7,26.0)
 	queue_redraw()
 	var travelled:=position.distance_to(before)
 	if travelled>.01:phase=fposmod(phase+travelled/(visual.stride_world_length()*visual.scale.x)*TAU,TAU);idle_time=0
 	else:idle_time+=delta
 	visual.idle_elapsed=idle_time
+	visual.ambient_allowed=job_kind=="idle" and jobs.entry(resident_id).cargo.is_empty()
 	visual_elapsed+=delta
 	var screen_point:=get_global_transform_with_canvas().origin
 	if not Rect2(Vector2(-120,-120),get_viewport_rect().size+Vector2(240,240)).has_point(screen_point):
@@ -88,10 +93,14 @@ func work_status()->String:
 # A stopped/reassigned worker first delivers the existing load, never discards it.
 func _job_tick(delta:float)->bool:
 	var item:=jobs.entry(resident_id)
-	if not jobs.available(resident_id):return false
+	if not jobs.available(resident_id):jobs.model.release_gather(resident_id);return false
 	if item.job!=job_kind:
+		jobs.model.release_gather(resident_id)
 		job_kind=item.job;job_route.clear();job_phase="idle";job_timer=0
+	if job_kind in ["wood","stone"] and job_phase in ["travel","harvest"] and not jobs.model.owns_gather(job_target,resident_id):
+		job_route.clear();job_phase="idle";job_timer=0
 	if jobs.model.chief_level()<=0:
+		jobs.model.release_gather(resident_id)
 		# Keep paid cargo and assigned intent intact until a depot exists again.
 		velocity=Vector2.ZERO;job_route.clear();job_phase="wait";job_timer=2.0;job_depot=Vector2.INF
 		return true
@@ -100,6 +109,7 @@ func _job_tick(delta:float)->bool:
 	if job_timer>0 and job_phase=="wait":
 		job_timer-=delta;return true
 	if not item.cargo.is_empty():
+		jobs.model.release_gather(resident_id)
 		if not depot_home.is_finite() or not _home_exists(depot_home):
 			depot_home=jobs.model.nearest_home(position);job_depot=Vector2.INF;job_route.clear()
 		if not depot_home.is_finite():_job_wait();return true
@@ -131,9 +141,9 @@ func _job_tick(delta:float)->bool:
 		var candidates:Array=jobs.model.nodes()
 		candidates.sort_custom(func(a,b):return position.distance_squared_to(DemoConfig.point(a.position))<position.distance_squared_to(DemoConfig.point(b.position)))
 		for node in candidates:
-			if node.kind!=job_kind or int(jobs.model.state.depleted.get(node.id,0))>=int(node.charges):continue
+			if node.kind!=job_kind or int(jobs.model.state.depleted.get(node.id,0))>=int(node.charges) or not jobs.model.gather_available(node.id,resident_id):continue
 			for side in [Vector2(0,65),Vector2(65,0),Vector2(-65,0),Vector2(0,-65)]:
-				if _plan_job_route(DemoConfig.point(node.position)+side):job_target=node.id;job_phase="travel";break
+				if _plan_job_route(DemoConfig.point(node.position)+side) and jobs.model.claim_gather(node.id,resident_id):job_target=node.id;job_phase="travel";break
 			if not job_route.is_empty():break
 		if job_route.is_empty():_job_wait();return true
 	if job_route.is_empty():return true
@@ -143,12 +153,13 @@ func _job_tick(delta:float)->bool:
 		if job_route.is_empty() and job_phase=="travel":job_phase="harvest";job_timer=float(DemoConfig.get_data().gather_seconds)
 		return true
 	var before:=position
-	ActorMovement.move(self,ActorMovement.direction_to(position,job_route[0],delta))
+	ActorMovement.move(self,ActorMovement.direction_to(position,job_route[0],delta,job_walk_factor()),job_walk_factor())
 	job_stuck=job_stuck+delta if position.distance_to(before)<.01 else 0.0
 	if job_stuck>1.5:job_route.clear();_job_wait()
 	return true
 
 func _job_wait()->void:
+	jobs.model.release_gather(resident_id)
 	job_phase="wait";job_timer=2.0;job_stuck=0
 
 func _plan_job_route(target:Vector2)->bool:
@@ -188,7 +199,7 @@ func _station_tick(delta:float,item:Dictionary)->void:
 			if position.distance_to(job_route[0])<=3:job_route.remove_at(0)
 			elif not job_route.is_empty():
 				var before:=position
-				ActorMovement.move(self,ActorMovement.direction_to(position,job_route[0],delta))
+				ActorMovement.move(self,ActorMovement.direction_to(position,job_route[0],delta,job_walk_factor()),job_walk_factor())
 				job_stuck=job_stuck+delta if position.distance_to(before)<.01 else 0.0
 				if job_stuck>1.5:job_route.clear();_job_wait();return
 		job_phase="station_travel";return
@@ -201,3 +212,9 @@ func _station_tick(delta:float,item:Dictionary)->void:
 	job_timer-=delta
 	if job_timer<=0:
 		FarmProduction.harvest(jobs.model,resident_id,key);job_phase="farm_wait"
+
+func job_walk_factor()->float:
+	return WORK_WALK_FACTOR if job_kind in ["wood","stone","farmer"] or not jobs.entry(resident_id).cargo.is_empty() else 1.0
+
+func _exit_tree()->void:
+	if jobs:jobs.model.release_gather(resident_id)

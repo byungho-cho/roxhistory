@@ -12,6 +12,7 @@ var retry_count := 0
 var blocked_cells: Array[Vector2i] = []
 func _init(owner_app:Node) -> void:app=owner_app
 func cancel() -> void:
+	if app.model:app.model.release_gather("hero")
 	path.clear();action="";target="";stuck=0;retry_count=0;blocked_cells.clear()
 	if is_instance_valid(trail):trail.clear()
 	if is_instance_valid(app.world):app.world.player.work_destination=Vector2.INF
@@ -19,6 +20,9 @@ func start(kind:String,id:String,destination:Vector2,retry:int=0,blocked:Array=[
 	if not is_instance_valid(trail):
 		trail=TravelTrail.new(self);app.world.add_child(trail)
 	if not destination.is_finite():return false
+	if kind=="gather" and not app.model.gather_available(id,"hero"):
+		if not quiet:app.toast("다른 채집자가 선택한 대상이에요")
+		return false
 	var player:DemoPlayer=app.world.player
 	if kind=="move":
 		var pose:=player.transform;pose.origin=destination
@@ -35,6 +39,7 @@ func start(kind:String,id:String,destination:Vector2,retry:int=0,blocked:Array=[
 		return true
 	# Only an accepted route is a movement command. Rejected clicks preserve work.
 	app.cancel_task(true,retry>0)
+	if kind=="gather" and not app.model.claim_gather(id,"hero"):return false
 	retry_count=retry;blocked_cells.assign(blocked)
 	app.world.player.resume_camera()
 	path=planned;path.remove_at(0)
@@ -111,3 +116,7 @@ func segment_ground_ok(from:Vector2,to:Vector2)->bool:
 	for i in range(steps+1):
 		if not VillageLayout.ground_ok(from.lerp(to,float(i)/steps)):return false
 	return true
+
+func _exit_tree()->void:
+	if is_instance_valid(app) and app.model:
+		app.model.release_gather("hero");app.model.release_gather("hero-pending")

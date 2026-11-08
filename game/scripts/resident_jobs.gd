@@ -42,14 +42,16 @@ func assign(id:String,job:String,building:String="")->bool:
 	var item:=entry(id);item.job=job;item.building=building if job in ["farmer","guard"] else ""
 	if not next.has("resident_jobs"):next.resident_jobs={}
 	next.resident_jobs[id]=item
-	return _commit(next)
+	var ok:=_commit(next)
+	if ok:model.release_gather(id)
+	return ok
 func _commit(next:Dictionary)->bool:
 	model.busy=true
 	var ok:=model.commit(next)
 	model.busy=false
 	return ok
 func harvest(id:String,node_id:String,now:float=-1.0)->bool:
-	if model.busy or not available(id) or model.chief_level()<=0:return false
+	if model.busy or not available(id) or model.chief_level()<=0 or not model.gather_available(node_id,id):return false
 	var item:=entry(id)
 	if item.job not in ["wood","stone"] or not item.cargo.is_empty():return false
 	if now<0:now=Time.get_unix_time_from_system()

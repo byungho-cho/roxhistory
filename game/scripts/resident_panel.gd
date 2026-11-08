@@ -7,8 +7,8 @@ var bubbles:Dictionary={}
 const JOB_NAMES:={"idle":"미배정","wood":"나무꾼","stone":"석재꾼","farmer":"농부","guard":"보초"}
 func _init(owner_app:Node)->void:app=owner_app
 func _ready()->void:
-	name="ResidentPanel";mouse_filter=Control.MOUSE_FILTER_IGNORE;z_index=6
-	counter_button=app.button(self,"",show_summary);counter_button.name="ResidentCounter"
+	name="ResidentPanel";mouse_filter=Control.MOUSE_FILTER_IGNORE;z_index=4;process_priority=30
+	counter_button=app.button(self,"",show_summary);counter_button.name="ResidentCounter";counter_button.z_index=28
 	counter_button.custom_minimum_size=Vector2.ZERO
 	var bounds:Rect2=app.chrome.slot("residents")
 	counter_button.position=bounds.position-Vector2(0,4);counter_button.size=Vector2(bounds.size.x,44)
@@ -134,3 +134,32 @@ func _process(_delta:float)->void:
 		if button.visible:
 			var bounds:Rect2=sprite.get_global_transform_with_canvas()*sprite.get_rect()
 			button.position=Vector2(bounds.get_center().x-23,bounds.position.y-36)
+			button.visible=not hud_occludes(button.get_global_rect())
+
+func fixed_hud_rects()->Array[Rect2]:
+	var rects:Array[Rect2]=[Rect2(app.safe+Vector2(-5,-3),Vector2(210,66))]
+	for key in ["wood","stone","tokens","residents"]:rects.append(app.chrome.slot(key).grow(2))
+	rects.append(Rect2(Vector2(app.w-app.safe.x-108,app.safe.y-5),Vector2(116,122)))
+	for control in [app.objective.get_parent(),app.map_toggle]:
+		if control is Control and is_instance_valid(control) and control.is_visible_in_tree():rects.append(control.get_global_rect())
+	for button in app.action_row.get_children():
+		if button is Control and button.is_visible_in_tree():rects.append(button.get_global_rect())
+	return rects
+
+func protected_hud_rects()->Array[Rect2]:
+	var rects:=fixed_hud_rects()
+	if is_instance_valid(app.family.bubble) and app.family.bubble.is_visible_in_tree():rects.append(app.family.bubble.get_global_rect())
+	for child in app.stage.get_children():
+		if child is ConstructionProgress and child.is_visible_in_tree():
+			rects.append(child.get_global_rect().grow(6))
+			if is_instance_valid(child.cancel_button):rects.append(child.cancel_button.get_global_rect())
+	return rects
+func hud_occludes(bounds:Rect2)->bool:
+	for rect in protected_hud_rects():
+		if rect.intersects(bounds):return true
+	return false
+
+func fixed_hud_at(point:Vector2)->bool:
+	for rect in fixed_hud_rects():
+		if rect.has_point(point):return true
+	return false

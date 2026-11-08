@@ -190,7 +190,7 @@ func show_screen(next: String) -> void:
 		"region": region_screen()
 		"chapter": ChapterSelection.new(self).open()
 		"play": play_hud()
-	toast_panel=PanelContainer.new();stage.add_child(toast_panel)
+	toast_panel=PanelContainer.new();toast_panel.z_index=45;stage.add_child(toast_panel)
 	toast_panel.position=Vector2(w*.5-120,safe.y+(190 if w<h else 118) if screen=="play" else safe.y+8);toast_panel.size=Vector2(240,38)
 	var toast_style:=StyleBoxFlat.new();toast_style.bg_color=Color(.13,.10,.07,.87);toast_style.set_corner_radius_all(19);toast_style.set_content_margin_all(8)
 	toast_panel.add_theme_stylebox_override("panel",toast_style)
@@ -451,7 +451,7 @@ func enter_game() -> void:
 
 
 func play_hud() -> void:
-	var quest_panel:=button(stage,"",toggle_quest);quest_panel.name="QuestPanel";quest_panel.custom_minimum_size=Vector2.ZERO
+	var quest_panel:=button(stage,"",toggle_quest);quest_panel.name="QuestPanel";quest_panel.z_index=40;quest_panel.custom_minimum_size=Vector2.ZERO
 	quest_panel.position=Vector2(safe.x,safe.y+(112 if w<h else 59));quest_panel.size=Vector2(240,84)
 	for state in ["normal","hover","pressed","focus"]:quest_panel.add_theme_stylebox_override(state,StyleBoxEmpty.new())
 	var quest_bg:=picture(quest_panel,preload("res://assets/ui/v0158/quest-hud-paper.png"),Rect2(0,0,240,84))
@@ -467,9 +467,9 @@ func play_hud() -> void:
 	joystick=DemoJoystick.new();stage.add_child(joystick);joystick.position=Vector2(safe.x,h-safe.y-140);joystick.hide();joystick.set_process_input(false)
 	var action_width:=64.0 if w/h>2.2 else 60.0
 	var menu_width:=action_width*6+8*5+48
-	menu_backdrop=Panel.new();menu_backdrop.name="MenuBackdrop";menu_backdrop.mouse_filter=Control.MOUSE_FILTER_IGNORE;stage.add_child(menu_backdrop)
+	menu_backdrop=Panel.new();menu_backdrop.name="MenuBackdrop";menu_backdrop.z_index=30;menu_backdrop.mouse_filter=Control.MOUSE_FILTER_IGNORE;stage.add_child(menu_backdrop)
 	var capsule:=StyleBoxFlat.new();capsule.bg_color=Color(.33,.25,.12,.83);capsule.border_color=Color(.83,.68,.38,.9);capsule.set_border_width_all(2);capsule.set_corner_radius_all(30);capsule.shadow_color=Color(0,0,0,.2);capsule.shadow_size=3;menu_backdrop.add_theme_stylebox_override("panel",capsule)
-	action_row=Control.new();action_row.name="Actions";action_row.mouse_filter=Control.MOUSE_FILTER_IGNORE;stage.add_child(action_row)
+	action_row=Control.new();action_row.name="Actions";action_row.z_index=31;action_row.mouse_filter=Control.MOUSE_FILTER_IGNORE;stage.add_child(action_row)
 	action_row.position=Vector2(w-safe.x-menu_width,h-safe.y-76);action_row.size=Vector2(menu_width,72)
 	if w<h:action_row.position.y=h-safe.y-220
 	for data in [["사냥","spear"],["채집","berries"],["제작","hammer"],["건설","hut"],["임무","scroll"],["가방","bag"]]:
@@ -509,7 +509,7 @@ func play_hud() -> void:
 	context_panel=PanelContainer.new();stage.add_child(context_panel);context_panel.position=Vector2(w*.5-145,h-safe.y-108);context_panel.size=Vector2(290,32);context_panel.add_theme_stylebox_override("panel",dark);context_panel.mouse_filter=Control.MOUSE_FILTER_IGNORE
 	context=label(context_panel,"",13,Color("fff0cd"));context.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
 	task_bar=ProgressBar.new();task_bar.mouse_filter=Control.MOUSE_FILTER_IGNORE;task_bar.show_percentage=false;task_bar.position=Vector2(w*.5-100,h-safe.y-120);task_bar.size=Vector2(200,7);stage.add_child(task_bar);task_bar.visible=false
-	chrome=PlayChrome.new(self);chrome.z_index=5;stage.add_child(chrome);chrome.size=Vector2(w,h)
+	chrome=PlayChrome.new(self);chrome.z_index=30;stage.add_child(chrome);chrome.size=Vector2(w,h)
 	resident_panel=ResidentPanel.new(self);stage.add_child(resident_panel)
 	stage.add_child(ConstructionProgress.new(self))
 	stage.add_child(ConstructionProgress.new(self,true))
@@ -519,9 +519,9 @@ func play_hud() -> void:
 	map_hit.hint_text="현재 위치로 지도 맞추기"
 	for state in ["normal","hover","pressed"]:map_hit.add_theme_stylebox_override(state,StyleBoxEmpty.new())
 	world_map=VillageWorldMap.new(self);stage.add_child(world_map);stage.move_child(world_map,0)
-	map_toggle=button(stage,"",toggle_world_map);map_toggle.icon=AssetCatalog.texture("UI-MAP");map_toggle.expand_icon=true;map_toggle.add_theme_constant_override("icon_max_width",48);map_toggle.custom_minimum_size=Vector2.ZERO;map_toggle.position=Vector2(w-safe.x-64,safe.y+90);map_toggle.size=Vector2(56,56);map_toggle.z_index=6
+	map_toggle=button(stage,"",toggle_world_map);map_toggle.icon=AssetCatalog.texture("UI-MAP");map_toggle.expand_icon=true;map_toggle.add_theme_constant_override("icon_max_width",48);map_toggle.custom_minimum_size=Vector2.ZERO;map_toggle.position=Vector2(w-safe.x-64,safe.y+90);map_toggle.size=Vector2(56,56);map_toggle.z_index=31
 	for state in ["normal","hover","pressed","focus"]:map_toggle.add_theme_stylebox_override(state,StyleBoxEmpty.new())
-	var settings_button:=button(stage,"",pause_game);settings_button.name="SettingsButton";settings_button.z_index=6
+	var settings_button:=button(stage,"",pause_game);settings_button.name="SettingsButton";settings_button.z_index=31
 	settings_button.icon=load("res://assets/ui/review-v037/settings-figma.png");settings_button.expand_icon=true
 	settings_button.custom_minimum_size=Vector2.ZERO;settings_button.position=Vector2(w-safe.x-36,safe.y-2);settings_button.size=Vector2(36,36)
 	settings_button.add_theme_constant_override("icon_max_width",36)
@@ -733,8 +733,10 @@ func gather_action(selected_id:String="") -> void:
 		for candidate in model.nodes():
 			if candidate.id==selected_id and not world.exhausted(candidate):n=candidate;break
 		if n.is_empty():toast("예약한 채집 대상이 사라졌어요");return
+	if not n.is_empty() and not model.gather_available(n.id,"hero"):
+		toast("다른 채집자가 선택한 대상이에요");return
 	if n.is_empty():
-		var candidates:=model.nodes().filter(func(c):return not world.exhausted(c) and world.player.position.distance_to(DemoConfig.point(c.position))<=GATHER_SEARCH_RADIUS)
+		var candidates:=model.nodes().filter(func(c):return model.gather_available(c.id,"hero") and not world.exhausted(c) and world.player.position.distance_to(DemoConfig.point(c.position))<=GATHER_SEARCH_RADIUS)
 		candidates.sort_custom(func(a,b):return world.player.position.distance_squared_to(DemoConfig.point(a.position))<world.player.position.distance_squared_to(DemoConfig.point(b.position)))
 		for candidate in candidates:
 			if navigation.start("gather",candidate.id,world.gather_stand(DemoConfig.point(candidate.position),candidate.kind),0,[],true):return
@@ -742,6 +744,7 @@ func gather_action(selected_id:String="") -> void:
 	if world.player.position.distance_to(DemoConfig.point(n.position))>float(DemoConfig.get_data().interact_radius):
 		navigation.start("gather",n.id,world.gather_stand(DemoConfig.point(n.position),n.kind));return
 	navigation.cancel()
+	if not model.claim_gather(n.id,"hero"):return
 	task = "gather"
 	world.player.face_target(DemoConfig.point(n.position))
 	var target_point:=DemoConfig.point(n.position)
@@ -808,6 +811,10 @@ func start_building_move(key:String)->void:
 	build_preview.select_position(model.building_position(key),build_kind,key)
 
 func reserve_action(request:Dictionary)->void:
+	if request.get("kind","")=="gather" and not str(request.get("id","")).is_empty():
+		if not model.claim_gather(str(request.id),"hero-pending"):
+			toast("다른 채집자가 선택한 대상이에요");return
+	else:model.release_gather("hero-pending")
 	pending_action=request.duplicate(true)
 	if is_instance_valid(queued_action_indicator):queued_action_indicator.reserve(request)
 
@@ -816,6 +823,7 @@ func run_reserved_action()->void:
 	if request.is_empty():return
 	var receipt_generation:int=queued_action_indicator.dispatch()
 	pending_action.clear()
+	model.release_gather("hero-pending")
 	dispatching_reserved_action=true
 	match str(request.kind):
 		"move":navigation.start("move","",request.at)
@@ -850,7 +858,9 @@ func finish_task() -> void:
 	call_deferred("run_reserved_action")
 
 func cancel_task(clear_reservation:bool=true,preserve_receipt:bool=false) -> void:
+	if model:model.release_gather("hero")
 	if clear_reservation:
+		if model:model.release_gather("hero-pending")
 		pending_action.clear()
 		if is_instance_valid(queued_action_indicator) and not dispatching_reserved_action and not preserve_receipt:queued_action_indicator.clear_receipt()
 		cancel_build_preview()

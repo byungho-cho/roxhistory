@@ -44,9 +44,18 @@ func rebuild_art()->void:
 	# Use actual saved building anchors, including free placement and moves.
 	if model.chief_level()>0 and chief.is_finite():
 		var start:=unproject(chief-Vector2(0,24))
-		for at in positions:
-			var target:=unproject(at-Vector2(0,24));var elbow:=Vector2(target.x,start.y)
-			road(start,elbow);road(elbow,target)
+		# A nearest-connection tree avoids the previous parallel grid of spokes.
+		var connected:Array[Vector2]=[start];var remaining:Array[Vector2]=[]
+		for at in positions:remaining.append(unproject(at-Vector2(0,24)))
+		while not remaining.is_empty():
+			var best_from:=connected[0];var best_index:=0;var distance:=INF
+			for from in connected:
+				for i in remaining.size():
+					var d:=from.distance_squared_to(remaining[i])
+					if d<distance:best_from=from;best_index=i;distance=d
+			var target:=remaining[best_index]
+			if distance>.01:add_child(NaturalRoad.new(NaturalRoad.curved_path(best_from,target)))
+			connected.append(target);remaining.remove_at(best_index)
 		foundation(start,6,model.chief_level())
 	for i in positions.size():foundation(unproject(positions[i]-Vector2(0,24)),4,levels[i])
 	queue_redraw()
@@ -64,15 +73,4 @@ func foundation(cell:Vector2,span:int,level:int=1)->void:
 	s.z_index=1;s.texture_filter=CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	add_child(s)
 func road(a:Vector2,b:Vector2)->void:
-	if a==b:return
-	var delta:=b-a
-	# Continuous one-cell-wide ribbon in the same isometric grid as the floor.
-	# Old diamond stamps narrowed to a point where neighbouring tiles met.
-	var along:=delta.normalized();var across:=Vector2(-along.y,along.x)*.5
-	var polygon:=Polygon2D.new();polygon.name="RoadCellRibbon"
-	polygon.polygon=PackedVector2Array([project(a-along*.5-across),project(b+along*.5-across),project(b+along*.5+across),project(a-along*.5+across)])
-	polygon.texture=AssetCatalog.texture("GROUND-ROAD")
-	var tex_size:=polygon.texture.get_size()
-	polygon.uv=PackedVector2Array([Vector2.ZERO,Vector2(tex_size.x,0),tex_size,Vector2(0,tex_size.y)])
-	var material:=ShaderMaterial.new();material.shader=load("res://assets/ui/v0158/road_ribbon.gdshader");polygon.material=material
-	polygon.antialiased=true;polygon.z_index=1;polygon.set_meta("grid_width",1.0);add_child(polygon)
+	if a!=b:add_child(NaturalRoad.new(NaturalRoad.curved_path(a,b)))

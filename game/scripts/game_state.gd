@@ -8,6 +8,9 @@ signal failed(message: String)
 var state: Dictionary = {}
 var store: SaveStore
 var busy := false
+# Runtime-only target ownership. Never consume a charge until harvest commits.
+# Hero's queued and active work share an actor but have separate lifetime tokens.
+var gather_claims:Dictionary={}
 const RESPAWN_MIN_SECONDS := 300.0
 const RESPAWN_MAX_SECONDS := 600.0
 # Test-period default remains unlimited; a chosen single-builder mode survives reload.
@@ -195,6 +198,7 @@ func commit(next: Dictionary, reset: bool = false) -> bool:
 		failed.emit(store.message)
 		return false
 	state = next
+	prune_gather_claims()
 	changed.emit()
 	return true
 
@@ -203,6 +207,7 @@ func start_new() -> bool:
 	prepare_resource_positions(next)
 	var ok:=commit(next,true)
 	if ok:
+		gather_claims.clear()
 		debug_unlimited_builders=true
 		construction_busy=false
 		busy=false
@@ -216,7 +221,7 @@ func save_position(pos: Vector2) -> bool:
 	return commit(next)
 
 func gather(node_id: String, pos: Vector2 = Vector2.ZERO, now:float=-1.0) -> bool:
-	if busy or state.is_empty():
+	if busy or state.is_empty() or not gather_available(node_id,"hero"):
 		return false
 	if now<0:now=Time.get_unix_time_from_system()
 	if not is_finite(now):return false
@@ -665,3 +670,34 @@ func nearest_home(from:Vector2)->Vector2:
 		var at:=home_position(i)
 		if at.distance_squared_to(from)<distance:best=at;distance=at.distance_squared_to(from)
 	return best
+
+func gather_available(target:String,owner:String)->bool:
+	var valid_target:=false
+	for node in nodes():
+		if node.id==target and int(state.depleted.get(target,0))<int(node.charges):valid_target=true;break
+	if not valid_target:return false
+	for claimant in gather_claims:
+		if gather_claims[claimant]==target and gather_actor(claimant)!=gather_actor(owner):return false
+	return true
+
+func claim_gather(target:String,owner:String)->bool:
+	if owner.is_empty() or not gather_available(target,owner):return false
+	for node in nodes():
+		if node.id==target and int(state.depleted.get(target,0))<int(node.charges):
+			gather_claims[owner]=target;return true
+	return false
+
+func release_gather(owner:String)->void:gather_claims.erase(owner)
+func owns_gather(target:String,owner:String)->bool:return gather_claims.get(owner,"")==target
+func gather_actor(owner:String)->String:return "hero" if owner in ["hero","hero-pending"] else owner
+
+func prune_gather_claims()->void:
+	var catalog:Dictionary={}
+	for node in nodes():catalog[node.id]=node
+	for owner in gather_claims.keys():
+		var target:String=gather_claims[owner]
+		if not catalog.has(target) or int(state.depleted.get(target,0))>=int(catalog[target].charges):
+			gather_claims.erase(owner);continue
+		if gather_actor(owner)!="hero":
+			var item:Dictionary=state.get("resident_jobs",{}).get(owner,{})
+			if owner not in ResidentAdmission.ids(state) or item.get("job","")!=catalog[target].kind or not item.get("cargo",{}).is_empty():gather_claims.erase(owner)

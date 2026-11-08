@@ -1,0 +1,8 @@
+polish-model.log {"checks":54,"failures":[]}
+polish-ui.log {"build":"not exported; waiting for farm assets","checks":22,"failures":[]}
+polish-farm-model-regression.log {"checks":131,"failures":[]}
+polish-building-regression.log {"checks":192,"failures":[]}
+polish-resident-runtime.log {"checks":24,"failed":[],"phase":"idle","position":[1386.5712890625,1089.12536621094]}
+polish-camera-regression.log {"checks":34,"failures":[],"touch":"synthetic Windows touch, not Android hardware"}
+polish-queue-regression.log {"checks":45,"failures":[],"rendered":true,"touch":"synthetic"}
+polish-old-ui.log V0158 building polish: []

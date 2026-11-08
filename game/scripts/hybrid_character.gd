@@ -31,6 +31,9 @@ var work_kind := "wood"
 var last_action_time := 0.0
 var idle_elapsed:=0.0
 var idle_looking:=false
+var ambient_allowed:=false
+var ambient_offset:=0.0
+var ambient_action:=""
 const WALK_CLIP: Animation=preload("res://assets/characters/motion/brisk_walk_v003.tres")
 const WALK_MAX_LIFT:=0.19
 
@@ -202,8 +205,11 @@ func animate(delta: float, movement: Vector2, phase: float, walking: bool, actio
 	apply_pose(phase,strike)
 	walk_blend=walking_weight
 	apply_walk_clip(phase,walking_weight*(1.0-action_blend))
+	ambient_action=""
+	if action=="training":apply_training_pose(action_time)
+	elif ambient_allowed and idle_elapsed>=1.5 and not walking and action=="":apply_ambient_idle(idle_elapsed)
 	idle_looking=false
-	if idle_elapsed>=2.5 and not walking and action=="":
+	if idle_elapsed>=2.5 and not walking and action=="" and ambient_action.is_empty():
 		var t:=fposmod(idle_elapsed-2.5,14.0)
 		if t<3.6:
 			idle_looking=true
@@ -212,6 +218,41 @@ func animate(delta: float, movement: Vector2, phase: float, walking: bool, actio
 			rotate_bone("head",Vector3(.025,glance*.28,0))
 			rotate_bone("spine",Vector3(0,glance*.055,0))
 	tool_3d.visible = action != "" and not paused
+
+static func idle_gesture(elapsed:float,offset:float)->Dictionary:
+	var t:=fposmod(elapsed+offset,26.0)
+	for gesture in [{"kind":"yawn","start":2.0,"duration":3.5},{"kind":"stretch","start":10.0,"duration":4.0},{"kind":"doze","start":19.0,"duration":4.5}]:
+		if t>=gesture.start and t<gesture.start+gesture.duration:
+			return {"kind":gesture.kind,"weight":sin((t-float(gesture.start))/float(gesture.duration)*PI)}
+	return {"kind":"","weight":0.0}
+func blend_bone(label:String,euler:Vector3,weight:float)->void:
+	var index:int=bones[label]
+	var target:Quaternion=rotation_left[index]*Quaternion.from_euler(euler)*rotation_right[index]
+	rig.set_bone_pose_rotation(index,rig.get_bone_pose_rotation(index).slerp(target,weight))
+func apply_ambient_idle(elapsed:float)->void:
+	var state:=idle_gesture(elapsed,ambient_offset);ambient_action=state.kind;var weight:float=state.weight
+	match ambient_action:
+		"yawn":
+			blend_bone("armR",Vector3(-1.35,.15,-.18),weight);blend_bone("forearmR",Vector3(-1.7,0,.1),weight);blend_bone("head",Vector3(-.13,0,.05),weight)
+		"stretch":
+			for side in [-1,1]:
+				var suffix:="L" if side<0 else "R"
+				blend_bone("arm"+suffix,Vector3(-2.3,0,side*.65),weight);blend_bone("forearm"+suffix,Vector3(-.25,0,0),weight)
+			blend_bone("spine",Vector3(-.15,0,0),weight);blend_bone("head",Vector3(-.2,0,0),weight)
+		"doze":
+			blend_bone("head",Vector3(.36,0,.09*sin(elapsed*1.8)),weight);blend_bone("spine",Vector3(.12,0,0),weight)
+			for eye in eye_nodes:eye.scale.y*=1-.85*weight
+func apply_training_pose(seconds:float)->void:
+	var beat:float=pow(maxf(0,sin(seconds*TAU/2.2)),2)
+	blend_bone("spine",Vector3(.03+beat*.1,-.15+beat*.24,0),1)
+	blend_bone("armR",Vector3(-1.1+beat*.35,0,-.15),1);blend_bone("forearmR",Vector3(-1.0+beat*.9,0,0),1)
+	blend_bone("armL",Vector3(-.7,0,.2),1);blend_bone("forearmL",Vector3(-.9,0,0),1)
+	blend_bone("head",Vector3(-.05,.1,0),1)
+func use_training_spear()->void:
+	for child in tool_3d.get_children():child.queue_free()
+	tool_3d.name="TrainingSpear"
+	cone(tool_3d,Vector3(0,0,.48),.018,.022,1.15,material("775039")).rotation.x=PI/2
+	cone(tool_3d,Vector3(0,0,1.13),0,.075,.23,material("b0b3a2")).rotation.x=PI/2
 
 func apply_pose(phase: float, strike: float) -> void:
 	var gait := sin(phase)*walk_blend
