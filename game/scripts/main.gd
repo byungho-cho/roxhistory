@@ -74,6 +74,7 @@ var family:FamilyArrival
 var building_work_audio:BuildingWorkAudio
 var building_workflow:BuildingWorkflow
 var building_menu:BuildingMenu
+var farm_tick:=0.0
 var resident_panel:ResidentPanel
 
 func camera_modal()->bool:
@@ -629,7 +630,14 @@ func apply_menu_state(animated:bool=false)->void:
 	menu_backdrop.hide()
 
 func inventory_summary() -> void:
-	show_modal("가진 재료","나무 %d개 · 돌 %d개\n완료 기념 씨앗 %d개"%[model.state.wood,model.state.stone,model.state.tokens],[{"text":"돌아가기","action":close_modal}],false,true)
+	var body:="나무 %d개 · 돌 %d개\n곡식 %d개 · 구리 %d개 (수입 규칙 미정)"%[model.state.wood,model.state.stone,model.state.get("grain",model.state.tokens),model.state.get("copper",0)]
+	var stock:=0
+	for cycle in model.state.get("farm_cycles",{}).values():stock+=int(cycle.stock)
+	if stock>0:body+="\n농장 보관 곡식 %d개 · 자동 운반 규칙 대기"%stock
+	var held:={"wood":0,"stone":0,"grain":0}
+	for cargo in model.state.get("held_cargo",[]):held[cargo.kind]+=int(cargo.amount)
+	if not model.state.get("held_cargo",[]).is_empty():body+="\n별도 보관: 목재 %d · 석재 %d · 곡식 %d (처리 규칙 대기)"%[held.wood,held.stone,held.grain]
+	show_modal("가진 재료",body,[{"text":"돌아가기","action":close_modal}],false,true)
 
 func update_hud() -> void:
 	if screen!="play" or not is_instance_valid(objective) or model.state.is_empty():return
@@ -642,6 +650,10 @@ func _process(delta: float) -> void:
 		if toast_time <= 0 and is_instance_valid(toast_label): toast_label.text = ""
 	if screen != "play" or world_map_open or map_transition_active or not is_instance_valid(world):
 		return
+	if application_active and not modal:
+		farm_tick+=delta
+		if farm_tick>=1.0:
+			FarmProduction.tick(model,farm_tick);farm_tick=0.0
 	var river_distance:=INF
 	for i in world.SHORE.size()-1:
 		var closest:=Geometry2D.get_closest_point_to_segment(world.player.position,world.SHORE[i],world.SHORE[i+1])
@@ -872,9 +884,7 @@ func show_demolition_confirmation(key:String)->void:
 	var quote:=model.demolition_quote(key)
 	if quote.is_empty():toast("현재 철거할 수 없는 건물이에요");return
 	var found:=model.lookup_building(key)
-	if found.get("collection","")=="homes" and model.reward_pending(int(found.index)):
-		toast("건물 위 씨앗 보상을 먼저 받아 주세요");return
-	show_modal("건물을 철거할까요?","반환: 나무 %d개 · 돌 %d개"%[quote.wood,quote.stone],[{"text":"취소","action":close_modal},{"text":"철거","action":func():confirm_demolition(key)}],true,true,true,Vector2.ZERO,true)
+	show_modal("건물을 철거할까요?","반환: 나무 %d개 · 돌 %d개"%[quote.wood,quote.stone]+("\n수용 인원이 줄어 주민 %d명이 무작위로 떠나며 배정이 해제됩니다. 운반 짐은 별도 보관합니다."%int(quote.departures) if int(quote.departures)>0 else ""),[{"text":"취소","action":close_modal},{"text":"철거","action":func():confirm_demolition(key)}],false,true,false,Vector2(480,380),true)
 	demolition_key=key
 
 func confirm_demolition(key:String)->void:
@@ -951,6 +961,7 @@ func pause_game() -> void:
 		{"text":"계속하기","primary":true,"action":close_modal},
 		{"text":"시작 화면","action":func(): close_modal(); show_screen("title")},
 		{"text":"안내·소리","action":show_about},
+		{"text":"알림 설정","action":show_notification_settings},
 		{"text":"개발 설정","action":show_development_settings}])
 	enable_settings_backdrop()
 
@@ -959,7 +970,7 @@ func show_development_settings()->void:
 	enable_settings_backdrop()
 
 func confirm_progress_reset()->void:
-	show_modal("진행을 초기화할까요?","진행과 씨앗을 지우고 소리 설정은 유지합니다. 삭제한 진행은 되돌릴 수 없습니다.",[
+	show_modal("진행을 초기화할까요?","진행과 자원을 지우고 소리 설정은 유지합니다. 삭제한 진행은 되돌릴 수 없습니다.",[
 		{"text":"취소","action":show_development_settings},{"text":"초기화","action":reset_progress}],false,true,false,Vector2.ZERO,true)
 func reset_progress()->void:
 	if not model.store.erase_progress():show_error(model.store.message);return
@@ -968,7 +979,7 @@ func reset_progress()->void:
 	close_modal();show_screen("title")
 
 func confirm_development_reset()->void:
-	show_modal("게임을 초기화할까요?","진행·씨앗·소리 설정을 모두 삭제하고 첫 실행 안내로 돌아갑니다.\n삭제한 데이터는 되돌릴 수 없습니다.",[
+	show_modal("게임을 초기화할까요?","진행·자원·소리 설정을 모두 삭제하고 첫 실행 안내로 돌아갑니다.\n삭제한 데이터는 되돌릴 수 없습니다.",[
 		{"text":"취소","action":show_development_settings},
 		{"text":"완전 초기화","action":full_reset}],false,true,false,Vector2.ZERO,true)
 	enable_settings_backdrop()
@@ -976,7 +987,7 @@ func confirm_development_reset()->void:
 func show_about() -> void:
 	var c := DemoConfig.get_data()
 	var sound: bool = settings.get_value("app","sound",false)
-	show_modal("RoxHistory · v"+str(ProjectSettings.get_setting("application/config/version")),c.history.fact+"\n\n"+c.history.fiction+"\n\n지역 선택 음악과 자연음, 채집·건설 효과음을 제공합니다. 씨앗은 완료 기념 보상입니다.",[
+	show_modal("RoxHistory · v"+str(ProjectSettings.get_setting("application/config/version")),c.history.fact+"\n\n"+c.history.fiction+"\n\n지역 선택 음악과 자연음, 채집·건설 효과음을 제공합니다. 곡식은 농장에서 생산합니다. 구리 화폐 수입 규칙은 준비 중입니다.",[
 		{"text":"소리 끄기" if sound else "소리 켜기","action":func():
 			settings.set_value("app","sound",not sound)
 			if settings.save(prefs_path) != OK: show_error("소리 설정을 저장하지 못했습니다.")
@@ -1148,3 +1159,17 @@ func enable_settings_backdrop()->void:
 			if (event is InputEventScreenTouch and event.pressed) or (event is InputEventMouseButton and event.pressed and event.button_index==MOUSE_BUTTON_LEFT):
 				get_viewport().set_input_as_handled()
 				close_modal())
+
+func show_notification_settings()->void:
+	var scroll:=show_modal("알림 설정","",[],false,true)
+	var list:=VBoxContainer.new();list.size_flags_horizontal=Control.SIZE_EXPAND_FILL;list.add_theme_constant_override("separation",14);scroll.add_child(list)
+	var titles:={"construction":"건축 완료","upgrade":"업그레이드 완료","arrival":"새 주민 도착"}
+	for event in VillageNotifications.EVENTS:
+		var row:=HBoxContainer.new();list.add_child(row)
+		var text:=label(row,titles[event],21);text.size_flags_horizontal=Control.SIZE_EXPAND_FILL
+		var setting:Variant=VillageNotifications.setting(model.state,event)
+		var target:String=event
+		var toggle:=button(row,"미설정" if setting==null else "ON" if setting else "OFF",func():
+			if VillageNotifications.set_enabled(model,target,setting!=true):show_notification_settings())
+		toggle.custom_minimum_size=Vector2(100,48)
+	var note:=label(list,"OS 전달 방식·반복 조건·초기 기본값은 미정입니다.\n자동 수확은 알림 대상이 아닙니다.",17);note.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART

@@ -10,6 +10,8 @@ var job_timer:=0.0
 var job_route:=PackedVector2Array()
 var job_stuck:=0.0
 var job_depot:=Vector2.INF
+var depot_home:=Vector2.INF
+var station_key:=""
 var variant:="female"
 var visual:HybridCharacter
 var origin:=Vector2.ZERO
@@ -28,6 +30,9 @@ func _ready()->void:
 	queue_redraw()
 func _draw()->void:
 	draw_set_transform(Vector2(4,-2),0,Vector2(1,.28));draw_circle(Vector2.ZERO,20,SceneStyle.CONTACT_COLOR);draw_set_transform(Vector2.ZERO)
+	if job_phase=="harvest":
+		draw_rect(Rect2(-20,-66,40,5),Color(0,0,0,.65))
+		draw_rect(Rect2(-19,-65,38*clampf(1-job_timer/1.2,0,1),3),Color("bfd274"))
 func _physics_process(delta:float)->void:
 	var world:DemoWorld=get_parent()
 	if world.player.presentation_paused:
@@ -45,9 +50,9 @@ func _physics_process(delta:float)->void:
 				if world.playable_rect().grow(-24).has_point(point) and not test_move(pose,Vector2.ZERO,null,.08,true) and not test_move(transform,point-position):destination=point;break
 	else:
 		var offset:=destination-position
-		velocity=offset.normalized()*48 if offset.length()>3 else Vector2.ZERO
-		move_and_slide()
+		ActorMovement.move(self,ActorMovement.direction_to(position,destination,delta) if offset.length()>3 else Vector2.ZERO)
 		if offset.length()<3 or position.distance_to(before)<.01:rest_time=rng.randf_range(2.5,5.0)
+	queue_redraw()
 	var travelled:=position.distance_to(before)
 	if travelled>.01:phase=fposmod(phase+travelled/(visual.stride_world_length()*visual.scale.x)*TAU,TAU);idle_time=0
 	else:idle_time+=delta
@@ -60,7 +65,8 @@ func _physics_process(delta:float)->void:
 		return
 	if visual_elapsed>=1.0/30.0:
 		visual.set_render_zoom(world.player.zoom_factor)
-		visual.animate(visual_elapsed,velocity.normalized(),phase,travelled>.01,job_kind if job_phase=="harvest" else "",clampf(1.0-job_timer/float(DemoConfig.get_data().gather_seconds),0,1),false)
+		visual.work_kind=job_kind
+		visual.animate(visual_elapsed,velocity.normalized(),phase,travelled>.01,job_kind if job_phase=="harvest" else "",maxf(0,float(DemoConfig.get_data().gather_seconds)-job_timer),false)
 		visual.viewport.render_target_update_mode=SubViewport.UPDATE_ONCE
 		visual_elapsed=0
 
@@ -71,8 +77,12 @@ func work_status()->String:
 	var item:=jobs.entry(resident_id)
 	if not item.cargo.is_empty():
 		if job_phase=="wait":return "전달 대기"
-		return "촌장집으로 이동 중"
-	if item.job=="idle":return "쉬는 중"
+		return "주민 움집으로 운반 중"
+	if item.job=="idle":return "미배정"
+	if item.job=="guard":return "초소 근무 중" if job_phase=="guard" else "초소로 이동 중"
+	if item.job=="farmer":
+		var cycle:=FarmProduction.entry(jobs.model,str(item.get("building","")))
+		return "수확 중" if job_phase=="harvest" else {"prepare":"재배 준비","grow":"성장 대기","ready":"수확 준비","harvest":"수확 준비"}.get(cycle.phase,"농장으로 이동 중")
 	return {"travel":"자원으로 이동 중","harvest":"채집 중","wait":"자원·경로 대기"}.get(job_phase,"작업 준비 중")
 
 # A stopped/reassigned worker first delivers the existing load, never discards it.
@@ -90,22 +100,32 @@ func _job_tick(delta:float)->bool:
 	if job_timer>0 and job_phase=="wait":
 		job_timer-=delta;return true
 	if not item.cargo.is_empty():
-		var index:=int(resident_id.trim_prefix("resident-"))
-		var x_offsets:=[-35,35,-70,0,70]
-		var depot:=jobs.model.building_position("chief")+Vector2(x_offsets[index%5],110+30*(index/5))
-		if depot!=job_depot:job_route.clear();job_depot=depot
+		if not depot_home.is_finite() or not _home_exists(depot_home):
+			depot_home=jobs.model.nearest_home(position);job_depot=Vector2.INF;job_route.clear()
+		if not depot_home.is_finite():_job_wait();return true
+		if not job_depot.is_finite():
+			for offset in [Vector2(0,90),Vector2(90,50),Vector2(-90,50),Vector2(0,-90)]:
+				if _plan_job_route(depot_home+offset):job_depot=depot_home+offset;break
+		if not job_depot.is_finite():_job_wait();return true
+		var depot:=job_depot
 		if position.distance_to(depot)<=5:
-			jobs.deposit(resident_id);job_phase="wait";job_timer=2;job_route.clear();return true
+			if not jobs.deposit(resident_id):_job_wait();return true
+			job_phase="idle";job_timer=0;job_route.clear();job_depot=Vector2.INF;depot_home=Vector2.INF;return true
 		if job_route.is_empty():
 			if not _plan_job_route(depot):_job_wait();return true
 		job_phase="return"
+	elif job_kind in ["farmer","guard"]:
+		_station_tick(delta,item);return true
 	elif job_phase=="harvest":
 		job_timer-=delta
 		if job_timer<=0:
+			var harvested:=false
 			for node in jobs.model.nodes():
 				if node.id==job_target and position.distance_to(DemoConfig.point(node.position))<=float(DemoConfig.get_data().interact_radius):
-					jobs.harvest(resident_id,job_target);break
-			job_route.clear();_job_wait()
+					harvested=jobs.harvest(resident_id,job_target);break
+			job_route.clear()
+			if harvested:job_phase="idle";job_timer=0
+			else:_job_wait()
 		return true
 	elif job_route.is_empty():
 		var candidates:Array=jobs.model.nodes()
@@ -123,7 +143,7 @@ func _job_tick(delta:float)->bool:
 		if job_route.is_empty() and job_phase=="travel":job_phase="harvest";job_timer=float(DemoConfig.get_data().gather_seconds)
 		return true
 	var before:=position
-	velocity=offset.normalized()*minf(float(DemoConfig.get_data().move_speed),offset.length()/maxf(delta,.001));move_and_slide()
+	ActorMovement.move(self,ActorMovement.direction_to(position,job_route[0],delta))
 	job_stuck=job_stuck+delta if position.distance_to(before)<.01 else 0.0
 	if job_stuck>1.5:job_route.clear();_job_wait()
 	return true
@@ -150,3 +170,34 @@ func _plan_job_route(target:Vector2)->bool:
 	var pose:=transform;pose.origin=result[-1]
 	if test_move(pose,target-result[-1]):return false
 	result.remove_at(0);result.append(target);job_route=result;return true
+
+func _home_exists(at:Vector2)->bool:
+	for i in jobs.model.built_count():
+		if jobs.model.home_position(i)==at:return true
+	return false
+
+func _station_tick(delta:float,item:Dictionary)->void:
+	var key:=str(item.get("building",""))
+	var found:=jobs.model.lookup_building(key)
+	if found.is_empty():_job_wait();return
+	if station_key!=key:station_key=key;job_phase="idle";job_route.clear();job_timer=0
+	var at:Vector2=found.position+Vector2(0,90)
+	if position.distance_to(at)>5:
+		if job_route.is_empty() and not _plan_job_route(at):_job_wait();return
+		if not job_route.is_empty():
+			if position.distance_to(job_route[0])<=3:job_route.remove_at(0)
+			elif not job_route.is_empty():
+				var before:=position
+				ActorMovement.move(self,ActorMovement.direction_to(position,job_route[0],delta))
+				job_stuck=job_stuck+delta if position.distance_to(before)<.01 else 0.0
+				if job_stuck>1.5:job_route.clear();_job_wait();return
+		job_phase="station_travel";return
+	job_route.clear()
+	if job_kind=="guard":job_phase="guard";return
+	if found.data.has("upgrade"):job_phase="wait";return
+	var cycle:=FarmProduction.entry(jobs.model,key)
+	if cycle.phase not in ["ready","harvest"]:job_phase="farm_wait";return
+	if job_phase!="harvest":job_phase="harvest";job_timer=1.2
+	job_timer-=delta
+	if job_timer<=0:
+		FarmProduction.harvest(jobs.model,resident_id,key);job_phase="farm_wait"

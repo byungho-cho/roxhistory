@@ -8,6 +8,12 @@ const VISIT_INTERVAL_SECONDS := 60.0
 static func count(state:Dictionary)->int:
 	return clampi(int(state.get("resident_count",2 if state.get("family_joined",false) else 0)),0,MAX_RESIDENTS)
 
+static func ids(state:Dictionary)->Array:
+	if state.has("resident_roster"):return state.resident_roster.duplicate()
+	var result:Array=[]
+	for i in count(state):result.append("resident-%d"%i)
+	return result
+
 static func visitor_count(state:Dictionary)->int:
 	return clampi(int(state.get("pending_family_count",0)),0,3)
 
@@ -15,6 +21,12 @@ static func available(model:GameState)->bool:
 	return not model.state.is_empty() and visitor_count(model.state)>0
 
 static func valid_saved_population(state:Dictionary)->bool:
+	if state.has("resident_roster"):
+		if not state.resident_roster is Array or state.resident_roster.size()!=count(state):return false
+		var seen:Array=[]
+		for id in state.resident_roster:
+			if not id is String or not ResidentJobs.valid_id(id) or id in seen:return false
+			seen.append(id)
 	for key in ["resident_count","pending_family_count"]:
 		if not state.has(key):continue
 		var value:Variant=state[key]
@@ -50,11 +62,18 @@ static func join(model:GameState,now:float=-1.0)->bool:
 	if not is_finite(now) or now<0:return false
 	var next:=model.state.duplicate(true)
 	next.resident_count=admitted+party
+	var roster:=ids(model.state)
+	for i in MAX_RESIDENTS:
+		var id:="resident-%d"%i
+		if not id in roster and roster.size()<admitted+party:roster.append(id)
+	next.resident_roster=roster
 	next.family_joined=true
 	next.family_unlocked=true
 	next.pending_family_count=0
 	next.family_next_at=now+VISIT_INTERVAL_SECONDS
-	return _commit(model,next)
+	var ok:=_commit(model,next)
+	if ok:VillageNotifications.dispatch(model,"arrival",{"count":party})
+	return ok
 
 static func _commit(model:GameState,next:Dictionary)->bool:
 	model.busy=true

@@ -384,7 +384,7 @@ func refresh_facilities()->void:
 		wanted.append(node_name)
 		var kind:=str(entry.kind)
 		var asset:="BLD-%s-L%d"%[kind.to_upper(),int(entry.get("level",1))]
-		var texture:=BuildingWorkflow.approved_texture(asset)
+		var texture:=BuildingVisuals.texture(kind,int(entry.get("level",1)))
 		if texture==null:continue
 		var body:=get_node_or_null(node_name) as StaticBody2D
 		if body==null:
@@ -396,6 +396,7 @@ func refresh_facilities()->void:
 		body.position=model.building_position(kind+":"+str(entry.uid))
 		var sprite:=body.get_child(0) as Sprite2D
 		BuildingVisuals.apply(sprite,kind,int(entry.get("level",1)),230)
+		if kind=="farm" and not body.has_node("TemporaryCropVisual"):body.add_child(FarmPlotVisual.new(model,kind+":"+str(entry.uid)))
 		var life:=body.get_node_or_null("BuildingLifeEffects")
 		if life==null:
 			life=BuildingLifeEffects.new(sprite,kind,int(entry.get("level",1)));body.add_child(life)
@@ -562,13 +563,18 @@ func resource_transition(id:String,reveal:bool,delay:float=0.0,animate:bool=true
 	tween.tween_callback(func():resource_tweens.erase(id))
 
 func refresh_residents()->void:
-	var admitted:=model.resident_count()
-	while residents.size()>admitted:
-		var actor:TrialResident=residents.pop_back();remove_child(actor);actor.queue_free()
-	while residents.size()<admitted:
-		var index:=residents.size()
+	var roster:=ResidentAdmission.ids(model.state)
+	for actor in residents.duplicate():
+		if not actor.resident_id in roster:
+			residents.erase(actor);remove_child(actor);actor.queue_free()
+	for id in roster:
+		var present:=false
+		for actor in residents:
+			if actor.resident_id==id:present=true;break
+		if present:continue
+		var index:=int(str(id).trim_prefix("resident-"))
 		var resident:=TrialResident.new();resident.variant="female" if index%2==0 else "sturdy_male"
-		resident.resident_id="resident-%d"%index;resident.name="Resident_%d"%index
+		resident.resident_id=id;resident.name="Resident_%d"%index
 		resident.position=resident_spawn_position(index);add_child(resident);residents.append(resident)
 	var visiting:=model.family_visitor_count() if model.family_available() else 0
 	while visitors.size()>visiting:

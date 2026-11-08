@@ -126,9 +126,9 @@ func run()->void:
 	check(model.cancel_upgrade(shrine_key),"Cancel shrine3")
 	check(model.move_building(shrine_key,model.building_position(shrine_key)),"Facility movement restored after cancellation")
 	check(model.demolish(shrine_key) and model.lookup_building(shrine_key).is_empty(),"Facility generic demolition")
-	check(model.claim_reward(0),"Claim before housing demolition")
+	check(not model.claim_reward(0),"Unspecified copper income does not issue old seed reward")
 	fixture=model.state.duplicate(true);fixture.resident_count=1;model.commit(fixture)
-	check(model.demolition_quote(home_key).is_empty() and not model.demolish(home_key),"Occupied residents cannot lose required housing")
+	check(int(model.demolition_quote(home_key).departures)==1,"Occupied housing removal warns departure count")
 	fixture=model.state.duplicate(true);fixture.resident_count=0;model.commit(fixture)
 	check(not model.demolition_quote(home_key).is_empty(),"Empty housing demolition supported")
 	# Both construction and upgrades rescale, but other game clocks do not.

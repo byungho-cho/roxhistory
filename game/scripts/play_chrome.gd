@@ -38,7 +38,7 @@ func clear_effects() -> void:
 	flights.clear();sync_resource_counts(true)
 func sync_resource_counts(immediate:bool=false)->void:
 	for key in ["wood","stone","tokens"]:
-		var target:=float(app.model.state.get(key,0))
+		var target:=float(app.model.state.get("grain",app.model.state.get("tokens",0)) if key=="tokens" else app.model.state.get(key,0))
 		if immediate or not resource_counts.has(key):
 			resource_counts[key]={"shown":target,"from":target,"target":target,"elapsed":COUNT_DURATION}
 		elif resource_counts[key].target!=target:

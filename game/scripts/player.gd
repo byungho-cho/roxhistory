@@ -191,10 +191,9 @@ func set_activity(value: String) -> void:
 func _physics_process(delta: float) -> void:
 	var movement := Vector2.ZERO if presentation_paused or activity != "" else direction.limit_length()
 	if not presentation_paused and activity=="" and work_destination.is_finite():
-		movement=(work_destination-position).limit_length(float(DemoConfig.get_data().move_speed)*delta)/maxf(0.001,float(DemoConfig.get_data().move_speed)*delta)
-	velocity = movement*float(DemoConfig.get_data().move_speed)
+		movement=ActorMovement.direction_to(position,work_destination,delta)
 	var before := position
-	move_and_slide()
+	ActorMovement.move(self,movement)
 	var safe_bounds:Rect2=get_parent().playable_rect().grow(-24) if get_parent().has_method("playable_rect") else VillageBounds.WORLD_RECT.grow(-24)
 	position=position.clamp(safe_bounds.position,safe_bounds.end)
 	var travelled := position.distance_to(before)

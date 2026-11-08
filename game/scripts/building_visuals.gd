@@ -13,6 +13,7 @@ static func asset_id(kind: String, level: int = 1) -> String:
 	return "BLD-%s-L%d" % [category, clampi(level, 1, 4)]
 
 static func texture(kind: String, level: int = 1) -> Texture2D:
+	if kind=="farm":return preload("res://assets/placeholders/farm.svg")
 	var id := asset_id(kind, level)
 	if not AssetCatalog.entry(id).get("approved", false): return null
 	return AssetCatalog.texture(id)

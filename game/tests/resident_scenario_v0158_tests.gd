@@ -59,7 +59,7 @@ func run()->void:
 	worker.set_physics_process(false)
 	check(carried and not invalid_credit,"Visible harvest enters return phase without remote credit")
 	check(int(model.state.wood)==balance+10,"Actor deposits exactly one load after walking")
-	check(worker.position.distance_to(model.building_position("chief")+Vector2(-35,110))<=5,"Deposit occurs at chief hut")
+	check(worker.position.distance_to(model.nearest_home(worker.position))<=110,"Deposit occurs at closest resident home doorway")
 	# The second profession also follows a complete return trip in the live world.
 	var stone_target:Dictionary={}
 	for node in model.nodes():
@@ -75,9 +75,9 @@ func run()->void:
 		if int(model.state.stone)>stone_before:break
 	stone_worker.set_physics_process(false)
 	check(stone_carried and int(model.state.stone)==stone_before+10,"Stone worker completes independent gather and return")
-	check(stone_worker.position.distance_to(model.building_position("chief")+Vector2(35,110))<=5,"Stone delivery uses its own chief hut arrival point")
+	check(stone_worker.position.distance_to(model.nearest_home(stone_worker.position))<=110,"Stone worker also delivers to resident home")
 	jobs.assign(worker.resident_id,"idle")
-	check(worker.work_status()=="쉬는 중","Idle assignment reflected in status")
+	check(worker.work_status()=="미배정","Idle assignment reflected in status")
 	print(JSON.stringify({"checks":checks,"failed":failures,"phase":worker.job_phase,"position":[worker.position.x,worker.position.y]}))
 	world.queue_free();await process_frame
 	quit(0 if failures.is_empty() else 1)

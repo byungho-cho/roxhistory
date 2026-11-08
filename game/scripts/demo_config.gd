@@ -22,4 +22,4 @@ static func fresh() -> Dictionary:
 	var c := get_data()
 	return {"schema":1,"terrain_revision":34,"resource_revision":35,"family_joined":false,"family_unlocked":false,"region":"amsa","position":c.spawn.duplicate(),"wood":99999,"stone":99999,"hq_can_be_absent":true,"chief_level":0,
 		"debug_unlimited_buildings":true,"debug_fast_build":true,"fast_build_mode":"fixed5","debug_show_boundary":true,"debug_unlimited_builders":true,"construction_jobs":[],"facilities":[],"resident_count":0,"pending_family_count":0,"family_next_at":0.0,
-		"depleted":{},"built":false,"reward_claimed":false,"tokens":99999,"intro_seen":false}
+		"depleted":{},"built":false,"reward_claimed":false,"tokens":99999,"grain":99999,"copper":0,"intro_seen":false}

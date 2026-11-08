@@ -1,0 +1,6 @@
+farm-final-model.log {"checks":108,"failures":[]}
+farm-final-building.log {"checks":192,"failures":[]}
+farm-final-fixed-five.log {"checks":63,"failures":[]}
+farm-final-resident.log {"checks":24,"failed":[],"phase":"idle","position":[1386.5712890625,1089.12536621094]}
+farm-camera-regression.log {"checks":34,"failures":[],"touch":"synthetic Windows touch, not Android hardware"}
+farm-final-ui.log {"checks":26,"failures":[],"touch":"synthetic; Android hardware not tested"}

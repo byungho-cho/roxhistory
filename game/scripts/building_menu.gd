@@ -90,10 +90,10 @@ func refresh()->void:
 	var upgrade_reason:String=app.building_workflow.upgrade_block_reason(app.model.chief_level()+1) if selected_key=="chief" else app.building_workflow.owned_upgrade_reason(selected_key)
 	upgrade_button.disabled=not upgrade_reason.is_empty();upgrade_button.hint_text=upgrade_reason
 	var quote:Dictionary=app.model.demolition_quote(selected_key)
-	demolish_button.disabled=selected_key=="chief" or quote.is_empty() or not quote.get("supported",false) or owned.get("data",{}).has("upgrade") or (i>=0 and app.model.reward_pending(i))
-	demolish_button.hint_text="촌장집은 철거할 수 없어요" if selected_key=="chief" else "건물 위 씨앗 보상을 먼저 받아 주세요"
+	demolish_button.disabled=selected_key=="chief" or quote.is_empty() or not quote.get("supported",false) or owned.get("data",{}).has("upgrade")
+	demolish_button.hint_text="촌장집은 철거할 수 없어요" if selected_key=="chief" else "건물 철거"
 	if owned.get("data",{}).has("upgrade"):demolish_button.hint_text="공사 완료 후 철거할 수 있어요"
-	elif i>=0 and app.model.resident_capacity()-[1,2,3,5][clampi(int(owned.data.get("level",1)),1,4)-1]<app.model.resident_count():demolish_button.hint_text="주민이 살 집이 부족해져요. 다른 움집을 먼저 마련해 주세요"
+	elif i>=0 and app.model.resident_capacity()-[1,2,3,5][clampi(int(owned.data.get("level",1)),1,4)-1]<app.model.resident_count():demolish_button.hint_text="철거 확인 시 초과 주민이 무작위로 떠나요"
 	elif selected_key!="chief" and (quote.is_empty() or not quote.get("supported",false)):demolish_button.hint_text="이 건물은 지금 철거할 수 없어요"
 	IntegratedMenuArt.refresh(move_button);IntegratedMenuArt.refresh(upgrade_button,not upgrade_button.disabled)
 	IntegratedMenuArt.refresh(demolish_button);IntegratedMenuArt.refresh(close_button)

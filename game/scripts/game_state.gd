@@ -1,6 +1,7 @@
 class_name GameState
 extends RefCounted
 
+signal notification_requested(event:String,payload:Dictionary)
 signal changed
 signal failed(message: String)
 
@@ -90,6 +91,7 @@ func finish_chief_upgrade(now:float=-1.0) -> bool:
 	prepare_resource_positions(next)
 	var ok:=commit(next)
 	busy=false
+	if ok:VillageNotifications.dispatch(self,"upgrade",{"kind":"chief"})
 	return ok
 
 # Same atomic payment/save transaction as huts. Outposts do not count toward
@@ -181,6 +183,7 @@ func _init(save_store: SaveStore) -> void:
 	migrate_village()
 	migrate_resources()
 	migrate_resource_positions()
+	migrate_economy()
 	ensure_respawn_timers()
 	finish_constructions()
 	finish_chief_upgrade()
@@ -223,6 +226,8 @@ func gather(node_id: String, pos: Vector2 = Vector2.ZERO, now:float=-1.0) -> boo
 			continue
 		var next := state.duplicate(true)
 		var count := int(next.depleted.get(node_id,0))
+		if int(next[n.kind])+int(DemoConfig.get_data().gather_yield)>BuildingRules.MAX_RESOURCE:
+			busy=false;return false
 		if count >= n.charges:
 			busy = false
 			return false
@@ -250,8 +255,7 @@ func homes() -> Array:
 func built_count() -> int: return homes().size()
 
 func reward_pending(index: int) -> bool:
-	var list := homes()
-	return index >= 0 and index < list.size() and not list[index].claimed
+	return false # Copper income rules pending; legacy claimed flags remain preserved.
 
 func home_position(index:int)->Vector2:
 	var list:=homes()
@@ -274,11 +278,12 @@ func demolition_quote(key:String)->Dictionary:
 	if key=="chief":return {}
 	var found:=lookup_building(key)
 	if found.is_empty() or found.data.has("upgrade"):return {}
+	var departures:=0
 	if found.collection=="homes":
-		var removed_capacity:int=[1,2,3,5][clampi(int(found.data.get("level",1)),1,4)-1]
-		if resident_capacity()-removed_capacity<resident_count():return {}
+		var remaining:=homes();remaining.remove_at(int(found.index))
+		departures=maxi(0,resident_count()-housing_capacity(remaining))
 	var cost:Dictionary=found.data.get("cost",{"wood":1,"stone":1})
-	var result:Dictionary={"index":int(found.index),"collection":found.collection,"kind":found.kind,"wood":0,"stone":0,"supported":true}
+	var result:Dictionary={"index":int(found.index),"collection":found.collection,"kind":found.kind,"wood":0,"stone":0,"supported":true,"departures":departures}
 	for resource in ["wood","stone"]:
 		var paid:=int(cost[resource])
 		var tenths:=paid*10 if paid<=10 else paid*9
@@ -290,7 +295,7 @@ func demolish(key:String)->bool:
 	if busy:return false
 	var quote:=demolition_quote(key)
 	if quote.is_empty() or not quote.supported:return false
-	if quote.collection=="homes" and reward_pending(int(quote.index)):return false
+
 	var next:=state.duplicate(true)
 	if quote.collection=="homes":next.homes=stable_homes()
 	next[quote.collection].remove_at(int(quote.index))
@@ -299,6 +304,14 @@ func demolish(key:String)->bool:
 		next.built=not next.homes.is_empty()
 		next.reward_claimed=next.homes[0].claimed if next.built else false
 		next.hut_style=next.homes[0].style if next.built else 0
+		ResidentJobs.remove_excess(next,int(quote.departures))
+	ResidentJobs.clear_building(next,key)
+	if next.get("farm_cycles",{}).has(key):
+		var stock:=int(next.farm_cycles[key].stock)
+		if stock>0:
+			if not next.has("held_cargo"):next.held_cargo=[]
+			next.held_cargo.append({"kind":"grain","amount":stock,"reason":"farm_demolition"})
+		next.farm_cycles.erase(key)
 	busy=true
 	var ok:=commit(next)
 	busy=false
@@ -314,18 +327,10 @@ func build(_pos: Vector2 = Vector2.ZERO, site_id:int=-1) -> bool:
 	if site_id<0 or not site_free(site_id):return false
 	return begin_construction("hut",DemoConfig.BUILD_SITES[site_id],-1,site_id)
 
-func claim_reward(index: int = 0) -> bool:
-	if busy or state.is_empty() or not reward_pending(index):
-		return false
-	busy = true
-	var next := state.duplicate(true)
-	next.homes = homes()
-	next.homes[index].claimed = true
-	next.reward_claimed = next.homes[0].claimed
-	next.tokens += int(DemoConfig.get_data().reward)
-	var ok := commit(next)
-	busy = false
-	return ok
+func claim_reward(_index: int = 0) -> bool:
+	# Copper collection amount and interval remain unspecified. Retain legacy
+	# claimed flags and balances; do not issue the former seed reward again.
+	return false
 
 func migrate_village()->bool:
 	if state.is_empty() or int(state.get("terrain_revision",0))>=34:return true
@@ -368,9 +373,12 @@ func home_limit()->int:
 	return BuildingRules.MAX_ENTRIES if debug_unlimited_buildings else mini(DemoConfig.MAX_RESIDENT_HOMES,chief_level())
 
 func resident_capacity()->int:
+	return housing_capacity(homes())
+
+func housing_capacity(list:Array)->int:
 	var capacity:=0
-	for home in homes():capacity += [1,2,3,5][clampi(int(home.get("level",1)),1,4)-1]
-	return capacity
+	for home in list:capacity += [1,2,3,5][clampi(int(home.get("level",1)),1,4)-1]
+	return mini(ResidentAdmission.MAX_RESIDENTS,capacity)
 
 func resident_count()->int:
 	return ResidentAdmission.count(state)
@@ -388,12 +396,13 @@ func builder_available()->bool:
 
 func building_unlocked(kind:String)->bool:
 	kind=BuildingRules.canonical(kind)
-	return not state.is_empty() and BuildingRules.REQUIRED_HQ.has(kind) and chief_level()>=int(BuildingRules.REQUIRED_HQ[kind])
+	return not state.is_empty() and BuildingRules.REQUIRED_HQ.has(kind) and chief_level()>=int(BuildingRules.REQUIRED_HQ[kind]) and (kind!="farm" or built_count()>0)
 
 func building_requirement(kind:String)->String:
 	kind=BuildingRules.canonical(kind)
 	if state.is_empty():return "게임을 먼저 시작해 주세요"
 	if not BuildingRules.REQUIRED_HQ.has(kind):return "아직 지원하지 않는 건물이에요"
+	if kind=="farm" and built_count()==0:return "주민 움집 1채를 먼저 지어 주세요"
 	if not building_unlocked(kind):return "촌장집 Lv.%d 필요" % int(BuildingRules.REQUIRED_HQ[kind])
 	if kind=="chief":
 		if chief_level()>0:return "촌장집가 이미 있어요"
@@ -409,7 +418,12 @@ func building_requirement(kind:String)->String:
 		if count>=1:return "%s은 1개만 지을 수 있어요" % BuildingWorkflow.building_name(kind)
 	if not builder_available():return "건설자 1명이 작업 중이에요"
 	if construction_jobs().size()>=BuildingRules.MAX_ENTRIES:return "건설 중인 건물이 너무 많아요"
-	if kind=="outpost" and outposts().size()+pending_construction_count(kind)>=BuildingRules.MAX_ENTRIES:return "초소 한도에 도달했어요"
+	if kind=="outpost" and not debug_unlimited_buildings and outposts().size()+pending_construction_count(kind)>=3:return "초소는 최대 3개예요"
+	if kind=="farm" and not debug_unlimited_buildings:
+		var farms:=pending_construction_count(kind)
+		for facility in facilities():
+			if facility.kind=="farm":farms+=1
+		if farms>=mini(3,chief_level()):return "현재 농장 한도 %d개"%mini(3,chief_level())
 	if kind in BuildingRules.FACILITY_KINDS:
 		var pending_facilities:=0
 		for job in construction_jobs():
@@ -568,6 +582,9 @@ func finish_constructions(now:float=-1.0)->bool:
 		if not next.has(collection):next[collection]=[]
 		next[collection].append(entry)
 	if not did_finish:return false
+	var completed:Array=[]
+	for job in construction_jobs():
+		if now>=float(job.finishes_at):completed.append(str(job.kind))
 	next.construction_jobs=pending
 	next.built=not next.get("homes",[]).is_empty()
 	if next.built:
@@ -576,6 +593,8 @@ func finish_constructions(now:float=-1.0)->bool:
 	busy=true
 	var ok:=commit(next)
 	busy=false
+	if ok:
+		for kind in completed:VillageNotifications.dispatch(self,"construction",{"kind":kind})
 	return ok
 
 func cancel_upgrade(key:String)->bool:
@@ -633,3 +652,16 @@ func set_debug_unlimited_builders(enabled:bool)->bool:
 	var ok:=commit(next)
 	busy=false
 	return ok
+
+func migrate_economy()->bool:
+	if state.is_empty() or state.has("grain"):return true
+	var next:=state.duplicate(true)
+	next.grain=int(next.tokens);next.copper=int(next.get("copper",0))
+	return commit(next)
+
+func nearest_home(from:Vector2)->Vector2:
+	var best:=Vector2.INF;var distance:=INF
+	for i in built_count():
+		var at:=home_position(i)
+		if at.distance_squared_to(from)<distance:best=at;distance=at.distance_squared_to(from)
+	return best

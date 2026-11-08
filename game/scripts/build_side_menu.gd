@@ -1,6 +1,6 @@
 class_name BuildSideMenu
 extends Control
-const KINDS:=["hut","outpost","hearth","training","shrine"]
+const KINDS:=["hut","outpost","hearth","training","shrine","farm"]
 const TILE_SIZE:=Vector2(92,102)
 var app:Node
 var hut:DemoButton
@@ -13,7 +13,11 @@ func _ready()->void:
 		var button:DemoButton=app.button(self,"",func():select_kind(kind));button.name=kind.capitalize()
 		button.custom_minimum_size=TILE_SIZE;button.size=TILE_SIZE
 		for state in ["normal","hover","pressed","disabled","focus"]:button.add_theme_stylebox_override(state,StyleBoxEmpty.new())
-		IntegratedMenuArt.install(button,"side-"+kind,Vector2(92,102))
+		if kind=="farm":
+			button.text="농장\n임시 외형";button.set_meta("farm_placeholder",true)
+			var image:=TextureRect.new();image.name="IntegratedImage";image.texture=preload("res://assets/placeholders/farm.svg");image.size=Vector2(76,52);image.position=Vector2(8,0);image.expand_mode=TextureRect.EXPAND_IGNORE_SIZE;image.mouse_filter=Control.MOUSE_FILTER_IGNORE;button.add_child(image)
+			button.enable_art_feedback()
+		else:IntegratedMenuArt.install(button,"side-"+kind,Vector2(92,102))
 		var locked:=TextureRect.new();locked.name="Locked";locked.texture=IntegratedMenuArt.trimmed(load("res://assets/ui/v0158/lock.png"));locked.expand_mode=TextureRect.EXPAND_IGNORE_SIZE;locked.stretch_mode=TextureRect.STRETCH_KEEP_ASPECT_CENTERED;locked.position=Vector2(30,36);locked.size=Vector2(32,34);locked.mouse_filter=Control.MOUSE_FILTER_IGNORE;button.art_feedback.add_child(locked)
 		button.enable_art_feedback();entries[kind]=button
 	hut=entries.hut;outpost_button=entries.outpost
@@ -31,7 +35,7 @@ func refresh()->void:
 		button.disabled=not button.hint_text.is_empty()
 		button.tooltip_text=button.hint_text if button.disabled else BuildingWorkflow.building_name(kind)
 		button.art_feedback.get_node("Locked").visible=button.disabled
-		IntegratedMenuArt.refresh(button)
+		if kind!="farm":IntegratedMenuArt.refresh(button)
 
 	var center:Vector2=app.build_button.get_global_rect().get_center()
 	position=Vector2(clampf(center.x-size.x*.5,app.safe.x,maxf(app.safe.x,app.w-app.safe.x-size.x)),maxf(app.safe.y+95,app.build_button.global_position.y-size.y-8))

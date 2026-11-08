@@ -60,7 +60,7 @@ func begin(kind: String, id := "") -> void:
 func update_work(seconds: float, total: float) -> void:
 	elapsed = seconds
 	if activity == "": return
-	if activity=="gather" and world.resource_labels.has(target):world.resource_labels[target].reveal_bar()
+	if activity=="gather" and world.resource_labels.has(target):world.resource_labels[target].show_action(seconds/maxf(.001,total))
 	world.player.action_time = seconds
 	if activity == "build":
 		preview_progress = clampf(seconds/total,0,1)
@@ -99,6 +99,7 @@ func update_work(seconds: float, total: float) -> void:
 	queue_redraw()
 
 func cancel() -> void:
+	if world.resource_labels.has(target):world.resource_labels[target].hide_action()
 	world.player.external_work_clock = false
 	if target != "" and world.art_nodes.has(target): world.art_nodes[target].get_child(0).rotation = 0
 	activity = ""; target = ""; impact_strength = 0

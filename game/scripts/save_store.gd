@@ -34,6 +34,7 @@ func valid(s: Variant) -> bool:
 	if not _valid_buildings(s,int(hq)):return false
 	if not ResidentAdmission.valid_saved_population(s):return false
 	if not ResidentJobs.valid_saved_jobs(s):return false
+	if not VillageActivityState.valid(s):return false
 	if s.has("resource_seed") and not BuildingRules.valid_number(s.resource_seed,1,2147483646,true):return false
 	var allowed := {}
 	for n in DemoConfig.get_data().nodes:
