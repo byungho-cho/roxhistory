@@ -5,6 +5,10 @@ var app:Node
 var bubble:Button
 var headline:Label
 var background:TextureRect
+var portrait:TextureRect
+# Alpha >= 10% visible content of the approved 236x216 icon; no PNG pixels changed.
+const PORTRAIT_REGION:=Rect2(50,14,136,193)
+const BUBBLE_FRONT:=20.0
 var progress:ProgressBar
 var talking:=false
 var elapsed:=0.0
@@ -21,7 +25,8 @@ func _ready()->void:
 	bubble.pressed.connect(request);app.stage.add_child(bubble)
 	var atlas:=AtlasTexture.new();atlas.atlas=preload("res://assets/ui/v0158/resident-bubble-bg.png");atlas.region=Rect2(211,11,345,105);atlas.filter_clip=true
 	background=app.picture(bubble,atlas,Rect2(0,0,270,44));background.stretch_mode=TextureRect.STRETCH_SCALE
-	app.picture(bubble,preload("res://assets/ui/v0158/resident-icon.png"),Rect2(3.6,2.8,38.4,38.4))
+	var icon:=AtlasTexture.new();icon.atlas=preload("res://assets/ui/v0158/resident-icon.png");icon.region=PORTRAIT_REGION;icon.filter_clip=true
+	portrait=app.picture(bubble,icon,Rect2(0,-2,30,42));portrait.name="ResidentPortrait"
 	headline=Label.new();headline.theme=DemoArt.theme();headline.position=Vector2(50,5.2);headline.size=Vector2(210,24);headline.vertical_alignment=VERTICAL_ALIGNMENT_CENTER;headline.add_theme_font_size_override("font_size",14);headline.add_theme_color_override("font_color",Color("49321e"));headline.mouse_filter=Control.MOUSE_FILTER_IGNORE;bubble.add_child(headline)
 	progress=ProgressBar.new();progress.show_percentage=false;progress.size=Vector2(250,3);progress.mouse_filter=Control.MOUSE_FILTER_IGNORE;bubble.add_child(progress);progress.position=Vector2(10,40);progress.hide()
 func request()->void:
@@ -57,7 +62,7 @@ func _process(delta:float)->void:
 	if not bubble.visible:return
 	headline.text="함께 마을을 가꾸어요…" if talking else "함께 머물 곳을 찾고 있어요"
 	var width:float=headline.get_theme_font("font").get_string_size(headline.text,HORIZONTAL_ALIGNMENT_LEFT,-1,14).x+60
-	bubble.size=Vector2(minf(width,app.w-app.safe.x*2),44);background.position.x=32*.2;background.size=Vector2(bubble.size.x-background.position.x,bubble.size.y)
+	bubble.size=Vector2(minf(width,app.w-app.safe.x*2),44);background.position.x=BUBBLE_FRONT;background.size=Vector2(bubble.size.x-background.position.x,bubble.size.y)
 	headline.size.x=bubble.size.x-60;progress.size.x=bubble.size.x-20
 	var head:=Vector2(1590,745)
 	if not app.world.visitors.is_empty():
