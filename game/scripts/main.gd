@@ -631,6 +631,7 @@ func apply_menu_state(animated:bool=false)->void:
 
 func inventory_summary() -> void:
 	var body:="나무 %d개 · 돌 %d개\n곡식 %d개 · 구리 %d개 (수입 규칙 미정)"%[model.state.wood,model.state.stone,model.state.get("grain",model.state.tokens),model.state.get("copper",0)]
+	body+="\n저장 한도 · 목재 %d / 석재 %d / 곡식 %d"%[ResourceStorage.capacity(model,"wood"),ResourceStorage.capacity(model,"stone"),ResourceStorage.capacity(model,"grain")]
 	var stock:=0
 	for cycle in model.state.get("farm_cycles",{}).values():stock+=int(cycle.stock)
 	if stock>0:body+="\n농장 보관 곡식 %d개"%stock
@@ -734,6 +735,7 @@ func gather_action(selected_id:String="") -> void:
 		for candidate in model.nodes():
 			if candidate.id==selected_id and not world.exhausted(candidate):n=candidate;break
 		if n.is_empty():toast("예약한 채집 대상이 사라졌어요");return
+	if not n.is_empty() and ResourceStorage.room(model,n.kind)<=0:toast("%s 저장 공간이 가득 찼어요"%("목재" if n.kind=="wood" else "석재"));return
 	if not n.is_empty() and not model.gather_available(n.id,"hero"):
 		toast("다른 채집자가 선택한 대상이에요");return
 	if n.is_empty():

@@ -37,7 +37,7 @@ static func harvest(model:GameState,id:String,key:String)->bool:
 	var found:=model.lookup_building(key)
 	if model.busy or not jobs.available(id) or worker.job!="farmer" or worker.get("building","")!=key or not worker.cargo.is_empty() or model.built_count()==0 or found.is_empty() or found.data.has("upgrade"):return false
 	var cycle:=entry(model,key)
-	if cycle.phase not in ["ready","harvest"]:return false
+	if cycle.phase not in ["ready","harvest"] or ResourceStorage.room(model,"grain")<=0:return false
 	var level:=clampi(int(cycle.cycle_level),1,4)-1
 	var amount:int=YIELDS[level]/CUTS[level]
 	# Each cut becomes exactly one load; the next cut waits for actual delivery

@@ -13,7 +13,8 @@ static func asset_id(kind: String, level: int = 1) -> String:
 	return "BLD-%s-L%d" % [category, clampi(level, 1, 4)]
 
 static func texture(kind: String, level: int = 1) -> Texture2D:
-	if kind=="farm":return load("res://assets/farm/v002/farm-l%d.png"%clampi(level,1,4))
+	if kind=="farm":return load("res://assets/farm/v003/farm-empty-l%d.png"%clampi(level,1,4))
+	if kind in ["stone_store","wood_store"]:return load("res://assets/buildings/storage-v001/%s-l%d.png"%[kind,clampi(level,1,4)])
 	var id := asset_id(kind, level)
 	if not AssetCatalog.entry(id).get("approved", false): return null
 	return AssetCatalog.texture(id)
@@ -21,6 +22,7 @@ static func texture(kind: String, level: int = 1) -> Texture2D:
 static func display_size(kind: String, level: int = 1, ground_width: float = 230.0) -> Vector2:
 	var source := texture(kind, level)
 	if source == null: return Vector2.ZERO
+	if kind=="farm":return Vector2(184,184*([320.0/420,340.0/440,380.0/480,420.0/520][clampi(level,1,4)-1]))*ground_width/230.0
 	var stage := clampi(level, 1, 4) - 1
 	var scale_factor: float
 	match kind:
@@ -60,7 +62,7 @@ static func apply(sprite: Sprite2D, kind: String, level: int = 1, ground_width: 
 	sprite.texture = source
 	sprite.centered = true
 	sprite.offset = Vector2.ZERO
-	sprite.scale = Vector2.ONE * rect.size.x / source.get_width()
+	sprite.scale = rect.size/source.get_size() if kind=="farm" else Vector2.ONE * rect.size.x / source.get_width()
 	sprite.position = rect.get_center()
 	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	sprite.set_meta("building_visual_kind", kind)

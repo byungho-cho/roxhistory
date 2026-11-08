@@ -38,8 +38,11 @@ func assign(id:String,job:String,building:String="")->bool:
 		if found.is_empty() or found.kind!=("farm" if job=="farmer" else "outpost"):return false
 		var occupant:=assigned_to(building)
 		if not occupant.is_empty() and occupant!=id:return false
+	if job in ["wood","stone"] and not building.is_empty():
+		var found:=model.lookup_building(building)
+		if found.is_empty() or found.kind!=ResourceStorage.STORE_KINDS[job]:return false
 	var next:=model.state.duplicate(true)
-	var item:=entry(id);item.job=job;item.building=building if job in ["farmer","guard"] else ""
+	var item:=entry(id);item.job=job;item.building=building if job in ["farmer","guard","wood","stone"] else ""
 	if not next.has("resident_jobs"):next.resident_jobs={}
 	next.resident_jobs[id]=item
 	var ok:=_commit(next)
@@ -73,26 +76,27 @@ func harvest(id:String,node_id:String,now:float=-1.0)->bool:
 		return _commit(next)
 	return false
 
-# Called only after actor arrival. Full storage retains cargo without truncation.
+# Arrival atomically accepts remaining capacity and discards only this load overflow.
 func deposit(id:String)->bool:
-	if model.busy or not available(id) or model.built_count()==0:return false
+	if model.busy or not available(id):return false
 	var item:=entry(id)
 	if item.cargo.is_empty():return false
 	var kind:=str(item.cargo.kind);var amount:=int(item.cargo.amount)
-	if int(model.state.get(kind,0))+amount>BuildingRules.MAX_RESOURCE:return false
+	if not ResourceStorage.destination(model,kind,Vector2.ZERO).is_finite():return false
+
 	var next:=model.state.duplicate(true)
-	next[kind]=int(next.get(kind,0))+amount;item.cargo={};next.resident_jobs[id]=item
+	ResourceStorage.receive(model,next,kind,amount);item.cargo={};next.resident_jobs[id]=item
 	return _commit(next)
 
 func assigned_to(building:String)->String:
-	for id in ResidentAdmission.ids(model.state):
-		var item:=entry(id)
-		if item.job in ["farmer","guard"] and item.get("building","")==building:return id
+	for id in assigned_ids(building):return id
 	return ""
 
 static func clear_building(next:Dictionary,key:String)->void:
 	for item in next.get("resident_jobs",{}).values():
-		if item.get("building","")==key:item.job="idle";item.building=""
+		if item.get("building","")==key:
+			if not key.begins_with("wood_store:") and not key.begins_with("stone_store:"):item.job="idle"
+			item.building=""
 
 static func remove_excess(next:Dictionary,count:int)->void:
 	var roster:=ResidentAdmission.ids(next)
@@ -107,3 +111,14 @@ static func remove_excess(next:Dictionary,count:int)->void:
 		if next.has("resident_jobs"):next.resident_jobs.erase(id)
 		departed.append(id);roster.remove_at(index)
 	next.resident_roster=roster;next.resident_count=roster.size();next.last_departed=departed
+
+func assigned_ids(building_key:String)->Array[String]:
+	var result:Array[String]=[]
+	var found:=model.lookup_building(building_key)
+	if found.is_empty():return result
+	for id in ResidentAdmission.ids(model.state):
+		var item:=entry(id)
+		if found.kind in ["stone_store","wood_store"]:
+			if ResourceStorage.STORE_KINDS.get(item.job,"")==found.kind:result.append(id)
+		elif item.get("building","")==building_key and item.job in ["farmer","guard"]:result.append(id)
+	return result

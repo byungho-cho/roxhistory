@@ -21,6 +21,8 @@ func _ready()->void:
 	app.model.changed.connect(refresh_visual)
 	refresh_visual()
 static func approved_texture(id:String)->Texture2D:
+	if id.begins_with("BLD-STONE_STORE-"):return BuildingVisuals.texture("stone_store",int(id.get_slice("-",2).trim_prefix("L")))
+	if id.begins_with("BLD-WOOD_STORE-"):return BuildingVisuals.texture("wood_store",int(id.get_slice("-",2).trim_prefix("L")))
 	if id.begins_with("BLD-FARM-"):return BuildingVisuals.texture("farm",int(id.get_slice("-",2).trim_prefix("L")))
 	var entry:=AssetCatalog.entry(id)
 	if not entry.get("approved",false):return null
@@ -35,9 +37,9 @@ static func approved_texture(id:String)->Texture2D:
 		if not Rect2(Vector2.ZERO,source.get_size()).encloses(Rect2(crop[0],crop[1],crop[2],crop[3])):return null
 	return AssetCatalog.texture(id)
 static func building_asset_id(kind:String,level:int=1)->String:
-	return "BLD-%s-L%d"%[{"chief":"CHIEF","hut":"HUT","home":"HUT","outpost":"OUTPOST","hearth":"HEARTH","training":"TRAINING","shrine":"SHRINE","farm":"FARM"}.get(kind,"HUT"),clampi(level,1,4)]
+	return "BLD-%s-L%d"%[{"chief":"CHIEF","hut":"HUT","home":"HUT","outpost":"OUTPOST","hearth":"HEARTH","training":"TRAINING","shrine":"SHRINE","farm":"FARM","stone_store":"STONE_STORE","wood_store":"WOOD_STORE"}.get(kind,"HUT"),clampi(level,1,4)]
 static func building_name(kind:String)->String:
-	return {"chief":"촌장집","hut":"주민 움집","home":"주민 움집","outpost":"초소","hearth":"화덕","training":"훈련소","shrine":"신당","farm":"농장 (임시 외형)"}.get(kind,"건물")
+	return {"chief":"촌장집","hut":"주민 움집","home":"주민 움집","outpost":"초소","hearth":"화덕","training":"훈련소","shrine":"신당","farm":"농장","stone_store":"석재소","wood_store":"제재소"}.get(kind,"건물")
 static func cost_text(cost:Dictionary)->String:return "나무 %d개 · 돌 %d개"%[int(cost.get("wood",0)),int(cost.get("stone",0))]
 func build_block_reason(kind:String)->String:
 	var reason:String=app.model.building_requirement(kind)

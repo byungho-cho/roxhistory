@@ -231,7 +231,7 @@ func gather(node_id: String, pos: Vector2 = Vector2.ZERO, now:float=-1.0) -> boo
 			continue
 		var next := state.duplicate(true)
 		var count := int(next.depleted.get(node_id,0))
-		if int(next[n.kind])+int(DemoConfig.get_data().gather_yield)>BuildingRules.MAX_RESOURCE:
+		if ResourceStorage.room(self,n.kind)<=0:
 			busy=false;return false
 		if count >= n.charges:
 			busy = false
@@ -240,7 +240,7 @@ func gather(node_id: String, pos: Vector2 = Vector2.ZERO, now:float=-1.0) -> boo
 		if count+1>=int(n.charges):
 			if not next.has("respawn_due"):next.respawn_due={}
 			next.respawn_due[node_id]=now+randf_range(RESPAWN_MIN_SECONDS,RESPAWN_MAX_SECONDS)
-		next[n.kind] += int(DemoConfig.get_data().gather_yield)
+		ResourceStorage.receive(self,next,n.kind,int(DemoConfig.get_data().gather_yield))
 		if pos != Vector2.ZERO:
 			next.position = [pos.x,pos.y]
 		var ok := commit(next)
@@ -401,12 +401,27 @@ func builder_available()->bool:
 
 func building_unlocked(kind:String)->bool:
 	kind=BuildingRules.canonical(kind)
+	if kind in ["stone_store","wood_store"]:
+		var farms:=0
+		for item in facilities():
+			if item.kind=="farm":farms+=1
+		if built_count()==0 or farms==0:return false
 	return not state.is_empty() and BuildingRules.REQUIRED_HQ.has(kind) and chief_level()>=int(BuildingRules.REQUIRED_HQ[kind]) and (kind!="farm" or built_count()>0)
 
 func building_requirement(kind:String)->String:
 	kind=BuildingRules.canonical(kind)
 	if state.is_empty():return "게임을 먼저 시작해 주세요"
 	if not BuildingRules.REQUIRED_HQ.has(kind):return "아직 지원하지 않는 건물이에요"
+	if kind in ["stone_store","wood_store"]:
+		if built_count()==0:return "주민 움집 1채를 먼저 지어 주세요"
+		var farms:=0
+		var stores:=pending_construction_count(kind)
+		for item in facilities():
+			if item.kind=="farm":farms+=1
+			if item.kind==kind:stores+=1
+		if farms==0:return "농장 1개를 먼저 지어 주세요"
+		if stores>=1:return "%s은 1개만 지을 수 있어요"%BuildingWorkflow.building_name(kind)
+		if not BuildingRules.STORAGE_TIMING_CONFIRMED:return "저장 건물 공사 시간 확인 대기 중"
 	if kind=="farm" and built_count()==0:return "주민 움집 1채를 먼저 지어 주세요"
 	if not building_unlocked(kind):return "촌장집 Lv.%d 필요" % int(BuildingRules.REQUIRED_HQ[kind])
 	if kind=="chief":
@@ -441,6 +456,7 @@ func building_requirement(kind:String)->String:
 func upgrade_requirement(key:String="chief")->String:
 	var found:=lookup_building(key)
 	if found.is_empty():return "건물을 찾을 수 없어요"
+	if found.kind in ["stone_store","wood_store"] and not BuildingRules.STORAGE_TIMING_CONFIRMED:return "저장 건물 공사 시간 확인 대기 중"
 	var level:=int(found.data.get("level",1))
 	if found.data.has("upgrade"):return "이미 업그레이드 중이에요"
 	if level>=4:return "최고 레벨이에요"
@@ -674,7 +690,7 @@ func nearest_home(from:Vector2)->Vector2:
 func gather_available(target:String,owner:String)->bool:
 	var valid_target:=false
 	for node in nodes():
-		if node.id==target and int(state.depleted.get(target,0))<int(node.charges):valid_target=true;break
+		if node.id==target and ResourceStorage.room(self,node.kind)>0 and int(state.depleted.get(target,0))<int(node.charges):valid_target=true;break
 	if not valid_target:return false
 	for claimant in gather_claims:
 		if gather_claims[claimant]==target and gather_actor(claimant)!=gather_actor(owner):return false
@@ -683,7 +699,7 @@ func gather_available(target:String,owner:String)->bool:
 func claim_gather(target:String,owner:String)->bool:
 	if owner.is_empty() or not gather_available(target,owner):return false
 	for node in nodes():
-		if node.id==target and int(state.depleted.get(target,0))<int(node.charges):
+		if node.id==target and ResourceStorage.room(self,node.kind)>0 and int(state.depleted.get(target,0))<int(node.charges):
 			gather_claims[owner]=target;return true
 	return false
 

@@ -7,7 +7,7 @@ func run()->void:
  for level in range(1,5):s.facilities.append({"uid":"art%d"%level,"kind":"farm","level":level,"position":[700+level*260,1100],"cost":{"wood":10,"stone":5}})
  check(app.model.commit(s),"Farm art fixture commits");app.enter_game();await frames(12)
  for level in range(1,5):
-  check(BuildingVisuals.texture("farm",level).resource_path.ends_with("farm-l%d.png"%level),"Level %d uses delivered art"%level)
+  check(BuildingVisuals.texture("farm",level).resource_path.ends_with("farm-empty-l%d.png"%level),"Level %d uses delivered art"%level)
   check(BuildingWorkflow.approved_texture("BLD-FARM-L%d"%level)==BuildingVisuals.texture("farm",level),"Preview and completed level %d agree"%level)
   check(BuildingVisuals.display_size("farm",level).x<=230,"Farm size follows world footprint")
  var menu:BuildingMenu=app.building_menu

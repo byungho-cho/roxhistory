@@ -21,7 +21,7 @@ func start(kind:String,id:String,destination:Vector2,retry:int=0,blocked:Array=[
 		trail=TravelTrail.new(self);app.world.add_child(trail)
 	if not destination.is_finite():return false
 	if kind=="gather" and not app.model.gather_available(id,"hero"):
-		if not quiet:app.toast("다른 채집자가 선택한 대상이에요")
+		if not quiet:app.toast(ResourceStorage.gather_reason(app.model,id))
 		return false
 	var player:DemoPlayer=app.world.player
 	if kind=="move":

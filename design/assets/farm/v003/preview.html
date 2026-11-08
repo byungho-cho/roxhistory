@@ -1,0 +1,10 @@
+<!doctype html><meta charset="utf-8"><title>Farm separated asset review</title>
+<style>body{background:#38473c;color:white;font:16px sans-serif;margin:24px} .grid{display:grid;grid-template-columns:repeat(4,360px);gap:16px}.tile{background:#62705d;border-radius:12px;padding:12px}.farm{position:relative;width:336px;} .base{width:100%;height:100%;position:absolute;inset:0}.crop{position:absolute;transform:translate(-50%,-91.5%)}h2{font-size:18px}button{padding:8px;margin:4px}</style>
+<h1>Empty farms + reusable crop stages</h1><p>Integration preview only. Base imagery is reconstructed, not pixel-identical extraction. Reference display aspect ratios preserved.</p>
+<div id="controls"></div><div id="grid" class="grid"></div>
+<script>
+fetch('manifest.json').then(r=>r.json()).then(m=>{
+ function render(stage){grid.innerHTML='';m.levels.forEach(l=>{let t=document.createElement('section');t.className='tile';t.innerHTML=`<h2>L${l.level} · ${stage?'growth '+stage:'empty'}</h2>`;let f=document.createElement('div');f.className='farm';f.style.height=(336*l.reference_display_size[1]/l.reference_display_size[0])+'px';let b=new Image();b.src=l.file;b.className='base';f.append(b);if(stage)l.crop_anchors.slice().sort((a,b)=>a[1]-b[1]).forEach(a=>{let c=new Image();c.src=`grain-growth-0${stage}.png`;c.className='crop';c.style.width=(l.crop_canvas_width_fraction*100)+'%';c.style.left=(a[0]*100)+'%';c.style.top=(a[1]*100)+'%';f.append(c)});t.append(f);grid.append(t)})}
+ for(let s=0;s<=4;s++){let b=document.createElement('button');b.textContent=s?'Growth '+s:'Empty';b.onclick=()=>render(s);controls.append(b)}render(Number(new URLSearchParams(location.search).get('stage')||4));window.ready=true;
+});
+</script>

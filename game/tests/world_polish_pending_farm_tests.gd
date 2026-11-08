@@ -7,7 +7,7 @@ func check(ok:bool,label:String)->void:
 func _initialize()->void:call_deferred("run")
 func run()->void:
  var model:=GameState.new(SaveStore.new("user://polish_claims_%d"%Time.get_ticks_usec()));model.start_new()
- var s:=model.state.duplicate(true);s.chief_level=4;s.resident_count=3;s.homes=[{"uid":"home","style":1,"claimed":true,"level":4,"position":[1300,900],"cost":{"wood":20,"stone":10}}];s.built=true;s.reward_claimed=true;model.commit(s)
+ var s:=model.state.duplicate(true);s.chief_level=4;s.wood=20;s.stone=20;s.resident_count=3;s.homes=[{"uid":"home","style":1,"claimed":true,"level":4,"position":[1300,900],"cost":{"wood":20,"stone":10}}];s.built=true;s.reward_claimed=true;model.commit(s)
  var jobs:=ResidentJobs.new(model);jobs.assign("resident-0","wood");jobs.assign("resident-1","wood");jobs.assign("resident-2","stone")
  var wood:Array=[];var stone:Dictionary={}
  for node in model.nodes():

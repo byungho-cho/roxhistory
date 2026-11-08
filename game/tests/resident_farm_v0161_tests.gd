@@ -7,7 +7,7 @@ func check(value:bool,label:String)->void:
 	if not value:failures.append(label);push_error(label)
 func fixture()->GameState:
 	var model:=GameState.new(SaveStore.new("user://farm0161_%d"%Time.get_ticks_usec()));model.start_new()
-	var s:=model.state.duplicate(true);s.chief_level=4;s.debug_unlimited_buildings=false;s.resident_count=5;s.family_joined=true
+	var s:=model.state.duplicate(true);s.chief_level=4;s.wood=90;s.stone=90;s.grain=0;s.debug_unlimited_buildings=false;s.resident_count=5;s.family_joined=true
 	s.homes=[{"uid":"h1","style":1,"claimed":false,"level":4,"position":[900,900],"cost":{"wood":20,"stone":10}}];s.built=true;s.reward_claimed=false
 	s.facilities=[{"uid":"f1","kind":"farm","level":1,"position":[1300,950],"cost":{"wood":10,"stone":5}}]
 	s.outposts=[{"uid":"p1","level":1,"position":[1500,800],"cost":{"wood":10,"stone":10}}]

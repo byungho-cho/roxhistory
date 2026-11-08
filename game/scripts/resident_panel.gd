@@ -103,32 +103,40 @@ func show_building(key:String)->void:
 	if key=="chief":show_summary();return
 	var found:Dictionary=app.model.lookup_building(key)
 	if found.is_empty():return
-	var jobs:=ResidentJobs.new(app.model);var occupant:=jobs.assigned_to(key)
-	var list:=content(("농장" if found.kind=="farm" else "초소")+" · 주민 배정",("농부" if found.kind=="farm" else "보초")+" %d / 1명"%(0 if occupant.is_empty() else 1))
-	if not occupant.is_empty():action(list,display_name(occupant)+" 배정 해제",func():jobs.assign(occupant,"idle");show_building(key))
+	var jobs:=ResidentJobs.new(app.model)
+	var assigned:=jobs.assigned_ids(key)
+	var multiple:bool=found.kind in ["stone_store","wood_store"]
+	var job:String={"farm":"farmer","outpost":"guard","stone_store":"stone","wood_store":"wood"}.get(found.kind,"idle")
+	var list:=content(BuildingWorkflow.building_name(found.kind)+" · 주민 배정",job_name(job)+" %d명"%assigned.size()+("" if multiple else " / 1명"))
+	for id in assigned:
+		var target_id:String=id
+		action(list,display_name(id)+" 배정 해제",func():jobs.assign(target_id,"idle");show_building(key))
 	for index in app.model.resident_count():
 		var id:=id_at(index);var item:=jobs.entry(id);var row:=card(list)
 		art(row,icon("idle"),Vector2(48,48));var text:Label=app.label(row,display_name(id)+" · "+job_name(item.job),18);text.size_flags_horizontal=Control.SIZE_EXPAND_FILL
-		var target:int=index;var button:=action(row,"배정",func():assign(target,"farmer" if found.kind=="farm" else "guard",key));button.disabled=not occupant.is_empty()
+		var target:int=index;var button:=action(row,"배정",func():assign(target,job,key));button.disabled=id in assigned or (not multiple and not assigned.is_empty())
 	app.label(list,"선택한 주민의 기존 배정은 해제됩니다.",15)
 func _process(_delta:float)->void:
 	if not is_instance_valid(app.world):return
 	var keys:Array[String]=[]
 	if app.model.chief_level()>0:keys.append("chief")
 	for key in OwnedBuildingUpgrades.keys(app.model):
-		if key.begins_with("farm:") or key.begins_with("outpost:"):keys.append(key)
+		if key.begins_with("farm:") or key.begins_with("outpost:") or key.begins_with("stone_store:") or key.begins_with("wood_store:"):keys.append(key)
 	for key in bubbles.keys():
 		if not key in keys:bubbles[key].queue_free();bubbles.erase(key)
 	for key in keys:
 		if not bubbles.has(key):
 			var target:=key;var button:DemoButton=app.button(self,"",func():show_building(target));button.name="AssignmentBubble_"+key.replace(":","_")
 			var frame:=StyleBoxFlat.new();frame.bg_color=Color("f4e5bf");frame.border_color=Color("aa8348");frame.set_border_width_all(1);frame.set_corner_radius_all(8)
-			for state in ["normal","hover","pressed","disabled","focus"]:button.add_theme_stylebox_override(state,frame)
+			for state in ["normal","hover","pressed","disabled","focus"]:button.add_theme_stylebox_override(state,StyleBoxEmpty.new())
 			button.custom_minimum_size=Vector2(46,44);button.size=button.custom_minimum_size
-			var portrait:=art(button,icon("idle"),Vector2.ZERO);portrait.name="AssignmentPortrait";portrait.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT);bubbles[key]=button
+			var visual:=Panel.new();visual.name="BubbleVisual";visual.mouse_filter=Control.MOUSE_FILTER_IGNORE;visual.add_theme_stylebox_override("panel",frame);visual.size=Vector2(46,44);visual.pivot_offset=Vector2(23,22);button.add_child(visual)
+			var portrait:=art(visual,icon("idle"),Vector2.ZERO);portrait.name="AssignmentPortrait";portrait.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT);bubbles[key]=button
 		var button:DemoButton=bubbles[key];var occupant:=ResidentJobs.new(app.model).assigned_to(key)
-		button.get_node("AssignmentPortrait").modulate.a=1.0 if key=="chief" or not occupant.is_empty() else .18
+		button.get_node("BubbleVisual/AssignmentPortrait").modulate.a=1.0 if key=="chief" or not occupant.is_empty() else .18
 		button.tooltip_text="전체 주민 배분" if key=="chief" else "주민 배정 · "+("미배정" if occupant.is_empty() else display_name(occupant))
+		var emphasized:bool=app.building_menu.visible and app.building_menu.selected_key==key
+		button.get_node("BubbleVisual").scale=Vector2.ONE*(1.0 if emphasized else .5)
 		var sprite:Sprite2D=app.world.building_sprite(key)
 		button.visible=not app.modal and app.screen=="play" and not app.world_map_open and is_instance_valid(sprite) and sprite.is_visible_in_tree()
 		if button.visible:

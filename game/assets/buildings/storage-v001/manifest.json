@@ -1,0 +1,39 @@
+{
+  "figma_file": "zkbflw9fCdAlWbphhw5pSS",
+  "building_frame": "1242:1091",
+  "menu_frame": "1776:372",
+  "files": [
+    {
+      "file": "stone_store-l1.png",
+      "sha256": "c357912add142d4537b4cbafb6599e587cc6c329b100477c7edb21da38823000"
+    },
+    {
+      "file": "stone_store-l2.png",
+      "sha256": "33b7d9785e8066ee78da1cca1ed4c6db2e4fb5986952f53c1d2fd2de0b5b6415"
+    },
+    {
+      "file": "stone_store-l3.png",
+      "sha256": "19ac39c123d3b11722483792fc548ff6106843ae6e79efa84c0ac48d2ec480b3"
+    },
+    {
+      "file": "stone_store-l4.png",
+      "sha256": "07931fcae7d2453194173e88e0fe06e32eea907f1f21550b37f2017ee607c11a"
+    },
+    {
+      "file": "wood_store-l1.png",
+      "sha256": "04078891b88cab027829827b307c4c8097ba8ff6322359539e215dfa4ea10670"
+    },
+    {
+      "file": "wood_store-l2.png",
+      "sha256": "e72af347da1f24826d56ce80b503ba279432eba60b56b9e1001c460746598894"
+    },
+    {
+      "file": "wood_store-l3.png",
+      "sha256": "edf666e64ab2da8140ec4d1641b297b77ff27b826c7333e913e3c7da20eeebd8"
+    },
+    {
+      "file": "wood_store-l4.png",
+      "sha256": "3e3d1e204d5fbe940e4280eeb563368ab6e94996b08e203b89e15049108f6b5d"
+    }
+  ]
+}

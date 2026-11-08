@@ -3,7 +3,7 @@ func run()->void:
  root.size=Vector2i(1280,800)
  app=load("res://scenes/main.tscn").instantiate();root.add_child(app);await frames()
  app.model=GameState.new(SaveStore.new("user://memo_%d"%Time.get_ticks_usec()));app.model.start_new();app.model.changed.connect(app.update_hud)
- var s:Dictionary=app.model.state.duplicate(true);s.chief_level=4;s.resident_count=3;s.resident_guide_seen=true;s.family_next_at=Time.get_unix_time_from_system()+10000
+ var s:Dictionary=app.model.state.duplicate(true);s.chief_level=4;s.wood=90;s.stone=90;s.grain=20;s.resident_count=3;s.resident_guide_seen=true;s.family_next_at=Time.get_unix_time_from_system()+10000
  s.homes=[{"uid":"h1","style":1,"claimed":true,"level":4,"position":[900,900],"cost":{"wood":20,"stone":10}}];s.built=true;s.reward_claimed=true
  s.facilities=[{"uid":"f1","kind":"farm","level":4,"position":[1300,1000],"cost":{"wood":10,"stone":5}}];s.outposts=[{"uid":"p1","level":1,"position":[1600,800],"cost":{"wood":10,"stone":10}}]
  check(app.model.commit(s),"Memo fixture accepted");app.enter_game();await frames(12)
@@ -13,15 +13,15 @@ func run()->void:
  check(jobs.assign("resident-2","guard","outpost:p1"),"Guard assigned")
  var worker:TrialResident=app.world.residents[0];var farmer:TrialResident=app.world.residents[1];var guard:TrialResident=app.world.residents[2]
  for actor in app.world.residents:actor.set_physics_process(false)
- check(TrialResident.GATHER_SECONDS==10 and TrialResident.WORK_WALK_FACTOR==.5,"Only resident gather duration changes; travel stays half speed")
+ check(is_equal_approx(worker.gather_seconds(),12) and TrialResident.WORK_WALK_FACTOR==.5,"Only resident gather duration changes; travel stays half speed")
  var target:Dictionary={}
  for n in app.model.nodes():
   if n.kind=="wood":target=n;break
- worker.position=DemoConfig.point(target.position)+Vector2(0,65);worker.job_kind="wood";worker.job_target=target.id;worker.job_phase="harvest";worker.job_timer=10;app.model.claim_gather(target.id,worker.resident_id)
- worker._job_tick(9)
- check(jobs.entry(worker.resident_id).cargo.is_empty() and worker.job_timer>0,"Nine seconds does not award gather cargo")
+ worker.position=DemoConfig.point(target.position)+Vector2(0,65);worker.job_kind="wood";worker.job_target=target.id;worker.job_phase="harvest";worker.job_timer=12;app.model.claim_gather(target.id,worker.resident_id)
+ worker._job_tick(11)
+ check(jobs.entry(worker.resident_id).cargo.is_empty() and worker.job_timer>0,"Eleven seconds does not award gather cargo")
  worker._job_tick(1.01)
- check(not jobs.entry(worker.resident_id).cargo.is_empty(),"Ten second gather awards one load")
+ check(not jobs.entry(worker.resident_id).cargo.is_empty(),"Twelve second gather awards one load")
  var next:Dictionary=app.model.state.duplicate(true);next.farm_cycles={"farm:f1":{"phase":"grow","elapsed":30.0,"cycle_level":4,"cuts":0,"stock":0}};app.model.commit(next)
  farmer.position=app.model.building_position("farm:f1")+Vector2(0,90);farmer._job_tick(.1)
  check(farmer.job_phase=="farm_wait","Growing farm retains tending phase")

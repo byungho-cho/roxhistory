@@ -22,7 +22,8 @@ var rng:=RandomNumberGenerator.new()
 var idle_time:=0.0
 var visual_elapsed:=0.0
 const WORK_WALK_FACTOR:=.5
-const GATHER_SECONDS:=10.0
+const GATHER_MULTIPLIER:=10.0
+func gather_seconds()->float:return float(DemoConfig.get_data().gather_seconds)*GATHER_MULTIPLIER
 var duty_clock:=0.0
 var patrol_step:=-1
 func _ready()->void:
@@ -37,7 +38,7 @@ func _draw()->void:
 	draw_set_transform(Vector2(4,-2),0,Vector2(1,.28));draw_circle(Vector2.ZERO,20,SceneStyle.CONTACT_COLOR);draw_set_transform(Vector2.ZERO)
 	if job_phase=="harvest":
 		draw_rect(Rect2(-20,-66,40,5),Color(0,0,0,.65))
-		draw_rect(Rect2(-19,-65,38*clampf(1-job_timer/(1.2 if job_kind=="farmer" else GATHER_SECONDS),0,1),3),Color("bfd274"))
+		draw_rect(Rect2(-19,-65,38*clampf(1-job_timer/(1.2 if job_kind=="farmer" else gather_seconds()),0,1),3),Color("bfd274"))
 func _physics_process(delta:float)->void:
 	var world:DemoWorld=get_parent()
 	if world.simulation_paused:
@@ -76,7 +77,7 @@ func _physics_process(delta:float)->void:
 		visual.set_render_zoom(world.player.zoom_factor)
 		visual.work_kind=job_kind
 		var action:=job_kind if job_phase=="harvest" else "farm_care" if job_kind=="farmer" and job_phase=="farm_wait" else "guard" if job_kind=="guard" else ""
-		visual.animate(visual_elapsed,velocity.normalized(),phase,travelled>.01,action,duty_clock if action in ["farm_care","guard"] else maxf(0,(1.2 if job_kind=="farmer" else GATHER_SECONDS)-job_timer),false)
+		visual.animate(visual_elapsed,velocity.normalized(),phase,travelled>.01,action,duty_clock if action in ["farm_care","guard"] else maxf(0,(1.2 if job_kind=="farmer" else gather_seconds())-job_timer),false)
 		visual.viewport.render_target_update_mode=SubViewport.UPDATE_ONCE
 		visual_elapsed=0
 
@@ -102,6 +103,7 @@ func _job_tick(delta:float)->bool:
 	if item.job!=job_kind:
 		jobs.model.release_gather(resident_id)
 		job_kind=item.job;job_route.clear();job_phase="idle";job_timer=0
+	if item.cargo.is_empty() and job_kind in ["wood","stone"] and ResourceStorage.room(jobs.model,job_kind)<=0:_job_wait();return true
 	if job_kind in ["wood","stone"] and job_phase in ["travel","harvest"] and not jobs.model.owns_gather(job_target,resident_id):
 		job_route.clear();job_phase="idle";job_timer=0
 	if jobs.model.chief_level()<=0:
@@ -115,8 +117,8 @@ func _job_tick(delta:float)->bool:
 		job_timer-=delta;return true
 	if not item.cargo.is_empty():
 		jobs.model.release_gather(resident_id)
-		if not depot_home.is_finite() or not _home_exists(depot_home):
-			depot_home=jobs.model.nearest_home(position);job_depot=Vector2.INF;job_route.clear()
+		if not depot_home.is_finite() or not ResourceStorage.destination_exists(jobs.model,str(item.cargo.kind),depot_home):
+			depot_home=ResourceStorage.destination(jobs.model,str(item.cargo.kind),position);job_depot=Vector2.INF;job_route.clear()
 		if not depot_home.is_finite():_job_wait();return true
 		if not job_depot.is_finite():
 			for offset in [Vector2(0,90),Vector2(90,50),Vector2(-90,50),Vector2(0,-90)]:
@@ -155,7 +157,7 @@ func _job_tick(delta:float)->bool:
 	var offset:=job_route[0]-position
 	if offset.length()<=3:
 		job_route.remove_at(0)
-		if job_route.is_empty() and job_phase=="travel":job_phase="harvest";job_timer=GATHER_SECONDS
+		if job_route.is_empty() and job_phase=="travel":job_phase="harvest";job_timer=gather_seconds()
 		return true
 	var before:=position
 	ActorMovement.move(self,ActorMovement.direction_to(position,job_route[0],delta,job_walk_factor()),job_walk_factor())
@@ -216,14 +218,16 @@ func _station_tick(delta:float,item:Dictionary)->void:
 	if job_kind=="guard":job_phase="guard";return
 	if found.data.has("upgrade"):job_phase="wait";return
 	var cycle:=FarmProduction.entry(jobs.model,key)
-	if cycle.phase not in ["ready","harvest"]:job_phase="farm_wait";return
+	if cycle.phase not in ["ready","harvest"] or ResourceStorage.room(jobs.model,"grain")<=0:job_phase="farm_wait";return
 	if job_phase!="harvest":job_phase="harvest";job_timer=1.2
 	job_timer-=delta
 	if job_timer<=0:
 		FarmProduction.harvest(jobs.model,resident_id,key);job_phase="farm_wait"
 
 func job_walk_factor()->float:
-	return WORK_WALK_FACTOR if job_kind in ["wood","stone","farmer"] or not jobs.entry(resident_id).cargo.is_empty() else 1.0
+	if job_kind in ["wood","stone"] or jobs.entry(resident_id).cargo.get("kind","") in ["wood","stone"]:
+		return .3 if not jobs.entry(resident_id).cargo.is_empty() else .5
+	return WORK_WALK_FACTOR if job_kind=="farmer" or not jobs.entry(resident_id).cargo.is_empty() else 1.0
 
 func _exit_tree()->void:
 	if jobs:jobs.model.release_gather(resident_id)
