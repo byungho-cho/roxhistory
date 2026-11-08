@@ -1,24 +1,21 @@
 # RoxHistory
 
-선사시대에서 시작해 조선·현대사까지 아우르는 한국사 게임입니다. 현재 개발 대상은 Godot 기반 Android 초기 정착지 데모입니다.
+선사시대에서 시작해 조선·현대사까지 아우르는 한국사 게임입니다. 현재 Godot 기반 Android·Windows 정착지 데모를 개발하고 있습니다.
 
-**2026-11-03 현재: v0.1.20 자동 이동·채집·3채 건설·월드 보상·접이식 HUD 배포, 주민 외형 8종 승인·Figma 등록 완료. 주민 배회·보행은 개발 대기입니다.**
+**최신 배포: 0.1.67 (2026-11-09 KST).** 건설 메뉴 가독성·곡선 흙길·중복 바닥·주민 배정 위치·개발 자원 충전을 보완했습니다.
 
-- [현재 개발 현황과 남은 범위](docs/current-status.md)
-- [최신 APK 한 파일](https://github.com/byungho-cho/roxhistory/releases/download/v0.1.20/RoxHistory-0.1.20-20261103-092003.apk) · [실행·검증 보고서](docs/shared-reports/2026-11-03-play-flow/report.md)
-- [문서 목록](docs/README.md) · [Figma·디자인 에셋](design/README.md)
-- [승인 주민 8종](design/assets/residents/v001/README.md) · [개발 지시 기준](docs/developer-instructions-current.md)
+- [현재 개발 현황과 반영 대기](docs/current-status.md)
+- [0.1.67 Android·Windows 다운로드](https://github.com/byungho-cho/roxhistory/releases/tag/v0.1.67)
+- [문서 목록](docs/README.md) · [디자인 에셋](design/README.md) · [개발 지시 기준](docs/developer-instructions-current.md)
 
-이번까지 반영된 사항은 앱 아이콘·선택음·금빛 오로라, 동물 3D 배치와 호흡, 움집 3종과 저장되는 스타일, 연기·물고기 떼·공통 건설 연출·주인공 보행 조정입니다. 동물 보행 리깅·전체 HUD·실물 기기와 직접 청취 확인은 후속입니다.
-
-팀장은 요구사항·Figma·문서를, 개발 담당은 구현·검증·빌드를 담당합니다. [역할 분담](docs/team-workflow.md).
+배포 소스는 `208e02c9`(`codex/world-readability-20261109`)입니다. main의 게임 소스는 아직 `feecb691` 기반으로, 문서 현행화가 0.1.67 코드 병합을 뜻하지 않습니다. Android 실기기 확인과 새 자원바 디자인의 게임 적용은 별도 후속입니다.
 
 ## 저장소 자료
 
-- game/: 실제 게임 소스. v0.1.20 플레이 흐름과 UI를 반영했습니다.
-- design/: 승인 원화·원본과 Figma 연결 정보.
-- assets/: 원본 음악·참고 에셋. [오디오 카탈로그](assets/audio/README.md).
-- docs/: 현황·개발 기준·날짜별 증거 보고서.
-- presentations/: 작성 당시 기획·로드맵 발표 자료.
+- `game/`: 게임 소스. 체크아웃 브랜치·버전을 확인하세요.
+- `design/`: 승인 원화·원본과 Figma 연결 정보.
+- `assets/`: 원본 음악·참고 에셋.
+- `docs/`: 현황·개발 기준·날짜별 증거 보고서.
+- `presentations/`: 작성 당시 기획·로드맵 발표 자료.
 
-예전 기획·검증 자료와 태그는 이력으로 보존합니다. 과거 APK는 정리돼 기존 다운로드 링크가 유효하지 않을 수 있습니다. 현재 상태와 다운로드는 위 현황 문서를 기준으로 확인합니다.
+[역할 분담](docs/team-workflow.md). 과거 기획·보고서·태그는 이력으로 보존합니다. 옛 APK 링크가 아니라 위 최신 릴리스를 사용하세요.
