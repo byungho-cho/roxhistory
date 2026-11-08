@@ -39,13 +39,23 @@ func item(title:String,file:String,at:Vector2,diameter:float,callback:Callable)-
 		caption.add_theme_color_override("font_outline_color",Color("231b12"));caption.add_theme_constant_override("outline_size",4);caption.mouse_filter=Control.MOUSE_FILTER_IGNORE
 	b.enable_art_feedback();return b
 func _ready()->void:
-	name="BuildingMenu";mouse_filter=Control.MOUSE_FILTER_IGNORE;z_index=8;size=Vector2(288,132)*.8
+	name="BuildingMenu";mouse_filter=Control.MOUSE_FILTER_IGNORE;z_index=8;size=Vector2(438,225)*.6
 	move_button=app.button(self,"",move_selected);move_button.name="Move"
-	IntegratedMenuArt.install(move_button,"move",Vector2(96,96)*.8);move_button.position=Vector2.ZERO
+	IntegratedMenuArt.install(move_button,"move",Vector2(96,96)*.8);move_button.position=Vector2(0,34)*.6
 	upgrade_button=app.button(self,"",upgrade);upgrade_button.name="Upgrade"
-	IntegratedMenuArt.install(upgrade_button,"upgrade",Vector2(96,96)*.8);upgrade_button.position=Vector2(96,36)*.8
+	IntegratedMenuArt.install(upgrade_button,"upgrade",Vector2(96,96)*.8);upgrade_button.position=Vector2(144.37,67)*.6
+	# The reference emphasizes the central action with a larger circle and arrow.
+	upgrade_button.custom_minimum_size=Vector2(80,92);upgrade_button.size=Vector2(80,92)
+	var upgrade_art:=upgrade_button.art_feedback
+	upgrade_art.get_node("RoundBackground").position=Vector2(-3,-2)
+	upgrade_art.get_node("RoundBackground").size=Vector2(88,88)
+	upgrade_art.get_node("ActionIcon").position=Vector2(11,11)
+	upgrade_art.get_node("ActionIcon").size=Vector2(60,60)
+	for part in ["LabelBackground","ActionName"]:
+		upgrade_art.get_node(part).position=Vector2(-1,72)
+		upgrade_art.get_node(part).size=Vector2(80,20)
 	demolish_button=app.button(self,"",demolish);demolish_button.name="Demolish"
-	IntegratedMenuArt.install(demolish_button,"demolish",Vector2(96,96)*.8);demolish_button.position=Vector2(192,0)*.8
+	IntegratedMenuArt.install(demolish_button,"demolish",Vector2(96,96)*.8);demolish_button.position=Vector2(282,34)*.6
 	close_button=app.button(self,"",close);close_button.name="Close"
 	IntegratedMenuArt.install(close_button,"close",Vector2(48,48)*.8);close_button.custom_minimum_size=Vector2(44,44);close_button.size=Vector2(44,44)
 	close_button.art_feedback.get_node("IntegratedImage").position=Vector2(2.8,2.8)
@@ -114,7 +124,7 @@ func refresh()->void:
 		bounds=sprite.get_global_transform_with_canvas()*sprite.get_rect()
 		anchor=Vector2(bounds.get_center().x,bounds.end.y)
 	position=anchor+Vector2(-size.x*.5,ANCHOR_Y)
-	close_button.position=Vector2(size.x+8,-12)
+	close_button.position=Vector2(396,0)*.6
 	queue_redraw()
 
 func _process(_delta:float)->void:
@@ -137,9 +147,5 @@ func demolish()->void:
 	close();app.show_demolition_confirmation(key)
 
 func _draw()->void:
-	# Connect only the action buttons through the close endpoint, never the building.
-	var points:=PackedVector2Array([Vector2(48,38),Vector2(75,62),Vector2(110,76),Vector2(144,74),Vector2(180,64),Vector2(214,47),Vector2(240,38),Vector2(255,18),Vector2(264,-8)])
-	for i in points.size():points[i]*=.8
-	points[points.size()-1]=close_button.position+close_button.size*.5
-	draw_polyline(points,Color("765021"),7,true)
-	draw_polyline(points,Color("e9b64f"),4,true)
+	# Figma v005: full exported canvas, aligned to the same reference as the buttons.
+	draw_texture_rect(preload("res://assets/ui/building-menu-v005/gold-connector.png"),Rect2(Vector2(55,10)*.6,Vector2(370,137.5)*.6),false)

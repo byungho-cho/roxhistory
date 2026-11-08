@@ -21,7 +21,7 @@ func _ready()->void:
 	app.model.changed.connect(refresh_visual)
 	refresh_visual()
 static func approved_texture(id:String)->Texture2D:
-	if id.begins_with("BLD-FARM-"):return preload("res://assets/placeholders/farm.svg")
+	if id.begins_with("BLD-FARM-"):return BuildingVisuals.texture("farm",int(id.get_slice("-",2).trim_prefix("L")))
 	var entry:=AssetCatalog.entry(id)
 	if not entry.get("approved",false):return null
 	var path:String=entry.get("file","")

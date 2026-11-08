@@ -1,6 +1,6 @@
 class_name FarmPlotVisual
 extends Node2D
-## Deliberately temporary crop marks, never presented as final Figma artwork.
+## Completed farm art contains crops. Separate growth overlays await clean base assets.
 var model:GameState
 var key:String
 func _init(game:GameState,id:String)->void:model=game;key=id;name="TemporaryCropVisual";visibility_layer=2;z_index=4
@@ -10,17 +10,7 @@ func _draw()->void:
 	if found.is_empty():return
 	var cycle:=FarmProduction.entry(model,key)
 	var progress:=float(cycle.elapsed)/FarmProduction.GROWTH if cycle.phase=="grow" else (1.0 if cycle.phase in ["ready","harvest"] else 0.0)
-	var stage:=clampi(int(progress*4),0,3)
-	var count:=12 if int(found.data.get("level",1))==4 else 6
-	if cycle.phase=="harvest":count=ceili(count*(1.0-float(cycle.cuts)/FarmProduction.CUTS[int(cycle.cycle_level)-1]))
-	if cycle.phase!="prepare":
-		for i in count:
-			var at:=Vector2((i%4-1.5)*23,(i/4-1)*14-28)
-			var height:=6.0+stage*5
-			var color:=Color("e4c05c") if stage==3 else Color("73a34c")
-			draw_line(at,at-Vector2(0,height),color,3,true)
-			draw_line(at-Vector2(0,height*.5),at-Vector2(7,height*.8),color,3,true)
-			draw_line(at-Vector2(0,height*.6),at+Vector2(7,-height*.9),color,3,true)
+	# Growth artwork is intentionally not layered over baked-in crops.
 	var brush:=BuildingMenu.art("brush-black-v003.png")
 	draw_texture_rect(brush,Rect2(-100,12,200,40),false,Color(1,1,1,.78))
 	var fill:=float(cycle.elapsed)/FarmProduction.PREPARATION if cycle.phase=="prepare" else progress
