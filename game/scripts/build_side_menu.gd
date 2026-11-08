@@ -1,6 +1,6 @@
 class_name BuildSideMenu
 extends Control
-const KINDS:=["outpost","shrine","hearth","training","farm","hut"]
+const KINDS:=["outpost","shrine","hearth","wood_store","stone_store","training","farm","hut"]
 const TILE_SIZE:=Vector2(92,102)
 var app:Node
 var hut:DemoButton

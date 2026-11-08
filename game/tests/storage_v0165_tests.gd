@@ -16,6 +16,24 @@ func run()->void:
  check(ResourceStorage.capacity(model,"grain")==500,"Mixed L1 L3 grain capacity sums")
  check(model.building_requirement("stone_store").contains("농장"),"Store requires completed farm")
  s=model.state.duplicate(true);s.facilities=[{"uid":"f1","kind":"farm","level":1,"position":[1500,1100],"cost":{"wood":10,"stone":5}}];model.commit(s)
+ check(model.building_requirement("stone_store").is_empty(),"Confirmed common timing enables new store construction")
+ var snapshot:Dictionary=model.state.duplicate(true)
+ model.set_debug_fast_build(false)
+ var placement:=Vector2.INF
+ for y in range(500,1900,250):
+  for x in range(500,1900,250):
+   if model.placement_requirement("stone_store",Vector2(x,y)).is_empty():placement=Vector2(x,y);break
+  if placement.is_finite():break
+ var now:=Time.get_unix_time_from_system()
+ check(placement.is_finite() and model.begin_construction("stone_store",placement,now),"New store starts through existing construction workflow")
+ var pending:Dictionary=model.construction_jobs()[0]
+ check(is_equal_approx(float(pending.finishes_at)-float(pending.started_at),60),"Storage L1 uses common one minute")
+ check(model.finish_constructions(now+61),"Storage construction finishes normally")
+ var key:="stone_store:"+str(pending.uid)
+ check(OwnedBuildingUpgrades.start(model,key,now+62),"Storage upgrade starts through existing workflow")
+ var upgrade:Dictionary=model.lookup_building(key).data.upgrade
+ check(is_equal_approx(float(upgrade.finishes_at)-float(upgrade.started_at),600),"Storage L2 uses common ten minutes")
+ model.commit(snapshot)
  check(BuildingRules.cost("stone_store",1)=={"wood":20,"stone":20},"Stone store L1 cost")
  check(BuildingRules.cost("wood_store",4)=={"wood":100,"stone":100},"Wood store L4 cost")
  for level in range(1,5):

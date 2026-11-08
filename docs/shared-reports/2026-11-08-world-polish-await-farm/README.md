@@ -67,3 +67,8 @@ Godot4.5.1 개발 실행과 화면 캡처 검증이다. Android 실기기·새 A
 미결: 기존 공통 시간은 L1~L4 1분/10분/30분/3시간, 개발 배속은 각각5초다. 새 저장 건물에 이를 사용할지는 사용자에게 질의했으며 아직 답변 전이다. BuildingRules.STORAGE_TIMING_CONFIRMED=false로 신규 공사/업그레이드 시작을 보류한다. 이미 저장된 공사 시계와 완료는 변경하지 않는다. 새 메뉴 삽입 순서도 질의 중이며 기존 여섯 메뉴 순서만 유지한다. 새 아이콘 조합은 확인용 캡처에만 표시했다. 두 결정을 받기 전 새 배포는 만들지 않는다.
 
 확인: storage_v0165_tests, storage_v0165_ui_tests, resident_farm_v0161_tests, world_polish_pending_farm_tests, memo_v0164_tests를 실행했다. 기존 회귀 fixture의 기본 보유량만 새 한도 아래로 조정했고 검사의 채집/예약/정확한 지급 기대값은 유지했다. 전체 과거 Windows 회귀 및 Android 실기기 확인은 별도다. 로그 D:/devtools/roxhistory-checks/storage-*.log, 실행 캡처 game/reports/storage-farm-v003.png 및 storage-menu-preview.png. 실행 프로젝트 game/project.godot, 배포 디렉토리 build/ (현재 업로드된0.1.64는 변경하지 않음).
+
+
+### 0.1.65 결정 반영
+
+사용자가 저장 건물 공통 시간 사용과 화덕 옆 제재소→석재소 순서를 확정했다. STORAGE_TIMING_CONFIRMED=true로 신규 건설/업그레이드를 활성화했다. 화면 왼쪽부터 초소·신당·화덕·제재소·석재소·훈련소·농장·움집으로 배치하고 8개 전체를 화면 폭에 맞춰 비례 축소한다. 위 체크포인트의 시간/순서 대기 항목은 이 결정으로 해소됐다. 기존 저장 공사 시계는 변경하지 않는다.

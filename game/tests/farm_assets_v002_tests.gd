@@ -22,7 +22,7 @@ func run()->void:
  check(farm.art_feedback.get_node("Composition/Locked").visible==farm.disabled,"Exactly one lock follows build availability")
  var order:Array[String]=[]
  for kind in BuildSideMenu.KINDS:order.append(kind)
- check(order==["outpost","shrine","hearth","training","farm","hut"],"Right to left construction order matches design")
+ check(order==["outpost","shrine","hearth","wood_store","stone_store","training","farm","hut"],"Right to left construction order matches design")
  check(app.build_side.entries.hut.position.x>app.build_side.entries.farm.position.x,"Hut is rightmost")
  var lock:Control=farm.art_feedback.get_node("Composition/Locked")
  check(lock.position.x<0 and lock.position.y>100 and lock.size==Vector2(54,54),"Lock uses reference lower-left 1.5x geometry")
@@ -30,7 +30,7 @@ func run()->void:
  var saved_width:float=app.w
  app.w=400;app.build_side.refresh()
  check(app.build_side.scale.x<1 and is_equal_approx(app.build_side.scale.x,app.build_side.scale.y),"Narrow menu scales all artwork proportionally")
- check(app.build_side.size.x*app.build_side.scale.x<=400-app.safe.x*2+.1,"Six items fit within safe width")
+ check(app.build_side.size.x*app.build_side.scale.x<=400-app.safe.x*2+.1,"Eight items fit within safe width")
  app.w=saved_width;app.build_side.refresh()
  app.build_side.hide()
  app.world.player.manual_camera=true;app.world.player.zoom_at(Vector2(app.w,app.h)*.5,1.2,app.model.building_position("farm:art2"));await frames(8)
