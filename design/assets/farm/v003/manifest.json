@@ -1,0 +1,328 @@
+{
+  "status": "separated-integration-review",
+  "provenance": "empty bases generated restoration from latest approved v002; growth sprites reused unchanged",
+  "crop_canvas": [
+    580,
+    580
+  ],
+  "crop_root_anchor": [
+    0.5,
+    0.915
+  ],
+  "levels": [
+    {
+      "level": 1,
+      "file": "farm-empty-l1.png",
+      "reference_display_size": [
+        420,
+        320
+      ],
+      "root_anchor": [
+        0.5,
+        0.9
+      ],
+      "crop_anchors": [
+        [
+          0.43,
+          0.48
+        ],
+        [
+          0.61,
+          0.68
+        ]
+      ],
+      "crop_canvas_width_fraction": 0.22
+    },
+    {
+      "level": 2,
+      "file": "farm-empty-l2.png",
+      "reference_display_size": [
+        440,
+        340
+      ],
+      "root_anchor": [
+        0.5,
+        0.9
+      ],
+      "crop_anchors": [
+        [
+          0.5,
+          0.44
+        ],
+        [
+          0.37,
+          0.56
+        ],
+        [
+          0.64,
+          0.57
+        ],
+        [
+          0.51,
+          0.7
+        ]
+      ],
+      "crop_canvas_width_fraction": 0.22
+    },
+    {
+      "level": 3,
+      "file": "farm-empty-l3.png",
+      "reference_display_size": [
+        480,
+        380
+      ],
+      "root_anchor": [
+        0.5,
+        0.9
+      ],
+      "crop_anchors": [
+        [
+          0.48,
+          0.45
+        ],
+        [
+          0.34,
+          0.56
+        ],
+        [
+          0.62,
+          0.54
+        ],
+        [
+          0.48,
+          0.67
+        ],
+        [
+          0.7,
+          0.64
+        ],
+        [
+          0.56,
+          0.76
+        ]
+      ],
+      "crop_canvas_width_fraction": 0.22
+    },
+    {
+      "level": 4,
+      "file": "farm-empty-l4.png",
+      "reference_display_size": [
+        520,
+        420
+      ],
+      "root_anchor": [
+        0.5,
+        0.9
+      ],
+      "crop_anchors": [
+        [
+          0.53,
+          0.37
+        ],
+        [
+          0.462,
+          0.414
+        ],
+        [
+          0.394,
+          0.458
+        ],
+        [
+          0.326,
+          0.502
+        ],
+        [
+          0.258,
+          0.546
+        ],
+        [
+          0.598,
+          0.414
+        ],
+        [
+          0.53,
+          0.458
+        ],
+        [
+          0.462,
+          0.502
+        ],
+        [
+          0.394,
+          0.546
+        ],
+        [
+          0.326,
+          0.59
+        ],
+        [
+          0.666,
+          0.458
+        ],
+        [
+          0.598,
+          0.502
+        ],
+        [
+          0.53,
+          0.546
+        ],
+        [
+          0.462,
+          0.59
+        ],
+        [
+          0.394,
+          0.634
+        ],
+        [
+          0.734,
+          0.502
+        ],
+        [
+          0.666,
+          0.546
+        ],
+        [
+          0.598,
+          0.59
+        ],
+        [
+          0.53,
+          0.634
+        ],
+        [
+          0.462,
+          0.678
+        ],
+        [
+          0.802,
+          0.546
+        ],
+        [
+          0.734,
+          0.59
+        ],
+        [
+          0.666,
+          0.634
+        ],
+        [
+          0.598,
+          0.678
+        ],
+        [
+          0.53,
+          0.722
+        ]
+      ],
+      "crop_canvas_width_fraction": 0.14
+    }
+  ],
+  "files": [
+    {
+      "file": "farm-empty-l1.png",
+      "size": [
+        1437,
+        1095
+      ],
+      "mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "sha256": "6c8dbd42c8371f416008ae08cf221a983cc9ed68b9ee7586c48d51655d3960b0"
+    },
+    {
+      "file": "farm-empty-l2.png",
+      "size": [
+        1426,
+        1103
+      ],
+      "mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "sha256": "d3b967652412f00d6189048adfded525c48f788b2590ee63b88a1502bf7a20da"
+    },
+    {
+      "file": "farm-empty-l3.png",
+      "size": [
+        1409,
+        1116
+      ],
+      "mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "sha256": "f1594365eaafe6b03101d9ad8ab80e193191eb4a2744d3b560ae4c9e09d9de93"
+    },
+    {
+      "file": "farm-empty-l4.png",
+      "size": [
+        1396,
+        1127
+      ],
+      "mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "sha256": "f0f0f033d2b6c55a755ddc4f876a02eae1989d5fc8a5e5de3586a578d1b9059d"
+    },
+    {
+      "file": "grain-growth-01.png",
+      "size": [
+        580,
+        580
+      ],
+      "mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        254
+      ],
+      "sha256": "993a3dc7a135020bed7abde0c697c2a2c75d03fa4c114e0c8ec57449582af485"
+    },
+    {
+      "file": "grain-growth-02.png",
+      "size": [
+        580,
+        580
+      ],
+      "mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        254
+      ],
+      "sha256": "9df42cf8bddc82c695d27d86379c80babec147cc5ef4609bcf4992964fac0118"
+    },
+    {
+      "file": "grain-growth-03.png",
+      "size": [
+        580,
+        580
+      ],
+      "mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        254
+      ],
+      "sha256": "b316f101074e71ff99b8d55bcaeba0f64f874316974b7d6128eeefd257f5a757"
+    },
+    {
+      "file": "grain-growth-04.png",
+      "size": [
+        580,
+        580
+      ],
+      "mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        254
+      ],
+      "sha256": "43ff69f5424aed2af9cd3f6d26307aa2c03b41be8ac9e47fe2ba465c63d5ac7e"
+    }
+  ]
+}
