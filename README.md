@@ -8,7 +8,7 @@
 - [0.1.67 Android·Windows 다운로드](https://github.com/byungho-cho/roxhistory/releases/tag/v0.1.67)
 - [문서 목록](docs/README.md) · [디자인 에셋](design/README.md) · [개발 지시 기준](docs/developer-instructions-current.md)
 
-배포 소스는 `208e02c9`(`codex/world-readability-20261109`)입니다. main의 게임 소스는 아직 `feecb691` 기반으로, 문서 현행화가 0.1.67 코드 병합을 뜻하지 않습니다. Android 실기기 확인과 새 자원바 디자인의 게임 적용은 별도 후속입니다.
+배포 소스는 `208e02c9`(`codex/world-readability-20261109`)이며, 해당 0.1.66·0.1.67 수정 코드를 main에 병합했습니다. 배포 태그·실행파일은 기존 검증본을 유지합니다. Android 실기기 확인과 새 자원바 디자인의 게임 적용은 별도 후속입니다.
 
 ## 저장소 자료
 
