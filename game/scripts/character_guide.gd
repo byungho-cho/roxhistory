@@ -11,6 +11,19 @@ var close_button:Button
 var close_holder:Control
 var age:=0.0
 var outside_press:=false
+var text_scroll:ScrollContainer
+var text_column:VBoxContainer
+var text_labels:Array[Label]=[]
+var text_fonts:Array[FontVariation]=[]
+const DESIGN_SIZE:=Vector2(1200,675)
+const PANEL_RECT:=Rect2(149,415,949,212)
+const CHARACTER_RECT:=Rect2(-67,202,468,425)
+# The close asset is a sibling of frame1627:83 in the Figma section.
+# Section (1074,518) minus the frame offset(40,110) gives this local slot.
+const CLOSE_RECT:=Rect2(1034,408,58,54)
+const TEXT_X:=355.0
+const TEXT_WIDTH:=670.0
+const TEXT_MAX_HEIGHT:=152.0
 func _init(owner_app:Node,title:String,body:String)->void:
 	app=owner_app;heading=title;message=body
 func picture(parent:Node,texture:Texture2D,rect:Rect2)->TextureRect:
@@ -18,35 +31,63 @@ func picture(parent:Node,texture:Texture2D,rect:Rect2)->TextureRect:
 	image.position=rect.position;image.size=rect.size;image.mouse_filter=Control.MOUSE_FILTER_IGNORE;parent.add_child(image);return image
 func _ready()->void:
 	name="CharacterGuide";set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT);mouse_filter=Control.MOUSE_FILTER_STOP
-	layout=Control.new();layout.name="GuideLayout";layout.size=Vector2(1200,675);layout.mouse_filter=Control.MOUSE_FILTER_IGNORE;add_child(layout)
-	panel_group=Control.new();panel_group.name="PanelGroup";panel_group.size=Vector2(1200,675);panel_group.mouse_filter=Control.MOUSE_FILTER_IGNORE;layout.add_child(panel_group)
+	layout=Control.new();layout.name="GuideLayout";layout.size=DESIGN_SIZE;layout.clip_contents=true;layout.mouse_filter=Control.MOUSE_FILTER_IGNORE;add_child(layout)
+	panel_group=Control.new();panel_group.name="PanelGroup";panel_group.size=DESIGN_SIZE;panel_group.mouse_filter=Control.MOUSE_FILTER_IGNORE;layout.add_child(panel_group)
 	var source:Texture2D=preload("res://assets/ui/v0159/guide-panel.png")
 	var crop:=AtlasTexture.new();crop.atlas=source;crop.region=Rect2(0,source.get_height()*.1918/1.3699,source.get_width(),source.get_height()/1.3699);crop.filter_clip=true
 	# Soft shadow follows the same panel silhouette; cream texture is never redrawn.
 	for i in [3,2,1]:
 		var shadow:=picture(panel_group,crop,Rect2(149-i,422-i,949+i*2,212+i*2));shadow.self_modulate=Color(.078,.059,.035,.09)
-	var panel:=picture(panel_group,crop,Rect2(149,415,949,212));panel.name="CreamPanel";panel.self_modulate.a=.8
-	var hit:=Control.new();hit.name="PanelHit";hit.position=Vector2(149,415);hit.size=Vector2(949,212);hit.mouse_filter=Control.MOUSE_FILTER_STOP;panel_group.add_child(hit)
-	var scroll:=ScrollContainer.new();scroll.name="GuideText";scroll.position=Vector2(355,467);scroll.size=Vector2(670,139);scroll.horizontal_scroll_mode=ScrollContainer.SCROLL_MODE_DISABLED;panel_group.add_child(scroll)
-	var column:=VBoxContainer.new();column.size_flags_horizontal=Control.SIZE_EXPAND_FILL;column.add_theme_constant_override("separation",14);scroll.add_child(column)
+	var panel:=picture(panel_group,crop,PANEL_RECT);panel.name="CreamPanel";panel.self_modulate.a=.8
+	var hit:=Control.new();hit.name="PanelHit";hit.position=PANEL_RECT.position;hit.size=PANEL_RECT.size;hit.mouse_filter=Control.MOUSE_FILTER_STOP;panel_group.add_child(hit)
+	text_scroll=DevelopmentSettingsScroll.new();text_scroll.name="GuideText";text_scroll.position=Vector2(TEXT_X,475);text_scroll.size=Vector2(TEXT_WIDTH,TEXT_MAX_HEIGHT);text_scroll.horizontal_scroll_mode=ScrollContainer.SCROLL_MODE_DISABLED;panel_group.add_child(text_scroll)
+	text_column=VBoxContainer.new();text_column.name="MessageContent";text_column.size_flags_horizontal=Control.SIZE_EXPAND_FILL;text_column.add_theme_constant_override("separation",14);text_scroll.add_child(text_column)
 	for item in [[heading,30],[message,23]]:
 		var text:=Label.new();text.theme=DemoArt.theme();text.text=item[0];
-		var font:=FontVariation.new();font.base_font=FigmaArt.NOTO;font.variation_opentype={TextServerManager.get_primary_interface().name_to_tag("wght"):700.0 if item[1]==30 else 400.0};text.add_theme_font_override("font",font);text.add_theme_font_size_override("font_size",item[1]);text.add_theme_color_override("font_color",Color("1f1c17"));text.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART;text.size_flags_horizontal=Control.SIZE_EXPAND_FILL;column.add_child(text)
-	character=picture(layout,preload("res://assets/ui/v0159/guide-character.png"),Rect2(-67,202,468,425));character.name="GuideCharacter";character.stretch_mode=TextureRect.STRETCH_KEEP_ASPECT_COVERED;character.pivot_offset=Vector2(234,425)
+		var font:=FontVariation.new();font.base_font=FigmaArt.NOTO;font.variation_opentype={TextServerManager.get_primary_interface().name_to_tag("wght"):700.0 if item[1]==30 else 400.0};text.add_theme_font_override("font",font);text.add_theme_font_size_override("font_size",item[1]);text.add_theme_color_override("font_color",Color("1f1c17"));text.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART;text.size_flags_horizontal=Control.SIZE_EXPAND_FILL;text.add_theme_constant_override("line_spacing",0);text_column.add_child(text);text_labels.append(text);text_fonts.append(font)
+	character=picture(layout,preload("res://assets/ui/v0159/guide-character.png"),CHARACTER_RECT);character.name="GuideCharacter";character.stretch_mode=TextureRect.STRETCH_KEEP_ASPECT_COVERED;character.clip_contents=true;character.pivot_offset=Vector2(234,425)
 	close_holder=Control.new();close_holder.mouse_filter=Control.MOUSE_FILTER_IGNORE;panel_group.add_child(close_holder)
 	close_button=HudButtons.create(close_holder,false,app.close_modal,"CloseGuide");close_button.tooltip_text="안내 닫기"
 	gui_input.connect(outside_input)
 	panel_group.modulate.a=0;character.modulate.a=0
 	update_layout()
 func update_layout()->void:
-	var factor:=minf((app.w-app.safe.x*2)/1200.0,(app.h-app.safe.y*2)/675.0)
-	layout.scale=Vector2.ONE*factor;layout.position=Vector2((app.w-1200*factor)*.5,app.h-app.safe.y-675*factor)
-	close_holder.scale=Vector2.ONE/factor;close_holder.position=Vector2(1098-(HudButtons.DIAMETER+10)/factor,415)
+	# Width-fit the design's transparent frame instead of inset fitting the whole
+	# 675px preview: its visible character starts at 202px, so wider phones can use
+	# the empty upper part without shrinking the messenger away from the left edge.
+	var factor:=minf(app.w/DESIGN_SIZE.x,(app.h-app.safe.y)/(DESIGN_SIZE.y-CHARACTER_RECT.position.y))
+	var bottom_inset:=maxf(0.0,app.safe.y-(DESIGN_SIZE.y-PANEL_RECT.end.y)*factor)
+	layout.scale=Vector2.ONE*factor
+	layout.position=Vector2((app.w-DESIGN_SIZE.x*factor)*.5,app.h-DESIGN_SIZE.y*factor-bottom_inset)
+	close_holder.position=CLOSE_RECT.position;close_holder.scale=Vector2.ONE
+	# Keep the artwork in its exact58×54 design slot; only the invisible hit
+	# target grows on small screens. Never shift the artwork to enlarge a hit box.
+	var hit_size:=CLOSE_RECT.size.max(Vector2.ONE*HudButtons.DIAMETER/factor)
+	close_button.custom_minimum_size=hit_size;close_button.size=hit_size
+	close_button.position=(CLOSE_RECT.size-hit_size)*.5
+	var image:TextureRect=close_button.art_feedback.get_node("Icon")
+	image.position=(hit_size-CLOSE_RECT.size)*.5;image.size=CLOSE_RECT.size
+	image.stretch_mode=TextureRect.STRETCH_SCALE
+	# Short copy is vertically centered like the reference; long/localized copy
+	# gets the full inner height and scrolls. Portrait text has a readable minimum.
+	for i in text_labels.size():
+		var font_size:=maxi(30 if i==0 else 23,ceili((18.0 if i==0 else 14.0)/factor))
+		if text_labels[i].get_theme_font_size("font_size")!=font_size:text_labels[i].add_theme_font_size_override("font_size",font_size)
+		# Figma line boxes are36/28px (1.2em). Godot Noto's44/34px
+		# metrics otherwise push the body down despite an identical font size.
+		var trim:=maxi(0,roundi(FigmaArt.NOTO.get_height(font_size))-roundi(font_size*1.2))
+		var top:=-int(trim/2);var bottom:=-trim-top
+		if text_fonts[i].spacing_top!=top:text_fonts[i].spacing_top=top
+		if text_fonts[i].spacing_bottom!=bottom:text_fonts[i].spacing_bottom=bottom
+	var height:=minf(TEXT_MAX_HEIGHT,maxf(1,text_column.get_combined_minimum_size().y))
+	var optical_shift:=minf(7,(TEXT_MAX_HEIGHT-height)*.5)
+	text_scroll.size=Vector2(TEXT_WIDTH,height)
+	text_scroll.position=Vector2(TEXT_X,PANEL_RECT.position.y+(PANEL_RECT.size.y-height)*.5-optical_shift)
 func outside_input(event:InputEvent)->void:
 	if age<.25:return
 	if event is InputEventMouseButton or event is InputEventScreenTouch:
 		var local:Vector2=layout.get_global_transform().affine_inverse()*event.position
-		if Rect2(149,415,949,212).has_point(local) or Rect2(-67,202,468,425).has_point(local):
+		if PANEL_RECT.has_point(local) or CHARACTER_RECT.has_point(local):
 			outside_press=false;return
 	if event is InputEventMouseButton and event.button_index==MOUSE_BUTTON_LEFT:
 		if event.pressed:outside_press=true
@@ -58,5 +99,5 @@ func _process(delta:float)->void:
 	age+=delta;update_layout()
 	panel_group.modulate.a=smoothstep(0,.22,age)
 	character.modulate.a=smoothstep(.22,.48,age)
-	character.position.x=-67-24*(1-smoothstep(.22,.55,age))
-	character.rotation=sin(maxf(0,age-.22)*TAU*.8)*.014*minf(1,age)
+	character.position.x=CHARACTER_RECT.position.x-24*(1-smoothstep(.22,.55,age))+sin(maxf(0,age-.55)*TAU*.35)*2
+	character.rotation=0
