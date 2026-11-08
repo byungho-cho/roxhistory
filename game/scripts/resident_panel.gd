@@ -140,8 +140,10 @@ func _process(_delta:float)->void:
 		var sprite:Sprite2D=app.world.building_sprite(key)
 		button.visible=not app.modal and app.screen=="play" and not app.world_map_open and is_instance_valid(sprite) and sprite.is_visible_in_tree()
 		if button.visible:
-			var bounds:Rect2=sprite.get_global_transform_with_canvas()*sprite.get_rect()
-			button.position=Vector2(bounds.get_center().x-23,bounds.position.y-36)
+			var bounds:Rect2=sprite.get_global_transform_with_canvas()*BuildingVisuals.visible_rect(sprite)
+			var visual_height:float=44.0*(1.0 if emphasized else .5)
+			button.position=Vector2(bounds.get_center().x-23,bounds.position.y-22-visual_height*.5+8)
+			button.set_meta("roof_anchor",Vector2(bounds.get_center().x,bounds.position.y))
 			button.visible=not hud_occludes(button.get_global_rect())
 
 func fixed_hud_rects()->Array[Rect2]:

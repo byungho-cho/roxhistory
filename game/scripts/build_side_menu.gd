@@ -2,10 +2,10 @@ class_name BuildSideMenu
 extends Control
 # Logical order is left-to-right; opening starts at the right (움집 first).
 const KINDS:=["outpost","shrine","hearth","wood_store","stone_store","training","farm","hut"]
-const TILE_SIZE:=Vector2(72,80) # Keep the hit target, shrink only the composition.
-const ART_SCALE:=0.60 # Smaller than the main action, including the approved extra 10%.
+const TILE_SIZE:=Vector2(80,92) # Keep the hit target, shrink only the composition.
+const ART_SCALE:=0.90 # Smaller than the main action, including the approved extra 10%.
 const MAX_VISIBLE:=6
-const GAP:=8.0
+const GAP:=4.0
 const GUTTER:=24.0
 const DRAG_THRESHOLD:=10.0
 var app:Node
@@ -29,7 +29,7 @@ func _init(owner_app:Node)->void:app=owner_app
 func _ready()->void:
 	name="BuildSideMenu";z_index=32;mouse_filter=Control.MOUSE_FILTER_IGNORE;hide()
 	backdrop=Panel.new();backdrop.mouse_filter=Control.MOUSE_FILTER_IGNORE;add_child(backdrop)
-	var skin:=StyleBoxFlat.new();skin.bg_color=Color(.10,.08,.05,.72);skin.set_corner_radius_all(18);skin.shadow_size=3;skin.shadow_color=Color(0,0,0,.18);backdrop.add_theme_stylebox_override("panel",skin)
+	var skin:=StyleBoxFlat.new();skin.bg_color=Color(.16,.11,.06,.48);skin.set_corner_radius_all(18);skin.border_color=Color(.70,.48,.20,.40);skin.set_border_width_all(1);skin.shadow_size=2;skin.shadow_color=Color(0,0,0,.18);backdrop.add_theme_stylebox_override("panel",skin)
 	clip=Control.new();clip.name="VisibleSlots";clip.clip_contents=true;clip.mouse_filter=Control.MOUSE_FILTER_IGNORE;add_child(clip)
 	content=Control.new();content.mouse_filter=Control.MOUSE_FILTER_IGNORE;clip.add_child(content)
 	for kind in KINDS:
@@ -66,7 +66,8 @@ func refresh()->void:
 		button.disabled=not button.hint_text.is_empty()
 		button.tooltip_text=button.hint_text if button.disabled else BuildingWorkflow.building_name(kind)
 		button.art_feedback.get_node("Composition/Locked").visible=button.disabled
-		button.art_feedback.get_node("Composition/Artwork").modulate=Color(1,1,1,.35) if button.disabled else Color.WHITE
+		var artwork:Control=button.art_feedback.get_node("Composition/Artwork")
+		for child in artwork.get_children():child.modulate=Color.WHITE if child is Label else Color(1,1,1,.60 if button.disabled else 1.0)
 	var center:Vector2=app.build_button.get_global_rect().get_center()
 	position=Vector2(clampf(center.x-size.x*.5,app.safe.x,maxf(app.safe.x,app.w-app.safe.x-size.x)),maxf(app.safe.y+95,app.build_button.global_position.y-size.y-8))
 	layout_scroll()
@@ -144,6 +145,7 @@ static func image_slot(parent:Control,file:String,at:Vector2,dimensions:Vector2,
 	var clip:=Control.new();clip.position=at;clip.size=dimensions;clip.clip_contents=true;clip.mouse_filter=Control.MOUSE_FILTER_IGNORE;parent.add_child(clip)
 	var image:=TextureRect.new();image.texture=load("res://assets/buildings/storage-v001/"+file+"-l1.png") if file in ["stone_store","wood_store"] else load("res://assets/ui/construction-side-v006/"+file+".png");image.expand_mode=TextureRect.EXPAND_IGNORE_SIZE;image.position=relative.position*dimensions;image.size=relative.size*dimensions;image.mouse_filter=Control.MOUSE_FILTER_IGNORE;clip.add_child(image)
 static func install_side_art(button:DemoButton,kind:String)->void:
+	button.set_meta("integrated_art",true) # This composition owns its disabled contrast.
 	for state in ["normal","hover","pressed","disabled","focus"]:button.add_theme_stylebox_override(state,StyleBoxEmpty.new())
 	var composition:=Control.new();composition.name="Composition";composition.size=Vector2(180,200);composition.scale=TILE_SIZE*ART_SCALE/Vector2(180,200);composition.position=TILE_SIZE*(1.0-ART_SCALE)*.5;composition.mouse_filter=Control.MOUSE_FILTER_IGNORE;button.add_child(composition)
 	var art:=Control.new();art.name="Artwork";art.mouse_filter=Control.MOUSE_FILTER_IGNORE;composition.add_child(art)
@@ -156,6 +158,6 @@ static func install_side_art(button:DemoButton,kind:String)->void:
 		"hut":image_slot(art,kind,Vector2(16.13,48.7),Vector2(143.75,124.301),Rect2(-.25,-.966,6.3882,2.4626))
 		"farm":image_slot(art,kind,Vector2(2,22),Vector2(180,150),Rect2(-19.17/180,18.33/150,218.333/180,200.0/150))
 	image_slot(art,"brush",Vector2(0,150),Vector2(180,50),Rect2(-2.2/180,-7.68/50,184.068/180,61.356/50))
-	var label:=Label.new();label.text={"hut":"움집","farm":"농장","training":"훈련소","hearth":"화덕","shrine":"신당","outpost":"초소","stone_store":"석재소","wood_store":"제재소"}[kind];label.theme=DemoArt.theme();label.add_theme_font_size_override("font_size",27);label.add_theme_color_override("font_color",Color("fff2cf"));label.position=Vector2(6.666,151.67);label.size=Vector2(166.667,40);label.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER;label.vertical_alignment=VERTICAL_ALIGNMENT_CENTER;label.mouse_filter=Control.MOUSE_FILTER_IGNORE;art.add_child(label)
-	var locked:=TextureRect.new();locked.name="Locked";locked.texture=IntegratedMenuArt.trimmed(load("res://assets/ui/v0158/lock.png"));locked.expand_mode=TextureRect.EXPAND_IGNORE_SIZE;locked.stretch_mode=TextureRect.STRETCH_KEEP_ASPECT_CENTERED;locked.position=Vector2(-2.5,137.5);locked.size=Vector2.ONE*54;locked.modulate.a=.7;locked.mouse_filter=Control.MOUSE_FILTER_IGNORE;composition.add_child(locked)
+	var label:=Label.new();label.name="MenuLabel";label.text={"hut":"움집","farm":"농장","training":"훈련소","hearth":"화덕","shrine":"신당","outpost":"초소","stone_store":"석재소","wood_store":"제재소"}[kind];label.theme=DemoArt.theme();label.add_theme_font_size_override("font_size",27);label.add_theme_color_override("font_color",Color("fff2cf"));label.position=Vector2(6.666,151.67);label.size=Vector2(166.667,40);label.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER;label.vertical_alignment=VERTICAL_ALIGNMENT_CENTER;label.mouse_filter=Control.MOUSE_FILTER_IGNORE;art.add_child(label)
+	var locked:=TextureRect.new();locked.name="Locked";locked.texture=IntegratedMenuArt.trimmed(load("res://assets/ui/v0158/lock.png"));locked.expand_mode=TextureRect.EXPAND_IGNORE_SIZE;locked.stretch_mode=TextureRect.STRETCH_KEEP_ASPECT_CENTERED;locked.position=Vector2(-2.5,137.5);locked.size=Vector2.ONE*54;locked.modulate.a=.95;locked.mouse_filter=Control.MOUSE_FILTER_IGNORE;composition.add_child(locked)
 	button.enable_art_feedback()

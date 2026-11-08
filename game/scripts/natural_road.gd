@@ -1,9 +1,11 @@
 class_name NaturalRoad
 extends Node2D
 ## Ground-cell geometry keeps the opaque core wider than one complete grid cell.
-const WIDTH:=1.6
-const MIN_WIDTH:=1.4
+const WIDTH:=1.16
+const MIN_WIDTH:=1.0
 var cells:=PackedVector2Array()
+var brush_paint:=false
+const BRUSH_PAINT:=preload("res://assets/roads/brush-v002/road-15.png")
 func _init(path:PackedVector2Array)->void:
 	cells=sample_path(path);name="NaturalRoad";set_meta("grid_width",WIDTH);set_meta("minimum_grid_width",MIN_WIDTH)
 static func sample_path(path:PackedVector2Array)->PackedVector2Array:
@@ -30,19 +32,32 @@ func edges()->Dictionary:
 		var wave:=sin(cells[i].x*2.1+cells[i].y*1.7)*.11
 		var half_width:=WIDTH*.5+sin(cells[i].x*3.4-cells[i].y*2.7)*.08
 		left.append(cells[i]+across*(half_width+wave));right.append(cells[i]-across*(half_width-wave))
-		outer_left.append(cells[i]+across*(half_width+wave+.4+.08*sin(cells[i].x*4.1+cells[i].y*2.3)));outer_right.append(cells[i]-across*(half_width-wave+.4+.08*cos(cells[i].x*2.7-cells[i].y*3.9)))
+		outer_left.append(cells[i]+across*(half_width+wave+.18+.04*sin(cells[i].x*4.1+cells[i].y*2.3)));outer_right.append(cells[i]-across*(half_width-wave+.18+.04*cos(cells[i].x*2.7-cells[i].y*3.9)))
 	return {"left":left,"right":right,"outer_left":outer_left,"outer_right":outer_right}
 func _ready()->void:
 	if cells.size()<2:return
 	var outline:=edges()
-	strip(outline.outer_left,outline.left,0,.93,"SoftLeftEdge")
-	strip(outline.right,outline.outer_right,.93,0,"SoftRightEdge")
-	strip(outline.left,outline.right,.93,.93,"RoadSoil")
+	strip(outline.outer_left,outline.left,0,1.0,"SoftLeftEdge")
+	strip(outline.right,outline.outer_right,1.0,0,"SoftRightEdge")
+	strip(outline.left,outline.right,1.0,1.0,"RoadSoil")
 func strip(first:PackedVector2Array,second:PackedVector2Array,alpha_first:float,alpha_second:float,id:String)->void:
 	var points:=PackedVector2Array();var colors:=PackedColorArray()
 	for cell in first:points.append(VillageLayout.project(cell));colors.append(Color(1,1,1,alpha_first))
 	for i in range(second.size()-1,-1,-1):points.append(VillageLayout.project(second[i]));colors.append(Color(1,1,1,alpha_second))
 	var polygon:=Polygon2D.new();polygon.name=id;polygon.polygon=points;polygon.vertex_colors=colors;polygon.antialiased=true
-	polygon.texture=AssetCatalog.texture("GROUND-ROAD")
+	polygon.texture=BRUSH_PAINT if brush_paint else AssetCatalog.texture("GROUND-ROAD")
 	var material:=ShaderMaterial.new();material.shader=preload("res://shaders/natural_road.gdshader");polygon.material=material
 	add_child(polygon)
+
+static func organic_path(a:Vector2,b:Vector2)->PackedVector2Array:
+	var delta:=b-a
+	if delta.length()<.05:return PackedVector2Array([a,b])
+	var bend:=Vector2(-delta.y,delta.x).normalized()*minf(1.2,delta.length()*.10)*sin(a.x*.7+b.y*.6)
+	var control:Vector2=(a+b)*.5+bend
+	var points:=PackedVector2Array()
+	for i in 25:
+		var t:=float(i)/24
+		var at:=a*(1-t)*(1-t)+control*2*(1-t)*t+b*t*t
+		if not VillageLayout.ground_ok(VillageLayout.project(at)):return curved_path(a,b)
+		points.append(at)
+	return points

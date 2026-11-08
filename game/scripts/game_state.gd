@@ -717,3 +717,12 @@ func prune_gather_claims()->void:
 		if gather_actor(owner)!="hero":
 			var item:Dictionary=state.get("resident_jobs",{}).get(owner,{})
 			if owner not in ResidentAdmission.ids(state) or item.get("job","")!=catalog[target].kind or not item.get("cargo",{}).is_empty():gather_claims.erase(owner)
+
+func debug_fill_resources()->bool:
+	if busy or state.is_empty():return false
+	var next:=state.duplicate(true)
+	for kind in ["wood","stone","grain"]:next[kind]=maxi(int(next.get(kind,0)),9999)
+	busy=true
+	var ok:=commit(next)
+	busy=false
+	return ok

@@ -68,3 +68,21 @@ static func apply(sprite: Sprite2D, kind: String, level: int = 1, ground_width: 
 	sprite.set_meta("building_visual_kind", kind)
 	sprite.set_meta("building_visual_level", clampi(level, 1, 4))
 	sprite.set_meta("building_visual_alignment", "bottom" if kind in ["training", "shrine"] else "center")
+
+static func has_own_ground(kind:String)->bool:
+	return kind in ["farm","stone_store","wood_store","hearth","shrine"]
+static var visible_regions:Dictionary={}
+static func visible_rect(sprite:Sprite2D)->Rect2:
+	var texture:=sprite.texture
+	var id:=texture.get_instance_id()
+	if not visible_regions.has(id):
+		var image:=texture.get_image()
+		var step:=maxi(1,mini(image.get_width(),image.get_height())/96)
+		var first:=Vector2(image.get_size());var last:=Vector2.ZERO
+		for y in range(0,image.get_height(),step):
+			for x in range(0,image.get_width(),step):
+				if image.get_pixel(x,y).a<.12:continue
+				first=first.min(Vector2(x,y));last=last.max(Vector2(x+step,y+step))
+		visible_regions[id]=Rect2(first,last-first) if last.x>first.x else sprite.get_rect()
+	var rect:Rect2=visible_regions[id]
+	return Rect2(rect.position+sprite.get_rect().position,rect.size)

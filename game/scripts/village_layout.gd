@@ -36,19 +36,22 @@ func rebuild_art()->void:
 	if signature==layout_signature:return
 	layout_signature=signature
 	for child in get_children():remove_child(child);child.queue_free()
-	var positions:Array=[];var levels:Array=[]
-	for i in model.built_count():positions.append(model.home_position(i));levels.append(int(model.homes()[i].get("level",1)))
-	for i in model.outposts().size():positions.append(model.outpost_position(i));levels.append(int(model.outposts()[i].get("level",1)))
+	var positions:Array=[];var levels:Array=[];var own_ground:Array[bool]=[]
+	for i in model.built_count():positions.append(model.home_position(i));levels.append(int(model.homes()[i].get("level",1)));own_ground.append(false)
+	for i in model.outposts().size():positions.append(model.outpost_position(i));levels.append(int(model.outposts()[i].get("level",1)));own_ground.append(false)
 	for entry in model.facilities():
-		positions.append(model.building_position(str(entry.kind)+":"+str(entry.uid)));levels.append(int(entry.get("level",1)))
+		positions.append(model.building_position(str(entry.kind)+":"+str(entry.uid)));levels.append(int(entry.get("level",1)));own_ground.append(BuildingVisuals.has_own_ground(str(entry.kind)))
 	# Use actual saved building anchors, including free placement and moves.
 	if model.chief_level()>0 and chief.is_finite():
 		var start:=unproject(chief-Vector2(0,24))
 		var buildings:Array=[{"cell":start,"span":6}]
 		for at in positions:buildings.append({"cell":unproject(at-Vector2(0,24)),"span":4})
 		var use_tiles:=BrushRoadNetwork.enabled() and BrushRoadNetwork.assets_available()
-		var planned:Dictionary=BrushRoadNetwork.plan(buildings) if use_tiles else {"ok":false}
-		if bool(planned.ok):
+		var grid_review:bool=OS.get_cmdline_user_args().has("--grid-roads")
+		var planned:Dictionary=BrushRoadNetwork.plan(buildings) if use_tiles and grid_review else {"ok":false}
+		if use_tiles and not grid_review:
+			add_child(OrganicRoadNetwork.new(buildings))
+		elif bool(planned.ok):
 			add_child(BrushRoadNetwork.new(planned.masks))
 		else:
 			# Keep the complete legacy network if assets or safe routing are unavailable.
@@ -62,10 +65,11 @@ func rebuild_art()->void:
 						var d:=from.distance_squared_to(remaining[i])
 						if d<distance:best_from=from;best_index=i;distance=d
 				var target:=remaining[best_index]
-				if distance>.01:add_child(NaturalRoad.new(NaturalRoad.curved_path(best_from,target)))
+				if distance>.01:add_child(NaturalRoad.new(NaturalRoad.organic_path(best_from,target)))
 				connected.append(target);remaining.remove_at(best_index)
 		foundation(start,6,model.chief_level())
-	for i in positions.size():foundation(unproject(positions[i]-Vector2(0,24)),4,levels[i])
+	for i in positions.size():
+		if not own_ground[i]:foundation(unproject(positions[i]-Vector2(0,24)),4,levels[i])
 	queue_redraw()
 func foundation(cell:Vector2,span:int,level:int=1)->void:
 	var id:="GROUND-PAD-L%d"%clampi(level,1,4)
