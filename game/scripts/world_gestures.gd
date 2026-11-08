@@ -42,6 +42,7 @@ func _process(delta:float)->void:
 		blocked=true;mouse_dragging=false;panning=false
 func _init(owner_app: Node) -> void: app=owner_app
 func clear() -> void:
+	if is_instance_valid(app.build_side):app.build_side.cancel_pointer()
 	moving_key=""
 	hold_at=Vector2.INF;hold_time=0.0;hold_consumed=false
 	mouse_start=Vector2.INF
@@ -55,6 +56,7 @@ func clear() -> void:
 		app.world.player.camera.position_smoothing_enabled=true
 		app.world.player.cancel_camera_guide()
 func ui_hit(at: Vector2) -> bool:
+	if is_instance_valid(app.build_side) and app.build_side.contains_point(at):return true
 	if app.modal and not app.camera_modal(): return true
 	if app.camera_modal():
 		var hud:UpgradeConfirmation=app.overlay.get_node_or_null("UpgradeConfirmation")
@@ -63,10 +65,12 @@ func ui_hit(at: Vector2) -> bool:
 	for c in [app.joystick,app.gather_button,app.build_button,app.objective.get_parent()]:
 		if is_instance_valid(c) and c.is_visible_in_tree() and c.get_global_rect().has_point(at): return true
 	for button in app.stage.find_children("*","Button",true,false):
-		if button.is_visible_in_tree() and button.get_global_rect().has_point(at):return true
+		if button.is_visible_in_tree() and button.mouse_filter!=Control.MOUSE_FILTER_IGNORE and button.get_global_rect().has_point(at):return true
 	# Collapsed action slots are empty world space, not invisible input blockers.
 	return false
 func _input(event: InputEvent) -> void:
+	if is_instance_valid(app.build_side) and app.build_side.handle_input(event):
+		get_viewport().set_input_as_handled();return
 	if app.map_transition_active:return
 	if app.menu_animating and is_instance_valid(app.action_row) and (event is InputEventScreenTouch or event is InputEventScreenDrag or event is InputEventMouseButton or event is InputEventMouseMotion):
 		if app.action_row.get_global_rect().has_point(event.position):

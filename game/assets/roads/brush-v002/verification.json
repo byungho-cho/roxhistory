@@ -1,0 +1,8 @@
+{
+  "tiles": 16,
+  "connected_pairs_tested": 128,
+  "interior_seam_min_alpha": 255,
+  "interior_seam_samples_per_pair": 825,
+  "transparent_png": true,
+  "scope": "Offline topology/alpha continuity and rendered preview. Godot integration not tested. Edge softness and texture appearance remain artistic-review items."
+}

@@ -1,0 +1,135 @@
+{
+  "version": 2,
+  "status": "vector-built integration candidate, visual approval pending",
+  "source_style": "brushstroke concept; native vector experimental recreation",
+  "projection": {
+    "axis_x": [
+      32,
+      16
+    ],
+    "axis_y": [
+      -32,
+      16
+    ],
+    "tile_span_grid_cells": 2,
+    "tile_step_x": [
+      64,
+      32
+    ],
+    "tile_step_y": [
+      -64,
+      32
+    ]
+  },
+  "render": {
+    "png_size": [
+      520,
+      264
+    ],
+    "world_size": [
+      130,
+      66
+    ],
+    "scale": 0.25,
+    "anchor_px": [
+      260,
+      132
+    ],
+    "road_width_grid_cells": 1
+  },
+  "mask_bits": {
+    "1": "+u / down-right",
+    "2": "+v / down-left",
+    "4": "-u / up-left",
+    "8": "-v / up-right"
+  },
+  "tiles": [
+    {
+      "mask": 0,
+      "svg": "svg/road-00.svg",
+      "png": "png/road-00.png"
+    },
+    {
+      "mask": 1,
+      "svg": "svg/road-01.svg",
+      "png": "png/road-01.png"
+    },
+    {
+      "mask": 2,
+      "svg": "svg/road-02.svg",
+      "png": "png/road-02.png"
+    },
+    {
+      "mask": 3,
+      "svg": "svg/road-03.svg",
+      "png": "png/road-03.png"
+    },
+    {
+      "mask": 4,
+      "svg": "svg/road-04.svg",
+      "png": "png/road-04.png"
+    },
+    {
+      "mask": 5,
+      "svg": "svg/road-05.svg",
+      "png": "png/road-05.png"
+    },
+    {
+      "mask": 6,
+      "svg": "svg/road-06.svg",
+      "png": "png/road-06.png"
+    },
+    {
+      "mask": 7,
+      "svg": "svg/road-07.svg",
+      "png": "png/road-07.png"
+    },
+    {
+      "mask": 8,
+      "svg": "svg/road-08.svg",
+      "png": "png/road-08.png"
+    },
+    {
+      "mask": 9,
+      "svg": "svg/road-09.svg",
+      "png": "png/road-09.png"
+    },
+    {
+      "mask": 10,
+      "svg": "svg/road-10.svg",
+      "png": "png/road-10.png"
+    },
+    {
+      "mask": 11,
+      "svg": "svg/road-11.svg",
+      "png": "png/road-11.png"
+    },
+    {
+      "mask": 12,
+      "svg": "svg/road-12.svg",
+      "png": "png/road-12.png"
+    },
+    {
+      "mask": 13,
+      "svg": "svg/road-13.svg",
+      "png": "png/road-13.png"
+    },
+    {
+      "mask": 14,
+      "svg": "svg/road-14.svg",
+      "png": "png/road-14.png"
+    },
+    {
+      "mask": 15,
+      "svg": "svg/road-15.svg",
+      "png": "png/road-15.png"
+    }
+  ],
+  "notes": [
+    "No opaque grass background; transparent outer region.",
+    "No game code changes.",
+    "Do not resize each tile to one grid cell: tile footprint=2x2, path width=1.",
+    "Adjacent tiles must agree on facing ports.",
+    "Use shared periodic texture so connected edge color is continuous."
+  ]
+}

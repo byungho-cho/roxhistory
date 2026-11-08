@@ -32,7 +32,7 @@ func _draw()->void:
 
 func rebuild_art()->void:
 	var chief:=model.building_position("chief")
-	var signature:=str([model.chief_level(),chief,model.homes(),model.outposts(),model.facilities()])
+	var signature:=str([model.chief_level(),chief,model.homes(),model.outposts(),model.facilities(),BrushRoadNetwork.enabled()])
 	if signature==layout_signature:return
 	layout_signature=signature
 	for child in get_children():remove_child(child);child.queue_free()
@@ -44,18 +44,26 @@ func rebuild_art()->void:
 	# Use actual saved building anchors, including free placement and moves.
 	if model.chief_level()>0 and chief.is_finite():
 		var start:=unproject(chief-Vector2(0,24))
-		# A nearest-connection tree avoids the previous parallel grid of spokes.
-		var connected:Array[Vector2]=[start];var remaining:Array[Vector2]=[]
-		for at in positions:remaining.append(unproject(at-Vector2(0,24)))
-		while not remaining.is_empty():
-			var best_from:=connected[0];var best_index:=0;var distance:=INF
-			for from in connected:
-				for i in remaining.size():
-					var d:=from.distance_squared_to(remaining[i])
-					if d<distance:best_from=from;best_index=i;distance=d
-			var target:=remaining[best_index]
-			if distance>.01:add_child(NaturalRoad.new(NaturalRoad.curved_path(best_from,target)))
-			connected.append(target);remaining.remove_at(best_index)
+		var buildings:Array=[{"cell":start,"span":6}]
+		for at in positions:buildings.append({"cell":unproject(at-Vector2(0,24)),"span":4})
+		var use_tiles:=BrushRoadNetwork.enabled() and BrushRoadNetwork.assets_available()
+		var planned:Dictionary=BrushRoadNetwork.plan(buildings) if use_tiles else {"ok":false}
+		if bool(planned.ok):
+			add_child(BrushRoadNetwork.new(planned.masks))
+		else:
+			# Keep the complete legacy network if assets or safe routing are unavailable.
+			# A nearest-connection tree avoids the previous parallel grid of spokes.
+			var connected:Array[Vector2]=[start];var remaining:Array[Vector2]=[]
+			for at in positions:remaining.append(unproject(at-Vector2(0,24)))
+			while not remaining.is_empty():
+				var best_from:=connected[0];var best_index:=0;var distance:=INF
+				for from in connected:
+					for i in remaining.size():
+						var d:=from.distance_squared_to(remaining[i])
+						if d<distance:best_from=from;best_index=i;distance=d
+				var target:=remaining[best_index]
+				if distance>.01:add_child(NaturalRoad.new(NaturalRoad.curved_path(best_from,target)))
+				connected.append(target);remaining.remove_at(best_index)
 		foundation(start,6,model.chief_level())
 	for i in positions.size():foundation(unproject(positions[i]-Vector2(0,24)),4,levels[i])
 	queue_redraw()
