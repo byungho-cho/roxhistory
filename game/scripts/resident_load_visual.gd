@@ -6,7 +6,8 @@ const LOADS := {
 	"stone": preload("res://assets/characters/residents/cargo/stone.glb"),
 	"grain": preload("res://assets/characters/residents/cargo/grain.glb"),
 }
-const BASKET_SCALE := 3.0
+const LOAD_SCALE := {"wood": 3.0, "stone": 3.0, "grain": 3.2}
+const BACK_OFFSET := {"wood": -0.43, "stone": -0.64, "grain": -0.68}
 var displayed_kind := ""
 var prop: Node3D
 
@@ -20,9 +21,8 @@ func update_load(cargo: Dictionary) -> void:
 	displayed_kind = kind
 	if kind.is_empty() or bone_idx < 0: return
 	var correction := get_skeleton().get_bone_global_rest(bone_idx).basis.inverse()
-	var basket := kind != "wood"
-	var size_factor := BASKET_SCALE if basket else 1.0
-	var offset := Vector3(0, .02, -.64 if basket else -.28)
+	var size_factor:float = LOAD_SCALE[kind]
+	var offset := Vector3(0, .02, BACK_OFFSET[kind])
 	prop = LOADS[kind].instantiate()
 	prop.transform = Transform3D(correction.scaled(Vector3.ONE * size_factor), correction * offset)
 	add_child(prop)
