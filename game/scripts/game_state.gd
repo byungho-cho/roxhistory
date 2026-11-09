@@ -410,7 +410,7 @@ func building_unlocked(kind:String)->bool:
 		if built_count()==0 or farms==0:return false
 	return not state.is_empty() and BuildingRules.REQUIRED_HQ.has(kind) and chief_level()>=int(BuildingRules.REQUIRED_HQ[kind]) and (kind!="farm" or built_count()>0)
 
-func building_requirement(kind:String)->String:
+func building_requirement(kind:String,check_resources:bool=true)->String:
 	kind=BuildingRules.canonical(kind)
 	if state.is_empty():return "게임을 먼저 시작해 주세요"
 	if not BuildingRules.REQUIRED_HQ.has(kind):return "아직 지원하지 않는 건물이에요"
@@ -451,11 +451,12 @@ func building_requirement(kind:String)->String:
 		for job in construction_jobs():
 			if str(job.kind) in BuildingRules.FACILITY_KINDS:pending_facilities+=1
 		if facilities().size()+pending_facilities>=BuildingRules.MAX_ENTRIES:return "시설 한도에 도달했어요"
+	if not check_resources:return ""
 	var cost:=building_cost(kind,1)
 	if state.wood<cost.wood or state.stone<cost.stone:return "나무 %d개와 돌 %d개가 필요해요" % [cost.wood,cost.stone]
 	return ""
 
-func upgrade_requirement(key:String="chief")->String:
+func upgrade_requirement(key:String="chief",check_resources:bool=true)->String:
 	var found:=lookup_building(key)
 	if found.is_empty():return "건물을 찾을 수 없어요"
 	if found.kind in ["stone_store","wood_store"] and not BuildingRules.STORAGE_TIMING_CONFIRMED:return "저장 건물 공사 시간 확인 대기 중"
@@ -464,6 +465,7 @@ func upgrade_requirement(key:String="chief")->String:
 	if level>=4:return "최고 레벨이에요"
 	if key!="chief" and level>=chief_level():return "촌장집 Lv.%d 필요" % (level+1)
 	if not builder_available():return "건설자 1명이 작업 중이에요"
+	if not check_resources:return ""
 	var cost:=building_cost(found.kind,level+1)
 	if state.wood<cost.wood or state.stone<cost.stone:return "나무 %d개와 돌 %d개가 필요해요" % [cost.wood,cost.stone]
 	return ""

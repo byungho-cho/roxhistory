@@ -97,7 +97,7 @@ func refresh()->void:
 	var owned:Dictionary=app.model.lookup_building(selected_key)
 	if owned.is_empty():close();return
 	move_button.disabled=owned.get("data",{}).has("upgrade");move_button.hint_text="공사 완료 후 이동할 수 있어요" if move_button.disabled else "옮길 위치를 선택해 주세요"
-	var upgrade_reason:String=app.building_workflow.upgrade_block_reason(app.model.chief_level()+1) if selected_key=="chief" else app.building_workflow.owned_upgrade_reason(selected_key)
+	var upgrade_reason:String=app.building_workflow.upgrade_block_reason(app.model.chief_level()+1,false) if selected_key=="chief" else app.building_workflow.owned_upgrade_reason(selected_key,false)
 	upgrade_button.disabled=not upgrade_reason.is_empty();upgrade_button.hint_text=upgrade_reason
 	var quote:Dictionary=app.model.demolition_quote(selected_key)
 	demolish_button.disabled=selected_key=="chief" or quote.is_empty() or not quote.get("supported",false) or owned.get("data",{}).has("upgrade")

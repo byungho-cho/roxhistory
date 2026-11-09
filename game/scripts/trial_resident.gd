@@ -12,6 +12,10 @@ var job_stuck:=0.0
 var job_depot:=Vector2.INF
 var depot_home:=Vector2.INF
 var station_key:=""
+var farm_origin:=Vector2.INF
+var farm_stand:=Vector2.INF
+const RESIDENT_LAYER:=2
+const FARM_STANDS:=[Vector2(135,72),Vector2(-135,72),Vector2(0,220)]
 var variant:="female"
 var visual:HybridCharacter
 var origin:=Vector2.ZERO
@@ -28,6 +32,9 @@ var duty_clock:=0.0
 var patrol_step:=-1
 func _ready()->void:
 	if resident_id.is_empty():resident_id="resident-0" if variant=="female" else "resident-1"
+	# Other residents are pass-through; terrain, buildings and wildlife remain solid.
+	collision_layer=RESIDENT_LAYER
+	collision_mask=1
 	jobs=ResidentJobs.new(get_parent().model)
 	origin=position;destination=position;rng.seed=abs(resident_id.hash())+122;rest_time=2.0+float(abs(resident_id.hash())%30)/10.0
 	var shape:=CollisionShape2D.new();var circle:=CircleShape2D.new();circle.radius=12;shape.shape=circle;add_child(shape)
@@ -77,7 +84,8 @@ func _physics_process(delta:float)->void:
 		visual.set_render_zoom(world.player.zoom_factor)
 		visual.work_kind=job_kind
 		var action:=job_kind if job_phase=="harvest" else "farm_care" if job_kind=="farmer" and job_phase=="farm_wait" else "guard" if job_kind=="guard" else ""
-		visual.animate(visual_elapsed,velocity.normalized(),phase,travelled>.01,action,duty_clock if action in ["farm_care","guard"] else maxf(0,(1.2 if job_kind=="farmer" else gather_seconds())-job_timer),false)
+		var facing:Vector2=(farm_origin-position).normalized() if action=="farm_care" or (job_kind=="farmer" and job_phase=="harvest") else velocity.normalized()
+		visual.animate(visual_elapsed,facing,phase,travelled>.01,action,duty_clock if action in ["farm_care","guard"] else maxf(0,(1.2 if job_kind=="farmer" else gather_seconds())-job_timer),false)
 		visual.viewport.render_target_update_mode=SubViewport.UPDATE_ONCE
 		visual_elapsed=0
 
@@ -102,7 +110,7 @@ func _job_tick(delta:float)->bool:
 	if not jobs.available(resident_id):jobs.model.release_gather(resident_id);return false
 	if item.job!=job_kind:
 		jobs.model.release_gather(resident_id)
-		job_kind=item.job;job_route.clear();job_phase="idle";job_timer=0
+		job_kind=item.job;job_route.clear();job_phase="idle";job_timer=0;farm_stand=Vector2.INF
 	if item.cargo.is_empty() and job_kind in ["wood","stone"] and ResourceStorage.room(jobs.model,job_kind)<=0:_job_wait();return true
 	if job_kind in ["wood","stone"] and job_phase in ["travel","harvest"] and not jobs.model.owns_gather(job_target,resident_id):
 		job_route.clear();job_phase="idle";job_timer=0
@@ -198,8 +206,21 @@ func _station_tick(delta:float,item:Dictionary)->void:
 	var key:=str(item.get("building",""))
 	var found:=jobs.model.lookup_building(key)
 	if found.is_empty():_job_wait();return
-	if station_key!=key:station_key=key;job_phase="idle";job_route.clear();job_timer=0
+	if station_key!=key:
+		station_key=key;job_phase="idle";job_route.clear();job_timer=0;farm_stand=Vector2.INF
 	var at:Vector2=found.position+Vector2(0,90)
+	if job_kind=="farmer":
+		if farm_origin!=found.position:
+			farm_origin=found.position;farm_stand=Vector2.INF;job_route.clear()
+		if not farm_stand.is_finite() or (job_route.is_empty() and position.distance_to(farm_stand)>5):
+			farm_stand=Vector2.INF
+			for offset in FARM_STANDS:
+				var candidate:Vector2=found.position+offset
+				if _plan_job_route(candidate):
+					farm_stand=candidate
+					break
+			if not farm_stand.is_finite():_job_wait();return
+		at=farm_stand
 	if job_kind=="guard":
 		var step:=int(duty_clock/8.0)%3
 		if step!=patrol_step:patrol_step=step;job_route.clear()

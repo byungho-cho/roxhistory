@@ -26,7 +26,7 @@ func run()->void:
 	var confirm:Button=app.overlay.find_child("ConfirmResidentAssignment",true,false);check(not confirm.disabled,"Guard assignment requires selected valid post")
 	confirm.pressed.emit();await frames();check(ResidentJobs.new(app.model).assigned_to("outpost:p1")==app.resident_panel.id_at(1),"Guard selection commits one station")
 	app.resident_panel.show_assignment(2,"farmer","");await frames();check(app.overlay.find_child("ConfirmResidentAssignment",true,false).disabled,"No target farm cannot be assigned")
-	app.close_modal();var farmer:TrialResident=app.world.residents[0];farmer.position=Vector2(1300,1090)
+	app.close_modal();var farmer:TrialResident=app.world.residents[0];farmer.position=Vector2(1300,1000)+TrialResident.FARM_STANDS[0]
 	s=app.model.state.duplicate(true);s.farm_cycles={"farm:f1":{"phase":"ready","elapsed":600.0,"cuts":0,"stock":0,"cycle_level":4}};app.model.commit(s)
 	var grain_before:int=app.model.state.grain
 	farmer._job_tick(.6);check(farmer.job_phase=="harvest" and ResidentJobs.new(app.model).entry(farmer.resident_id).cargo.is_empty(),"Harvest action active before 1.2 second cut")

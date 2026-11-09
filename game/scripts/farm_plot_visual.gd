@@ -5,10 +5,10 @@ static var layout_data:Dictionary={}
 const CROPS:=[preload("res://assets/farm/v003/grain-growth-01.png"),preload("res://assets/farm/v003/grain-growth-02.png"),preload("res://assets/farm/v003/grain-growth-03.png"),preload("res://assets/farm/v003/grain-growth-04.png")]
 var model:GameState
 var key:String
-func _init(game:GameState,id:String)->void:model=game;key=id;name="TemporaryCropVisual";visibility_layer=2;z_index=4
+func _init(game:GameState,id:String)->void:model=game;key=id;name="TemporaryCropVisual";visibility_layer=2
 func _ready()->void:
 	if layout_data.is_empty():layout_data=JSON.parse_string(FileAccess.get_file_as_string("res://assets/farm/v003/manifest.json"))
-func _process(_delta:float)->void:queue_redraw()
+	model.changed.connect(queue_redraw)
 func _draw()->void:
 	var found:=model.lookup_building(key)
 	if found.is_empty():return
@@ -26,6 +26,8 @@ func _draw()->void:
 	for i in count:
 		var at:=rect.position+Vector2(anchors[i][0],anchors[i][1])*rect.size
 		draw_texture_rect(texture,Rect2(at-Vector2(.5,.915)*dimensions,dimensions),false)
+	# Draw below the field and keep both side work positions clear.
+	draw_set_transform(Vector2(0,rect.end.y-2))
 	var brush:=BuildingMenu.art("brush-black-v003.png")
 	draw_texture_rect(brush,Rect2(-110,10,220,48),false,Color(1,1,1,.78))
 	var fill:=float(cycle.elapsed)/FarmProduction.PREPARATION if cycle.phase=="prepare" else progress

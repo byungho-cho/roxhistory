@@ -58,7 +58,7 @@ func block_reason()->String:
 	if not moving_key.is_empty() and app.model.lookup_building(moving_key).get("data",{}).has("upgrade"):return "공사 완료 후 이동할 수 있어요"
 	var reason:String=app.model.placement_requirement(kind,placement_position,moving_key)
 	if reason.is_empty() and app.world.has_method("placement_requirement"):reason=app.world.placement_requirement(kind,placement_position,moving_key)
-	if reason.is_empty() and kind=="chief" and moving_key.is_empty():reason=app.building_workflow.build_block_reason(kind)
+	if reason.is_empty() and moving_key.is_empty():reason=app.building_workflow.build_block_reason(kind,false)
 	return reason
 func validity()->bool:return block_reason().is_empty()
 func refresh_validity()->void:

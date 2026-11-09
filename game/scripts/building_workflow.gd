@@ -41,17 +41,17 @@ static func building_asset_id(kind:String,level:int=1)->String:
 static func building_name(kind:String)->String:
 	return {"chief":"촌장집","hut":"주민 움집","home":"주민 움집","outpost":"초소","hearth":"화덕","training":"훈련소","shrine":"신당","farm":"농장","stone_store":"석재소","wood_store":"제재소"}.get(kind,"건물")
 static func cost_text(cost:Dictionary)->String:return "나무 %d개 · 돌 %d개"%[int(cost.get("wood",0)),int(cost.get("stone",0))]
-func build_block_reason(kind:String)->String:
-	var reason:String=app.model.building_requirement(kind)
+func build_block_reason(kind:String,check_resources:bool=true)->String:
+	var reason:String=app.model.building_requirement(kind,check_resources)
 	if not reason.is_empty():return reason
 	if approved_texture(building_asset_id(kind,1))==null:return "%s 확정 게임 에셋 준비 중"%building_name(kind)
 	return ""
 func outpost_block_reason()->String:return build_block_reason("outpost")
-func upgrade_block_reason(target:int)->String:
+func upgrade_block_reason(target:int,check_resources:bool=true)->String:
 	if target!=app.model.chief_level()+1:return "건물 단계가 변경되었어요. 다시 선택해 주세요"
-	var reason:String=app.model.upgrade_requirement("chief")
+	var reason:String=app.model.upgrade_requirement("chief",check_resources)
 	if not reason.is_empty():return reason
-	if not app.model.can_upgrade_chief():return cost_text(app.model.building_cost("chief",target))+"가 필요해요"
+	if check_resources and not app.model.can_upgrade_chief():return cost_text(app.model.building_cost("chief",target))+"가 필요해요"
 	if approved_texture(building_asset_id("chief",target))==null:return "%d단계 촌장집 에셋 준비 중"%target
 	return ""
 func request_upgrade()->void:
@@ -120,15 +120,13 @@ func _process(delta:float)->void:
 			if app.model.finish_chief_upgrade() and is_instance_valid(app.world) and app.screen=="play":app.world.feedback.built(app.model.building_position("chief"))
 		retry_after=.1
 	update_owned_upgrades();update_constructions()
-func owned_upgrade_reason(key:String)->String:
+func owned_upgrade_reason(key:String,check_resources:bool=true)->String:
 	var found:Dictionary=app.model.lookup_building(key)
 	if found.is_empty():return "건물을 찾을 수 없어요"
-	var reason:String=app.model.upgrade_requirement(key)
+	var reason:String=app.model.upgrade_requirement(key,check_resources)
 	if not reason.is_empty():return reason
 	var target:=int(found.data.get("level",1))+1
 	if approved_texture(building_asset_id(str(found.kind),target))==null:return "%s %d단계 확정 에셋 준비 중"%[building_name(str(found.kind)),target]
-	var cost:Dictionary=app.model.building_cost(str(found.kind),target)
-	if app.model.state.wood<int(cost.wood) or app.model.state.stone<int(cost.stone):return cost_text(cost)+"가 필요해요"
 	return ""
 func request_owned_upgrade(key:String)->void:
 	if key=="chief":request_upgrade();return
