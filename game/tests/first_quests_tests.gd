@@ -63,7 +63,7 @@ func run()->void:
 	check(journal.global_position.x<app.stage.get_node("QuestRewardEntry").global_position.x,"Journal appears to the left of rewards")
 	var journal_icon:TextureRect=journal.get_node("EntryIcon")
 	var reward_icon:TextureRect=app.stage.get_node("QuestRewardEntry/EntryIcon")
-	check(is_equal_approx(journal_icon.get_global_rect().end.y,reward_icon.get_global_rect().end.y),"Journal and reward artwork share a baseline")
+	check(is_equal_approx(journal_icon.global_position.y+journal_icon.get_meta("visible_baseline"),reward_icon.global_position.y+reward_icon.get_meta("visible_baseline")),"Journal and reward artwork share a visible baseline")
 	app.construction_menu()
 	check(app.build_side.transition!=null and app.build_side.modulate.a<1.0,"Building list starts an opening animation")
 	await app.build_side.transition.finished

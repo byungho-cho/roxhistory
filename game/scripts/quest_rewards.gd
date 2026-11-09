@@ -75,22 +75,25 @@ static func install_entry(app:Node)->Label:
 	return caption(app,badge,"",Rect2(0,0,22,22),14,Color.WHITE)
 
 static func entry_art(app:Node,button:DemoButton,icon:Texture2D,title:String,icon_scale:float=1.0)->void:
-	var trimmed:Texture2D
-	if icon is AtlasTexture:
-		var source_rect:=Rect2i(icon.region)
-		var used:Rect2i=icon.atlas.get_image().get_region(source_rect).get_used_rect()
-		icon.region=Rect2(Rect2i(source_rect.position+used.position,used.size))
-		trimmed=icon
-	else:
-		trimmed=IntegratedMenuArt.trimmed(icon)
+	var trimmed:AtlasTexture=icon if icon is AtlasTexture else IntegratedMenuArt.trimmed(icon)
 	var dimensions:=trimmed.get_size()
 	var base_size:=dimensions*minf(54.0/dimensions.x,54.0/dimensions.y)
 	var display_size:=base_size*icon_scale
-	var entry_icon:TextureRect=app.picture(button,trimmed,Rect2(Vector2((64-display_size.x)*.5,56-display_size.y),display_size))
+	var art:=trimmed.atlas.get_image().get_region(Rect2i(trimmed.region))
+	var baseline_offset:=visible_bottom(art)*display_size.y/art.get_height()
+	var entry_icon:TextureRect=app.picture(button,trimmed,Rect2(Vector2((64-display_size.x)*.5,56-baseline_offset),display_size))
 	entry_icon.name="EntryIcon"
+	entry_icon.set_meta("visible_baseline",baseline_offset)
 	var brush:TextureRect=app.picture(button,preload("res://assets/ui/construction-side-v006/brush.png"),Rect2(0,49,64,26))
 	brush.modulate.a=.8
 	caption(app,button,title,Rect2(0,50,64,24),14,CREAM)
+
+static func visible_bottom(art:Image)->int:
+	# Faint edge pixels extend below the visible scroll and bag.
+	for y in range(art.get_height()-1,-1,-1):
+		for x in art.get_width():
+			if art.get_pixel(x,y).a>=.125:return y+1
+	return art.get_height()
 
 static func open(app:Node)->void:
 	app.show_modal("","",[],false,true)
