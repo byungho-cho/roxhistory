@@ -9,6 +9,8 @@ const TRAINING_HEIGHTS := [180.0, 202.5, 211.5, 229.5]
 const SHRINE_HEIGHTS := [166.0, 184.0, 202.0, 222.0]
 const HEARTH_HEIGHTS := [114.57, 139.37, 182.4, 184.3]
 const OUTPOST_GROUND_SPANS := [800.0, 780.0, 790.0, 830.0]
+# Ground footprint centers in the original textures, excluding flags and transparent margins.
+const CHIEF_GROUND_ANCHORS := [Vector2(0.50, 0.73), Vector2(0.49, 0.73), Vector2(0.47, 0.73), Vector2(0.47, 0.74)]
 
 static func asset_id(kind: String, level: int = 1) -> String:
 	var category := "HUT" if kind in ["chief", "hut", "home"] else kind.to_upper()
@@ -55,7 +57,9 @@ static func display_rect(kind: String, level: int = 1, ground_width: float = 230
 	var center := Vector2(0.0, -ground_width * 0.2 + 3.0)
 	match kind:
 		"chief":
-			center.y=ground_width*.10-dimensions.y*.5
+			var anchor: Vector2 = CHIEF_GROUND_ANCHORS[clampi(level, 1, 4) - 1]
+			# The six-cell chief foundation is centered 12 pixels below its world origin.
+			center = Vector2(0, 12.0 * ground_width / 340.0) + (Vector2(0.5, 0.5) - anchor) * dimensions
 		"training", "shrine":
 			# All stages sit on the same ground contact line rather than drifting with height.
 			center.y = ground_width * 0.12 - dimensions.y * 0.5

@@ -10,10 +10,12 @@ func open()->void:
 	var portrait:bool=app.w<app.h
 	var card_size:=Vector2(minf(276,(app.w-app.safe.x*2-40)/3),minf(346,app.h-150))
 	if portrait:card_size=Vector2(app.w-app.safe.x*2,minf(225,(app.h-180)/3))
+	var group_height := card_size.y * 3 + 24 if portrait else card_size.y
+	var top: float = (app.h - group_height) * 0.5
 	var names:=["선사시대의 첫 불씨","고조선의 시작","삼국의 새로운 길"]
 	for i in 3:
-		var at:=Vector2((app.w-card_size.x*3-40)*.5+i*(card_size.x+20),110)
-		if portrait:at=Vector2(app.safe.x,95+i*(card_size.y+12))
+		var at:=Vector2((app.w-card_size.x*3-40)*.5+i*(card_size.x+20),top)
+		if portrait:at=Vector2(app.safe.x,top+i*(card_size.y+12))
 		var card:=Control.new();card.position=at;card.size=card_size;app.stage.add_child(card)
 		var bg:TextureRect=app.picture(card,preload("res://assets/ui/v0158/chapter-card-bg.png"),Rect2(Vector2.ZERO,card_size));bg.stretch_mode=TextureRect.STRETCH_SCALE
 		var image_height:=card_size.y*.44
