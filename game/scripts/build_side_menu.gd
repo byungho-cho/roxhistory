@@ -33,6 +33,11 @@ var dragged:=false
 var pressed_kind:=""
 var pressed_arrow:=0
 var needs_refresh:=true
+var transition:Tween
+var slide_offset:=0.0:
+	set(value):
+		position.x+=value-slide_offset
+		slide_offset=value
 func _init(owner_app:Node)->void:app=owner_app
 func _ready()->void:
 	name="BuildSideMenu";z_index=30;mouse_filter=Control.MOUSE_FILTER_IGNORE;hide()
@@ -60,6 +65,25 @@ func _visibility_changed()->void:
 	cancel_pointer()
 	if visible:
 		refresh();scroll_offset=max_scroll();layout_scroll()
+	else:
+		if transition:transition.kill()
+		transition=null
+		slide_offset=0
+		modulate.a=1
+
+func toggle_animated()->void:
+	if transition:return
+	var opening:=not visible
+	if opening:
+		show()
+		slide_offset=-18
+		modulate.a=0
+	transition=create_tween().set_parallel(true).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	transition.tween_property(self,"slide_offset",0.0 if opening else -18.0,.22)
+	transition.tween_property(self,"modulate:a",1.0 if opening else 0.0,.18)
+	transition.finished.connect(func():
+		transition=null
+		if not opening:hide())
 static func style_label(label:Label)->void:
 	label.add_theme_color_override("font_outline_color",Color("231b12"));label.add_theme_constant_override("outline_size",4);label.mouse_filter=Control.MOUSE_FILTER_IGNORE
 func max_scroll()->float:return maxf(0,content.size.x-clip.size.x)
@@ -93,7 +117,7 @@ func layout_scroll()->void:
 	if not dragged:
 		right_hint.visible=scroll_offset<max_scroll()-.5
 	size=Vector2(right_hint.position.x+(GUTTER if right_hint.visible else 0.0),TILE_SIZE.y)
-	position=Vector2(app.build_button.global_position.x-size.x-BUILD_GAP,app.build_button.global_position.y)
+	position=Vector2(app.build_button.global_position.x-size.x-BUILD_GAP+slide_offset,app.build_button.global_position.y)
 	queue_redraw()
 func scroll_by(amount:float)->void:
 	scroll_offset+=amount;layout_scroll()
@@ -134,6 +158,10 @@ func end_pointer(at:Vector2)->void:
 # Routed before world gestures so a menu drag can never become a world tap/pan.
 func handle_input(event:InputEvent)->bool:
 	if not is_visible_in_tree():return false
+	if transition:
+		if event is InputEventMouse or event is InputEventScreenTouch or event is InputEventScreenDrag:
+			return get_global_rect().grow(18).has_point(event.position)
+		return false
 	if event is InputEventMouseButton:
 		if event.pressed and contains_point(event.position) and event.button_index in [MOUSE_BUTTON_WHEEL_UP,MOUSE_BUTTON_WHEEL_DOWN,MOUSE_BUTTON_WHEEL_LEFT,MOUSE_BUTTON_WHEEL_RIGHT]:
 			scroll_by((TILE_SIZE.x+GAP)*(-1 if event.button_index in [MOUSE_BUTTON_WHEEL_UP,MOUSE_BUTTON_WHEEL_LEFT] else 1));return true
@@ -185,7 +213,7 @@ static func install_side_art(button:DemoButton,kind:String)->void:
 			var slot_scale:=composition.scale*art.scale
 			var fit:=Vector2(156,131)*slot_scale
 			icon.size=native*minf(fit.x/native.x,fit.y/native.y)/slot_scale
-			icon.position=Vector2((180-icon.size.x)*.5,155-icon.size.y+4.0/slot_scale.y)
+			icon.position=Vector2((180-icon.size.x)*.5,155-icon.size.y+6.0/slot_scale.y)
 			icon.mouse_filter=Control.MOUSE_FILTER_IGNORE
 			art.add_child(icon)
 		"outpost":image_slot(art,kind,Vector2(15,33),Vector2(150,150))

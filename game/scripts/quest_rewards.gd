@@ -57,7 +57,7 @@ static func install_entry(app:Node)->Label:
 	var at:=Vector2(app.safe.x,app.h-app.safe.y-87)
 	var journal:=art_button(app,app.stage,"JournalButton",Rect2(at,Vector2(64,83)),app.quest_details)
 	journal.z_index=35
-	entry_art(app,journal,DemoArt.play_icon("scroll"),"임무",1.2,5)
+	entry_art(app,journal,DemoArt.play_icon("scroll"),"임무",1.2,2)
 	var button:=art_button(app,app.stage,"QuestRewardEntry",Rect2(at+Vector2(67,0),Vector2(64,83)),func():
 		if not app.modal and not app.world_map_open and not app.map_transition_active:open(app))
 	button.z_index=35

@@ -62,7 +62,8 @@ func run()->void:
 	var main_inventory:Control=app.action_row.get_child(3)
 	check(journal.global_position.x<app.stage.get_node("QuestRewardEntry").global_position.x,"Journal appears to the left of rewards")
 	app.construction_menu()
-	await frames()
+	check(app.build_side.transition!=null and app.build_side.modulate.a<1.0,"Building list starts an opening animation")
+	await app.build_side.transition.finished
 	check(app.build_side.visible and not main_inventory.visible and not app.menu_toggle.visible,"Building list replaces main actions")
 	check(app.build_side.visible_slots==5 and app.build_side.left_hint.visible and not app.build_side.right_hint.visible,"Right edge displays five entries and only the left arrow")
 	var fixed_at:Vector2=app.build_button.global_position
@@ -73,6 +74,8 @@ func run()->void:
 		await RenderingServer.frame_post_draw
 		root.get_texture().get_image().save_png("res://reports/tutorial-build-menu.png")
 	tap(app.build_button.get_global_rect().get_center())
+	check(app.build_side.transition!=null and app.build_button.global_position==fixed_at,"Closing animation starts with the build button fixed")
+	await app.build_side.transition.finished
 	await frames()
 	check(not app.build_side.visible and app.menu_toggle.visible,"Construction toggles back to main actions")
 	var entry:Button=app.stage.get_node("QuestRewardEntry")
