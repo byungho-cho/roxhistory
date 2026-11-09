@@ -33,11 +33,7 @@ if ($PckPrototype) {
     $patchHash = (Get-FileHash -LiteralPath (Join-Path $output $patch)).Hash.ToLowerInvariant()
     $bootstrap = Get-Content -Raw (Join-Path $repo 'game/patch_test/bootstrap.gd')
     if ($bootstrap -notmatch ('(?m)^const PATCH_SHA256 := "' + $patchHash + '"\s*$')) { throw 'The patch differs from the digest pinned by the bootstrap.' }
-    # The production release cleanup targets standalone APK/EXE assets.
-    # Archive the test APK under its normal filename so the experiment stays separate.
-    $archive = 'Roxhistory_0.1.85-pck-test.zip'
-    Compress-Archive -LiteralPath (Join-Path $output $files[0]) -DestinationPath (Join-Path $output $archive) -Force
-    $files = @($archive, $patch)
+    $files += $patch
     $manifest.files = @(foreach ($name in $files) {
         $assetPath = Join-Path $output $name
         @{ name=$name; sha256=(Get-FileHash -LiteralPath $assetPath).Hash.ToLowerInvariant(); size=(Get-Item -LiteralPath $assetPath).Length }
