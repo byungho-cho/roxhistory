@@ -67,7 +67,7 @@ func run()->void:
  app.inventory_summary();await frames(6)
  check(app.task=="build" and app.world.selected_site==3,"Informational UI preserves active construction")
  app.close_modal();app.cancel_task()
- app.choosing_plot=true;app.cancel_site_button.pressed.emit();check(not app.choosing_plot and app.world.selected_site==-1,"Explicit selection cancellation")
+ app.choosing_plot=true;app.cancel_build_preview();check(not app.choosing_plot and app.world.selected_site==-1,"Explicit selection cancellation")
  app.world.select_site(3);app.world.player.position=DemoConfig.BUILD_SITES[3]+Vector2(0,65);await frames()
  app.build_action();check(app.task=="build" and app.task_site==3,"Construction locks selected site")
  var start_time:float=app.task_remaining

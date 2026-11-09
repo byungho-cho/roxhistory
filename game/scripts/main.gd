@@ -36,7 +36,6 @@ var map_tween:Tween
 var map_transition_active:=false
 var task_target := ""
 var task_site := -1
-var cancel_site_button:DemoButton
 var gather_approach:=false
 var approach_elapsed:=0.0
 var application_active := true
@@ -133,15 +132,21 @@ func queue_layout() -> void:
 	call_deferred("relayout")
 
 func relayout() -> void:
-	var guide_text:Array=[]
-	if overlay is CharacterGuide:guide_text=[overlay.heading,overlay.message]
+	var guide_pages:Array[Dictionary]=[]
+	var guide_actions:Array[Callable]=[]
+	if overlay is CharacterGuide:
+		guide_pages=overlay.remaining_pages()
+		guide_actions=overlay.completions.duplicate()
 	if gestures: gestures.clear()
 	rebuilding = false
 	if modal:
 		close_modal()
 	cancel_task()
 	show_screen(screen)
-	if not guide_text.is_empty():show_character_guide(guide_text[0],guide_text[1])
+	if not guide_pages.is_empty():
+		show_character_guide(guide_pages[0].title,guide_pages[0].body)
+		overlay.pages.assign(guide_pages.slice(1))
+		overlay.completions=guide_actions
 
 func clear_children(node: Node) -> void:
 	for child in node.get_children():
@@ -499,12 +504,6 @@ func play_hud() -> void:
 	building_menu=BuildingMenu.new(self);stage.add_child(building_menu)
 	queued_action_indicator=QueuedActionIndicator.new(self);stage.add_child(queued_action_indicator)
 	build_preview=BuildPreview.new(self);world.add_child(build_preview)
-	cancel_site_button=button(stage,"부지 선택 취소",cancel_build_preview)
-	cancel_site_button.name="CancelBuildSite";cancel_site_button.custom_minimum_size=Vector2.ZERO
-	cancel_site_button.position=Vector2(w-safe.x-140,h-safe.y-(270 if w<h else 126));cancel_site_button.size=Vector2(140,44)
-	cancel_site_button.add_theme_font_size_override("font_size",13)
-	var cancel_skin:=StyleBoxFlat.new();cancel_skin.bg_color=Color(.10,.12,.10,.78);cancel_skin.border_color=Color(.8,.65,.39,.5);cancel_skin.set_border_width_all(1);cancel_skin.set_corner_radius_all(10)
-	for state in ["normal","hover","pressed"]:cancel_site_button.add_theme_stylebox_override(state,cancel_skin)
 	var dark:=DemoArt.panel(true)
 	context_panel=PanelContainer.new();stage.add_child(context_panel);context_panel.position=Vector2(w*.5-145,h-safe.y-108);context_panel.size=Vector2(290,32);context_panel.add_theme_stylebox_override("panel",dark);context_panel.mouse_filter=Control.MOUSE_FILTER_IGNORE
 	context=label(context_panel,"",13,Color("fff0cd"));context.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
@@ -578,7 +577,7 @@ func switch_map_scene()->void:
 	if world_map_open:
 		world.player.direction=Vector2.ZERO
 		cancel_build_preview()
-		context_panel.hide();task_bar.hide();cancel_site_button.hide()
+		context_panel.hide();task_bar.hide()
 	chrome.queue_redraw()
 
 func recenter_map()->void:
@@ -696,7 +695,6 @@ func _process(delta: float) -> void:
 			world.feedback.update_work(task_total-task_remaining,task_total)
 			task_bar.value = (1.0-task_remaining/task_total)*100
 			if task_remaining <= 0: finish_task()
-	cancel_site_button.visible=choosing_plot and not modal and not (is_instance_valid(build_preview) and build_preview.active())
 	var near := world.nearest()
 	var working_hint := "채집 중… 이동하면 멈춥니다" if task=="gather" else "보금자리 건설 중…"
 	gather_button.hint_text=working_hint if task!="" else ("자원 가까이 이동해 주세요" if near.is_empty() else "작업을 마친 뒤 사용할 수 있어요")
@@ -768,8 +766,21 @@ func construction_menu()->void:
 	if is_instance_valid(building_menu):building_menu.close()
 	cancel_build_preview()
 	if model.chief_level()==0:
-		build_side.select_kind("chief");return
+		if model.pending_construction_count("chief")>0:
+			build_side.select_kind("chief")
+		else:
+			show_character_guide("촌장집을 먼저 지어주세요","촌장집을 지을 위치를 골라 주세요.\n건설하려면 목재와 석재가 필요해요.",start_first_chief_placement)
+		return
 	build_side.visible=not build_side.visible
+
+func start_first_chief_placement()->void:
+	if screen!="play" or not is_instance_valid(world) or model.chief_level()>0 or model.pending_construction_count("chief")>0:return
+	build_side.hide()
+	build_kind="chief"
+	choosing_plot=true
+	var center:=Vector2(w*.5,h*.55)
+	var at:Vector2=world.get_global_transform_with_canvas().affine_inverse()*center
+	build_preview.select_position(at,build_kind)
 
 func cancel_build_preview()->void:
 	if choosing_plot and is_instance_valid(world) and task!="build":world.clear_site()
@@ -1069,7 +1080,10 @@ func show_modal(title: String, body: String, actions: Array, compact: bool = fal
 		b.add_theme_font_size_override("font_size",17)
 	return scroll
 
-func show_character_guide(title:String,body:String)->void:
+func show_character_guide(title:String,body:String,after:Callable=Callable())->void:
+	if overlay is CharacterGuide:
+		overlay.enqueue(title,body,after)
+		return
 	# Informational overlay: no save mutation, reward or action cancellation.
 	close_modal()
 	if gestures:gestures.clear()
@@ -1078,6 +1092,7 @@ func show_character_guide(title:String,body:String)->void:
 		world.player.presentation_paused=true
 	modal=true;toast_time=0
 	overlay=CharacterGuide.new(self,title,body);overlay.z_index=50;ui.add_child(overlay);sync_audio()
+	if after.is_valid():overlay.completions.append(after)
 
 func close_modal() -> void:
 	if is_instance_valid(building_workflow):building_workflow.confirmation_target=-1
@@ -1107,7 +1122,9 @@ func display_error(message: String) -> void:
 	show_modal("저장 확인",message+"\n저장 공간을 확인한 뒤 다시 시도해 주세요.",[{"text":"확인","action":close_modal}])
 
 func go_back() -> void:
-	if modal:
+	if overlay is CharacterGuide:
+		overlay.advance()
+	elif modal:
 		close_modal()
 	elif screen == "play": pause_game()
 	elif screen == "region": show_screen("title")

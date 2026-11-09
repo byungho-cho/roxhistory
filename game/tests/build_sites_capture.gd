@@ -13,7 +13,7 @@ func run()->void:
  var samples:Array=[]
  for tick in 360:
   if tick==20:tap(DemoConfig.BUILD_SITES[3])
-  if tick==40:app.cancel_site_button.pressed.emit()
+  if tick==40:app.cancel_build_preview()
   if tick==50:tap(DemoConfig.BUILD_SITES[0])
   if tick==265 and app.model.built_count()==1:tap(app.world.reward_marker_rect(0).get_center())
   await process_frame

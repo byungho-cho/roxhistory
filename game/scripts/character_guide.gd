@@ -10,7 +10,11 @@ var character:TextureRect
 var close_button:Button
 var close_holder:Control
 var age:=0.0
-var outside_press:=false
+var pages:Array[Dictionary]=[]
+var completions:Array[Callable]=[]
+var presses:Dictionary={}
+var scroll_pointer:=-2
+var initial_scroll:=0
 var text_scroll:ScrollContainer
 var text_column:VBoxContainer
 var text_labels:Array[Label]=[]
@@ -39,16 +43,14 @@ func _ready()->void:
 	for i in [3,2,1]:
 		var shadow:=picture(panel_group,crop,Rect2(149-i,422-i,949+i*2,212+i*2));shadow.self_modulate=Color(.078,.059,.035,.09)
 	var panel:=picture(panel_group,crop,PANEL_RECT);panel.name="CreamPanel";panel.self_modulate.a=.8
-	var hit:=Control.new();hit.name="PanelHit";hit.position=PANEL_RECT.position;hit.size=PANEL_RECT.size;hit.mouse_filter=Control.MOUSE_FILTER_STOP;panel_group.add_child(hit)
-	text_scroll=DevelopmentSettingsScroll.new();text_scroll.name="GuideText";text_scroll.position=Vector2(TEXT_X,475);text_scroll.size=Vector2(TEXT_WIDTH,TEXT_MAX_HEIGHT);text_scroll.horizontal_scroll_mode=ScrollContainer.SCROLL_MODE_DISABLED;panel_group.add_child(text_scroll)
+	text_scroll=ScrollContainer.new();text_scroll.name="GuideText";text_scroll.position=Vector2(TEXT_X,475);text_scroll.size=Vector2(TEXT_WIDTH,TEXT_MAX_HEIGHT);text_scroll.horizontal_scroll_mode=ScrollContainer.SCROLL_MODE_DISABLED;panel_group.add_child(text_scroll)
 	text_column=VBoxContainer.new();text_column.name="MessageContent";text_column.size_flags_horizontal=Control.SIZE_EXPAND_FILL;text_column.add_theme_constant_override("separation",14);text_scroll.add_child(text_column)
 	for item in [[heading,30],[message,23]]:
 		var text:=Label.new();text.theme=DemoArt.theme();text.text=item[0];
 		var font:=FontVariation.new();font.base_font=FigmaArt.NOTO;font.variation_opentype={TextServerManager.get_primary_interface().name_to_tag("wght"):700.0 if item[1]==30 else 400.0};text.add_theme_font_override("font",font);text.add_theme_font_size_override("font_size",item[1]);text.add_theme_color_override("font_color",Color("1f1c17"));text.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART;text.size_flags_horizontal=Control.SIZE_EXPAND_FILL;text.add_theme_constant_override("line_spacing",0);text_column.add_child(text);text_labels.append(text);text_fonts.append(font)
 	character=picture(layout,preload("res://assets/ui/v0159/guide-character.png"),CHARACTER_RECT);character.name="GuideCharacter";character.stretch_mode=TextureRect.STRETCH_KEEP_ASPECT_COVERED;character.clip_contents=true;character.pivot_offset=Vector2(234,425)
 	close_holder=Control.new();close_holder.mouse_filter=Control.MOUSE_FILTER_IGNORE;panel_group.add_child(close_holder)
-	close_button=HudButtons.create(close_holder,false,app.close_modal,"CloseGuide");close_button.tooltip_text="안내 닫기"
-	gui_input.connect(outside_input)
+	close_button=HudButtons.create(close_holder,false,advance,"CloseGuide");close_button.tooltip_text="안내 닫기"
 	panel_group.modulate.a=0;character.modulate.a=0
 	update_layout()
 func update_layout()->void:
@@ -83,18 +85,65 @@ func update_layout()->void:
 	var optical_shift:=minf(7,(TEXT_MAX_HEIGHT-height)*.5)
 	text_scroll.size=Vector2(TEXT_WIDTH,height)
 	text_scroll.position=Vector2(TEXT_X,PANEL_RECT.position.y+(PANEL_RECT.size.y-height)*.5-optical_shift)
-func outside_input(event:InputEvent)->void:
-	if age<.25:return
-	if event is InputEventMouseButton or event is InputEventScreenTouch:
-		var local:Vector2=layout.get_global_transform().affine_inverse()*event.position
-		if PANEL_RECT.has_point(local) or CHARACTER_RECT.has_point(local):
-			outside_press=false;return
-	if event is InputEventMouseButton and event.button_index==MOUSE_BUTTON_LEFT:
-		if event.pressed:outside_press=true
-		elif outside_press:accept_event();app.close_modal()
-	elif event is InputEventScreenTouch:
-		if event.pressed:outside_press=true
-		elif outside_press:accept_event();app.close_modal()
+func enqueue(title:String,body:String,after:Callable)->void:
+	pages.append({"title":title,"body":body})
+	if after.is_valid():completions.append(after)
+
+func remaining_pages()->Array[Dictionary]:
+	var remaining:Array[Dictionary]=[{"title":heading,"body":message}]
+	remaining.append_array(pages)
+	return remaining
+
+func advance()->void:
+	presses.clear()
+	scroll_pointer=-2
+	if not pages.is_empty():
+		var next:Dictionary=pages.pop_front()
+		heading=next.title
+		message=next.body
+		text_labels[0].text=heading
+		text_labels[1].text=message
+		text_scroll.scroll_vertical=0
+		return
+	var actions:=completions.duplicate()
+	app.close_modal()
+	for action in actions:
+		if action.is_valid():action.call()
+
+func handle_pointer(event:InputEvent)->bool:
+	var pointer:=-2
+	var down:=false
+	var cancelled:=false
+	if event is InputEventScreenTouch:
+		pointer=event.index
+		down=event.pressed
+		cancelled=event.canceled
+	elif event is InputEventMouseButton and event.button_index==MOUSE_BUTTON_LEFT:
+		pointer=-1
+		down=event.pressed
+	elif event is InputEventScreenDrag or event is InputEventMouseMotion:
+		pointer=event.index if event is InputEventScreenDrag else -1
+		if presses.has(pointer):
+			var offset:Vector2=event.position-presses[pointer].start
+			if offset.length()>12:presses[pointer].dragged=true
+			if presses[pointer].dragged and pointer==scroll_pointer:
+				text_scroll.scroll_vertical=initial_scroll-roundi(offset.y/layout.scale.y)
+		return true
+	else:
+		# Allow the text container to handle mouse-wheel scrolling.
+		return false
+	if down:
+		presses[pointer]={"start":event.position,"dragged":false}
+		if scroll_pointer==-2 and text_scroll.get_global_rect().has_point(event.position):
+			scroll_pointer=pointer
+			initial_scroll=text_scroll.scroll_vertical
+	elif presses.has(pointer):
+		var press:Dictionary=presses[pointer]
+		presses.erase(pointer)
+		if scroll_pointer==pointer:scroll_pointer=-2
+		if not cancelled and not press.dragged and press.start.distance_to(event.position)<=12:advance()
+	return true
+
 func _process(delta:float)->void:
 	age+=delta;update_layout()
 	panel_group.modulate.a=smoothstep(0,.22,age)

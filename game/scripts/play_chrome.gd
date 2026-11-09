@@ -11,6 +11,7 @@ const TRACK_COLOR:=Color("523621")
 const TRACK_RIM:=Color("874f0d")
 const FILL_COLORS:=[Color("ffdb45"),Color("f2b00a"),Color("d48005")]
 var resource_capacities:Dictionary={}
+var refill_targets:Dictionary={}
 # Original portrait pixels, clipped to the hair/shoulders instead of its baked gold ring.
 const PORTRAIT_OUTLINE=[Vector2(28,103),Vector2(29,77),Vector2(40,57),Vector2(53,43),Vector2(70,34),Vector2(82,22),Vector2(100,27),Vector2(118,23),Vector2(142,37),Vector2(157,53),Vector2(157,73),Vector2(170,90),Vector2(171,116),Vector2(162,140),Vector2(147,153),Vector2(156,166),Vector2(153,177),Vector2(132,186),Vector2(100,186),Vector2(68,179),Vector2(47,167),Vector2(61,152),Vector2(66,141),Vector2(49,130),Vector2(43,118),Vector2(33,120)]
 const COUNT_DURATION:=0.35
@@ -21,10 +22,21 @@ var minimap:LiveMinimap
 var location_marker_texture:Texture2D=preload("res://assets/ui/minimap-player-figma-v001.svg")
 func _init(owner_app: Node) -> void: app=owner_app
 func _ready() -> void:
+	for key in ["wood","stone","tokens"]:
+		var target:=DemoButton.new()
+		target.name=key.capitalize()+"RefillTarget"
+		target.flat=true
+		target.focus_mode=Control.FOCUS_NONE
+		for style in ["normal","hover","pressed","focus","disabled","hover_pressed"]:
+			target.add_theme_stylebox_override(style,StyleBoxEmpty.new())
+		target.pressed.connect(refill_resource.bind(key))
+		add_child(target)
+		refill_targets[key]=target
 	sync_resource_counts(true)
 	texture_filter=CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	app.model.changed.connect(sync_resource_counts)
 	resized.connect(queue_redraw)
+	resized.connect(layout_refill_targets)
 	mouse_filter=Control.MOUSE_FILTER_IGNORE
 	if ResourceLoader.exists("res://assets/ui/s40000/portrait.png"): portrait=load("res://assets/ui/v034/chief-portrait.png")
 	call_deferred("create_minimap")
@@ -34,11 +46,28 @@ func slot(kind: String) -> Rect2:
 	var i:int=["wood","stone","tokens","residents"].find(kind)
 	if app.w<app.h:return Rect2(Vector2(app.safe.x+i*86,app.safe.y+62),Vector2(82,36))
 	return Rect2(Vector2(app.w-app.safe.x-520+i*100,app.safe.y+1),Vector2(96,36))
+func layout_refill_targets()->void:
+	for key in refill_targets:
+		var target:DemoButton=refill_targets[key]
+		var bounds:=slot(key)
+		target.position=bounds.position
+		target.size=bounds.size
+		target.visible=app.model.debug_resource_refill
+
+func refill_resource(key:String)->void:
+	if app.modal or app.world_map_open or app.map_transition_active or not app.application_active:return
+	if app.model.debug_fill_resource("grain" if key=="tokens" else key):
+		var count:Dictionary=resource_counts[key]
+		count.shown=count.target
+		count.elapsed=COUNT_DURATION
+		queue_redraw()
+
 func gained(kind:String,at:Vector2,delay:float=0.0) -> void:
 	flights.append({"kind":kind,"world":at,"age":-delay})
 func clear_effects() -> void:
 	flights.clear();sync_resource_counts(true)
 func sync_resource_counts(immediate:bool=false)->void:
+	layout_refill_targets()
 	for kind in ["wood","stone","grain"]:
 		resource_capacities[kind]=ResourceStorage.capacity(app.model,kind)
 	for key in ["wood","stone","tokens"]:

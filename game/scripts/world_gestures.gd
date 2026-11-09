@@ -69,6 +69,9 @@ func ui_hit(at: Vector2) -> bool:
 	# Collapsed action slots are empty world space, not invisible input blockers.
 	return false
 func _input(event: InputEvent) -> void:
+	if app.overlay is CharacterGuide:
+		if app.application_active and app.overlay.handle_pointer(event):get_viewport().set_input_as_handled()
+		return
 	if is_instance_valid(app.build_side) and app.build_side.handle_input(event):
 		get_viewport().set_input_as_handled();return
 	if app.map_transition_active:return

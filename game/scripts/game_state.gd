@@ -23,6 +23,8 @@ var debug_unlimited_buildings:bool:
 	set(value):set_debug_unlimited_buildings(value)
 var debug_fast_build:bool:
 	get:return bool(state.get("debug_fast_build",false))
+var debug_resource_refill:bool:
+	get:return bool(state.get("debug_resource_refill",false))
 var debug_show_boundary:bool:
 	get:return bool(state.get("debug_show_boundary",false))
 	set(value):set_debug_show_boundary(value)
@@ -718,10 +720,17 @@ func prune_gather_claims()->void:
 			var item:Dictionary=state.get("resident_jobs",{}).get(owner,{})
 			if owner not in ResidentAdmission.ids(state) or item.get("job","")!=catalog[target].kind or not item.get("cargo",{}).is_empty():gather_claims.erase(owner)
 
-func debug_fill_resources()->bool:
+func set_debug_resource_refill(enabled:bool)->bool:
 	if busy or state.is_empty():return false
+	if enabled==debug_resource_refill:return true
 	var next:=state.duplicate(true)
-	for kind in ["wood","stone","grain"]:next[kind]=int(next.get(kind,0))+1000
+	next.debug_resource_refill=enabled
+	return commit(next)
+
+func debug_fill_resource(kind:String)->bool:
+	if busy or not debug_resource_refill or kind not in ["wood","stone","grain"]:return false
+	var next:=state.duplicate(true)
+	next[kind]=int(next.get(kind,0))+100
 	busy=true
 	var ok:=commit(next)
 	busy=false

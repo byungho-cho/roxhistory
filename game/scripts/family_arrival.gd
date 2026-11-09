@@ -42,11 +42,11 @@ func begin()->void:
 func finish()->void:
 	talking=false;progress.hide()
 	var party:int=app.model.family_visitor_count()
-	if app.model.join_family():app.toast("주민 %d명이 마을에 합류했어요"%party,2.5)
+	if app.model.join_family():app.show_character_guide("주민 %d명이 합류했어요"%party,"새 주민이 마을에 자리를 잡았어요.")
 	elif app.model.family_available() and app.model.resident_capacity()-app.model.resident_count()<party:show_capacity_needed()
 func show_capacity_needed()->void:
 	var free:int=maxi(0,app.model.resident_capacity()-app.model.resident_count())
-	app.toast("주민 %d명이 기다리고 있어요 · 빈자리 %d명\n주민 움집을 짓거나 업그레이드해 주세요"%[app.model.family_visitor_count(),free],4.0)
+	app.show_character_guide("주민 %d명이 기다리고 있어요"%app.model.family_visitor_count(),"빈자리 %d명 · 주민 움집을 짓거나 업그레이드해 주세요."%free)
 
 func _process(delta:float)->void:
 	if not is_instance_valid(app.world):return
