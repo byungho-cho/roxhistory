@@ -14,6 +14,7 @@ const ART_SCALE:=0.90 # Smaller than the main action, including the approved ext
 const MAX_VISIBLE:=5
 const GAP:=4.0
 const GUTTER:=44.0
+const BUILD_GAP:=4.0
 const DRAG_THRESHOLD:=10.0
 var app:Node
 var hut:DemoButton
@@ -67,10 +68,12 @@ func refresh()->void:
 	var available_width:float=app.w-app.safe.x*2-70
 	visible_slots=clampi(int((available_width-GUTTER*2+GAP)/(TILE_SIZE.x+GAP)),1,MAX_VISIBLE)
 	scale=Vector2.ONE
-	size=Vector2(visible_slots*(TILE_SIZE.x+GAP)-GAP+GUTTER*2,TILE_SIZE.y)
-	clip.position=Vector2(GUTTER,0);clip.size=Vector2(size.x-GUTTER*2,TILE_SIZE.y)
+	clip.position=Vector2(GUTTER,0)
+	clip.size=Vector2(visible_slots*(TILE_SIZE.x+GAP)-GAP,TILE_SIZE.y)
 	content.size=Vector2(KINDS.size()*(TILE_SIZE.x+GAP)-GAP,TILE_SIZE.y)
-	left_hint.size=Vector2(GUTTER,TILE_SIZE.y);right_hint.size=left_hint.size;right_hint.position=Vector2(size.x-GUTTER,0)
+	left_hint.size=Vector2(GUTTER,TILE_SIZE.y)
+	right_hint.size=left_hint.size
+	right_hint.position=Vector2(clip.position.x+clip.size.x,0)
 	for i in KINDS.size():
 		var kind:String=KINDS[i];var button:DemoButton=entries[kind]
 		button.position=Vector2(i*(TILE_SIZE.x+GAP),0)
@@ -80,16 +83,18 @@ func refresh()->void:
 		button.art_feedback.get_node("Composition/Locked").visible=button.disabled
 		var artwork:Control=button.art_feedback.get_node("Composition/Artwork")
 		artwork.modulate.a=.62 if button.disabled else 1.0
-	position=Vector2(app.build_button.global_position.x-size.x-8,app.build_button.global_position.y)
-	queue_redraw()
 	layout_scroll()
 func _draw()->void:
 	if not is_instance_valid(app.build_button):return
-	draw_rect(Rect2(0,8,size.x+8+app.build_button.size.x,size.y-6),Color(0,0,0,.18))
-	draw_line(Vector2(size.x+4,12),Vector2(size.x+4,size.y-5),Color(.96,.77,.43,.55))
+	draw_line(Vector2(size.x+BUILD_GAP*.5,12),Vector2(size.x+BUILD_GAP*.5,size.y-5),Color(.96,.77,.43,.55))
 func layout_scroll()->void:
 	scroll_offset=clampf(scroll_offset,0,max_scroll());content.position.x=-scroll_offset
-	left_hint.visible=scroll_offset>.5;right_hint.visible=scroll_offset<max_scroll()-.5
+	left_hint.visible=scroll_offset>.5
+	if not dragged:
+		right_hint.visible=scroll_offset<max_scroll()-.5
+	size=Vector2(right_hint.position.x+(GUTTER if right_hint.visible else 0.0),TILE_SIZE.y)
+	position=Vector2(app.build_button.global_position.x-size.x-BUILD_GAP,app.build_button.global_position.y)
+	queue_redraw()
 func scroll_by(amount:float)->void:
 	scroll_offset+=amount;layout_scroll()
 func contains_point(at:Vector2)->bool:return is_visible_in_tree() and get_global_rect().has_point(at)
@@ -99,12 +104,15 @@ func kind_at(at:Vector2)->String:
 		if entries[kind].get_global_rect().has_point(at):return kind
 	return ""
 func cancel_pointer()->void:
+	var was_dragged:=dragged
 	for button in entries.values():button.clear()
 	pointer=-2;pressed_kind="";pressed_arrow=0;dragged=false
+	if was_dragged:layout_scroll()
 func begin_pointer(at:Vector2,id:int)->void:
 	pointer=id;press_at=at;last_at=at;dragged=false;pressed_kind=kind_at(at)
-	var x:=at.x-global_position.x
-	pressed_arrow=-1 if x<GUTTER else (1 if x>size.x-GUTTER else 0)
+	pressed_arrow=0
+	if left_hint.visible and left_hint.get_global_rect().has_point(at):pressed_arrow=-1
+	elif right_hint.visible and right_hint.get_global_rect().has_point(at):pressed_arrow=1
 	if not pressed_kind.is_empty():
 		# DemoButton uses finger for non-toggle touch/managed press animation.
 		entries[pressed_kind].finger=0 if not entries[pressed_kind].disabled else -1

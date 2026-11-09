@@ -16,6 +16,7 @@ func run()->void:
 	check(BuildSideMenu.ART_SCALE>=.85,"Submenu artwork fills its readable touch slot")
 	check(is_equal_approx(menu.scroll_offset,menu.max_scroll()),"Opens at rightmost hut")
 	check(menu.left_hint.visible and not menu.right_hint.visible,"Overflow hints match direction")
+	check(is_equal_approx(app.build_button.global_position.x-menu.clip.get_global_rect().end.x,BuildSideMenu.BUILD_GAP),"Hidden right arrow does not leave a gap beside construction")
 	var at:=menu.hut.get_global_rect().get_center()
 	mouse(at,MOUSE_BUTTON_LEFT,true);await frames()
 	check(menu.hut.finger>=0 and menu.hut.art_feedback.scale.x<1,"Mouse press animates artwork")
