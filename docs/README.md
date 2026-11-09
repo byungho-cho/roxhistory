@@ -1,9 +1,10 @@
 # RoxHistory 문서 안내
 
-2026-11-09 KST. **최신 배포 0.1.67** 기준으로 현행화했습니다. 0.1.67 코드의 main 병합 상태와 Figma 완료·게임 반영 대기는 [현재 개발 현황](current-status.md)에서 구분합니다.
+2026-11-09 KST. 확인한 main은 **0.1.70 / 31e90c55**입니다. 신규 기획 확정과 실제 구현은 구분합니다. 최신 퀘스트·주민·곡식 소비 변경은 아래 현행 기획을 따릅니다.
 
 | 문서 | 용도 |
 | --- | --- |
+| [첫 퀘스트·주민·곡식 소비](quest-scenario-current.md) | 최신 사용자 결정, Figma 기획, 구현 전 미정 사항 |
 | [현재 개발 현황](current-status.md) | 구현·승인·미완료·최신 다운로드 기준 |
 | [품질 진행](quality-progress.md) · [JSON](quality-progress.json) | 상태와 증거 연결 |
 | [수정사항 대장](team-lead-change-register.md) | 완료 요청과 새 주민 요청 구분 |
@@ -14,7 +15,7 @@
 | [디자인 에셋](../design/README.md) | 최신 Figma·원본·아카이브 |
 | [음악·효과음](../assets/audio/README.md) | 채택곡·백업·런타임 상태 |
 
-[0.1.67 Android·Windows 릴리스](https://github.com/byungho-cho/roxhistory/releases/tag/v0.1.67) · [배포 소스의 상세 보고서](https://github.com/byungho-cho/roxhistory/blob/208e02c9aa0b89631cc791b4d9fea515a5e06308/docs/integration-handoff-20261109.md).
+이전 배포 기록: [0.1.67 Android·Windows 릴리스](https://github.com/byungho-cho/roxhistory/releases/tag/v0.1.67) · [배포 소스의 상세 보고서](https://github.com/byungho-cho/roxhistory/blob/208e02c9aa0b89631cc791b4d9fea515a5e06308/docs/integration-handoff-20261109.md).
 
 ## 이전 기획과 검증 기록
 
