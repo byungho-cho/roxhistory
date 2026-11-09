@@ -1,0 +1,61 @@
+{
+  "package": "upgrade-sign-tutorial-hand-v001",
+  "status": "approved_artwork_handoff_not_runtime_verified",
+  "base_main_commit": "ba090c2194e3a4c7c61e647e088b420d89ad2438",
+  "original_bytes_preserved": true,
+  "scope": {
+    "asset_handoff_only": true,
+    "runtime_integration": false,
+    "main_modified": false,
+    "merged": false,
+    "deployed": false
+  },
+  "files": [
+    {
+      "filename": "RoxHistory_Upgrade_Wooden_Sign_v1.png",
+      "purpose": "upgrade wooden sign artwork",
+      "width": 1265,
+      "height": 1243,
+      "mode": "RGBA",
+      "alpha_range": [
+        0,
+        255
+      ],
+      "bytes": 1036613,
+      "sha256": "4eab33b8e381ee8ef27a40468ad9da7e20edee8e71abf316daa4c6677865f460",
+      "git_blob_sha": "ce6b16fdc84d47b32cddbfa04985941ce4c19f28",
+      "status": "approved_for_now_retouch_after_in_game_review",
+      "actual_display_size_verified": false
+    },
+    {
+      "filename": "RoxHistory_Tutorial_Hand_Diagonal_v2.png",
+      "purpose": "diagonal tutorial pointer artwork",
+      "width": 1254,
+      "height": 1254,
+      "mode": "RGBA",
+      "alpha_range": [
+        0,
+        255
+      ],
+      "bytes": 635774,
+      "sha256": "8379a996463f73afe49405ca41d05c539050d3b825f7985e2089817842ca4e13",
+      "git_blob_sha": "0108fa5ff12ea627016f42af85d5dd5b1dc75999",
+      "status": "approved_artwork",
+      "actual_display_size_verified": false,
+      "transparent_padding_preserved": true,
+      "fingertip_reference": {
+        "origin": "top_left",
+        "pixels": [
+          280,
+          1118
+        ],
+        "normalized": [
+          0.22328548644338117,
+          0.8915470494417863
+        ],
+        "approximate": true,
+        "runtime_alignment_verified": false
+      }
+    }
+  ]
+}
