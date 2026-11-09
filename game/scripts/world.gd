@@ -20,6 +20,7 @@ var objectives: WorldObjectives
 var animals: Array[WorldAnimal] = []
 var residents:Array[TrialResident]=[]
 var visitors:Array[TrialResident]=[]
+var animating_family_join:=false
 var resource_tweens:Dictionary={}
 var resources_initialized:=false
 var reward_pouch:AtlasTexture
@@ -316,9 +317,17 @@ func _process(_delta: float) -> void:
 	if id != selected:
 		selected = id
 		queue_redraw()
+	var reserved_targets:Dictionary={}
+	for owner in model.gather_claims:
+		if model.gather_actor(owner)!="hero":
+			reserved_targets[model.gather_claims[owner]]=true
 	for key in resource_labels:
 		var indicator:ResourceIndicator=resource_labels[key]
 		var icon:Sprite2D=art_nodes[key].get_child(0)
+		var reserved:=reserved_targets.has(key)
+		if indicator.reserved_by_other!=reserved:
+			indicator.reserved_by_other=reserved
+			icon.self_modulate=Color(.86,.88,.94,.86) if reserved else Color.WHITE
 		indicator.update_geometry(icon.texture.get_height()*icon.scale.y,player.camera.zoom.x)
 		indicator.visible=art_nodes[key].visible
 
@@ -603,7 +612,17 @@ func refresh_residents()->void:
 		resident.position=resident_spawn_position(index);add_child(resident);residents.append(resident)
 	var visiting:=model.family_visitor_count() if model.family_available() else 0
 	while visitors.size()>visiting:
-		var visitor:TrialResident=visitors.pop_back();remove_child(visitor);visitor.queue_free()
+		var visitor:TrialResident=visitors.pop_back()
+		if animating_family_join:
+			var sparkle:=visitor.create_tween()
+			for flash in 3:
+				sparkle.tween_property(visitor,"modulate",Color(1.65,1.45,1.0,1.0),.18)
+				sparkle.tween_property(visitor,"modulate",Color.WHITE,.22)
+			sparkle.tween_property(visitor,"modulate:a",0.0,.8)
+			sparkle.tween_callback(visitor.queue_free)
+		else:
+			remove_child(visitor)
+			visitor.queue_free()
 	while visitors.size()<visiting:
 		var index:=visitors.size()
 		var visitor:=TrialResident.new();visitor.variant="female" if index%2==0 else "sturdy_male"

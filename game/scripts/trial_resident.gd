@@ -15,7 +15,7 @@ var station_key:=""
 var farm_origin:=Vector2.INF
 var farm_stand:=Vector2.INF
 const RESIDENT_LAYER:=2
-const FARM_STANDS:=[Vector2(135,72),Vector2(-135,72),Vector2(0,220)]
+const FARM_STANDS:=[Vector2(171,72),Vector2(-171,72),Vector2(0,220)]
 var variant:="female"
 var visual:HybridCharacter
 var origin:=Vector2.ZERO

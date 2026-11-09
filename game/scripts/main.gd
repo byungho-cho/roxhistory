@@ -511,7 +511,6 @@ func play_hud() -> void:
 	chrome=PlayChrome.new(self);chrome.z_index=30;stage.add_child(chrome);chrome.size=Vector2(w,h)
 	resident_panel=ResidentPanel.new(self);stage.add_child(resident_panel)
 	stage.add_child(ConstructionProgress.new(self))
-	stage.add_child(ConstructionProgress.new(self,true))
 	stage.add_child(ConstructionProgress.new(self,false,true))
 	family=FamilyArrival.new(self);stage.add_child(family)
 	var map_hit:=button(stage,"",recenter_map);map_hit.name="RecenterCamera";map_hit.custom_minimum_size=Vector2.ZERO;map_hit.position=Vector2(w-safe.x-100,safe.y+10);map_hit.size=Vector2(100,100)

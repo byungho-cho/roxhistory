@@ -114,8 +114,14 @@ func run()->void:
  check(app.overlay is CharacterGuide and app.overlay.heading.contains("3명") and app.overlay.message.contains("빈자리 2명") and app.model.resident_count()==13,"Capacity guide displays the real party and free places")
  app.close_modal()
  waiting=app.model.state.duplicate(true);waiting.pending_family_count=2;app.model.commit(waiting)
+ var joining_visitor:TrialResident=app.world.visitors[0]
  app.family.request()
  check(app.overlay is CharacterGuide and app.overlay.heading.contains("2명이 합류") and app.model.resident_count()==15,"Admission guide uses actual joined count")
+ check(is_instance_valid(joining_visitor) and app.world.visitors.is_empty(),"Joined visitor remains visible without being an active visitor")
+ await create_timer(.2).timeout
+ check(is_instance_valid(joining_visitor) and joining_visitor.modulate.r>1.0,"Visitor sparkles while the guide is open")
+ await create_timer(2.0).timeout
+ check(not is_instance_valid(joining_visitor),"Visitor is freed after the sparkle and fade")
  app.close_modal()
  var organic:OrganicRoadNetwork=null
  for layer in app.world.get_children():

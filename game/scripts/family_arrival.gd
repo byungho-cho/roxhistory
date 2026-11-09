@@ -42,7 +42,10 @@ func begin()->void:
 func finish()->void:
 	talking=false;progress.hide()
 	var party:int=app.model.family_visitor_count()
-	if app.model.join_family():app.show_character_guide("주민 %d명이 합류했어요"%party,"새 주민이 마을에 자리를 잡았어요.")
+	app.world.animating_family_join=true
+	var joined:bool=app.model.join_family()
+	app.world.animating_family_join=false
+	if joined:app.show_character_guide("주민 %d명이 합류했어요"%party,"새 주민이 마을에 자리를 잡았어요.")
 	elif app.model.family_available() and app.model.resident_capacity()-app.model.resident_count()<party:show_capacity_needed()
 func show_capacity_needed()->void:
 	var free:int=maxi(0,app.model.resident_capacity()-app.model.resident_count())

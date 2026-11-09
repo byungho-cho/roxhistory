@@ -3,6 +3,8 @@ extends RefCounted
 ## One presentation transform for completed structures and placement previews.
 ## Does not change collision, saved positions, plot geometry or occupation.
 const REFERENCE_WIDTH := 320.0
+const FARM_WIDTH := 256.0
+const FARM_PREVIOUS_WIDTH := 184.0
 const TRAINING_HEIGHTS := [180.0, 202.5, 211.5, 229.5]
 const SHRINE_HEIGHTS := [166.0, 184.0, 202.0, 222.0]
 const HEARTH_HEIGHTS := [114.57, 139.37, 182.4, 184.3]
@@ -22,7 +24,9 @@ static func texture(kind: String, level: int = 1) -> Texture2D:
 static func display_size(kind: String, level: int = 1, ground_width: float = 230.0) -> Vector2:
 	var source := texture(kind, level)
 	if source == null: return Vector2.ZERO
-	if kind=="farm":return Vector2(184,184*([320.0/420,340.0/440,380.0/480,420.0/520][clampi(level,1,4)-1]))*ground_width/230.0
+	if kind=="farm":
+		var aspect:float=[320.0/420,340.0/440,380.0/480,420.0/520][clampi(level,1,4)-1]
+		return Vector2(FARM_WIDTH,FARM_WIDTH*aspect)*ground_width/230.0
 	var stage := clampi(level, 1, 4) - 1
 	var scale_factor: float
 	match kind:
@@ -52,7 +56,10 @@ static func display_rect(kind: String, level: int = 1, ground_width: float = 230
 			center.y = -ground_width * 0.03
 		"outpost":
 			center.y = -ground_width * 0.3 + 3.0
-	if kind=="farm":center.y+=dimensions.y*.3
+	if kind=="farm":
+		# Keep the artwork ground anchor at its previous world position.
+		var previous_height:=dimensions.y*FARM_PREVIOUS_WIDTH/FARM_WIDTH
+		center.y+=previous_height*.7-dimensions.y*.4
 	return Rect2(center - dimensions * 0.5, dimensions)
 
 static func apply(sprite: Sprite2D, kind: String, level: int = 1, ground_width: float = 230.0) -> void:

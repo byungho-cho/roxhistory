@@ -3,7 +3,8 @@ param(
     [string]$GodotPath = $env:ROX_GODOT_EXE,
     [string]$AndroidSdkPath = $env:ANDROID_HOME,
     [string]$JavaHome = $env:JAVA_HOME,
-    [string]$EditorSettingsPath
+    [string]$EditorSettingsPath,
+    [switch]$AndroidOnly
 )
 $ErrorActionPreference = 'Stop'
 $repo = Split-Path $PSScriptRoot -Parent
@@ -43,8 +44,14 @@ $apk = Join-Path $output "Roxhistory_$version.apk"
 $exe = Join-Path $output "Roxhistory_$version.exe"
 $pendingApk = Join-Path $output "Roxhistory_$version.pending.apk"
 $pendingExe = Join-Path $output "Roxhistory_$version.pending.exe"
+$releaseFiles = @($apk)
+$exports = @(@{ preset='Android'; path=$pendingApk; log='android' })
+if (-not $AndroidOnly) {
+    $releaseFiles += $exe
+    $exports += @{ preset='Windows Desktop'; path=$pendingExe; log='windows' }
+}
 function Assert-Replaceable {
-    foreach ($path in @($apk,$exe)) {
+    foreach ($path in $releaseFiles) {
         if (Test-Path -LiteralPath $path) {
             try {
                 $handle = [IO.File]::Open($path,[IO.FileMode]::Open,[IO.FileAccess]::ReadWrite,[IO.FileShare]::None)
@@ -62,9 +69,9 @@ try {
     $env:GODOT_ANDROID_KEYSTORE_DEBUG_PATH = $key
     $env:GODOT_ANDROID_KEYSTORE_DEBUG_USER = $keyUser
     $env:GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD = $keyPassword
-    foreach ($platform in @(@('Android',$pendingApk,'android'), @('Windows Desktop',$pendingExe,'windows'))) {
-        & $GodotPath --headless --path (Join-Path $repo 'game') --export-debug $platform[0] $platform[1] *> (Join-Path $logs "$($platform[2])-export.log")
-        if ($LASTEXITCODE -ne 0) { throw "$($platform[0]) export failed; existing release files have been preserved." }
+    foreach ($platform in $exports) {
+        & $GodotPath --headless --path (Join-Path $repo 'game') --export-debug $platform.preset $platform.path *> (Join-Path $logs "$($platform.log)-export.log")
+        if ($LASTEXITCODE -ne 0) { throw "$($platform.preset) export failed; existing release files have been preserved." }
     }
     & (Join-Path $tools 'apksigner.bat') verify --verbose --print-certs $pendingApk *> (Join-Path $logs 'android-signature.log')
     if ($LASTEXITCODE -ne 0) { throw 'APK signature verification failed.' }
@@ -78,26 +85,27 @@ try {
     $fingerprint = (Get-FileHash (Join-Path $logs 'signer-certificate.der')).Hash
     $signer = [regex]::Match($signatureLog, '(?m)^Signer #1 certificate SHA-256 digest: ([0-9a-fA-F]+)\r?$')
     if (-not $signer.Success -or $signer.Groups[1].Value -ne $fingerprint) { throw 'APK signer does not match the existing key.' }
-    # The app's test mode uses a separate save/preferences directory. A smoke
-    # launch must never migrate or finish jobs in the player's live save.
-    $process = Start-Process -FilePath $pendingExe -ArgumentList @('--headless','--quit-after','120','--log-file',(Join-Path $logs 'windows-runtime.log'),'--','--test-ui') -WindowStyle Hidden -PassThru -Wait
-    if ($process.ExitCode -ne 0) { throw 'Windows runtime smoke check failed.' }
+    if (-not $AndroidOnly) {
+        # The app's test mode uses a separate save/preferences directory. A smoke
+        # launch must never migrate or finish jobs in the player's live save.
+        $process = Start-Process -FilePath $pendingExe -ArgumentList @('--headless','--quit-after','120','--log-file',(Join-Path $logs 'windows-runtime.log'),'--','--test-ui') -WindowStyle Hidden -PassThru -Wait
+        if ($process.ExitCode -ne 0) { throw 'Windows runtime smoke check failed.' }
+    }
     if ((Get-FileHash -LiteralPath $key).Hash -ne $keyHash) { throw 'Signing key unexpectedly changed.' }
     Assert-Replaceable
     Move-Item -LiteralPath $pendingApk -Destination $apk -Force
-    Move-Item -LiteralPath $pendingExe -Destination $exe -Force
+    if (-not $AndroidOnly) { Move-Item -LiteralPath $pendingExe -Destination $exe -Force }
     $commit = & git -C $repo rev-parse HEAD
     if ($LASTEXITCODE -ne 0) { throw 'Cannot record source commit.' }
     $manifest = [ordered]@{ version=$version; commit=$commit; mode='debug'; files=@() }
-    foreach ($file in @($apk, $exe)) {
+    foreach ($file in $releaseFiles) {
         $manifest.files += @{ name=[IO.Path]::GetFileName($file); sha256=(Get-FileHash -LiteralPath $file).Hash.ToLower(); size=(Get-Item -LiteralPath $file).Length }
     }
     $manifest | ConvertTo-Json -Depth 4 | Set-Content (Join-Path $output 'release-manifest.json') -Encoding utf8
     # Only remove generated sidecars for this build; source/history/older releases are not touched here.
     $sidecar = "$pendingApk.idsig"
     if (Test-Path -LiteralPath $sidecar) { Remove-Item -LiteralPath $sidecar }
-    Write-Output "Ready: $apk"
-    Write-Output "Ready: $exe"
+    foreach ($file in $releaseFiles) { Write-Output "Ready: $file" }
 } finally {
     foreach ($name in $variableNames) { [Environment]::SetEnvironmentVariable($name, $savedEnvironment[$name]) }
     $settings=$null; $keyPassword=$null

@@ -9,6 +9,12 @@ var screen_zoom:=1.0
 var bar_time:=0.0
 var initialized:=false
 var action_progress:=0.0
+var reserved_by_other:=false
+static var reserved_icon:Texture2D
+
+func _ready()->void:
+	if reserved_icon==null:
+		reserved_icon=IntegratedMenuArt.trimmed(preload("res://assets/ui/v0158/lock.png"))
 
 func update_amount(left:float,capacity:float)->void:
 	remaining=left;total=maxf(1,capacity);queue_redraw()

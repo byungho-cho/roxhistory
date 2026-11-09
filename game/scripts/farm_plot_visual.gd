@@ -5,8 +5,16 @@ static var layout_data:Dictionary={}
 const CROPS:=[preload("res://assets/farm/v003/grain-growth-01.png"),preload("res://assets/farm/v003/grain-growth-02.png"),preload("res://assets/farm/v003/grain-growth-03.png"),preload("res://assets/farm/v003/grain-growth-04.png")]
 var model:GameState
 var key:String
+var progress_track:=StyleBoxFlat.new()
+var progress_fill:=StyleBoxFlat.new()
 func _init(game:GameState,id:String)->void:model=game;key=id;name="TemporaryCropVisual";visibility_layer=2
 func _ready()->void:
+	progress_track.bg_color=PlayChrome.TRACK_COLOR
+	progress_track.border_color=PlayChrome.TRACK_RIM
+	progress_track.set_border_width_all(2)
+	progress_track.set_corner_radius_all(14)
+	progress_fill.bg_color=Color("367fc4")
+	progress_fill.set_corner_radius_all(12)
 	if layout_data.is_empty():layout_data=JSON.parse_string(FileAccess.get_file_as_string("res://assets/farm/v003/manifest.json"))
 	model.changed.connect(queue_redraw)
 func _draw()->void:
@@ -26,15 +34,41 @@ func _draw()->void:
 	for i in count:
 		var at:=rect.position+Vector2(anchors[i][0],anchors[i][1])*rect.size
 		draw_texture_rect(texture,Rect2(at-Vector2(.5,.915)*dimensions,dimensions),false)
-	# Draw below the field and keep both side work positions clear.
-	draw_set_transform(Vector2(0,rect.end.y-2))
-	var brush:=BuildingMenu.art("brush-black-v003.png")
-	draw_texture_rect(brush,Rect2(-110,10,220,48),false,Color(1,1,1,.78))
-	var fill:=float(cycle.elapsed)/FarmProduction.PREPARATION if cycle.phase=="prepare" else progress
-	if cycle.phase=="harvest":fill=1.0-float(cycle.cuts)/FarmProduction.CUTS[int(cycle.cycle_level)-1]
-	draw_rect(Rect2(-92,17,184,6),Color(0,0,0,.55));draw_rect(Rect2(-92,17,184*fill,6),Color("b3bd4e"))
-	var remaining:=maxf(0.0,(FarmProduction.PREPARATION if cycle.phase=="prepare" else FarmProduction.GROWTH)-float(cycle.elapsed))
-	var caption:="준비 %02d:%02d"%[int(remaining)/60,int(remaining)%60] if cycle.phase=="prepare" else "성장 %d%% · %02d:%02d"%[roundi(progress*100),int(remaining)/60,int(remaining)%60]
-	if cycle.phase in ["ready","harvest"]:caption="수확 대기" if cycle.phase=="ready" else "수확 중"
-	draw_string(DemoArt.theme().default_font,Vector2(-104,44),caption,HORIZONTAL_ALIGNMENT_CENTER,208,20,Color("fff0d3"))
-	if int(cycle.stock)>0:draw_string(DemoArt.theme().default_font,Vector2(-110,62),"보관 %d"%int(cycle.stock),HORIZONTAL_ALIGNMENT_CENTER,220,15,Color("fff0d3"))
+	# Keep the bar under the field and clear of both side work positions.
+	var bar:=Rect2(-106,rect.end.y+9,212,30)
+	var ratio:=progress
+	var status:="성장"
+	var duration:=FarmProduction.GROWTH
+	match cycle.phase:
+		"prepare":
+			status="준비"
+			duration=FarmProduction.PREPARATION
+			ratio=float(cycle.elapsed)/duration
+		"ready":
+			status="수확 대기"
+		"harvest":
+			status="수확 중"
+			ratio=1.0-float(cycle.cuts)/FarmProduction.CUTS[int(cycle.cycle_level)-1]
+	ratio=clampf(ratio,0,1)
+	draw_style_box(progress_track,bar)
+	if ratio>0:
+		var inner:=bar.grow(-2)
+		inner.size.x*=ratio
+		draw_style_box(progress_fill,inner)
+
+	var font:=DemoArt.theme().default_font
+	var baseline:=bar.get_center().y+(font.get_ascent(20)-font.get_descent(20))*.5
+	var left:=Vector2(bar.position.x+12,baseline)
+	var width:=bar.size.x-24
+	if cycle.phase in ["prepare","grow"]:
+		var remaining:=ceili(maxf(0,duration-float(cycle.elapsed)))
+		draw_bar_text(font,left,"%s %d%%"%[status,roundi(ratio*100)],HORIZONTAL_ALIGNMENT_LEFT,width)
+		draw_bar_text(font,left,"%02d:%02d"%[remaining/60,remaining%60],HORIZONTAL_ALIGNMENT_RIGHT,width)
+	else:
+		draw_bar_text(font,left,status,HORIZONTAL_ALIGNMENT_CENTER,width)
+	if int(cycle.stock)>0:
+		draw_string(font,Vector2(bar.position.x,bar.end.y+17),"보관 %d"%int(cycle.stock),HORIZONTAL_ALIGNMENT_CENTER,bar.size.x,15,Color("fff0d3"))
+
+func draw_bar_text(font:Font,at:Vector2,label:String,alignment:HorizontalAlignment,width:float)->void:
+	draw_string_outline(font,at,label,alignment,width,20,4,Color("30251b"))
+	draw_string(font,at,label,alignment,width,20,Color("fffae0"))
