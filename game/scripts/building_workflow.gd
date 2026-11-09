@@ -132,7 +132,7 @@ func owned_upgrade_reason(key:String,check_resources:bool=true)->String:
 func request_owned_upgrade(key:String)->void:
 	if key=="chief":request_upgrade();return
 	if app.modal or not app.application_active or app.screen!="play" or app.world_map_open:return
-	var reason:=owned_upgrade_reason(key)
+	var reason:=owned_upgrade_reason(key,false)
 	if not reason.is_empty():app.toast(reason);return
 	var found:Dictionary=app.model.lookup_building(key)
 	var target:=int(found.data.get("level",1))+1
@@ -145,7 +145,7 @@ func confirm_owned_upgrade(key:String,target:int)->bool:
 	var found:Dictionary=app.model.lookup_building(key)
 	if found.is_empty() or int(found.data.get("level",1))+1!=target:return false
 	var reason:=owned_upgrade_reason(key)
-	if not reason.is_empty():app.close_modal();app.toast(reason);return false
+	if not reason.is_empty():app.toast(reason);return false
 	if not OwnedBuildingUpgrades.start(app.model,key):return false
 	owned_confirmation="";app.close_modal();return true
 func update_owned_upgrades()->void:

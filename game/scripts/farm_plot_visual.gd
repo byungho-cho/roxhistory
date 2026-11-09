@@ -7,6 +7,8 @@ var model:GameState
 var key:String
 var progress_track:=StyleBoxFlat.new()
 var progress_fill:=StyleBoxFlat.new()
+var hud_bounds:=Rect2()
+var hud_visible:=true
 func _init(game:GameState,id:String)->void:model=game;key=id;name="TemporaryCropVisual";visibility_layer=2
 func _ready()->void:
 	progress_track.bg_color=PlayChrome.TRACK_COLOR
@@ -17,6 +19,15 @@ func _ready()->void:
 	progress_fill.set_corner_radius_all(12)
 	if layout_data.is_empty():layout_data=JSON.parse_string(FileAccess.get_file_as_string("res://assets/farm/v003/manifest.json"))
 	model.changed.connect(queue_redraw)
+
+func _process(_delta:float)->void:
+	# Redraw at viewport entry/exit even if the growth clock has not ticked.
+	if not hud_bounds.has_area():return
+	var bounds:=get_global_transform_with_canvas()*hud_bounds
+	var onscreen:=bounds.intersects(get_viewport_rect().grow(4))
+	if onscreen!=hud_visible:
+		hud_visible=onscreen
+		queue_redraw()
 func _draw()->void:
 	var found:=model.lookup_building(key)
 	if found.is_empty():return
@@ -25,6 +36,7 @@ func _draw()->void:
 	var level:=clampi(int(found.data.get("level",1)),1,4)
 	var layout:Dictionary=layout_data.levels[level-1]
 	var rect:=BuildingVisuals.display_rect("farm",level)
+	hud_bounds=rect
 	var anchors:Array=layout.crop_anchors.duplicate();anchors.sort_custom(func(a,b):return a[1]<b[1])
 	var count:=anchors.size()
 	if cycle.phase=="prepare":count=0
@@ -34,6 +46,7 @@ func _draw()->void:
 	for i in count:
 		var at:=rect.position+Vector2(anchors[i][0],anchors[i][1])*rect.size
 		draw_texture_rect(texture,Rect2(at-Vector2(.5,.915)*dimensions,dimensions),false)
+	if not hud_visible:return
 	# Keep the bar under the field and clear of both side work positions.
 	var bar:=Rect2(-106,rect.end.y+9,212,30)
 	var ratio:=progress
