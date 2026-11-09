@@ -566,6 +566,7 @@ func play_hud() -> void:
 	for state in ["normal","hover","pressed","focus"]:settings_button.add_theme_stylebox_override(state,StyleBoxEmpty.new())
 	quest_reward_count=QuestRewards.install_entry(self)
 	stage.add_child(VillageRewardBoard.new(self))
+	stage.add_child(BuildingUpgradeSigns.new(self))
 	world_map_open=false
 	update_hud()
 
@@ -1222,9 +1223,12 @@ func go_back() -> void:
 		overlay.advance()
 	elif modal:
 		close_modal()
-	elif is_instance_valid(tutorial) and tutorial.active():
-		return
-	elif screen == "play": pause_game()
+	elif screen == "play":
+		show_modal("게임을 종료할까요?","진행은 기기에 저장됩니다.",[
+			{"text":"취소","action":close_modal},
+			{"text":"종료","action":func():
+				if is_instance_valid(world) and not model.save_position(world.player.position):return
+				get_tree().quit()}],false,true,false,Vector2.ZERO,true)
 	elif screen == "region": show_screen("title")
 	else:
 		show_modal("여정을 나갈까요?","앱을 종료합니다.",[{"text":"돌아가기","action":close_modal},{"text":"종료","action":func(): get_tree().quit()}],false,false,false,Vector2.ZERO,true)

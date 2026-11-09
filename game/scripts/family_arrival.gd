@@ -8,6 +8,8 @@ var background:TextureRect
 var portrait:TextureRect
 const PORTRAIT_REGION:=Rect2(143,52,961,1165)
 const BUBBLE_FRONT:=11.0
+const ORIGINAL_HEIGHT:=44.0
+const BUBBLE_HEIGHT:=ORIGINAL_HEIGHT*1.2
 var progress:ProgressBar
 var talking:=false
 var elapsed:=0.0
@@ -25,9 +27,9 @@ func _ready()->void:
 	var atlas:=AtlasTexture.new();atlas.atlas=preload("res://assets/ui/v0158/resident-bubble-bg.png");atlas.region=Rect2(211,11,345,105);atlas.filter_clip=true
 	background=app.picture(bubble,atlas,Rect2(0,0,270,44));background.stretch_mode=TextureRect.STRETCH_SCALE
 	var icon:=AtlasTexture.new();icon.atlas=PlayChrome.RESIDENT_ICON;icon.region=PORTRAIT_REGION;icon.filter_clip=true
-	portrait=app.picture(bubble,icon,Rect2(-4,-8,44,60));portrait.name="ResidentPortrait"
-	headline=Label.new();headline.theme=DemoArt.theme();headline.position=Vector2(50,5.2);headline.size=Vector2(210,24);headline.vertical_alignment=VERTICAL_ALIGNMENT_CENTER;headline.add_theme_font_size_override("font_size",14);headline.add_theme_color_override("font_color",Color("49321e"));headline.mouse_filter=Control.MOUSE_FILTER_IGNORE;bubble.add_child(headline)
-	progress=ProgressBar.new();progress.show_percentage=false;progress.size=Vector2(250,3);progress.mouse_filter=Control.MOUSE_FILTER_IGNORE;bubble.add_child(progress);progress.position=Vector2(10,40);progress.hide()
+	portrait=app.picture(bubble,icon,Rect2(-4,-20,44,60));portrait.name="ResidentPortrait"
+	headline=Label.new();headline.theme=DemoArt.theme();headline.position=Vector2(50,0);headline.size=Vector2(210,BUBBLE_HEIGHT);headline.vertical_alignment=VERTICAL_ALIGNMENT_CENTER;headline.add_theme_font_size_override("font_size",14);headline.add_theme_color_override("font_color",Color("49321e"));headline.mouse_filter=Control.MOUSE_FILTER_IGNORE;bubble.add_child(headline)
+	progress=ProgressBar.new();progress.show_percentage=false;progress.size=Vector2(250,3);progress.mouse_filter=Control.MOUSE_FILTER_IGNORE;bubble.add_child(progress);progress.position=Vector2(10,BUBBLE_HEIGHT-4);progress.hide()
 func request()->void:
 	if talking or app.modal or app.world_map_open or not app.application_active or not app.model.family_available():return
 	var needed:int=app.model.family_visitor_count()
@@ -64,7 +66,7 @@ func _process(delta:float)->void:
 	if not bubble.visible:return
 	headline.text="함께 마을을 가꾸어요…" if talking else "함께 머물 곳을 찾고 있어요"
 	var width:float=headline.get_theme_font("font").get_string_size(headline.text,HORIZONTAL_ALIGNMENT_LEFT,-1,14).x+60
-	bubble.size=Vector2(minf(width,app.w-app.safe.x*2),44);background.position.x=BUBBLE_FRONT;background.size=Vector2(bubble.size.x-background.position.x,bubble.size.y)
+	bubble.size=Vector2(minf(width,app.w-app.safe.x*2),BUBBLE_HEIGHT);background.position.x=BUBBLE_FRONT;background.size=Vector2(bubble.size.x-background.position.x,bubble.size.y)
 	headline.size.x=bubble.size.x-60;progress.size.x=bubble.size.x-20
 	var viewport:=Rect2(0,0,app.w,app.h).grow(4)
 	var party_bounds:=Rect2()
@@ -74,7 +76,7 @@ func _process(delta:float)->void:
 		if not viewport.intersects(bounds):continue
 		party_bounds=party_bounds.merge(bounds) if party_bounds.has_area() else bounds
 	var anchor:=Vector2(party_bounds.get_center().x,party_bounds.position.y)
-	bubble.position=anchor-Vector2(bubble.size.x*.5,bubble.size.y+5)
+	bubble.position=anchor-Vector2(bubble.size.x*.5,ORIGINAL_HEIGHT+5)
 	bubble.visible=party_bounds.has_area() and viewport.intersects(bubble.get_global_rect())
 	if talking and app.task!="family":talking=false;progress.hide()
 	bubble.set_meta("semantic_text",headline.text)

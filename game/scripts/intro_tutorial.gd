@@ -1,6 +1,9 @@
 class_name IntroTutorial
 extends Control
 
+const HAND := preload("res://assets/ui/tutorial/RoxHistory_Tutorial_Hand_Diagonal_v2.png")
+const HAND_TIP := Vector2(280,1118)/1254.0
+
 var app: Node
 var target_id := ""
 var plot := Vector2.INF
@@ -136,5 +139,8 @@ func _draw() -> void:
 	if not at.is_finite() or not get_viewport_rect().has_point(at): return
 	var phase := fposmod(age,1.1)/1.1
 	draw_arc(at, 26+phase*12, 0, TAU, 40, Color(1,.84,.3,1-phase*.55), 3, true)
-	var finger := at+Vector2(10,-36+sin(phase*TAU)*8)
-	draw_string(ThemeDB.fallback_font,finger,"☝",HORIZONTAL_ALIGNMENT_LEFT,-1,34,Color("fff3c6"))
+	var lift:=1.0-smoothstep(.05,.37,phase)+smoothstep(.55,.92,phase)
+	var tip:=at+Vector2(0,-14*lift)
+	var extent:=minf(82.0,minf((app.w-tip.x)/(1.0-HAND_TIP.x),tip.y/HAND_TIP.y))
+	if extent>0:
+		draw_texture_rect(HAND,Rect2(tip-HAND_TIP*extent,Vector2.ONE*extent),false)
