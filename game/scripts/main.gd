@@ -565,6 +565,7 @@ func play_hud() -> void:
 	settings_button.add_theme_constant_override("icon_max_width",36)
 	for state in ["normal","hover","pressed","focus"]:settings_button.add_theme_stylebox_override(state,StyleBoxEmpty.new())
 	quest_reward_count=QuestRewards.install_entry(self)
+	stage.add_child(VillageRewardBoard.new(self))
 	world_map_open=false
 	update_hud()
 

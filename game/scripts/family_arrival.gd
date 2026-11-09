@@ -7,7 +7,7 @@ var headline:Label
 var background:TextureRect
 var portrait:TextureRect
 const PORTRAIT_REGION:=Rect2(143,52,961,1165)
-const BUBBLE_FRONT:=20.0
+const BUBBLE_FRONT:=11.0
 var progress:ProgressBar
 var talking:=false
 var elapsed:=0.0
@@ -25,7 +25,7 @@ func _ready()->void:
 	var atlas:=AtlasTexture.new();atlas.atlas=preload("res://assets/ui/v0158/resident-bubble-bg.png");atlas.region=Rect2(211,11,345,105);atlas.filter_clip=true
 	background=app.picture(bubble,atlas,Rect2(0,0,270,44));background.stretch_mode=TextureRect.STRETCH_SCALE
 	var icon:=AtlasTexture.new();icon.atlas=PlayChrome.RESIDENT_ICON;icon.region=PORTRAIT_REGION;icon.filter_clip=true
-	portrait=app.picture(bubble,icon,Rect2(0,-2,30,42));portrait.name="ResidentPortrait"
+	portrait=app.picture(bubble,icon,Rect2(-4,-8,44,60));portrait.name="ResidentPortrait"
 	headline=Label.new();headline.theme=DemoArt.theme();headline.position=Vector2(50,5.2);headline.size=Vector2(210,24);headline.vertical_alignment=VERTICAL_ALIGNMENT_CENTER;headline.add_theme_font_size_override("font_size",14);headline.add_theme_color_override("font_color",Color("49321e"));headline.mouse_filter=Control.MOUSE_FILTER_IGNORE;bubble.add_child(headline)
 	progress=ProgressBar.new();progress.show_percentage=false;progress.size=Vector2(250,3);progress.mouse_filter=Control.MOUSE_FILTER_IGNORE;bubble.add_child(progress);progress.position=Vector2(10,40);progress.hide()
 func request()->void:

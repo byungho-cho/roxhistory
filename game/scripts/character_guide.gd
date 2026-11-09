@@ -7,8 +7,6 @@ var message:String
 var layout:Control
 var panel_group:Control
 var character:TextureRect
-var close_button:Button
-var close_holder:Control
 var age:=0.0
 var pages:Array[Dictionary]=[]
 var completions:Array[Callable]=[]
@@ -22,9 +20,6 @@ var text_fonts:Array[FontVariation]=[]
 const DESIGN_SIZE:=Vector2(1200,675)
 const PANEL_RECT:=Rect2(149,415,949,212)
 const CHARACTER_RECT:=Rect2(-67,202,468,425)
-# The close asset is a sibling of frame1627:83 in the Figma section.
-# Section (1074,518) minus the frame offset(40,110) gives this local slot.
-const CLOSE_RECT:=Rect2(1034,408,58,54)
 const TEXT_X:=355.0
 const TEXT_WIDTH:=670.0
 const TEXT_MAX_HEIGHT:=152.0
@@ -43,14 +38,28 @@ func _ready()->void:
 	for i in [3,2,1]:
 		var shadow:=picture(panel_group,crop,Rect2(149-i,422-i,949+i*2,212+i*2));shadow.self_modulate=Color(.078,.059,.035,.09)
 	var panel:=picture(panel_group,crop,PANEL_RECT);panel.name="CreamPanel";panel.self_modulate.a=.8
+	var nameplate:=Panel.new()
+	nameplate.position=Vector2(267,423);nameplate.size=Vector2(137,42)
+	nameplate.mouse_filter=Control.MOUSE_FILTER_IGNORE
+	var wood:=StyleBoxFlat.new()
+	wood.bg_color=Color("65452b");wood.border_color=Color("be985c")
+	wood.set_border_width_all(2);wood.set_corner_radius_all(5)
+	nameplate.add_theme_stylebox_override("panel",wood)
+	panel_group.add_child(nameplate)
+	var speaker:Label=app.label(nameplate,"길잡이",20,Color("fff0c9"))
+	speaker.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	speaker.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
+	speaker.vertical_alignment=VERTICAL_ALIGNMENT_CENTER
+	var advance_hint:=picture(panel_group,preload("res://assets/ui/construction-side-v006/chevron.svg"),Rect2(1030,579,20,34))
+	advance_hint.name="GuideAdvanceHint"
+	advance_hint.pivot_offset=advance_hint.size*.5
+	advance_hint.rotation=-PI*.5
 	text_scroll=ScrollContainer.new();text_scroll.name="GuideText";text_scroll.position=Vector2(TEXT_X,475);text_scroll.size=Vector2(TEXT_WIDTH,TEXT_MAX_HEIGHT);text_scroll.horizontal_scroll_mode=ScrollContainer.SCROLL_MODE_DISABLED;panel_group.add_child(text_scroll)
 	text_column=VBoxContainer.new();text_column.name="MessageContent";text_column.size_flags_horizontal=Control.SIZE_EXPAND_FILL;text_column.add_theme_constant_override("separation",14);text_scroll.add_child(text_column)
 	for item in [[heading,30],[message,23]]:
 		var text:=Label.new();text.theme=DemoArt.theme();text.text=item[0];
 		var font:=FontVariation.new();font.base_font=FigmaArt.NOTO;font.variation_opentype={TextServerManager.get_primary_interface().name_to_tag("wght"):700.0 if item[1]==30 else 400.0};text.add_theme_font_override("font",font);text.add_theme_font_size_override("font_size",item[1]);text.add_theme_color_override("font_color",Color("1f1c17"));text.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART;text.size_flags_horizontal=Control.SIZE_EXPAND_FILL;text.add_theme_constant_override("line_spacing",0);text_column.add_child(text);text_labels.append(text);text_fonts.append(font)
 	character=picture(layout,preload("res://assets/ui/v0159/guide-character.png"),CHARACTER_RECT);character.name="GuideCharacter";character.stretch_mode=TextureRect.STRETCH_KEEP_ASPECT_COVERED;character.clip_contents=true;character.pivot_offset=Vector2(234,425)
-	close_holder=Control.new();close_holder.mouse_filter=Control.MOUSE_FILTER_IGNORE;panel_group.add_child(close_holder)
-	close_button=HudButtons.create(close_holder,false,advance,"CloseGuide");close_button.tooltip_text="안내 닫기"
 	panel_group.modulate.a=0;character.modulate.a=0
 	update_layout()
 func update_layout()->void:
@@ -61,15 +70,6 @@ func update_layout()->void:
 	var bottom_inset:=maxf(0.0,app.safe.y-(DESIGN_SIZE.y-PANEL_RECT.end.y)*factor)
 	layout.scale=Vector2.ONE*factor
 	layout.position=Vector2((app.w-DESIGN_SIZE.x*factor)*.5,app.h-DESIGN_SIZE.y*factor-bottom_inset)
-	close_holder.position=CLOSE_RECT.position;close_holder.scale=Vector2.ONE
-	# Keep the artwork in its exact58×54 design slot; only the invisible hit
-	# target grows on small screens. Never shift the artwork to enlarge a hit box.
-	var hit_size:=CLOSE_RECT.size.max(Vector2.ONE*HudButtons.DIAMETER/factor)
-	close_button.custom_minimum_size=hit_size;close_button.size=hit_size
-	close_button.position=(CLOSE_RECT.size-hit_size)*.5
-	var image:TextureRect=close_button.art_feedback.get_node("Icon")
-	image.position=(hit_size-CLOSE_RECT.size)*.5;image.size=CLOSE_RECT.size
-	image.stretch_mode=TextureRect.STRETCH_SCALE
 	# Short copy is vertically centered like the reference; long/localized copy
 	# gets the full inner height and scrolls. Portrait text has a readable minimum.
 	for i in text_labels.size():
