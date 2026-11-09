@@ -18,6 +18,8 @@ const RESIDENT_LAYER:=2
 const FARM_STANDS:=[Vector2(171,72),Vector2(-171,72),Vector2(0,220)]
 var variant:="female"
 var visual:HybridCharacter
+var carry_study:ResidentCarryStudy
+var retouch_study:=OS.get_cmdline_user_args().has("--resident-retouch-study")
 var origin:=Vector2.ZERO
 var destination:=Vector2.ZERO
 var phase:=0.0
@@ -38,7 +40,12 @@ func _ready()->void:
 	jobs=ResidentJobs.new(get_parent().model)
 	origin=position;destination=position;rng.seed=abs(resident_id.hash())+122;rest_time=2.0+float(abs(resident_id.hash())%30)/10.0
 	var shape:=CollisionShape2D.new();var circle:=CircleShape2D.new();circle.radius=12;shape.shape=circle;add_child(shape)
-	visual=HybridCharacter.new();visual.model_path="res://assets/characters/residents/"+variant+".glb";visual.render_size_factor=.5;add_child(visual);visual.scale=Vector2.ONE*(1.08 if variant=="female" else 1.16);visual.set_enabled(true)
+	visual=HybridCharacter.new()
+	visual.model_path="res://assets/characters/resident-study/woodcutter-study.glb" if retouch_study and variant=="sturdy_male" else "res://assets/characters/residents/"+variant+".glb"
+	visual.render_size_factor=.5;add_child(visual);visual.scale=Vector2.ONE*(1.08 if variant=="female" else 1.16);visual.set_enabled(true)
+	if retouch_study:
+		carry_study=ResidentCarryStudy.new();visual.rig.add_child(carry_study);carry_study.configure(visual.rig)
+		carry_study.set_cargo(jobs.entry(resident_id).cargo)
 	visual.ambient_offset=float(abs(resident_id.hash())%2600)/100.0
 	queue_redraw()
 func _draw()->void:
@@ -68,6 +75,7 @@ func _physics_process(delta:float)->void:
 		if offset.length()<3 or position.distance_to(before)<.01:
 			rest_time=rng.randf_range(2.5,5.0)
 			visual.ambient_offset=fposmod(visual.ambient_offset+9.7,26.0)
+	if is_instance_valid(carry_study):carry_study.set_cargo(jobs.entry(resident_id).cargo)
 	queue_redraw()
 	var travelled:=position.distance_to(before)
 	if travelled>.01:phase=fposmod(phase+travelled/(visual.stride_world_length()*visual.scale.x)*TAU,TAU);idle_time=0

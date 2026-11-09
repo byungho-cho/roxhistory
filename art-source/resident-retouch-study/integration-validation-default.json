@@ -1,0 +1,5 @@
+{
+  "checks": 4,
+  "failures": [],
+  "scope": "Headless actual DemoWorld resident construction and presentation states, not rendered gameplay or device performance"
+}
