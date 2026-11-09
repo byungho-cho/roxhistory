@@ -106,7 +106,7 @@ func show_building(key:String)->void:
 	var jobs:=ResidentJobs.new(app.model)
 	var assigned:=jobs.assigned_ids(key)
 	var multiple:bool=found.kind in ["stone_store","wood_store"]
-	var job:String={"farm":"farmer","outpost":"guard","stone_store":"stone","wood_store":"wood"}.get(found.kind,"idle")
+	var job:String=ResidentJobs.BUILDING_JOBS.get(found.kind,"idle")
 	var list:=content(BuildingWorkflow.building_name(found.kind)+" · 주민 배정",job_name(job)+" %d명"%assigned.size()+("" if multiple else " / 1명"))
 	for id in assigned:
 		var target_id:String=id
@@ -121,7 +121,7 @@ func _process(_delta:float)->void:
 	var keys:Array[String]=[]
 	if app.model.chief_level()>0:keys.append("chief")
 	for key in OwnedBuildingUpgrades.keys(app.model):
-		if key.begins_with("farm:") or key.begins_with("outpost:") or key.begins_with("stone_store:") or key.begins_with("wood_store:"):keys.append(key)
+		if ResidentJobs.BUILDING_JOBS.has(key.get_slice(":",0)):keys.append(key)
 	for key in bubbles.keys():
 		if not key in keys:bubbles[key].queue_free();bubbles.erase(key)
 	for key in keys:
