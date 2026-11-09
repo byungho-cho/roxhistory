@@ -396,7 +396,12 @@ func welcome(sound: bool) -> void:
 	show_screen("title")
 
 func title_screen() -> void:
-	var background:=picture(stage,preload("res://assets/ui/title-hanbando/hanbando-start-background-v1.png"),Rect2(0,0,w,h))
+	var title_art:=AtlasTexture.new()
+	title_art.atlas=preload("res://assets/ui/title-hanbando/hanbando-start-background-v1.png")
+	# The handoff image includes static controls along the lower edge.
+	title_art.region=Rect2(0,0,title_art.atlas.get_width(),720)
+	title_art.filter_clip=true
+	var background:=picture(stage,title_art,Rect2(0,0,w,h))
 	background.stretch_mode=TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	var logo_width:=minf(w*(.62 if w<h else .31),h*.61)
 	var logo:=picture(stage,preload("res://assets/ui/title-hanbando/hanbando-upheaval-logo-v1.png"),Rect2((w-logo_width)*.5,safe.y+h*.022,logo_width,logo_width*.5))

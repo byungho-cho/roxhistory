@@ -174,7 +174,9 @@ static func install_side_art(button:DemoButton,kind:String)->void:
 			icon.texture=IntegratedMenuArt.trimmed(MENU_ICONS[kind])
 			icon.expand_mode=TextureRect.EXPAND_IGNORE_SIZE
 			var native:=icon.texture.get_size()
-			icon.size=native*minf(156.0/native.x,131.0/native.y)
+			var slot_scale:=composition.scale*art.scale
+			var fit:=Vector2(156,131)*slot_scale
+			icon.size=native*minf(fit.x/native.x,fit.y/native.y)/slot_scale
 			icon.position=Vector2((180-icon.size.x)*.5,155-icon.size.y)
 			icon.mouse_filter=Control.MOUSE_FILTER_IGNORE
 			art.add_child(icon)
