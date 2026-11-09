@@ -18,6 +18,7 @@ const RESIDENT_LAYER:=2
 const FARM_STANDS:=[Vector2(171,72),Vector2(-171,72),Vector2(0,220)]
 var variant:="female"
 var visual:HybridCharacter
+var carried_load: ResidentLoadVisual
 var origin:=Vector2.ZERO
 var destination:=Vector2.ZERO
 var phase:=0.0
@@ -39,6 +40,10 @@ func _ready()->void:
 	origin=position;destination=position;rng.seed=abs(resident_id.hash())+122;rest_time=2.0+float(abs(resident_id.hash())%30)/10.0
 	var shape:=CollisionShape2D.new();var circle:=CircleShape2D.new();circle.radius=12;shape.shape=circle;add_child(shape)
 	visual=HybridCharacter.new();visual.model_path="res://assets/characters/residents/"+variant+".glb";visual.render_size_factor=.5;add_child(visual);visual.scale=Vector2.ONE*(1.08 if variant=="female" else 1.16);visual.set_enabled(true)
+	carried_load=ResidentLoadVisual.new()
+	carried_load.bone_name="spine"
+	visual.rig.add_child(carried_load)
+	carried_load.update_load(jobs.entry(resident_id).cargo)
 	visual.ambient_offset=float(abs(resident_id.hash())%2600)/100.0
 	queue_redraw()
 func _draw()->void:
@@ -73,7 +78,8 @@ func _physics_process(delta:float)->void:
 	if travelled>.01:phase=fposmod(phase+travelled/(visual.stride_world_length()*visual.scale.x)*TAU,TAU);idle_time=0
 	else:idle_time+=delta
 	visual.idle_elapsed=idle_time
-	visual.ambient_allowed=job_kind=="idle" and jobs.entry(resident_id).cargo.is_empty()
+	var cargo: Dictionary=jobs.entry(resident_id).cargo
+	visual.ambient_allowed=job_kind=="idle" and cargo.is_empty()
 	visual_elapsed+=delta
 	var screen_point:=get_global_transform_with_canvas().origin
 	if not Rect2(Vector2(-120,-120),get_viewport_rect().size+Vector2(240,240)).has_point(screen_point):
@@ -81,6 +87,7 @@ func _physics_process(delta:float)->void:
 		visual_elapsed=0
 		return
 	if visual_elapsed>=1.0/30.0:
+		carried_load.update_load(cargo)
 		visual.set_render_zoom(world.player.zoom_factor)
 		visual.work_kind=job_kind
 		var action:=job_kind if job_phase=="harvest" else "farm_care" if job_kind=="farmer" and job_phase=="farm_wait" else "guard" if job_kind=="guard" else ""
