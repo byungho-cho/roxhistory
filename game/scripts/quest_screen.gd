@@ -11,10 +11,10 @@ func text(parent:Node,value:String,at:Vector2,fs:int=20,color:Color=CREAM)->Labe
 func crop(source:Texture2D,w:float,h:float,x:float,y:float)->AtlasTexture:
 	var result:=AtlasTexture.new();result.atlas=source;result.region=Rect2(source.get_width()*x/w,source.get_height()*y/h,source.get_width()/w,source.get_height()/h);result.filter_clip=true;return result
 func hut()->Texture2D:return crop(HUTS,6.3882,2.4626,.25,.966)
-func background(parent:Node,key:String,rect:Rect2)->TextureRect:
+func background(parent:Control,key:String,rect:Rect2)->NinePatchRect:
 	var source:Texture2D=load("res://assets/ui/v0160/quest-"+key+"-bg.png")
 	var texture:Texture2D=crop(source,1.015,1.366,.007,.1792) if key=="common" else crop(source,1,1.4058,0,.2039) if key=="selected" else crop(source,1.0284,1.2271,.0142,.1102)
-	var result:TextureRect=app.picture(parent,texture,rect);result.stretch_mode=TextureRect.STRETCH_SCALE;return result
+	return QuestRewards.sliced_art(parent,texture,rect,110)
 func line(parent:Node,at:Vector2,extent:Vector2,color:String)->void:
 	var rule:=ColorRect.new();rule.position=at;rule.size=extent;rule.color=Color(color);rule.mouse_filter=Control.MOUSE_FILTER_IGNORE;parent.add_child(rule)
 func open()->void:
@@ -49,17 +49,26 @@ func open()->void:
 	scroll.add_child(list)
 	var state:Dictionary=app.model.state
 	var current:=FirstQuests.current(state)
+	var claimed_style:=ShaderMaterial.new()
+	claimed_style.shader=preload("res://shaders/quest_claimed.gdshader")
 	for i in FirstQuests.IDS.size():
 		var row:=Control.new()
 		row.custom_minimum_size=Vector2(1125,76)
 		list.add_child(row)
-		background(row,"selected" if i==current else "common",Rect2(0,0,1125,76))
+		var row_art:=background(row,"selected" if i==current else "common",Rect2(0,0,1125,76))
 		text(row,"%02d"%[i+1],Vector2(16,18),22)
 		text(row,FirstQuests.TITLES[i],Vector2(78,18),22)
 		text(row,FirstQuests.OBJECTIVES[i],Vector2(330,18),19)
 		var id:String=FirstQuests.IDS[i]
 		var status:="대기"
-		if id in state.get("quests_claimed",[]):status="보상 수령"
-		elif id in state.get("quests_done",[]):status="받을 보상"
+		var tint:=CREAM
+		if id in state.get("quests_claimed",[]):
+			status="✓ 수령 완료"
+			row_art.material=claimed_style
+			row.modulate=Color(.77,.77,.77,.83)
+			tint=Color("dbd7c9")
+		elif id in state.get("quests_done",[]):
+			status="보상 미수령"
+			tint=Color("ffcc70")
 		elif i==current:status="진행 중"
-		text(row,status,Vector2(988,18),18)
+		text(row,status,Vector2(988,18),18,tint)

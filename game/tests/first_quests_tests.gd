@@ -64,7 +64,7 @@ func run()->void:
 	app.construction_menu()
 	await frames()
 	check(app.build_side.visible and not main_inventory.visible and not app.menu_toggle.visible,"Building list replaces main actions")
-	check(app.build_side.visible_slots==6 and app.build_side.left_hint.visible and not app.build_side.right_hint.visible,"Right edge displays six entries and only the left arrow")
+	check(app.build_side.visible_slots==5 and app.build_side.left_hint.visible and not app.build_side.right_hint.visible,"Right edge displays five entries and only the left arrow")
 	var fixed_at:Vector2=app.build_button.global_position
 	tap(app.build_side.left_hint.get_global_rect().get_center())
 	await frames()
@@ -188,6 +188,19 @@ func run()->void:
 	app.close_modal()
 	await frames(2)
 	check(not app.tutorial.active() and not app.gather_button.disabled,"Chief reward unlocks ordinary gathering")
+	check(model.begin_construction("hut",Vector2(900,900),now) and model.finish_constructions(now+61),"A hut provides room for the first visitor")
+	check(model.ensure_family_visit(),"The first visitor arrives")
+	var visited:=model.state.duplicate(true)
+	visited.resident_guide_seen=true
+	model.commit(visited)
+	await frames()
+	var visitor:Node2D=app.world.visitors[0]
+	var visitor_tap:Vector2=app.world.get_global_transform_with_canvas()*app.world.visitor_bounds(visitor).get_center()
+	app.world_tap(visitor_tap)
+	check(model.resident_count()==1 and not model.family_available(),"Tapping the visitor body admits the party")
+	app.close_modal()
+	app.world_tap(visitor_tap)
+	check(model.resident_count()==1,"Tapping the old visitor position cannot admit twice")
 	print(JSON.stringify({"checks":checks,"failures":failures}))
 	app.queue_free()
 	await frames()

@@ -12,9 +12,14 @@ var context: Label
 var gather_button: DemoButton
 var build_button: DemoButton
 var build_lock_icon: TextureRect
+var build_return_badge: TextureRect
+var build_visual: ActionVisual
 var gather_lock_icon: TextureRect
 var tutorial: IntroTutorial
 var village_alerts: AndroidVillageNotifications
+var performance_diagnostics := PerformanceDiagnostics.new()
+var title_prompt: DemoButton
+var title_prompt_time := 0.0
 var task_bar: ProgressBar
 var toast_label: Label
 var toast_time := 0.0
@@ -396,6 +401,8 @@ func title_screen() -> void:
 	title.add_theme_color_override("font_outline_color",Color("49321e"))
 	design_label(stage,"작은 불씨에서 시작되는 우리의 역사",design_rect(78,175,1100,48),maxi(18,int(34*k)),Color("ffedc7"))
 	var start:=button(stage,"화면을 터치하여 시작",start_or_continue)
+	title_prompt=start
+	title_prompt_time=0
 	start.name="StartGame";start.custom_minimum_size=Vector2.ZERO
 	start.position=Vector2(w*.5-180,h-safe.y-100);start.size=Vector2(360,64)
 	for state in ["normal","hover","pressed","focus"]:start.add_theme_stylebox_override(state,StyleBoxEmpty.new())
@@ -512,6 +519,9 @@ func play_hud() -> void:
 			gather_lock_icon=picture(b,IntegratedMenuArt.trimmed(preload("res://assets/ui/v0158/lock.png")),Rect2(3,37,23,23))
 		if caption=="건설":
 			build_button=b
+			build_visual=visual
+			build_return_badge=picture(b,preload("res://assets/ui/construction-side-v006/return-badge.svg"),Rect2(35,0,28,28))
+			build_return_badge.hide()
 			build_lock_icon=picture(b,IntegratedMenuArt.trimmed(preload("res://assets/ui/v0158/lock.png")),Rect2(3,37,23,23))
 			build_lock_icon.visible=first_construction_locked()
 			b.disabled=build_lock_icon.visible
@@ -656,6 +666,8 @@ func apply_menu_state(animated:bool=false)->void:
 	menu_toggle.pivot_offset=menu_toggle.size*.5
 	menu_toggle.rotation=0.0
 	menu_toggle.visible=not (is_instance_valid(build_side) and build_side.visible)
+	build_return_badge.visible=not menu_toggle.visible
+	build_visual.pedestal.self_modulate=Color(1.25,1.08,.72) if build_return_badge.visible else Color.WHITE
 	if not menu_toggle.visible:build_button.position.x=width-button_width
 	menu_backdrop.hide()
 
@@ -696,6 +708,10 @@ func first_construction_locked()->bool:
 	return model.chief_level()==0 and model.pending_construction_count("chief")==0 and FirstQuests.current(model.state) in [0,1]
 
 func _process(delta: float) -> void:
+	performance_diagnostics.tick(self,delta)
+	if screen=="title" and application_active and is_instance_valid(title_prompt):
+		title_prompt_time=fposmod(title_prompt_time+delta,3.0)
+		title_prompt.modulate.a=.87+.13*cos(title_prompt_time*TAU/3.0)
 	if is_instance_valid(toast_panel): toast_panel.visible = toast_time > 0 and toast_label.text != ""
 	if toast_time > 0:
 		toast_time -= delta
@@ -1008,6 +1024,9 @@ func world_tap(screen_point:Vector2) -> void:
 	if choosing_plot:
 		build_preview.select_position(at,build_kind,build_preview.moving_key)
 		return
+	if world.visitor_hit(at):
+		family.request()
+		return
 	for i in model.built_count():
 		if model.reward_pending(i) and (world.reward_marker_rect(i).grow(6).has_point(at) or building_menu.hit_key(at)==model.home_key(i)):claim_home(i);return
 	if is_instance_valid(building_menu):
@@ -1055,6 +1074,13 @@ func pause_game() -> void:
 func show_development_settings()->void:
 	DevelopmentSettings.open(self)
 	enable_settings_backdrop()
+
+func set_performance_diagnostics(enabled:bool)->void:
+	var previous:bool=settings.get_value("development","performance_diagnostics",false)
+	settings.set_value("development","performance_diagnostics",enabled)
+	if settings.save(prefs_path)!=OK:
+		settings.set_value("development","performance_diagnostics",previous)
+		show_error("성능 진단 설정을 저장하지 못했습니다.")
 
 func confirm_progress_reset()->void:
 	show_modal("진행을 초기화할까요?","진행과 자원을 지우고 소리 설정은 유지합니다. 삭제한 진행은 되돌릴 수 없습니다.",[

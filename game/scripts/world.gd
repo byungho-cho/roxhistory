@@ -287,12 +287,22 @@ func near_site() -> bool:
 
 func interaction_at(screen_point:Vector2)->bool:
 	var at:=get_global_transform_with_canvas().affine_inverse()*screen_point
+	if visitor_hit(at):return true
 	for n in model.nodes():
 		if resource_hit(n,at):return true
 	if site_at(at)>=0:return true
 	for i in model.built_count():
 		if model.reward_pending(i) and reward_hit(i,at):return true
 	return false
+
+func visitor_hit(at:Vector2)->bool:
+	if not model.family_available():return false
+	for visitor in visitors:
+		if visitor.visible and visitor_bounds(visitor).has_point(at):return true
+	return false
+
+func visitor_bounds(visitor:Node2D)->Rect2:
+	return Rect2(visitor.position-Vector2(31,124),Vector2(62,128))
 
 func resource_hit(n:Dictionary,at:Vector2)->bool:
 	if exhausted(n):return false

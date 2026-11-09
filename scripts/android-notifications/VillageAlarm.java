@@ -2,6 +2,7 @@ package com.roxhistory.notifications;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.Application;
 import android.app.AlarmManager;
 import android.app.Notification;
 import android.app.NotificationChannel;
@@ -14,6 +15,9 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
+import android.os.Bundle;
+import android.os.Debug;
+import android.os.PowerManager;
 import org.json.JSONException;
 import org.json.JSONObject;
 import java.util.Iterator;
@@ -23,6 +27,68 @@ public final class VillageAlarm extends BroadcastReceiver {
     private static final String PREFS = "roxhistory_village_alarms";
     private static final int FLAGS = PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE;
     private static final long RETENTION_MS = 7L * 24 * 60 * 60 * 1000;
+    private static boolean foreground;
+    private static Activity observedActivity;
+
+    public static synchronized void observeActivity(Activity activity) {
+        foreground = true;
+        if (observedActivity == activity) return;
+        observedActivity = activity;
+        activity.getApplication().registerActivityLifecycleCallbacks(new Application.ActivityLifecycleCallbacks() {
+            @Override public void onActivityStarted(Activity current) {
+                if (current == activity) setForeground(current, true);
+            }
+            @Override public void onActivityStopped(Activity current) {
+                if (current == activity) setForeground(current, false);
+            }
+            @Override public void onActivityDestroyed(Activity current) {
+                if (current != activity) return;
+                setForeground(current, false);
+                current.getApplication().unregisterActivityLifecycleCallbacks(this);
+                synchronized (VillageAlarm.class) {
+                    if (observedActivity == current) observedActivity = null;
+                }
+            }
+            @Override public void onActivityCreated(Activity current, Bundle state) {}
+            @Override public void onActivityResumed(Activity current) {}
+            @Override public void onActivityPaused(Activity current) {}
+            @Override public void onActivitySaveInstanceState(Activity current, Bundle state) {}
+        });
+    }
+
+    private static synchronized void setForeground(Activity activity, boolean visible) {
+        if (activity != observedActivity || foreground == visible) return;
+        if (!visible) {
+            // A delayed system alarm may still be queued for an event that fell due on screen.
+            Context context = activity.getApplicationContext();
+            SharedPreferences settings = prefs(context);
+            JSONObject scheduled = parse(settings.getString("scheduled", "{}"));
+            SharedPreferences.Editor receipts = settings.edit();
+            long now = System.currentTimeMillis();
+            Iterator<String> keys = scheduled.keys();
+            while (keys.hasNext()) {
+                String id = keys.next();
+                JSONObject job = scheduled.optJSONObject(id);
+                if (job != null && job.optLong("at") <= now) receipts.putLong("delivered:" + id, now);
+            }
+            receipts.commit();
+        }
+        foreground = visible;
+    }
+
+    public static String diagnosticSample(Activity activity) {
+        Debug.MemoryInfo memory = new Debug.MemoryInfo();
+        Debug.getMemoryInfo(memory);
+        JSONObject sample = new JSONObject();
+        try {
+            sample.put("process_pss_kib", memory.getTotalPss());
+            sample.put("process_cpu_total_ms", android.os.Process.getElapsedCpuTime());
+            if (Build.VERSION.SDK_INT >= 29) {
+                sample.put("thermal_status", activity.getSystemService(PowerManager.class).getCurrentThermalStatus());
+            }
+        } catch (JSONException ignored) {}
+        return sample.toString();
+    }
 
     public static void requestPermission(Activity activity) {
         activity.runOnUiThread(() -> {
@@ -92,6 +158,10 @@ public final class VillageAlarm extends BroadcastReceiver {
         SharedPreferences settings = prefs(context);
         String receipt = "delivered:" + id;
         if (settings.contains(receipt)) return;
+        if (foreground) {
+            settings.edit().putLong(receipt, System.currentTimeMillis()).commit();
+            return;
+        }
         NotificationManager notifications = context.getSystemService(NotificationManager.class);
         if (Build.VERSION.SDK_INT >= 26) {
             notifications.createNotificationChannel(new NotificationChannel(
@@ -102,7 +172,8 @@ public final class VillageAlarm extends BroadcastReceiver {
                 ? new Notification.Builder(context, CHANNEL) : new Notification.Builder(context);
         Intent launch = context.getPackageManager().getLaunchIntentForPackage(context.getPackageName());
         if (launch != null) builder.setContentIntent(PendingIntent.getActivity(context, 0, launch, FLAGS));
-        builder.setSmallIcon(android.R.drawable.ic_dialog_info).setContentTitle(title)
+        int icon = context.getResources().getIdentifier("ic_village_notice", "drawable", context.getPackageName());
+        builder.setSmallIcon(icon != 0 ? icon : android.R.drawable.ic_dialog_info).setContentTitle(title)
                 .setContentText(body).setAutoCancel(true);
         try {
             notifications.notify(id, 0, builder.build());

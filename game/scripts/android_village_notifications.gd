@@ -14,12 +14,19 @@ func _init(game: GameState) -> void:
 	bridge = wrapper.wrap("com.roxhistory.notifications.VillageAlarm")
 	if bridge == null: return
 	activity = Engine.get_singleton("AndroidRuntime").getActivity()
+	if activity == null:return
+	bridge.observeActivity(activity)
 	model.changed.connect(sync)
 	model.notification_requested.connect(completed)
 	sync()
 
 func request_permission() -> void:
 	if bridge != null and activity != null:bridge.requestPermission(activity)
+
+func diagnostic_sample() -> Dictionary:
+	if bridge == null or activity == null:return {}
+	var sample:Variant=JSON.parse_string(bridge.diagnosticSample(activity))
+	return sample if sample is Dictionary else {}
 
 func sync() -> void:
 	if bridge == null or activity == null:return

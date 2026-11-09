@@ -8,7 +8,6 @@ const CREAM:=Color("f5e1bb")
 const INK:=Color("392513")
 const CARD:=Rect2(1.75,8.2,103.44,290.82)
 const CLAIM:=Rect2(54.35,161.36,385.65,403.18)
-const COUNT:=Rect2(106.8,161.36,241.36,403.18)
 const CLOSE:=Rect2(277.78,224.07,657.04,328.52)
 const BAG:=Rect2(648.23,67.85,770.21,232.8)
 const CORN:=Rect2(486.33,71.38,724,238.16)
@@ -21,6 +20,20 @@ static func part(source:Texture2D,crop:Rect2)->AtlasTexture:
 	texture.region=Rect2(crop.position/crop.size*dimensions,Vector2(100,100)/crop.size*dimensions)
 	texture.filter_clip=true
 	return texture
+
+static func sliced_art(parent:Control,source:Texture2D,rect:Rect2,cap:int)->NinePatchRect:
+	var art:=NinePatchRect.new()
+	art.texture=source.atlas if source is AtlasTexture else source
+	art.region_rect=source.region if source is AtlasTexture else Rect2(Vector2.ZERO,source.get_size())
+	var factor:=minf(1.0,rect.size.y/art.region_rect.size.y)
+	art.position=rect.position
+	art.size=rect.size/factor
+	art.scale=Vector2.ONE*factor
+	for side in [SIDE_LEFT,SIDE_TOP,SIDE_RIGHT,SIDE_BOTTOM]:
+		art.set_patch_margin(side,cap)
+	art.mouse_filter=Control.MOUSE_FILTER_IGNORE
+	parent.add_child(art)
+	return art
 
 static func art_button(app:Node,parent:Control,name:String,rect:Rect2,action:Callable)->DemoButton:
 	var button:DemoButton=app.button(parent,"",action)
@@ -62,7 +75,10 @@ static func install_entry(app:Node)->Label:
 	return caption(app,badge,"",Rect2(0,0,22,22),14,Color.WHITE)
 
 static func entry_art(app:Node,button:DemoButton,icon:Texture2D,title:String)->void:
-	app.picture(button,icon,Rect2(7,5,50,55))
+	var trimmed:=IntegratedMenuArt.trimmed(icon) if not icon is AtlasTexture else icon
+	var dimensions:=trimmed.get_size()
+	var display_size:=dimensions*minf(54.0/dimensions.x,54.0/dimensions.y)
+	app.picture(button,trimmed,Rect2(Vector2((64-display_size.x)*.5,56-display_size.y),display_size))
 	var brush:TextureRect=app.picture(button,preload("res://assets/ui/construction-side-v006/brush.png"),Rect2(0,49,64,26))
 	brush.modulate.a=.8
 	caption(app,button,title,Rect2(0,50,64,24),14,CREAM)
@@ -89,8 +105,8 @@ static func open(app:Node)->void:
 	var close:=art_button(app,panel,"QuestRewardClose",Rect2(Vector2(927,70)-Vector2.ONE*close_size*.5,Vector2.ONE*close_size),app.close_modal)
 	app.picture(close,part(PARTS,CLOSE),Rect2(Vector2.ONE*(close_size-92)*.5,Vector2.ONE*92))
 	var scroll:=DevelopmentSettingsScroll.new()
-	scroll.position=Vector2(75,138)
-	scroll.size=Vector2(850,545)
+	scroll.position=Vector2(75,164)
+	scroll.size=Vector2(850,522)
 	scroll.horizontal_scroll_mode=ScrollContainer.SCROLL_MODE_DISABLED
 	scroll.vertical_scroll_mode=ScrollContainer.SCROLL_MODE_SHOW_NEVER
 	panel.add_child(scroll)
@@ -99,7 +115,7 @@ static func open(app:Node)->void:
 	scroll.add_child(cards)
 	var claim_all:=art_button(app,panel,"ClaimAllQuestRewards",Rect2(315,702,370,76),func():
 		if app.model.claim_all_quest_rewards():fill_cards(app,cards))
-	app.picture(claim_all,part(PARTS,CLAIM),Rect2(0,0,370,76)).stretch_mode=TextureRect.STRETCH_SCALE
+	sliced_art(claim_all,part(PARTS,CLAIM),Rect2(0,0,370,76),38)
 	caption(app,claim_all,"모두 받기",Rect2(0,0,370,76),32,INK)
 	fill_cards(app,cards)
 
@@ -115,7 +131,7 @@ static func fill_cards(app:Node,cards:VBoxContainer)->void:
 		var card:=Control.new()
 		card.custom_minimum_size=Vector2(850,104)
 		cards.add_child(card)
-		app.picture(card,part(PARTS,CARD),Rect2(0,0,850,104)).stretch_mode=TextureRect.STRETCH_SCALE
+		sliced_art(card,part(PARTS,CARD),Rect2(0,0,850,104),54)
 		var icon:Texture2D
 		if index<=5:
 			icon=part(ICONS,OBJECTIVE_ICONS[index-3])
@@ -128,5 +144,5 @@ static func fill_cards(app:Node,cards:VBoxContainer)->void:
 		caption(app,card,str(FirstQuests.MANUAL_AMOUNT),Rect2(582,0,75,104),37,INK)
 		var claim:=art_button(app,card,"ClaimQuest%d"%index,Rect2(687,16,142,71),func():
 			if app.model.claim_quest_reward(index):fill_cards(app,cards))
-		app.picture(claim,part(PARTS,CLAIM),Rect2(0,0,142,71)).stretch_mode=TextureRect.STRETCH_SCALE
+		sliced_art(claim,part(PARTS,CLAIM),Rect2(0,0,142,71),38)
 		caption(app,claim,"받기",Rect2(0,0,142,71),32,INK)

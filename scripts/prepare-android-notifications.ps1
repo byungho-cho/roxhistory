@@ -37,5 +37,5 @@ if ($LASTEXITCODE -ne 0) { throw 'Android notification bridge compilation failed
 $jar = Join-Path $JavaHome 'bin/jar.exe'
 & $jar --create --file (Join-Path $work 'classes.jar') -C $classes .
 if ($LASTEXITCODE -ne 0) { throw 'Android notification bridge JAR packaging failed.' }
-& $jar --create --file (Join-Path $addons 'roxhistory_notifications.aar') -C $work 'classes.jar' -C $source 'AndroidManifest.xml'
+& $jar --create --file (Join-Path $addons 'roxhistory_notifications.aar') -C $work 'classes.jar' -C $source 'AndroidManifest.xml' -C $source 'res'
 if ($LASTEXITCODE -ne 0) { throw 'Android notification bridge AAR packaging failed.' }

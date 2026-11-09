@@ -29,7 +29,7 @@ func _ready()->void:
 	headline=Label.new();headline.theme=DemoArt.theme();headline.position=Vector2(50,5.2);headline.size=Vector2(210,24);headline.vertical_alignment=VERTICAL_ALIGNMENT_CENTER;headline.add_theme_font_size_override("font_size",14);headline.add_theme_color_override("font_color",Color("49321e"));headline.mouse_filter=Control.MOUSE_FILTER_IGNORE;bubble.add_child(headline)
 	progress=ProgressBar.new();progress.show_percentage=false;progress.size=Vector2(250,3);progress.mouse_filter=Control.MOUSE_FILTER_IGNORE;bubble.add_child(progress);progress.position=Vector2(10,40);progress.hide()
 func request()->void:
-	if talking or app.modal or not app.model.family_available():return
+	if talking or app.modal or app.world_map_open or not app.application_active or not app.model.family_available():return
 	var needed:int=app.model.family_visitor_count()
 	if app.model.resident_capacity()-app.model.resident_count()<needed:
 		show_capacity_needed();return
@@ -55,7 +55,7 @@ func _process(delta:float)->void:
 	if not is_instance_valid(app.world):return
 	if app.model.family_available() and not app.model.state.get("resident_guide_seen",false) and not app.modal and not app.choosing_plot and not app.world_map_open and app.application_active:
 		var next:Dictionary=app.model.state.duplicate(true);next.resident_guide_seen=true
-		if app.model.commit(next):app.show_character_guide("새 주민이 찾아왔어요","함께 머물 곳을 찾고 있어요.\n주민 말풍선을 눌러 마을로 맞이해 주세요.")
+		if app.model.commit(next):app.show_character_guide("새 주민이 찾아왔어요","함께 머물 곳을 찾고 있어요.\n주민이나 말풍선을 눌러 마을로 맞이해 주세요.")
 	if app.application_active and app.screen=="play":
 		visit_check_elapsed+=delta
 		if visit_check_elapsed>=1.0:
@@ -66,21 +66,16 @@ func _process(delta:float)->void:
 	var width:float=headline.get_theme_font("font").get_string_size(headline.text,HORIZONTAL_ALIGNMENT_LEFT,-1,14).x+60
 	bubble.size=Vector2(minf(width,app.w-app.safe.x*2),44);background.position.x=BUBBLE_FRONT;background.size=Vector2(bubble.size.x-background.position.x,bubble.size.y)
 	headline.size.x=bubble.size.x-60;progress.size.x=bubble.size.x-20
-	var head:=Vector2(1590,745)
-	if not app.world.visitors.is_empty():
-		head.x=0;head.y=INF
-		for resident in app.world.visitors:
-			head.x+=resident.position.x;head.y=minf(head.y,resident.position.y-150)
-		head.x/=app.world.visitors.size()
-	var at:Vector2=app.world.get_global_transform_with_canvas()*head
 	var viewport:=Rect2(0,0,app.w,app.h).grow(4)
-	var party_visible:=false
+	var party_bounds:=Rect2()
+	var transform_to_screen:Transform2D=app.world.get_global_transform_with_canvas()
 	for resident in app.world.visitors:
-		var feet:Vector2=app.world.get_global_transform_with_canvas()*resident.position
-		var height:float=150.0*app.world.get_global_transform_with_canvas().get_scale().y
-		if viewport.intersects(Rect2(feet-Vector2(height*.22,height),Vector2(height*.44,height))):party_visible=true;break
-	bubble.position=at-Vector2(bubble.size.x*.5,bubble.size.y)
-	bubble.visible=party_visible and viewport.intersects(bubble.get_global_rect())
+		var bounds:Rect2=transform_to_screen*app.world.visitor_bounds(resident)
+		if not viewport.intersects(bounds):continue
+		party_bounds=party_bounds.merge(bounds) if party_bounds.has_area() else bounds
+	var anchor:=Vector2(party_bounds.get_center().x,party_bounds.position.y)
+	bubble.position=anchor-Vector2(bubble.size.x*.5,bubble.size.y+5)
+	bubble.visible=party_bounds.has_area() and viewport.intersects(bubble.get_global_rect())
 	if talking and app.task!="family":talking=false;progress.hide()
 	bubble.set_meta("semantic_text",headline.text)
 	progress.value=100*(1-app.task_remaining/1.5) if talking else 0

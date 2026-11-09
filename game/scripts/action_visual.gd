@@ -3,10 +3,11 @@ extends Control
 ## Figma 956:419: independent icon, pedestal and vertically centered name.
 var button:DemoButton
 var caption:Label
+var pedestal:TextureRect
 func _init(owner_button:DemoButton, texture:Texture2D)->void:
 	button=owner_button;mouse_filter=Control.MOUSE_FILTER_IGNORE
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	var pedestal:=TextureRect.new();pedestal.texture=preload("res://assets/ui/brush/action-stone-base@2x.png")
+	pedestal=TextureRect.new();pedestal.texture=preload("res://assets/ui/brush/action-stone-base@2x.png")
 	pedestal.expand_mode=TextureRect.EXPAND_IGNORE_SIZE;pedestal.position=Vector2(0,28);pedestal.size=Vector2(button.custom_minimum_size.x,49)
 	pedestal.mouse_filter=Control.MOUSE_FILTER_IGNORE;add_child(pedestal)
 	var icon:=TextureRect.new();icon.texture=texture;icon.expand_mode=TextureRect.EXPAND_IGNORE_SIZE;icon.stretch_mode=TextureRect.STRETCH_KEEP_ASPECT_CENTERED

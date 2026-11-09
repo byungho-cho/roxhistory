@@ -2,9 +2,9 @@ class_name BuildSideMenu
 extends Control
 # Logical order is left-to-right; opening starts at the right (움집 first).
 const KINDS:=["outpost","shrine","hearth","wood_store","stone_store","training","farm","hut"]
-const TILE_SIZE:=Vector2(80,92) # Keep the hit target, shrink only the composition.
+const TILE_SIZE:=Vector2(64,77)
 const ART_SCALE:=0.90 # Smaller than the main action, including the approved extra 10%.
-const MAX_VISIBLE:=6
+const MAX_VISIBLE:=5
 const GAP:=4.0
 const GUTTER:=44.0
 const DRAG_THRESHOLD:=10.0
@@ -14,8 +14,8 @@ var outpost_button:DemoButton
 var entries:Dictionary={}
 var clip:Control
 var content:Control
-var left_hint:Label
-var right_hint:Label
+var left_hint:Control
+var right_hint:Control
 var scroll_offset:=0.0
 var visible_slots:=MAX_VISIBLE
 var pointer:=-2
@@ -27,7 +27,7 @@ var pressed_arrow:=0
 var needs_refresh:=true
 func _init(owner_app:Node)->void:app=owner_app
 func _ready()->void:
-	name="BuildSideMenu";z_index=32;mouse_filter=Control.MOUSE_FILTER_IGNORE;hide()
+	name="BuildSideMenu";z_index=30;mouse_filter=Control.MOUSE_FILTER_IGNORE;hide()
 	clip=Control.new();clip.name="VisibleSlots";clip.clip_contents=true;clip.mouse_filter=Control.MOUSE_FILTER_IGNORE;add_child(clip)
 	content=Control.new();content.mouse_filter=Control.MOUSE_FILTER_IGNORE;clip.add_child(content)
 	for kind in KINDS:
@@ -37,12 +37,17 @@ func _ready()->void:
 		install_side_art(button,kind)
 		button.enable_art_feedback();entries[kind]=button
 	hut=entries.hut;outpost_button=entries.outpost
-	left_hint=Label.new();left_hint.text="‹";right_hint=Label.new();right_hint.text="›"
-	for hint in [left_hint,right_hint]:
-		hint.add_theme_font_size_override("font_size",24);hint.add_theme_color_override("font_color",Color("e6d3aa"));hint.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER;hint.vertical_alignment=VERTICAL_ALIGNMENT_CENTER;hint.mouse_filter=Control.MOUSE_FILTER_IGNORE;add_child(hint)
+	left_hint=make_arrow(false);right_hint=make_arrow(true)
 	visibility_changed.connect(_visibility_changed)
 	app.model.changed.connect(func():needs_refresh=true)
 	refresh()
+func make_arrow(flip:bool)->Control:
+	var target:=Control.new()
+	target.mouse_filter=Control.MOUSE_FILTER_IGNORE
+	add_child(target)
+	var icon:TextureRect=app.picture(target,preload("res://assets/ui/construction-side-v006/chevron.svg"),Rect2(16,29,12,20))
+	icon.flip_h=flip
+	return target
 func _visibility_changed()->void:
 	cancel_pointer()
 	if visible:
@@ -67,9 +72,14 @@ func refresh()->void:
 		button.tooltip_text=button.hint_text if button.disabled else BuildingWorkflow.building_name(kind)
 		button.art_feedback.get_node("Composition/Locked").visible=button.disabled
 		var artwork:Control=button.art_feedback.get_node("Composition/Artwork")
-		for child in artwork.get_children():child.modulate=Color.WHITE if child is Label else Color(1,1,1,.60 if button.disabled else 1.0)
-	position=Vector2(app.build_button.global_position.x-size.x-8,app.build_button.global_position.y-15)
+		artwork.modulate.a=.62 if button.disabled else 1.0
+	position=Vector2(app.build_button.global_position.x-size.x-8,app.build_button.global_position.y)
+	queue_redraw()
 	layout_scroll()
+func _draw()->void:
+	if not is_instance_valid(app.build_button):return
+	draw_rect(Rect2(0,8,size.x+8+app.build_button.size.x,size.y-6),Color(0,0,0,.18))
+	draw_line(Vector2(size.x+4,12),Vector2(size.x+4,size.y-5),Color(.96,.77,.43,.55))
 func layout_scroll()->void:
 	scroll_offset=clampf(scroll_offset,0,max_scroll());content.position.x=-scroll_offset
 	left_hint.visible=scroll_offset>.5;right_hint.visible=scroll_offset<max_scroll()-.5
@@ -146,8 +156,11 @@ static func image_slot(parent:Control,file:String,at:Vector2,dimensions:Vector2,
 static func install_side_art(button:DemoButton,kind:String)->void:
 	button.set_meta("integrated_art",true) # This composition owns its disabled contrast.
 	for state in ["normal","hover","pressed","disabled","focus"]:button.add_theme_stylebox_override(state,StyleBoxEmpty.new())
-	var composition:=Control.new();composition.name="Composition";composition.size=Vector2(180,200);composition.scale=TILE_SIZE*ART_SCALE/Vector2(180,200);composition.position=TILE_SIZE*(1.0-ART_SCALE)*.5;composition.mouse_filter=Control.MOUSE_FILTER_IGNORE;button.add_child(composition)
+	var composition:=Control.new();composition.name="Composition";composition.size=Vector2(180,200);composition.scale=TILE_SIZE/Vector2(180,200);composition.mouse_filter=Control.MOUSE_FILTER_IGNORE;button.add_child(composition)
+	var pedestal:=TextureRect.new();pedestal.texture=preload("res://assets/ui/brush/action-stone-base@2x.png");pedestal.expand_mode=TextureRect.EXPAND_IGNORE_SIZE
+	pedestal.position=Vector2(0,82);pedestal.size=Vector2(180,118);pedestal.mouse_filter=Control.MOUSE_FILTER_IGNORE;composition.add_child(pedestal)
 	var art:=Control.new();art.name="Artwork";art.mouse_filter=Control.MOUSE_FILTER_IGNORE;composition.add_child(art)
+	art.scale=Vector2.ONE*ART_SCALE;art.position=Vector2(9,-23)
 	match kind:
 		"stone_store","wood_store":image_slot(art,kind,Vector2(2,47),Vector2(180,135))
 		"outpost":image_slot(art,kind,Vector2(15,33),Vector2(150,150))
@@ -156,7 +169,6 @@ static func install_side_art(button:DemoButton,kind:String)->void:
 		"training":image_slot(art,kind,Vector2(30.18,37.5),Vector2(119.64,137.5),Rect2(-.1084,-.3522,5.2337,1.5178))
 		"hut":image_slot(art,kind,Vector2(16.13,48.7),Vector2(143.75,124.301),Rect2(-.25,-.966,6.3882,2.4626))
 		"farm":image_slot(art,kind,Vector2(2,22),Vector2(180,150),Rect2(-19.17/180,18.33/150,218.333/180,200.0/150))
-	image_slot(art,"brush",Vector2(0,150),Vector2(180,50),Rect2(-2.2/180,-7.68/50,184.068/180,61.356/50))
-	var label:=Label.new();label.name="MenuLabel";label.text={"hut":"움집","farm":"농장","training":"훈련소","hearth":"화덕","shrine":"신당","outpost":"초소","stone_store":"석재소","wood_store":"제재소"}[kind];label.theme=DemoArt.theme();label.add_theme_font_size_override("font_size",27);label.add_theme_color_override("font_color",Color("fff2cf"));label.position=Vector2(6.666,151.67);label.size=Vector2(166.667,40);label.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER;label.vertical_alignment=VERTICAL_ALIGNMENT_CENTER;label.mouse_filter=Control.MOUSE_FILTER_IGNORE;art.add_child(label)
-	var locked:=TextureRect.new();locked.name="Locked";locked.texture=IntegratedMenuArt.trimmed(load("res://assets/ui/v0158/lock.png"));locked.expand_mode=TextureRect.EXPAND_IGNORE_SIZE;locked.stretch_mode=TextureRect.STRETCH_KEEP_ASPECT_CENTERED;locked.position=Vector2(-2.5,137.5);locked.size=Vector2.ONE*54;locked.modulate.a=.95;locked.mouse_filter=Control.MOUSE_FILTER_IGNORE;composition.add_child(locked)
+	var label:=Label.new();label.name="MenuLabel";label.text={"hut":"움집","farm":"농장","training":"훈련소","hearth":"화덕","shrine":"신당","outpost":"초소","stone_store":"석재소","wood_store":"제재소"}[kind];label.theme=DemoArt.theme();label.add_theme_font_size_override("font_size",27);label.add_theme_color_override("font_color",Color("fff2cf"));label.position=Vector2(6.666,137);label.size=Vector2(166.667,45);label.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER;label.vertical_alignment=VERTICAL_ALIGNMENT_CENTER;label.mouse_filter=Control.MOUSE_FILTER_IGNORE;composition.add_child(label)
+	var locked:=TextureRect.new();locked.name="Locked";locked.texture=IntegratedMenuArt.trimmed(load("res://assets/ui/v0158/lock.png"));locked.expand_mode=TextureRect.EXPAND_IGNORE_SIZE;locked.stretch_mode=TextureRect.STRETCH_KEEP_ASPECT_CENTERED;locked.position=Vector2(4,137);locked.size=Vector2.ONE*48;locked.modulate.a=.85;locked.mouse_filter=Control.MOUSE_FILTER_IGNORE;composition.add_child(locked)
 	button.enable_art_feedback()
