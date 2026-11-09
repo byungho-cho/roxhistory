@@ -61,6 +61,9 @@ func run()->void:
 	var journal:Control=app.stage.get_node("JournalButton")
 	var main_inventory:Control=app.action_row.get_child(3)
 	check(journal.global_position.x<app.stage.get_node("QuestRewardEntry").global_position.x,"Journal appears to the left of rewards")
+	var journal_icon:TextureRect=journal.get_node("EntryIcon")
+	var reward_icon:TextureRect=app.stage.get_node("QuestRewardEntry/EntryIcon")
+	check(is_equal_approx(journal_icon.get_global_rect().end.y,reward_icon.get_global_rect().end.y),"Journal and reward artwork share a baseline")
 	app.construction_menu()
 	check(app.build_side.transition!=null and app.build_side.modulate.a<1.0,"Building list starts an opening animation")
 	await app.build_side.transition.finished
