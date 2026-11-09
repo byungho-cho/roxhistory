@@ -19,7 +19,7 @@ const FARM_STANDS:=[Vector2(171,72),Vector2(-171,72),Vector2(0,220)]
 var variant:="female"
 var visual:HybridCharacter
 var carry_study:ResidentCarryStudy
-var retouch_study:=OS.get_cmdline_user_args().has("--resident-retouch-study")
+var retouch_study:=OS.has_feature("resident_retouch_study") or OS.get_cmdline_user_args().has("--resident-retouch-study")
 var origin:=Vector2.ZERO
 var destination:=Vector2.ZERO
 var phase:=0.0
