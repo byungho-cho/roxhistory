@@ -39,7 +39,7 @@ func item(title:String,file:String,at:Vector2,diameter:float,callback:Callable)-
 		caption.add_theme_color_override("font_outline_color",Color("231b12"));caption.add_theme_constant_override("outline_size",4);caption.mouse_filter=Control.MOUSE_FILTER_IGNORE
 	b.enable_art_feedback();return b
 func _ready()->void:
-	name="BuildingMenu";mouse_filter=Control.MOUSE_FILTER_IGNORE;z_index=8;size=Vector2(438,225)*.6
+	name="BuildingMenu";mouse_filter=Control.MOUSE_FILTER_IGNORE;z_index=26;size=Vector2(438,225)*.6
 	move_button=app.button(self,"",move_selected);move_button.name="Move"
 	IntegratedMenuArt.install(move_button,"move",Vector2(96,96)*.8);move_button.position=Vector2(0,34)*.6
 	upgrade_button=app.button(self,"",upgrade);upgrade_button.name="Upgrade"

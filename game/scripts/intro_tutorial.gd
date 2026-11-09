@@ -21,7 +21,7 @@ func _init(owner: Node) -> void:
 	z_index = 45
 
 func active() -> bool:
-	return app.screen == "play" and app.model.state.get("guided_intro", false) and FirstQuests.current(app.model.state) in [0, 1, 2]
+	return app.screen == "play" and not app.village_entry_active() and app.model.state.get("guided_intro", false) and FirstQuests.current(app.model.state) in [0, 1, 2]
 
 func _process(delta: float) -> void:
 	age += delta

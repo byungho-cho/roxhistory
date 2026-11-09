@@ -1,6 +1,7 @@
 class_name VillageRewardBoard
 extends DemoButton
 ## The board and animated reward bubble use independent artwork.
+const EAST_CORNER:=Vector2(212,36)
 var app:Node
 var marker:TextureRect
 var pulse_elapsed:=0.0
@@ -9,7 +10,7 @@ var tween:Tween
 func _init(owner:Node)->void:
 	app=owner
 	name="VillageRewardBoard"
-	size=Vector2(75,72)
+	size=Vector2(118,120)
 	z_index=20
 	focus_mode=Control.FOCUS_NONE
 	tooltip_text="마을 보상"
@@ -17,10 +18,10 @@ func _init(owner:Node)->void:
 func _ready()->void:
 	for state in ["normal","hover","pressed","focus","disabled"]:
 		add_theme_stylebox_override(state,StyleBoxEmpty.new())
-	app.picture(self,preload("res://assets/ui/village-guidance/noticeboard.png"),Rect2(8,12,59,60))
-	marker=app.picture(self,preload("res://assets/ui/village-guidance/noticeboard-alert.png"),Rect2(20,-19,34,34))
+	app.picture(self,preload("res://assets/ui/village-guidance/noticeboard.png"),Rect2(Vector2.ZERO,size))
+	marker=app.picture(self,preload("res://assets/ui/village-guidance/noticeboard-alert.png"),Rect2(33.5,-15,51,51))
 	marker.name="RewardExclamation"
-	marker.pivot_offset=Vector2(17,29)
+	marker.pivot_offset=Vector2(25.5,43.5)
 	marker.hide()
 	pressed.connect(open_rewards)
 	app.model.changed.connect(refresh_reward)
@@ -52,11 +53,10 @@ func _process(delta:float)->void:
 	if not visible or not app.application_active:return
 	var world:Node2D=app.world
 	var transform_to_screen:=world.get_global_transform_with_canvas()
-	var at:Vector2=transform_to_screen*(app.model.building_position("chief")+Vector2(0,132))
-	visible=Rect2(Vector2.ZERO,Vector2(app.w,app.h)).has_point(at)
-	if not visible:return
+	var at:Vector2=transform_to_screen*(app.model.building_position("chief")+EAST_CORNER)
 	scale=Vector2.ONE*clampf(transform_to_screen.get_scale().x,.85,1.15)
-	position=at-size*scale*Vector2(.5,1)
+	position=at-size*scale*Vector2(.18,1)
+	visible=Rect2(Vector2.ZERO,Vector2(app.w,app.h)).intersects(get_global_rect())
 	if marker.visible:
 		pulse_elapsed+=delta
 		if pulse_elapsed>=13:

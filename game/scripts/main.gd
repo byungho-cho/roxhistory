@@ -43,6 +43,7 @@ var menu_animating:=false
 var map_transition:ColorRect
 var map_tween:Tween
 var map_transition_active:=false
+var village_entry:VillageEntry
 var task_target := ""
 var task_site := -1
 var gather_approach:=false
@@ -174,6 +175,7 @@ func clear_children(node: Node) -> void:
 		child.queue_free()
 
 func show_screen(next: String) -> void:
+	finish_village_entry()
 	if menu_tween:menu_tween.kill()
 	menu_animating=false
 	if map_tween:map_tween.kill()
@@ -461,9 +463,9 @@ func start_region() -> void:
 			remove_child(world)
 			world.queue_free()
 			world = null
-		enter_game()
+		enter_game(true)
 
-func enter_game() -> void:
+func enter_game(first_entry:=false) -> void:
 	if model.state.is_empty():
 		return
 	if village_alerts and VillageNotifications.EVENTS.any(func(event):return VillageNotifications.setting(model.state,event)):
@@ -482,8 +484,16 @@ func enter_game() -> void:
 	world.player.set_character_3d(true)
 	world.player.camera.reset_smoothing()
 	show_screen("play")
-	# Old intro_seen is retained in saves; entry now goes directly to play.
+	if first_entry:
+		gestures.clear()
+		village_entry=VillageEntry.new(world.player,world.boundary_root.get_node_or_null("UnlockedPerimeter"))
+		stage.add_child(village_entry)
 
+func village_entry_active()->bool:
+	return is_instance_valid(village_entry) and not village_entry.is_queued_for_deletion()
+
+func finish_village_entry()->void:
+	if village_entry_active():village_entry.finish()
 
 func play_hud() -> void:
 	var quest_panel:=button(stage,"",toggle_quest);quest_panel.name="QuestPanel";quest_panel.z_index=40;quest_panel.custom_minimum_size=Vector2.ZERO
@@ -541,12 +551,13 @@ func play_hud() -> void:
 	build_side=BuildSideMenu.new(self);stage.add_child(build_side)
 	build_side.visibility_changed.connect(update_construction_row)
 	tutorial=IntroTutorial.new(self);stage.add_child(tutorial)
-	building_menu=BuildingMenu.new(self);stage.add_child(building_menu)
+	building_menu=BuildingMenu.new(self)
 	queued_action_indicator=QueuedActionIndicator.new(self);stage.add_child(queued_action_indicator)
 	build_preview=BuildPreview.new(self);world.add_child(build_preview)
 	var dark:=DemoArt.panel(true)
 	context_panel=PanelContainer.new();stage.add_child(context_panel);context_panel.position=Vector2(w*.5-145,h-safe.y-108);context_panel.size=Vector2(290,32);context_panel.add_theme_stylebox_override("panel",dark);context_panel.mouse_filter=Control.MOUSE_FILTER_IGNORE
 	context=label(context_panel,"",13,Color("fff0cd"));context.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
+	context_panel.hide()
 	task_bar=ProgressBar.new();task_bar.mouse_filter=Control.MOUSE_FILTER_IGNORE;task_bar.show_percentage=false;task_bar.position=Vector2(w*.5-100,h-safe.y-120);task_bar.size=Vector2(200,7);stage.add_child(task_bar);task_bar.visible=false
 	chrome=PlayChrome.new(self);chrome.z_index=30;stage.add_child(chrome);chrome.size=Vector2(w,h)
 	resident_panel=ResidentPanel.new(self);stage.add_child(resident_panel)
@@ -567,6 +578,8 @@ func play_hud() -> void:
 	quest_reward_count=QuestRewards.install_entry(self)
 	stage.add_child(VillageRewardBoard.new(self))
 	stage.add_child(BuildingUpgradeSigns.new(self))
+	# GUI hit testing visits later siblings first; the menu only blocks through its buttons.
+	stage.add_child(building_menu)
 	world_map_open=false
 	update_hud()
 
@@ -695,7 +708,7 @@ func update_hud() -> void:
 	update_quest()
 
 func show_pending_quest_guide()->void:
-	if modal or choosing_plot or not task.is_empty() or not application_active:return
+	if village_entry_active() or modal or choosing_plot or not task.is_empty() or not application_active:return
 	var current:=FirstQuests.current(model.state)
 	if current<0 or current>FirstQuests.INTRO_KINDS.size():return
 	if FirstQuests.intro_reward_ready(model.state,current):
@@ -725,7 +738,7 @@ func _process(delta: float) -> void:
 		toast_time -= delta
 		if toast_time <= 0 and is_instance_valid(toast_label): toast_label.text = ""
 	if is_instance_valid(world):world.simulation_paused=not application_active or world_map_open or map_transition_active
-	if screen != "play" or world_map_open or map_transition_active or not is_instance_valid(world):
+	if screen != "play" or world_map_open or map_transition_active or village_entry_active() or not is_instance_valid(world):
 		return
 	show_pending_quest_guide()
 	if application_active:
@@ -1219,7 +1232,9 @@ func display_error(message: String) -> void:
 	show_modal("저장 확인",message+"\n저장 공간을 확인한 뒤 다시 시도해 주세요.",[{"text":"확인","action":close_modal}])
 
 func go_back() -> void:
-	if overlay is CharacterGuide:
+	if village_entry_active():
+		finish_village_entry()
+	elif overlay is CharacterGuide:
 		overlay.advance()
 	elif modal:
 		close_modal()
@@ -1248,6 +1263,7 @@ func _notification(what: int) -> void:
 	if what == NOTIFICATION_WM_GO_BACK_REQUEST:
 		go_back()
 	elif what == NOTIFICATION_APPLICATION_PAUSED or what == NOTIFICATION_APPLICATION_FOCUS_OUT:
+		finish_village_entry()
 		var was_demolition:=not demolition_key.is_empty()
 		if was_demolition:close_modal()
 		if is_instance_valid(region_selection):region_selection.cancel_input()

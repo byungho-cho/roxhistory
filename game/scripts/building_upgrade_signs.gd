@@ -33,7 +33,7 @@ func refresh()->void:
 		if signs.has(key):signs[key].disabled=not reason.is_empty()
 
 func _process(_delta:float)->void:
-	visible=app.application_active and not app.modal and not app.world_map_open and not app.map_transition_active and not app.choosing_plot and not app.tutorial.active() and not app.building_menu.visible
+	visible=app.application_active and not app.modal and not app.world_map_open and not app.map_transition_active and not app.choosing_plot and not app.tutorial.active()
 	if not visible:return
 	if dirty:refresh()
 	var screen:=Rect2(Vector2.ZERO,Vector2(app.w,app.h))
@@ -44,5 +44,7 @@ func _process(_delta:float)->void:
 			button.hide()
 			continue
 		var bounds:=sprite.get_global_transform_with_canvas()*BuildingVisuals.visible_rect(sprite)
-		button.position=Vector2(bounds.end.x-HIT_SIZE.x*.45,bounds.end.y-HIT_SIZE.y*.8)
+		var ground_offset:=132.0 if key=="chief" else 85.0
+		var south:Vector2=app.world.get_global_transform_with_canvas()*(app.model.building_position(key)+Vector2(0,ground_offset))
+		button.position=south-Vector2(HIT_SIZE.x*.5,HIT_SIZE.y*.8)
 		button.visible=screen.intersects(bounds) and screen.encloses(button.get_global_rect()) and not app.resident_panel.hud_occludes(button.get_global_rect())
