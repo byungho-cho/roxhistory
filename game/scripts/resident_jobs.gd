@@ -3,6 +3,7 @@ extends RefCounted
 ## Persist only intent and paid-for cargo. Travel/work progress can safely restart.
 var model: GameState
 const MAX_RESIDENTS := 15
+const BUILDING_JOBS := {"farm":"farmer", "outpost":"guard", "stone_store":"stone", "wood_store":"wood"}
 const JOBS := ["idle", "wood", "stone", "farmer", "guard"]
 func _init(game:GameState)->void:model=game
 

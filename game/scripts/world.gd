@@ -422,6 +422,7 @@ func refresh_outposts()->void:
 			add_child(body)
 		body.position=model.building_position("outpost:"+str(entry.uid))
 		BuildingVisuals.apply(body.get_child(0),"outpost",int(entry.get("level",1)),230)
+		refresh_unassigned_indicator(body,body.get_child(0),"outpost:"+str(entry.uid))
 	remove_stale_buildings("Outpost_",wanted)
 
 func refresh_facilities()->void:
@@ -450,7 +451,15 @@ func refresh_facilities()->void:
 		life.level=int(entry.get("level",1))
 		life.visible=not entry.has("upgrade")
 		if kind=="hearth":sprite.material=null
+		refresh_unassigned_indicator(body,sprite,kind+":"+str(entry.uid))
 	remove_stale_buildings("Facility_",wanted)
+
+func refresh_unassigned_indicator(body:Node2D,sprite:Sprite2D,key:String)->void:
+	if not ResidentJobs.BUILDING_JOBS.has(key.get_slice(":",0)):return
+	var indicator:=body.get_node_or_null("UnassignedBuildingIndicator") as UnassignedBuildingIndicator
+	if indicator==null:
+		indicator=UnassignedBuildingIndicator.new(model,key,sprite);body.add_child(indicator)
+	indicator.refresh()
 
 func add_building_collision(body:StaticBody2D,width:float)->void:
 	var collision:=CollisionShape2D.new();var shape:=ConvexPolygonShape2D.new()
