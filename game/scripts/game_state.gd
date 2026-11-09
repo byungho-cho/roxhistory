@@ -23,6 +23,8 @@ var debug_unlimited_buildings:bool:
 	set(value):set_debug_unlimited_buildings(value)
 var debug_fast_build:bool:
 	get:return bool(state.get("debug_fast_build",false))
+var debug_resource_refill:bool:
+	get:return bool(state.get("debug_resource_refill",false))
 var debug_show_boundary:bool:
 	get:return bool(state.get("debug_show_boundary",false))
 	set(value):set_debug_show_boundary(value)
@@ -94,7 +96,7 @@ func finish_chief_upgrade(now:float=-1.0) -> bool:
 	prepare_resource_positions(next)
 	var ok:=commit(next)
 	busy=false
-	if ok:VillageNotifications.dispatch(self,"upgrade",{"kind":"chief"})
+	if ok:VillageNotifications.dispatch(self,"upgrade",{"kind":"chief","id":"chief:%s"%next.chief_level})
 	return ok
 
 # Same atomic payment/save transaction as huts. Outposts do not count toward
@@ -180,20 +182,26 @@ func respawn(id:String, at:Vector2, now:float=-1.0) -> bool:
 		return commit(next)
 	return false
 
-func _init(save_store: SaveStore) -> void:
+func _init(save_store: SaveStore, defer_completion: bool = false) -> void:
 	store = save_store
 	state = store.load_game()
 	migrate_village()
 	migrate_resources()
 	migrate_resource_positions()
 	migrate_economy()
+	if not state.is_empty() and not state.has("quests_done"):commit(state.duplicate(true))
 	ensure_respawn_timers()
+	if not defer_completion:finish_loaded_jobs()
+
+func finish_loaded_jobs()->void:
 	finish_constructions()
 	finish_chief_upgrade()
 	OwnedBuildingUpgrades.finish(self)
 	if debug_fast_build and state.get("fast_build_mode","")!="fixed5":set_debug_fast_build(true)
 
 func commit(next: Dictionary, reset: bool = false) -> bool:
+	if not FirstQuests.valid(next):return false
+	FirstQuests.reconcile(next,not reset and not next.has("quests_done"))
 	if not store.save_game(next,reset):
 		failed.emit(store.message)
 		return false
@@ -204,6 +212,8 @@ func commit(next: Dictionary, reset: bool = false) -> bool:
 
 func start_new() -> bool:
 	var next:=DemoConfig.fresh()
+	next.guided_intro=true
+	next.notification_run="%s-%s"%[Time.get_unix_time_from_system(),Time.get_ticks_usec()]
 	prepare_resource_positions(next)
 	var ok:=commit(next,true)
 	if ok:
@@ -241,6 +251,9 @@ func gather(node_id: String, pos: Vector2 = Vector2.ZERO, now:float=-1.0) -> boo
 			if not next.has("respawn_due"):next.respawn_due={}
 			next.respawn_due[node_id]=now+randf_range(RESPAWN_MIN_SECONDS,RESPAWN_MAX_SECONDS)
 		ResourceStorage.receive(self,next,n.kind,int(DemoConfig.get_data().gather_yield))
+		var done:Array=next.get("quests_done",[])
+		FirstQuests.mark(done,"hero_wood" if n.kind=="wood" else "hero_stone")
+		next.quests_done=done
 		if pos != Vector2.ZERO:
 			next.position = [pos.x,pos.y]
 		var ok := commit(next)
@@ -248,6 +261,34 @@ func gather(node_id: String, pos: Vector2 = Vector2.ZERO, now:float=-1.0) -> boo
 		return ok
 	busy = false
 	return false
+
+func claim_quest_reward(index:int)->bool:
+	if busy:return false
+	var next:=state.duplicate(true)
+	if FirstQuests.intro_reward_ready(state,index):
+		FirstQuests.grant_intro(next,index)
+		return commit(next)
+	if index not in FirstQuests.pending(state):return false
+	next.quests_claimed.append(FirstQuests.IDS[index])
+	next.grain=int(next.get("grain",0))+FirstQuests.MANUAL_AMOUNT
+	return commit(next)
+
+func claim_all_quest_rewards()->bool:
+	var pending:=FirstQuests.pending(state)
+	if busy or pending.is_empty():return false
+	var next:=state.duplicate(true)
+	for index in pending:next.quests_claimed.append(FirstQuests.IDS[index])
+	next.grain=int(next.get("grain",0))+pending.size()*FirstQuests.MANUAL_AMOUNT
+	return commit(next)
+
+func mark_quest_guide(index:int)->bool:
+	var id:String=FirstQuests.IDS[index]
+	var shown:Array=state.get("quests_guides",[])
+	if id in shown:return false
+	var next:=state.duplicate(true)
+	next.quests_guides=shown.duplicate()
+	next.quests_guides.append(id)
+	return commit(next)
 
 func can_build() -> bool:
 	return can_construct("hut")
@@ -408,7 +449,7 @@ func building_unlocked(kind:String)->bool:
 		if built_count()==0 or farms==0:return false
 	return not state.is_empty() and BuildingRules.REQUIRED_HQ.has(kind) and chief_level()>=int(BuildingRules.REQUIRED_HQ[kind]) and (kind!="farm" or built_count()>0)
 
-func building_requirement(kind:String)->String:
+func building_requirement(kind:String,check_resources:bool=true)->String:
 	kind=BuildingRules.canonical(kind)
 	if state.is_empty():return "게임을 먼저 시작해 주세요"
 	if not BuildingRules.REQUIRED_HQ.has(kind):return "아직 지원하지 않는 건물이에요"
@@ -449,11 +490,12 @@ func building_requirement(kind:String)->String:
 		for job in construction_jobs():
 			if str(job.kind) in BuildingRules.FACILITY_KINDS:pending_facilities+=1
 		if facilities().size()+pending_facilities>=BuildingRules.MAX_ENTRIES:return "시설 한도에 도달했어요"
+	if not check_resources:return ""
 	var cost:=building_cost(kind,1)
 	if state.wood<cost.wood or state.stone<cost.stone:return "나무 %d개와 돌 %d개가 필요해요" % [cost.wood,cost.stone]
 	return ""
 
-func upgrade_requirement(key:String="chief")->String:
+func upgrade_requirement(key:String="chief",check_resources:bool=true)->String:
 	var found:=lookup_building(key)
 	if found.is_empty():return "건물을 찾을 수 없어요"
 	if found.kind in ["stone_store","wood_store"] and not BuildingRules.STORAGE_TIMING_CONFIRMED:return "저장 건물 공사 시간 확인 대기 중"
@@ -462,6 +504,7 @@ func upgrade_requirement(key:String="chief")->String:
 	if level>=4:return "최고 레벨이에요"
 	if key!="chief" and level>=chief_level():return "촌장집 Lv.%d 필요" % (level+1)
 	if not builder_available():return "건설자 1명이 작업 중이에요"
+	if not check_resources:return ""
 	var cost:=building_cost(found.kind,level+1)
 	if state.wood<cost.wood or state.stone<cost.stone:return "나무 %d개와 돌 %d개가 필요해요" % [cost.wood,cost.stone]
 	return ""
@@ -605,7 +648,7 @@ func finish_constructions(now:float=-1.0)->bool:
 	if not did_finish:return false
 	var completed:Array=[]
 	for job in construction_jobs():
-		if now>=float(job.finishes_at):completed.append(str(job.kind))
+		if now>=float(job.finishes_at):completed.append({"kind":str(job.kind),"id":str(job.uid)})
 	next.construction_jobs=pending
 	next.built=not next.get("homes",[]).is_empty()
 	if next.built:
@@ -615,7 +658,7 @@ func finish_constructions(now:float=-1.0)->bool:
 	var ok:=commit(next)
 	busy=false
 	if ok:
-		for kind in completed:VillageNotifications.dispatch(self,"construction",{"kind":kind})
+		for job in completed:VillageNotifications.dispatch(self,"construction",job)
 	return ok
 
 func cancel_upgrade(key:String)->bool:
@@ -718,10 +761,17 @@ func prune_gather_claims()->void:
 			var item:Dictionary=state.get("resident_jobs",{}).get(owner,{})
 			if owner not in ResidentAdmission.ids(state) or item.get("job","")!=catalog[target].kind or not item.get("cargo",{}).is_empty():gather_claims.erase(owner)
 
-func debug_fill_resources()->bool:
+func set_debug_resource_refill(enabled:bool)->bool:
 	if busy or state.is_empty():return false
+	if enabled==debug_resource_refill:return true
 	var next:=state.duplicate(true)
-	for kind in ["wood","stone","grain"]:next[kind]=maxi(int(next.get(kind,0)),9999)
+	next.debug_resource_refill=enabled
+	return commit(next)
+
+func debug_fill_resource(kind:String)->bool:
+	if busy or not debug_resource_refill or kind not in ["wood","stone","grain"]:return false
+	var next:=state.duplicate(true)
+	next[kind]=int(next.get(kind,0))+100
 	busy=true
 	var ok:=commit(next)
 	busy=false

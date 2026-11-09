@@ -37,28 +37,29 @@ func open()->void:
 	line(content,Vector2(249,131),Vector2(1,34),"9a713f");app.picture(content,hut(),Rect2(272,127,48,41.506));text(content,"생활",Vector2(342,130),25,Color("b8a58c"))
 	line(content,Vector2(84,176),Vector2(1114,1),"866039");line(content,Vector2(431,198),Vector2(1,425),"775639")
 	var glow:TextureRect=app.picture(content,crop(preload("res://assets/ui/v0160/quest-story-glow.png"),7.0549,40.913,.4768,9.3043),Rect2(87,165,182,18));var blend:=ShaderMaterial.new();blend.shader=preload("res://shaders/quest_lighten.gdshader");glow.material=blend
-	var captions:=["우리의 첫 보금자리","숲에서 만난 흔적","함께 살아가는 마을"]
-	for i in 3:
-		var y:int=[208,330,444][i];var height:int=106 if i==0 else 98
-		background(content,"selected" if i==0 else "common",Rect2(61,y,348,height))
-		var texture:Texture2D=hut() if i==0 else crop(ICONS,4.2431,2.4265,.0608,1.2938) if i==1 else crop(ICONS,4.2198,2.56,3.1648,1.395)
-		app.picture(content,texture,Rect2(79,y+24.46 if i==0 else y+18.75,66,57.071 if i==0 else 60.5))
-		text(content,captions[i],Vector2(157,y+24 if i==0 else y+19),19);text(content,"진행 중" if i==0 else "잠김",Vector2(157,y+56 if i==0 else y+51),16)
-	app.picture(content,hut(),Rect2(462,208,143,123.653));text(content,"이야기 · 첫 터전",Vector2(618,202),19,Color("d0ae7d"))
-	text(content,"우리의 첫 보금자리",Vector2(618,235),39,Color("ffebc2"));text(content,"나무와 돌을 모아 주민이 머물 움집을 지어주세요.",Vector2(551,318),21,Color("f5e3be"))
-	line(content,Vector2(456,363),Vector2(755,1),"87623c")
-	var cost:Dictionary=app.model.building_cost("chief" if app.model.chief_level()==0 else "hut",1)
-	for i in 2:
-		var key:String="wood" if i==0 else "stone";var x:int=456+i*386
-		background(content,"common",Rect2(x,389,371,110));app.picture(content,DemoArt.icon(key),Rect2(x+20,410,74,67.833))
-		text(content,"목재 모으기" if i==0 else "석재 모으기",Vector2(x+109,410),22,Color("f7e5c0"))
-		text(content,"%d / %d"%[mini(int(app.model.state.get(key,0)),int(cost[key])),int(cost[key])],Vector2(x+279,415),19,Color("f5dcab"))
-		var bar:=ProgressBar.new();bar.name="WoodProgress" if i==0 else "StoneProgress";bar.position=Vector2(x+109,463);bar.size=Vector2(242,12);bar.show_percentage=false;bar.max_value=int(cost[key]);bar.value=mini(int(app.model.state.get(key,0)),int(cost[key]));bar.mouse_filter=Control.MOUSE_FILTER_IGNORE
-		var track:=StyleBoxFlat.new();track.bg_color=Color("241d14");track.border_color=Color("99815b");track.set_border_width_all(1);track.set_corner_radius_all(6)
-		var fill:=StyleBoxFlat.new();fill.bg_color=Color("98af31");fill.set_corner_radius_all(5);fill.set_expand_margin_all(-1)
-		bar.add_theme_stylebox_override("background",track);bar.add_theme_stylebox_override("fill",fill);content.add_child(bar);bar.size=Vector2(242,12)
-	background(content,"common",Rect2(459,533,472,80));text(content,"보상",Vector2(478,551),27,Color("e8bb70"));line(content,Vector2(562,549),Vector2(1,48),"ad7a3e")
-	app.picture(content,DemoArt.icon("meat"),Rect2(585,542,69,63.25));app.picture(content,DemoArt.icon("berries"),Rect2(682,542,69,63.25));app.picture(content,preload("res://assets/ui/v0160/quest-leather.png"),Rect2(762,520,108,108))
-	var track:DemoButton=app.button(content,"",func():app.close_modal();app.focus_objective());track.name="TrackQuest";track.custom_minimum_size=Vector2.ZERO;track.position=Vector2(957,532);track.size=Vector2(260,81)
-	for state in ["normal","hover","pressed","focus"]:track.add_theme_stylebox_override(state,StyleBoxEmpty.new())
-	background(track,"track",Rect2(0,0,260,81));app.picture(track,DemoArt.icon("compass"),Rect2(18,17.13,51,46.75));text(track,"임무 추적",Vector2(81,23),23,Color("3d210a"))
+	var scroll:=DevelopmentSettingsScroll.new()
+	scroll.name="QuestList"
+	scroll.position=Vector2(61,197)
+	scroll.size=Vector2(1148,426)
+	scroll.horizontal_scroll_mode=ScrollContainer.SCROLL_MODE_DISABLED
+	content.add_child(scroll)
+	var list:=VBoxContainer.new()
+	list.size_flags_horizontal=Control.SIZE_EXPAND_FILL
+	list.add_theme_constant_override("separation",8)
+	scroll.add_child(list)
+	var state:Dictionary=app.model.state
+	var current:=FirstQuests.current(state)
+	for i in FirstQuests.IDS.size():
+		var row:=Control.new()
+		row.custom_minimum_size=Vector2(1125,76)
+		list.add_child(row)
+		background(row,"selected" if i==current else "common",Rect2(0,0,1125,76))
+		text(row,"%02d"%[i+1],Vector2(16,18),22)
+		text(row,FirstQuests.TITLES[i],Vector2(78,18),22)
+		text(row,FirstQuests.OBJECTIVES[i],Vector2(330,18),19)
+		var id:String=FirstQuests.IDS[i]
+		var status:="대기"
+		if id in state.get("quests_claimed",[]):status="보상 수령"
+		elif id in state.get("quests_done",[]):status="받을 보상"
+		elif i==current:status="진행 중"
+		text(row,status,Vector2(988,18),18)

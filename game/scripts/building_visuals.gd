@@ -3,16 +3,21 @@ extends RefCounted
 ## One presentation transform for completed structures and placement previews.
 ## Does not change collision, saved positions, plot geometry or occupation.
 const REFERENCE_WIDTH := 320.0
+const FARM_WIDTH := 256.0
+const FARM_PREVIOUS_WIDTH := 184.0
 const TRAINING_HEIGHTS := [180.0, 202.5, 211.5, 229.5]
 const SHRINE_HEIGHTS := [166.0, 184.0, 202.0, 222.0]
 const HEARTH_HEIGHTS := [114.57, 139.37, 182.4, 184.3]
 const OUTPOST_GROUND_SPANS := [800.0, 780.0, 790.0, 830.0]
+# Ground footprint centers in the original textures, excluding flags and transparent margins.
+const CHIEF_GROUND_ANCHORS := [Vector2(0.50, 0.73), Vector2(0.49, 0.73), Vector2(0.47, 0.73), Vector2(0.47, 0.74)]
 
 static func asset_id(kind: String, level: int = 1) -> String:
 	var category := "HUT" if kind in ["chief", "hut", "home"] else kind.to_upper()
 	return "BLD-%s-L%d" % [category, clampi(level, 1, 4)]
 
 static func texture(kind: String, level: int = 1) -> Texture2D:
+	if kind=="chief":return load("res://assets/chief-retouch/l%d.png"%clampi(level,1,4))
 	if kind=="farm":return load("res://assets/farm/v003/farm-empty-l%d.png"%clampi(level,1,4))
 	if kind in ["stone_store","wood_store"]:return load("res://assets/buildings/storage-v001/%s-l%d.png"%[kind,clampi(level,1,4)])
 	var id := asset_id(kind, level)
@@ -22,7 +27,14 @@ static func texture(kind: String, level: int = 1) -> Texture2D:
 static func display_size(kind: String, level: int = 1, ground_width: float = 230.0) -> Vector2:
 	var source := texture(kind, level)
 	if source == null: return Vector2.ZERO
-	if kind=="farm":return Vector2(184,184*([320.0/420,340.0/440,380.0/480,420.0/520][clampi(level,1,4)-1]))*ground_width/230.0
+	if kind=="chief":
+		# The approved Figma canvas already includes both increases.
+		var frame:=Vector2(783.36,587.52)*(ground_width/680.0)
+		var original:=source.get_size()
+		return original*minf(frame.x/original.x,frame.y/original.y)
+	if kind=="farm":
+		var aspect:float=[320.0/420,340.0/440,380.0/480,420.0/520][clampi(level,1,4)-1]
+		return Vector2(FARM_WIDTH,FARM_WIDTH*aspect)*ground_width/230.0
 	var stage := clampi(level, 1, 4) - 1
 	var scale_factor: float
 	match kind:
@@ -44,6 +56,10 @@ static func display_rect(kind: String, level: int = 1, ground_width: float = 230
 	var dimensions := display_size(kind, level, ground_width)
 	var center := Vector2(0.0, -ground_width * 0.2 + 3.0)
 	match kind:
+		"chief":
+			var anchor: Vector2 = CHIEF_GROUND_ANCHORS[clampi(level, 1, 4) - 1]
+			# The six-cell chief foundation is centered 12 pixels below its world origin.
+			center = Vector2(0, 12.0 * ground_width / 340.0) + (Vector2(0.5, 0.5) - anchor) * dimensions
 		"training", "shrine":
 			# All stages sit on the same ground contact line rather than drifting with height.
 			center.y = ground_width * 0.12 - dimensions.y * 0.5
@@ -52,7 +68,10 @@ static func display_rect(kind: String, level: int = 1, ground_width: float = 230
 			center.y = -ground_width * 0.03
 		"outpost":
 			center.y = -ground_width * 0.3 + 3.0
-	if kind=="farm":center.y+=dimensions.y*.3
+	if kind=="farm":
+		# Keep the artwork ground anchor at its previous world position.
+		var previous_height:=dimensions.y*FARM_PREVIOUS_WIDTH/FARM_WIDTH
+		center.y+=previous_height*.7-dimensions.y*.4
 	return Rect2(center - dimensions * 0.5, dimensions)
 
 static func apply(sprite: Sprite2D, kind: String, level: int = 1, ground_width: float = 230.0) -> void:

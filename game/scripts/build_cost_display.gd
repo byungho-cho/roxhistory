@@ -11,10 +11,10 @@ func _ready()->void:
 	var brush:=TextureRect.new();brush.name="CostBrush"
 	var source:Texture2D=preload("res://assets/ui/v0159/cost-brush.png")
 	var crop:=AtlasTexture.new();crop.atlas=source;crop.region=Rect2(0,source.get_height()*.1333/1.2667,source.get_width(),source.get_height()/1.2667);crop.filter_clip=true
-	brush.texture=crop;brush.expand_mode=TextureRect.EXPAND_IGNORE_SIZE;brush.position=Vector2(0,26);brush.size=Vector2(310,39);brush.modulate.a=.6;brush.mouse_filter=Control.MOUSE_FILTER_IGNORE;add_child(brush)
+	brush.texture=crop;brush.expand_mode=TextureRect.EXPAND_IGNORE_SIZE;brush.position=Vector2(0,13);brush.size=Vector2(310,39);brush.modulate.a=.6;brush.mouse_filter=Control.MOUSE_FILTER_IGNORE;add_child(brush)
 	for i in 2:
 		var icon:=TextureRect.new();icon.name="Wood" if i==0 else "Stone";icon.texture=DemoArt.icon("wood" if i==0 else "stone");icon.expand_mode=TextureRect.EXPAND_IGNORE_SIZE;icon.stretch_mode=TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		icon.position=Vector2(18+i*140,19);icon.size=Vector2(32,32);icon.mouse_filter=Control.MOUSE_FILTER_IGNORE;add_child(icon)
+		icon.position=Vector2(18+i*140,16.5);icon.size=Vector2(32,32);icon.mouse_filter=Control.MOUSE_FILTER_IGNORE;add_child(icon)
 		var count:=Label.new();count.name="WoodAmount" if i==0 else "StoneAmount";count.theme=DemoArt.theme();count.position=Vector2(58+i*140,0);count.size=Vector2(96,65);count.vertical_alignment=VERTICAL_ALIGNMENT_CENTER
 		count.add_theme_font_size_override("font_size",36);count.add_theme_color_override("font_color",Color("fff7d1"));count.add_theme_color_override("font_outline_color",Color("302715"));count.add_theme_constant_override("outline_size",3);count.mouse_filter=Control.MOUSE_FILTER_IGNORE;add_child(count);amounts.append(count)
 	button_holder=Control.new();button_holder.mouse_filter=Control.MOUSE_FILTER_IGNORE;add_child(button_holder)

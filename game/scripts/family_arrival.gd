@@ -6,8 +6,7 @@ var bubble:Button
 var headline:Label
 var background:TextureRect
 var portrait:TextureRect
-# Alpha >= 10% visible content of the approved 236x216 icon; no PNG pixels changed.
-const PORTRAIT_REGION:=Rect2(50,14,136,193)
+const PORTRAIT_REGION:=Rect2(143,52,961,1165)
 const BUBBLE_FRONT:=20.0
 var progress:ProgressBar
 var talking:=false
@@ -25,7 +24,7 @@ func _ready()->void:
 	bubble.pressed.connect(request);app.stage.add_child(bubble)
 	var atlas:=AtlasTexture.new();atlas.atlas=preload("res://assets/ui/v0158/resident-bubble-bg.png");atlas.region=Rect2(211,11,345,105);atlas.filter_clip=true
 	background=app.picture(bubble,atlas,Rect2(0,0,270,44));background.stretch_mode=TextureRect.STRETCH_SCALE
-	var icon:=AtlasTexture.new();icon.atlas=preload("res://assets/ui/v0158/resident-icon.png");icon.region=PORTRAIT_REGION;icon.filter_clip=true
+	var icon:=AtlasTexture.new();icon.atlas=PlayChrome.RESIDENT_ICON;icon.region=PORTRAIT_REGION;icon.filter_clip=true
 	portrait=app.picture(bubble,icon,Rect2(0,-2,30,42));portrait.name="ResidentPortrait"
 	headline=Label.new();headline.theme=DemoArt.theme();headline.position=Vector2(50,5.2);headline.size=Vector2(210,24);headline.vertical_alignment=VERTICAL_ALIGNMENT_CENTER;headline.add_theme_font_size_override("font_size",14);headline.add_theme_color_override("font_color",Color("49321e"));headline.mouse_filter=Control.MOUSE_FILTER_IGNORE;bubble.add_child(headline)
 	progress=ProgressBar.new();progress.show_percentage=false;progress.size=Vector2(250,3);progress.mouse_filter=Control.MOUSE_FILTER_IGNORE;bubble.add_child(progress);progress.position=Vector2(10,40);progress.hide()
@@ -43,11 +42,14 @@ func begin()->void:
 func finish()->void:
 	talking=false;progress.hide()
 	var party:int=app.model.family_visitor_count()
-	if app.model.join_family():app.toast("주민 %d명이 마을에 합류했어요"%party,2.5)
+	app.world.animating_family_join=true
+	var joined:bool=app.model.join_family()
+	app.world.animating_family_join=false
+	if joined:app.show_character_guide("주민 %d명이 합류했어요"%party,"새 주민이 마을에 자리를 잡았어요.")
 	elif app.model.family_available() and app.model.resident_capacity()-app.model.resident_count()<party:show_capacity_needed()
 func show_capacity_needed()->void:
 	var free:int=maxi(0,app.model.resident_capacity()-app.model.resident_count())
-	app.toast("주민 %d명이 기다리고 있어요 · 빈자리 %d명\n주민 움집을 짓거나 업그레이드해 주세요"%[app.model.family_visitor_count(),free],4.0)
+	app.show_character_guide("주민 %d명이 기다리고 있어요"%app.model.family_visitor_count(),"빈자리 %d명 · 주민 움집을 짓거나 업그레이드해 주세요."%free)
 
 func _process(delta:float)->void:
 	if not is_instance_valid(app.world):return
@@ -71,7 +73,14 @@ func _process(delta:float)->void:
 			head.x+=resident.position.x;head.y=minf(head.y,resident.position.y-150)
 		head.x/=app.world.visitors.size()
 	var at:Vector2=app.world.get_global_transform_with_canvas()*head
-	bubble.position=Vector2(clampf(at.x-bubble.size.x*.5,app.safe.x,app.w-app.safe.x-bubble.size.x),clampf(at.y-bubble.size.y,app.safe.y+90,app.h-app.safe.y-160))
+	var viewport:=Rect2(0,0,app.w,app.h).grow(4)
+	var party_visible:=false
+	for resident in app.world.visitors:
+		var feet:Vector2=app.world.get_global_transform_with_canvas()*resident.position
+		var height:float=150.0*app.world.get_global_transform_with_canvas().get_scale().y
+		if viewport.intersects(Rect2(feet-Vector2(height*.22,height),Vector2(height*.44,height))):party_visible=true;break
+	bubble.position=at-Vector2(bubble.size.x*.5,bubble.size.y)
+	bubble.visible=party_visible and viewport.intersects(bubble.get_global_rect())
 	if talking and app.task!="family":talking=false;progress.hide()
 	bubble.set_meta("semantic_text",headline.text)
 	progress.value=100*(1-app.task_remaining/1.5) if talking else 0

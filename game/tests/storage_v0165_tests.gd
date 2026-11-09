@@ -53,7 +53,9 @@ func run()->void:
  check(not model.gather_available(node.id,"hero"),"Excess inventory stops new gather")
  var old_depleted:Dictionary=model.state.depleted.duplicate(true)
  check(not model.gather(node.id) and model.state.depleted==old_depleted,"Full gather consumes no node charge")
- s=model.state.duplicate(true);s.stone=97;model.commit(s)
+ s=model.state.duplicate(true);s.stone=97
+ # This fixture measures gather credit after the one-time quest reward.
+ FirstQuests.mark(s.quests_done,"hero_stone");FirstQuests.mark(s.quests_claimed,"hero_stone");model.commit(s)
  check(model.gather(node.id) and model.state.stone==100,"Hero receives available three units only")
  s=model.state.duplicate(true);s.wood=1997;s.resident_jobs["resident-0"].cargo={"kind":"wood","amount":10};s.resident_jobs["resident-1"].cargo={"kind":"wood","amount":10};model.commit(s)
  model.store.blocked=true

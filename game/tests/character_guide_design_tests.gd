@@ -1,5 +1,6 @@
 extends "res://tests/building_hold_v056_tests.gd"
 func snap(file:String)->void:
+ if DisplayServer.get_name()=="headless":return
  await frames(8);await RenderingServer.frame_post_draw;root.get_texture().get_image().save_png("res://reports/guide-refactor-"+file+".png")
 func run()->void:
  root.size=Vector2i(1200,675)
@@ -26,8 +27,9 @@ func run()->void:
  touch(guide.close_button.get_global_rect().get_center(),0,true);touch(guide.close_button.get_global_rect().get_center(),0,false);await frames()
  check(not app.modal and app.world.player.position.distance_to(hero)<1,"Actual touch X dismisses without moving hero")
  app.show_character_guide("주민 안내","동적으로 받은 안내입니다.");await frames(35);guide=app.overlay
+ app.show_character_guide("다음 안내","다음 페이지입니다.")
  var inside:Vector2=guide.layout.get_global_transform()*Vector2(700,550)
- touch(inside,0,true);touch(inside,0,false);await frames();check(app.modal,"Message body tap does not dismiss")
+ touch(inside,0,true);touch(inside,0,false);await frames();check(app.overlay==guide and guide.heading=="다음 안내","Message body tap advances one page")
  var outside:=Vector2(app.w*.75,app.h*.2);touch(outside,0,true);touch(outside,0,false);await frames();check(not app.modal,"Backdrop touch dismisses and consumes pointer")
  root.size=Vector2i(1600,720);await frames(15);app.show_character_guide("새로운 지역을 탐험할 수 있어요!","옅어진 구름 너머에서 직접 채집해 보세요.");await frames(35);guide=app.overlay
  check(guide.character.get_global_rect().position.y>=app.safe.y-1,"Ultrawide layout keeps character top inside safe screen")

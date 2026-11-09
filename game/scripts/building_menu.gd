@@ -97,7 +97,7 @@ func refresh()->void:
 	var owned:Dictionary=app.model.lookup_building(selected_key)
 	if owned.is_empty():close();return
 	move_button.disabled=owned.get("data",{}).has("upgrade");move_button.hint_text="공사 완료 후 이동할 수 있어요" if move_button.disabled else "옮길 위치를 선택해 주세요"
-	var upgrade_reason:String=app.building_workflow.upgrade_block_reason(app.model.chief_level()+1) if selected_key=="chief" else app.building_workflow.owned_upgrade_reason(selected_key)
+	var upgrade_reason:String=app.building_workflow.upgrade_block_reason(app.model.chief_level()+1,false) if selected_key=="chief" else app.building_workflow.owned_upgrade_reason(selected_key,false)
 	upgrade_button.disabled=not upgrade_reason.is_empty();upgrade_button.hint_text=upgrade_reason
 	var quote:Dictionary=app.model.demolition_quote(selected_key)
 	demolish_button.disabled=selected_key=="chief" or quote.is_empty() or not quote.get("supported",false) or owned.get("data",{}).has("upgrade")
@@ -109,7 +109,8 @@ func refresh()->void:
 	IntegratedMenuArt.refresh(demolish_button);IntegratedMenuArt.refresh(close_button)
 	var sprite:=selected_sprite()
 	if sprite==null:close();return
-	var bounds:Rect2=sprite.get_global_transform_with_canvas()*sprite.get_rect()
+	var bounds:Rect2=sprite.get_global_transform_with_canvas()*BuildingVisuals.visible_rect(sprite)
+	if not bounds.intersects(Rect2(0,0,app.w,app.h).grow(4)):close();return
 	var anchor:=Vector2(bounds.get_center().x,bounds.end.y)
 	var bottom:float=app.h-app.safe.y
 	if is_instance_valid(app.action_row) and app.action_row.is_visible_in_tree():bottom=minf(bottom,app.action_row.global_position.y-8)
@@ -121,7 +122,7 @@ func refresh()->void:
 	if framing_active and shift.length()>.5:
 		app.world.player.camera.offset-=shift/app.world.player.camera.zoom
 		app.world.player.camera.force_update_scroll()
-		bounds=sprite.get_global_transform_with_canvas()*sprite.get_rect()
+		bounds=sprite.get_global_transform_with_canvas()*BuildingVisuals.visible_rect(sprite)
 		anchor=Vector2(bounds.get_center().x,bounds.end.y)
 	position=anchor+Vector2(-size.x*.5,ANCHOR_Y)
 	close_button.position=Vector2(396,0)*.6-Vector2(0,44*.2)

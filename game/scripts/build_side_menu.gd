@@ -6,7 +6,7 @@ const TILE_SIZE:=Vector2(80,92) # Keep the hit target, shrink only the compositi
 const ART_SCALE:=0.90 # Smaller than the main action, including the approved extra 10%.
 const MAX_VISIBLE:=6
 const GAP:=4.0
-const GUTTER:=24.0
+const GUTTER:=44.0
 const DRAG_THRESHOLD:=10.0
 var app:Node
 var hut:DemoButton
@@ -14,7 +14,6 @@ var outpost_button:DemoButton
 var entries:Dictionary={}
 var clip:Control
 var content:Control
-var backdrop:Panel
 var left_hint:Label
 var right_hint:Label
 var scroll_offset:=0.0
@@ -25,11 +24,10 @@ var last_at:=Vector2.ZERO
 var dragged:=false
 var pressed_kind:=""
 var pressed_arrow:=0
+var needs_refresh:=true
 func _init(owner_app:Node)->void:app=owner_app
 func _ready()->void:
 	name="BuildSideMenu";z_index=32;mouse_filter=Control.MOUSE_FILTER_IGNORE;hide()
-	backdrop=Panel.new();backdrop.mouse_filter=Control.MOUSE_FILTER_IGNORE;add_child(backdrop)
-	var skin:=StyleBoxFlat.new();skin.bg_color=Color(.16,.11,.06,.48);skin.set_corner_radius_all(18);skin.border_color=Color(.70,.48,.20,.40);skin.set_border_width_all(1);skin.shadow_size=2;skin.shadow_color=Color(0,0,0,.18);backdrop.add_theme_stylebox_override("panel",skin)
 	clip=Control.new();clip.name="VisibleSlots";clip.clip_contents=true;clip.mouse_filter=Control.MOUSE_FILTER_IGNORE;add_child(clip)
 	content=Control.new();content.mouse_filter=Control.MOUSE_FILTER_IGNORE;clip.add_child(content)
 	for kind in KINDS:
@@ -43,6 +41,7 @@ func _ready()->void:
 	for hint in [left_hint,right_hint]:
 		hint.add_theme_font_size_override("font_size",24);hint.add_theme_color_override("font_color",Color("e6d3aa"));hint.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER;hint.vertical_alignment=VERTICAL_ALIGNMENT_CENTER;hint.mouse_filter=Control.MOUSE_FILTER_IGNORE;add_child(hint)
 	visibility_changed.connect(_visibility_changed)
+	app.model.changed.connect(func():needs_refresh=true)
 	refresh()
 func _visibility_changed()->void:
 	cancel_pointer()
@@ -52,24 +51,24 @@ static func style_label(label:Label)->void:
 	label.add_theme_color_override("font_outline_color",Color("231b12"));label.add_theme_constant_override("outline_size",4);label.mouse_filter=Control.MOUSE_FILTER_IGNORE
 func max_scroll()->float:return maxf(0,content.size.x-clip.size.x)
 func refresh()->void:
-	var available_width:float=app.w-app.safe.x*2
+	needs_refresh=false
+	var available_width:float=app.w-app.safe.x*2-70
 	visible_slots=clampi(int((available_width-GUTTER*2+GAP)/(TILE_SIZE.x+GAP)),1,MAX_VISIBLE)
 	scale=Vector2.ONE
 	size=Vector2(visible_slots*(TILE_SIZE.x+GAP)-GAP+GUTTER*2,TILE_SIZE.y)
-	backdrop.size=size;clip.position=Vector2(GUTTER,0);clip.size=Vector2(size.x-GUTTER*2,TILE_SIZE.y)
+	clip.position=Vector2(GUTTER,0);clip.size=Vector2(size.x-GUTTER*2,TILE_SIZE.y)
 	content.size=Vector2(KINDS.size()*(TILE_SIZE.x+GAP)-GAP,TILE_SIZE.y)
 	left_hint.size=Vector2(GUTTER,TILE_SIZE.y);right_hint.size=left_hint.size;right_hint.position=Vector2(size.x-GUTTER,0)
 	for i in KINDS.size():
 		var kind:String=KINDS[i];var button:DemoButton=entries[kind]
 		button.position=Vector2(i*(TILE_SIZE.x+GAP),0)
-		button.hint_text=app.building_workflow.build_block_reason(kind)
+		button.hint_text=app.building_workflow.build_block_reason(kind,false)
 		button.disabled=not button.hint_text.is_empty()
 		button.tooltip_text=button.hint_text if button.disabled else BuildingWorkflow.building_name(kind)
 		button.art_feedback.get_node("Composition/Locked").visible=button.disabled
 		var artwork:Control=button.art_feedback.get_node("Composition/Artwork")
 		for child in artwork.get_children():child.modulate=Color.WHITE if child is Label else Color(1,1,1,.60 if button.disabled else 1.0)
-	var center:Vector2=app.build_button.get_global_rect().get_center()
-	position=Vector2(clampf(center.x-size.x*.5,app.safe.x,maxf(app.safe.x,app.w-app.safe.x-size.x)),maxf(app.safe.y+95,app.build_button.global_position.y-size.y-8))
+	position=Vector2(app.build_button.global_position.x-size.x-8,app.build_button.global_position.y-15)
 	layout_scroll()
 func layout_scroll()->void:
 	scroll_offset=clampf(scroll_offset,0,max_scroll());content.position.x=-scroll_offset
@@ -128,8 +127,8 @@ func handle_input(event:InputEvent)->bool:
 	return false
 func _process(_delta:float)->void:
 	if not visible:return
-	refresh()
-	if app.world_map_open or app.modal or not app.application_active:hide()
+	if app.world_map_open or app.modal or not app.application_active:hide();return
+	if needs_refresh:refresh()
 func select_kind(kind:String)->void:
 	cancel_pointer()
 	var reason:String=app.building_workflow.build_block_reason(kind)

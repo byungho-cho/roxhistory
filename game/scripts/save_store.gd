@@ -17,7 +17,7 @@ func valid(s: Variant) -> bool:
 	if s.schema!=1 or s.region!="amsa" or not BuildingRules.valid_position(s.position):return false
 	for k in ["wood","stone","tokens"]:
 		if not BuildingRules.valid_number(s[k],0,BuildingRules.MAX_RESOURCE,true):return false
-	for k in ["built","reward_claimed","intro_seen","family_joined","family_unlocked","hq_can_be_absent","debug_fast_build","debug_show_boundary","debug_unlimited_builders","debug_unlimited_buildings"]:
+	for k in ["built","reward_claimed","intro_seen","family_joined","family_unlocked","hq_can_be_absent","debug_fast_build","debug_show_boundary","debug_resource_refill","debug_unlimited_builders","debug_unlimited_buildings"]:
 		if s.has(k) and not s[k] is bool:return false
 	if not s.depleted is Dictionary or (s.reward_claimed and not s.built):return false
 	if s.has("hut_style") and not BuildingRules.valid_number(s.hut_style,0,2,true):return false
@@ -34,6 +34,7 @@ func valid(s: Variant) -> bool:
 	if not _valid_buildings(s,int(hq)):return false
 	if not ResidentAdmission.valid_saved_population(s):return false
 	if not ResidentJobs.valid_saved_jobs(s):return false
+	if not FirstQuests.valid(s):return false
 	if not VillageActivityState.valid(s):return false
 	if s.has("resource_seed") and not BuildingRules.valid_number(s.resource_seed,1,2147483646,true):return false
 	var allowed := {}

@@ -31,7 +31,7 @@ func run()->void:
 	app.enter_game();await frames(8)
 	for animal in app.world.animals:animal.set_physics_process(false)
 	check(not app.model.debug_unlimited_buildings,"Normal building caps default")
-	app.construction_menu();check(app.choosing_plot and app.build_kind=="chief","Fresh HQ dedicated placement entry")
+	app.construction_menu();app.overlay.advance();check(app.choosing_plot and app.build_kind=="chief","Fresh HQ dedicated placement entry")
 	check(not app.build_side.entries.has("chief"),"HQ absent from normal side menu")
 	var at:=free_position("chief");check(at.is_finite(),"Free HQ position")
 	app.build_preview.select_position(at,"chief");await frames()

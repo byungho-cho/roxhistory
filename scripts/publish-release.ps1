@@ -1,19 +1,25 @@
 [CmdletBinding()]
-param([string]$Repository = 'byungho-cho/roxhistory', [string]$ReleaseNotesPath)
+param([string]$Repository = 'byungho-cho/roxhistory', [string]$ReleaseNotesPath, [switch]$AndroidOnly)
 $ErrorActionPreference = 'Stop'
 $repo = Split-Path $PSScriptRoot -Parent
 $output = Join-Path $repo 'build'
 $manifest = Get-Content -Raw (Join-Path $output 'release-manifest.json') | ConvertFrom-Json
 $version = $manifest.version
 if ($version -notmatch '^\d+\.\d+\.\d+$') { throw 'Invalid release version.' }
-$files = @("Roxhistory_$version.apk", "Roxhistory_$version.exe")
+$files = @("Roxhistory_$version.apk")
+$platforms = 'Android'
+if (-not $AndroidOnly) {
+    $files += "Roxhistory_$version.exe"
+    $platforms = 'Android / Windows'
+}
+if (@($manifest.files).Count -ne $files.Count) { throw 'The build manifest does not match the requested platforms.' }
 foreach ($name in $files) {
     $entry = @($manifest.files | Where-Object name -CEQ $name)
     $path = Join-Path $output $name
     if ($entry.Count -ne 1 -or -not (Test-Path -LiteralPath $path) -or (Get-FileHash -LiteralPath $path).Hash -ne $entry[0].sha256) { throw "Missing or changed build: $name" }
 }
 $head = & git -C $repo rev-parse HEAD
-if ($LASTEXITCODE -ne 0 -or $head -ne $manifest.commit) { throw 'Rebuild both platforms from the current source commit before publishing.' }
+if ($LASTEXITCODE -ne 0 -or $head -ne $manifest.commit) { throw 'Rebuild the requested platforms from the current source commit before publishing.' }
 if (& git -C $repo status --porcelain) { throw 'Commit source and release tooling before building and publishing.' }
 & gh auth status --hostname github.com *> $null
 if ($LASTEXITCODE -ne 0) { throw 'GitHub CLI login is required for release uploads.' }
@@ -27,10 +33,10 @@ $exists = $matchingReleases.Count -eq 1
 $notes = Join-Path $repo '.work/release-logs/release-notes.txt'
 New-Item -ItemType Directory (Split-Path $notes) -Force | Out-Null
 @"
-RoxHistory $version — Android / Windows development build
+RoxHistory $version — $platforms development build
 
 Source commit: $($manifest.commit)
-Both files were built and verified together. This Android APK uses the current MY-NUROX debug signing key. Older differently signed installations require reinstalling; uninstalling can erase saved progress.
+This Android APK uses the current MY-NUROX debug signing key. Older differently signed installations require reinstalling; uninstalling can erase saved progress.
 Build and signature checks passed. Known legacy regression-test failures remain documented; this is not a full gameplay approval.
 "@ | Set-Content -LiteralPath $notes -Encoding utf8
 if ($ReleaseNotesPath) {
@@ -71,7 +77,7 @@ if ($release.draft) {
         }
         $url = "https://uploads.github.com/repos/$Repository/releases/$($release.id)/assets?name=$([Uri]::EscapeDataString($name))"
         & gh api --method POST $url --header 'Content-Type: application/octet-stream' --input (Join-Path $output $name) --silent
-        if ($LASTEXITCODE -ne 0) { throw 'Pair upload failed. Previous releases have not been cleaned.' }
+        if ($LASTEXITCODE -ne 0) { throw 'Release asset upload failed. Previous releases have not been cleaned.' }
     }
 }
 $assetsText = & gh api "repos/$Repository/releases/$($release.id)/assets?per_page=100"
@@ -85,6 +91,8 @@ foreach ($entry in $manifest.files) {
 if ($LASTEXITCODE -ne 0) { throw 'Publishing failed. No cleanup performed.' }
 $tagCommit = & gh api "repos/$Repository/commits/$tag" --jq '.sha'
 if ($LASTEXITCODE -ne 0 -or $tagCommit -ne $manifest.commit) { throw 'Published tag verification failed. No cleanup performed.' }
-& (Join-Path $PSScriptRoot 'keep-latest-release.ps1') -Repository $Repository -Apply
-if (-not $?) { throw 'Release published, but old asset cleanup needs attention.' }
-Write-Output "Published both platforms: https://github.com/$Repository/releases/tag/$tag"
+if (-not $AndroidOnly) {
+    & (Join-Path $PSScriptRoot 'keep-latest-release.ps1') -Repository $Repository -Apply
+    if (-not $?) { throw 'Release published, but old asset cleanup needs attention.' }
+}
+Write-Output "Published $platforms to https://github.com/$Repository/releases/tag/$tag"

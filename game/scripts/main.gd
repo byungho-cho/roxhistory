@@ -11,6 +11,10 @@ var objective: Label
 var context: Label
 var gather_button: DemoButton
 var build_button: DemoButton
+var build_lock_icon: TextureRect
+var gather_lock_icon: TextureRect
+var tutorial: IntroTutorial
+var village_alerts: AndroidVillageNotifications
 var task_bar: ProgressBar
 var toast_label: Label
 var toast_time := 0.0
@@ -36,7 +40,6 @@ var map_tween:Tween
 var map_transition_active:=false
 var task_target := ""
 var task_site := -1
-var cancel_site_button:DemoButton
 var gather_approach:=false
 var approach_elapsed:=0.0
 var application_active := true
@@ -84,20 +87,28 @@ func toggle_quest()->void:
 	quest_expanded=not quest_expanded
 	update_quest()
 
+var quest_reward_count:Label
+
 func update_quest()->void:
 	if not is_instance_valid(objective):return
-	var level:=model.chief_level()
-	objective.text="촌장집을 건설해요" if level==0 else ("새 주민이 찾아왔어요" if model.family_available() else "주민 %d/%d명 · 촌장집 %d단계"%[model.resident_count(),model.resident_capacity(),level])
+	var current:=FirstQuests.current(model.state)
+	objective.text=FirstQuests.TITLES[current] if current>=0 else "첫 여정 완료"
+	if is_instance_valid(quest_reward_count):
+		var pending:=FirstQuests.pending(model.state).size()
+		quest_reward_count.text=str(pending)
+		quest_reward_count.get_parent().visible=pending>0
+		quest_reward_count.get_parent().get_parent().visible=not model.state.get("quests_done",[]).is_empty()
 	objective.size=Vector2(168,24)
 	objective.get_parent().size=Vector2(240,84 if quest_expanded else 52)
 	if is_instance_valid(quest_arrow):quest_arrow.rotation=0.0 if quest_expanded else PI
 	if is_instance_valid(quest_accent):quest_accent.size.y=48 if quest_expanded else 18
 	if is_instance_valid(quest_detail):
-		quest_detail.visible=quest_expanded
-		var cost:=model.building_cost("chief" if level==0 else "hut",1)
+		quest_detail.visible=quest_expanded and current in [2,3,5,6]
+		var kind:String={2:"chief",3:"hut",5:"chief",6:"farm"}.get(current,"chief")
+		var cost:=model.building_cost(kind,2 if current==5 else 1)
 		quest_wood.text="%d/%d"%[mini(int(model.state.wood),int(cost.wood)),int(cost.wood)]
 		quest_stone.text="%d/%d"%[mini(int(model.state.stone),int(cost.stone)),int(cost.stone)]
-		objective.get_parent().tooltip_text="촌장집 건설 재료" if level==0 else "주민 움집 건설 재료 · 주민이 많으면 움집을 짓거나 업그레이드해 주세요"
+		objective.get_parent().tooltip_text=FirstQuests.OBJECTIVES[current] if current>=0 else "첫 여정 완료"
 
 func has_pending_rewards()->bool:
 	for i in model.built_count():
@@ -114,7 +125,9 @@ func _ready() -> void:
 	settings.load(prefs_path)
 	audio = DemoSoundscape.new()
 	add_child(audio)
-	model = GameState.new(SaveStore.new("user://tests/session" if test_mode else "user://"))
+	model = GameState.new(SaveStore.new("user://tests/session" if test_mode else "user://"),true)
+	if not test_mode:village_alerts=AndroidVillageNotifications.new(model)
+	model.finish_loaded_jobs()
 	model.changed.connect(update_hud)
 	model.failed.connect(show_error)
 	canvas = CanvasLayer.new()
@@ -133,15 +146,21 @@ func queue_layout() -> void:
 	call_deferred("relayout")
 
 func relayout() -> void:
-	var guide_text:Array=[]
-	if overlay is CharacterGuide:guide_text=[overlay.heading,overlay.message]
+	var guide_pages:Array[Dictionary]=[]
+	var guide_actions:Array[Callable]=[]
+	if overlay is CharacterGuide:
+		guide_pages=overlay.remaining_pages()
+		guide_actions=overlay.completions.duplicate()
 	if gestures: gestures.clear()
 	rebuilding = false
 	if modal:
 		close_modal()
 	cancel_task()
 	show_screen(screen)
-	if not guide_text.is_empty():show_character_guide(guide_text[0],guide_text[1])
+	if not guide_pages.is_empty():
+		show_character_guide(guide_pages[0].title,guide_pages[0].body)
+		overlay.pages.assign(guide_pages.slice(1))
+		overlay.completions=guide_actions
 
 func clear_children(node: Node) -> void:
 	for child in node.get_children():
@@ -395,9 +414,9 @@ func start_or_continue()->void:
 	else:enter_game()
 
 func toggle_sound() -> void:
-	settings.set_value("app","sound",not settings.get_value("app","sound",false))
+	settings.set_value("app","sound",not settings.get_value("app","sound",true))
 	if settings.save(prefs_path)!=OK:show_error("소리 설정을 저장하지 못했습니다.")
-	else:sync_audio();toast("소리 켜짐" if settings.get_value("app","sound",false) else "소리 꺼짐")
+	else:sync_audio();toast("소리 켜짐" if settings.get_value("app","sound",true) else "소리 꺼짐")
 
 func chapter_menu() -> void:
 	close_modal()
@@ -413,6 +432,7 @@ func full_reset() -> void:
 	settings.clear()
 	if settings.save(prefs_path)!=OK:show_error("설정 초기화를 저장하지 못했습니다.");return
 	model.state.clear();cancel_task()
+	if village_alerts:village_alerts.sync()
 	if is_instance_valid(world):remove_child(world);world.queue_free();world=null
 	close_modal();show_screen("title")
 
@@ -433,6 +453,8 @@ func start_region() -> void:
 func enter_game() -> void:
 	if model.state.is_empty():
 		return
+	if village_alerts and VillageNotifications.EVENTS.any(func(event):return VillageNotifications.setting(model.state,event)):
+		village_alerts.request_permission()
 	if not is_instance_valid(world):
 		world = DemoWorld.new(model)
 		add_child(world)
@@ -466,28 +488,33 @@ func play_hud() -> void:
 	quest_panel.set_meta("semantic_text","퀘스트 상세 펼침·접힘")
 	joystick=DemoJoystick.new();stage.add_child(joystick);joystick.position=Vector2(safe.x,h-safe.y-140);joystick.hide();joystick.set_process_input(false)
 	var action_width:=64.0 if w/h>2.2 else 60.0
-	var menu_width:=action_width*6+8*5+48
+	var menu_width:=action_width*5+8*4+48
 	menu_backdrop=Panel.new();menu_backdrop.name="MenuBackdrop";menu_backdrop.z_index=30;menu_backdrop.mouse_filter=Control.MOUSE_FILTER_IGNORE;stage.add_child(menu_backdrop)
 	var capsule:=StyleBoxFlat.new();capsule.bg_color=Color(.33,.25,.12,.83);capsule.border_color=Color(.83,.68,.38,.9);capsule.set_border_width_all(2);capsule.set_corner_radius_all(30);capsule.shadow_color=Color(0,0,0,.2);capsule.shadow_size=3;menu_backdrop.add_theme_stylebox_override("panel",capsule)
 	action_row=Control.new();action_row.name="Actions";action_row.z_index=31;action_row.mouse_filter=Control.MOUSE_FILTER_IGNORE;stage.add_child(action_row)
 	action_row.position=Vector2(w-safe.x-menu_width,h-safe.y-76);action_row.size=Vector2(menu_width,72)
 	if w<h:action_row.position.y=h-safe.y-220
-	for data in [["사냥","spear"],["채집","berries"],["제작","hammer"],["건설","hut"],["임무","scroll"],["가방","bag"]]:
+	for data in [["사냥","spear"],["채집","berries"],["제작","hammer"],["가방","bag"],["건설","hut"]]:
 		var caption:String=data[0]
-		var callback:Callable=gather_action if caption=="채집" else construction_menu if caption=="건설" else quest_details if caption=="임무" else inventory_summary if caption=="가방" else func():toast("아직 준비 중인 기능입니다")
+		var callback:Callable=gather_action if caption=="채집" else construction_menu if caption=="건설" else inventory_summary if caption=="가방" else func():toast("아직 준비 중인 기능입니다")
 		var b:=button(action_row,caption,callback,false,data[1]);b.custom_minimum_size=Vector2(action_width,72)
 		b.set_meta("permanent_action",true)
 		b.set_meta("auxiliary_action",caption!="건설")
 		if caption in ["사냥","제작"]:b.disabled=true;b.hint_text=caption+"은 아직 준비 중입니다"
 		b.icon=DemoArt.play_icon(data[1])
-		if caption=="임무":b.name="JournalButton"
 		if caption=="가방":b.name="InventoryButton"
 		var action_style:=StyleBoxFlat.new();action_style.bg_color=Color.TRANSPARENT;action_style.set_content_margin_all(2)
 		for state in ["normal","hover","pressed","disabled"]:b.add_theme_stylebox_override(state,action_style)
 		var visual:=ActionVisual.new(b,b.icon);b.icon=null;b.add_child(visual)
 		for color_name in ["font_color","font_hover_color","font_pressed_color","font_disabled_color","font_focus_color"]:b.add_theme_color_override(color_name,Color.TRANSPARENT)
-		if caption=="채집":gather_button=b
-		if caption=="건설":build_button=b
+		if caption=="채집":
+			gather_button=b
+			gather_lock_icon=picture(b,IntegratedMenuArt.trimmed(preload("res://assets/ui/v0158/lock.png")),Rect2(3,37,23,23))
+		if caption=="건설":
+			build_button=b
+			build_lock_icon=picture(b,IntegratedMenuArt.trimmed(preload("res://assets/ui/v0158/lock.png")),Rect2(3,37,23,23))
+			build_lock_icon.visible=first_construction_locked()
+			b.disabled=build_lock_icon.visible
 	menu_toggle=button(action_row,"‹",toggle_menu);menu_toggle.name="MenuToggle";menu_toggle.custom_minimum_size=Vector2(56,56);menu_toggle.size_flags_vertical=Control.SIZE_SHRINK_CENTER;menu_toggle.hint_text="보조 메뉴 펼침·접힘"
 	menu_toggle.icon=null;menu_toggle.expand_icon=true;menu_toggle.add_theme_constant_override("icon_max_width",54)
 	var circle:=StyleBoxEmpty.new()
@@ -496,15 +523,11 @@ func play_hud() -> void:
 	var toggle_visual:=MenuToggleVisual.new();toggle_visual.name="ToggleVisual";menu_toggle.add_child(toggle_visual)
 	apply_menu_state()
 	build_side=BuildSideMenu.new(self);stage.add_child(build_side)
+	build_side.visibility_changed.connect(update_construction_row)
+	tutorial=IntroTutorial.new(self);stage.add_child(tutorial)
 	building_menu=BuildingMenu.new(self);stage.add_child(building_menu)
 	queued_action_indicator=QueuedActionIndicator.new(self);stage.add_child(queued_action_indicator)
 	build_preview=BuildPreview.new(self);world.add_child(build_preview)
-	cancel_site_button=button(stage,"부지 선택 취소",cancel_build_preview)
-	cancel_site_button.name="CancelBuildSite";cancel_site_button.custom_minimum_size=Vector2.ZERO
-	cancel_site_button.position=Vector2(w-safe.x-140,h-safe.y-(270 if w<h else 126));cancel_site_button.size=Vector2(140,44)
-	cancel_site_button.add_theme_font_size_override("font_size",13)
-	var cancel_skin:=StyleBoxFlat.new();cancel_skin.bg_color=Color(.10,.12,.10,.78);cancel_skin.border_color=Color(.8,.65,.39,.5);cancel_skin.set_border_width_all(1);cancel_skin.set_corner_radius_all(10)
-	for state in ["normal","hover","pressed"]:cancel_site_button.add_theme_stylebox_override(state,cancel_skin)
 	var dark:=DemoArt.panel(true)
 	context_panel=PanelContainer.new();stage.add_child(context_panel);context_panel.position=Vector2(w*.5-145,h-safe.y-108);context_panel.size=Vector2(290,32);context_panel.add_theme_stylebox_override("panel",dark);context_panel.mouse_filter=Control.MOUSE_FILTER_IGNORE
 	context=label(context_panel,"",13,Color("fff0cd"));context.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
@@ -512,7 +535,6 @@ func play_hud() -> void:
 	chrome=PlayChrome.new(self);chrome.z_index=30;stage.add_child(chrome);chrome.size=Vector2(w,h)
 	resident_panel=ResidentPanel.new(self);stage.add_child(resident_panel)
 	stage.add_child(ConstructionProgress.new(self))
-	stage.add_child(ConstructionProgress.new(self,true))
 	stage.add_child(ConstructionProgress.new(self,false,true))
 	family=FamilyArrival.new(self);stage.add_child(family)
 	var map_hit:=button(stage,"",recenter_map);map_hit.name="RecenterCamera";map_hit.custom_minimum_size=Vector2.ZERO;map_hit.position=Vector2(w-safe.x-100,safe.y+10);map_hit.size=Vector2(100,100)
@@ -526,6 +548,7 @@ func play_hud() -> void:
 	settings_button.custom_minimum_size=Vector2.ZERO;settings_button.position=Vector2(w-safe.x-36,safe.y-2);settings_button.size=Vector2(36,36)
 	settings_button.add_theme_constant_override("icon_max_width",36)
 	for state in ["normal","hover","pressed","focus"]:settings_button.add_theme_stylebox_override(state,StyleBoxEmpty.new())
+	quest_reward_count=QuestRewards.install_entry(self)
 	world_map_open=false
 	update_hud()
 
@@ -578,7 +601,7 @@ func switch_map_scene()->void:
 	if world_map_open:
 		world.player.direction=Vector2.ZERO
 		cancel_build_preview()
-		context_panel.hide();task_bar.hide();cancel_site_button.hide()
+		context_panel.hide();task_bar.hide()
 	chrome.queue_redraw()
 
 func recenter_map()->void:
@@ -586,6 +609,10 @@ func recenter_map()->void:
 		world_map.center=Vector2.ZERO;world_map.clear_input();world_map.queue_redraw()
 	else:world.player.resume_camera()
 	chrome.queue_redraw()
+
+func update_construction_row()->void:
+	apply_menu_state()
+	if build_side.visible:build_side.refresh()
 
 func toggle_menu()->void:
 	if menu_animating:return
@@ -599,17 +626,18 @@ func apply_menu_state(animated:bool=false)->void:
 	if menu_tween:menu_tween.kill()
 	var button_width:=64.0 if w/h>2.2 else 60.0
 	var stride:=button_width+8
-	var width:=stride*6+56
+	var width:=stride*5+56
 	action_row.size=Vector2(width,77);action_row.position.x=w-safe.x-width
 	menu_animating=animated
 	if animated:
 		menu_tween=create_tween().set_parallel(true).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 		menu_tween.finished.connect(func():menu_animating=false)
-	for i in 6:
+	for i in 5:
 		var child:Control=action_row.get_child(i)
 		var auxiliary:bool=child.get_meta("auxiliary_action",false)
-		var shown:=menu_expanded or not auxiliary
-		var target:=Vector2(stride*i if menu_expanded else stride*5,0)
+		var construction_open:=is_instance_valid(build_side) and build_side.visible
+		var shown:=not auxiliary or (menu_expanded and not construction_open)
+		var target:=Vector2(stride*i if menu_expanded else stride*4,0)
 		child.size=Vector2(button_width,77)
 		child.mouse_filter=Control.MOUSE_FILTER_STOP if shown else Control.MOUSE_FILTER_IGNORE
 		if shown:child.show()
@@ -624,9 +652,11 @@ func apply_menu_state(animated:bool=false)->void:
 	menu_toggle.get_node("ToggleVisual").expanded=menu_expanded
 	menu_toggle.get_node("ToggleVisual").queue_redraw()
 	menu_toggle.hint_text="접기" if menu_expanded else "메뉴 펼치기"
-	menu_toggle.size=Vector2(56,56);menu_toggle.position=Vector2(stride*6,10)
+	menu_toggle.size=Vector2(56,56);menu_toggle.position=Vector2(stride*5,10)
 	menu_toggle.pivot_offset=menu_toggle.size*.5
 	menu_toggle.rotation=0.0
+	menu_toggle.visible=not (is_instance_valid(build_side) and build_side.visible)
+	if not menu_toggle.visible:build_button.position.x=width-button_width
 	menu_backdrop.hide()
 
 func inventory_summary() -> void:
@@ -644,6 +674,27 @@ func update_hud() -> void:
 	if screen!="play" or not is_instance_valid(objective) or model.state.is_empty():return
 	update_quest()
 
+func show_pending_quest_guide()->void:
+	if modal or choosing_plot or not task.is_empty() or not application_active:return
+	var current:=FirstQuests.current(model.state)
+	if current<0 or current>FirstQuests.INTRO_KINDS.size():return
+	if FirstQuests.intro_reward_ready(model.state,current):
+		var body:="화면을 눌러 보상으로 %s %d개를 받으세요."%[FirstQuests.INTRO_RESOURCES[current],FirstQuests.INTRO_AMOUNT]
+		show_character_guide(FirstQuests.INTRO_SUCCESSES[current],body,claim_intro_reward.bind(current))
+		return
+	if model.mark_quest_guide(current):
+		var title:String=FirstQuests.INTRO_GUIDES[current] if current<FirstQuests.INTRO_KINDS.size() else FirstQuests.TITLES[current]
+		show_character_guide(title,FirstQuests.OBJECTIVES[current])
+
+func claim_intro_reward(index:int)->void:
+	if not model.claim_quest_reward(index):return
+	var kind:String=FirstQuests.INTRO_KINDS[index] if index!=2 else "tokens"
+	for i in 5:
+		chrome.gained(kind,world.player.position+Vector2((i-2)*10,-52),i*.055)
+
+func first_construction_locked()->bool:
+	return model.chief_level()==0 and model.pending_construction_count("chief")==0 and FirstQuests.current(model.state) in [0,1]
+
 func _process(delta: float) -> void:
 	if is_instance_valid(toast_panel): toast_panel.visible = toast_time > 0 and toast_label.text != ""
 	if toast_time > 0:
@@ -652,6 +703,7 @@ func _process(delta: float) -> void:
 	if is_instance_valid(world):world.simulation_paused=not application_active or world_map_open or map_transition_active
 	if screen != "play" or world_map_open or map_transition_active or not is_instance_valid(world):
 		return
+	show_pending_quest_guide()
 	if application_active:
 		farm_tick+=delta
 		if farm_tick>=1.0:
@@ -663,7 +715,7 @@ func _process(delta: float) -> void:
 	audio.river_proximity=1.0-smoothstep(80,720,river_distance)
 	context_panel.visible = false # Passive lower hints are replaced by world markers/HUD states.
 	var direction := Vector2.ZERO
-	if not modal and application_active and not gestures.blocked:
+	if not modal and application_active and not gestures.blocked and not tutorial.active():
 		if is_instance_valid(joystick): direction = joystick.value
 		var keyboard := Vector2(float(Input.is_physical_key_pressed(KEY_D) or Input.is_physical_key_pressed(KEY_RIGHT))-float(Input.is_physical_key_pressed(KEY_A) or Input.is_physical_key_pressed(KEY_LEFT)),float(Input.is_physical_key_pressed(KEY_S) or Input.is_physical_key_pressed(KEY_DOWN))-float(Input.is_physical_key_pressed(KEY_W) or Input.is_physical_key_pressed(KEY_UP)))
 		if keyboard.length() > 0: direction = keyboard.normalized()
@@ -696,7 +748,6 @@ func _process(delta: float) -> void:
 			world.feedback.update_work(task_total-task_remaining,task_total)
 			task_bar.value = (1.0-task_remaining/task_total)*100
 			if task_remaining <= 0: finish_task()
-	cancel_site_button.visible=choosing_plot and not modal and not (is_instance_valid(build_preview) and build_preview.active())
 	var near := world.nearest()
 	var working_hint := "채집 중… 이동하면 멈춥니다" if task=="gather" else "보금자리 건설 중…"
 	gather_button.hint_text=working_hint if task!="" else ("자원 가까이 이동해 주세요" if near.is_empty() else "작업을 마친 뒤 사용할 수 있어요")
@@ -704,8 +755,11 @@ func _process(delta: float) -> void:
 	gather_button.set_working(task=="gather");build_button.set_working(task=="build")
 	gather_button.text="채집"
 	build_button.text="건설"
-	gather_button.disabled = modal
-	build_button.disabled = modal
+	gather_button.disabled = modal or tutorial.active()
+	gather_lock_icon.visible=tutorial.active()
+	build_lock_icon.visible=first_construction_locked()
+	build_button.disabled = modal or build_lock_icon.visible
+	if build_lock_icon.visible:build_button.hint_text="목재·석재 채집 보상을 받으면 건설할 수 있어요"
 	style_action_state(gather_button)
 	style_action_state(build_button)
 	if task == "":
@@ -764,12 +818,30 @@ func gather_action(selected_id:String="") -> void:
 
 func construction_menu()->void:
 	if menu_animating:return
-	if modal or gestures.blocked:return
+	if modal or gestures.blocked or first_construction_locked():return
 	if is_instance_valid(building_menu):building_menu.close()
 	cancel_build_preview()
 	if model.chief_level()==0:
-		build_side.select_kind("chief");return
+		if model.pending_construction_count("chief")>0:
+			build_side.select_kind("chief")
+		else:
+			start_first_chief_placement()
+		return
 	build_side.visible=not build_side.visible
+
+func start_first_chief_placement()->void:
+	if screen!="play" or not is_instance_valid(world) or model.chief_level()>0 or model.pending_construction_count("chief")>0:return
+	build_side.hide()
+	build_kind="chief"
+	choosing_plot=true
+	if tutorial.active():
+		if not tutorial.choose_plot():
+			choosing_plot=false
+			toast("건설 가능한 부지를 찾지 못했어요. 다시 시도해 주세요")
+		return
+	var center:=Vector2(w*.5,h*.55)
+	var at:Vector2=world.get_global_transform_with_canvas().affine_inverse()*center
+	build_preview.select_position(at,build_kind)
 
 func cancel_build_preview()->void:
 	if choosing_plot and is_instance_valid(world) and task!="build":world.clear_site()
@@ -932,6 +1004,7 @@ func world_tap(screen_point:Vector2) -> void:
 	if world_map_open or modal or gestures.blocked:return
 	var at:Vector2=world.get_global_transform_with_canvas().affine_inverse()*screen_point
 	if not relocating_key.is_empty() and building_menu.hit_key(at)==relocating_key:return
+	if is_instance_valid(tutorial) and tutorial.active():return
 	if choosing_plot:
 		build_preview.select_position(at,build_kind,build_preview.moving_key)
 		return
@@ -989,6 +1062,7 @@ func confirm_progress_reset()->void:
 func reset_progress()->void:
 	if not model.store.erase_progress():show_error(model.store.message);return
 	cancel_task();model.state.clear()
+	if village_alerts:village_alerts.sync()
 	if is_instance_valid(world):remove_child(world);world.queue_free();world=null
 	close_modal();show_screen("title")
 
@@ -1000,7 +1074,7 @@ func confirm_development_reset()->void:
 
 func show_about() -> void:
 	var c := DemoConfig.get_data()
-	var sound: bool = settings.get_value("app","sound",false)
+	var sound: bool = settings.get_value("app","sound",true)
 	show_modal("RoxHistory · v"+str(ProjectSettings.get_setting("application/config/version")),c.history.fact+"\n\n"+c.history.fiction+"\n\n지역 선택 음악과 자연음, 채집·건설 효과음을 제공합니다. 곡식은 농장에서 생산합니다. 구리 화폐 수입 규칙은 준비 중입니다.",[
 		{"text":"소리 끄기" if sound else "소리 켜기","action":func():
 			settings.set_value("app","sound",not sound)
@@ -1069,7 +1143,10 @@ func show_modal(title: String, body: String, actions: Array, compact: bool = fal
 		b.add_theme_font_size_override("font_size",17)
 	return scroll
 
-func show_character_guide(title:String,body:String)->void:
+func show_character_guide(title:String,body:String,after:Callable=Callable())->void:
+	if overlay is CharacterGuide:
+		overlay.enqueue(title,body,after)
+		return
 	# Informational overlay: no save mutation, reward or action cancellation.
 	close_modal()
 	if gestures:gestures.clear()
@@ -1078,6 +1155,7 @@ func show_character_guide(title:String,body:String)->void:
 		world.player.presentation_paused=true
 	modal=true;toast_time=0
 	overlay=CharacterGuide.new(self,title,body);overlay.z_index=50;ui.add_child(overlay);sync_audio()
+	if after.is_valid():overlay.completions.append(after)
 
 func close_modal() -> void:
 	if is_instance_valid(building_workflow):building_workflow.confirmation_target=-1
@@ -1093,7 +1171,7 @@ func close_modal() -> void:
 	sync_audio()
 
 func sync_audio() -> void:
-	if is_instance_valid(audio): audio.configure(settings.get_value("app","sound",false),application_active,screen == "play",modal,screen == "region",screen == "title")
+	if is_instance_valid(audio): audio.configure(settings.get_value("app","sound",true),application_active,screen == "play",modal,screen == "region",screen == "title")
 
 func toast(message: String, seconds: float = 3.0) -> void:
 	if is_instance_valid(toast_label): toast_label.text = message
@@ -1107,8 +1185,12 @@ func display_error(message: String) -> void:
 	show_modal("저장 확인",message+"\n저장 공간을 확인한 뒤 다시 시도해 주세요.",[{"text":"확인","action":close_modal}])
 
 func go_back() -> void:
-	if modal:
+	if overlay is CharacterGuide:
+		overlay.advance()
+	elif modal:
 		close_modal()
+	elif is_instance_valid(tutorial) and tutorial.active():
+		return
 	elif screen == "play": pause_game()
 	elif screen == "region": show_screen("title")
 	else:
@@ -1119,7 +1201,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_cancel"):
 		go_back()
 		get_viewport().set_input_as_handled()
-	elif event is InputEventKey and event.pressed and not event.echo and screen == "play" and not world_map_open and not modal:
+	elif event is InputEventKey and event.pressed and not event.echo and screen == "play" and not world_map_open and not modal and not tutorial.active():
 		if event.physical_keycode == KEY_E: gather_action()
 		elif event.physical_keycode == KEY_B: construction_menu()
 
@@ -1183,7 +1265,9 @@ func show_notification_settings()->void:
 		var text:=label(row,titles[event],21);text.size_flags_horizontal=Control.SIZE_EXPAND_FILL
 		var setting:Variant=VillageNotifications.setting(model.state,event)
 		var target:String=event
-		var toggle:=button(row,"미설정" if setting==null else "ON" if setting else "OFF",func():
-			if VillageNotifications.set_enabled(model,target,setting!=true):show_notification_settings())
+		var toggle:=button(row,"ON" if setting else "OFF",func():
+			if VillageNotifications.set_enabled(model,target,not setting):
+				if not setting and village_alerts:village_alerts.request_permission()
+				show_notification_settings())
 		toggle.custom_minimum_size=Vector2(100,48)
-	var note:=label(list,"OS 전달 방식·반복 조건·초기 기본값은 미정입니다.\n자동 수확은 알림 대상이 아닙니다.",17);note.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
+	var note:=label(list,"Android 알림은 기기의 알림 권한과 무음 설정을 따릅니다.",17);note.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART

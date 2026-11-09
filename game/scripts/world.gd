@@ -20,6 +20,7 @@ var objectives: WorldObjectives
 var animals: Array[WorldAnimal] = []
 var residents:Array[TrialResident]=[]
 var visitors:Array[TrialResident]=[]
+var animating_family_join:=false
 var resource_tweens:Dictionary={}
 var resources_initialized:=false
 var reward_pouch:AtlasTexture
@@ -104,15 +105,8 @@ func _ready() -> void:
 	player.position = DemoConfig.point(model.state.position)
 	add_child(player)
 	# Wildlife stays outside the settlement and clear of the demo resource/build routes.
-	for entry in [["deer",470,430,75,-0.8],["rabbit",1680,1040,30,0.6],["rabbit",1790,1080,28,-0.4],["bear",1950,620,78,-0.7],["deer",600,450,68,0.9],["deer",-350,400,68,0.9],["rabbit",900,-130,30,0.6],["rabbit",2450,1430,30,0.6],["bear",2820,300,78,-0.7]]:
-		var animal := WorldAnimal.new()
-		animal.name = "Wildlife_"+str(entry[0])+str(animals.size())
-		animal.species = entry[0]
-		animal.position = Vector2(entry[1],entry[2])
-		animal.world_height = entry[3]
-		animal.heading = entry[4]
-		add_child(animal)
-		animals.append(animal)
+	for entry in [["deer",470,430,75,-0.8],["rabbit",1680,1040,30,0.6],["rabbit",1790,1080,28,-0.4],["deer",600,450,68,0.9],["deer",-350,400,68,0.9],["rabbit",900,-130,30,0.6],["rabbit",2450,1430,30,0.6]]:
+		add_wildlife(entry[0],Vector2(entry[1],entry[2]),entry[3],entry[4])
 	objectives=WorldObjectives.new(self);add_child(objectives)
 	feedback = WorldFeedback.new(self)
 	add_child(feedback)
@@ -124,6 +118,40 @@ func _ready() -> void:
 	model.changed.connect(refresh)
 	refresh()
 	call_deferred("restore_clear_position")
+	call_deferred("spawn_outer_bears")
+
+func add_wildlife(species:String,at:Vector2,height:float,heading:float)->WorldAnimal:
+	var animal:=WorldAnimal.new()
+	animal.name="Wildlife_"+species+str(animals.size())
+	animal.species=species
+	animal.position=at
+	animal.world_height=height
+	animal.heading=heading
+	add_child(animal)
+	animals.append(animal)
+	return animal
+
+func spawn_outer_bears()->void:
+	var bounds:=VillageBounds.WORLD_RECT.grow(-130)
+	for anchor in [Vector2(-460,710),Vector2(2850,420)]:
+		var bear:=add_wildlife("bear",anchor,78,-.7)
+		var chosen:=Vector2.INF
+		for radius in [0.0,140.0,280.0,420.0,560.0]:
+			for step in (1 if radius==0 else 16):
+				var candidate:Vector2=anchor+Vector2.from_angle(step*TAU/16.0)*radius
+				if bounds.has_point(candidate) and bear.safe_ground(candidate):
+					chosen=candidate
+					break
+			if chosen.is_finite():break
+		if chosen.is_finite():
+			bear.position=chosen
+			bear.home_position=chosen
+			bear.destination=chosen
+			bear.scale=Vector2.ONE*SceneStyle.ground_scale(chosen.y)
+		else:
+			animals.erase(bear)
+			remove_child(bear)
+			bear.queue_free()
 
 func add_resource_art(n:Dictionary)->void:
 	var root := Node2D.new()
@@ -289,9 +317,17 @@ func _process(_delta: float) -> void:
 	if id != selected:
 		selected = id
 		queue_redraw()
+	var reserved_targets:Dictionary={}
+	for owner in model.gather_claims:
+		if model.gather_actor(owner)!="hero":
+			reserved_targets[model.gather_claims[owner]]=true
 	for key in resource_labels:
 		var indicator:ResourceIndicator=resource_labels[key]
 		var icon:Sprite2D=art_nodes[key].get_child(0)
+		var reserved:=reserved_targets.has(key)
+		if indicator.reserved_by_other!=reserved:
+			indicator.reserved_by_other=reserved
+			icon.self_modulate=Color(.86,.88,.94,.86) if reserved else Color.WHITE
 		indicator.update_geometry(icon.texture.get_height()*icon.scale.y,player.camera.zoom.x)
 		indicator.visible=art_nodes[key].visible
 
@@ -576,7 +612,17 @@ func refresh_residents()->void:
 		resident.position=resident_spawn_position(index);add_child(resident);residents.append(resident)
 	var visiting:=model.family_visitor_count() if model.family_available() else 0
 	while visitors.size()>visiting:
-		var visitor:TrialResident=visitors.pop_back();remove_child(visitor);visitor.queue_free()
+		var visitor:TrialResident=visitors.pop_back()
+		if animating_family_join:
+			var sparkle:=visitor.create_tween()
+			for flash in 3:
+				sparkle.tween_property(visitor,"modulate",Color(1.65,1.45,1.0,1.0),.18)
+				sparkle.tween_property(visitor,"modulate",Color.WHITE,.22)
+			sparkle.tween_property(visitor,"modulate:a",0.0,.8)
+			sparkle.tween_callback(visitor.queue_free)
+		else:
+			remove_child(visitor)
+			visitor.queue_free()
 	while visitors.size()<visiting:
 		var index:=visitors.size()
 		var visitor:=TrialResident.new();visitor.variant="female" if index%2==0 else "sturdy_male"

@@ -58,6 +58,7 @@ func block_reason()->String:
 	if not moving_key.is_empty() and app.model.lookup_building(moving_key).get("data",{}).has("upgrade"):return "공사 완료 후 이동할 수 있어요"
 	var reason:String=app.model.placement_requirement(kind,placement_position,moving_key)
 	if reason.is_empty() and app.world.has_method("placement_requirement"):reason=app.world.placement_requirement(kind,placement_position,moving_key)
+	if reason.is_empty() and moving_key.is_empty():reason=app.building_workflow.build_block_reason(kind,false)
 	return reason
 func validity()->bool:return block_reason().is_empty()
 func refresh_validity()->void:
@@ -81,7 +82,7 @@ func _process(delta:float)->void:
 func update_overlay_layout()->void:
 	# Anchor to the rendered building, not a fixed world height or a separate HUD band.
 	# At an edge, flip the controls as a group instead of letting them stop following.
-	var bounds:Rect2=ghost.sprite.get_global_transform_with_canvas()*ghost.sprite.get_rect()
+	var bounds:Rect2=ghost.sprite.get_global_transform_with_canvas()*BuildingVisuals.visible_rect(ghost.sprite)
 	var viewport:=Rect2(app.safe,Vector2(app.w,app.h)-app.safe*2)
 	if not visible or not bounds.intersects(viewport):
 		controls.hide();cost_display.hide();return
@@ -90,9 +91,9 @@ func update_overlay_layout()->void:
 	var top:=bounds.position.y-extent.y-8
 	var below:=top<viewport.position.y
 	var y:=bounds.end.y+8 if below else top
-	# If both sides are outside the viewport, stay on the visible building edge.
-	y=clampf(y,viewport.position.y,maxf(viewport.position.y,viewport.end.y-extent.y))
-	controls.position=Vector2(clampf(bounds.get_center().x-extent.x*.5,viewport.position.x,maxf(viewport.position.x,viewport.end.x-extent.x)),y)
+	var x:=bounds.get_center().x-extent.x*.5
+	var safe_x:=clampf(x,viewport.position.x,maxf(viewport.position.x,viewport.end.x-extent.x))
+	controls.position=Vector2(move_toward(x,safe_x,60),y)
 	controls.visible=not moving_key.is_empty()
 	cost_display.position=controls.position
 	cost_display.visible=moving_key.is_empty();cost_display.update_cost(app.model.building_cost(kind,1))

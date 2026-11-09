@@ -31,6 +31,8 @@ var walking:=0.0
 var random:=RandomNumberGenerator.new()
 var walked_distance:=0.0
 var footprint_body: StaticBody2D
+const BEAR_BUILDING_CLEARANCE:=400.0
+const BEAR_PERSON_CLEARANCE:=240.0
 
 func _ready() -> void:
 	home_position=position;destination=position;random.seed=int(position.x*100+position.y);resting=random.randf_range(.4,2.0)
@@ -136,6 +138,7 @@ func safe_ground(point:Vector2)->bool:
 	if Geometry2D.is_point_in_polygon(point,PackedVector2Array(DemoWorld.RIVER_POLYGON)):return false
 	var world:DemoWorld=get_parent()
 	if world.player and point.distance_to(world.player.position)<65:return false
+	if species=="bear" and not bear_ground_clear(world,point):return false
 	for place in DemoConfig.BUILD_SITES:
 		if ((point-place+Vector2(0,24))/Vector2(160,95)).length()<1:return false
 	for resource in world.model.nodes():
@@ -147,6 +150,17 @@ func safe_ground(point:Vector2)->bool:
 	var query:=PhysicsPointQueryParameters2D.new();query.position=point
 	if footprint_body:query.exclude=[footprint_body.get_rid()]
 	if not get_world_2d().direct_space_state.intersect_point(query,1).is_empty():return false
+	return true
+
+func bear_ground_clear(world:DemoWorld,point:Vector2)->bool:
+	if VillageBounds.rect_for_level(1).grow(100).has_point(point):return false
+	if point.distance_to(world.player.position)<BEAR_PERSON_CLEARANCE:return false
+	for at in world.completed_building_positions():
+		if point.distance_to(at)<BEAR_BUILDING_CLEARANCE:return false
+	for job in world.model.construction_jobs():
+		if point.distance_to(DemoConfig.point(job.position))<BEAR_BUILDING_CLEARANCE:return false
+	for resident in world.residents+world.visitors:
+		if point.distance_to(resident.position)<BEAR_PERSON_CLEARANCE:return false
 	return true
 
 func _physics_process(delta:float)->void:
