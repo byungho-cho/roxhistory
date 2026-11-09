@@ -13,7 +13,7 @@ const TILE_SIZE:=Vector2(64,77)
 const ART_SCALE:=0.90 # Smaller than the main action, including the approved extra 10%.
 const MAX_VISIBLE:=5
 const GAP:=4.0
-const GUTTER:=44.0
+const GUTTER:=24.0
 const BUILD_GAP:=4.0
 const DRAG_THRESHOLD:=10.0
 var app:Node
@@ -53,7 +53,7 @@ func make_arrow(flip:bool)->Control:
 	var target:=Control.new()
 	target.mouse_filter=Control.MOUSE_FILTER_IGNORE
 	add_child(target)
-	var icon:TextureRect=app.picture(target,preload("res://assets/ui/construction-side-v006/chevron.svg"),Rect2(16,29,12,20))
+	var icon:TextureRect=app.picture(target,preload("res://assets/ui/construction-side-v006/chevron.svg"),Rect2((GUTTER-12)*.5,29,12,20))
 	icon.flip_h=flip
 	return target
 func _visibility_changed()->void:

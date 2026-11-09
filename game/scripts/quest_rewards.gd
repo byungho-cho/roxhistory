@@ -57,7 +57,7 @@ static func install_entry(app:Node)->Label:
 	var at:=Vector2(app.safe.x,app.h-app.safe.y-87)
 	var journal:=art_button(app,app.stage,"JournalButton",Rect2(at,Vector2(64,83)),app.quest_details)
 	journal.z_index=35
-	entry_art(app,journal,DemoArt.play_icon("scroll"),"임무")
+	entry_art(app,journal,DemoArt.play_icon("scroll"),"임무",1.2,5)
 	var button:=art_button(app,app.stage,"QuestRewardEntry",Rect2(at+Vector2(67,0),Vector2(64,83)),func():
 		if not app.modal and not app.world_map_open and not app.map_transition_active:open(app))
 	button.z_index=35
@@ -74,11 +74,12 @@ static func install_entry(app:Node)->Label:
 	button.add_child(badge)
 	return caption(app,badge,"",Rect2(0,0,22,22),14,Color.WHITE)
 
-static func entry_art(app:Node,button:DemoButton,icon:Texture2D,title:String)->void:
+static func entry_art(app:Node,button:DemoButton,icon:Texture2D,title:String,icon_scale:float=1.0,offset_y:float=0.0)->void:
 	var trimmed:=IntegratedMenuArt.trimmed(icon) if not icon is AtlasTexture else icon
 	var dimensions:=trimmed.get_size()
-	var display_size:=dimensions*minf(54.0/dimensions.x,54.0/dimensions.y)
-	app.picture(button,trimmed,Rect2(Vector2((64-display_size.x)*.5,56-display_size.y),display_size))
+	var base_size:=dimensions*minf(54.0/dimensions.x,54.0/dimensions.y)
+	var display_size:=base_size*icon_scale
+	app.picture(button,trimmed,Rect2(Vector2((64-display_size.x)*.5,56-base_size.y+offset_y),display_size))
 	var brush:TextureRect=app.picture(button,preload("res://assets/ui/construction-side-v006/brush.png"),Rect2(0,49,64,26))
 	brush.modulate.a=.8
 	caption(app,button,title,Rect2(0,50,64,24),14,CREAM)
