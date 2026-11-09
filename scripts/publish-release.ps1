@@ -1,8 +1,8 @@
 [CmdletBinding()]
-param([string]$Repository = 'byungho-cho/roxhistory', [string]$ReleaseNotesPath, [switch]$AndroidOnly)
+param([string]$Repository = 'byungho-cho/roxhistory', [string]$ReleaseNotesPath, [switch]$AndroidOnly, [string]$OutputDirectory, [switch]$PckPrototype)
 $ErrorActionPreference = 'Stop'
 $repo = Split-Path $PSScriptRoot -Parent
-$output = Join-Path $repo 'build'
+$output = if ($OutputDirectory) { $OutputDirectory } else { Join-Path $repo 'build' }
 $manifest = Get-Content -Raw (Join-Path $output 'release-manifest.json') | ConvertFrom-Json
 $version = $manifest.version
 if ($version -notmatch '^\d+\.\d+\.\d+$') { throw 'Invalid release version.' }
@@ -24,6 +24,25 @@ if (& git -C $repo status --porcelain) { throw 'Commit source and release toolin
 & gh auth status --hostname github.com *> $null
 if ($LASTEXITCODE -ne 0) { throw 'GitHub CLI login is required for release uploads.' }
 $tag = "v$version"
+$title = "RoxHistory $version"
+if ($PckPrototype) {
+    if (-not $AndroidOnly -or $version -ne '0.1.85') { throw 'The PCK prototype requires the Android-only 0.1.85 base.' }
+    $tag = 'pck-test-0.1.85-to-0.1.86'
+    $title = 'RoxHistory PCK test 0.1.85 to 0.1.86'
+    $patch = 'Roxhistory_0.1.85_to_0.1.86.pck'
+    $patchHash = (Get-FileHash -LiteralPath (Join-Path $output $patch)).Hash.ToLowerInvariant()
+    $bootstrap = Get-Content -Raw (Join-Path $repo 'game/patch_test/bootstrap.gd')
+    if ($bootstrap -notmatch ('(?m)^const PATCH_SHA256 := "' + $patchHash + '"\s*$')) { throw 'The patch differs from the digest pinned by the bootstrap.' }
+    # The production release cleanup targets standalone APK/EXE assets.
+    # Archive the test APK under its normal filename so the experiment stays separate.
+    $archive = 'Roxhistory_0.1.85-pck-test.zip'
+    Compress-Archive -LiteralPath (Join-Path $output $files[0]) -DestinationPath (Join-Path $output $archive) -Force
+    $files = @($archive, $patch)
+    $manifest.files = @(foreach ($name in $files) {
+        $assetPath = Join-Path $output $name
+        @{ name=$name; sha256=(Get-FileHash -LiteralPath $assetPath).Hash.ToLowerInvariant(); size=(Get-Item -LiteralPath $assetPath).Length }
+    })
+}
 $allReleasesText = & gh api "repos/$Repository/releases?per_page=100" --paginate --slurp
 if ($LASTEXITCODE -ne 0) { throw 'Cannot list releases.' }
 $allReleases = @(foreach ($page in (ConvertFrom-Json ($allReleasesText -join "`n"))) { foreach ($item in $page) { $item } })
@@ -43,7 +62,7 @@ if ($ReleaseNotesPath) {
     Get-Content -Raw -LiteralPath $ReleaseNotesPath | Add-Content -LiteralPath $notes -Encoding utf8
 }
 if (-not $exists) {
-    $created = & gh api --method POST "repos/$Repository/releases" -f "tag_name=$tag" -f "target_commitish=$($manifest.commit)" -f "name=RoxHistory $version" -F "body=@$notes" -F draft=true -F prerelease=true
+    $created = & gh api --method POST "repos/$Repository/releases" -f "tag_name=$tag" -f "target_commitish=$($manifest.commit)" -f "name=$title" -F "body=@$notes" -F draft=true -F prerelease=true
     if ($LASTEXITCODE -ne 0) { throw 'Release creation failed.' }
     $matchingReleases = @((ConvertFrom-Json ($created -join "`n")))
 }
