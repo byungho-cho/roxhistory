@@ -28,6 +28,7 @@ var reward_bubble:StyleBoxFlat
 var reward_markers:Node2D
 var reward_roof_bounds:=Rect2()
 var boundary_level:=-1
+var boundary_fog:Node2D
 var boundary_debug:=false
 var boundary_root:Node2D
 var boundary_pulse:Tween
@@ -83,6 +84,15 @@ func _ready() -> void:
 	water.hide()
 	polygon_body(PackedVector2Array(RIVER_POLYGON))
 	boundary_root=Node2D.new();boundary_root.name="UnlockedBoundary";add_child(boundary_root)
+	boundary_fog=Node2D.new()
+	boundary_fog.name="VillageBoundaryFog"
+	boundary_fog.z_index=14
+	boundary_fog.visibility_layer=2
+	var fog_material:=ShaderMaterial.new()
+	fog_material.shader=preload("res://shaders/village_boundary_fog.gdshader")
+	boundary_fog.material=fog_material
+	boundary_fog.draw.connect(draw_boundary_fog)
+	add_child(boundary_fog)
 	refresh_boundary()
 	add_child(VillageLayout.new(model))
 	prop("hut",DemoConfig.CHIEF_POSITION,340,Vector2(220,80),"ExistingHut")
@@ -534,6 +544,9 @@ func refresh_boundary()->void:
 	for child in boundary_root.get_children():
 		boundary_root.remove_child(child);child.queue_free()
 	var polygon:=VillageBounds.polygon_for_level(boundary_level)
+	var bounds:=VillageBounds.rect_for_level(boundary_level)
+	boundary_fog.material.set_shader_parameter("boundary",Vector4(bounds.position.x,bounds.position.y,bounds.end.x,bounds.end.y))
+	boundary_fog.queue_redraw()
 	for i in polygon.size():
 		var boundary:=StaticBody2D.new();boundary.name="VillageBoundary"
 		var edge:=CollisionShape2D.new();var segment:=SegmentShape2D.new()
@@ -542,6 +555,15 @@ func refresh_boundary()->void:
 	var outline:=Line2D.new();outline.name="UnlockedPerimeter";outline.points=polygon;outline.closed=true
 	outline.width=3;outline.default_color=Color("ed514b");outline.z_index=-14
 	outline.visible=boundary_debug;boundary_root.add_child(outline)
+
+func draw_boundary_fog()->void:
+	var clear:=VillageBounds.rect_for_level(boundary_level)
+	var outer:=VillageBounds.WORLD_RECT.grow(2000)
+	# Draw only the area outside the playable rectangle, without shading clear ground.
+	boundary_fog.draw_rect(Rect2(outer.position,Vector2(outer.size.x,clear.position.y-outer.position.y)),Color.WHITE)
+	boundary_fog.draw_rect(Rect2(Vector2(outer.position.x,clear.end.y),Vector2(outer.size.x,outer.end.y-clear.end.y)),Color.WHITE)
+	boundary_fog.draw_rect(Rect2(Vector2(outer.position.x,clear.position.y),Vector2(clear.position.x-outer.position.x,clear.size.y)),Color.WHITE)
+	boundary_fog.draw_rect(Rect2(Vector2(clear.end.x,clear.position.y),Vector2(outer.end.x-clear.end.x,clear.size.y)),Color.WHITE)
 
 func playable_rect()->Rect2:
 	return VillageBounds.rect_for_level(model.chief_level())

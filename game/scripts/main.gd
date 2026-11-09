@@ -129,6 +129,7 @@ func _ready() -> void:
 	test_mode = "--test-ui" in OS.get_cmdline_user_args()
 	if test_mode:
 		prefs_path = "user://tests/preferences.cfg"
+		performance_diagnostics.path = "user://tests/performance-diagnostics.jsonl"
 	settings.load(prefs_path)
 	audio = DemoSoundscape.new()
 	add_child(audio)
@@ -1097,7 +1098,7 @@ func show_development_settings()->void:
 	enable_settings_backdrop()
 
 func set_performance_diagnostics(enabled:bool)->void:
-	var previous:bool=settings.get_value("development","performance_diagnostics",false)
+	var previous:=PerformanceDiagnostics.enabled(settings)
 	settings.set_value("development","performance_diagnostics",enabled)
 	if settings.save(prefs_path)!=OK:
 		settings.set_value("development","performance_diagnostics",previous)

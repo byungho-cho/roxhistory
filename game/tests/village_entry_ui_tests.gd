@@ -11,6 +11,14 @@ func run()->void:
 	await frames()
 	app.test_mode=true
 	app.model=GameState.new(SaveStore.new("user://village_entry_ui_%d"%Time.get_ticks_usec()))
+	app.prefs_path=app.model.store.directory.path_join("preferences.cfg")
+	app.settings=ConfigFile.new()
+	app.performance_diagnostics.path=app.model.store.directory.path_join("performance-diagnostics.jsonl")
+	check(PerformanceDiagnostics.enabled(app.settings),"Missing preference defaults to diagnostics ON")
+	app.set_performance_diagnostics(false)
+	var updated_settings:=ConfigFile.new()
+	check(updated_settings.load(app.prefs_path)==OK and not PerformanceDiagnostics.enabled(updated_settings),"Explicit OFF survives reloading preferences")
+	app.set_performance_diagnostics(true)
 	app.model.changed.connect(app.update_hud)
 	await create_timer(.5).timeout
 	app.start_region()
@@ -24,6 +32,11 @@ func run()->void:
 	await create_timer(VillageEntry.DURATION).timeout
 	await frames(5)
 	check(not app.village_entry_active() and player.position==start and is_equal_approx(player.zoom_factor,1),"Entry restores camera without changing save coordinates")
+	var fog:Node2D=app.world.get_node("VillageBoundaryFog")
+	var bounds:Rect2=app.world.playable_rect()
+	check(fog.visible and fog.material.get_shader_parameter("boundary")==Vector4(bounds.position.x,bounds.position.y,bounds.end.x,bounds.end.y),"Fog remains aligned with the existing playable boundary after entry")
+	var entry_log:=FileAccess.get_file_as_string(app.performance_diagnostics.path)
+	check(entry_log.contains('"scene":"village_entry"') and entry_log.contains('"frame_p95_ms"'),"Diagnostics record the short entry with real frame intervals")
 	check(app.overlay is CharacterGuide,"First guide appears after the clouds")
 	if app.overlay is CharacterGuide:app.overlay.advance()
 	await frames(5)
