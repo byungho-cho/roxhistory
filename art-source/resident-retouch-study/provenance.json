@@ -1,0 +1,28 @@
+{
+  "status": "Unapproved opt-in runtime prototype; default game and hero preserved",
+  "source": "art-source/meshy01/meshy01-hero.blend",
+  "source_sha256": "32344d26de3ff50138f5a33bd8708d67a4021774a4872443d5132298a6037b37",
+  "base_commit": "a1f149f",
+  "reference": "Figma 1161:12 B simple 2D (woodcutter)",
+  "scope": "v3 keeps v2 hair blockout; connected anatomy remeshed with reprojected skin weights. Rejected stretched rear ponytail experiment retained separately.",
+  "bones": [
+    "hips",
+    "spine",
+    "head",
+    "armL",
+    "forearmL",
+    "handL",
+    "armR",
+    "forearmR",
+    "handR",
+    "thighL",
+    "shinL",
+    "footL",
+    "thighR",
+    "shinR",
+    "footR"
+  ],
+  "optimization": "Original textured head retained, generated anatomy voxel-welded with transferred skin weights. Mobile topology/LOD not optimized.",
+  "triangles": 58212,
+  "hero_unchanged": true
+}
