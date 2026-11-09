@@ -491,9 +491,9 @@ func play_hud() -> void:
 	for state in ["normal","hover","pressed","focus"]:quest_panel.add_theme_stylebox_override(state,StyleBoxEmpty.new())
 	var quest_bg:=picture(quest_panel,preload("res://assets/ui/v0158/quest-hud-paper.png"),Rect2(0,0,240,84))
 	quest_bg.stretch_mode=TextureRect.STRETCH_SCALE;quest_bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT);quest_bg.modulate.a=.9
-	quest_arrow=picture(quest_panel,preload("res://assets/ui/v0158/quest-hud-fold.png"),Rect2(206,10,24,24));quest_arrow.pivot_offset=Vector2(12,12)
-	picture(quest_panel,DemoArt.facility_icon("chief",1),Rect2(10,10,28,28))
-	objective=label(quest_panel,"",13,Color("49321e"));objective.position=Vector2(40,14.8);objective.size=Vector2(168,24);objective.clip_text=true
+	quest_arrow=picture(quest_panel,preload("res://assets/ui/v0158/quest-hud-fold.png"),Rect2(206,14,24,24));quest_arrow.pivot_offset=Vector2(12,12)
+	picture(quest_panel,DemoArt.facility_icon("chief",1),Rect2(10,14,28,28))
+	objective=label(quest_panel,"",13,Color("49321e"));objective.position=Vector2(40,18.8);objective.size=Vector2(168,24);objective.clip_text=true
 	quest_detail=Control.new();quest_detail.mouse_filter=Control.MOUSE_FILTER_IGNORE;quest_panel.add_child(quest_detail)
 	picture(quest_detail,DemoArt.icon("wood"),Rect2(40,40.4,24,24));picture(quest_detail,DemoArt.icon("stone"),Rect2(136,40.4,24,24))
 	quest_wood=label(quest_detail,"",12,Color("49321e"));quest_wood.position=Vector2(68,40.4);quest_wood.size=Vector2(54,24)

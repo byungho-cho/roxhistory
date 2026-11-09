@@ -185,7 +185,7 @@ static func install_side_art(button:DemoButton,kind:String)->void:
 			var slot_scale:=composition.scale*art.scale
 			var fit:=Vector2(156,131)*slot_scale
 			icon.size=native*minf(fit.x/native.x,fit.y/native.y)/slot_scale
-			icon.position=Vector2((180-icon.size.x)*.5,155-icon.size.y)
+			icon.position=Vector2((180-icon.size.x)*.5,155-icon.size.y+4.0/slot_scale.y)
 			icon.mouse_filter=Control.MOUSE_FILTER_IGNORE
 			art.add_child(icon)
 		"outpost":image_slot(art,kind,Vector2(15,33),Vector2(150,150))
