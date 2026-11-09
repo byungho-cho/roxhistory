@@ -25,33 +25,42 @@ func _ready() -> void:
 	size = Vector2(410,72)
 	scale = Vector2.ONE*0.65
 	var track := Panel.new()
-	track.position = Vector2(70,8)
-	track.size = Vector2(330,54)
+	track.position = Vector2(50 if gathering else 70,8)
+	track.size = Vector2(350 if gathering else 330,54)
 	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.122,0.161,0.102,0.72)
-	style.border_color = Color(0.769,0.639,0.38,0.8)
+	style.bg_color = PlayChrome.TRACK_COLOR if gathering else Color(0.122,0.161,0.102,0.72)
+	style.border_color = PlayChrome.TRACK_RIM if gathering else Color(0.769,0.639,0.38,0.8)
 	style.set_border_width_all(2)
-	style.set_corner_radius_all(14)
+	style.set_corner_radius_all(27 if gathering else 14)
 	track.add_theme_stylebox_override("panel",style)
 	add_child(track)
 	fill = TextureRect.new()
-	fill.position = Vector2(75,13)
-	fill.size = Vector2(160,44)
+	fill.position = Vector2(53,11) if gathering else Vector2(75,13)
+	fill.size = Vector2(160,48 if gathering else 44)
 	fill.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	var gradient := GradientTexture2D.new()
 	gradient.gradient = Gradient.new()
 	gradient.gradient.colors = PackedColorArray([Color(0.698,0.91,0.329,0.92),Color(0.231,0.569,0.129,0.92)])
+	if gathering:
+		gradient.gradient.offsets=PackedFloat32Array([0,.48,1])
+		gradient.gradient.colors=PackedColorArray(PlayChrome.FILL_COLORS)
 	gradient.fill_from = Vector2(0,0)
 	gradient.fill_to = Vector2(0,1)
 	fill.texture = gradient
 	var rounded := ShaderMaterial.new()
 	rounded.shader = preload("res://shaders/progress_round.gdshader")
+	if gathering:rounded.set_shader_parameter("corner_radius",24.0)
 	fill.material = rounded
 	add_child(fill)
 	timer = Label.new()
 	timer.position = Vector2(170,13)
+	if gathering:
+		timer.position=Vector2(120,8)
+		timer.size=Vector2(230,52)
+		timer.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
+		timer.vertical_alignment=VERTICAL_ALIGNMENT_CENTER
 	timer.theme = DemoArt.theme()
-	timer.add_theme_font_size_override("font_size",30)
+	timer.add_theme_font_size_override("font_size",24 if gathering else 30)
 	timer.add_theme_color_override("font_color",Color("fffae0"))
 	timer.add_theme_color_override("font_outline_color",Color("30251b"))
 	timer.add_theme_constant_override("outline_size",3)
@@ -86,7 +95,7 @@ func _process(delta: float) -> void:
 		remaining=maxf(0,float(job.finishes_at)-Time.get_unix_time_from_system())
 		total=float(job.get("clock_duration",job.finishes_at-job.started_at))
 	var ratio := clampf(1.0-remaining/maxf(0.001,total),0,1)
-	fill.size.x = maxf(0.01,320*ratio)
+	fill.size.x = maxf(0.01,(344 if gathering else 320)*ratio)
 	fill.material.set_shader_parameter("dimensions",fill.size)
 	var seconds := maxi(0,int(ceil(remaining)))
 	timer.text = "%02d:%02d:%02d" % [seconds/3600,(seconds/60)%60,seconds%60]
@@ -114,6 +123,12 @@ func _process(delta: float) -> void:
 		position=Vector2(bounds.get_center().x-size.x*scale.x*.5,bounds.position.y-size.y*scale.y-5)
 	position.x = clampf(position.x,app.safe.x,maxf(app.safe.x,app.w-app.safe.x-size.x*scale.x-(50 if is_instance_valid(cancel_button) else 0)))
 	position.y = clampf(position.y,app.safe.y+90,maxf(app.safe.y+90,app.h-app.safe.y-100-size.y*scale.y))
+
+	if gathering and is_instance_valid(app.resident_panel):
+		# Keep the world timer clear of the fixed top HUD, including the map button.
+		for hud in app.resident_panel.fixed_hud_rects():
+			if hud.position.y<app.h*.4 and hud.intersects(Rect2(position,size*scale)):
+				position.y=hud.end.y+5
 
 	if is_instance_valid(cancel_button):
 		cancel_holder.scale=Vector2.ONE/scale

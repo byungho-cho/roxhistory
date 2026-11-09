@@ -22,13 +22,17 @@ func run()->void:
 		check(app.task=="gather" and timer.visible and not app.task_bar.visible,"Gather shows only target time bar")
 		check(timer.hammer.texture==DemoArt.icon(kind),"Resource-specific symbol in timer")
 		app.task_remaining=app.task_total*.5;timer._process(0)
-		check(is_equal_approx(timer.fill.size.x,160),"Time fill follows elapsed half duration")
+		check(is_equal_approx(timer.fill.size.x,172),"Time fill follows elapsed half duration")
 		for zoom in [DemoPlayer.MIN_ZOOM,DemoPlayer.MAX_ZOOM]:
 			app.world.player.zoom_at(Vector2(app.w,app.h)*.5,zoom);timer._process(0)
 			var world_zoom:float=app.world.get_global_transform_with_canvas().get_scale().x
 			check(is_equal_approx(timer.scale.x,clampf(world_zoom*.85,.34,.68)*2.0/3.0),"Exactly two-thirds construction scale at zoom")
 			check(timer.get_global_rect().position.x>=app.safe.x and timer.get_global_rect().end.x<=app.w-app.safe.x+1,"Time bar within horizontal bounds")
 			check(timer.get_global_rect().position.y>=app.safe.y+90 and timer.get_global_rect().end.y<=app.h-app.safe.y-100+1,"Time bar within vertical bounds")
+		var top_hud_clear:=true
+		for hud in app.resident_panel.fixed_hud_rects():
+			if hud.position.y<app.h*.4 and hud.intersects(timer.get_global_rect()):top_hud_clear=false
+		check(top_hud_clear,"Gather time bar stays clear of the top HUD")
 		if "--capture-gather" in OS.get_cmdline_user_args():
 			await frames(12);await RenderingServer.frame_post_draw;DirAccess.make_dir_recursive_absolute("res://reports/gather-time")
 			root.get_texture().get_image().save_png("res://reports/gather-time/"+kind+".png")

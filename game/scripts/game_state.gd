@@ -721,7 +721,7 @@ func prune_gather_claims()->void:
 func debug_fill_resources()->bool:
 	if busy or state.is_empty():return false
 	var next:=state.duplicate(true)
-	for kind in ["wood","stone","grain"]:next[kind]=maxi(int(next.get(kind,0)),9999)
+	for kind in ["wood","stone","grain"]:next[kind]=int(next.get(kind,0))+1000
 	busy=true
 	var ok:=commit(next)
 	busy=false

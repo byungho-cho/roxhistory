@@ -8,10 +8,10 @@ func run()->void:
     probe.gather(node.id);probe.gather(node.id);break
  check(probe.state.wood==20 and probe.state.stone==20 and probe.can_construct("chief"),"Zero-stock new game can gather materials and unlock chief construction")
  var s:Dictionary=probe.state.duplicate(true);s.copper=7;probe.commit(s)
- check(probe.debug_fill_resources() and probe.state.wood==9999 and probe.state.stone==9999 and probe.state.grain==9999,"Refill sets three resources to development stock")
+ check(probe.debug_fill_resources() and probe.state.wood==1020 and probe.state.stone==1020 and probe.state.grain==1000,"Refill adds 1,000 to each existing balance")
  check(probe.resident_count()==0 and probe.state.copper==7,"Refill does not alter residents or copper")
- var reload:=GameState.new(probe.store);check(reload.state.wood==9999,"Filled stock survives reload above production cap")
- s=probe.state.duplicate(true);s.wood=12345;probe.commit(s);probe.debug_fill_resources();check(probe.state.wood==12345,"Refill preserves higher existing stock")
+ var reload:=GameState.new(probe.store);check(reload.state.wood==1020,"Filled stock survives reload above production cap")
+ s=probe.state.duplicate(true);s.wood=12345;probe.commit(s);probe.debug_fill_resources();check(probe.state.wood==13345 and probe.state.stone==2020 and probe.state.grain==2000,"Repeated refill adds to balances above normal storage limits")
  s=probe.state.duplicate(true);s.stone=5;probe.commit(s);probe.store.blocked=true
  check(not probe.debug_fill_resources() and probe.state.stone==5,"Failed refill save preserves existing data")
  root.size=Vector2i(1280,800)
@@ -52,7 +52,7 @@ func run()->void:
  check(refill!=null and refill.text=="자원 채우기","Development settings expose resource refill action")
  var fill_state:Dictionary=app.model.state.duplicate(true);fill_state.wood=0;fill_state.stone=0;fill_state.grain=0;app.model.commit(fill_state)
  refill.pressed.emit();await frames()
- check(app.model.state.wood==9999 and app.model.state.stone==9999 and app.model.state.grain==9999 and app.model.resident_count()==15,"Refill button is wired and leaves population alone")
+ check(app.model.state.wood==1000 and app.model.state.stone==1000 and app.model.state.grain==1000 and app.model.resident_count()==15,"Refill button is wired and leaves population alone")
  app.close_modal()
  var organic:OrganicRoadNetwork=null
  for layer in app.world.get_children():

@@ -16,9 +16,9 @@ static func entries(app:Node)->Array[Dictionary]:
 		{"id":"ShowBoundary","title":"빨간 마을 경계선","kind":"toggle",
 			"value":app.model.debug_show_boundary,"read":func():return app.model.debug_show_boundary,
 			"changed":func(enabled:bool):app.model.set_debug_show_boundary(enabled)},
-		{"id":"FillResources","title":"목재·석재·곡식 9,999개 채우기","kind":"action",
+		{"id":"FillResources","title":"목재·석재·곡식 각각 1,000개 추가","kind":"action",
 			"button":"자원 채우기","action":func():
-				if app.model.debug_fill_resources():app.update_hud();app.toast("목재·석재·곡식을 9,999개까지 채웠어요")},
+				if app.model.debug_fill_resources():app.update_hud();app.toast("목재·석재·곡식이 각각 1,000개 늘었어요")},
 		{"id":"ResetProgress","title":"진행 초기화 · 소리 설정 유지","kind":"action",
 			"button":"초기화","action":app.confirm_progress_reset},
 		{"id":"FullReset","title":"완전 초기화","kind":"action",
