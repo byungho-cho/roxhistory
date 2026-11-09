@@ -121,6 +121,7 @@ func has_pending_rewards()->bool:
 	return false
 
 func _ready() -> void:
+	if OS.has_feature("android"):Engine.max_fps=60
 	gestures=WorldGestures.new(self);add_child(gestures)
 	get_tree().auto_accept_quit = false
 	get_tree().quit_on_go_back = false
