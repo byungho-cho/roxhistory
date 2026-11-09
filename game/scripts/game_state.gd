@@ -258,8 +258,12 @@ func gather(node_id: String, pos: Vector2 = Vector2.ZERO, now:float=-1.0) -> boo
 	return false
 
 func claim_quest_reward(index:int)->bool:
-	if busy or index not in FirstQuests.pending(state):return false
+	if busy:return false
 	var next:=state.duplicate(true)
+	if FirstQuests.intro_reward_ready(state,index):
+		FirstQuests.grant_intro(next,index)
+		return commit(next)
+	if index not in FirstQuests.pending(state):return false
 	next.quests_claimed.append(FirstQuests.IDS[index])
 	next.grain=int(next.get("grain",0))+FirstQuests.MANUAL_AMOUNT
 	return commit(next)

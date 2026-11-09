@@ -13,8 +13,11 @@ const OBJECTIVES := [
 	"마을에 농장 한 채를 지으세요.",
 	"주민 한 명을 농장에 농부로 배정하세요."
 ]
-const AUTO_KINDS := ["wood","stone","grain"]
-const AUTO_AMOUNT := 100
+const INTRO_KINDS := ["wood","stone","grain"]
+const INTRO_AMOUNT := 100
+const INTRO_GUIDES := ["목재를 채집하세요","석재를 채집하세요","촌장집을 지어주세요"]
+const INTRO_SUCCESSES := ["목재 채집 성공!","석재 채집 성공!","촌장집 건설 완료!"]
+const INTRO_RESOURCES := ["목재","석재","곡식"]
 const MANUAL_AMOUNT := 50
 
 static func reconcile(next:Dictionary, legacy:bool)->void:
@@ -39,14 +42,16 @@ static func reconcile(next:Dictionary, legacy:bool)->void:
 		if farm.kind=="farm":mark(done,"first_farm");break
 	for job in next.get("resident_jobs",{}).values():
 		if job.job=="farmer" and not str(job.get("building","")).is_empty():mark(done,"first_farmer");break
-	for i in AUTO_KINDS.size():
-		if IDS[i] not in done or IDS[i] in claimed:continue
-		var kind:String=AUTO_KINDS[i]
-		var previous:int=int(next.get(kind,next.get("tokens",0) if kind=="grain" else 0))
-		next[kind]=previous+AUTO_AMOUNT
-		claimed.append(IDS[i])
 	next.quests_done=done
 	next.quests_claimed=claimed
+	if legacy:
+		for i in INTRO_KINDS.size():
+			if IDS[i] in done and IDS[i] not in claimed:grant_intro(next,i)
+
+static func grant_intro(next:Dictionary,index:int)->void:
+	var kind:String=INTRO_KINDS[index]
+	next[kind]=int(next.get(kind,next.get("tokens",0) if kind=="grain" else 0))+INTRO_AMOUNT
+	next.quests_claimed.append(IDS[index])
 
 static func mark(list:Array,id:String)->void:
 	if id not in list:list.append(id)
@@ -54,11 +59,15 @@ static func mark(list:Array,id:String)->void:
 static func current(state:Dictionary)->int:
 	for i in IDS.size():
 		if IDS[i] not in state.get("quests_done",[]):return i
+		if i<INTRO_KINDS.size() and IDS[i] not in state.get("quests_claimed",[]):return i
 	return -1
+
+static func intro_reward_ready(state:Dictionary,index:int)->bool:
+	return index>=0 and index<INTRO_KINDS.size() and index==current(state) and IDS[index] in state.get("quests_done",[])
 
 static func pending(state:Dictionary)->Array[int]:
 	var result:Array[int]=[]
-	for i in range(AUTO_KINDS.size(),IDS.size()):
+	for i in range(INTRO_KINDS.size(),IDS.size()):
 		if IDS[i] in state.get("quests_done",[]) and IDS[i] not in state.get("quests_claimed",[]):result.append(i)
 	return result
 

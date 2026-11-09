@@ -11,6 +11,7 @@ var objective: Label
 var context: Label
 var gather_button: DemoButton
 var build_button: DemoButton
+var build_lock_icon: TextureRect
 var task_bar: ProgressBar
 var toast_label: Label
 var toast_time := 0.0
@@ -499,7 +500,11 @@ func play_hud() -> void:
 		var visual:=ActionVisual.new(b,b.icon);b.icon=null;b.add_child(visual)
 		for color_name in ["font_color","font_hover_color","font_pressed_color","font_disabled_color","font_focus_color"]:b.add_theme_color_override(color_name,Color.TRANSPARENT)
 		if caption=="채집":gather_button=b
-		if caption=="건설":build_button=b
+		if caption=="건설":
+			build_button=b
+			build_lock_icon=picture(b,IntegratedMenuArt.trimmed(preload("res://assets/ui/v0158/lock.png")),Rect2(3,37,23,23))
+			build_lock_icon.visible=first_construction_locked()
+			b.disabled=build_lock_icon.visible
 	menu_toggle=button(action_row,"‹",toggle_menu);menu_toggle.name="MenuToggle";menu_toggle.custom_minimum_size=Vector2(56,56);menu_toggle.size_flags_vertical=Control.SIZE_SHRINK_CENTER;menu_toggle.hint_text="보조 메뉴 펼침·접힘"
 	menu_toggle.icon=null;menu_toggle.expand_icon=true;menu_toggle.add_theme_constant_override("icon_max_width",54)
 	var circle:=StyleBoxEmpty.new()
@@ -653,9 +658,23 @@ func update_hud() -> void:
 func show_pending_quest_guide()->void:
 	if modal or choosing_plot or not task.is_empty() or not application_active:return
 	var current:=FirstQuests.current(model.state)
-	if current<0 or current>=FirstQuests.AUTO_KINDS.size():return
+	if current<0 or current>FirstQuests.INTRO_KINDS.size():return
+	if FirstQuests.intro_reward_ready(model.state,current):
+		var body:="화면을 눌러 보상으로 %s %d개를 받으세요."%[FirstQuests.INTRO_RESOURCES[current],FirstQuests.INTRO_AMOUNT]
+		show_character_guide(FirstQuests.INTRO_SUCCESSES[current],body,claim_intro_reward.bind(current))
+		return
 	if model.mark_quest_guide(current):
-		show_character_guide(FirstQuests.TITLES[current],FirstQuests.OBJECTIVES[current])
+		var title:String=FirstQuests.INTRO_GUIDES[current] if current<FirstQuests.INTRO_KINDS.size() else FirstQuests.TITLES[current]
+		show_character_guide(title,FirstQuests.OBJECTIVES[current])
+
+func claim_intro_reward(index:int)->void:
+	if not model.claim_quest_reward(index):return
+	var kind:String=FirstQuests.INTRO_KINDS[index] if index!=2 else "tokens"
+	for i in 5:
+		chrome.gained(kind,world.player.position+Vector2((i-2)*10,-52),i*.055)
+
+func first_construction_locked()->bool:
+	return model.chief_level()==0 and model.pending_construction_count("chief")==0 and FirstQuests.current(model.state) in [0,1]
 
 func _process(delta: float) -> void:
 	if is_instance_valid(toast_panel): toast_panel.visible = toast_time > 0 and toast_label.text != ""
@@ -718,7 +737,9 @@ func _process(delta: float) -> void:
 	gather_button.text="채집"
 	build_button.text="건설"
 	gather_button.disabled = modal
-	build_button.disabled = modal
+	build_lock_icon.visible=first_construction_locked()
+	build_button.disabled = modal or build_lock_icon.visible
+	if build_lock_icon.visible:build_button.hint_text="목재·석재 채집 보상을 받으면 건설할 수 있어요"
 	style_action_state(gather_button)
 	style_action_state(build_button)
 	if task == "":
@@ -777,14 +798,14 @@ func gather_action(selected_id:String="") -> void:
 
 func construction_menu()->void:
 	if menu_animating:return
-	if modal or gestures.blocked:return
+	if modal or gestures.blocked or first_construction_locked():return
 	if is_instance_valid(building_menu):building_menu.close()
 	cancel_build_preview()
 	if model.chief_level()==0:
 		if model.pending_construction_count("chief")>0:
 			build_side.select_kind("chief")
 		else:
-			show_character_guide("촌장집을 먼저 지어주세요","촌장집을 지을 위치를 골라 주세요.\n건설하려면 목재와 석재가 필요해요.",start_first_chief_placement)
+			start_first_chief_placement()
 		return
 	build_side.visible=not build_side.visible
 
