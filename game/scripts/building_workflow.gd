@@ -21,6 +21,7 @@ func _ready()->void:
 	app.model.changed.connect(refresh_visual)
 	refresh_visual()
 static func approved_texture(id:String)->Texture2D:
+	if id.begins_with("BLD-CHIEF-"):return BuildingVisuals.texture("chief",int(id.get_slice("-",2).trim_prefix("L")))
 	if id.begins_with("BLD-STONE_STORE-"):return BuildingVisuals.texture("stone_store",int(id.get_slice("-",2).trim_prefix("L")))
 	if id.begins_with("BLD-WOOD_STORE-"):return BuildingVisuals.texture("wood_store",int(id.get_slice("-",2).trim_prefix("L")))
 	if id.begins_with("BLD-FARM-"):return BuildingVisuals.texture("farm",int(id.get_slice("-",2).trim_prefix("L")))

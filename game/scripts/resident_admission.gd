@@ -42,12 +42,18 @@ static func prepare_visit(model:GameState,now:float=-1.0)->bool:
 	if now<0:now=Time.get_unix_time_from_system()
 	if not is_finite(now) or now<0:return false
 	var next:=model.state.duplicate(true)
+	var first:bool="first_resident" not in model.state.get("quests_done",[]) and not model.state.get("family_joined",false)
+	if first:
+		if model.built_count()==0:return false
+		next.pending_family_count=1
+		next.family_next_at=0.0
+		return _commit(model,next)
 	var due:=float(next.get("family_next_at",0.0))
 	if due<=0:
 		next.family_next_at=now+VISIT_INTERVAL_SECONDS
 	elif now>=due:
 		# Near the absolute population ceiling, do not strand an oversized party.
-		next.pending_family_count=randi_range(1,mini(3,MAX_RESIDENTS-count(next)))
+		next.pending_family_count=randi_range(1,mini(2,MAX_RESIDENTS-count(next)))
 		next.family_next_at=0.0
 	else:return false
 	return _commit(model,next)

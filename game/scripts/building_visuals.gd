@@ -15,6 +15,7 @@ static func asset_id(kind: String, level: int = 1) -> String:
 	return "BLD-%s-L%d" % [category, clampi(level, 1, 4)]
 
 static func texture(kind: String, level: int = 1) -> Texture2D:
+	if kind=="chief":return load("res://assets/chief-retouch/l%d.png"%clampi(level,1,4))
 	if kind=="farm":return load("res://assets/farm/v003/farm-empty-l%d.png"%clampi(level,1,4))
 	if kind in ["stone_store","wood_store"]:return load("res://assets/buildings/storage-v001/%s-l%d.png"%[kind,clampi(level,1,4)])
 	var id := asset_id(kind, level)
@@ -24,6 +25,11 @@ static func texture(kind: String, level: int = 1) -> Texture2D:
 static func display_size(kind: String, level: int = 1, ground_width: float = 230.0) -> Vector2:
 	var source := texture(kind, level)
 	if source == null: return Vector2.ZERO
+	if kind=="chief":
+		# The approved Figma canvas already includes both increases.
+		var frame:=Vector2(783.36,587.52)*(ground_width/680.0)
+		var original:=source.get_size()
+		return original*minf(frame.x/original.x,frame.y/original.y)
 	if kind=="farm":
 		var aspect:float=[320.0/420,340.0/440,380.0/480,420.0/520][clampi(level,1,4)-1]
 		return Vector2(FARM_WIDTH,FARM_WIDTH*aspect)*ground_width/230.0
@@ -48,6 +54,8 @@ static func display_rect(kind: String, level: int = 1, ground_width: float = 230
 	var dimensions := display_size(kind, level, ground_width)
 	var center := Vector2(0.0, -ground_width * 0.2 + 3.0)
 	match kind:
+		"chief":
+			center.y=ground_width*.10-dimensions.y*.5
 		"training", "shrine":
 			# All stages sit on the same ground contact line rather than drifting with height.
 			center.y = ground_width * 0.12 - dimensions.y * 0.5

@@ -9,7 +9,7 @@ func frames(n:int)->void:
 	for i in n:await process_frame
 func run()->void:
 	var app=load("res://scenes/main.tscn").instantiate();root.add_child(app);await frames(5)
-	app.model=GameState.new(SaveStore.new("user://gather_time_%s"%Time.get_ticks_usec()));app.model.start_new();app.enter_game();await frames(15);app.set_process(false)
+	app.model=GameState.new(SaveStore.new("user://gather_time_%s"%Time.get_ticks_usec()));app.model.start_new();app.enter_game();app.set_process(false);await frames(15)
 	var construction:ConstructionProgress=app.stage.get_node("ConstructionTimeProgress")
 	check(not app.stage.has_node("GatheringTimeProgress"),"No duplicate upper gathering bar")
 	for kind in ["wood","stone"]:

@@ -5,19 +5,19 @@ func run()->void:
  for kind in ["wood","stone"]:
   for node in probe.nodes():
    if node.kind==kind:
-    probe.gather(node.id);probe.gather(node.id);break
- check(probe.state.wood==20 and probe.state.stone==20 and probe.can_construct("chief"),"Zero-stock new game can gather materials and unlock chief construction")
+    probe.gather(node.id);break
+ check(probe.state.wood==110 and probe.state.stone==110 and probe.can_construct("chief"),"Zero-stock new game can gather materials and unlock chief construction")
  var s:Dictionary=probe.state.duplicate(true);s.copper=7;probe.commit(s)
- check(not probe.debug_fill_resource("wood") and probe.state.wood==20,"Refill starts disabled")
+ check(not probe.debug_fill_resource("wood") and probe.state.wood==110,"Refill starts disabled")
  check(probe.set_debug_resource_refill(true) and probe.debug_fill_resource("wood") and probe.debug_fill_resource("wood"),"Enabled refill applies both clicks")
- check(probe.state.wood==220 and probe.state.stone==20 and probe.state.grain==0 and probe.resident_count()==0 and probe.state.copper==7,"Only chosen resource changes")
- var reload:=GameState.new(probe.store);check(reload.state.wood==220 and reload.debug_resource_refill,"Stock above cap and refill preference survive reload")
+ check(probe.state.wood==310 and probe.state.stone==110 and probe.state.grain==0 and probe.resident_count()==0 and probe.state.copper==7,"Only chosen resource changes")
+ var reload:=GameState.new(probe.store);check(reload.state.wood==310 and reload.debug_resource_refill,"Stock above cap and refill preference survive reload")
  s=probe.state.duplicate(true);s.stone=5;probe.commit(s);probe.store.blocked=true
  check(not probe.debug_fill_resource("stone") and probe.state.stone==5,"Failed refill save preserves existing data")
  root.size=Vector2i(1280,800)
  app=load("res://scenes/main.tscn").instantiate();root.add_child(app);await frames()
  app.model=GameState.new(SaveStore.new("user://readability_%d"%Time.get_ticks_usec()));app.model.start_new();app.model.changed.connect(app.update_hud)
- var fresh:Dictionary=app.model.state.duplicate(true);fresh.resident_guide_seen=true;fresh.family_next_at=Time.get_unix_time_from_system()+10000;app.model.commit(fresh)
+ var fresh:Dictionary=app.model.state.duplicate(true);fresh.resident_guide_seen=true;fresh.quests_guides=FirstQuests.IDS.slice(0,3);fresh.family_next_at=Time.get_unix_time_from_system()+10000;app.model.commit(fresh)
  app.enter_game();await frames(12)
  app.construction_menu();await frames()
  check(app.overlay is CharacterGuide and not app.choosing_plot,"First construction opens character guide with zero stock")
@@ -50,7 +50,7 @@ func run()->void:
  mouse(confirm_at,MOUSE_BUTTON_LEFT,true);mouse(confirm_at,MOUSE_BUTTON_LEFT,false);await frames()
  check(app.model.pending_construction_count("chief")==1 and not app.choosing_plot,"Existing preview confirmation starts first construction")
  if not app.model.construction_jobs().is_empty():app.model.cancel_construction(str(app.model.construction_jobs()[0].uid))
- s=app.model.state.duplicate(true);s.chief_level=4;s.resident_count=15;s.wood=99999;s.stone=99999;s.grain=99999;s.resident_guide_seen=true;s.family_next_at=Time.get_unix_time_from_system()+10000
+ s=app.model.state.duplicate(true);s.chief_level=4;s.quests_done=FirstQuests.IDS.slice(0,3);s.quests_claimed=FirstQuests.IDS.slice(0,3);s.resident_count=15;s.wood=99999;s.stone=99999;s.grain=99999;s.resident_guide_seen=true;s.family_next_at=Time.get_unix_time_from_system()+10000
  s.homes=[]
  for i in 3:s.homes.append({"uid":"h%d"%i,"style":1,"claimed":true,"level":4,"position":[650+i*260,1050+i%2*230],"cost":{"wood":20,"stone":10}})
  s.built=true;s.reward_claimed=true;s.facilities=[]

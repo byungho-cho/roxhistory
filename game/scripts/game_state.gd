@@ -189,6 +189,7 @@ func _init(save_store: SaveStore) -> void:
 	migrate_resources()
 	migrate_resource_positions()
 	migrate_economy()
+	if not state.is_empty() and not state.has("quests_done"):commit(state.duplicate(true))
 	ensure_respawn_timers()
 	finish_constructions()
 	finish_chief_upgrade()
@@ -196,6 +197,8 @@ func _init(save_store: SaveStore) -> void:
 	if debug_fast_build and state.get("fast_build_mode","")!="fixed5":set_debug_fast_build(true)
 
 func commit(next: Dictionary, reset: bool = false) -> bool:
+	if not FirstQuests.valid(next):return false
+	FirstQuests.reconcile(next,not reset and not next.has("quests_done"))
 	if not store.save_game(next,reset):
 		failed.emit(store.message)
 		return false
@@ -243,6 +246,9 @@ func gather(node_id: String, pos: Vector2 = Vector2.ZERO, now:float=-1.0) -> boo
 			if not next.has("respawn_due"):next.respawn_due={}
 			next.respawn_due[node_id]=now+randf_range(RESPAWN_MIN_SECONDS,RESPAWN_MAX_SECONDS)
 		ResourceStorage.receive(self,next,n.kind,int(DemoConfig.get_data().gather_yield))
+		var done:Array=next.get("quests_done",[])
+		FirstQuests.mark(done,"hero_wood" if n.kind=="wood" else "hero_stone")
+		next.quests_done=done
 		if pos != Vector2.ZERO:
 			next.position = [pos.x,pos.y]
 		var ok := commit(next)
@@ -250,6 +256,22 @@ func gather(node_id: String, pos: Vector2 = Vector2.ZERO, now:float=-1.0) -> boo
 		return ok
 	busy = false
 	return false
+
+func claim_quest_reward(index:int)->bool:
+	if busy or index not in FirstQuests.pending(state):return false
+	var next:=state.duplicate(true)
+	next.quests_claimed.append(FirstQuests.IDS[index])
+	next.grain=int(next.get("grain",0))+FirstQuests.MANUAL_AMOUNT
+	return commit(next)
+
+func mark_quest_guide(index:int)->bool:
+	var id:String=FirstQuests.IDS[index]
+	var shown:Array=state.get("quests_guides",[])
+	if id in shown:return false
+	var next:=state.duplicate(true)
+	next.quests_guides=shown.duplicate()
+	next.quests_guides.append(id)
+	return commit(next)
 
 func can_build() -> bool:
 	return can_construct("hut")

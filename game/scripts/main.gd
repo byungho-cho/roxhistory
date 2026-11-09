@@ -83,20 +83,27 @@ func toggle_quest()->void:
 	quest_expanded=not quest_expanded
 	update_quest()
 
+var quest_reward_count:Label
+
 func update_quest()->void:
 	if not is_instance_valid(objective):return
-	var level:=model.chief_level()
-	objective.text="촌장집을 건설해요" if level==0 else ("새 주민이 찾아왔어요" if model.family_available() else "주민 %d/%d명 · 촌장집 %d단계"%[model.resident_count(),model.resident_capacity(),level])
+	var current:=FirstQuests.current(model.state)
+	objective.text=FirstQuests.TITLES[current] if current>=0 else "첫 여정 완료"
+	if is_instance_valid(quest_reward_count):
+		var pending:=FirstQuests.pending(model.state).size()
+		quest_reward_count.text=str(pending)
+		quest_reward_count.get_parent().visible=pending>0
 	objective.size=Vector2(168,24)
 	objective.get_parent().size=Vector2(240,84 if quest_expanded else 52)
 	if is_instance_valid(quest_arrow):quest_arrow.rotation=0.0 if quest_expanded else PI
 	if is_instance_valid(quest_accent):quest_accent.size.y=48 if quest_expanded else 18
 	if is_instance_valid(quest_detail):
-		quest_detail.visible=quest_expanded
-		var cost:=model.building_cost("chief" if level==0 else "hut",1)
+		quest_detail.visible=quest_expanded and current in [2,3,5,6]
+		var kind:String={2:"chief",3:"hut",5:"chief",6:"farm"}.get(current,"chief")
+		var cost:=model.building_cost(kind,2 if current==5 else 1)
 		quest_wood.text="%d/%d"%[mini(int(model.state.wood),int(cost.wood)),int(cost.wood)]
 		quest_stone.text="%d/%d"%[mini(int(model.state.stone),int(cost.stone)),int(cost.stone)]
-		objective.get_parent().tooltip_text="촌장집 건설 재료" if level==0 else "주민 움집 건설 재료 · 주민이 많으면 움집을 짓거나 업그레이드해 주세요"
+		objective.get_parent().tooltip_text=FirstQuests.OBJECTIVES[current] if current>=0 else "첫 여정 완료"
 
 func has_pending_rewards()->bool:
 	for i in model.built_count():
@@ -524,6 +531,7 @@ func play_hud() -> void:
 	settings_button.custom_minimum_size=Vector2.ZERO;settings_button.position=Vector2(w-safe.x-36,safe.y-2);settings_button.size=Vector2(36,36)
 	settings_button.add_theme_constant_override("icon_max_width",36)
 	for state in ["normal","hover","pressed","focus"]:settings_button.add_theme_stylebox_override(state,StyleBoxEmpty.new())
+	quest_reward_count=QuestRewards.install_entry(self)
 	world_map_open=false
 	update_hud()
 
@@ -642,6 +650,13 @@ func update_hud() -> void:
 	if screen!="play" or not is_instance_valid(objective) or model.state.is_empty():return
 	update_quest()
 
+func show_pending_quest_guide()->void:
+	if modal or choosing_plot or not task.is_empty() or not application_active:return
+	var current:=FirstQuests.current(model.state)
+	if current<0 or current>=FirstQuests.AUTO_KINDS.size():return
+	if model.mark_quest_guide(current):
+		show_character_guide(FirstQuests.TITLES[current],FirstQuests.OBJECTIVES[current])
+
 func _process(delta: float) -> void:
 	if is_instance_valid(toast_panel): toast_panel.visible = toast_time > 0 and toast_label.text != ""
 	if toast_time > 0:
@@ -650,6 +665,7 @@ func _process(delta: float) -> void:
 	if is_instance_valid(world):world.simulation_paused=not application_active or world_map_open or map_transition_active
 	if screen != "play" or world_map_open or map_transition_active or not is_instance_valid(world):
 		return
+	show_pending_quest_guide()
 	if application_active:
 		farm_tick+=delta
 		if farm_tick>=1.0:
