@@ -1097,7 +1097,7 @@ func show_development_settings()->void:
 	enable_settings_backdrop()
 
 func set_performance_diagnostics(enabled:bool)->void:
-	var previous:bool=settings.get_value("development","performance_diagnostics",false)
+	var previous:bool=settings.get_value("development","performance_diagnostics",true)
 	settings.set_value("development","performance_diagnostics",enabled)
 	if settings.save(prefs_path)!=OK:
 		settings.set_value("development","performance_diagnostics",previous)

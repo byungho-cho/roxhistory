@@ -4,11 +4,12 @@ param(
     [string]$AndroidSdkPath = $env:ANDROID_HOME,
     [string]$JavaHome = $env:JAVA_HOME,
     [string]$EditorSettingsPath,
-    [switch]$AndroidOnly
+    [switch]$AndroidOnly,
+    [string]$OutputDirectory
 )
 $ErrorActionPreference = 'Stop'
 $repo = Split-Path $PSScriptRoot -Parent
-$output = Join-Path $repo 'build'
+$output = if ($OutputDirectory) { $OutputDirectory } else { Join-Path $repo 'build' }
 $logs = Join-Path $repo '.work/release-logs'
 if (-not $GodotPath) {
     $GodotPath = (Get-Command 'Godot_v4.5.1-stable_win64_console.exe' -ErrorAction Stop).Source

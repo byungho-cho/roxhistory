@@ -11,10 +11,12 @@ import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
+import android.os.BatteryManager;
 import android.os.Bundle;
 import android.os.Debug;
 import android.os.PowerManager;
@@ -83,6 +85,10 @@ public final class VillageAlarm extends BroadcastReceiver {
         try {
             sample.put("process_pss_kib", memory.getTotalPss());
             sample.put("process_cpu_total_ms", android.os.Process.getElapsedCpuTime());
+            Intent battery = activity.registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
+            if (battery != null && battery.hasExtra(BatteryManager.EXTRA_TEMPERATURE)) {
+                sample.put("battery_temperature_c", battery.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, 0) / 10.0);
+            }
             if (Build.VERSION.SDK_INT >= 29) {
                 sample.put("thermal_status", activity.getSystemService(PowerManager.class).getCurrentThermalStatus());
             }

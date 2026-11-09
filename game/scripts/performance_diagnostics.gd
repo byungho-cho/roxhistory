@@ -7,7 +7,7 @@ const INTERVAL := 5.0
 var elapsed := 0.0
 
 func tick(app: Node, delta: float) -> void:
-	if not app.application_active or not app.settings.get_value("development","performance_diagnostics",false):
+	if not app.application_active or not app.settings.get_value("development","performance_diagnostics",true):
 		elapsed=0
 		return
 	elapsed+=delta

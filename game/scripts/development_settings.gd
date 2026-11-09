@@ -5,8 +5,8 @@ extends RefCounted
 static func entries(app:Node)->Array[Dictionary]:
 	return [
 		{"id":"PerformanceDiagnostics","title":"성능 진단 기록 · 기기에만 저장","kind":"toggle",
-			"value":app.settings.get_value("development","performance_diagnostics",false),
-			"read":func():return app.settings.get_value("development","performance_diagnostics",false),
+			"value":app.settings.get_value("development","performance_diagnostics",true),
+			"read":func():return app.settings.get_value("development","performance_diagnostics",true),
 			"changed":app.set_performance_diagnostics},
 		{"id":"UnlimitedBuildings","title":"건축물 개수 제한 해제","kind":"toggle",
 			"value":app.model.debug_unlimited_buildings,"read":func():return app.model.debug_unlimited_buildings,

@@ -5,7 +5,7 @@ config/name="RoxHistory"
 config/version="0.1.85"
 config/build_date="2026.11.10"
 config/icon="res://assets/app-icon-pioneer.png"
-run/main_scene="res://scenes/main.tscn"
+run/main_scene="res://patch_test/bootstrap.tscn"
 config/features=PackedStringArray("4.5", "GL Compatibility")
 
 [display]
