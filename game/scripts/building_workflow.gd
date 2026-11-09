@@ -58,7 +58,7 @@ func upgrade_block_reason(target:int,check_resources:bool=true)->String:
 func request_upgrade()->void:
 	if app.modal or not app.application_active or app.screen!="play" or app.world_map_open:return
 	var target:int=app.model.chief_level()+1
-	var reason:=upgrade_block_reason(target)
+	var reason:=upgrade_block_reason(target,false)
 	if not reason.is_empty():app.toast(reason);return
 	var cost:Dictionary=app.model.building_cost("chief",target)
 	show_upgrade_confirmation("chief",cost,func():confirm_upgrade(target))
@@ -75,7 +75,7 @@ func upgrade_description(cost:Dictionary,target:int)->String:
 func confirm_upgrade(target:int)->bool:
 	if not app.modal or not app.application_active or confirmation_target!=target or not is_instance_valid(confirmation_overlay) or app.overlay!=confirmation_overlay:return false
 	var reason:=upgrade_block_reason(target)
-	if not reason.is_empty():app.close_modal();app.toast(reason);return false
+	if not reason.is_empty():app.toast(reason);return false
 	if not app.model.upgrade_chief():return false
 	confirmation_target=-1;app.close_modal();refresh_visual();return true
 func refresh_visual()->void:

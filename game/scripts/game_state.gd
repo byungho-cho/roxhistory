@@ -96,7 +96,7 @@ func finish_chief_upgrade(now:float=-1.0) -> bool:
 	prepare_resource_positions(next)
 	var ok:=commit(next)
 	busy=false
-	if ok:VillageNotifications.dispatch(self,"upgrade",{"kind":"chief"})
+	if ok:VillageNotifications.dispatch(self,"upgrade",{"kind":"chief","id":"chief:%s"%next.chief_level})
 	return ok
 
 # Same atomic payment/save transaction as huts. Outposts do not count toward
@@ -182,7 +182,7 @@ func respawn(id:String, at:Vector2, now:float=-1.0) -> bool:
 		return commit(next)
 	return false
 
-func _init(save_store: SaveStore) -> void:
+func _init(save_store: SaveStore, defer_completion: bool = false) -> void:
 	store = save_store
 	state = store.load_game()
 	migrate_village()
@@ -191,6 +191,9 @@ func _init(save_store: SaveStore) -> void:
 	migrate_economy()
 	if not state.is_empty() and not state.has("quests_done"):commit(state.duplicate(true))
 	ensure_respawn_timers()
+	if not defer_completion:finish_loaded_jobs()
+
+func finish_loaded_jobs()->void:
 	finish_constructions()
 	finish_chief_upgrade()
 	OwnedBuildingUpgrades.finish(self)
@@ -209,6 +212,8 @@ func commit(next: Dictionary, reset: bool = false) -> bool:
 
 func start_new() -> bool:
 	var next:=DemoConfig.fresh()
+	next.guided_intro=true
+	next.notification_run="%s-%s"%[Time.get_unix_time_from_system(),Time.get_ticks_usec()]
 	prepare_resource_positions(next)
 	var ok:=commit(next,true)
 	if ok:
@@ -266,6 +271,14 @@ func claim_quest_reward(index:int)->bool:
 	if index not in FirstQuests.pending(state):return false
 	next.quests_claimed.append(FirstQuests.IDS[index])
 	next.grain=int(next.get("grain",0))+FirstQuests.MANUAL_AMOUNT
+	return commit(next)
+
+func claim_all_quest_rewards()->bool:
+	var pending:=FirstQuests.pending(state)
+	if busy or pending.is_empty():return false
+	var next:=state.duplicate(true)
+	for index in pending:next.quests_claimed.append(FirstQuests.IDS[index])
+	next.grain=int(next.get("grain",0))+pending.size()*FirstQuests.MANUAL_AMOUNT
 	return commit(next)
 
 func mark_quest_guide(index:int)->bool:
@@ -635,7 +648,7 @@ func finish_constructions(now:float=-1.0)->bool:
 	if not did_finish:return false
 	var completed:Array=[]
 	for job in construction_jobs():
-		if now>=float(job.finishes_at):completed.append(str(job.kind))
+		if now>=float(job.finishes_at):completed.append({"kind":str(job.kind),"id":str(job.uid)})
 	next.construction_jobs=pending
 	next.built=not next.get("homes",[]).is_empty()
 	if next.built:
@@ -645,7 +658,7 @@ func finish_constructions(now:float=-1.0)->bool:
 	var ok:=commit(next)
 	busy=false
 	if ok:
-		for kind in completed:VillageNotifications.dispatch(self,"construction",{"kind":kind})
+		for job in completed:VillageNotifications.dispatch(self,"construction",job)
 	return ok
 
 func cancel_upgrade(key:String)->bool:

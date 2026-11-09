@@ -144,7 +144,7 @@ func _process(_delta:float)->void:
 			var visual_height:float=44.0*(1.0 if emphasized else .5)
 			button.position=Vector2(bounds.get_center().x-23,bounds.position.y-22-visual_height*.5+8)
 			button.set_meta("roof_anchor",Vector2(bounds.get_center().x,bounds.position.y))
-			button.visible=not hud_occludes(button.get_global_rect())
+			button.visible=bounds.intersects(Rect2(0,0,app.w,app.h).grow(4)) and not hud_occludes(button.get_global_rect())
 
 func fixed_hud_rects()->Array[Rect2]:
 	var rects:Array[Rect2]=[Rect2(app.safe+Vector2(-5,-3),Vector2(210,66))]

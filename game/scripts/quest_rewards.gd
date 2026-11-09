@@ -42,12 +42,14 @@ static func caption(app:Node,parent:Control,value:String,rect:Rect2,font_size:in
 
 static func install_entry(app:Node)->Label:
 	var at:=Vector2(app.safe.x,app.h-app.safe.y-87)
-	var button:=art_button(app,app.stage,"QuestRewardEntry",Rect2(at,Vector2(68,83)),func():
+	var journal:=art_button(app,app.stage,"JournalButton",Rect2(at,Vector2(64,83)),app.quest_details)
+	journal.z_index=35
+	entry_art(app,journal,DemoArt.play_icon("scroll"),"임무")
+	var button:=art_button(app,app.stage,"QuestRewardEntry",Rect2(at+Vector2(67,0),Vector2(64,83)),func():
 		if not app.modal and not app.world_map_open and not app.map_transition_active:open(app))
 	button.z_index=35
 	button.tooltip_text="퀘스트 보상"
-	app.picture(button,part(ICONS,BAG),Rect2(7,4,50,55))
-	caption(app,button,"보상",Rect2(0,55,68,24),14,CREAM)
+	entry_art(app,button,part(ICONS,BAG),"보상")
 	var badge:=Panel.new()
 	badge.position=Vector2(44,0)
 	badge.size=Vector2(22,22)
@@ -58,6 +60,12 @@ static func install_entry(app:Node)->Label:
 	badge.add_theme_stylebox_override("panel",style)
 	button.add_child(badge)
 	return caption(app,badge,"",Rect2(0,0,22,22),14,Color.WHITE)
+
+static func entry_art(app:Node,button:DemoButton,icon:Texture2D,title:String)->void:
+	app.picture(button,icon,Rect2(7,5,50,55))
+	var brush:TextureRect=app.picture(button,preload("res://assets/ui/construction-side-v006/brush.png"),Rect2(0,49,64,26))
+	brush.modulate.a=.8
+	caption(app,button,title,Rect2(0,50,64,24),14,CREAM)
 
 static func open(app:Node)->void:
 	app.show_modal("","",[],false,true)
@@ -77,52 +85,48 @@ static func open(app:Node)->void:
 	app.overlay.add_child(panel)
 	app.picture(panel,PANEL,Rect2(Vector2.ZERO,panel.size)).stretch_mode=TextureRect.STRETCH_SCALE
 	caption(app,panel,"퀘스트 보상",Rect2(295,25,410,82),60,CREAM)
-	app.picture(panel,part(PARTS,COUNT),Rect2(355,163,290,76)).stretch_mode=TextureRect.STRETCH_SCALE
-	var count:=caption(app,panel,"",Rect2(355,163,290,76),29,CREAM)
-	for x in [80,680]:
-		var rule:=ColorRect.new()
-		rule.position=Vector2(x,200)
-		rule.size=Vector2(240,2)
-		rule.color=Color("b18943")
-		rule.mouse_filter=Control.MOUSE_FILTER_IGNORE
-		panel.add_child(rule)
 	var close_size:=maxf(92,48/factor)
 	var close:=art_button(app,panel,"QuestRewardClose",Rect2(Vector2(927,70)-Vector2.ONE*close_size*.5,Vector2.ONE*close_size),app.close_modal)
 	app.picture(close,part(PARTS,CLOSE),Rect2(Vector2.ONE*(close_size-92)*.5,Vector2.ONE*92))
 	var scroll:=DevelopmentSettingsScroll.new()
-	scroll.position=Vector2(75,254)
-	scroll.size=Vector2(850,436)
+	scroll.position=Vector2(75,138)
+	scroll.size=Vector2(850,545)
 	scroll.horizontal_scroll_mode=ScrollContainer.SCROLL_MODE_DISABLED
 	scroll.vertical_scroll_mode=ScrollContainer.SCROLL_MODE_SHOW_NEVER
 	panel.add_child(scroll)
 	var cards:=VBoxContainer.new()
-	cards.add_theme_constant_override("separation",14)
+	cards.add_theme_constant_override("separation",8)
 	scroll.add_child(cards)
-	caption(app,panel,"미수령 보상은 보관됩니다",Rect2(230,700,540,56),25,CREAM)
-	fill_cards(app,cards,count)
+	var claim_all:=art_button(app,panel,"ClaimAllQuestRewards",Rect2(315,702,370,76),func():
+		if app.model.claim_all_quest_rewards():fill_cards(app,cards))
+	app.picture(claim_all,part(PARTS,CLAIM),Rect2(0,0,370,76)).stretch_mode=TextureRect.STRETCH_SCALE
+	caption(app,claim_all,"모두 받기",Rect2(0,0,370,76),32,INK)
+	fill_cards(app,cards)
 
-static func fill_cards(app:Node,cards:VBoxContainer,count:Label)->void:
+static func fill_cards(app:Node,cards:VBoxContainer)->void:
 	app.clear_children(cards)
 	var pending:=FirstQuests.pending(app.model.state)
-	count.text="받을 보상 %d개"%pending.size()
+	var all_button:Button=app.overlay.find_child("ClaimAllQuestRewards",true,false)
+	all_button.disabled=pending.is_empty()
+	all_button.modulate.a=.55 if all_button.disabled else 1.0
 	if pending.is_empty():
-		caption(app,cards,"받을 보상이 없어요",Rect2(0,0,850,136),32,CREAM).custom_minimum_size=Vector2(850,136)
+		caption(app,cards,"받을 보상이 없어요",Rect2(0,0,850,104),32,CREAM).custom_minimum_size=Vector2(850,104)
 	for index in pending:
 		var card:=Control.new()
-		card.custom_minimum_size=Vector2(850,136)
+		card.custom_minimum_size=Vector2(850,104)
 		cards.add_child(card)
-		app.picture(card,part(PARTS,CARD),Rect2(0,0,850,136)).stretch_mode=TextureRect.STRETCH_SCALE
+		app.picture(card,part(PARTS,CARD),Rect2(0,0,850,104)).stretch_mode=TextureRect.STRETCH_SCALE
 		var icon:Texture2D
 		if index<=5:
 			icon=part(ICONS,OBJECTIVE_ICONS[index-3])
 		else:
 			icon=BuildingVisuals.texture("farm",1) if index==6 else PlayChrome.RESIDENT_ICON
-		app.picture(card,icon,Rect2(24,14,138,108)).stretch_mode=TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		var title:=caption(app,card,FirstQuests.TITLES[index],Rect2(190,0,315,136),34,INK)
+		app.picture(card,icon,Rect2(24,6,138,92)).stretch_mode=TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		var title:=caption(app,card,FirstQuests.TITLES[index],Rect2(190,0,315,104),34,INK)
 		title.horizontal_alignment=HORIZONTAL_ALIGNMENT_LEFT
-		app.picture(card,part(ICONS,CORN),Rect2(524,39,54,55))
-		caption(app,card,str(FirstQuests.MANUAL_AMOUNT),Rect2(582,0,75,136),37,INK)
-		var claim:=art_button(app,card,"ClaimQuest%d"%index,Rect2(687,33,142,71),func():
-			if app.model.claim_quest_reward(index):fill_cards(app,cards,count))
+		app.picture(card,part(ICONS,CORN),Rect2(524,24,54,55))
+		caption(app,card,str(FirstQuests.MANUAL_AMOUNT),Rect2(582,0,75,104),37,INK)
+		var claim:=art_button(app,card,"ClaimQuest%d"%index,Rect2(687,16,142,71),func():
+			if app.model.claim_quest_reward(index):fill_cards(app,cards))
 		app.picture(claim,part(PARTS,CLAIM),Rect2(0,0,142,71)).stretch_mode=TextureRect.STRETCH_SCALE
 		caption(app,claim,"받기",Rect2(0,0,142,71),32,INK)

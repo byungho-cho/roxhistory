@@ -42,6 +42,7 @@ func _process(delta:float)->void:
 		blocked=true;mouse_dragging=false;panning=false
 func _init(owner_app: Node) -> void: app=owner_app
 func clear() -> void:
+	if is_instance_valid(app.tutorial):app.tutorial.pointer=-2
 	if is_instance_valid(app.build_side):app.build_side.cancel_pointer()
 	moving_key=""
 	hold_at=Vector2.INF;hold_time=0.0;hold_consumed=false
@@ -71,6 +72,9 @@ func ui_hit(at: Vector2) -> bool:
 func _input(event: InputEvent) -> void:
 	if app.overlay is CharacterGuide:
 		if app.application_active and app.overlay.handle_pointer(event):get_viewport().set_input_as_handled()
+		return
+	if not app.modal and app.application_active and is_instance_valid(app.tutorial) and app.tutorial.active():
+		if app.tutorial.handle_pointer(event):get_viewport().set_input_as_handled()
 		return
 	if is_instance_valid(app.build_side) and app.build_side.handle_input(event):
 		get_viewport().set_input_as_handled();return

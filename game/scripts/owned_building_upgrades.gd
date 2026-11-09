@@ -46,15 +46,18 @@ static func finish(model:GameState,now:float=-1)->bool:
 	if not is_finite(now):return false
 	var next:=model.state.duplicate(true);var changed:=false;var completed:Array=[]
 	for collection in ["homes","outposts","facilities"]:
-		for entry in next.get(collection,[]):
+		var entries:Array=next.get(collection,[])
+		for index in entries.size():
+			var entry:Dictionary=entries[index]
 			if entry.has("upgrade") and now>=float(entry.upgrade.finishes_at):
-				entry.level=int(entry.upgrade.to);entry.erase("upgrade");changed=true;completed.append(str(entry.get("kind","hut")))
+				completed.append({"kind":str(entry.get("kind","hut")),"id":VillageNotifications.owned_id(collection,entry,index)})
+				entry.level=int(entry.upgrade.to);entry.erase("upgrade");changed=true
 	if not changed:return false
 	model.busy=true
 	var ok:=model.commit(next)
 	model.busy=false
 	if ok:
-		for kind in completed:VillageNotifications.dispatch(model,"upgrade",{"kind":kind})
+		for job in completed:VillageNotifications.dispatch(model,"upgrade",job)
 	return ok
 
 static func cancel(model:GameState,key:String)->bool:

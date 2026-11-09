@@ -61,6 +61,7 @@ function Assert-Replaceable {
     }
 }
 Assert-Replaceable
+& (Join-Path $PSScriptRoot 'prepare-android-notifications.ps1') -GodotPath $GodotPath -AndroidSdkPath $AndroidSdkPath -JavaHome $JavaHome
 $variableNames = @('JAVA_HOME','GODOT_ANDROID_KEYSTORE_DEBUG_PATH','GODOT_ANDROID_KEYSTORE_DEBUG_USER','GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD')
 $savedEnvironment = @{}
 foreach ($name in $variableNames) { $savedEnvironment[$name] = [Environment]::GetEnvironmentVariable($name) }
@@ -79,6 +80,10 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'APK alignment verification failed.' }
     $metadata = & (Join-Path $tools 'aapt.exe') dump badging $pendingApk
     if ($LASTEXITCODE -ne 0 -or -not ($metadata -match "versionName='$([regex]::Escape($version))'")) { throw 'APK version verification failed.' }
+    $manifestTree = & (Join-Path $tools 'aapt.exe') dump xmltree $pendingApk AndroidManifest.xml
+    if ($LASTEXITCODE -ne 0 -or -not ($manifestTree -match 'android.permission.POST_NOTIFICATIONS') -or -not ($manifestTree -match 'com.roxhistory.notifications.VillageAlarm')) {
+        throw 'Android notification permission or receiver is missing from the APK.'
+    }
     $signatureLog = Get-Content -Raw (Join-Path $logs 'android-signature.log')
     & (Join-Path $JavaHome 'bin/keytool.exe') -exportcert -keystore $key -alias $keyUser -storepass:env GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD -file (Join-Path $logs 'signer-certificate.der') *> (Join-Path $logs 'certificate-export.log')
     if ($LASTEXITCODE -ne 0) { throw 'Public signing certificate export failed.' }

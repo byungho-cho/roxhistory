@@ -47,7 +47,7 @@ static func prepare_visit(model:GameState,now:float=-1.0)->bool:
 		if model.built_count()==0:return false
 		next.pending_family_count=1
 		next.family_next_at=0.0
-		return _commit(model,next)
+		return _arrive(model,next)
 	var due:=float(next.get("family_next_at",0.0))
 	if due<=0:
 		next.family_next_at=now+VISIT_INTERVAL_SECONDS
@@ -55,6 +55,7 @@ static func prepare_visit(model:GameState,now:float=-1.0)->bool:
 		# Near the absolute population ceiling, do not strand an oversized party.
 		next.pending_family_count=randi_range(1,mini(2,MAX_RESIDENTS-count(next)))
 		next.family_next_at=0.0
+		return _arrive(model,next)
 	else:return false
 	return _commit(model,next)
 
@@ -77,8 +78,12 @@ static func join(model:GameState,now:float=-1.0)->bool:
 	next.family_unlocked=true
 	next.pending_family_count=0
 	next.family_next_at=now+VISIT_INTERVAL_SECONDS
+	return _commit(model,next)
+
+static func _arrive(model:GameState,next:Dictionary)->bool:
+	var id:=VillageNotifications.arrival_id(float(model.state.get("family_next_at",0)))
 	var ok:=_commit(model,next)
-	if ok:VillageNotifications.dispatch(model,"arrival",{"count":party})
+	if ok:VillageNotifications.dispatch(model,"arrival",{"count":next.pending_family_count,"id":id})
 	return ok
 
 static func _commit(model:GameState,next:Dictionary)->bool:

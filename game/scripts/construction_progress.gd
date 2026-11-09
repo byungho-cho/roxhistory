@@ -121,8 +121,14 @@ func _process(delta: float) -> void:
 		var image:Sprite2D=app.world.art_nodes[app.task_target].get_child(0)
 		var bounds:Rect2=image.get_global_transform_with_canvas()*image.get_rect()
 		position=Vector2(bounds.get_center().x-size.x*scale.x*.5,bounds.position.y-size.y*scale.y-5)
-	position.x = clampf(position.x,app.safe.x,maxf(app.safe.x,app.w-app.safe.x-size.x*scale.x-(50 if is_instance_valid(cancel_button) else 0)))
-	position.y = clampf(position.y,app.safe.y+90,maxf(app.safe.y+90,app.h-app.safe.y-100-size.y*scale.y))
+	var viewport:=Rect2(0,0,app.w,app.h).grow(4)
+	var anchor:=position+Vector2(size.x*scale.x*.5,size.y*scale.y)
+	if not viewport.intersects(Rect2(anchor-Vector2(40,12),Vector2(80,175*world_zoom+12))):
+		hide()
+		return
+	var safe_x:=clampf(position.x,app.safe.x,maxf(app.safe.x,app.w-app.safe.x-size.x*scale.x))
+	position.x=move_toward(position.x,safe_x,24)
+	position.y=move_toward(position.y,maxf(position.y,app.safe.y),24)
 
 	if gathering and is_instance_valid(app.resident_panel):
 		# Keep the world timer clear of the fixed top HUD, including the map button.

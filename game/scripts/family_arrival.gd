@@ -73,7 +73,14 @@ func _process(delta:float)->void:
 			head.x+=resident.position.x;head.y=minf(head.y,resident.position.y-150)
 		head.x/=app.world.visitors.size()
 	var at:Vector2=app.world.get_global_transform_with_canvas()*head
-	bubble.position=Vector2(clampf(at.x-bubble.size.x*.5,app.safe.x,app.w-app.safe.x-bubble.size.x),clampf(at.y-bubble.size.y,app.safe.y+90,app.h-app.safe.y-160))
+	var viewport:=Rect2(0,0,app.w,app.h).grow(4)
+	var party_visible:=false
+	for resident in app.world.visitors:
+		var feet:Vector2=app.world.get_global_transform_with_canvas()*resident.position
+		var height:float=150.0*app.world.get_global_transform_with_canvas().get_scale().y
+		if viewport.intersects(Rect2(feet-Vector2(height*.22,height),Vector2(height*.44,height))):party_visible=true;break
+	bubble.position=at-Vector2(bubble.size.x*.5,bubble.size.y)
+	bubble.visible=party_visible and viewport.intersects(bubble.get_global_rect())
 	if talking and app.task!="family":talking=false;progress.hide()
 	bubble.set_meta("semantic_text",headline.text)
 	progress.value=100*(1-app.task_remaining/1.5) if talking else 0

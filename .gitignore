@@ -21,3 +21,6 @@ game/export_credentials.cfg
 *.idsig
 game/Godot/
 game/reports/
+game/android/build/
+game/android/.build_version
+game/addons/roxhistory_notifications.aar
