@@ -207,7 +207,7 @@ func show_screen(next: String) -> void:
 		if next != "play": world.feedback.clear_transients()
 		world.visible = screen == "play"
 		world.set_process_mode(Node.PROCESS_MODE_INHERIT if screen == "play" else Node.PROCESS_MODE_DISABLED)
-	if screen not in ["play","region"]:
+	if screen not in ["play","region","title"]:
 		menu_background()
 	match screen:
 		"onboarding": onboarding()
@@ -396,11 +396,11 @@ func welcome(sound: bool) -> void:
 	show_screen("title")
 
 func title_screen() -> void:
-	var k:=minf(w/1600,h/900)
-	var title:=design_label(stage,"RoxHistory",design_rect(68,65,900,100),maxi(32,int(88*k)),Color("fff0d0"))
-	title.add_theme_constant_override("outline_size",3)
-	title.add_theme_color_override("font_outline_color",Color("49321e"))
-	design_label(stage,"작은 불씨에서 시작되는 우리의 역사",design_rect(78,175,1100,48),maxi(18,int(34*k)),Color("ffedc7"))
+	var background:=picture(stage,preload("res://assets/ui/title-hanbando/hanbando-start-background-v1.png"),Rect2(0,0,w,h))
+	background.stretch_mode=TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	var logo_width:=minf(w*(.62 if w<h else .31),h*.61)
+	var logo:=picture(stage,preload("res://assets/ui/title-hanbando/hanbando-upheaval-logo-v1.png"),Rect2((w-logo_width)*.5,safe.y+h*.022,logo_width,logo_width*.5))
+	logo.name="HanbandoTitleLogo"
 	var start:=button(stage,"화면을 터치하여 시작",start_or_continue)
 	title_prompt=start
 	title_prompt_time=0

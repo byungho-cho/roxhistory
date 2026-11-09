@@ -2,6 +2,13 @@ class_name BuildSideMenu
 extends Control
 # Logical order is left-to-right; opening starts at the right (움집 first).
 const KINDS:=["outpost","shrine","hearth","wood_store","stone_store","training","farm","hut"]
+const MENU_ICONS:={
+	"farm":preload("res://assets/ui/construction-side-v006/menu-farm.png"),
+	"hearth":preload("res://assets/ui/construction-side-v006/menu-hearth.png"),
+	"wood_store":preload("res://assets/ui/construction-side-v006/menu-sawmill.png"),
+	"shrine":preload("res://assets/ui/construction-side-v006/menu-shrine.png"),
+	"stone_store":preload("res://assets/ui/construction-side-v006/menu-stoneworks.png"),
+}
 const TILE_SIZE:=Vector2(64,77)
 const ART_SCALE:=0.90 # Smaller than the main action, including the approved extra 10%.
 const MAX_VISIBLE:=5
@@ -152,7 +159,7 @@ func select_outpost()->void:select_kind("outpost")
 # Slots from I10000 1295:229. Clip source atlases without modifying approved images.
 static func image_slot(parent:Control,file:String,at:Vector2,dimensions:Vector2,relative:Rect2=Rect2(0,0,1,1))->void:
 	var clip:=Control.new();clip.position=at;clip.size=dimensions;clip.clip_contents=true;clip.mouse_filter=Control.MOUSE_FILTER_IGNORE;parent.add_child(clip)
-	var image:=TextureRect.new();image.texture=load("res://assets/buildings/storage-v001/"+file+"-l1.png") if file in ["stone_store","wood_store"] else load("res://assets/ui/construction-side-v006/"+file+".png");image.expand_mode=TextureRect.EXPAND_IGNORE_SIZE;image.position=relative.position*dimensions;image.size=relative.size*dimensions;image.mouse_filter=Control.MOUSE_FILTER_IGNORE;clip.add_child(image)
+	var image:=TextureRect.new();image.texture=load("res://assets/ui/construction-side-v006/"+file+".png");image.expand_mode=TextureRect.EXPAND_IGNORE_SIZE;image.position=relative.position*dimensions;image.size=relative.size*dimensions;image.mouse_filter=Control.MOUSE_FILTER_IGNORE;clip.add_child(image)
 static func install_side_art(button:DemoButton,kind:String)->void:
 	button.set_meta("integrated_art",true) # This composition owns its disabled contrast.
 	for state in ["normal","hover","pressed","disabled","focus"]:button.add_theme_stylebox_override(state,StyleBoxEmpty.new())
@@ -162,13 +169,18 @@ static func install_side_art(button:DemoButton,kind:String)->void:
 	var art:=Control.new();art.name="Artwork";art.mouse_filter=Control.MOUSE_FILTER_IGNORE;composition.add_child(art)
 	art.scale=Vector2.ONE*ART_SCALE;art.position=Vector2(9,-23)
 	match kind:
-		"stone_store","wood_store":image_slot(art,kind,Vector2(2,47),Vector2(180,135))
+		"farm","hearth","wood_store","shrine","stone_store":
+			var icon:=TextureRect.new()
+			icon.texture=IntegratedMenuArt.trimmed(MENU_ICONS[kind])
+			icon.expand_mode=TextureRect.EXPAND_IGNORE_SIZE
+			var native:=icon.texture.get_size()
+			icon.size=native*minf(156.0/native.x,131.0/native.y)
+			icon.position=Vector2((180-icon.size.x)*.5,155-icon.size.y)
+			icon.mouse_filter=Control.MOUSE_FILTER_IGNORE
+			art.add_child(icon)
 		"outpost":image_slot(art,kind,Vector2(15,33),Vector2(150,150))
-		"shrine":image_slot(art,kind,Vector2(28.75,37.5),Vector2(122.5,137.5),Rect2(-.11,-.0567,1.2104,1.0782))
-		"hearth":image_slot(art,kind,Vector2(20.12,56.88),Vector2(143.76,102.12),Rect2(-.0531,-.2743,1.1107,1.5636))
 		"training":image_slot(art,kind,Vector2(30.18,37.5),Vector2(119.64,137.5),Rect2(-.1084,-.3522,5.2337,1.5178))
 		"hut":image_slot(art,kind,Vector2(16.13,48.7),Vector2(143.75,124.301),Rect2(-.25,-.966,6.3882,2.4626))
-		"farm":image_slot(art,kind,Vector2(2,22),Vector2(180,150),Rect2(-19.17/180,18.33/150,218.333/180,200.0/150))
 	var label:=Label.new();label.name="MenuLabel";label.text={"hut":"움집","farm":"농장","training":"훈련소","hearth":"화덕","shrine":"신당","outpost":"초소","stone_store":"석재소","wood_store":"제재소"}[kind];label.theme=DemoArt.theme();label.add_theme_font_size_override("font_size",27);label.add_theme_color_override("font_color",Color("fff2cf"));label.position=Vector2(6.666,137);label.size=Vector2(166.667,45);label.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER;label.vertical_alignment=VERTICAL_ALIGNMENT_CENTER;label.mouse_filter=Control.MOUSE_FILTER_IGNORE;composition.add_child(label)
 	var locked:=TextureRect.new();locked.name="Locked";locked.texture=IntegratedMenuArt.trimmed(load("res://assets/ui/v0158/lock.png"));locked.expand_mode=TextureRect.EXPAND_IGNORE_SIZE;locked.stretch_mode=TextureRect.STRETCH_KEEP_ASPECT_CENTERED;locked.position=Vector2(4,137);locked.size=Vector2.ONE*48;locked.modulate.a=.85;locked.mouse_filter=Control.MOUSE_FILTER_IGNORE;composition.add_child(locked)
 	button.enable_art_feedback()
