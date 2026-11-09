@@ -113,10 +113,10 @@ static func open(app:Node)->void:
 	var cards:=VBoxContainer.new()
 	cards.add_theme_constant_override("separation",8)
 	scroll.add_child(cards)
-	var claim_all:=art_button(app,panel,"ClaimAllQuestRewards",Rect2(315,702,370,76),func():
+	var claim_all:=art_button(app,panel,"ClaimAllQuestRewards",Rect2(315,693,370,76),func():
 		if app.model.claim_all_quest_rewards():fill_cards(app,cards))
-	sliced_art(claim_all,part(PARTS,CLAIM),Rect2(0,0,370,76),38)
-	caption(app,claim_all,"모두 받기",Rect2(0,0,370,76),32,INK)
+	sliced_art(claim_all,part(PARTS,CLAIM),Rect2(0,0,370,56),38)
+	caption(app,claim_all,"모두 받기",Rect2(0,0,370,56),32,INK)
 	fill_cards(app,cards)
 
 static func fill_cards(app:Node,cards:VBoxContainer)->void:

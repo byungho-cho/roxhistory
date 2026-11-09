@@ -35,7 +35,7 @@ func open()->void:
 	var content:=Control.new();content.name="QuestContent";content.position=-panel.position;content.mouse_filter=Control.MOUSE_FILTER_IGNORE;panel.add_child(content)
 	app.picture(content,crop(ICONS,4.4138,2.6947,3.3908,.2789),Rect2(88,127,38,42));text(content,"이야기",Vector2(148,128),28,Color("ffe1a0"))
 	line(content,Vector2(249,131),Vector2(1,34),"9a713f");app.picture(content,hut(),Rect2(272,127,48,41.506));text(content,"생활",Vector2(342,130),25,Color("b8a58c"))
-	line(content,Vector2(84,176),Vector2(1114,1),"866039");line(content,Vector2(431,198),Vector2(1,425),"775639")
+	line(content,Vector2(84,176),Vector2(1114,1),"866039")
 	var glow:TextureRect=app.picture(content,crop(preload("res://assets/ui/v0160/quest-story-glow.png"),7.0549,40.913,.4768,9.3043),Rect2(87,165,182,18));var blend:=ShaderMaterial.new();blend.shader=preload("res://shaders/quest_lighten.gdshader");glow.material=blend
 	var scroll:=DevelopmentSettingsScroll.new()
 	scroll.name="QuestList"
