@@ -26,13 +26,14 @@ function global:gh {
     throw "Unexpected mock API request: $endpoint"
 }
 try {
-    $global:retentionReleases = @((Release 1 'v0.1.58'),(Release 2 'v0.1.59'),(Release 3 'v0.1.60'),(Release 4 'draft' $true),(Release 5 'pck-test-0.1.58-to-0.1.59'))
+    $global:retentionReleases = @((Release 1 'v0.1.58'),(Release 2 'v0.1.59'),(Release 3 'v0.1.60'),(Release 4 'draft' $true),(Release 5 'pck-test-0.1.58-to-0.1.59'),(Release 6 'android-patch-base'))
     $global:retentionAssets = @{
         1=@((Asset 11 'RoxHistory-0.1.58-cloud-test.apk'),(Asset 12 'Roxhistory_0.1.58.exe'),(Asset 13 'source.zip'))
         2=@((Asset 21 'Roxhistory_0.1.59.apk'),(Asset 22 'Roxhistory_0.1.59.exe'),(Asset 23 'SHA256SUMS.txt'))
         3=@((Asset 31 'Roxhistory_0.1.60.apk'))
         4=@((Asset 41 'Roxhistory_0.1.57.apk'))
         5=@((Asset 51 'Roxhistory_0.1.58.apk'),(Asset 52 'Roxhistory_0.1.58_to_0.1.59.pck'))
+        6=@((Asset 61 'Roxhistory_0.1.58.apk'))
     }
     $global:retentionReadCount=0
     & $script | Out-Null

@@ -7,7 +7,7 @@ function Api([string]$endpoint) {
     return @(foreach ($page in (ConvertFrom-Json ($json -join "`n"))) { foreach ($item in $page) { $item } })
 }
 $releases = @(Api "repos/$Repository/releases?per_page=100" | Where-Object {
-    -not $_.draft -and $_.tag_name -notmatch '^pck-test-'
+    -not $_.draft -and $_.tag_name -notmatch '^pck-test-' -and $_.tag_name -ne 'android-patch-base'
 })
 $pairs = @(foreach ($release in $releases) {
     $assets = @(Api "repos/$Repository/releases/$($release.id)/assets?per_page=100")
