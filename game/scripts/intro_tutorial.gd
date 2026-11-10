@@ -14,6 +14,7 @@ var retry_in := 0.0
 var press_at := Vector2.INF
 var pointer := -2
 var age := 0.0
+var construction_focus := Vector2.INF
 
 func _init(owner: Node) -> void:
 	app = owner
@@ -26,12 +27,25 @@ func active() -> bool:
 func _process(delta: float) -> void:
 	age += delta
 	queue_redraw()
-	if not active() or app.modal or not app.application_active: return
+	if not active() or not app.application_active: return
 	var current := FirstQuests.current(app.model.state)
+	if current==2:
+		var site:=Vector2.INF
+		if app.model.chief_level()>0:
+			site=app.model.building_position("chief")
+		else:
+			for job in app.model.construction_jobs():
+				if job.kind=="chief":
+					site=DemoConfig.point(job.position)
+					break
+		if site.is_finite():focus_construction(site)
+		return
+	if app.modal:return
 	if stage_index != current:
 		stage_index = current
 		target_id = ""
 		started_travel = false
+		retry_in = 0
 		rejected.clear()
 	if current >= 2 or FirstQuests.intro_reward_ready(app.model.state, current): return
 	if started_travel and app.navigation.action.is_empty() and app.task.is_empty():
@@ -53,9 +67,7 @@ func _process(delta: float) -> void:
 		var at := DemoConfig.point(node.position)
 		if player.distance_to(at) <= float(DemoConfig.get_data().interact_radius) or not app.navigation.plan_route(app.world.gather_stand(at, kind), []).is_empty():
 			target_id = node.id
-			var visible_area := Rect2(70, 110, app.w-140, app.h-240)
-			if not visible_area.has_point(app.world.get_global_transform_with_canvas()*at):
-				app.world.player.guide_to(at-Vector2(0, 48))
+			app.world.player.hold_tutorial_camera(at-Vector2(0,48))
 			return
 	rejected.clear()
 
@@ -117,10 +129,15 @@ func choose_plot() -> bool:
 			var candidate := center + Vector2.from_angle(TAU*i/16.0)*radius
 			if not app.world.placement_requirement("chief",candidate).is_empty(): continue
 			plot = candidate
-			app.world.player.guide_to(plot-Vector2(0, 50))
+			focus_construction(plot)
 			app.toast("표시된 부지를 눌러 주세요")
 			return true
 	return false
+
+func focus_construction(site:Vector2)->void:
+	if construction_focus==site and app.world.player.manual_camera:return
+	construction_focus=site
+	app.world.player.hold_tutorial_camera(site-Vector2(0,50))
 
 func _draw() -> void:
 	if not active() or app.modal or not app.application_active or not app.task.is_empty() or not app.navigation.action.is_empty(): return

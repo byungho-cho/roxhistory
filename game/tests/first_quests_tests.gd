@@ -148,6 +148,8 @@ func run()->void:
 	check(not app.choosing_plot and not app.modal,"Locked construction cannot open placement")
 	var designated: String=app.tutorial.target_id
 	check(not designated.is_empty(),"Tutorial selects a reachable wood target")
+	await create_timer(2.2).timeout
+	check(app.world.player.manual_camera,"Wood target stays framed past the old automatic return")
 	if DisplayServer.get_name()!="headless":
 		await RenderingServer.frame_post_draw
 		root.get_texture().get_image().save_png("res://reports/tutorial-wood-target.png")
@@ -167,6 +169,8 @@ func run()->void:
 	await frames(4)
 	check(app.overlay is CharacterGuide and app.overlay.heading==FirstQuests.INTRO_GUIDES[1] and model.state.wood==110,"Tapping claims wood and shows the stone guide")
 	app.close_modal()
+	await frames(4)
+	check(app.world.player.manual_camera and not app.tutorial.target_id.is_empty(),"Stone tutorial frames its own target")
 	check(model.gather(stone),"Guide fixture gathers stone")
 	await frames(4)
 	check(app.overlay is CharacterGuide and app.overlay.heading==FirstQuests.INTRO_SUCCESSES[1] and app.build_lock_icon.visible,"Stone success keeps construction locked until claimed")
@@ -178,11 +182,14 @@ func run()->void:
 	check(app.choosing_plot and app.build_kind=="chief" and not app.build_preview.active(),"Unlocked construction highlights a plot before placement")
 	var plot:Vector2=app.tutorial.plot
 	check(plot.is_finite() and app.world.placement_requirement("chief",plot).is_empty(),"The tutorial plot is clear of obstacles")
+	await create_timer(2.2).timeout
+	check(app.world.player.manual_camera and root.get_visible_rect().has_point(app.world.get_global_transform_with_canvas()*plot),"Chief plot remains framed before selection")
 	tap(app.world.get_global_transform_with_canvas()*plot)
 	check(app.build_preview.active() and app.build_preview.placement_position==plot,"Designated plot tap opens confirmation")
 	await frames()
 	tap(app.build_preview.cost_display.confirm_button.get_global_rect().get_center())
 	check(model.pending_construction_count("chief")==1,"Tutorial confirmation starts chief construction")
+	check(app.world.player.manual_camera,"Chief plot stays framed during construction")
 	var scheduled:=VillageNotifications.schedule(model)
 	check(scheduled.size()==1,"Construction completion has one scheduled notice")
 	check(VillageNotifications.set_enabled(model,"construction",false) and VillageNotifications.schedule(model).is_empty(),"Disabling notifications removes the planned notice")
@@ -191,11 +198,13 @@ func run()->void:
 	check(model.finish_constructions(float(job.finishes_at)) and VillageNotifications.schedule(model).is_empty(),"Completing construction clears its schedule")
 	await frames(4)
 	check(app.overlay is CharacterGuide and app.overlay.heading==FirstQuests.INTRO_SUCCESSES[2] and model.state.grain==0,"Chief success waits for a tap")
+	check(app.world.player.manual_camera,"Chief stays framed while its reward guide is open")
 	tap(Vector2(30,30))
 	await frames(4)
 	check(app.overlay is CharacterGuide and app.overlay.heading==FirstQuests.TITLES[3] and model.state.grain==100,"Tapping claims grain and shows the first hut guide")
 	app.close_modal()
-	await frames(2)
+	await create_timer(.7).timeout
+	check(not app.world.player.manual_camera,"Chief reward tap returns the camera to the hero")
 	check(not app.tutorial.active() and not app.gather_button.disabled,"Chief reward unlocks ordinary gathering")
 	check(model.begin_construction("hut",Vector2(900,900),now) and model.finish_constructions(now+61),"A hut provides room for the first visitor")
 	check(model.ensure_family_visit(),"The first visitor arrives")

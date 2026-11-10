@@ -41,7 +41,7 @@ func start(kind:String,id:String,destination:Vector2,retry:int=0,blocked:Array=[
 	app.cancel_task(true,retry>0)
 	if kind=="gather" and not app.model.claim_gather(id,"hero"):return false
 	retry_count=retry;blocked_cells.assign(blocked)
-	app.world.player.resume_camera()
+	if not app.tutorial.active():player.resume_camera()
 	path=planned;path.remove_at(0)
 	if path.is_empty() or path[-1].distance_to(destination)>.01:path.append(destination)
 	action=kind;target=id;previous=player.position

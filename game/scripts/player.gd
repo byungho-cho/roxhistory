@@ -32,6 +32,7 @@ var perf_done := false
 var camera: Camera2D
 var zoom_factor := 1.0
 var guide_tween: Tween
+var tutorial_camera_tween: Tween
 var guide_generation := 0
 var rest_points := PackedVector2Array()
 var tool: Node2D
@@ -52,6 +53,7 @@ func camera_bounds()->Rect2:
 
 func pan_camera(screen_delta:Vector2)->void:
 	cancel_camera_guide()
+	if tutorial_camera_tween:tutorial_camera_tween.kill()
 	if not manual_camera:camera_center=camera.get_screen_center_position()
 	manual_camera=true
 	var half:=get_viewport_rect().size*.5/camera.zoom
@@ -62,7 +64,25 @@ func pan_camera(screen_delta:Vector2)->void:
 	camera.reset_smoothing();camera.force_update_scroll()
 
 func resume_camera()->void:
+	cancel_camera_guide()
+	if tutorial_camera_tween:tutorial_camera_tween.kill()
 	manual_camera=false;camera.position=Vector2.ZERO;camera.reset_smoothing()
+
+func hold_tutorial_camera(point:Vector2)->void:
+	cancel_camera_guide()
+	if tutorial_camera_tween:tutorial_camera_tween.kill()
+	camera_center=camera.get_screen_center_position()
+	manual_camera=true
+	var half:=get_viewport_rect().size*.5/camera.zoom
+	var bounds:=camera_bounds()
+	var target:=point.clamp(bounds.position+half,bounds.end-half)
+	tutorial_camera_tween=create_tween()
+	tutorial_camera_tween.tween_property(self,"camera_center",target,.55).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+
+func release_tutorial_camera()->void:
+	if not manual_camera:return
+	hold_tutorial_camera(global_position)
+	tutorial_camera_tween.finished.connect(resume_camera,CONNECT_ONE_SHOT)
 
 func _ready() -> void:
 	var shape := CollisionShape2D.new()

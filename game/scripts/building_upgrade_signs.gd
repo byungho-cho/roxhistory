@@ -37,6 +37,9 @@ func _process(_delta:float)->void:
 	if not visible:return
 	if dirty:refresh()
 	var screen:=Rect2(Vector2.ZERO,Vector2(app.w,app.h))
+	var zoom:float=app.world.player.zoom_factor
+	var visual_extent:=40.0*clampf(zoom,.78,1.6)
+	var hit_extent:=maxf(HIT_SIZE.x,visual_extent+4.0)
 	for key in signs:
 		var button:DemoButton=signs[key]
 		var sprite:Sprite2D=app.world.building_sprite(key)
@@ -46,5 +49,9 @@ func _process(_delta:float)->void:
 		var bounds:=sprite.get_global_transform_with_canvas()*BuildingVisuals.visible_rect(sprite)
 		var ground_offset:=132.0 if key=="chief" else 85.0
 		var south:Vector2=app.world.get_global_transform_with_canvas()*(app.model.building_position(key)+Vector2(0,ground_offset))
-		button.position=south-Vector2(HIT_SIZE.x*.5,HIT_SIZE.y*.8)
+		var art:TextureRect=button.get_child(0)
+		art.size=Vector2.ONE*visual_extent
+		art.position=Vector2.ONE*(hit_extent-visual_extent)*.5
+		button.size=Vector2.ONE*hit_extent
+		button.position=south-Vector2(hit_extent*.5,hit_extent*.8)
 		button.visible=screen.intersects(bounds) and screen.encloses(button.get_global_rect()) and not app.resident_panel.hud_occludes(button.get_global_rect())

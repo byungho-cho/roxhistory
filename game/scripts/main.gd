@@ -20,6 +20,7 @@ var village_alerts: AndroidVillageNotifications
 var performance_diagnostics := PerformanceDiagnostics.new()
 var title_prompt: DemoButton
 var title_prompt_time := 0.0
+var title_cloud_seen := false
 var task_bar: ProgressBar
 var toast_label: Label
 var toast_time := 0.0
@@ -406,6 +407,15 @@ func title_screen() -> void:
 	title_art.filter_clip=true
 	var background:=picture(stage,title_art,Rect2(0,0,w,h))
 	background.stretch_mode=TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	if not title_cloud_seen:
+		title_cloud_seen=true
+		for i in 2:
+			var cloud:=picture(stage,VillageEntry.BANK_A if i==0 else VillageEntry.BANK_B,Rect2(-w*.15,h*(.05 if i==0 else .45),w*1.3,h*.55))
+			cloud.modulate.a=.85
+			var reveal:=cloud.create_tween().set_parallel()
+			reveal.tween_property(cloud,"position:x",w*(.45 if i==0 else -.72),1.25).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+			reveal.tween_property(cloud,"modulate:a",0.0,1.25)
+			reveal.chain().tween_callback(cloud.queue_free)
 	var logo_width:=minf(w*(.62 if w<h else .31),h*.61)
 	var logo:=picture(stage,preload("res://assets/ui/title-hanbando/hanbando-upheaval-logo-v1.png"),Rect2((w-logo_width)*.5,safe.y+h*.022,logo_width,logo_width*.5))
 	logo.name="HanbandoTitleLogo"
@@ -722,6 +732,7 @@ func show_pending_quest_guide()->void:
 
 func claim_intro_reward(index:int)->void:
 	if not model.claim_quest_reward(index):return
+	if model.state.get("guided_intro",false):world.player.release_tutorial_camera()
 	var kind:String=FirstQuests.INTRO_KINDS[index] if index!=2 else "tokens"
 	for i in 5:
 		chrome.gained(kind,world.player.position+Vector2((i-2)*10,-52),i*.055)
