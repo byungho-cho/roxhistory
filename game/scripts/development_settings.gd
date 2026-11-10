@@ -3,7 +3,11 @@ extends RefCounted
 
 # Add future options here; rows share the same scrollable list and touch sizes.
 static func entries(app:Node)->Array[Dictionary]:
+	var logs:=PerformanceDiagnostics.log_summary()
 	return [
+		{"id":"PerformanceShortcut","title":"마을에 디버그 버튼 표시","kind":"toggle",
+			"value":app.debug_shortcut_visible(),"read":app.debug_shortcut_visible,
+			"changed":app.set_debug_shortcut_visible},
 		{"id":"PerformanceDiagnostics","title":"발열·성능 진단 기록 · 기기에만 저장","kind":"toggle",
 			"value":PerformanceDiagnostics.enabled(app.settings),
 			"read":func():return PerformanceDiagnostics.enabled(app.settings),
@@ -14,6 +18,8 @@ static func entries(app:Node)->Array[Dictionary]:
 			"changed":app.set_performance_hud},
 		{"id":"PerformanceExport","title":"진단 기록 ZIP 내보내기","kind":"action",
 			"button":"내보내기","action":app.export_performance_logs},
+		{"id":"PerformanceDelete","title":"진단 로그 %d개 · %s"%[logs.count,String.humanize_size(logs.bytes)],"kind":"action",
+			"button":"삭제","action":app.confirm_delete_performance_logs,"disabled":logs.count==0},
 		{"id":"UnlimitedBuildings","title":"건축물 개수 제한 해제","kind":"toggle",
 			"value":app.model.debug_unlimited_buildings,"read":func():return app.model.debug_unlimited_buildings,
 			"changed":func(enabled:bool):app.model.debug_unlimited_buildings=enabled},
@@ -88,3 +94,4 @@ static func populate(app:Node,scroll:ScrollContainer,settings:Array[Dictionary])
 			action.name=setting.id+"Button"
 			action.custom_minimum_size=Vector2(104,44)
 			action.focus_mode=Control.FOCUS_ALL
+			action.disabled=setting.get("disabled",false)

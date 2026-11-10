@@ -101,15 +101,36 @@ func tick(app: Node, _delta: float) -> void:
 	file.seek_end()
 	file.store_line(JSON.stringify(sample))
 
+static func log_files() -> PackedStringArray:
+	var files:=PackedStringArray()
+	for name in DirAccess.get_files_at(RUNS):
+		if name.ends_with(".jsonl"):files.append(name)
+	return files
+
+static func log_summary() -> Dictionary:
+	var files:=log_files()
+	var bytes:=0
+	for name in files:
+		var file:=FileAccess.open(RUNS.path_join(name),FileAccess.READ)
+		if file!=null:bytes+=file.get_length()
+	return {"count":files.size(),"bytes":bytes}
+
+func delete_logs() -> int:
+	var failed:=0
+	for name in log_files():
+		if DirAccess.remove_absolute(RUNS.path_join(name))!=OK:failed+=1
+	if path.begins_with(RUNS+"/"):path=""
+	reset_window(scene)
+	return failed
+
 func export_zip()->String:
-	var files:=DirAccess.get_files_at(RUNS)
+	var files:=log_files()
 	if files.is_empty():return ""
 	var stamp:=Time.get_datetime_string_from_system(true).replace(":","-")
 	var destination:="user://diagnostics/Roxhistory-diagnostics-%s.zip"%stamp
 	var zip:=ZIPPacker.new()
 	if zip.open(destination)!=OK:return ""
 	for name in files:
-		if not name.ends_with(".jsonl"):continue
 		var data:=FileAccess.get_file_as_bytes(RUNS.path_join(name))
 		if data.is_empty():continue
 		if zip.start_file(name)!=OK or zip.write_file(data)!=OK or zip.close_file()!=OK:

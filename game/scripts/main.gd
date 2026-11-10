@@ -20,6 +20,8 @@ var village_alerts: AndroidVillageNotifications
 var performance_diagnostics := PerformanceDiagnostics.new()
 const PERFORMANCE_HUD:=preload("res://scripts/performance_hud.gd")
 var performance_hud:PanelContainer
+var debug_shortcut:DemoButton
+var debug_shortcut_icon:TextureRect
 const HUNT_SCREEN := preload("res://scripts/deer_hunt_screen.gd")
 var hunt: HUNT_SCREEN
 var title_sound: DemoButton
@@ -577,6 +579,14 @@ func play_hud() -> void:
 	action_row=Control.new();action_row.name="Actions";action_row.z_index=31;action_row.mouse_filter=Control.MOUSE_FILTER_IGNORE;stage.add_child(action_row)
 	action_row.position=Vector2(w-safe.x-menu_width,h-safe.y-76);action_row.size=Vector2(menu_width,72)
 	if w<h:action_row.position.y=h-safe.y-220
+	debug_shortcut=button(stage,"",toggle_performance_debug)
+	debug_shortcut.name="PerformanceDebugShortcut"
+	debug_shortcut.custom_minimum_size=Vector2.ZERO
+	debug_shortcut.size=Vector2(48,48)
+	debug_shortcut.position=Vector2(w-safe.x-48,action_row.position.y-124)
+	debug_shortcut.z_index=36
+	debug_shortcut_icon=picture(debug_shortcut,preload("res://assets/ui/v0158/debug-bug.svg"),Rect2(9,9,30,30))
+	update_debug_shortcut()
 	for data in [["사냥","spear"],["채집","berries"],["제작","hammer"],["가방","bag"],["건설","hut"]]:
 		var caption:String=data[0]
 		var callback:Callable=open_hunt if caption=="사냥" else gather_action if caption=="채집" else construction_menu if caption=="건설" else inventory_summary if caption=="가방" else func():toast("아직 준비 중인 기능입니다")
@@ -1158,6 +1168,40 @@ func show_development_settings()->void:
 	DevelopmentSettings.open(self)
 	enable_settings_backdrop()
 
+func debug_shortcut_visible() -> bool:
+	return settings.get_value("development","performance_shortcut",true)
+
+func set_debug_shortcut_visible(enabled:bool) -> void:
+	var previous:=debug_shortcut_visible()
+	settings.set_value("development","performance_shortcut",enabled)
+	if settings.save(prefs_path)!=OK:
+		settings.set_value("development","performance_shortcut",previous)
+		show_error("디버그 버튼 표시 설정을 저장하지 못했습니다.")
+	update_debug_shortcut()
+
+func update_debug_shortcut() -> void:
+	if not is_instance_valid(debug_shortcut):return
+	var active:=PerformanceDiagnostics.enabled(settings) or PerformanceDiagnostics.hud_enabled(settings)
+	debug_shortcut.visible=debug_shortcut_visible()
+	debug_shortcut.tooltip_text="성능 로그·HUD 끄기" if active else "성능 로그·HUD 켜기"
+	debug_shortcut.set_meta("semantic_text",debug_shortcut.tooltip_text)
+	debug_shortcut_icon.modulate=Color("92eea8") if active else Color("a2a6ad")
+
+func toggle_performance_debug() -> void:
+	if modal or world_map_open or map_transition_active:return
+	var old_logs:=PerformanceDiagnostics.enabled(settings)
+	var old_hud:=PerformanceDiagnostics.hud_enabled(settings)
+	var enabled:=not (old_logs or old_hud)
+	settings.set_value("development","performance_diagnostics",enabled)
+	settings.set_value("development","performance_hud",enabled)
+	if settings.save(prefs_path)!=OK:
+		settings.set_value("development","performance_diagnostics",old_logs)
+		settings.set_value("development","performance_hud",old_hud)
+		show_error("성능 진단 설정을 저장하지 못했습니다.")
+		return
+	if is_instance_valid(performance_hud):performance_hud.visible=enabled
+	update_debug_shortcut()
+
 func set_performance_hud(enabled:bool)->void:
 	var previous:=PerformanceDiagnostics.hud_enabled(settings)
 	settings.set_value("development","performance_hud",enabled)
@@ -1166,6 +1210,18 @@ func set_performance_hud(enabled:bool)->void:
 		show_error("성능 HUD 설정을 저장하지 못했습니다.")
 		return
 	if is_instance_valid(performance_hud):performance_hud.visible=enabled
+	update_debug_shortcut()
+
+func confirm_delete_performance_logs() -> void:
+	var logs:=PerformanceDiagnostics.log_summary()
+	show_modal("진단 로그를 삭제할까요?","%d개 · %s를 삭제합니다. 기록이 켜져 있으면 새 로그가 다시 쌓입니다."%[logs.count,String.humanize_size(logs.bytes)],[
+		{"text":"취소","action":show_development_settings},
+		{"text":"삭제","action":delete_performance_logs}],false,true,false,Vector2.ZERO,true)
+
+func delete_performance_logs() -> void:
+	var failed:=performance_diagnostics.delete_logs()
+	show_development_settings()
+	if failed>0:toast("로그 %d개를 삭제하지 못했습니다."%failed)
 
 func export_performance_logs()->void:
 	var zip:=performance_diagnostics.export_zip()
@@ -1186,6 +1242,7 @@ func set_performance_diagnostics(enabled:bool)->void:
 	if settings.save(prefs_path)!=OK:
 		settings.set_value("development","performance_diagnostics",previous)
 		show_error("성능 진단 설정을 저장하지 못했습니다.")
+	update_debug_shortcut()
 
 func confirm_progress_reset()->void:
 	show_modal("진행을 초기화할까요?","진행과 자원을 지우고 소리 설정은 유지합니다. 삭제한 진행은 되돌릴 수 없습니다.",[
