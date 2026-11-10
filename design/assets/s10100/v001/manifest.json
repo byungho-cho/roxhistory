@@ -1,0 +1,33 @@
+{
+  "screen_id": "S10100",
+  "version": "v001",
+  "date": "2026-11-10",
+  "assets": [
+    {
+      "file": "river_2s.mp4",
+      "label": "강가 마을",
+      "status": "prototype_sample",
+      "duration_seconds": 2,
+      "width": 854,
+      "height": 480,
+      "fps": 30,
+      "video_codec": "h264",
+      "audio": false,
+      "size_bytes": 2556121,
+      "sha256": "b3b6bd612b3523c885b8fc230661fa1885788d10bca74ec8efe98db832425175"
+    },
+    {
+      "file": "forest_2s.mp4",
+      "label": "숲속 마을",
+      "status": "prototype_sample",
+      "duration_seconds": 2,
+      "width": 854,
+      "height": 480,
+      "fps": 30,
+      "video_codec": "h264",
+      "audio": false,
+      "size_bytes": 2746589,
+      "sha256": "90305607af169ccbe62ab6f51c1bb45bda87fdba6be1d2f59fd4141ffad3e1e1"
+    }
+  ]
+}
