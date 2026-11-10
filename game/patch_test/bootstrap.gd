@@ -15,26 +15,33 @@ var restart_pending := false
 const TRUST := preload("res://patch_test/patch_key.gd")
 
 var cache := "user://rox-patches-0.2.91/"
-@onready var index := cache + "current.json"
+var index := cache + "current.json"
 var shade:ColorRect
 var popup:CenterContainer
 var update_rows:VBoxContainer
 var request: HTTPRequest
 var status: Label
 var update_button: Button
+var close_button: Button
 var progress_bar: ProgressBar
+var progress_text: Label
 var downloading := false
 var previous_mouse_emulation := false
 var cached := {}
 var candidate := {}
 var envelope := PackedByteArray()
-func _ready() -> void:
-	mouse_filter = Control.MOUSE_FILTER_IGNORE
+func _init() -> void:
+	# Autoload _ready runs after the main scene is loaded. Mount before that load.
 	DirAccess.make_dir_recursive_absolute(cache)
 	discard(cache + "incoming.part")
 	discard(index + ".part")
 	cached = verified_manifest(FileAccess.get_file_as_bytes(index)) if FileAccess.file_exists(index) else {}
 	if not cached.is_empty() and not valid_pack(pack_path(cached),cached):cached = {}
+	ProjectSettings.set_setting("roxhistory/update/source_commit",BASE_COMMIT)
+	mount_cached()
+
+func _ready() -> void:
+	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	shade = ColorRect.new()
 	shade.color = Color(0.08, 0.06, 0.03, 0.55)
 	add_child(shade)
@@ -64,10 +71,19 @@ func _ready() -> void:
 	rows.add_child(status)
 	progress_bar = ProgressBar.new()
 	progress_bar.custom_minimum_size.y = 24
+	progress_bar.show_percentage = false
 	progress_bar.hide()
 	rows.add_child(progress_bar)
+	progress_text = Label.new()
+	progress_text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	progress_text.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	progress_text.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	progress_text.add_theme_color_override("font_outline_color", Color.BLACK)
+	progress_text.add_theme_constant_override("outline_size", 4)
+	progress_bar.add_child(progress_text)
+	progress_text.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	update_button = action(rows, "업데이트 받기", download_patch)
-	action(rows, "닫기", close_popup)
+	close_button = action(rows, "닫기", close_popup)
 	request = HTTPRequest.new()
 	request.timeout = 30.0
 	request.body_size_limit = 8192
@@ -76,8 +92,6 @@ func _ready() -> void:
 	ProjectSettings.set_setting("roxhistory/native/diagnostic_zip",true)
 	shade.hide()
 	popup.hide()
-	ProjectSettings.set_setting("roxhistory/update/source_commit",BASE_COMMIT)
-	mount_cached()
 
 func title_ready() -> void:
 	title_active = true
@@ -108,7 +122,14 @@ func close_popup()->void:
 
 func _process(_delta: float) -> void:
 	if downloading:
-		progress_bar.value = minf(99.0, 100.0 * request.get_downloaded_bytes() / float(candidate.size))
+		update_download_progress(request.get_downloaded_bytes(), int(candidate.size))
+
+func update_download_progress(received: int, total: int) -> void:
+	var downloaded := clampi(received, 0, total)
+	progress_bar.value = minf(99.0, 100.0 * downloaded / float(total))
+	progress_text.text = "%d%%  ·  %.1f / %.1f MB" % [
+		floori(progress_bar.value), downloaded / 1000000.0, total / 1000000.0
+	]
 
 func action(rows: Container, caption: String, callback: Callable) -> Button:
 	var button := Button.new()
@@ -169,18 +190,28 @@ func request_completed(result: int, code: int, _headers: PackedStringArray, body
 	downloading = false
 	progress_bar.hide()
 	restart_pending = true
-	status.text = "업데이트를 저장했습니다. 게임을 종료한 뒤 다시 열어 주세요."
-	update_button.text = "게임 종료"
+	status.hide()
+	close_button.hide()
+	update_button.text = "게임 재실행"
 	update_button.disabled = false
 
 func download_patch()->void:
 	if restart_pending:
-		get_tree().quit()
+		update_button.disabled = true
+		if OS.has_feature("android"):
+			# The Android export host restarts its process for create_instance().
+			if OS.create_instance(PackedStringArray()) < 0:
+				status.text = "게임을 다시 열지 못했습니다. 한 번 더 눌러 주세요."
+				status.show()
+				update_button.disabled = false
+		else:
+			OS.set_restart_on_exit(true, OS.get_cmdline_args())
+			get_tree().quit()
 		return
 	if candidate.is_empty():return
 	update_button.disabled=true
 	downloading=true
-	progress_bar.value=0
+	update_download_progress(0, int(candidate.size))
 	progress_bar.show()
 	status.text=candidate.version+" 다운로드 중…"
 	request.download_file=cache+"incoming.part"
