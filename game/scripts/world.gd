@@ -240,7 +240,6 @@ func polygon_body(points: PackedVector2Array) -> void:
 	add_child(body)
 
 func refresh() -> void:
-	if DragTrace.in_farm_tick and DragTrace.skip_farm_world_refresh:return
 	refresh_boundary()
 	refresh_chief()
 	refresh_resources()

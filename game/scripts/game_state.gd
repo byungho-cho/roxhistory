@@ -203,7 +203,7 @@ func commit(next: Dictionary, reset: bool = false) -> bool:
 	if not FirstQuests.valid(next):return false
 	FirstQuests.reconcile(next,not reset and not next.has("quests_done"))
 	var save_started:=Time.get_ticks_usec()
-	var saved:=store.save_game(next,reset)
+	var saved:=true if DragTrace.in_farm_tick and DragTrace.mode=="no_save" else store.save_game(next,reset)
 	DragTrace.span("save",save_started)
 	if not saved:
 		failed.emit(store.message)
@@ -211,7 +211,7 @@ func commit(next: Dictionary, reset: bool = false) -> bool:
 	state = next
 	prune_gather_claims()
 	var changed_started:=Time.get_ticks_usec()
-	changed.emit()
+	if not (DragTrace.in_farm_tick and DragTrace.mode=="no_signal"):changed.emit()
 	DragTrace.span("changed",changed_started)
 	return true
 

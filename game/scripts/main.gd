@@ -130,7 +130,7 @@ func has_pending_rewards()->bool:
 	return false
 
 func _ready() -> void:
-	DragTrace.skip_farm_world_refresh=FileAccess.file_exists("user://drag-trace-skip-refresh")
+	DragTrace.mode=FileAccess.get_file_as_string("user://drag-trace-mode").strip_edges() if FileAccess.file_exists("user://drag-trace-mode") else ""
 	if OS.has_feature("android"):Engine.max_fps=60
 	gestures=WorldGestures.new(self);add_child(gestures)
 	get_tree().auto_accept_quit = false
@@ -142,7 +142,7 @@ func _ready() -> void:
 	settings.load(prefs_path)
 	audio = DemoSoundscape.new()
 	add_child(audio)
-	var save_directory:="user://tests/session" if test_mode else "user://"
+	var save_directory:="user://tests/session" if test_mode else ("user://drag-trace-fixture" if not DragTrace.mode.is_empty() else "user://")
 	model = GameState.new(SaveStore.new(save_directory),true)
 	if not test_mode:village_alerts=AndroidVillageNotifications.new(model)
 	model.finish_loaded_jobs()

@@ -2,7 +2,7 @@ class_name DragTrace
 extends RefCounted
 
 static var in_farm_tick:=false
-static var skip_farm_world_refresh:=false
+static var mode:=""
 static var started:=0
 static var last_frame:=0
 static var done:=false
