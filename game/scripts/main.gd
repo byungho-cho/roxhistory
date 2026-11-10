@@ -23,7 +23,7 @@ var performance_hud:PanelContainer
 var debug_shortcut:DemoButton
 var debug_shortcut_icon:TextureRect
 const HUNT_SCREEN := preload("res://scripts/deer_hunt_screen.gd")
-const INTRO_VIDEO_PATH := "res://assets/video/intro.ogv"
+const INTRO_VIDEO_PATH := "res://assets/video/history_intro_15s_v0.2.94_20261111.ogv"
 var hunt: HUNT_SCREEN
 var title_sound: DemoButton
 var title_prompt: DemoButton
@@ -474,10 +474,13 @@ func title_screen() -> void:
 func style_start_prompt(start: DemoButton) -> void:
 	start.name="StartGame";start.custom_minimum_size=Vector2.ZERO
 	start.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
+	start.anchor_top = 0.917
+	start.anchor_bottom = 0.917
 	start.offset_left=-180
 	start.offset_right=180
-	start.offset_top=-safe.y-121
-	start.offset_bottom=-safe.y-57
+	var center_offset := minf(0.0,h*.083-safe.y-32)
+	start.offset_top=center_offset-32
+	start.offset_bottom=center_offset+32
 	for state in ["normal","hover","pressed","focus"]:start.add_theme_stylebox_override(state,StyleBoxEmpty.new())
 	start.add_theme_font_size_override("font_size",24)
 	start.add_theme_color_override("font_color",Color("fff0d0"))
@@ -508,11 +511,11 @@ func intro_screen() -> void:
 	intro_player.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	stage.add_child(intro_player)
 	stage.resized.connect(fit_intro_video)
-	var surface := button(stage,"",finish_intro)
-	surface.custom_minimum_size = Vector2.ZERO
-	surface.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	for state in ["normal","hover","pressed","focus"]:surface.add_theme_stylebox_override(state,StyleBoxEmpty.new())
-	style_start_prompt(button(stage,"화면을 터치하여 스킵",finish_intro))
+	var skip := button(stage,"화면을 터치하여 스킵",finish_intro)
+	style_start_prompt(skip)
+	skip.name = "SkipIntro"
+	skip.offset_left = -116
+	skip.offset_right = 116
 	intro_position = -1.0
 	intro_stall = 0.0
 	intro_player.finished.connect(finish_intro)

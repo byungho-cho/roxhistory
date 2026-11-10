@@ -17,7 +17,9 @@ static func entry(model:GameState,key:String)->Dictionary:
 	return result
 static func tick(model:GameState,seconds:float)->bool:
 	if model.busy or model.state.is_empty() or not is_finite(seconds) or seconds<=0:return false
-	var next:=model.state.duplicate(true);var changed:=false
+	var next:=model.state.duplicate(true)
+	var updated:Array[String]=[]
+	var phase_changed:=false
 	if not next.has("farm_cycles"):next.farm_cycles={}
 	for farm in model.facilities():
 		if farm.kind!="farm" or farm.has("upgrade"):continue
@@ -26,12 +28,17 @@ static func tick(model:GameState,seconds:float)->bool:
 		# A farmer is needed for preparation; established crops grow unattended.
 		if cycle.phase=="prepare" and ResidentJobs.new(model).assigned_to(key).is_empty():continue
 		if cycle.phase not in ["prepare","grow"]:continue
+		var previous_phase:String=cycle.phase
 		cycle.elapsed=minf(float(cycle.elapsed)+seconds,PREPARATION if cycle.phase=="prepare" else GROWTH)
 		if cycle.phase=="prepare" and cycle.elapsed>=PREPARATION:
 			cycle.phase="grow";cycle.elapsed=0.0;cycle.cycle_level=int(farm.get("level",1));cycle.cuts=0
 		elif cycle.phase=="grow" and cycle.elapsed>=GROWTH:cycle.phase="ready"
-		next.farm_cycles[key]=cycle;changed=true
-	return _commit(model,next) if changed else false
+		next.farm_cycles[key]=cycle
+		updated.append(key)
+		phase_changed = phase_changed or cycle.phase!=previous_phase
+	if updated.is_empty():return false
+	if phase_changed:updated.clear()
+	return _commit(model,next,updated)
 static func harvest(model:GameState,id:String,key:String)->bool:
 	var jobs:=ResidentJobs.new(model);var worker:=jobs.entry(id)
 	var found:=model.lookup_building(key)
@@ -61,8 +68,8 @@ static func collect_stock(model:GameState,id:String,key:String,amount:int)->bool
 	var next:=model.state.duplicate(true);next.farm_cycles[key]=cycle;next.resident_jobs[id]=item
 	return _commit(model,next)
 
-static func _commit(model:GameState,next:Dictionary)->bool:
+static func _commit(model:GameState,next:Dictionary,clock_keys:Array[String]=[])->bool:
 	model.busy=true
-	var ok:=model.commit(next)
+	var ok:=model.commit(next,false,clock_keys)
 	model.busy=false
 	return ok

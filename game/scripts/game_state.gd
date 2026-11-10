@@ -3,6 +3,7 @@ extends RefCounted
 
 signal notification_requested(event:String,payload:Dictionary)
 signal changed
+signal farm_clock_changed(keys: Array[String])
 signal failed(message: String)
 
 var state: Dictionary = {}
@@ -199,15 +200,19 @@ func finish_loaded_jobs()->void:
 	OwnedBuildingUpgrades.finish(self)
 	if debug_fast_build and state.get("fast_build_mode","")!="fixed5":set_debug_fast_build(true)
 
-func commit(next: Dictionary, reset: bool = false) -> bool:
+func commit(next: Dictionary, reset: bool = false, farm_clock_keys: Array[String] = []) -> bool:
 	if not FirstQuests.valid(next):return false
 	FirstQuests.reconcile(next,not reset and not next.has("quests_done"))
 	if not store.save_game(next,reset):
 		failed.emit(store.message)
 		return false
+	var clock_only: bool = not reset and not farm_clock_keys.is_empty() and next.get("quests_done") == state.get("quests_done") and next.get("quests_claimed") == state.get("quests_claimed")
 	state = next
 	prune_gather_claims()
-	changed.emit()
+	if clock_only:
+		farm_clock_changed.emit(farm_clock_keys)
+	else:
+		changed.emit()
 	return true
 
 func start_new() -> bool:

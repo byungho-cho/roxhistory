@@ -16,6 +16,7 @@ var cancellation_overlay:Control
 var owned_overlay:Control
 var owned_retry:=0.0
 var pending_growth_notice:=""
+var upgrade_art_available: Dictionary = {}
 func _init(owner_app:Node)->void:app=owner_app
 func _ready()->void:
 	app.model.changed.connect(refresh_visual)
@@ -37,6 +38,12 @@ static func approved_texture(id:String)->Texture2D:
 		if crop.size()!=4:return null
 		if not Rect2(Vector2.ZERO,source.get_size()).encloses(Rect2(crop[0],crop[1],crop[2],crop[3])):return null
 	return AssetCatalog.texture(id)
+# Packaged art does not change during a session. Keep the result, not the texture.
+func has_upgrade_art(id: String) -> bool:
+	if not upgrade_art_available.has(id):
+		upgrade_art_available[id] = approved_texture(id)!=null
+	return upgrade_art_available[id]
+
 static func building_asset_id(kind:String,level:int=1)->String:
 	return "BLD-%s-L%d"%[{"chief":"CHIEF","hut":"HUT","home":"HUT","outpost":"OUTPOST","hearth":"HEARTH","training":"TRAINING","shrine":"SHRINE","farm":"FARM","stone_store":"STONE_STORE","wood_store":"WOOD_STORE"}.get(kind,"HUT"),clampi(level,1,4)]
 static func building_name(kind:String)->String:
@@ -53,7 +60,7 @@ func upgrade_block_reason(target:int,check_resources:bool=true)->String:
 	var reason:String=app.model.upgrade_requirement("chief",check_resources)
 	if not reason.is_empty():return reason
 	if check_resources and not app.model.can_upgrade_chief():return cost_text(app.model.building_cost("chief",target))+"가 필요해요"
-	if approved_texture(building_asset_id("chief",target))==null:return "%d단계 촌장집 에셋 준비 중"%target
+	if not has_upgrade_art(building_asset_id("chief",target)):return "%d단계 촌장집 에셋 준비 중"%target
 	return ""
 func request_upgrade()->void:
 	if app.modal or not app.application_active or app.screen!="play" or app.world_map_open:return
@@ -127,7 +134,7 @@ func owned_upgrade_reason(key:String,check_resources:bool=true)->String:
 	var reason:String=app.model.upgrade_requirement(key,check_resources)
 	if not reason.is_empty():return reason
 	var target:=int(found.data.get("level",1))+1
-	if approved_texture(building_asset_id(str(found.kind),target))==null:return "%s %d단계 확정 에셋 준비 중"%[building_name(str(found.kind)),target]
+	if not has_upgrade_art(building_asset_id(str(found.kind),target)):return "%s %d단계 확정 에셋 준비 중"%[building_name(str(found.kind)),target]
 	return ""
 func request_owned_upgrade(key:String)->void:
 	if key=="chief":request_upgrade();return
