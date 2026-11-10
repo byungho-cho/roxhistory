@@ -27,6 +27,7 @@ var progress_bar: ProgressBar
 var progress_text: Label
 var downloading := false
 var previous_mouse_emulation := false
+var embedded_version := str(ProjectSettings.get_setting("application/config/version",BASE_VERSION))
 var cached := {}
 var candidate := {}
 var envelope := PackedByteArray()
@@ -36,7 +37,7 @@ func _init() -> void:
 	discard(cache + "incoming.part")
 	discard(index + ".part")
 	cached = verified_manifest(FileAccess.get_file_as_bytes(index)) if FileAccess.file_exists(index) else {}
-	if not cached.is_empty() and not valid_pack(pack_path(cached),cached):cached = {}
+	if not cached.is_empty() and (version_number(cached.version)<=version_number(embedded_version) or not valid_pack(pack_path(cached),cached)):cached = {}
 	ProjectSettings.set_setting("roxhistory/update/source_commit",BASE_COMMIT)
 	mount_cached()
 
@@ -67,7 +68,7 @@ func _ready() -> void:
 	status.add_theme_font_override("font", load("res://assets/fonts/BlackHanSans-Regular.ttf"))
 	status.add_theme_font_size_override("font_size", 24)
 	status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	status.text = "설치된 게임 버전  " + cached.get("version",BASE_VERSION)
+	status.text = "설치된 게임 버전  " + cached.get("version",embedded_version)
 	rows.add_child(status)
 	progress_bar = ProgressBar.new()
 	progress_bar.custom_minimum_size.y = 24
@@ -163,7 +164,7 @@ func request_completed(result: int, code: int, _headers: PackedStringArray, body
 		if candidate.is_empty():
 			show_failure()
 			return
-		if version_number(candidate.version) <= version_number(cached.get("version", BASE_VERSION)):
+		if version_number(candidate.version) <= version_number(cached.get("version", embedded_version)):
 			status.text = "이미 최신 버전입니다"
 			check_status = ""
 			update_button.disabled = false
