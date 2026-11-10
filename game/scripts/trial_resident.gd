@@ -18,6 +18,8 @@ const RESIDENT_LAYER:=2
 const FARM_STANDS:=[Vector2(171,72),Vector2(-171,72),Vector2(0,220)]
 var variant:="female"
 var visual:HybridCharacter
+const RESIDENT_SPRITE:=preload("res://scripts/resident_sprite.gd")
+var resident_sprite:RESIDENT_SPRITE
 var carried_load: ResidentLoadVisual
 var origin:=Vector2.ZERO
 var destination:=Vector2.ZERO
@@ -39,12 +41,17 @@ func _ready()->void:
 	jobs=ResidentJobs.new(get_parent().model)
 	origin=position;destination=position;rng.seed=abs(resident_id.hash())+122;rest_time=2.0+float(abs(resident_id.hash())%30)/10.0
 	var shape:=CollisionShape2D.new();var circle:=CircleShape2D.new();circle.radius=12;shape.shape=circle;add_child(shape)
-	visual=HybridCharacter.new();visual.model_path="res://assets/characters/residents/"+variant+".glb";visual.render_size_factor=.5;add_child(visual);visual.scale=Vector2.ONE*(1.08 if variant=="female" else 1.16);visual.set_enabled(true)
-	carried_load=ResidentLoadVisual.new()
-	carried_load.bone_name="spine"
-	visual.rig.add_child(carried_load)
-	carried_load.update_load(jobs.entry(resident_id).cargo)
-	visual.ambient_offset=float(abs(resident_id.hash())%2600)/100.0
+	if resident_id.begins_with("resident-") and ResourceLoader.exists(RESIDENT_SPRITE.atlas_path(variant)):
+		resident_sprite=RESIDENT_SPRITE.new()
+		resident_sprite.variant=variant
+		add_child(resident_sprite)
+	else:
+		visual=HybridCharacter.new();visual.model_path="res://assets/characters/residents/"+variant+".glb";visual.render_size_factor=.5;add_child(visual);visual.scale=Vector2.ONE*(1.08 if variant=="female" else 1.16);visual.set_enabled(true)
+		carried_load=ResidentLoadVisual.new()
+		carried_load.bone_name="spine"
+		visual.rig.add_child(carried_load)
+		carried_load.update_load(jobs.entry(resident_id).cargo)
+		visual.ambient_offset=float(abs(resident_id.hash())%2600)/100.0
 	queue_redraw()
 func _draw()->void:
 	draw_set_transform(Vector2(4,-2),0,Vector2(1,.28));draw_circle(Vector2.ZERO,20,SceneStyle.CONTACT_COLOR);draw_set_transform(Vector2.ZERO)
@@ -54,7 +61,7 @@ func _draw()->void:
 func _physics_process(delta:float)->void:
 	var world:DemoWorld=get_parent()
 	if world.simulation_paused:
-		visual.viewport.render_target_update_mode=SubViewport.UPDATE_DISABLED
+		if visual:visual.viewport.render_target_update_mode=SubViewport.UPDATE_DISABLED
 		return
 	duty_clock+=delta
 	var before:=position
@@ -72,28 +79,34 @@ func _physics_process(delta:float)->void:
 		ActorMovement.move(self,ActorMovement.direction_to(position,destination,delta) if offset.length()>3 else Vector2.ZERO)
 		if offset.length()<3 or position.distance_to(before)<.01:
 			rest_time=rng.randf_range(2.5,5.0)
-			visual.ambient_offset=fposmod(visual.ambient_offset+9.7,26.0)
+			if visual:visual.ambient_offset=fposmod(visual.ambient_offset+9.7,26.0)
 	queue_redraw()
 	var travelled:=position.distance_to(before)
-	if travelled>.01:phase=fposmod(phase+travelled/(visual.stride_world_length()*visual.scale.x)*TAU,TAU);idle_time=0
+	var stride:=visual.stride_world_length()*visual.scale.x if visual else DemoPlayer.STRIDE*(1.08 if variant=="female" else 1.16)
+	if travelled>.01:phase=fposmod(phase+travelled/stride*TAU,TAU);idle_time=0
 	else:idle_time+=delta
-	visual.idle_elapsed=idle_time
 	var cargo: Dictionary=jobs.entry(resident_id).cargo
-	visual.ambient_allowed=job_kind=="idle" and cargo.is_empty()
+	if visual:
+		visual.idle_elapsed=idle_time
+		visual.ambient_allowed=job_kind=="idle" and cargo.is_empty()
 	visual_elapsed+=delta
 	var screen_point:=get_global_transform_with_canvas().origin
 	if not Rect2(Vector2(-120,-120),get_viewport_rect().size+Vector2(240,240)).has_point(screen_point):
-		visual.viewport.render_target_update_mode=SubViewport.UPDATE_DISABLED
+		if visual:visual.viewport.render_target_update_mode=SubViewport.UPDATE_DISABLED
 		visual_elapsed=0
 		return
 	if visual_elapsed>=1.0/30.0:
-		carried_load.update_load(cargo)
-		visual.set_render_zoom(world.player.zoom_factor)
-		visual.work_kind=job_kind
 		var action:=job_kind if job_phase=="harvest" else "farm_care" if job_kind=="farmer" and job_phase=="farm_wait" else "guard" if job_kind=="guard" else ""
 		var facing:Vector2=(farm_origin-position).normalized() if action=="farm_care" or (job_kind=="farmer" and job_phase=="harvest") else velocity.normalized()
-		visual.animate(visual_elapsed,facing,phase,travelled>.01,action,duty_clock if action in ["farm_care","guard"] else maxf(0,(1.2 if job_kind=="farmer" else gather_seconds())-job_timer),false)
-		visual.viewport.render_target_update_mode=SubViewport.UPDATE_ONCE
+		var action_time:=duty_clock if action in ["farm_care","guard"] else maxf(0,(1.2 if job_kind=="farmer" else gather_seconds())-job_timer)
+		if resident_sprite:
+			resident_sprite.pose(facing,phase,travelled>.01,action,action_time,idle_time,cargo)
+		else:
+			carried_load.update_load(cargo)
+			visual.set_render_zoom(world.player.zoom_factor)
+			visual.work_kind=job_kind
+			visual.animate(visual_elapsed,facing,phase,travelled>.01,action,action_time,false)
+			visual.viewport.render_target_update_mode=SubViewport.UPDATE_ONCE
 		visual_elapsed=0
 
 # Read-only status used by the resident assignment panel. No rewards occur here.
