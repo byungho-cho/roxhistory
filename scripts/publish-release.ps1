@@ -1,5 +1,5 @@
 [CmdletBinding()]
-param([string]$Repository = 'byungho-cho/roxhistory', [string]$ReleaseNotesPath, [switch]$AndroidOnly, [string]$OutputDirectory, [switch]$PckPrototype)
+param([string]$Repository = 'byungho-cho/roxhistory', [string]$ReleaseNotesPath, [switch]$AndroidOnly, [string]$OutputDirectory, [switch]$PckPrototype, [switch]$PatchBase)
 $ErrorActionPreference = 'Stop'
 $repo = Split-Path $PSScriptRoot -Parent
 $output = if ($OutputDirectory) { $OutputDirectory } else { Join-Path $repo 'build' }
@@ -25,6 +25,11 @@ if (& git -C $repo status --porcelain) { throw 'Commit source and release toolin
 if ($LASTEXITCODE -ne 0) { throw 'GitHub CLI login is required for release uploads.' }
 $tag = "v$version"
 $title = "RoxHistory $version"
+if ($PatchBase) {
+    if (-not $AndroidOnly -or $PckPrototype) { throw 'The patch base must be Android-only.' }
+    $tag = 'android-patch-base'
+    $title = 'RoxHistory Android patch installer'
+}
 if ($PckPrototype) {
     if (-not $AndroidOnly -or $version -ne '0.1.85') { throw 'The PCK prototype requires the Android-only 0.1.85 base.' }
     $tag = 'pck-test-0.1.85-to-0.1.86'

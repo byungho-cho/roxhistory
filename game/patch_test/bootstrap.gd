@@ -1,30 +1,31 @@
 extends Control
 
 const BASE_VERSION := "0.1.85"
-const TARGET_VERSION := "0.1.86"
-const PATCH_SIZE := 127304
-# The APK pins this reviewed payload. A replacement file on the same host cannot authorize itself.
-const PATCH_SHA256 := "e546618f6ca58f069516dfc5cceb8a1d2fedb8197f5f4d1c4e8bb1189822d4af"
-const PATCH_URL := "https://github.com/byungho-cho/roxhistory/releases/download/pck-test-0.1.85-to-0.1.86/Roxhistory_0.1.85_to_0.1.86.pck"
+const BASE_COMMIT := "8dbab7655bba5c535a95f26c308cbd784358af02"
+const RUNTIME := "godot-4.5.1-android-pck-1"
+const RELEASE_ROOT := "https://github.com/byungho-cho/roxhistory/releases/download/android-patches/"
 const GAME_SCENE := "res://scenes/main.tscn"
+const TRUST := preload("res://patch_test/patch_key.gd")
 
-var patch_path := "user://roxhistory-patch-0.1.85-to-0.1.86.pck"
+var cache := "user://rox-patches/"
+@onready var index := cache + "current.json"
 var request: HTTPRequest
 var status: Label
 var update_button: Button
 var progress_bar: ProgressBar
 var downloading := false
 var previous_mouse_emulation := false
-
+var cached := {}
+var candidate := {}
+var envelope := PackedByteArray()
 func _ready() -> void:
 	previous_mouse_emulation = Input.emulate_mouse_from_touch
 	Input.emulate_mouse_from_touch = true
-	discard(patch_path + ".part")
-	if valid_patch(patch_path) and mount_patch():
-		open_game()
-		return
-	var had_invalid_patch := FileAccess.file_exists(patch_path)
-	discard(patch_path)
+	DirAccess.make_dir_recursive_absolute(cache)
+	discard(cache + "incoming.part")
+	discard(index + ".part")
+	cached = verified_manifest(FileAccess.get_file_as_bytes(index)) if FileAccess.file_exists(index) else {}
+	if not cached.is_empty() and not valid_pack(pack_path(cached),cached):cached = {}
 	build_title_backdrop()
 	var shade := ColorRect.new()
 	shade.color = Color(0.08, 0.06, 0.03, 0.55)
@@ -50,20 +51,19 @@ func _ready() -> void:
 	status.add_theme_font_override("font", load("res://assets/fonts/BlackHanSans-Regular.ttf"))
 	status.add_theme_font_size_override("font_size", 24)
 	status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	status.text = "RoxHistory PCK test  %s → %s" % [BASE_VERSION, TARGET_VERSION]
-	if had_invalid_patch: status.text = "Invalid patch removed. Base %s is available." % BASE_VERSION
+	status.text = "설치된 게임 버전  " + cached.get("version",BASE_VERSION)
 	rows.add_child(status)
 	progress_bar = ProgressBar.new()
 	progress_bar.custom_minimum_size.y = 24
 	progress_bar.hide()
 	rows.add_child(progress_bar)
-	update_button = action(rows, "Download and play " + TARGET_VERSION, download_patch)
-	action(rows, "Play base / cancel download", play_base)
+	update_button = action(rows, "업데이트 확인", check_for_patch)
+	action(rows, "현재 버전 실행", play_current)
 	request = HTTPRequest.new()
 	request.timeout = 30.0
-	request.body_size_limit = PATCH_SIZE
+	request.body_size_limit = 8192
 	add_child(request)
-	request.request_completed.connect(download_complete)
+	request.request_completed.connect(request_completed)
 
 func build_title_backdrop() -> void:
 	var background := TextureRect.new()
@@ -89,70 +89,125 @@ func build_title_backdrop() -> void:
 
 func _process(_delta: float) -> void:
 	if downloading:
-		progress_bar.value = minf(99.0, 100.0 * request.get_downloaded_bytes() / PATCH_SIZE)
+		progress_bar.value = minf(99.0, 100.0 * request.get_downloaded_bytes() / float(candidate.size))
 
 func action(rows: VBoxContainer, caption: String, callback: Callable) -> Button:
 	var button := Button.new()
 	button.text = caption
+	button.add_theme_font_override("font",status.get_theme_font("font"))
 	button.custom_minimum_size.y = 52
 	button.pressed.connect(callback)
 	rows.add_child(button)
 	return button
 
-func download_patch() -> void:
+func check_for_patch() -> void:
 	update_button.disabled = true
-	downloading = true
-	progress_bar.value = 0
-	progress_bar.show()
-	status.text = "Downloading " + TARGET_VERSION + "…"
-	request.download_file = patch_path + ".part"
-	if request.request(PATCH_URL) != OK:
+	status.text = "업데이트 확인 중…"
+	request.download_file = ""
+	request.body_size_limit = 8192
+	if request.request(RELEASE_ROOT + "latest.json") != OK:
 		show_failure()
 
-func download_complete(result: int, code: int, _headers: PackedStringArray, _body: PackedByteArray) -> void:
-	if result != HTTPRequest.RESULT_SUCCESS or code != 200 or not promote_download():
+func request_completed(result: int, code: int, _headers: PackedStringArray, body: PackedByteArray) -> void:
+	if result != HTTPRequest.RESULT_SUCCESS or code != 200:
 		show_failure()
 		return
-	if mount_patch():
-		open_game()
-	else:
-		discard(patch_path)
+	if not downloading:
+		candidate = verified_manifest(body)
+		if candidate.is_empty():
+			show_failure()
+			return
+		if version_number(candidate.version) <= version_number(cached.get("version", BASE_VERSION)):
+			status.text = "이미 최신 버전입니다"
+			update_button.disabled = false
+			return
+		envelope = body
+		downloading = true
+		progress_bar.value = 0
+		progress_bar.show()
+		status.text = candidate.version + " 다운로드 중…"
+		request.download_file = cache + "incoming.part"
+		request.body_size_limit = int(candidate.size)
+		if request.request(RELEASE_ROOT + candidate.file) != OK:
+			show_failure()
+		return
+	if not valid_pack(cache + "incoming.part",candidate):
 		show_failure()
+		return
+	if DirAccess.rename_absolute(cache + "incoming.part",pack_path(candidate)) != OK:
+		show_failure()
+		return
+	var old := cached
+	cached = candidate
+	if not mount_cached():
+		cached = old
+		show_failure()
+		return
+	if save_index() and not old.is_empty():discard(pack_path(old))
+	open_game()
 
-func valid_patch(path: String) -> bool:
-	if str(ProjectSettings.get_setting("application/config/version")) != BASE_VERSION:
-		return false
-	if not FileAccess.file_exists(path):
-		return false
-	var file := FileAccess.open(path, FileAccess.READ)
-	if file == null or file.get_length() != PATCH_SIZE:
-		return false
+func verified_manifest(bytes:PackedByteArray) -> Dictionary:
+	var wrapper:Variant = JSON.parse_string(bytes.get_string_from_utf8())
+	if not wrapper is Dictionary:return {}
+	if not wrapper.get("payload") is String or not wrapper.get("signature") is String:return {}
+	var payload := Marshalls.base64_to_raw(wrapper.payload)
+	var signature := Marshalls.base64_to_raw(wrapper.signature)
+	var key := CryptoKey.new()
+	if key.load_from_string(TRUST.PATCH_PUBLIC_KEY,true) != OK:return {}
+	var hash := HashingContext.new()
+	hash.start(HashingContext.HASH_SHA256)
+	hash.update(payload)
+	if not Crypto.new().verify(HashingContext.HASH_SHA256,hash.finish(),signature,key):return {}
+	var data:Variant = JSON.parse_string(payload.get_string_from_utf8())
+	if not data is Dictionary:return {}
+	if data.get("base") != BASE_VERSION or data.get("base_commit") != BASE_COMMIT or data.get("runtime") != RUNTIME:return {}
+	if not data.get("version") is String or not data.get("sha256") is String or not data.get("size") is float:return {}
+	var regex := RegEx.new()
+	regex.compile("^[0-9]{1,4}\\.[0-9]{1,4}\\.[0-9]{1,4}$")
+	if regex.search(data.version)==null or version_number(data.version)<=version_number(BASE_VERSION):return {}
+	regex.compile("^[0-9a-f]{64}$")
+	if regex.search(data.sha256)==null or data.size<=0 or data.size>600000000 or data.size!=floorf(data.size):return {}
+	if data.get("file") != "Roxhistory_%s_to_%s.pck"%[BASE_VERSION,data.version]:return {}
+	return data
+
+func version_number(version:String) -> int:
+	var parts:=version.split(".")
+	return int(parts[0])*100000000+int(parts[1])*10000+int(parts[2])
+
+func pack_path(manifest:Dictionary) -> String:
+	return cache + manifest.sha256 + ".pck"
+
+func valid_pack(path:String,manifest:Dictionary) -> bool:
+	var file:=FileAccess.open(path,FileAccess.READ)
+	if file==null:return false
+	var length:=file.get_length()
 	file.close()
-	return FileAccess.get_sha256(path) == PATCH_SHA256
+	return length==int(manifest.size) and FileAccess.get_sha256(path)==manifest.sha256
 
-func promote_download() -> bool:
-	var partial := patch_path + ".part"
-	if not valid_patch(partial):
-		return false
-	return DirAccess.rename_absolute(partial, patch_path) == OK
+func save_index() -> bool:
+	var file:=FileAccess.open(index + ".part",FileAccess.WRITE)
+	if file==null:return false
+	file.store_buffer(envelope)
+	var ok:=file.get_error()==OK
+	file.close()
+	return ok and DirAccess.rename_absolute(index + ".part",index)==OK
 
-func mount_patch() -> bool:
-	if not ProjectSettings.load_resource_pack(patch_path, true):
-		return false
-	# project.binary was already read by the engine before bootstrap.
-	ProjectSettings.set_setting("application/config/version", TARGET_VERSION)
+func mount_cached() -> bool:
+	if cached.is_empty() or not ProjectSettings.load_resource_pack(pack_path(cached),true):return false
+	ProjectSettings.set_setting("application/config/version",cached.version)
 	return true
 
 func show_failure() -> void:
 	downloading = false
 	progress_bar.hide()
-	discard(patch_path + ".part")
-	status.text = "Update unavailable. Base %s is available." % BASE_VERSION
+	discard(cache + "incoming.part")
+	status.text = "업데이트 실패 · 현재 버전으로 실행할 수 있어요"
 	update_button.disabled = false
 
-func play_base() -> void:
+func play_current() -> void:
 	request.cancel_request()
-	discard(patch_path + ".part")
+	discard(cache + "incoming.part")
+	mount_cached()
 	open_game()
 
 func open_game() -> void:
