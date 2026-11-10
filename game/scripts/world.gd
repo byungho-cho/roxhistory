@@ -19,21 +19,6 @@ var feedback: WorldFeedback
 var objectives: WorldObjectives
 var animals: Array[WorldAnimal] = []
 var residents:Array[TrialResident]=[]
-var hud_actor_rects:Array[Rect2]=[]
-var hud_actor_frame:=-1
-
-func hud_actor_overlap(rect:Rect2)->bool:
-	var frame:=Engine.get_process_frames()
-	if hud_actor_frame!=frame:
-		hud_actor_frame=frame
-		hud_actor_rects.clear()
-		var canvas:=get_global_transform_with_canvas()
-		for actor in [player]+residents+visitors:
-			if is_instance_valid(actor) and actor.is_visible_in_tree():
-				hud_actor_rects.append(canvas*Rect2(actor.position-Vector2(25,106),Vector2(50,106)))
-	for actor_rect in hud_actor_rects:
-		if rect.intersects(actor_rect):return true
-	return false
 var visitors:Array[TrialResident]=[]
 var animating_family_join:=false
 var resource_tweens:Dictionary={}

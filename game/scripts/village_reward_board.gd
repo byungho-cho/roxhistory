@@ -2,6 +2,8 @@ class_name VillageRewardBoard
 extends DemoButton
 ## The board and animated reward bubble use independent artwork.
 const EAST_CORNER:=Vector2(212,36)
+const WORLD_ART:=preload("res://scripts/world_hud_art.gd")
+var art:Node2D
 var app:Node
 var marker:TextureRect
 var pulse_elapsed:=0.0
@@ -18,8 +20,10 @@ func _init(owner:Node)->void:
 func _ready()->void:
 	for state in ["normal","hover","pressed","focus","disabled"]:
 		add_theme_stylebox_override(state,StyleBoxEmpty.new())
-	app.picture(self,preload("res://assets/ui/village-guidance/noticeboard.png"),Rect2(Vector2.ZERO,size))
-	marker=app.picture(self,preload("res://assets/ui/village-guidance/noticeboard-alert.png"),Rect2(33.5,-15,51,51))
+	art=WORLD_ART.new()
+	art.bind(self,app.world)
+	app.picture(art,preload("res://assets/ui/village-guidance/noticeboard.png"),Rect2(Vector2.ZERO,size))
+	marker=app.picture(art,preload("res://assets/ui/village-guidance/noticeboard-alert.png"),Rect2(33.5,-15,51,51))
 	marker.name="RewardExclamation"
 	marker.pivot_offset=Vector2(25.5,43.5)
 	marker.hide()
@@ -54,13 +58,10 @@ func _process(delta:float)->void:
 	var world:Node2D=app.world
 	var transform_to_screen:=world.get_global_transform_with_canvas()
 	var at:Vector2=transform_to_screen*(app.model.building_position("chief")+EAST_CORNER)
-	scale=Vector2.ONE*clampf(transform_to_screen.get_scale().x,.85,1.15)
+	scale=Vector2.ONE*app.world.player.zoom_factor
 	position=at-size*scale*Vector2(.18,1)
 	visible=Rect2(Vector2.ZERO,Vector2(app.w,app.h)).intersects(get_global_rect())
-	var visible_art:=get_global_rect().grow(-8)
-	if marker.visible:visible_art=visible_art.merge(marker.get_global_rect())
-	var opacity:=.23 if visible and world.hud_actor_overlap(visible_art) else 1.0
-	modulate.a=move_toward(modulate.a,opacity,delta*7.0)
+	art.place(world,position,scale)
 	if marker.visible:
 		pulse_elapsed+=delta
 		if pulse_elapsed>=13:

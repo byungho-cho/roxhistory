@@ -2,6 +2,7 @@ class_name BuildingUpgradeSigns
 extends Control
 
 const ART:=preload("res://assets/ui/village-guidance/RoxHistory_Upgrade_Wooden_Sign_v1.png")
+const WORLD_ART:=preload("res://scripts/world_hud_art.gd")
 const HIT_SIZE:=Vector2(44,44)
 var app:Node
 var signs:Dictionary={}
@@ -28,11 +29,14 @@ func refresh()->void:
 		if not signs.has(key) and reason.is_empty():
 			var button:DemoButton=QuestRewards.art_button(app,self,"UpgradeSign",Rect2(Vector2.ZERO,HIT_SIZE),app.building_workflow.request_owned_upgrade.bind(key))
 			button.tooltip_text="업그레이드"
-			app.picture(button,ART,Rect2(2,2,40,40))
+			var world_art:=WORLD_ART.new()
+			world_art.bind(button,app.world)
+			app.picture(world_art,ART,Rect2(2,2,40,40))
+			button.set_meta("world_art",world_art)
 			signs[key]=button
 		if signs.has(key):signs[key].disabled=not reason.is_empty()
 
-func _process(delta:float)->void:
+func _process(_delta:float)->void:
 	visible=app.application_active and not app.modal and not app.world_map_open and not app.map_transition_active and not app.choosing_plot and not app.tutorial.active()
 	if not visible:return
 	if dirty:refresh()
@@ -48,8 +52,10 @@ func _process(delta:float)->void:
 			continue
 		var bounds:=sprite.get_global_transform_with_canvas()*BuildingVisuals.visible_rect(sprite)
 		var ground_offset:=132.0 if key=="chief" else 85.0
+		if key.begins_with("wood_store:") or key.begins_with("stone_store:"):ground_offset=46.0
 		var south:Vector2=app.world.get_global_transform_with_canvas()*(app.model.building_position(key)+Vector2(0,ground_offset))
-		var art:TextureRect=button.get_child(0)
+		var world_art:Node2D=button.get_meta("world_art")
+		var art:TextureRect=world_art.get_child(0)
 		art.size=Vector2.ONE*visual_extent
 		art.position=Vector2.ONE*(hit_extent-visual_extent)*.5
 		button.size=Vector2.ONE*hit_extent
@@ -59,6 +65,4 @@ func _process(delta:float)->void:
 			if menu_action.has_point(button.get_global_rect().get_center()):
 				button.position.y=menu_action.position.y-hit_extent-4.0
 		button.visible=screen.intersects(bounds) and screen.encloses(button.get_global_rect()) and not app.resident_panel.hud_occludes(button.get_global_rect())
-		if button.visible:
-			var opacity:=.23 if app.world.hud_actor_overlap(art.get_global_rect()) else 1.0
-			art.modulate.a=move_toward(art.modulate.a,opacity,delta*7.0)
+		world_art.place(app.world,button.position,Vector2.ONE)

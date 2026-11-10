@@ -18,6 +18,9 @@ var gather_lock_icon: TextureRect
 var tutorial: IntroTutorial
 var village_alerts: AndroidVillageNotifications
 var performance_diagnostics := PerformanceDiagnostics.new()
+const PERFORMANCE_HUD:=preload("res://scripts/performance_hud.gd")
+var performance_hud:PanelContainer
+var performance_trial:=""
 var title_prompt: DemoButton
 var title_prompt_time := 0.0
 var title_cloud_seen := false
@@ -131,11 +134,18 @@ func _ready() -> void:
 	if test_mode:
 		prefs_path = "user://tests/preferences.cfg"
 		performance_diagnostics.path = "user://tests/performance-diagnostics.jsonl"
+	performance_trial=str(ProjectSettings.get_setting("roxhistory/trial/id",""))
+	if not performance_trial.is_empty():
+		prefs_path="user://performance-trials/preferences.cfg"
+		DirAccess.make_dir_recursive_absolute("user://performance-trials")
 	settings.load(prefs_path)
 	audio = DemoSoundscape.new()
 	add_child(audio)
-	model = GameState.new(SaveStore.new("user://tests/session" if test_mode else "user://"),true)
-	if not test_mode:village_alerts=AndroidVillageNotifications.new(model)
+	var save_directory:="user://tests/session" if test_mode else "user://"
+	if not performance_trial.is_empty():save_directory="user://performance-trials/session"
+	model = GameState.new(SaveStore.new(save_directory),true)
+	if not performance_trial.is_empty():prepare_performance_trial()
+	if not test_mode:village_alerts=AndroidVillageNotifications.new(model,performance_trial.is_empty())
 	model.finish_loaded_jobs()
 	model.changed.connect(update_hud)
 	model.failed.connect(show_error)
@@ -147,6 +157,7 @@ func _ready() -> void:
 	ui.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	get_viewport().size_changed.connect(queue_layout)
 	show_screen("title")
+	if ProjectSettings.get_setting("roxhistory/bootstrap/launch_start",false):start_or_continue.call_deferred()
 
 func queue_layout() -> void:
 	if rebuilding:
@@ -506,7 +517,34 @@ func village_entry_active()->bool:
 func finish_village_entry()->void:
 	if village_entry_active():village_entry.finish()
 
+func prepare_performance_trial()->void:
+	var state:=DemoConfig.fresh()
+	state.chief_level=4
+	state.homes=[]
+	var offsets:=[Vector2(-330,170),Vector2(270,220),Vector2(20,390)]
+	for i in offsets.size():
+		var at:Vector2=DemoConfig.CHIEF_POSITION+offsets[i]
+		state.homes.append({"uid":"benchmark-%d"%i,"position":[at.x,at.y],"style":1,"claimed":true,"level":4})
+	state.built=true
+	state.reward_claimed=true
+	state.wood=400
+	state.stone=400
+	state.resident_count=12
+	state.resource_seed=289
+	state.debug_show_boundary=false
+	state.family_next_at=4102444800.0
+	state.quests_done=FirstQuests.IDS.slice(0,3)
+	state.quests_claimed=FirstQuests.IDS.slice(0,3)
+	state.quests_guides=FirstQuests.IDS.slice(0,4)
+	model.prepare_resource_positions(state)
+	model.commit(state,true)
+
 func play_hud() -> void:
+	performance_hud=PERFORMANCE_HUD.new()
+	stage.add_child(performance_hud)
+	performance_hud.position=Vector2(w-safe.x-193,safe.y+156)
+	performance_hud.visible=PerformanceDiagnostics.hud_enabled(settings)
+	performance_hud.update_sample(performance_diagnostics.latest)
 	var quest_panel:=button(stage,"",toggle_quest);quest_panel.name="QuestPanel";quest_panel.z_index=40;quest_panel.custom_minimum_size=Vector2.ZERO
 	quest_panel.position=Vector2(safe.x,safe.y+(112 if w<h else 59));quest_panel.size=Vector2(240,84)
 	for state in ["normal","hover","pressed","focus"]:quest_panel.add_theme_stylebox_override(state,StyleBoxEmpty.new())
@@ -1107,6 +1145,28 @@ func pause_game() -> void:
 func show_development_settings()->void:
 	DevelopmentSettings.open(self)
 	enable_settings_backdrop()
+
+func set_performance_hud(enabled:bool)->void:
+	var previous:=PerformanceDiagnostics.hud_enabled(settings)
+	settings.set_value("development","performance_hud",enabled)
+	if settings.save(prefs_path)!=OK:
+		settings.set_value("development","performance_hud",previous)
+		show_error("성능 HUD 설정을 저장하지 못했습니다.")
+		return
+	if is_instance_valid(performance_hud):performance_hud.visible=enabled
+
+func export_performance_logs()->void:
+	var zip:=performance_diagnostics.export_zip()
+	if zip.is_empty():
+		show_error("내보낼 진단 기록이 없거나 ZIP을 만들지 못했습니다.")
+		return
+	var destination:=ProjectSettings.globalize_path(zip)
+	if OS.has_feature("android"):
+		if not village_alerts or not village_alerts.save_diagnostic_zip(destination,zip.get_file()):
+			show_error("다운로드 폴더에 저장하지 못했습니다. 최신 시험용 APK와 Android 10 이상이 필요합니다.")
+			return
+		destination="다운로드/"+zip.get_file()
+	show_modal("진단 기록 저장 완료",destination,[{"text":"확인","action":show_development_settings}])
 
 func set_performance_diagnostics(enabled:bool)->void:
 	var previous:=PerformanceDiagnostics.enabled(settings)

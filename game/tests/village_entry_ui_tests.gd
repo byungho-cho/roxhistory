@@ -99,7 +99,7 @@ func run()->void:
 	var from_screen:Transform2D=app.world.get_global_transform_with_canvas().affine_inverse()
 	player.position=from_screen*(board.get_global_rect().get_center()+Vector2(0,18))
 	await create_timer(.23).timeout
-	check(board.visible and board.modulate.a<.4,"Board stays tappable and lets the overlapping hero show through")
+	check(board.visible and board.art.get_parent()==app.world and is_equal_approx(board.art.modulate.a,1),"Board stays tappable and opaque in the actor depth layer")
 	await capture("reward-board-hero")
 	player.position=actor_position
 	player.set_physics_process(true)
