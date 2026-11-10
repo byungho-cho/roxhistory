@@ -522,6 +522,8 @@ func cover_intro(covered: Callable) -> void:
 		var clouds := ShaderMaterial.new()
 		clouds.shader = preload("res://shaders/cloud_transition.gdshader")
 		clouds.set_shader_parameter("coverage",0.0)
+		clouds.set_shader_parameter("textured",true)
+		clouds.set_shader_parameter("cloud_bank",VillageEntry.BANK_A)
 		intro_cloud.material = clouds
 		intro_cloud_layer.add_child(intro_cloud)
 		intro_cloud.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
