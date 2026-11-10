@@ -23,7 +23,7 @@ var performance_hud:PanelContainer
 var debug_shortcut:DemoButton
 var debug_shortcut_icon:TextureRect
 const HUNT_SCREEN := preload("res://scripts/deer_hunt_screen.gd")
-const INTRO_VIDEO_PATH := "res://assets/video/history_intro_30s_v0.2.100_20261111.ogv"
+const INTRO_VIDEO_PATH := "res://assets/video/intro.ogv"
 var hunt: HUNT_SCREEN
 var title_sound: DemoButton
 var title_prompt: DemoButton
@@ -31,6 +31,12 @@ var intro_player: VideoStreamPlayer
 var intro_stream: VideoStream
 var intro_position := -1.0
 var intro_stall := 0.0
+var intro_preparing := false
+var intro_leaving := false
+var intro_cloud_layer: CanvasLayer
+var intro_cloud: ColorRect
+var intro_loading: Label
+var intro_cloud_tween: Tween
 var title_prompt_time := 0.0
 var title_cloud_seen := false
 var task_bar: ProgressBar
@@ -253,7 +259,7 @@ func show_screen(next: String) -> void:
 		var info:=label(stage,"버전 "+str(ProjectSettings.get_setting("application/config/version"))+" · 생성일자 "+str(ProjectSettings.get_setting("application/config/build_date","")),12,Color("fff0d0"))
 		info.position=Vector2(safe.x,h-safe.y-15);info.add_theme_constant_override("outline_size",3);info.add_theme_color_override("font_outline_color",Color("30271b"))
 	sync_audio()
-	if next != previous:
+	if next != previous and not is_instance_valid(intro_cloud):
 		var fade := ColorRect.new()
 		fade.color = Color("302d26")
 		fade.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -435,6 +441,7 @@ func title_screen() -> void:
 		title_cloud_seen=true
 		for i in 2:
 			var cloud:=picture(stage,VillageEntry.BANK_A if i==0 else VillageEntry.BANK_B,Rect2(-w*.15,h*(.05 if i==0 else .45),w*1.3,h*.55))
+			cloud.add_to_group("title_reveal_clouds")
 			cloud.modulate.a=.85
 			var reveal:=cloud.create_tween().set_parallel()
 			reveal.tween_property(cloud,"position:x",w*(.45 if i==0 else -.72),1.25).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
@@ -487,16 +494,70 @@ func style_start_prompt(start: DemoButton) -> void:
 	start.add_theme_color_override("font_outline_color",Color("49321e"));start.add_theme_constant_override("outline_size",3)
 
 func check_title_update() -> void:
-	if screen=="title":get_node("/root/PatchBootstrap/Overlay").title_ready()
+	if screen=="title" and not is_instance_valid(intro_cloud):
+		get_node("/root/PatchBootstrap/Overlay").title_ready()
 
 func start_or_continue()->void:
-	if modal or screen!="title" or not application_active:return
+	if modal or screen!="title" or not application_active or is_instance_valid(intro_cloud):return
+	get_node("/root/PatchBootstrap/Overlay").leave_title()
+	get_tree().call_group("title_reveal_clouds","hide")
+	cover_intro(prepare_intro)
+
+func prepare_intro() -> void:
 	if ResourceLoader.exists(INTRO_VIDEO_PATH, "VideoStream"):
 		intro_stream = load(INTRO_VIDEO_PATH) as VideoStream
 	if intro_stream:
+		intro_preparing = true
 		show_screen("intro")
 	else:
-		continue_to_village()
+		leave_intro_under_cover()
+
+func cover_intro(covered: Callable) -> void:
+	if not is_instance_valid(intro_cloud):
+		intro_cloud_layer = CanvasLayer.new()
+		intro_cloud_layer.layer = 90
+		add_child(intro_cloud_layer)
+		intro_cloud = ColorRect.new()
+		intro_cloud.name = "IntroCloudTransition"
+		var clouds := ShaderMaterial.new()
+		clouds.shader = preload("res://shaders/cloud_transition.gdshader")
+		clouds.set_shader_parameter("coverage",0.0)
+		intro_cloud.material = clouds
+		intro_cloud_layer.add_child(intro_cloud)
+		intro_cloud.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		intro_cloud.resized.connect(fit_intro_cloud)
+		fit_intro_cloud()
+		intro_loading = label(intro_cloud,"인트로 준비 중…",24,Color("49321e"))
+		intro_loading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		intro_loading.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		intro_loading.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		intro_loading.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		intro_loading.hide()
+	intro_cloud.mouse_filter = Control.MOUSE_FILTER_STOP
+	animate_intro_cloud(1.0,.36,covered)
+
+func fit_intro_cloud() -> void:
+	(intro_cloud.material as ShaderMaterial).set_shader_parameter(
+		"aspect", intro_cloud.size.x / maxf(1.0,intro_cloud.size.y))
+
+func animate_intro_cloud(target: float, duration: float, completed: Callable) -> void:
+	if intro_cloud_tween:intro_cloud_tween.kill()
+	var clouds := intro_cloud.material as ShaderMaterial
+	var coverage := float(clouds.get_shader_parameter("coverage"))
+	intro_cloud_tween = create_tween().set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	intro_cloud_tween.tween_method(func(value: float):clouds.set_shader_parameter("coverage",value),
+		coverage,target,duration*absf(target-coverage))
+	intro_cloud_tween.tween_callback(completed)
+	if not application_active:intro_cloud_tween.pause()
+
+func reveal_intro_destination() -> void:
+	intro_loading.hide()
+	if screen=="intro":
+		intro_cloud.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	animate_intro_cloud(0.0,.44,func():
+		intro_cloud_layer.queue_free()
+		intro_cloud = null
+		intro_leaving = false)
 
 func intro_screen() -> void:
 	var backdrop := ColorRect.new()
@@ -519,8 +580,18 @@ func intro_screen() -> void:
 	intro_position = -1.0
 	intro_stall = 0.0
 	intro_player.finished.connect(finish_intro)
+	var texture := intro_player.get_video_texture()
+	if texture:texture.changed.connect(intro_first_frame_ready,CONNECT_ONE_SHOT)
 	intro_player.play()
+	intro_player.paused = not application_active
 	fit_intro_video()
+
+func intro_first_frame_ready() -> void:
+	if screen!="intro" or not intro_preparing:return
+	intro_preparing = false
+	intro_stall = 0.0
+	fit_intro_video()
+	reveal_intro_destination()
 
 func fit_intro_video() -> void:
 	if not is_instance_valid(intro_player):return
@@ -531,11 +602,19 @@ func fit_intro_video() -> void:
 	intro_player.position = (stage.size-intro_player.size)*0.5
 
 func finish_intro() -> void:
-	if screen!="intro":return
+	if screen!="intro" or intro_leaving:return
+	intro_leaving = true
+	intro_preparing = false
+	if is_instance_valid(intro_player):intro_player.paused = true
+	cover_intro(leave_intro_under_cover)
+
+func leave_intro_under_cover() -> void:
 	if is_instance_valid(intro_player):intro_player.stop()
 	intro_player = null
 	intro_stream = null
 	continue_to_village()
+	await get_tree().process_frame
+	reveal_intro_destination()
 
 func continue_to_village() -> void:
 	if model.state.is_empty():chapter_menu()
@@ -868,11 +947,12 @@ func first_construction_locked()->bool:
 
 func _process(delta: float) -> void:
 	if screen=="intro":
-		if application_active and is_instance_valid(intro_player):
+		if application_active and not intro_leaving and is_instance_valid(intro_player):
 			var position := intro_player.stream_position
-			intro_stall = intro_stall+delta if is_equal_approx(position,intro_position) else 0.0
+			intro_stall = intro_stall+delta if intro_preparing or is_equal_approx(position,intro_position) else 0.0
 			intro_position = position
 			if not intro_player.is_playing() or intro_stall>=3.0:finish_intro()
+			elif intro_preparing:intro_loading.visible = intro_stall>=1.0
 		return
 	performance_diagnostics.tick(self,delta)
 	if screen=="title" and application_active and is_instance_valid(title_prompt):
@@ -883,7 +963,7 @@ func _process(delta: float) -> void:
 		toast_time -= delta
 		if toast_time <= 0 and is_instance_valid(toast_label): toast_label.text = ""
 	if is_instance_valid(world):world.simulation_paused=not application_active or world_map_open or map_transition_active
-	if screen != "play" or world_map_open or map_transition_active or village_entry_active() or not is_instance_valid(world):
+	if screen != "play" or world_map_open or map_transition_active or is_instance_valid(intro_cloud) or village_entry_active() or not is_instance_valid(world):
 		return
 	show_pending_quest_guide()
 	if application_active:
@@ -1461,6 +1541,8 @@ func close_hunt() -> void:
 func go_back() -> void:
 	if screen=="intro":
 		finish_intro()
+	elif is_instance_valid(intro_cloud):
+		return
 	elif screen=="hunt":
 		close_hunt()
 	elif village_entry_active():
@@ -1480,7 +1562,7 @@ func go_back() -> void:
 		show_modal("여정을 나갈까요?","앱을 종료합니다.",[{"text":"돌아가기","action":close_modal},{"text":"종료","action":func(): get_tree().quit()}],false,false,false,Vector2.ZERO,true)
 
 func _unhandled_input(event: InputEvent) -> void:
-	if map_transition_active:return
+	if map_transition_active or (is_instance_valid(intro_cloud) and screen!="intro"):return
 	if event.is_action_pressed("ui_cancel"):
 		go_back()
 		get_viewport().set_input_as_handled()
@@ -1501,6 +1583,7 @@ func _notification(what: int) -> void:
 		if gestures: gestures.clear()
 		if is_instance_valid(chrome): chrome.clear_effects()
 		application_active = false
+		if intro_cloud_tween and intro_cloud_tween.is_valid():intro_cloud_tween.pause()
 		if is_instance_valid(intro_player):intro_player.paused = true
 		sync_audio()
 		if is_instance_valid(world): world.feedback.clear_transients()
@@ -1512,7 +1595,8 @@ func _notification(what: int) -> void:
 			if not was_demolition:model.save_position(world.player.position)
 	elif what == NOTIFICATION_APPLICATION_RESUMED or what == NOTIFICATION_APPLICATION_FOCUS_IN:
 		application_active = true
-		if is_instance_valid(intro_player):intro_player.paused = false
+		if intro_cloud_tween and intro_cloud_tween.is_valid():intro_cloud_tween.play()
+		if is_instance_valid(intro_player) and not intro_leaving:intro_player.paused = false
 		sync_audio()
 		if is_instance_valid(world): world.player.presentation_paused = modal
 	elif what == NOTIFICATION_WM_CLOSE_REQUEST:

@@ -70,6 +70,7 @@ func ui_hit(at: Vector2) -> bool:
 	# Collapsed action slots are empty world space, not invisible input blockers.
 	return false
 func _input(event: InputEvent) -> void:
+	if is_instance_valid(app.intro_cloud):return
 	if app.village_entry_active():
 		if event.is_action_pressed("ui_cancel"):app.finish_village_entry()
 		get_viewport().set_input_as_handled()
