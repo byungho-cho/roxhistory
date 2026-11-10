@@ -130,6 +130,7 @@ func has_pending_rewards()->bool:
 	return false
 
 func _ready() -> void:
+	DragTrace.skip_farm_world_refresh=FileAccess.file_exists("user://drag-trace-skip-refresh")
 	if OS.has_feature("android"):Engine.max_fps=60
 	gestures=WorldGestures.new(self);add_child(gestures)
 	get_tree().auto_accept_quit = false
@@ -818,7 +819,9 @@ func _process(delta: float) -> void:
 		farm_tick+=delta
 		if farm_tick>=1.0:
 			var farm_started:=Time.get_ticks_usec()
+			DragTrace.in_farm_tick=true
 			FarmProduction.tick(model,farm_tick);farm_tick=0.0
+			DragTrace.in_farm_tick=false
 			DragTrace.span("farm",farm_started)
 	var river_distance:=INF
 	for i in world.SHORE.size()-1:
