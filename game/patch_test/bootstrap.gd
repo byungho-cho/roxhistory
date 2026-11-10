@@ -10,22 +10,15 @@ var check_status := "":
 		check_status = value
 		check_status_changed.emit(value)
 var checked_title := false
+var title_active := false
 var restart_pending := false
 const TRUST := preload("res://patch_test/patch_key.gd")
 
 var cache := "user://rox-patches-0.2.91/"
 @onready var index := cache + "current.json"
-const TRIAL_LOADER:=preload("res://patch_test/trial_loader.gd")
-var trials:TRIAL_LOADER
 var shade:ColorRect
 var popup:CenterContainer
 var update_rows:VBoxContainer
-var trial_rows:VBoxContainer
-var trial_status:Label
-var trial_buttons:Dictionary={}
-var trial_close:Button
-var trial_restart:Button
-var trial_regular:Button
 var request: HTTPRequest
 var status: Label
 var update_button: Button
@@ -81,24 +74,15 @@ func _ready() -> void:
 	add_child(request)
 	request.request_completed.connect(request_completed)
 	ProjectSettings.set_setting("roxhistory/native/diagnostic_zip",true)
-	trials=TRIAL_LOADER.new()
-	trials.folder=cache.path_join("trials")
-	trials.verify_payload=verify_payload
-	add_child(trials)
-	trials.catalog_ready.connect(refresh_trial_buttons)
-	trials.message.connect(func(value:String):trial_status.text=value)
-	trials.selection_saved.connect(show_restart)
-	build_trial_panel(panel)
 	shade.hide()
 	popup.hide()
-	ProjectSettings.set_setting("roxhistory/trial/base_commit",BASE_COMMIT)
-	if not trials.mount_selected():
-		trials.selected = ""
-		mount_cached()
+	ProjectSettings.set_setting("roxhistory/update/source_commit",BASE_COMMIT)
+	mount_cached()
 
 func title_ready() -> void:
+	title_active = true
 	if not is_inside_tree():return
-	if not checked_title and trials.selected.is_empty() and not OS.get_cmdline_user_args().has("--test-ui"):
+	if not checked_title and not OS.get_cmdline_user_args().has("--test-ui"):
 		checked_title = true
 		check_for_patch()
 
@@ -108,60 +92,14 @@ func show_popup() -> void:
 	shade.show()
 	popup.show()
 
-func build_trial_panel(panel:PanelContainer)->void:
-	trial_rows=VBoxContainer.new()
-	trial_rows.custom_minimum_size.x=360
-	trial_rows.add_theme_constant_override("separation",12)
-	panel.add_child(trial_rows)
-	trial_status=Label.new()
-	trial_status.add_theme_font_override("font",status.get_theme_font("font"))
-	trial_status.add_theme_font_size_override("font_size",20)
-	trial_rows.add_child(trial_status)
-	var reserved:=Label.new()
-	reserved.add_theme_font_override("font",status.get_theme_font("font"))
-	reserved.text="T4 · T5 준비 중"
-	trial_rows.add_child(reserved)
-	var choices:=GridContainer.new()
-	choices.columns=2
-	trial_rows.add_child(choices)
-	for id in TRIAL_LOADER.IDS:
-		var caption:String=id
-		if id=="T0":caption+=" · 공통 기준판"
-		elif id=="T1":caption+=" · 남성 주민 2D"
-		elif id=="T2":caption+=" · 전체 주민 2D"
-		elif id=="T3":caption+=" · 3D 내부 해상도 축소"
-		trial_buttons[id]=action(choices,caption,trials.select.bind(id))
-	trial_regular=action(trial_rows,"일반판으로 돌아가기",trials.select.bind(""))
-	trial_close=action(trial_rows,"닫기",close_popup)
-	trial_restart=action(trial_rows,"게임 종료 · 다시 열어 적용",get_tree().quit)
-	trial_rows.hide()
-
-func show_trials()->void:
-	request.cancel_request()
-	update_rows.hide()
-	trial_rows.show()
-	show_popup()
-	trial_restart.hide()
-	trial_close.show()
-	trial_regular.show()
-	refresh_trial_buttons()
-	trials.refresh()
-
-func refresh_trial_buttons()->void:
-	trial_status.text="선택: "+trials.label()+"\n기준: "+str(trials.catalog.get("baseline_id","확인 중"))
-	for id in trial_buttons:
-		trial_buttons[id].visible=not trials.record(id).is_empty()
-
-func show_restart()->void:
-	trial_status.text="선택을 저장했습니다. 게임을 완전히 종료한 뒤 다시 열어 주세요."
-	for button in trial_buttons.values():button.hide()
-	trial_regular.hide()
-	trial_close.hide()
-	trial_restart.show()
+func leave_title() -> void:
+	title_active = false
+	close_popup()
 
 func close_popup()->void:
-	request.cancel_request()
-	trials.cancel()
+	if popup.visible:
+		request.cancel_request()
+		discard(cache + "incoming.part")
 	downloading=false
 	progress_bar.hide()
 	if popup.visible:Input.emulate_mouse_from_touch = previous_mouse_emulation
@@ -185,7 +123,6 @@ func check_for_patch() -> void:
 	update_button.disabled = true
 	status.text = "업데이트 확인 중…"
 	check_status = status.text
-	if not trials.selected.is_empty():return
 	request.cancel_request()
 	request.download_file = ""
 	request.body_size_limit = 8192
@@ -213,10 +150,12 @@ func request_completed(result: int, code: int, _headers: PackedStringArray, body
 		envelope = body
 		status.text = "새 버전 "+candidate.version
 		update_button.disabled=false
-		trial_rows.hide()
 		update_rows.show()
 		check_status = ""
-		show_popup()
+		if title_active:
+			show_popup()
+		else:
+			checked_title = false
 		return
 	if not valid_pack(cache + "incoming.part",candidate):
 		show_failure()
@@ -305,7 +244,7 @@ func save_index() -> bool:
 func mount_cached() -> bool:
 	if cached.is_empty() or not ProjectSettings.load_resource_pack(pack_path(cached),true):return false
 	ProjectSettings.set_setting("application/config/version",cached.version)
-	ProjectSettings.set_setting("roxhistory/trial/base_commit",cached.commit)
+	ProjectSettings.set_setting("roxhistory/update/source_commit",cached.commit)
 	return true
 
 func show_failure() -> void:

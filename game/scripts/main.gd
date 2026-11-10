@@ -20,7 +20,9 @@ var village_alerts: AndroidVillageNotifications
 var performance_diagnostics := PerformanceDiagnostics.new()
 const PERFORMANCE_HUD:=preload("res://scripts/performance_hud.gd")
 var performance_hud:PanelContainer
-var performance_trial:=""
+const HUNT_SCREEN := preload("res://scripts/deer_hunt_screen.gd")
+var hunt: HUNT_SCREEN
+var title_sound: DemoButton
 var title_prompt: DemoButton
 var title_prompt_time := 0.0
 var title_cloud_seen := false
@@ -134,18 +136,12 @@ func _ready() -> void:
 	if test_mode:
 		prefs_path = "user://tests/preferences.cfg"
 		performance_diagnostics.path = "user://tests/performance-diagnostics.jsonl"
-	performance_trial=str(ProjectSettings.get_setting("roxhistory/trial/id",""))
-	if not performance_trial.is_empty():
-		prefs_path="user://performance-trials/preferences.cfg"
-		DirAccess.make_dir_recursive_absolute("user://performance-trials")
 	settings.load(prefs_path)
 	audio = DemoSoundscape.new()
 	add_child(audio)
 	var save_directory:="user://tests/session" if test_mode else "user://"
-	if not performance_trial.is_empty():save_directory="user://performance-trials/session"
 	model = GameState.new(SaveStore.new(save_directory),true)
-	if not performance_trial.is_empty():prepare_performance_trial()
-	if not test_mode:village_alerts=AndroidVillageNotifications.new(model,performance_trial.is_empty())
+	if not test_mode:village_alerts=AndroidVillageNotifications.new(model)
 	model.finish_loaded_jobs()
 	model.changed.connect(update_hud)
 	model.failed.connect(show_error)
@@ -159,7 +155,7 @@ func _ready() -> void:
 	show_screen("title")
 
 func queue_layout() -> void:
-	if rebuilding:
+	if rebuilding or screen=="hunt":
 		return
 	rebuilding = true
 	call_deferred("relayout")
@@ -187,6 +183,7 @@ func clear_children(node: Node) -> void:
 		child.queue_free()
 
 func show_screen(next: String) -> void:
+	if screen=="title" and next!="title":get_node("/root/PatchBootstrap/Overlay").leave_title()
 	finish_village_entry()
 	if menu_tween:menu_tween.kill()
 	menu_animating=false
@@ -221,7 +218,7 @@ func show_screen(next: String) -> void:
 		if next != "play": world.feedback.clear_transients()
 		world.visible = screen == "play"
 		world.set_process_mode(Node.PROCESS_MODE_INHERIT if screen == "play" else Node.PROCESS_MODE_DISABLED)
-	if screen not in ["play","region","title"]:
+	if screen not in ["play","region","title","hunt"]:
 		menu_background()
 	match screen:
 		"onboarding": onboarding()
@@ -229,6 +226,11 @@ func show_screen(next: String) -> void:
 		"region": region_screen()
 		"chapter": ChapterSelection.new(self).open()
 		"play": play_hud()
+		"hunt":
+			hunt = HUNT_SCREEN.new()
+			hunt.app = self
+			stage.add_child(hunt)
+			hunt.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	toast_panel=PanelContainer.new();toast_panel.z_index=45;stage.add_child(toast_panel)
 	toast_panel.position=Vector2(w*.5-120,safe.y+(190 if w<h else 118) if screen=="play" else safe.y+8);toast_panel.size=Vector2(240,38)
 	var toast_style:=StyleBoxFlat.new();toast_style.bg_color=Color(.13,.10,.07,.87);toast_style.set_corner_radius_all(19);toast_style.set_content_margin_all(8)
@@ -434,7 +436,7 @@ func title_screen() -> void:
 	surface.custom_minimum_size=Vector2.ZERO
 	surface.size=Vector2(w,h)
 	for state in ["normal","hover","pressed","focus"]:surface.add_theme_stylebox_override(state,StyleBoxEmpty.new())
-	var start:=button(stage,"터치하세요",start_or_continue)
+	var start:=button(stage,"화면을 터치하여 시작",start_or_continue)
 	title_prompt=start
 	title_prompt_time=0
 	start.name="StartGame";start.custom_minimum_size=Vector2.ZERO
@@ -448,34 +450,43 @@ func title_screen() -> void:
 	for state in ["normal","hover","pressed","focus"]:config.add_theme_stylebox_override(state,StyleBoxEmpty.new())
 	picture(config,preload("res://assets/ui/v0158/settings.svg"),Rect2(4,4,48,48))
 	config.set_meta("semantic_text","설정")
-	var sound_button:=button(stage,"소리",toggle_sound)
-	sound_button.position=Vector2(w-safe.x-131,safe.y+10)
-	sound_button.size=Vector2(65,48)
-	var trial_button:=button(stage,"성능 시험판",updates.show_trials)
-	trial_button.position=Vector2(w-safe.x-154,h-safe.y-55)
-	trial_button.size=Vector2(148,48)
-	var caption:=Label.new()
-	caption.text="게임 %s · %s"%[ProjectSettings.get_setting("application/config/version"),updates.trials.label()]
-	caption.position=Vector2(safe.x+8,h-safe.y-51)
-	stage.add_child(caption)
+	title_sound = button(stage,"",toggle_sound)
+	title_sound.name = "TitleSound"
+	title_sound.custom_minimum_size = Vector2.ZERO
+	title_sound.position = Vector2(safe.x+4,safe.y+6)
+	title_sound.size = Vector2(56,56)
+	update_title_sound()
 	var patch_status:=Label.new()
-	patch_status.position=caption.position+Vector2(0,21)
+	patch_status.position=Vector2(safe.x,h-safe.y-37)
+	patch_status.add_theme_color_override("font_color",Color("fff0d0"))
 	stage.add_child(patch_status)
 	patch_status.process_mode=Node.PROCESS_MODE_ALWAYS
 	updates.check_status_changed.connect(patch_status.set_text)
 	patch_status.text=updates.check_status
-	updates.title_ready.call_deferred()
+	call_deferred("check_title_update")
+
+func check_title_update() -> void:
+	if screen=="title":get_node("/root/PatchBootstrap/Overlay").title_ready()
 
 func start_or_continue()->void:
 	if modal:return
-	get_node("/root/PatchBootstrap/Overlay").close_popup()
 	if model.state.is_empty():chapter_menu()
 	else:enter_game()
 
 func toggle_sound() -> void:
 	settings.set_value("app","sound",not settings.get_value("app","sound",true))
 	if settings.save(prefs_path)!=OK:show_error("소리 설정을 저장하지 못했습니다.")
-	else:sync_audio();toast("소리 켜짐" if settings.get_value("app","sound",true) else "소리 꺼짐")
+	else:
+		sync_audio()
+		update_title_sound()
+		toast("소리 켜짐" if settings.get_value("app","sound",true) else "소리 꺼짐")
+
+func update_title_sound() -> void:
+	if not is_instance_valid(title_sound):return
+	var enabled: bool = settings.get_value("app","sound",true)
+	title_sound.icon = preload("res://assets/ui/v0158/sound-on.svg") if enabled else preload("res://assets/ui/v0158/sound-off.svg")
+	title_sound.tooltip_text = "소리 끄기" if enabled else "소리 켜기"
+
 
 func chapter_menu() -> void:
 	close_modal()
@@ -539,28 +550,6 @@ func village_entry_active()->bool:
 func finish_village_entry()->void:
 	if village_entry_active():village_entry.finish()
 
-func prepare_performance_trial()->void:
-	var state:=DemoConfig.fresh()
-	state.chief_level=4
-	state.homes=[]
-	var offsets:=[Vector2(-330,170),Vector2(270,220),Vector2(20,390)]
-	for i in offsets.size():
-		var at:Vector2=DemoConfig.CHIEF_POSITION+offsets[i]
-		state.homes.append({"uid":"benchmark-%d"%i,"position":[at.x,at.y],"style":1,"claimed":true,"level":4})
-	state.built=true
-	state.reward_claimed=true
-	state.wood=400
-	state.stone=400
-	state.resident_count=12
-	state.resource_seed=289
-	state.debug_show_boundary=false
-	state.family_next_at=4102444800.0
-	state.quests_done=FirstQuests.IDS.slice(0,3)
-	state.quests_claimed=FirstQuests.IDS.slice(0,3)
-	state.quests_guides=FirstQuests.IDS.slice(0,4)
-	model.prepare_resource_positions(state)
-	model.commit(state,true)
-
 func play_hud() -> void:
 	performance_hud=PERFORMANCE_HUD.new()
 	stage.add_child(performance_hud)
@@ -590,11 +579,12 @@ func play_hud() -> void:
 	if w<h:action_row.position.y=h-safe.y-220
 	for data in [["사냥","spear"],["채집","berries"],["제작","hammer"],["가방","bag"],["건설","hut"]]:
 		var caption:String=data[0]
-		var callback:Callable=gather_action if caption=="채집" else construction_menu if caption=="건설" else inventory_summary if caption=="가방" else func():toast("아직 준비 중인 기능입니다")
+		var callback:Callable=open_hunt if caption=="사냥" else gather_action if caption=="채집" else construction_menu if caption=="건설" else inventory_summary if caption=="가방" else func():toast("아직 준비 중인 기능입니다")
 		var b:=button(action_row,caption,callback,false,data[1]);b.custom_minimum_size=Vector2(action_width,72)
 		b.set_meta("permanent_action",true)
 		b.set_meta("auxiliary_action",caption!="건설")
-		if caption in ["사냥","제작"]:b.disabled=true;b.hint_text=caption+"은 아직 준비 중입니다"
+		if caption=="사냥":b.name="HuntButton"
+		if caption=="제작":b.disabled=true;b.hint_text=caption+"은 아직 준비 중입니다"
 		b.icon=DemoArt.play_icon(data[1])
 		if caption=="가방":b.name="InventoryButton"
 		var action_style:=StyleBoxFlat.new();action_style.bg_color=Color.TRANSPARENT;action_style.set_content_margin_all(2)
@@ -1325,8 +1315,23 @@ func display_error(message: String) -> void:
 	cancel_task()
 	show_modal("저장 확인",message+"\n저장 공간을 확인한 뒤 다시 시도해 주세요.",[{"text":"확인","action":close_modal}])
 
+func open_hunt() -> void:
+	if screen!="play" or modal or world_map_open or map_transition_active or village_entry_active() or tutorial.active():
+		return
+	cancel_task()
+	gestures.clear()
+	world.player.direction = Vector2.ZERO
+	show_screen("hunt")
+
+func close_hunt() -> void:
+	if screen!="hunt":return
+	hunt = null
+	show_screen("play")
+
 func go_back() -> void:
-	if village_entry_active():
+	if screen=="hunt":
+		close_hunt()
+	elif village_entry_active():
 		finish_village_entry()
 	elif overlay is CharacterGuide:
 		overlay.advance()
