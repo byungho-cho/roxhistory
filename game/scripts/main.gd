@@ -28,6 +28,8 @@ var title_sound: DemoButton
 var title_prompt: DemoButton
 var title_prompt_time := 0.0
 var title_cloud_seen := false
+const TITLE_INTRO := preload("res://scripts/title_intro.gd")
+var title_intro: Control
 var task_bar: ProgressBar
 var toast_label: Label
 var toast_time := 0.0
@@ -157,12 +159,15 @@ func _ready() -> void:
 	show_screen("title")
 
 func queue_layout() -> void:
-	if rebuilding or screen=="hunt":
+	if rebuilding or screen in ["hunt", "intro"]:
 		return
 	rebuilding = true
 	call_deferred("relayout")
 
 func relayout() -> void:
+	if screen=="intro":
+		rebuilding=false
+		return
 	var guide_pages:Array[Dictionary]=[]
 	var guide_actions:Array[Callable]=[]
 	if overlay is CharacterGuide:
@@ -220,11 +225,16 @@ func show_screen(next: String) -> void:
 		if next != "play": world.feedback.clear_transients()
 		world.visible = screen == "play"
 		world.set_process_mode(Node.PROCESS_MODE_INHERIT if screen == "play" else Node.PROCESS_MODE_DISABLED)
-	if screen not in ["play","region","title","hunt"]:
+	if screen not in ["play","region","title","hunt","intro"]:
 		menu_background()
 	match screen:
 		"onboarding": onboarding()
 		"title": title_screen()
+		"intro":
+			title_intro = TITLE_INTRO.new()
+			title_intro.app = self
+			stage.add_child(title_intro)
+			title_intro.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 		"region": region_screen()
 		"chapter": ChapterSelection.new(self).open()
 		"play": play_hud()
@@ -442,7 +452,8 @@ func title_screen() -> void:
 	title_prompt=start
 	title_prompt_time=0
 	start.name="StartGame";start.custom_minimum_size=Vector2.ZERO
-	start.position=Vector2(w*.5-180,h-safe.y-121);start.size=Vector2(360,64)
+	var prompt_rect := title_prompt_rect(Vector2(w,h),safe.y)
+	start.position=prompt_rect.position;start.size=prompt_rect.size
 	for state in ["normal","hover","pressed","focus"]:start.add_theme_stylebox_override(state,StyleBoxEmpty.new())
 	start.add_theme_font_size_override("font_size",24)
 	start.add_theme_color_override("font_color",Color("fff0d0"))
@@ -470,8 +481,16 @@ func title_screen() -> void:
 func check_title_update() -> void:
 	if screen=="title":get_node("/root/PatchBootstrap/Overlay").title_ready()
 
+func title_prompt_rect(view_size: Vector2, safe_bottom: float) -> Rect2:
+	return Rect2(view_size.x*.5-180,view_size.y-safe_bottom-121,360,64)
+
 func start_or_continue()->void:
-	if modal:return
+	if modal or screen!="title":return
+	show_screen("intro")
+
+func finish_title_intro()->void:
+	if screen!="intro":return
+	if is_instance_valid(title_intro):title_intro.stop()
 	if model.state.is_empty():chapter_menu()
 	else:enter_game()
 
@@ -1359,6 +1378,7 @@ func close_modal() -> void:
 	sync_audio()
 
 func sync_audio() -> void:
+	if is_instance_valid(title_intro):title_intro.set_active(application_active)
 	if is_instance_valid(audio): audio.configure(settings.get_value("app","sound",true),application_active,screen == "play",modal,screen == "region",screen == "title")
 
 func toast(message: String, seconds: float = 3.0) -> void:
@@ -1386,7 +1406,9 @@ func close_hunt() -> void:
 	show_screen("play")
 
 func go_back() -> void:
-	if screen=="hunt":
+	if screen=="intro":
+		finish_title_intro()
+	elif screen=="hunt":
 		close_hunt()
 	elif village_entry_active():
 		finish_village_entry()
