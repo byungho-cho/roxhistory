@@ -4,8 +4,6 @@ extends Node2D
 var kind:="wood"
 var remaining:=1.0
 var total:=1.0
-var picture_height:=0.0
-var screen_zoom:=1.0
 var bar_time:=0.0
 var initialized:=false
 var action_progress:=0.0
@@ -31,11 +29,12 @@ func hide_action()->void:
 
 func _process(delta:float)->void:
 	if bar_time>0:
-		bar_time=maxf(0,bar_time-delta);queue_redraw()
+		bar_time=maxf(0,bar_time-delta)
+		if bar_time==0:queue_redraw()
 
-func update_geometry(height:float,zoom:float)->void:
-	picture_height=height;screen_zoom=zoom
-	scale=Vector2.ONE/maxf(.1,zoom);queue_redraw()
+func update_zoom(zoom:float)->void:
+	var target_scale:=Vector2.ONE/maxf(.1,zoom)
+	if scale!=target_scale:scale=target_scale
 
 func _draw()->void:
 	if bar_time<=0:return
