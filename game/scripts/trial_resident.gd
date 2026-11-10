@@ -39,7 +39,12 @@ func _ready()->void:
 	jobs=ResidentJobs.new(get_parent().model)
 	origin=position;destination=position;rng.seed=abs(resident_id.hash())+122;rest_time=2.0+float(abs(resident_id.hash())%30)/10.0
 	var shape:=CollisionShape2D.new();var circle:=CircleShape2D.new();circle.radius=12;shape.shape=circle;add_child(shape)
-	visual=HybridCharacter.new();visual.model_path="res://assets/characters/residents/"+variant+".glb";visual.render_size_factor=.5;add_child(visual);visual.scale=Vector2.ONE*(1.08 if variant=="female" else 1.16);visual.set_enabled(true)
+	visual=HybridCharacter.new()
+	visual.model_path="res://assets/characters/residents/"+variant+".glb"
+	visual.render_size_factor=.375 if resident_id.begins_with("resident-") else .5
+	add_child(visual)
+	visual.scale=Vector2.ONE*(1.08 if variant=="female" else 1.16)
+	visual.set_enabled(true)
 	carried_load=ResidentLoadVisual.new()
 	carried_load.bone_name="spine"
 	visual.rig.add_child(carried_load)
