@@ -75,12 +75,19 @@ if (-not $old.Count) {
     & gh release upload $tag $pack -R $repository
     if ($LASTEXITCODE -ne 0) { throw 'Patch upload failed.' }
 }
-$release = & gh api "repos/$repository/releases/tags/$tag" | ConvertFrom-Json
+$remote = & gh release view $tag -R $repository --json isDraft,assets
+if ($LASTEXITCODE -ne 0) { throw 'Could not verify patch release.' }
+$release = $remote | ConvertFrom-Json
 $asset = @($release.assets | Where-Object name -eq $name)
 if ($asset.Count -ne 1 -or $asset[0].digest -ne "sha256:$sha" -or $asset[0].size -ne $size) { throw 'Remote patch hash mismatch.' }
 & gh release upload $tag $index --clobber -R $repository
 if ($LASTEXITCODE -ne 0) { throw 'Signed index upload failed.' }
-if ($release.draft) {
+$remote = & gh release view $tag -R $repository --json assets
+if ($LASTEXITCODE -ne 0) { throw 'Could not verify signed index.' }
+$remoteIndex = @(($remote | ConvertFrom-Json).assets | Where-Object name -eq 'latest.json')
+$indexHash = (Get-FileHash $index).Hash.ToLowerInvariant()
+if ($remoteIndex.Count -ne 1 -or $remoteIndex[0].digest -ne "sha256:$indexHash") { throw 'Remote signed index hash mismatch.' }
+if ($release.isDraft) {
     & gh release edit $tag --draft=false --latest=false -R $repository
     if ($LASTEXITCODE -ne 0) { throw 'Patch publication failed.' }
 }
