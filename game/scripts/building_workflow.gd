@@ -40,6 +40,7 @@ static func approved_texture(id:String)->Texture2D:
 	return AssetCatalog.texture(id)
 # Packaged art does not change during a session. Keep the result, not the texture.
 func has_upgrade_art(id: String) -> bool:
+	if DragTrace.mode=="uncached":return approved_texture(id)!=null
 	if not upgrade_art_available.has(id):
 		upgrade_art_available[id] = approved_texture(id)!=null
 	return upgrade_art_available[id]

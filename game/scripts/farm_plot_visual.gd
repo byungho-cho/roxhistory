@@ -35,6 +35,7 @@ func _process(_delta:float)->void:
 func _draw()->void:
 	var found:=model.lookup_building(key)
 	if found.is_empty():return
+	var started:=Time.get_ticks_usec()
 	var cycle:=FarmProduction.entry(model,key)
 	var progress:=float(cycle.elapsed)/FarmProduction.GROWTH if cycle.phase=="grow" else (1.0 if cycle.phase in ["ready","harvest"] else 0.0)
 	var level:=clampi(int(found.data.get("level",1)),1,4)
@@ -50,7 +51,9 @@ func _draw()->void:
 	for i in count:
 		var at:=rect.position+Vector2(anchors[i][0],anchors[i][1])*rect.size
 		draw_texture_rect(texture,Rect2(at-Vector2(.5,.915)*dimensions,dimensions),false)
-	if not hud_visible:return
+	if not hud_visible:
+		DragTrace.span("farm_draw",started)
+		return
 	# Keep the bar under the field and clear of both side work positions.
 	var bar:=Rect2(-106,rect.end.y+9,212,30)
 	var ratio:=progress
@@ -85,6 +88,8 @@ func _draw()->void:
 		draw_bar_text(font,left,status,HORIZONTAL_ALIGNMENT_CENTER,width)
 	if int(cycle.stock)>0:
 		draw_string(font,Vector2(bar.position.x,bar.end.y+17),"보관 %d"%int(cycle.stock),HORIZONTAL_ALIGNMENT_CENTER,bar.size.x,15,Color("fff0d3"))
+
+	DragTrace.span("farm_draw",started)
 
 func draw_bar_text(font:Font,at:Vector2,label:String,alignment:HorizontalAlignment,width:float)->void:
 	draw_string_outline(font,at,label,alignment,width,20,4,Color("30251b"))

@@ -39,7 +39,10 @@ func refresh()->void:
 func _process(_delta:float)->void:
 	visible=app.application_active and not app.modal and not app.world_map_open and not app.map_transition_active and not app.choosing_plot and not app.tutorial.active()
 	if not visible:return
-	if dirty:refresh()
+	if dirty:
+		var started:=Time.get_ticks_usec()
+		refresh()
+		DragTrace.span("upgrade_sign_refresh",started)
 	var screen:=Rect2(Vector2.ZERO,Vector2(app.w,app.h))
 	var zoom:float=app.world.player.zoom_factor
 	var visual_extent:=40.0*clampf(zoom,.78,1.6)

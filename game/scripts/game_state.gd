@@ -203,13 +203,16 @@ func finish_loaded_jobs()->void:
 func commit(next: Dictionary, reset: bool = false, farm_clock_keys: Array[String] = []) -> bool:
 	if not FirstQuests.valid(next):return false
 	FirstQuests.reconcile(next,not reset and not next.has("quests_done"))
-	if not store.save_game(next,reset):
+	var save_started:=Time.get_ticks_usec()
+	var saved:=store.save_game(next,reset)
+	DragTrace.span("save",save_started)
+	if not saved:
 		failed.emit(store.message)
 		return false
 	var clock_only: bool = not reset and not farm_clock_keys.is_empty() and next.get("quests_done") == state.get("quests_done") and next.get("quests_claimed") == state.get("quests_claimed")
 	state = next
 	prune_gather_claims()
-	if clock_only:
+	if clock_only and DragTrace.mode!="control":
 		farm_clock_changed.emit(farm_clock_keys)
 	else:
 		changed.emit()
