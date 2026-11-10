@@ -12,6 +12,7 @@ func _ready()->void:
 	value=Label.new()
 	value.mouse_filter=Control.MOUSE_FILTER_IGNORE
 	value.add_theme_font_size_override("font_size",12)
+	value.add_theme_color_override("font_color",Color("fff3d2"))
 	add_child(value)
 	value.text="성능 측정 중…"
 
