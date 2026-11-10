@@ -94,8 +94,21 @@ func run()->void:
 	await frames()
 	board=app.stage.get_node("VillageRewardBoard")
 	await capture("village-entry-board")
+	var actor_position:=player.position
+	player.set_physics_process(false)
+	var from_screen:Transform2D=app.world.get_global_transform_with_canvas().affine_inverse()
+	player.position=from_screen*(board.get_global_rect().get_center()+Vector2(0,18))
+	await create_timer(.23).timeout
+	check(board.visible and board.modulate.a<.4,"Board stays tappable and lets the overlapping hero show through")
+	await capture("reward-board-hero")
+	player.position=actor_position
+	player.set_physics_process(true)
 	check(app.building_menu.show_at(building_point()),"Chief submenu opens")
 	await frames()
+	for child in app.stage.get_children():
+		if child is BuildingUpgradeSigns:signs=child
+	sign_button=signs.signs.get("chief")
+	check(board.visible and sign_button.visible,"Board and upgrade sign stay visible with the building submenu open")
 	await capture("village-entry-menu")
 	board.set_process(false)
 	var close_at:Vector2=app.building_menu.close_button.get_global_rect().get_center()

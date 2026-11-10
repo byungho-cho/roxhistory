@@ -23,7 +23,10 @@ func tick(app: Node, _delta: float) -> void:
 	var playing:bool=app.screen=="play" and is_instance_valid(app.world)
 	var next_scene:String=app.screen
 	if playing:
-		next_scene="village_entry" if app.village_entry_active() else ("construction_menu" if app.build_side.visible else ("village_popup" if app.modal else "village"))
+		if app.village_entry_active():next_scene="village_entry"
+		elif app.build_side.visible:next_scene="construction_menu"
+		elif app.building_menu.visible:next_scene="building_selection_menu"
+		else:next_scene="village_popup" if app.modal else "village"
 	if next_scene!=scene:
 		reset_window(next_scene)
 		entry_sampled=false
@@ -49,6 +52,7 @@ func tick(app: Node, _delta: float) -> void:
 		"screen":app.screen,
 		"popup":app.modal,
 		"construction_menu":playing and app.build_side.visible,
+		"building_selection_menu":playing and app.building_menu.visible,
 		"hero_moving":playing and not app.world.player.velocity.is_zero_approx(),
 		"hero_task":app.task,
 		"residents":app.world.residents.size() if playing else 0,

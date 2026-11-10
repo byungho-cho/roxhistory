@@ -32,7 +32,7 @@ func refresh()->void:
 			signs[key]=button
 		if signs.has(key):signs[key].disabled=not reason.is_empty()
 
-func _process(_delta:float)->void:
+func _process(delta:float)->void:
 	visible=app.application_active and not app.modal and not app.world_map_open and not app.map_transition_active and not app.choosing_plot and not app.tutorial.active()
 	if not visible:return
 	if dirty:refresh()
@@ -54,4 +54,11 @@ func _process(_delta:float)->void:
 		art.position=Vector2.ONE*(hit_extent-visual_extent)*.5
 		button.size=Vector2.ONE*hit_extent
 		button.position=south-Vector2(hit_extent*.5,hit_extent*.8)
+		if app.building_menu.visible and app.building_menu.selected_key==key:
+			var menu_action:Rect2=app.building_menu.upgrade_button.get_global_rect()
+			if menu_action.has_point(button.get_global_rect().get_center()):
+				button.position.y=menu_action.position.y-hit_extent-4.0
 		button.visible=screen.intersects(bounds) and screen.encloses(button.get_global_rect()) and not app.resident_panel.hud_occludes(button.get_global_rect())
+		if button.visible:
+			var opacity:=.23 if app.world.hud_actor_overlap(art.get_global_rect()) else 1.0
+			art.modulate.a=move_toward(art.modulate.a,opacity,delta*7.0)

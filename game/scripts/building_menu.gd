@@ -8,6 +8,9 @@ var demolish_button:DemoButton
 var close_button:DemoButton
 var saved_camera_offset:=Vector2.ZERO
 var framing_active:=false
+var state_dirty:=true
+var layout_bounds:=Rect2()
+var layout_bottom:=-1.0
 static var textures:Dictionary={}
 const ANCHOR_Y:=-35.0 # Approved menu raised another 20 logical UI pixels to overlap the building.
 const ROOT:="res://assets/ui/building-menu-v001/"
@@ -59,6 +62,8 @@ func _ready()->void:
 	close_button=app.button(self,"",close);close_button.name="Close"
 	IntegratedMenuArt.install(close_button,"close",Vector2(48,48)*.8);close_button.custom_minimum_size=Vector2(44,44);close_button.size=Vector2(44,44)
 	close_button.art_feedback.get_node("IntegratedImage").position=Vector2(2.8,2.8)
+	close_button.position=Vector2(396,0)*.6-Vector2(0,44*.2)
+	app.model.changed.connect(func():state_dirty=true)
 	hide()
 func close()->void:
 	selected_key="";hide()
@@ -91,8 +96,14 @@ func show_at(screen_point:Vector2)->bool:
 	if key.is_empty():return false
 	app.cancel_build_preview();app.build_side.hide();app.navigation.cancel()
 	if not framing_active:saved_camera_offset=app.world.player.camera.offset;framing_active=true
-	selected_key=key;show();refresh();return true
+	selected_key=key;state_dirty=true;layout_bounds=Rect2()
+	show();refresh();return true
 func refresh()->void:
+	if state_dirty:refresh_actions()
+	if visible:refresh_position()
+
+func refresh_actions()->void:
+	state_dirty=false
 	var i:=index()
 	var owned:Dictionary=app.model.lookup_building(selected_key)
 	if owned.is_empty():close();return
@@ -107,6 +118,8 @@ func refresh()->void:
 	elif selected_key!="chief" and (quote.is_empty() or not quote.get("supported",false)):demolish_button.hint_text="이 건물은 지금 철거할 수 없어요"
 	IntegratedMenuArt.refresh(move_button);IntegratedMenuArt.refresh(upgrade_button,not upgrade_button.disabled)
 	IntegratedMenuArt.refresh(demolish_button);IntegratedMenuArt.refresh(close_button)
+
+func refresh_position()->void:
 	var sprite:=selected_sprite()
 	if sprite==null:close();return
 	var bounds:Rect2=sprite.get_global_transform_with_canvas()*BuildingVisuals.visible_rect(sprite)
@@ -114,6 +127,7 @@ func refresh()->void:
 	var anchor:=Vector2(bounds.get_center().x,bounds.end.y)
 	var bottom:float=app.h-app.safe.y
 	if is_instance_valid(app.action_row) and app.action_row.is_visible_in_tree():bottom=minf(bottom,app.action_row.global_position.y-8)
+	if bounds.is_equal_approx(layout_bounds) and is_equal_approx(bottom,layout_bottom):return
 	var top:float=app.safe.y+100
 	var left:float=maxf(app.safe.x+size.x*.5,app.safe.x+bounds.size.x*.5)
 	var right:float=minf(app.w-app.safe.x-size.x*.5,app.w-app.safe.x-bounds.size.x*.5-52)
@@ -125,8 +139,8 @@ func refresh()->void:
 		bounds=sprite.get_global_transform_with_canvas()*BuildingVisuals.visible_rect(sprite)
 		anchor=Vector2(bounds.get_center().x,bounds.end.y)
 	position=anchor+Vector2(-size.x*.5,ANCHOR_Y)
-	close_button.position=Vector2(396,0)*.6-Vector2(0,44*.2)
-	queue_redraw()
+	layout_bounds=bounds
+	layout_bottom=bottom
 
 func _process(_delta:float)->void:
 	if not visible:return

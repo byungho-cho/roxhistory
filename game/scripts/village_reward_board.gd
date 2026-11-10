@@ -57,6 +57,10 @@ func _process(delta:float)->void:
 	scale=Vector2.ONE*clampf(transform_to_screen.get_scale().x,.85,1.15)
 	position=at-size*scale*Vector2(.18,1)
 	visible=Rect2(Vector2.ZERO,Vector2(app.w,app.h)).intersects(get_global_rect())
+	var visible_art:=get_global_rect().grow(-8)
+	if marker.visible:visible_art=visible_art.merge(marker.get_global_rect())
+	var opacity:=.23 if visible and world.hud_actor_overlap(visible_art) else 1.0
+	modulate.a=move_toward(modulate.a,opacity,delta*7.0)
 	if marker.visible:
 		pulse_elapsed+=delta
 		if pulse_elapsed>=13:
