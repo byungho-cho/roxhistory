@@ -32,7 +32,7 @@ func _ready()->void:
 	cancel_button.set_meta("semantic_text","배치 취소")
 	set_world_scale(1.0)
 func set_world_scale(zoom:float)->void:
-	var factor:=HudButtons.world_scale(zoom)
+	var factor:=maxf(.64,HudButtons.world_scale(zoom))
 	scale=Vector2.ONE*factor
 	button_holder.scale=Vector2.ONE/factor
 	button_holder.position=Vector2(RESOURCE_WIDTH+BUTTON_GAP/factor,(64-HudButtons.DIAMETER/factor)*.5)
