@@ -52,6 +52,8 @@ func camera_bounds()->Rect2:
 	return Rect2(VillageBounds.WORLD_RECT.position-padding,WORLD_SIZE+padding*2)
 
 func pan_camera(screen_delta:Vector2)->void:
+	DragTrace.start()
+	var pan_started:=Time.get_ticks_usec()
 	cancel_camera_guide()
 	if tutorial_camera_tween:tutorial_camera_tween.kill()
 	if not manual_camera:camera_center=camera.get_screen_center_position()
@@ -62,6 +64,7 @@ func pan_camera(screen_delta:Vector2)->void:
 	camera_center=camera_center.clamp(bounds.position+half,bounds.end-half)
 	camera.position=camera_center-global_position
 	camera.reset_smoothing();camera.force_update_scroll()
+	DragTrace.span("pan",pan_started)
 
 func resume_camera()->void:
 	cancel_camera_guide()

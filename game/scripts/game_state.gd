@@ -202,12 +202,17 @@ func finish_loaded_jobs()->void:
 func commit(next: Dictionary, reset: bool = false) -> bool:
 	if not FirstQuests.valid(next):return false
 	FirstQuests.reconcile(next,not reset and not next.has("quests_done"))
-	if not store.save_game(next,reset):
+	var save_started:=Time.get_ticks_usec()
+	var saved:=store.save_game(next,reset)
+	DragTrace.span("save",save_started)
+	if not saved:
 		failed.emit(store.message)
 		return false
 	state = next
 	prune_gather_claims()
+	var changed_started:=Time.get_ticks_usec()
 	changed.emit()
+	DragTrace.span("changed",changed_started)
 	return true
 
 func start_new() -> bool:

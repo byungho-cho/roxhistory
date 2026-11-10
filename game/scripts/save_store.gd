@@ -173,7 +173,9 @@ func save_game(s: Dictionary, reset: bool = false) -> bool:
 		message = "저장 공간을 확인해 주세요. 진행을 저장하지 못했습니다."
 		return false
 	file.store_string(JSON.stringify({"payload":payload,"sha256":payload.sha256_text()}))
+	var flush_started:=Time.get_ticks_usec()
 	file.flush()
+	DragTrace.span("flush",flush_started)
 	var write_error := file.get_error()
 	file.close()
 	if write_error != OK or _read(temp).is_empty():

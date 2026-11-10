@@ -801,6 +801,7 @@ func first_construction_locked()->bool:
 	return model.chief_level()==0 and model.pending_construction_count("chief")==0 and FirstQuests.current(model.state) in [0,1]
 
 func _process(delta: float) -> void:
+	DragTrace.frame()
 	performance_diagnostics.tick(self,delta)
 	if screen=="title" and application_active and is_instance_valid(title_prompt):
 		title_prompt_time=fposmod(title_prompt_time+delta,3.0)
@@ -816,7 +817,9 @@ func _process(delta: float) -> void:
 	if application_active:
 		farm_tick+=delta
 		if farm_tick>=1.0:
+			var farm_started:=Time.get_ticks_usec()
 			FarmProduction.tick(model,farm_tick);farm_tick=0.0
+			DragTrace.span("farm",farm_started)
 	var river_distance:=INF
 	for i in world.SHORE.size()-1:
 		var closest:=Geometry2D.get_closest_point_to_segment(world.player.position,world.SHORE[i],world.SHORE[i+1])
