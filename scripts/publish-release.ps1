@@ -1,5 +1,5 @@
 [CmdletBinding()]
-param([string]$Repository = 'byungho-cho/roxhistory', [string]$ReleaseNotesPath, [switch]$AndroidOnly, [string]$OutputDirectory, [switch]$PckPrototype, [switch]$PatchBase)
+param([string]$Repository = 'byungho-cho/roxhistory', [string]$ReleaseNotesPath, [switch]$AndroidOnly, [string]$OutputDirectory, [switch]$PckPrototype, [switch]$PatchBase, [switch]$PerformanceBase)
 $ErrorActionPreference = 'Stop'
 $repo = Split-Path $PSScriptRoot -Parent
 $output = if ($OutputDirectory) { $OutputDirectory } else { Join-Path $repo 'build' }
@@ -25,6 +25,11 @@ if (& git -C $repo status --porcelain) { throw 'Commit source and release toolin
 if ($LASTEXITCODE -ne 0) { throw 'GitHub CLI login is required for release uploads.' }
 $tag = "v$version"
 $title = "RoxHistory $version"
+if ($PerformanceBase) {
+    if (-not $AndroidOnly -or $PatchBase -or $PckPrototype) { throw 'The performance installer must be Android-only.' }
+    $tag = 'pck-test-performance-installer'
+    $title = 'RoxHistory Android performance installer'
+}
 if ($PatchBase) {
     if (-not $AndroidOnly -or $PckPrototype) { throw 'The patch base must be Android-only.' }
     $tag = 'android-patch-base'
