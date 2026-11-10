@@ -4,6 +4,7 @@ signal catalog_ready
 signal message(value:String)
 signal selection_saved
 const ROOT:="https://github.com/byungho-cho/roxhistory/releases/download/android-performance-trials/"
+const IDS:=["T0","T1","T2","T3","T4","T5"]
 const BASE:="8dbab7655bba5c535a95f26c308cbd784358af02"
 const RUNTIME:="godot-4.5.1-android-pck-1"
 var folder:String
@@ -25,7 +26,7 @@ func _ready()->void:
 		envelope=Marshalls.base64_to_raw(str(state.get("catalog","")))
 		catalog=validate_catalog(envelope)
 		selected=str(state.get("id",""))
-	if selected not in ["T0","T1"]:selected=""
+	if selected not in IDS:selected=""
 	request=HTTPRequest.new()
 	request.timeout=45
 	add_child(request)
@@ -43,13 +44,15 @@ func validate_catalog(bytes:PackedByteArray)->Dictionary:
 	pattern.compile("^[0-9a-f]{64}$")
 	var ids:=[]
 	for item in data.packs:
-		if not item is Dictionary or item.get("id") not in ["T0","T1"] or item.id in ids:return {}
+		if not item is Dictionary or item.get("id") not in IDS or item.id in ids:return {}
 		if not item.get("sha256") is String or pattern.search(item.sha256)==null:return {}
 		if not item.get("size") is float or item.size<=0 or item.size>600000000 or floorf(item.size)!=item.size:return {}
 		if item.get("file")!="Roxhistory_%s_%s.pck"%[item.id,data.version]:return {}
 		ids.append(item.id)
 	if "T0" not in ids:return {}
-	if "T1" in ids and record_from(data,"T1").get("requires")!=record_from(data,"T0").sha256:return {}
+	var base_hash:String=record_from(data,"T0").sha256
+	for id in ids:
+		if id!="T0" and record_from(data,id).get("requires")!=base_hash:return {}
 	return data
 
 func record_from(data:Dictionary,id:String)->Dictionary:
@@ -83,7 +86,7 @@ func select(id:String)->void:
 		return
 	if record(id).is_empty():fail();return
 	queue.append(record("T0"))
-	if id=="T1":queue.append(record("T1"))
+	if id!="T0":queue.append(record(id))
 	next_pack()
 
 func completed(result:int,code:int,_headers:PackedStringArray,body:PackedByteArray)->void:
@@ -141,10 +144,10 @@ func mount_selected()->bool:
 	var base:=record("T0")
 	if base.is_empty() or not valid_file(pack_path(base),base) or not ProjectSettings.load_resource_pack(pack_path(base),true):return false
 	var applied:="T0"
-	if selected=="T1":
-		var overlay:=record("T1")
+	if selected!="T0":
+		var overlay:=record(selected)
 		if not overlay.is_empty() and valid_file(pack_path(overlay),overlay) and ProjectSettings.load_resource_pack(pack_path(overlay),true):
-			applied="T1"
+			applied=selected
 	ProjectSettings.set_setting("application/config/version",catalog.version)
 	ProjectSettings.set_setting("roxhistory/trial/id",applied)
 	ProjectSettings.set_setting("roxhistory/trial/base_commit",catalog.baseline_commit)

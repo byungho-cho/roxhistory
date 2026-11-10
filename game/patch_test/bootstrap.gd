@@ -16,8 +16,7 @@ var popup:CenterContainer
 var update_rows:VBoxContainer
 var trial_rows:VBoxContainer
 var trial_status:Label
-var trial_t0:Button
-var trial_t1:Button
+var trial_buttons:Dictionary={}
 var trial_close:Button
 var trial_restart:Button
 var trial_regular:Button
@@ -119,8 +118,14 @@ func build_trial_panel(panel:PanelContainer)->void:
 	reserved.add_theme_font_override("font",status.get_theme_font("font"))
 	reserved.text="T2~T5 · 준비 예정"
 	trial_rows.add_child(reserved)
-	trial_t0=action(trial_rows,"T0 · 공통 기준판",trials.select.bind("T0"))
-	trial_t1=action(trial_rows,"T1 · 남성 주민 2D",trials.select.bind("T1"))
+	var choices:=GridContainer.new()
+	choices.columns=2
+	trial_rows.add_child(choices)
+	for id in TRIAL_LOADER.IDS:
+		var caption:String=id
+		if id=="T0":caption+=" · 공통 기준판"
+		elif id=="T1":caption+=" · 남성 주민 2D"
+		trial_buttons[id]=action(choices,caption,trials.select.bind(id))
 	trial_regular=action(trial_rows,"일반판으로 돌아가기",trials.select.bind(""))
 	trial_close=action(trial_rows,"닫기",close_popup)
 	trial_restart=action(trial_rows,"게임 종료 · 다시 열어 적용",get_tree().quit)
@@ -140,13 +145,12 @@ func show_trials()->void:
 
 func refresh_trial_buttons()->void:
 	trial_status.text="선택: "+trials.label()+"\n기준: "+str(trials.catalog.get("baseline_id","확인 중"))
-	trial_t0.visible=not trials.record("T0").is_empty()
-	trial_t1.visible=not trials.record("T1").is_empty()
+	for id in trial_buttons:
+		trial_buttons[id].visible=not trials.record(id).is_empty()
 
 func show_restart()->void:
 	trial_status.text="선택을 저장했습니다. 게임을 완전히 종료한 뒤 다시 열어 주세요."
-	trial_t0.hide()
-	trial_t1.hide()
+	for button in trial_buttons.values():button.hide()
 	trial_regular.hide()
 	trial_close.hide()
 	trial_restart.show()
