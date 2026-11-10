@@ -82,9 +82,10 @@ func build_title_backdrop() -> void:
 	logo.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	logo.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(logo)
-	logo.set_anchor_and_offset(SIDE_LEFT, .25, 0)
 	logo.set_anchor_and_offset(SIDE_RIGHT, .75, 0)
+	logo.set_anchor_and_offset(SIDE_LEFT, .25, 0)
 	logo.set_anchor_and_offset(SIDE_BOTTOM, .25, 0)
+	logo.set_anchor_and_offset(SIDE_TOP, .025, 0)
 
 func _process(_delta: float) -> void:
 	if downloading:
