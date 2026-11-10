@@ -19,6 +19,10 @@ func _ready()->void:
 	progress_fill.set_corner_radius_all(12)
 	if layout_data.is_empty():layout_data=JSON.parse_string(FileAccess.get_file_as_string("res://assets/farm/v003/manifest.json"))
 	model.changed.connect(queue_redraw)
+	model.farm_clock_changed.connect(on_farm_clock_changed)
+
+func on_farm_clock_changed(keys:Array[String])->void:
+	if key in keys:queue_redraw()
 
 func _process(_delta:float)->void:
 	# Redraw at viewport entry/exit even if the growth clock has not ticked.
