@@ -1,0 +1,71 @@
+{
+  "purpose": "Archived individual era chapter clips; not the revised continuous intro",
+  "clips": [
+    {
+      "file": "01_stone_5s.mp4",
+      "era": "stone",
+      "duration_seconds": 5,
+      "width": 854,
+      "height": 480,
+      "fps": 30,
+      "audio": false,
+      "bytes": 7757057,
+      "sha256": "33562fd1f1eb0354531f559e0ede22aca2e43cd28bb4fec01472d74cd417c5dd"
+    },
+    {
+      "file": "02_forest_5s.mp4",
+      "era": "forest",
+      "duration_seconds": 5,
+      "width": 854,
+      "height": 480,
+      "fps": 30,
+      "audio": false,
+      "bytes": 7689240,
+      "sha256": "9b482bf77658814158480d06a702a36b1b36735d32237331ee30e3f8cab1e8b3"
+    },
+    {
+      "file": "03_goguryeo_5s.mp4",
+      "era": "goguryeo",
+      "duration_seconds": 5,
+      "width": 854,
+      "height": 480,
+      "fps": 30,
+      "audio": false,
+      "bytes": 8958683,
+      "sha256": "6ac7fd7023f6ee7ff6dfaa968f49cf9ac82d6356233cd9357123a34c0b0d1dc1"
+    },
+    {
+      "file": "04_joseon_5s.mp4",
+      "era": "joseon",
+      "duration_seconds": 5,
+      "width": 854,
+      "height": 480,
+      "fps": 30,
+      "audio": false,
+      "bytes": 8286554,
+      "sha256": "ca8c43f94e911680970e1dc1e60085ec3121a0ad41435c0afe659123b247a32c"
+    },
+    {
+      "file": "05_war_5s.mp4",
+      "era": "war",
+      "duration_seconds": 5,
+      "width": 854,
+      "height": 480,
+      "fps": 30,
+      "audio": false,
+      "bytes": 9093536,
+      "sha256": "938bdc6039ee1f820ab8253f040f3ba4500d02b8e623f44e27bcb6533b068fe9"
+    },
+    {
+      "file": "06_modern_5s.mp4",
+      "era": "modern",
+      "duration_seconds": 5,
+      "width": 854,
+      "height": 480,
+      "fps": 30,
+      "audio": false,
+      "bytes": 6165415,
+      "sha256": "b9372a4633da29aef3465b15186cf37da106a06cdc8f8afb3acfd5364fd4314a"
+    }
+  ]
+}
