@@ -37,7 +37,8 @@ static func tick(model:GameState,seconds:float)->bool:
 		updated.append(key)
 		phase_changed = phase_changed or cycle.phase!=previous_phase
 	if updated.is_empty():return false
-	return _commit(model,next,[] if phase_changed else updated)
+	if phase_changed:updated.clear()
+	return _commit(model,next,updated)
 static func harvest(model:GameState,id:String,key:String)->bool:
 	var jobs:=ResidentJobs.new(model);var worker:=jobs.entry(id)
 	var found:=model.lookup_building(key)

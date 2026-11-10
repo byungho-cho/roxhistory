@@ -209,7 +209,7 @@ func commit(next: Dictionary, reset: bool = false, farm_clock_keys: Array[String
 	if not saved:
 		failed.emit(store.message)
 		return false
-	var clock_only := not reset and not farm_clock_keys.is_empty() and next.get("quests_done") == state.get("quests_done") and next.get("quests_claimed") == state.get("quests_claimed")
+	var clock_only: bool = not reset and not farm_clock_keys.is_empty() and next.get("quests_done") == state.get("quests_done") and next.get("quests_claimed") == state.get("quests_claimed")
 	state = next
 	prune_gather_claims()
 	if clock_only and DragTrace.mode!="control":
