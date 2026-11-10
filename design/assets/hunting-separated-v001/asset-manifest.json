@@ -1,0 +1,481 @@
+{
+  "version": "v001",
+  "status": "partial_art_ready_for_integration_review",
+  "known_limits": [
+    "Raster background/foreground are not 2K/4K.",
+    "Vector UI is a simplified redraw, not final approved painted UI.",
+    "No deer animation clips.",
+    "No in-game integration or device QA."
+  ],
+  "assets": [
+    {
+      "path": "README.md",
+      "bytes": 4727,
+      "sha256": "fd1414fda9c2e82e7b5b1e0b560d5f944528a65e2c7c67311439bb6bb9e2920a"
+    },
+    {
+      "path": "actors/deer-front-left.png",
+      "bytes": 1903643,
+      "sha256": "b710b4a6e12d683babc99f605105fc96f2cf4e223a930e0f80f2f1659fb981bd",
+      "size": [
+        1536,
+        1536
+      ],
+      "mode": "RGBA",
+      "alpha_range": [
+        0,
+        255
+      ]
+    },
+    {
+      "path": "actors/deer-provenance.json",
+      "bytes": 1861,
+      "sha256": "c068bd85cfee9a6945d01352eaec68eaef34413b0ab2fd48b47ba98f4ae54ff4"
+    },
+    {
+      "path": "actors/deer-side-left.png",
+      "bytes": 1807722,
+      "sha256": "f5145d3f4573d1fac38b3e438fc428e9fc6a94686b8a7c47249d0505e7ce92fb",
+      "size": [
+        1536,
+        1536
+      ],
+      "mode": "RGBA",
+      "alpha_range": [
+        0,
+        255
+      ]
+    },
+    {
+      "path": "backgrounds/battle-clean-v001.png",
+      "bytes": 2855768,
+      "sha256": "a393af19d94e9292df7fe64d4227c64acd6aa1ac3d1c5ba6f0e5e669b46b8581",
+      "size": [
+        1672,
+        941
+      ],
+      "mode": "RGB"
+    },
+    {
+      "path": "foreground/hunters-foliage-group-v001.png",
+      "bytes": 2128310,
+      "sha256": "b7fdc857437c1d828d32e98eb11876d8a301f36c5b27813ccfb990898c4cb970",
+      "size": [
+        1662,
+        946
+      ],
+      "mode": "RGBA",
+      "alpha_range": [
+        0,
+        255
+      ]
+    },
+    {
+      "path": "preview/asset-overview.png",
+      "bytes": 2015722,
+      "sha256": "5ff73dbc7dcaaca424cd7ceb78d08353c67b8f7ff5ab53a7cc072054b03b16ec"
+    },
+    {
+      "path": "preview/ui-contact-sheet.png",
+      "bytes": 178668,
+      "sha256": "e97307f80ffdbd613110fd6e1d015748a8eb5151f371e88d62fa62b5f3bcc9a8",
+      "size": [
+        1280,
+        960
+      ],
+      "mode": "RGB"
+    },
+    {
+      "path": "transition-layers.json",
+      "bytes": 1759,
+      "sha256": "76b66eb51c7c828db1318f3c52e9fb3aa3f2543ee36d7572b7d945df03f18e3f"
+    },
+    {
+      "path": "ui/ability-primary-bg.svg",
+      "bytes": 1137,
+      "sha256": "2f46bf6c2001930857fdcde200fc298aa496c9de0cfd80e6cb4742497d507302"
+    },
+    {
+      "path": "ui/ability-secondary-bg.svg",
+      "bytes": 1126,
+      "sha256": "7160b2491d8bfb814d09031813f9484a12fe0addc08f6dec196df08c2ad75292"
+    },
+    {
+      "path": "ui/battle-title-bg.svg",
+      "bytes": 1748,
+      "sha256": "604fe1b70fef1005aa3ee54dc371d4624452d57e699548bc0e191d46b7ba6b3d"
+    },
+    {
+      "path": "ui/button-primary-bg.svg",
+      "bytes": 1171,
+      "sha256": "c1f43c4d3d30631110c2826384a304b7c58aa36eefee24c71819686f1a11ff02"
+    },
+    {
+      "path": "ui/button-secondary-bg.svg",
+      "bytes": 1161,
+      "sha256": "4c730956b553fed960a10c1dde65ff571e4e6bc1df99f7242e75c06f40144587"
+    },
+    {
+      "path": "ui/charge-semicircle-track.svg",
+      "bytes": 901,
+      "sha256": "afd300ec9cbd974a822bccb389933541fd0747497c9688255c4f2fdf7a0780e3"
+    },
+    {
+      "path": "ui/health-fill.svg",
+      "bytes": 914,
+      "sha256": "868f2e89957ffaeb768ca13779df3b61f2129c598ff3c9c2c43e89fdde4b19f5"
+    },
+    {
+      "path": "ui/health-track.svg",
+      "bytes": 892,
+      "sha256": "fda2b9d53d6cd62aa1dc6b4c8689352062e77c54053188747e445a491efa7166"
+    },
+    {
+      "path": "ui/icon-back.svg",
+      "bytes": 910,
+      "sha256": "67490a8eb31bb7d859198005293427106a25ef9052836555a14ab8962cd90fdf"
+    },
+    {
+      "path": "ui/icon-check.svg",
+      "bytes": 997,
+      "sha256": "5b2ee90f5f5b16250c65692613ce85dd31c32b8b190a828fc1551f19c77e8a63"
+    },
+    {
+      "path": "ui/icon-pause.svg",
+      "bytes": 990,
+      "sha256": "d713592608f10082dc551814afb56194b018057a8de8058b177e48c5e0c163f5"
+    },
+    {
+      "path": "ui/icon-spear.svg",
+      "bytes": 1115,
+      "sha256": "56220bba0ad16f8dc45e044ecfaabe34f2250a4b0822e317324b41f232e7929d"
+    },
+    {
+      "path": "ui/objective-banner-bg.svg",
+      "bytes": 1161,
+      "sha256": "7625b68c76dee3e9840c64a951709b6473e99bc12bd152b52b9d06dadb540723"
+    },
+    {
+      "path": "ui/pause-bg.svg",
+      "bytes": 1134,
+      "sha256": "39c080ce2b8af6662014980b07f9e878cadd2713d1c2b2ebdcff7d403f9f615c"
+    },
+    {
+      "path": "ui/png-2x/ability-primary-bg.png",
+      "bytes": 94104,
+      "sha256": "7e50ba01e8e03b221e142a7b39815c3990488b9b4c06d60d2fa6aa0cf5e4fbfe",
+      "size": [
+        512,
+        512
+      ],
+      "mode": "RGBA",
+      "alpha_range": [
+        0,
+        255
+      ]
+    },
+    {
+      "path": "ui/png-2x/ability-secondary-bg.png",
+      "bytes": 37689,
+      "sha256": "2fbbfb2c9e266ac2ac552119b090ba71e3783f77f6db1a65fd91c462294dc4b5",
+      "size": [
+        288,
+        288
+      ],
+      "mode": "RGBA",
+      "alpha_range": [
+        0,
+        255
+      ]
+    },
+    {
+      "path": "ui/png-2x/battle-title-bg.png",
+      "bytes": 15692,
+      "sha256": "6ea1fd89d9ca5c5e4ca4c6672ff0039c8c37e02b4ad0b0ca3bf263c62f2518ab",
+      "size": [
+        840,
+        200
+      ],
+      "mode": "RGBA",
+      "alpha_range": [
+        0,
+        255
+      ]
+    },
+    {
+      "path": "ui/png-2x/button-primary-bg.png",
+      "bytes": 8935,
+      "sha256": "9cace8f76542357ad68c6c41b13738a6ae1a6f9ff21ab6796481ab4d596d0c54",
+      "size": [
+        1040,
+        264
+      ],
+      "mode": "RGBA",
+      "alpha_range": [
+        0,
+        255
+      ]
+    },
+    {
+      "path": "ui/png-2x/button-secondary-bg.png",
+      "bytes": 15114,
+      "sha256": "b4d830949da1d92e3c1aa71e9c55fc429c62391b211bacb676caa8b6365051b0",
+      "size": [
+        720,
+        184
+      ],
+      "mode": "RGBA",
+      "alpha_range": [
+        0,
+        255
+      ]
+    },
+    {
+      "path": "ui/png-2x/charge-semicircle-track.png",
+      "bytes": 14556,
+      "sha256": "b41d7d3a6b632e1223d0c53a6c5de410be26eb6cd6fe1ce290e1c848c6395969",
+      "size": [
+        320,
+        640
+      ],
+      "mode": "RGBA",
+      "alpha_range": [
+        0,
+        255
+      ]
+    },
+    {
+      "path": "ui/png-2x/health-fill.png",
+      "bytes": 1260,
+      "sha256": "1407ba55c43c9e27d006ab5695ac7c57c72c6ae23846094c90b87d5dc6d1987d",
+      "size": [
+        624,
+        48
+      ],
+      "mode": "RGBA",
+      "alpha_range": [
+        0,
+        255
+      ]
+    },
+    {
+      "path": "ui/png-2x/health-track.png",
+      "bytes": 2571,
+      "sha256": "455795822aebde698c1151ab44736f0e212bfa56aac1e7a8bdcf0c3e30bdc07c",
+      "size": [
+        640,
+        64
+      ],
+      "mode": "RGBA",
+      "alpha_range": [
+        0,
+        255
+      ]
+    },
+    {
+      "path": "ui/png-2x/icon-back.png",
+      "bytes": 1847,
+      "sha256": "f3e7015bc3a83ce2a3d831a456b175dbd709338290386160b2739c6b17b0c814",
+      "size": [
+        128,
+        128
+      ],
+      "mode": "RGBA",
+      "alpha_range": [
+        0,
+        255
+      ]
+    },
+    {
+      "path": "ui/png-2x/icon-check.png",
+      "bytes": 6930,
+      "sha256": "210e295f7a0d3c42885bb9de8d23e5eab344422c0cf9e29f8ccec9822d5ed618",
+      "size": [
+        128,
+        128
+      ],
+      "mode": "RGBA",
+      "alpha_range": [
+        0,
+        255
+      ]
+    },
+    {
+      "path": "ui/png-2x/icon-pause.png",
+      "bytes": 1278,
+      "sha256": "7e921a21bbf7aae430790556ae0a79005e036d963d85cbfa48d669521c2562ba",
+      "size": [
+        128,
+        128
+      ],
+      "mode": "RGBA",
+      "alpha_range": [
+        0,
+        255
+      ]
+    },
+    {
+      "path": "ui/png-2x/icon-spear.png",
+      "bytes": 8845,
+      "sha256": "ba3cf9796c6a14bf8a7489c46198f865ab5b252f32dca58b3548b29e258019e4",
+      "size": [
+        256,
+        256
+      ],
+      "mode": "RGBA",
+      "alpha_range": [
+        0,
+        255
+      ]
+    },
+    {
+      "path": "ui/png-2x/objective-banner-bg.png",
+      "bytes": 19554,
+      "sha256": "177cf5e813d5604a3ca2d609c9d903d726cb0d1297dbc927ec8d672e0bd3c9cf",
+      "size": [
+        1280,
+        192
+      ],
+      "mode": "RGBA",
+      "alpha_range": [
+        0,
+        255
+      ]
+    },
+    {
+      "path": "ui/png-2x/pause-bg.png",
+      "bytes": 16312,
+      "sha256": "cc294a39592acf97b5f6a82dd039aaf0c6a2e3c435b462b5b366436b90c334e3",
+      "size": [
+        176,
+        176
+      ],
+      "mode": "RGBA",
+      "alpha_range": [
+        0,
+        255
+      ]
+    },
+    {
+      "path": "ui/png-2x/portrait-slot-disabled.png",
+      "bytes": 17431,
+      "sha256": "f08e537f5ad71d75ddc3a1d4fb89f999c0948052aca12938442f1f0d366dcf17",
+      "size": [
+        320,
+        360
+      ],
+      "mode": "RGBA",
+      "alpha_range": [
+        0,
+        255
+      ]
+    },
+    {
+      "path": "ui/png-2x/portrait-slot-normal.png",
+      "bytes": 17482,
+      "sha256": "bf4c04c9282de55bd714a0b5b41a4744ea07d822f4c2fd058a431dc23513a400",
+      "size": [
+        320,
+        360
+      ],
+      "mode": "RGBA",
+      "alpha_range": [
+        0,
+        255
+      ]
+    },
+    {
+      "path": "ui/png-2x/portrait-slot-selected.png",
+      "bytes": 17292,
+      "sha256": "931624de6729b063d038df73a10038e10e3d6656749b736c2a472f1079126ced",
+      "size": [
+        320,
+        360
+      ],
+      "mode": "RGBA",
+      "alpha_range": [
+        0,
+        255
+      ]
+    },
+    {
+      "path": "ui/png-2x/prep-panel-bg.png",
+      "bytes": 210121,
+      "sha256": "b89f17d19433975af34a55da4b413ebff5d621b388d53c523a27e6a3851a517f",
+      "size": [
+        1280,
+        2080
+      ],
+      "mode": "RGBA",
+      "alpha_range": [
+        0,
+        255
+      ]
+    },
+    {
+      "path": "ui/png-2x/prep-title-bg.png",
+      "bytes": 16832,
+      "sha256": "9786676824ec5bfa37ccc4597713ab3aa7edb32e9736cf815bfafb03efedece1",
+      "size": [
+        840,
+        224
+      ],
+      "mode": "RGBA",
+      "alpha_range": [
+        0,
+        255
+      ]
+    },
+    {
+      "path": "ui/png-2x/status-plate-bg.png",
+      "bytes": 17303,
+      "sha256": "dedaf81510a47ba1f4a2174f662cb4e27d4d2c24c8ccbc849a236fb18d9d827d",
+      "size": [
+        880,
+        192
+      ],
+      "mode": "RGBA",
+      "alpha_range": [
+        0,
+        255
+      ]
+    },
+    {
+      "path": "ui/portrait-slot-disabled.svg",
+      "bytes": 1097,
+      "sha256": "c7f37708e377a267eedd3adafc4710cdc3179557f07586a90021e31533703488"
+    },
+    {
+      "path": "ui/portrait-slot-normal.svg",
+      "bytes": 1097,
+      "sha256": "e7ba3fa90623d36126911378aa0b9a8b4623379931e78a3040f8acafb2cdf0e6"
+    },
+    {
+      "path": "ui/portrait-slot-selected.svg",
+      "bytes": 1097,
+      "sha256": "e2c2310fc7ce4628f0328bfb5e5270cd1862bae5b8b58c8db1e9c292ab65072b"
+    },
+    {
+      "path": "ui/prep-panel-bg.svg",
+      "bytes": 1446,
+      "sha256": "0914b71d0d7d75590e35c6484291ac8a136582912f3acfdd1c57f256f2b90d15"
+    },
+    {
+      "path": "ui/prep-title-bg.svg",
+      "bytes": 1760,
+      "sha256": "01971f798f28adb402abcb07d2f4364c5274ccff8cdc17b497bee6882baa0670"
+    },
+    {
+      "path": "ui/status-plate-bg.svg",
+      "bytes": 1161,
+      "sha256": "391f5a2f27861e99a628229cd08ae7a8d51c920f754c8b684bd5a713b4dad88c"
+    }
+  ],
+  "external_assets": [
+    {
+      "path": "../../../game/assets/animals/deer-rigged.glb",
+      "bytes": 1091260,
+      "sha256": "505a0ca1a4949e86e7e0b9c412acec68c52f4312dbe65a8cd0a7ca34ee70264e"
+    }
+  ]
+}

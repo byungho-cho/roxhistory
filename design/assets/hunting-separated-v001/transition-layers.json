@@ -1,0 +1,81 @@
+{
+  "canvas_reference": [
+    960,
+    540
+  ],
+  "timing_status": "proposal_only",
+  "base": {
+    "z": 0,
+    "asset": "backgrounds/battle-clean-v001.png",
+    "coverage": "full viewport, including behind foreground and panel",
+    "always_present": true
+  },
+  "prep": [
+    {
+      "id": "prep_title",
+      "z": 30,
+      "asset": "ui/prep-title-bg.svg",
+      "exit": "up-left"
+    },
+    {
+      "id": "foreground_hunters",
+      "z": 20,
+      "asset": "foreground/hunters-foliage-group-v001.png",
+      "exit": "down-left",
+      "single_group": true
+    },
+    {
+      "id": "right_popup",
+      "z": 40,
+      "asset": "ui/prep-panel-bg.svg",
+      "exit": "right",
+      "children": "native text, portrait slots, bars and buttons"
+    },
+    {
+      "id": "deer",
+      "z": 10,
+      "asset": "../../../game/assets/animals/deer-rigged.glb",
+      "fallback": "actors/deer-front-left.png",
+      "exit": "independent"
+    }
+  ],
+  "battle": [
+    {
+      "id": "title",
+      "entry": "top",
+      "asset": "ui/battle-title-bg.svg"
+    },
+    {
+      "id": "controls",
+      "entry": "right-bottom",
+      "asset": "ui/ability-primary-bg.svg"
+    },
+    {
+      "id": "character_health",
+      "entry": "from offscreen then follow actor",
+      "asset": "ui/health-track.svg"
+    },
+    {
+      "id": "objective",
+      "entry": "bottom",
+      "asset": "ui/objective-banner-bg.svg"
+    }
+  ],
+  "sequence": [
+    "lock input",
+    "prep groups exit",
+    "background transition with full coverage",
+    "battle title, controls, status bars enter",
+    "unlock input"
+  ],
+  "do_not_bake": [
+    "text",
+    "numbers",
+    "deer",
+    "health bars",
+    "abilities",
+    "costs",
+    "charge progress"
+  ],
+  "asset_path_base": "this directory"
+}

@@ -1,0 +1,65 @@
+{
+  "source": "D:\\workspace\\roxhistory-unified\\game\\assets\\animals\\deer-rigged.glb",
+  "source_sha256": "505a0ca1a4949e86e7e0b9c412acec68c52f4312dbe65a8cd0a7ca34ee70264e",
+  "mesh_count": 1,
+  "vertices": 15131,
+  "triangles": 16000,
+  "bones": 15,
+  "authored_animation_clips": 0,
+  "textures": 3,
+  "render": "Blender Cycles 64 samples, orthographic camera, transparent RGBA, three area lights. No geometry/material/pose edits.",
+  "caveats": [
+    "Static rest-pose renders only; no idle, run or hit animation authored.",
+    "Studio illumination baked into PNG; not matched to forest lighting.",
+    "Original source texture and surface faceting preserved.",
+    "Facing left means left in image, not anatomical left side.",
+    "Use the existing repository GLB; source GLB and Blender intermediate are not duplicated in this package."
+  ],
+  "assets": [
+    {
+      "file": "deer-side-left.png",
+      "size": [
+        1536,
+        1536
+      ],
+      "mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        224,
+        188,
+        1312,
+        1298
+      ],
+      "fully_transparent_pixels": 1973625,
+      "fully_opaque_pixels": 374219,
+      "partial_alpha_pixels": 11452,
+      "sha256": "f5145d3f4573d1fac38b3e438fc428e9fc6a94686b8a7c47249d0505e7ce92fb"
+    },
+    {
+      "file": "deer-front-left.png",
+      "size": [
+        1536,
+        1536
+      ],
+      "mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "alpha_bbox": [
+        326,
+        195,
+        1221,
+        1308
+      ],
+      "fully_transparent_pixels": 1950198,
+      "fully_opaque_pixels": 393793,
+      "partial_alpha_pixels": 15305,
+      "sha256": "b710b4a6e12d683babc99f605105fc96f2cf4e223a930e0f80f2f1659fb981bd"
+    }
+  ],
+  "repository_source": "game/assets/animals/deer-rigged.glb"
+}
