@@ -2,11 +2,14 @@ config_version=5
 
 [application]
 config/name="RoxHistory"
-config/version="0.2.88"
+config/version="0.2.91"
 config/build_date="2026.11.10"
 config/icon="res://assets/app-icon-pioneer.png"
 run/main_scene="res://scenes/main.tscn"
 config/features=PackedStringArray("4.5", "GL Compatibility")
+
+[autoload]
+PatchBootstrap="*res://patch_test/bootstrap.tscn"
 
 [display]
 window/size/viewport_width=960

@@ -1,23 +1,29 @@
 class_name PerformanceDiagnostics
 extends RefCounted
 
-const PATH := "user://performance-diagnostics.jsonl"
+const RUNS := "user://diagnostics/runs"
 const DEFAULT_ENABLED := true
-const MAX_BYTES := 128 * 1024
 const INTERVAL := 5.0
 var elapsed := 0.0
 var scene := ""
 var last_tick := 0
 var frame_times := PackedFloat32Array()
 var entry_sampled := false
-var path := PATH
+var path := ""
+var latest:Dictionary={}
+var previous_cpu:=0.0
+var previous_sample_at:=0
 
 static func enabled(settings:ConfigFile)->bool:
 	return settings.get_value("development","performance_diagnostics",DEFAULT_ENABLED)
 
+static func hud_enabled(settings:ConfigFile)->bool:
+	return settings.get_value("development","performance_hud",false)
+
 func tick(app: Node, _delta: float) -> void:
-	if not app.application_active or not enabled(app.settings):
+	if not app.application_active or (not enabled(app.settings) and not hud_enabled(app.settings)):
 		reset_window("")
+		previous_sample_at=0
 		entry_sampled=false
 		return
 	var playing:bool=app.screen=="play" and is_instance_valid(app.world)
@@ -29,6 +35,7 @@ func tick(app: Node, _delta: float) -> void:
 		else:next_scene="village_popup" if app.modal else "village"
 	if next_scene!=scene:
 		reset_window(next_scene)
+		previous_sample_at=0
 		entry_sampled=false
 	if scene=="village_entry" and entry_sampled:return
 	var now:=Time.get_ticks_usec()
@@ -46,6 +53,9 @@ func tick(app: Node, _delta: float) -> void:
 		"time":Time.get_datetime_string_from_system(true),
 		"version":ProjectSettings.get_setting("application/config/version"),
 		"platform":OS.get_name(),
+		"trial":ProjectSettings.get_setting("roxhistory/trial/id","regular"),
+		"baseline_commit":ProjectSettings.get_setting("roxhistory/trial/base_commit",""),
+		"zoom":app.world.player.zoom_factor if playing else null,
 		"device":OS.get_model_name() if OS.has_feature("android") else OS.get_processor_name(),
 		"scene":scene,
 		"sample_seconds":elapsed,
@@ -74,15 +84,39 @@ func tick(app: Node, _delta: float) -> void:
 	var engine_memory:=OS.get_static_memory_usage()
 	if engine_memory>0:sample.engine_memory_bytes=engine_memory
 	if app.village_alerts:sample.merge(app.village_alerts.diagnostic_sample())
-	var line:=JSON.stringify(sample)
+	if sample.has("process_cpu_total_ms"):
+		var current_cpu:=float(sample.process_cpu_total_ms)
+		if previous_sample_at>0 and current_cpu>=previous_cpu:
+			sample.process_cpu_one_core_percent=(current_cpu-previous_cpu)*100000.0/(now-previous_sample_at)
+		previous_cpu=current_cpu
+		previous_sample_at=now
+	latest=sample
+	if is_instance_valid(app.performance_hud):app.performance_hud.update_sample(latest)
+	if not enabled(app.settings):return
+	if path.is_empty():
+		DirAccess.make_dir_recursive_absolute(RUNS)
+		var stamp:=Time.get_datetime_string_from_system(true).replace(":","-")
+		path=RUNS+"/%s-%d.jsonl"%[stamp,OS.get_process_id()]
 	var file:=FileAccess.open(path,FileAccess.READ_WRITE) if FileAccess.file_exists(path) else FileAccess.open(path,FileAccess.WRITE)
 	if file==null:return
-	if file.get_length()+line.to_utf8_buffer().size()+1>MAX_BYTES:
-		file.close()
-		file=FileAccess.open(path,FileAccess.WRITE)
-		if file==null:return
 	file.seek_end()
-	file.store_line(line)
+	file.store_line(JSON.stringify(sample))
+
+func export_zip()->String:
+	var files:=DirAccess.get_files_at(RUNS)
+	if files.is_empty():return ""
+	var stamp:=Time.get_datetime_string_from_system(true).replace(":","-")
+	var destination:="user://diagnostics/Roxhistory-diagnostics-%s.zip"%stamp
+	var zip:=ZIPPacker.new()
+	if zip.open(destination)!=OK:return ""
+	for name in files:
+		if not name.ends_with(".jsonl"):continue
+		var data:=FileAccess.get_file_as_bytes(RUNS.path_join(name))
+		if data.is_empty():continue
+		if zip.start_file(name)!=OK or zip.write_file(data)!=OK or zip.close_file()!=OK:
+			zip.close()
+			return ""
+	return destination if zip.close()==OK else ""
 
 func reset_window(next_scene:String)->void:
 	scene=next_scene

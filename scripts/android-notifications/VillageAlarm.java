@@ -10,6 +10,12 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.ContentValues;
+import android.content.ContentResolver;
+import android.provider.MediaStore;
+import android.provider.Settings;
+import java.io.FileInputStream;
+import java.io.OutputStream;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
@@ -78,6 +84,36 @@ public final class VillageAlarm extends BroadcastReceiver {
         foreground = visible;
     }
 
+    public static boolean saveDiagnosticZip(Activity activity, String path, String filename) {
+        if (Build.VERSION.SDK_INT < 29 || !filename.matches("Roxhistory-diagnostics-[0-9T-]+\\.zip")) return false;
+        ContentResolver resolver = activity.getContentResolver();
+        Uri target = null;
+        try {
+            ContentValues item = new ContentValues();
+            item.put(MediaStore.Downloads.DISPLAY_NAME, filename);
+            item.put(MediaStore.Downloads.MIME_TYPE, "application/zip");
+            item.put(MediaStore.Downloads.IS_PENDING, 1);
+            target = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, item);
+            if (target == null) return false;
+            try (FileInputStream input = new FileInputStream(path);
+                 OutputStream output = resolver.openOutputStream(target)) {
+                if (output == null) throw new java.io.IOException("Cannot open Downloads entry");
+                byte[] chunk = new byte[32768];
+                int count;
+                while ((count = input.read(chunk)) != -1) output.write(chunk, 0, count);
+            }
+            ContentValues ready = new ContentValues();
+            ready.put(MediaStore.Downloads.IS_PENDING, 0);
+            if (resolver.update(target, ready, null, null) != 1) throw new java.io.IOException("Cannot finalize Downloads entry");
+            return true;
+        } catch (Exception failure) {
+            if (target != null) {
+                try { resolver.delete(target, null, null); } catch (Exception ignored) {}
+            }
+            return false;
+        }
+    }
+
     public static String diagnosticSample(Activity activity) {
         Debug.MemoryInfo memory = new Debug.MemoryInfo();
         Debug.getMemoryInfo(memory);
@@ -89,6 +125,11 @@ public final class VillageAlarm extends BroadcastReceiver {
             if (battery != null && battery.hasExtra(BatteryManager.EXTRA_TEMPERATURE)) {
                 sample.put("battery_temperature_c", battery.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, 0) / 10.0);
             }
+            if (battery != null && battery.hasExtra(BatteryManager.EXTRA_PLUGGED)) {
+                sample.put("battery_plugged", battery.getIntExtra(BatteryManager.EXTRA_PLUGGED, 0) != 0);
+            }
+            int brightness = Settings.System.getInt(activity.getContentResolver(), Settings.System.SCREEN_BRIGHTNESS, -1);
+            if (brightness >= 0) sample.put("system_brightness_setting", brightness);
             if (Build.VERSION.SDK_INT >= 29) {
                 sample.put("thermal_status", activity.getSystemService(PowerManager.class).getCurrentThermalStatus());
             }
