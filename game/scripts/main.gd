@@ -130,6 +130,7 @@ func has_pending_rewards()->bool:
 	return false
 
 func _ready() -> void:
+	DragTrace.mode=FileAccess.get_file_as_string("user://drag-trace-mode").strip_edges() if FileAccess.file_exists("user://drag-trace-mode") else ""
 	if OS.has_feature("android"):Engine.max_fps=60
 	gestures=WorldGestures.new(self);add_child(gestures)
 	get_tree().auto_accept_quit = false
@@ -141,7 +142,7 @@ func _ready() -> void:
 	settings.load(prefs_path)
 	audio = DemoSoundscape.new()
 	add_child(audio)
-	var save_directory:="user://tests/session" if test_mode else "user://"
+	var save_directory:="user://tests/session" if test_mode else ("user://drag-trace-fixture" if not DragTrace.mode.is_empty() else "user://")
 	model = GameState.new(SaveStore.new(save_directory),true)
 	if not test_mode:village_alerts=AndroidVillageNotifications.new(model)
 	model.finish_loaded_jobs()
@@ -801,6 +802,7 @@ func first_construction_locked()->bool:
 	return model.chief_level()==0 and model.pending_construction_count("chief")==0 and FirstQuests.current(model.state) in [0,1]
 
 func _process(delta: float) -> void:
+	DragTrace.frame()
 	performance_diagnostics.tick(self,delta)
 	if screen=="title" and application_active and is_instance_valid(title_prompt):
 		title_prompt_time=fposmod(title_prompt_time+delta,3.0)
@@ -816,7 +818,11 @@ func _process(delta: float) -> void:
 	if application_active:
 		farm_tick+=delta
 		if farm_tick>=1.0:
+			var farm_started:=Time.get_ticks_usec()
+			DragTrace.in_farm_tick=true
 			FarmProduction.tick(model,farm_tick);farm_tick=0.0
+			DragTrace.in_farm_tick=false
+			DragTrace.span("farm",farm_started)
 	var river_distance:=INF
 	for i in world.SHORE.size()-1:
 		var closest:=Geometry2D.get_closest_point_to_segment(world.player.position,world.SHORE[i],world.SHORE[i+1])

@@ -127,7 +127,10 @@ func owned_upgrade_reason(key:String,check_resources:bool=true)->String:
 	var reason:String=app.model.upgrade_requirement(key,check_resources)
 	if not reason.is_empty():return reason
 	var target:=int(found.data.get("level",1))+1
-	if approved_texture(building_asset_id(str(found.kind),target))==null:return "%s %d단계 확정 에셋 준비 중"%[building_name(str(found.kind)),target]
+	var check_started:=Time.get_ticks_usec()
+	var approved:=approved_texture(building_asset_id(str(found.kind),target))
+	DragTrace.span("upgrade_texture_"+str(found.kind),check_started)
+	if approved==null:return "%s %d단계 확정 에셋 준비 중"%[building_name(str(found.kind)),target]
 	return ""
 func request_owned_upgrade(key:String)->void:
 	if key=="chief":request_upgrade();return
