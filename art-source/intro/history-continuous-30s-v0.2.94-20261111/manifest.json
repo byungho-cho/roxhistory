@@ -1,0 +1,49 @@
+{
+  "original_name": "history_continuous_30s_v0.2.94_20261111.mp4",
+  "original_size": 42870690,
+  "original_sha256": "55149671e03a7f25beaeddae68ac8b8a617ba53eacce6fa544222b67d7acf5e8",
+  "files": [
+    {
+      "name": "history_continuous_30s_v0.2.94_20261111.mp4.part01",
+      "size": 7500000,
+      "sha256": "b2f84851aadb65aed995dbb3685efbaac12f962c3cad1c750c99372964c76820",
+      "git_sha": "bb73aebce42411b8e8ea587a572cfee99293d900"
+    },
+    {
+      "name": "history_continuous_30s_v0.2.94_20261111.mp4.part02",
+      "size": 7500000,
+      "sha256": "24b1e8c10b8c691983bbe6cb3df7d5a34eec3572b655187794bc9cb1a460303d",
+      "git_sha": "f84983ac28f6262c4a618efda2b2f6da0df83c04"
+    },
+    {
+      "name": "history_continuous_30s_v0.2.94_20261111.mp4.part03",
+      "size": 7500000,
+      "sha256": "f814c303c93b23f1b7ec88f04c33ce9455c2b2042e7eaec0fe14f80a32c9f4eb",
+      "git_sha": "213a68ff3ce1d2c2f24524f7b957145250d79915"
+    },
+    {
+      "name": "history_continuous_30s_v0.2.94_20261111.mp4.part04",
+      "size": 7500000,
+      "sha256": "8073cfe37496786e4e6065bdc8da1f2bd08324ec416aee47036d46f2b1d72ce3",
+      "git_sha": "ab65483497487475378e032549bd8ffe422822ea"
+    },
+    {
+      "name": "history_continuous_30s_v0.2.94_20261111.mp4.part05",
+      "size": 7500000,
+      "sha256": "c745f7b699a947b62c499b096b0498708af13ddba1062185ee9fe08c6ab58e5d",
+      "git_sha": "da2b0a6ef9eebc96df27cd0b92272fc33bf5f047"
+    },
+    {
+      "name": "history_continuous_30s_v0.2.94_20261111.mp4.part06",
+      "size": 5370690,
+      "sha256": "9feb56f233875bfc65bd40e5288cc549b8944dbce27a650ce07190219d27d65d",
+      "git_sha": "a41a714300b4d1f13f838f5082e25bfa8ec7aca4"
+    },
+    {
+      "name": "history_continuous_30s_v0.2.94_20261111_preview.mp4",
+      "size": 8407765,
+      "sha256": "d1345421d3217c10fbffc7168f59b0a01b7065e2c4b6dc5f0d7dfbf9eb170d18",
+      "git_sha": "f70cd5a471df3944c60ce951e273db57f88577af"
+    }
+  ]
+}
