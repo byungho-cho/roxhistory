@@ -23,9 +23,14 @@ var performance_hud:PanelContainer
 var debug_shortcut:DemoButton
 var debug_shortcut_icon:TextureRect
 const HUNT_SCREEN := preload("res://scripts/deer_hunt_screen.gd")
+const INTRO_VIDEO_PATH := "res://assets/video/intro.ogv"
 var hunt: HUNT_SCREEN
 var title_sound: DemoButton
 var title_prompt: DemoButton
+var intro_player: VideoStreamPlayer
+var intro_stream: VideoStream
+var intro_position := -1.0
+var intro_stall := 0.0
 var title_prompt_time := 0.0
 var title_cloud_seen := false
 var task_bar: ProgressBar
@@ -157,12 +162,15 @@ func _ready() -> void:
 	show_screen("title")
 
 func queue_layout() -> void:
-	if rebuilding or screen=="hunt":
+	if rebuilding or screen in ["hunt","intro"]:
 		return
 	rebuilding = true
 	call_deferred("relayout")
 
 func relayout() -> void:
+	if screen in ["hunt","intro"]:
+		rebuilding = false
+		return
 	var guide_pages:Array[Dictionary]=[]
 	var guide_actions:Array[Callable]=[]
 	if overlay is CharacterGuide:
@@ -220,11 +228,12 @@ func show_screen(next: String) -> void:
 		if next != "play": world.feedback.clear_transients()
 		world.visible = screen == "play"
 		world.set_process_mode(Node.PROCESS_MODE_INHERIT if screen == "play" else Node.PROCESS_MODE_DISABLED)
-	if screen not in ["play","region","title","hunt"]:
+	if screen not in ["play","region","title","hunt","intro"]:
 		menu_background()
 	match screen:
 		"onboarding": onboarding()
 		"title": title_screen()
+		"intro": intro_screen()
 		"region": region_screen()
 		"chapter": ChapterSelection.new(self).open()
 		"play": play_hud()
@@ -441,12 +450,7 @@ func title_screen() -> void:
 	var start:=button(stage,"화면을 터치하여 시작",start_or_continue)
 	title_prompt=start
 	title_prompt_time=0
-	start.name="StartGame";start.custom_minimum_size=Vector2.ZERO
-	start.position=Vector2(w*.5-180,h-safe.y-121);start.size=Vector2(360,64)
-	for state in ["normal","hover","pressed","focus"]:start.add_theme_stylebox_override(state,StyleBoxEmpty.new())
-	start.add_theme_font_size_override("font_size",24)
-	start.add_theme_color_override("font_color",Color("fff0d0"))
-	start.add_theme_color_override("font_outline_color",Color("49321e"));start.add_theme_constant_override("outline_size",3)
+	style_start_prompt(start)
 	var config:=button(stage,"",pause_game)
 	config.name="TitleSettings";config.custom_minimum_size=Vector2.ZERO;config.position=Vector2(w-safe.x-60,safe.y+6);config.size=Vector2(56,56)
 	for state in ["normal","hover","pressed","focus"]:config.add_theme_stylebox_override(state,StyleBoxEmpty.new())
@@ -467,11 +471,70 @@ func title_screen() -> void:
 	patch_status.text=updates.check_status
 	call_deferred("check_title_update")
 
+func style_start_prompt(start: DemoButton) -> void:
+	start.name="StartGame";start.custom_minimum_size=Vector2.ZERO
+	start.set_anchors_and_offsets_preset(Control.PRESET_CENTER_BOTTOM)
+	start.offset_left=-180
+	start.offset_right=180
+	start.offset_top=-safe.y-121
+	start.offset_bottom=-safe.y-57
+	for state in ["normal","hover","pressed","focus"]:start.add_theme_stylebox_override(state,StyleBoxEmpty.new())
+	start.add_theme_font_size_override("font_size",24)
+	start.add_theme_color_override("font_color",Color("fff0d0"))
+	start.add_theme_color_override("font_outline_color",Color("49321e"));start.add_theme_constant_override("outline_size",3)
+
 func check_title_update() -> void:
 	if screen=="title":get_node("/root/PatchBootstrap/Overlay").title_ready()
 
 func start_or_continue()->void:
-	if modal:return
+	if modal or screen!="title" or not application_active:return
+	if ResourceLoader.exists(INTRO_VIDEO_PATH, "VideoStream"):
+		intro_stream = load(INTRO_VIDEO_PATH) as VideoStream
+	if intro_stream:
+		show_screen("intro")
+	else:
+		continue_to_village()
+
+func intro_screen() -> void:
+	var backdrop := ColorRect.new()
+	backdrop.color = Color.BLACK
+	backdrop.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	stage.add_child(backdrop)
+	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	intro_player = VideoStreamPlayer.new()
+	intro_player.stream = intro_stream
+	intro_player.expand = true
+	intro_player.volume_db = 0.0 if settings.get_value("app","sound",true) else -80.0
+	intro_player.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	stage.add_child(intro_player)
+	stage.resized.connect(fit_intro_video)
+	var surface := button(stage,"",finish_intro)
+	surface.custom_minimum_size = Vector2.ZERO
+	surface.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	for state in ["normal","hover","pressed","focus"]:surface.add_theme_stylebox_override(state,StyleBoxEmpty.new())
+	style_start_prompt(button(stage,"화면을 터치하여 스킵",finish_intro))
+	intro_position = -1.0
+	intro_stall = 0.0
+	intro_player.finished.connect(finish_intro)
+	intro_player.play()
+	fit_intro_video()
+
+func fit_intro_video() -> void:
+	if not is_instance_valid(intro_player):return
+	var texture := intro_player.get_video_texture()
+	var source_size := texture.get_size() if texture else Vector2.ZERO
+	if source_size.x <= 0 or source_size.y <= 0:source_size = Vector2(16,9)
+	intro_player.size = source_size * minf(stage.size.x/source_size.x,stage.size.y/source_size.y)
+	intro_player.position = (stage.size-intro_player.size)*0.5
+
+func finish_intro() -> void:
+	if screen!="intro":return
+	if is_instance_valid(intro_player):intro_player.stop()
+	intro_player = null
+	intro_stream = null
+	continue_to_village()
+
+func continue_to_village() -> void:
 	if model.state.is_empty():chapter_menu()
 	else:enter_game()
 
@@ -801,6 +864,13 @@ func first_construction_locked()->bool:
 	return model.chief_level()==0 and model.pending_construction_count("chief")==0 and FirstQuests.current(model.state) in [0,1]
 
 func _process(delta: float) -> void:
+	if screen=="intro":
+		if application_active and is_instance_valid(intro_player):
+			var position := intro_player.stream_position
+			intro_stall = intro_stall+delta if is_equal_approx(position,intro_position) else 0.0
+			intro_position = position
+			if not intro_player.is_playing() or intro_stall>=3.0:finish_intro()
+		return
 	performance_diagnostics.tick(self,delta)
 	if screen=="title" and application_active and is_instance_valid(title_prompt):
 		title_prompt_time=fposmod(title_prompt_time+delta,3.0)
@@ -1386,7 +1456,9 @@ func close_hunt() -> void:
 	show_screen("play")
 
 func go_back() -> void:
-	if screen=="hunt":
+	if screen=="intro":
+		finish_intro()
+	elif screen=="hunt":
 		close_hunt()
 	elif village_entry_active():
 		finish_village_entry()
@@ -1426,6 +1498,7 @@ func _notification(what: int) -> void:
 		if gestures: gestures.clear()
 		if is_instance_valid(chrome): chrome.clear_effects()
 		application_active = false
+		if is_instance_valid(intro_player):intro_player.paused = true
 		sync_audio()
 		if is_instance_valid(world): world.feedback.clear_transients()
 		if is_instance_valid(joystick): joystick.clear()
@@ -1436,6 +1509,7 @@ func _notification(what: int) -> void:
 			if not was_demolition:model.save_position(world.player.position)
 	elif what == NOTIFICATION_APPLICATION_RESUMED or what == NOTIFICATION_APPLICATION_FOCUS_IN:
 		application_active = true
+		if is_instance_valid(intro_player):intro_player.paused = false
 		sync_audio()
 		if is_instance_valid(world): world.player.presentation_paused = modal
 	elif what == NOTIFICATION_WM_CLOSE_REQUEST:

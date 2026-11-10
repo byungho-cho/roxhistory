@@ -47,6 +47,9 @@ var running := false
 var result_shown := false
 var result_timer := 0.0
 var pose_clock := 1.0
+const BASIC_IMPACT_TIME := 0.26
+const BASIC_RECOIL_TIME := 0.19
+var basic_recoil := 0.0
 var actor_delta := 0.0
 var pose := ""
 var exit_button: DemoButton
@@ -278,10 +281,15 @@ func play_pose(id: String) -> void:
 
 func _process(delta: float) -> void:
 	if not app.application_active:return
+	pose_clock += delta
+	basic_recoil = maxf(0.0,basic_recoil-delta)
 	if transition_elapsed>=0:advance_transition(delta)
 	if running and not result_shown:
 		for move in rules.advance(delta):
 			play_pose(move)
+		if pose_clock>=BASIC_IMPACT_TIME and rules.resolve_basic_impact():
+			basic_recoil = BASIC_RECOIL_TIME
+			app.audio.cue("hunt_impact")
 		for id in ready_flashes:
 			ready_flashes[id] = maxf(0,ready_flashes[id]-delta)
 		update_combat_ui()
@@ -291,7 +299,6 @@ func _process(delta: float) -> void:
 		if result_timer<=0:
 			app.close_hunt()
 			return
-	pose_clock += delta
 	actor_delta += delta
 	if actor_delta>=1.0/30.0:
 		update_actors(actor_delta)
@@ -312,6 +319,7 @@ func update_combat_ui() -> void:
 
 func update_actors(delta: float) -> void:
 	var beat := sin(clampf(pose_clock/.52,0,1)*PI)
+	var basic_attack := pose in ["thrust","auto_thrust"]
 	for i in hunters.size():
 		var hunter := hunters[i]
 		if not combat_layout:continue
@@ -319,7 +327,8 @@ func update_actors(delta: float) -> void:
 		var dodge := running and pose=="counter" and i==0
 		var base: Vector2 = HUNTER_SLOTS[i] if combat_layout else PREP_SLOTS[i]
 		hunter.scale = Vector2.ONE*(.89 if combat_layout else 1.13)
-		hunter.position = base + actor_offset + Vector2((32 if attack else -18 if dodge else 0)*beat,-5*beat if attack else 0)
+		var lunge := 64 if basic_attack else 32
+		hunter.position = base + actor_offset + Vector2((lunge if attack else -18 if dodge else 0)*beat,-5*beat if attack else 0)
 		hunter.animate(delta,Vector2.RIGHT,pose_clock*12,dodge,"" if not attack else "hunt",pose_clock,false)
 		if attack:
 			hunter.blend_bone("spine",Vector3(.10+beat*.12,0,-.08),.9)
@@ -328,7 +337,10 @@ func update_actors(delta: float) -> void:
 		hunter.tool_3d.visible = true
 		hunter.viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
 	var charge := running and pose=="counter"
-	deer.position = DEER_SLOT+deer_offset+Vector2((-29 if charge else 23)*beat if combat_layout else -65,-8*beat if combat_layout else -30)
+	var deer_motion := Vector2(-29,-8) if charge else Vector2.ZERO if basic_attack else Vector2(23,-8)
+	deer.position = DEER_SLOT+deer_offset+(deer_motion*beat if combat_layout else Vector2(-65,-30))
+	if basic_recoil>0:
+		deer.position += Vector2(13,-3)*basic_recoil/BASIC_RECOIL_TIME
 	deer.scale = Vector2.ONE*(1.0 if combat_layout else 1.55)
 	deer_status.position = Vector2(deer.position.x-50,204)
 	deer.walking = beat if running else 0.0
@@ -336,6 +348,11 @@ func update_actors(delta: float) -> void:
 
 func draw_stage() -> void:
 	if not combat_layout:return
+	if basic_recoil>0:
+		var hit := deer.position+Vector2(-24,-39)
+		var fade := basic_recoil/BASIC_RECOIL_TIME
+		for direction in [Vector2(-1,-.5),Vector2(-1,0),Vector2(-1,.5)]:
+			canvas.draw_line(hit+direction*4,hit+direction*(12+5*(1-fade)),Color(1,.89,.64,fade),2,true)
 	var center := Vector2(874,454)+combat_controls.position
 	canvas.draw_arc(center,59,-1.24,1.31,38,Color("15272b"),9,true)
 	if rules.gauge>0:

@@ -31,6 +31,7 @@ func _ready() -> void:
 		streams[key] = load("res://assets/audio/"+key+".wav")
 	for key in ["wood","stone","build","demolish"]:
 		streams["recorded_"+key]=load("res://assets/audio/recorded-actions-v001/"+key+"-hit.wav")
+	streams["hunt_impact"] = streams["stone_0"]
 	recorded_work=AudioStreamPlayer.new();recorded_work.name="RecordedActionVoice";recorded_work.bus="Master";add_child(recorded_work)
 	for i in 6:
 		var voice := AudioStreamPlayer.new()
