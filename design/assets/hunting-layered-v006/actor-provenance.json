@@ -1,0 +1,107 @@
+{
+  "assets": [
+    {
+      "file": "deer-battle-left-3072.png",
+      "dimensions": [
+        3072,
+        3072
+      ],
+      "mode": "RGBA",
+      "alpha_bbox_xyxy": [
+        482,
+        378,
+        2602,
+        2601
+      ],
+      "ground_y": 2600,
+      "source": "game/assets/animals/deer-rigged.glb",
+      "source_sha256": "505a0ca1a4949e86e7e0b9c412acec68c52f4312dbe65a8cd0a7ca34ee70264e",
+      "animation_clips": 0,
+      "facing": "left",
+      "pose": "original static rest pose",
+      "render": "Cycles CPU, 96 samples, no denoising, native 3072px, no upscaling",
+      "repo_path": "design/assets/hunting-layered-v006/actors/deer-battle-left-3072.png"
+    },
+    {
+      "file": "hunter-battle-right-3072.png",
+      "dimensions": [
+        3072,
+        3072
+      ],
+      "mode": "RGBA",
+      "alpha_bbox_xyxy": [
+        1141,
+        265,
+        2001,
+        2875
+      ],
+      "ground_y": 2874,
+      "source": "game/assets/characters/meshy01/hero.glb",
+      "source_sha256": "44c5c760d84b48d73a011a1e442f3eec9c8a5c37a5a11031c854375f4f959785",
+      "animation_clips": 0,
+      "facing": "right",
+      "pose": "original static rest pose",
+      "render": "Cycles CPU, 96 samples, no denoising, native 3072px, no upscaling",
+      "repo_path": "design/assets/hunting-layered-v006/actors/hunter-battle-right-3072.png"
+    },
+    {
+      "file": "sturdy_male-battle-right-3072.png",
+      "dimensions": [
+        3072,
+        3072
+      ],
+      "mode": "RGBA",
+      "alpha_bbox_xyxy": [
+        1082,
+        395,
+        2025,
+        2753
+      ],
+      "ground_y": 2752,
+      "source": "game/assets/characters/residents/sturdy_male.glb",
+      "source_sha256": "cc2ab8f43acd80c6eb9215252f8641510f915b616fc387cf231a3be4052d0feb",
+      "animation_clips": 0,
+      "facing": "right",
+      "pose": "original static rest pose",
+      "render": "Cycles CPU, 96 samples, no denoising, native 3072px, no upscaling",
+      "repo_path": "design/assets/hunting-layered-v006/actors/sturdy_male-battle-right-3072.png"
+    },
+    {
+      "file": "female-battle-right-3072.png",
+      "dimensions": [
+        3072,
+        3072
+      ],
+      "mode": "RGBA",
+      "alpha_bbox_xyxy": [
+        1178,
+        395,
+        1998,
+        2753
+      ],
+      "ground_y": 2752,
+      "source": "game/assets/characters/residents/female.glb",
+      "source_sha256": "9c2bb747a2231210435c6cf9c8bd1b4d5b525a7ca854814f2267ef3411632f02",
+      "animation_clips": 0,
+      "facing": "right",
+      "pose": "original static rest pose",
+      "render": "Cycles CPU, 96 samples, no denoising, native 3072px, no upscaling",
+      "repo_path": "design/assets/hunting-layered-v006/actors/female-battle-right-3072.png"
+    }
+  ],
+  "limitations": [
+    "No character contains a spear. No new model or prop was created.",
+    "Source model geometry/texture seams and resident prototype overlaps are preserved.",
+    "No animation is supplied. All actors are static original rest poses.",
+    "All source models and previous render files are unchanged."
+  ],
+  "existing_spear": {
+    "path": "game/assets/ui/s40000/hunt-spear-v001.png",
+    "dimensions": [
+      256,
+      256
+    ],
+    "mode": "RGBA",
+    "included_in_character_render": false
+  }
+}

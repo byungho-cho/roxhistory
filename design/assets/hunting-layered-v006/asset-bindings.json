@@ -1,0 +1,976 @@
+{
+  "version": "v006",
+  "status": "latest_requested_design_snapshot_for_development",
+  "repo_path_base": "All repo_path fields are relative to repository root.",
+  "resources": [
+    {
+      "figma_image_hash": "4983463d4c9e2f7f02b09bf3fcf4d4b73d65dbe1",
+      "repo_path": "design/assets/hunting-separated-v001/backgrounds/battle-clean-v001.png",
+      "reused_existing_git_file": true,
+      "bytes": 2855768,
+      "sha256": "a393af19d94e9292df7fe64d4227c64acd6aa1ac3d1c5ba6f0e5e669b46b8581",
+      "source_image_sha1": "4983463d4c9e2f7f02b09bf3fcf4d4b73d65dbe1",
+      "pixels": [
+        1672,
+        941
+      ],
+      "mode": "RGB"
+    },
+    {
+      "figma_image_hash": "5a173c5090e790990174908130581c898680d242",
+      "repo_path": "design/assets/hunting-separated-v001/foreground/hunters-foliage-group-v001.png",
+      "reused_existing_git_file": true,
+      "bytes": 2128310,
+      "sha256": "b7fdc857437c1d828d32e98eb11876d8a301f36c5b27813ccfb990898c4cb970",
+      "source_image_sha1": "5a173c5090e790990174908130581c898680d242",
+      "pixels": [
+        1662,
+        946
+      ],
+      "mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        255
+      ]
+    },
+    {
+      "figma_image_hash": "c0b15ab342e934a4cf36babf8ecb132ec4b711a0",
+      "repo_path": "game/assets/quest-rewards/parts.png",
+      "reused_existing_git_file": true,
+      "bytes": 1456094,
+      "sha256": "12b74f16aa270665a008af9175334653d859ed1a66fcc0812f8c8a7d230ee8bd",
+      "source_image_sha1": "c0b15ab342e934a4cf36babf8ecb132ec4b711a0",
+      "pixels": [
+        1774,
+        887
+      ],
+      "mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        255
+      ]
+    },
+    {
+      "figma_image_hash": "be484033c98125ac297d70bb7803b16495bb47bb",
+      "repo_path": "game/assets/ui/v034/build-confirm.png",
+      "reused_existing_git_file": true,
+      "bytes": 1173751,
+      "sha256": "d33daacff86b1933a31c5460eafa27b0f70a1acc5aa9ac83d9131b14654185fe",
+      "source_image_sha1": "be484033c98125ac297d70bb7803b16495bb47bb",
+      "pixels": [
+        1263,
+        1246
+      ],
+      "mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        255
+      ]
+    },
+    {
+      "figma_image_hash": "593f83cafb26732f32e17a68688dd5f02150c79f",
+      "repo_path": "game/assets/ui/v0160/quest-track-bg.png",
+      "reused_existing_git_file": true,
+      "bytes": 1890584,
+      "sha256": "56943605d1371983b5290ff79b322bfe2b7b2874e8009e415d6a670ef36d3aff",
+      "source_image_sha1": "593f83cafb26732f32e17a68688dd5f02150c79f",
+      "pixels": [
+        2172,
+        724
+      ],
+      "mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        255
+      ]
+    },
+    {
+      "figma_image_hash": "68df7604685cc83722caa9d8aa7d178243f4952b",
+      "repo_path": "game/assets/ui/brush/resource-slot-brush@2x.png",
+      "reused_existing_git_file": true,
+      "bytes": 50655,
+      "sha256": "495960bcc86f44720d6923501d1942bb6145d116c7a980c502e6bc248bbc5afb",
+      "source_image_sha1": "68df7604685cc83722caa9d8aa7d178243f4952b",
+      "pixels": [
+        512,
+        112
+      ],
+      "mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        192
+      ]
+    },
+    {
+      "figma_image_hash": "828dd52517ec6d0b96f229a652bb3aab3e0fc3fb",
+      "repo_path": "game/assets/ui/review-v037/settings-figma.png",
+      "reused_existing_git_file": true,
+      "bytes": 7682,
+      "sha256": "733b779057475254869c8aaec69c6b7a08dfce9be65eefcb7ac1bf797fb85a3e",
+      "source_image_sha1": "828dd52517ec6d0b96f229a652bb3aab3e0fc3fb",
+      "pixels": [
+        55,
+        55
+      ],
+      "mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        255
+      ]
+    },
+    {
+      "figma_image_hash": "fb2f8a8518af9df2a8e41713ddc82366672071e2",
+      "repo_path": "design/assets/hunting-layered-v006/preparation/title-noarrow.png",
+      "reused_existing_git_file": false,
+      "bytes": 1314351,
+      "sha256": "54b819e20fa0168dcb647f5b39e9e493104fb2a06321db946c83a6c34a5c93f8",
+      "source_image_sha1": "fb2f8a8518af9df2a8e41713ddc82366672071e2",
+      "pixels": [
+        2172,
+        724
+      ],
+      "mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        255
+      ]
+    },
+    {
+      "figma_image_hash": "6a2daa16f7be257aaa32ebe39c27b44d34b95fee",
+      "repo_path": "design/assets/hunting-layered-v006/preparation/background.png",
+      "reused_existing_git_file": false,
+      "bytes": 3397619,
+      "sha256": "bf06ab5e26d52640d80cdf811f8d6e6d2bed1ff2341b88feac33bd3037f83228",
+      "source_image_sha1": "6a2daa16f7be257aaa32ebe39c27b44d34b95fee",
+      "pixels": [
+        1672,
+        941
+      ],
+      "mode": "RGB"
+    },
+    {
+      "figma_image_hash": "28a8ebf34b41c005e517ea8fb9786b7c92ac0195",
+      "repo_path": "design/assets/hunting-layered-v006/preparation/right-panel.png",
+      "reused_existing_git_file": false,
+      "bytes": 2234561,
+      "sha256": "6a0b915a30e35999c52183e5455022d3ccc8d3d63430f5b4aa40492305e7c409",
+      "source_image_sha1": "28a8ebf34b41c005e517ea8fb9786b7c92ac0195",
+      "pixels": [
+        1024,
+        1536
+      ],
+      "mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        254
+      ]
+    },
+    {
+      "figma_image_hash": "0b637136f35ec017cbcce237cf23c2eb51428258",
+      "repo_path": "design/assets/hunting-layered-v006/actors/hunter-battle-right-3072.png",
+      "reused_existing_git_file": false,
+      "bytes": 6943647,
+      "sha256": "2d09651c588720a2345223935472658ad92e91fda0f46b36368c4d313eaac434",
+      "source_image_sha1": "0b637136f35ec017cbcce237cf23c2eb51428258",
+      "pixels": [
+        3072,
+        3072
+      ],
+      "mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        255
+      ]
+    },
+    {
+      "figma_image_hash": "a9ceeb1a01bd2d6c3ac08f5f3a398a9a7e52da14",
+      "repo_path": "design/assets/hunting-layered-v006/actors/deer-battle-left-3072.png",
+      "reused_existing_git_file": false,
+      "bytes": 6902474,
+      "sha256": "0c2f80524123ab13816c301969e5e204dfa7e61855045785c4b9ddd5b5ee0a21",
+      "source_image_sha1": "a9ceeb1a01bd2d6c3ac08f5f3a398a9a7e52da14",
+      "pixels": [
+        3072,
+        3072
+      ],
+      "mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        255
+      ]
+    },
+    {
+      "figma_image_hash": "d1c34fd389d4c5764df14f1fc212e2fc4bd5e72b",
+      "repo_path": "design/assets/hunting-layered-v006/actors/female-battle-right-3072.png",
+      "reused_existing_git_file": false,
+      "bytes": 6782254,
+      "sha256": "1a58e4113952a633173dee3b64ff00461c49036a35d0cccdc052c1612fb565b1",
+      "source_image_sha1": "d1c34fd389d4c5764df14f1fc212e2fc4bd5e72b",
+      "pixels": [
+        3072,
+        3072
+      ],
+      "mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        255
+      ]
+    },
+    {
+      "figma_image_hash": "1502b802184a3957a09da2021fe0c90f6a04bf62",
+      "repo_path": "design/assets/hunting-layered-v006/actors/sturdy_male-battle-right-3072.png",
+      "reused_existing_git_file": false,
+      "bytes": 6887442,
+      "sha256": "0ac7f0b356e65b0050242de9baedcdf0d8bf8377e299109fa070df313a0eed75",
+      "source_image_sha1": "1502b802184a3957a09da2021fe0c90f6a04bf62",
+      "pixels": [
+        3072,
+        3072
+      ],
+      "mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        255
+      ]
+    }
+  ],
+  "image_layers": [
+    {
+      "scene_id": "2062:210",
+      "node_id": "2062:211",
+      "node_name": "00 Background / prep-clean-v002.png / 1672×941",
+      "paint_index": 0,
+      "figma_image_hash": "6a2daa16f7be257aaa32ebe39c27b44d34b95fee",
+      "display_size": [
+        1920,
+        1080
+      ],
+      "figma_scale_mode": "FILL",
+      "repo_path": "design/assets/hunting-layered-v006/preparation/background.png"
+    },
+    {
+      "scene_id": "2062:210",
+      "node_id": "2062:213",
+      "node_name": "deer-left-v003-3072.png / actual GLB render",
+      "paint_index": 0,
+      "figma_image_hash": "a9ceeb1a01bd2d6c3ac08f5f3a398a9a7e52da14",
+      "display_size": [
+        430,
+        430
+      ],
+      "figma_scale_mode": "FIT",
+      "repo_path": "design/assets/hunting-layered-v006/actors/deer-battle-left-3072.png"
+    },
+    {
+      "scene_id": "2062:210",
+      "node_id": "2062:215",
+      "node_name": "hunters-foliage-group-v001.png / 1662×946",
+      "paint_index": 0,
+      "figma_image_hash": "5a173c5090e790990174908130581c898680d242",
+      "display_size": [
+        1050,
+        598
+      ],
+      "figma_scale_mode": "FIT",
+      "repo_path": "design/assets/hunting-separated-v001/foreground/hunters-foliage-group-v001.png"
+    },
+    {
+      "scene_id": "2062:210",
+      "node_id": "2083:654",
+      "node_name": "Hunt/Title/사냥 준비 · 고정 이미지 · 중앙 에셋 연결",
+      "paint_index": 0,
+      "figma_image_hash": "fb2f8a8518af9df2a8e41713ddc82366672071e2",
+      "display_size": [
+        480,
+        159.99984741210938
+      ],
+      "figma_scale_mode": "FIT",
+      "repo_path": "design/assets/hunting-layered-v006/preparation/title-noarrow.png"
+    },
+    {
+      "scene_id": "2062:210",
+      "node_id": "2083:655",
+      "node_name": "Hunt/BG/준비 패널 · 중앙 에셋 연결",
+      "paint_index": 0,
+      "figma_image_hash": "28a8ebf34b41c005e517ea8fb9786b7c92ac0195",
+      "display_size": [
+        670,
+        1005
+      ],
+      "figma_scale_mode": "FIT",
+      "repo_path": "design/assets/hunting-layered-v006/preparation/right-panel.png"
+    },
+    {
+      "scene_id": "2062:210",
+      "node_id": "2062:243",
+      "node_name": "Portrait crop / source hunter group",
+      "paint_index": 0,
+      "figma_image_hash": "5a173c5090e790990174908130581c898680d242",
+      "display_size": [
+        800,
+        455.3500061035156
+      ],
+      "figma_scale_mode": "FIT",
+      "repo_path": "design/assets/hunting-separated-v001/foreground/hunters-foliage-group-v001.png"
+    },
+    {
+      "scene_id": "2062:210",
+      "node_id": "2062:247",
+      "node_name": "Portrait crop / source hunter group",
+      "paint_index": 0,
+      "figma_image_hash": "5a173c5090e790990174908130581c898680d242",
+      "display_size": [
+        800,
+        455.3500061035156
+      ],
+      "figma_scale_mode": "FIT",
+      "repo_path": "design/assets/hunting-separated-v001/foreground/hunters-foliage-group-v001.png"
+    },
+    {
+      "scene_id": "2062:210",
+      "node_id": "2062:251",
+      "node_name": "Portrait crop / source hunter group",
+      "paint_index": 0,
+      "figma_image_hash": "5a173c5090e790990174908130581c898680d242",
+      "display_size": [
+        800,
+        455.3500061035156
+      ],
+      "figma_scale_mode": "FIT",
+      "repo_path": "design/assets/hunting-separated-v001/foreground/hunters-foliage-group-v001.png"
+    },
+    {
+      "scene_id": "2062:210",
+      "node_id": "2083:661",
+      "node_name": "Shared leather label / objective",
+      "paint_index": 0,
+      "figma_image_hash": "c0b15ab342e934a4cf36babf8ecb132ec4b711a0",
+      "display_size": [
+        118,
+        36
+      ],
+      "figma_scale_mode": "CROP",
+      "repo_path": "game/assets/quest-rewards/parts.png",
+      "normalized_crop_transform": [
+        [
+          0.41431793570518494,
+          0,
+          0.44250282645225525
+        ],
+        [
+          0,
+          0.24802705645561218,
+          0.4002254903316498
+        ]
+      ],
+      "source_region_xywh": [
+        785.00001,
+        355.00001,
+        735.00002,
+        220.0
+      ]
+    },
+    {
+      "scene_id": "2062:210",
+      "node_id": "2083:663",
+      "node_name": "Deer objective icon / existing actor",
+      "paint_index": 0,
+      "figma_image_hash": "a9ceeb1a01bd2d6c3ac08f5f3a398a9a7e52da14",
+      "display_size": [
+        80,
+        80
+      ],
+      "figma_scale_mode": "FIT",
+      "repo_path": "design/assets/hunting-layered-v006/actors/deer-battle-left-3072.png"
+    },
+    {
+      "scene_id": "2062:210",
+      "node_id": "2083:665",
+      "node_name": "Shared leather label / party",
+      "paint_index": 0,
+      "figma_image_hash": "c0b15ab342e934a4cf36babf8ecb132ec4b711a0",
+      "display_size": [
+        210,
+        48
+      ],
+      "figma_scale_mode": "CROP",
+      "repo_path": "game/assets/quest-rewards/parts.png",
+      "normalized_crop_transform": [
+        [
+          0.41431793570518494,
+          0,
+          0.44250282645225525
+        ],
+        [
+          0,
+          0.24802705645561218,
+          0.4002254903316498
+        ]
+      ],
+      "source_region_xywh": [
+        785.00001,
+        355.00001,
+        735.00002,
+        220.0
+      ]
+    },
+    {
+      "scene_id": "2062:210",
+      "node_id": "I2083:670;1024:54",
+      "node_name": "confirm 원본 / 비파괴 크롭",
+      "paint_index": 0,
+      "figma_image_hash": "be484033c98125ac297d70bb7803b16495bb47bb",
+      "display_size": [
+        40.833335876464844,
+        42
+      ],
+      "figma_scale_mode": "CROP",
+      "repo_path": "game/assets/ui/v034/build-confirm.png",
+      "normalized_crop_transform": [
+        [
+          0.692794919013977,
+          0,
+          0.1496437042951584
+        ],
+        [
+          0,
+          0.7223113775253296,
+          0.13563403487205505
+        ]
+      ],
+      "source_region_xywh": [
+        189.0,
+        169.00001,
+        874.99998,
+        899.99998
+      ]
+    },
+    {
+      "scene_id": "2062:210",
+      "node_id": "I2083:672;1024:54",
+      "node_name": "confirm 원본 / 비파괴 크롭",
+      "paint_index": 0,
+      "figma_image_hash": "be484033c98125ac297d70bb7803b16495bb47bb",
+      "display_size": [
+        40.833335876464844,
+        42
+      ],
+      "figma_scale_mode": "CROP",
+      "repo_path": "game/assets/ui/v034/build-confirm.png",
+      "normalized_crop_transform": [
+        [
+          0.692794919013977,
+          0,
+          0.1496437042951584
+        ],
+        [
+          0,
+          0.7223113775253296,
+          0.13563403487205505
+        ]
+      ],
+      "source_region_xywh": [
+        189.0,
+        169.00001,
+        874.99998,
+        899.99998
+      ]
+    },
+    {
+      "scene_id": "2062:210",
+      "node_id": "I2083:674;1024:54",
+      "node_name": "confirm 원본 / 비파괴 크롭",
+      "paint_index": 0,
+      "figma_image_hash": "be484033c98125ac297d70bb7803b16495bb47bb",
+      "display_size": [
+        40.833335876464844,
+        42
+      ],
+      "figma_scale_mode": "CROP",
+      "repo_path": "game/assets/ui/v034/build-confirm.png",
+      "normalized_crop_transform": [
+        [
+          0.692794919013977,
+          0,
+          0.1496437042951584
+        ],
+        [
+          0,
+          0.7223113775253296,
+          0.13563403487205505
+        ]
+      ],
+      "source_region_xywh": [
+        189.0,
+        169.00001,
+        874.99998,
+        899.99998
+      ]
+    },
+    {
+      "scene_id": "2062:210",
+      "node_id": "I2083:689;1024:54",
+      "node_name": "confirm 원본 / 비파괴 크롭",
+      "paint_index": 0,
+      "figma_image_hash": "be484033c98125ac297d70bb7803b16495bb47bb",
+      "display_size": [
+        38.88888931274414,
+        40
+      ],
+      "figma_scale_mode": "CROP",
+      "repo_path": "game/assets/ui/v034/build-confirm.png",
+      "normalized_crop_transform": [
+        [
+          0.692794919013977,
+          0,
+          0.1496437042951584
+        ],
+        [
+          0,
+          0.7223113775253296,
+          0.13563403487205505
+        ]
+      ],
+      "source_region_xywh": [
+        189.0,
+        169.00001,
+        874.99998,
+        899.99998
+      ]
+    },
+    {
+      "scene_id": "2062:210",
+      "node_id": "I2083:694;1518:328",
+      "node_name": "글자·아이콘 없는 배경",
+      "paint_index": 0,
+      "figma_image_hash": "593f83cafb26732f32e17a68688dd5f02150c79f",
+      "display_size": [
+        524,
+        101
+      ],
+      "figma_scale_mode": "CROP",
+      "repo_path": "game/assets/ui/v0160/quest-track-bg.png",
+      "normalized_crop_transform": [
+        [
+          0.9723756909370422,
+          0,
+          0.013812154531478882
+        ],
+        [
+          0,
+          0.8149171471595764,
+          0.08977900445461273
+        ]
+      ],
+      "source_region_xywh": [
+        30.0,
+        65.0,
+        2112.0,
+        590.00001
+      ]
+    },
+    {
+      "scene_id": "2062:210",
+      "node_id": "2083:697",
+      "node_name": "돌아가기 / 퀘스트 보상 크림 버튼",
+      "paint_index": 0,
+      "figma_image_hash": "c0b15ab342e934a4cf36babf8ecb132ec4b711a0",
+      "display_size": [
+        223,
+        76
+      ],
+      "figma_scale_mode": "CROP",
+      "repo_path": "game/assets/quest-rewards/parts.png",
+      "normalized_crop_transform": [
+        [
+          0.25930100679397583,
+          0,
+          0.14092446863651276
+        ],
+        [
+          0,
+          0.24802705645561218,
+          0.4002254903316498
+        ]
+      ],
+      "source_region_xywh": [
+        250.00001,
+        355.00001,
+        459.99999,
+        220.0
+      ]
+    },
+    {
+      "scene_id": "2065:254",
+      "node_id": "2127:160",
+      "node_name": "Environment · central clean battle background",
+      "paint_index": 0,
+      "figma_image_hash": "4983463d4c9e2f7f02b09bf3fcf4d4b73d65dbe1",
+      "display_size": [
+        1920,
+        1080
+      ],
+      "figma_scale_mode": "FIT",
+      "repo_path": "design/assets/hunting-separated-v001/backgrounds/battle-clean-v001.png"
+    },
+    {
+      "scene_id": "2065:254",
+      "node_id": "2127:161",
+      "node_name": "Actor / hero · actual static 3D",
+      "paint_index": 0,
+      "figma_image_hash": "0b637136f35ec017cbcce237cf23c2eb51428258",
+      "display_size": [
+        46.13026809692383,
+        140
+      ],
+      "figma_scale_mode": "CROP",
+      "repo_path": "design/assets/hunting-layered-v006/actors/hunter-battle-right-3072.png",
+      "normalized_crop_transform": [
+        [
+          0.2799479067325592,
+          0,
+          0.3714192807674408
+        ],
+        [
+          0,
+          0.849609375,
+          0.0862630233168602
+        ]
+      ],
+      "source_region_xywh": [
+        1141.00003,
+        265.00001,
+        859.99997,
+        2610.0
+      ]
+    },
+    {
+      "scene_id": "2065:254",
+      "node_id": "2127:162",
+      "node_name": "Actor / sturdy_male · actual static 3D",
+      "paint_index": 0,
+      "figma_image_hash": "1502b802184a3957a09da2021fe0c90f6a04bf62",
+      "display_size": [
+        49.98939895629883,
+        125
+      ],
+      "figma_scale_mode": "CROP",
+      "repo_path": "design/assets/hunting-layered-v006/actors/sturdy_male-battle-right-3072.png",
+      "normalized_crop_transform": [
+        [
+          0.3069661557674408,
+          0,
+          0.3522135317325592
+        ],
+        [
+          0,
+          0.767578125,
+          0.1285807341337204
+        ]
+      ],
+      "source_region_xywh": [
+        1081.99997,
+        395.00002,
+        943.00003,
+        2358.0
+      ]
+    },
+    {
+      "scene_id": "2065:254",
+      "node_id": "2127:163",
+      "node_name": "Actor / female · actual static 3D",
+      "paint_index": 0,
+      "figma_image_hash": "d1c34fd389d4c5764df14f1fc212e2fc4bd5e72b",
+      "display_size": [
+        45.20780563354492,
+        130
+      ],
+      "figma_scale_mode": "CROP",
+      "repo_path": "design/assets/hunting-layered-v006/actors/female-battle-right-3072.png",
+      "normalized_crop_transform": [
+        [
+          0.2669270932674408,
+          0,
+          0.3834635317325592
+        ],
+        [
+          0,
+          0.767578125,
+          0.1285807341337204
+        ]
+      ],
+      "source_region_xywh": [
+        1177.99997,
+        395.00002,
+        820.00003,
+        2358.0
+      ]
+    },
+    {
+      "scene_id": "2065:254",
+      "node_id": "2127:164",
+      "node_name": "Actor / deer · existing central 3072 render",
+      "paint_index": 0,
+      "figma_image_hash": "a9ceeb1a01bd2d6c3ac08f5f3a398a9a7e52da14",
+      "display_size": [
+        156.40126037597656,
+        164
+      ],
+      "figma_scale_mode": "CROP",
+      "repo_path": "design/assets/hunting-layered-v006/actors/deer-battle-left-3072.png",
+      "normalized_crop_transform": [
+        [
+          0.6901041865348816,
+          0,
+          0.1569010466337204
+        ],
+        [
+          0,
+          0.7236328125,
+          0.123046875
+        ]
+      ],
+      "source_region_xywh": [
+        482.00002,
+        378.0,
+        2120.00006,
+        2223.0
+      ]
+    },
+    {
+      "scene_id": "2065:254",
+      "node_id": "I2131:189;903:37",
+      "node_name": "승인 재질 / left 붓터치",
+      "paint_index": 0,
+      "figma_image_hash": "68df7604685cc83722caa9d8aa7d178243f4952b",
+      "display_size": [
+        80,
+        50
+      ],
+      "figma_scale_mode": "CROP",
+      "repo_path": "game/assets/ui/brush/resource-slot-brush@2x.png",
+      "normalized_crop_transform": [
+        [
+          0.44999998807907104,
+          0,
+          0.5299999713897705
+        ],
+        [
+          0,
+          0.6800000071525574,
+          0.1599999964237213
+        ]
+      ],
+      "source_region_xywh": [
+        271.35999,
+        17.92,
+        230.39999,
+        76.16
+      ]
+    },
+    {
+      "scene_id": "2065:254",
+      "node_id": "I2131:189;903:38",
+      "node_name": "승인 재질 / right 붓터치",
+      "paint_index": 0,
+      "figma_image_hash": "68df7604685cc83722caa9d8aa7d178243f4952b",
+      "display_size": [
+        80,
+        50
+      ],
+      "figma_scale_mode": "CROP",
+      "repo_path": "game/assets/ui/brush/resource-slot-brush@2x.png",
+      "normalized_crop_transform": [
+        [
+          0.44999998807907104,
+          0,
+          0.5299999713897705
+        ],
+        [
+          0,
+          0.6800000071525574,
+          0.1599999964237213
+        ]
+      ],
+      "source_region_xywh": [
+        271.35999,
+        17.92,
+        230.39999,
+        76.16
+      ]
+    },
+    {
+      "scene_id": "2065:254",
+      "node_id": "I2071:235;2071:234",
+      "node_name": "Painted art · RGBA crop",
+      "paint_index": 0,
+      "figma_image_hash": "b6f3cf1192a9cfec43006ccab3af60ed6010b4ab",
+      "display_size": [
+        487,
+        96
+      ],
+      "figma_scale_mode": "CROP",
+      "repo_path": "design/assets/hunting-layered-v006/battle/ui/party-hp-plate.png",
+      "component_id": "2071:233",
+      "runtime_scale_mode": "STRETCH_TO_DISPLAY_SIZE",
+      "already_cropped": true,
+      "verified_source_atlas_region_xywh": [
+        34,
+        71,
+        776,
+        191
+      ],
+      "note": "Use the standalone transparent PNG. Do not apply the source atlas imageTransform again."
+    },
+    {
+      "scene_id": "2065:254",
+      "node_id": "I2071:247;2071:246",
+      "node_name": "Painted art · RGBA crop",
+      "paint_index": 0,
+      "figma_image_hash": "b6f3cf1192a9cfec43006ccab3af60ed6010b4ab",
+      "display_size": [
+        220,
+        220
+      ],
+      "figma_scale_mode": "CROP",
+      "repo_path": "design/assets/hunting-layered-v006/battle/ui/primary-spear.png",
+      "component_id": "2071:245",
+      "runtime_scale_mode": "STRETCH_TO_DISPLAY_SIZE",
+      "already_cropped": true,
+      "verified_source_atlas_region_xywh": [
+        326,
+        300,
+        430,
+        430
+      ],
+      "note": "Use the standalone transparent PNG. Do not apply the source atlas imageTransform again."
+    },
+    {
+      "scene_id": "2065:254",
+      "node_id": "I2071:253;2071:252",
+      "node_name": "Painted art · RGBA crop",
+      "paint_index": 0,
+      "figma_image_hash": "b6f3cf1192a9cfec43006ccab3af60ed6010b4ab",
+      "display_size": [
+        132,
+        132
+      ],
+      "figma_scale_mode": "CROP",
+      "repo_path": "design/assets/hunting-layered-v006/battle/ui/strong-attack.png",
+      "component_id": "2071:251",
+      "runtime_scale_mode": "STRETCH_TO_DISPLAY_SIZE",
+      "already_cropped": true,
+      "verified_source_atlas_region_xywh": [
+        786,
+        350,
+        338,
+        342
+      ],
+      "note": "Use the standalone transparent PNG. Do not apply the source atlas imageTransform again."
+    },
+    {
+      "scene_id": "2065:254",
+      "node_id": "I2071:259;2071:258",
+      "node_name": "Painted art · RGBA crop",
+      "paint_index": 0,
+      "figma_image_hash": "b6f3cf1192a9cfec43006ccab3af60ed6010b4ab",
+      "display_size": [
+        126,
+        126
+      ],
+      "figma_scale_mode": "CROP",
+      "repo_path": "design/assets/hunting-layered-v006/battle/ui/cooperative-disabled.png",
+      "component_id": "2071:257",
+      "runtime_scale_mode": "STRETCH_TO_DISPLAY_SIZE",
+      "already_cropped": true,
+      "verified_source_atlas_region_xywh": [
+        1162,
+        370,
+        317,
+        316
+      ],
+      "note": "Use the standalone transparent PNG. Do not apply the source atlas imageTransform again."
+    },
+    {
+      "scene_id": "2065:254",
+      "node_id": "I2071:265;2071:264",
+      "node_name": "Painted art · RGBA crop",
+      "paint_index": 0,
+      "figma_image_hash": "b6f3cf1192a9cfec43006ccab3af60ed6010b4ab",
+      "display_size": [
+        600,
+        71.99999237060547
+      ],
+      "figma_scale_mode": "CROP",
+      "repo_path": "design/assets/hunting-layered-v006/battle/ui/objective-parchment.png",
+      "component_id": "2071:263",
+      "runtime_scale_mode": "STRETCH_TO_DISPLAY_SIZE",
+      "already_cropped": true,
+      "verified_source_atlas_region_xywh": [
+        52,
+        769,
+        1434,
+        192
+      ],
+      "note": "Use the standalone transparent PNG. Do not apply the source atlas imageTransform again."
+    },
+    {
+      "scene_id": "2065:254",
+      "node_id": "I2132:189;836:97",
+      "node_name": "HUD / 환경설정 · 원화 톱니바퀴 / 원화 픽셀",
+      "paint_index": 0,
+      "figma_image_hash": "828dd52517ec6d0b96f229a652bb3aab3e0fc3fb",
+      "display_size": [
+        92,
+        92
+      ],
+      "figma_scale_mode": "FIT",
+      "repo_path": "game/assets/ui/review-v037/settings-figma.png"
+    },
+    {
+      "scene_id": "2065:254",
+      "node_id": "I2139:178;2071:240",
+      "node_name": "Painted art · RGBA crop",
+      "paint_index": 0,
+      "figma_image_hash": "b6f3cf1192a9cfec43006ccab3af60ed6010b4ab",
+      "display_size": [
+        412,
+        92
+      ],
+      "figma_scale_mode": "CROP",
+      "repo_path": "design/assets/hunting-layered-v006/battle/ui/forest-title-wood.png",
+      "component_id": "2071:239",
+      "runtime_scale_mode": "STRETCH_TO_DISPLAY_SIZE",
+      "already_cropped": true,
+      "verified_source_atlas_region_xywh": [
+        826,
+        81,
+        686,
+        170
+      ],
+      "note": "Use the standalone transparent PNG. Do not apply the source atlas imageTransform again."
+    }
+  ],
+  "raster_components": {
+    "2071:233": "design/assets/hunting-layered-v006/battle/ui/party-hp-plate.png",
+    "2071:239": "design/assets/hunting-layered-v006/battle/ui/forest-title-wood.png",
+    "2071:245": "design/assets/hunting-layered-v006/battle/ui/primary-spear.png",
+    "2071:251": "design/assets/hunting-layered-v006/battle/ui/strong-attack.png",
+    "2071:257": "design/assets/hunting-layered-v006/battle/ui/cooperative-disabled.png",
+    "2071:263": "design/assets/hunting-layered-v006/battle/ui/objective-parchment.png"
+  },
+  "svg_components": {
+    "2122:724": "design/assets/hunting-layered-v006/battle/ui/charge-value-plate.svg",
+    "2122:731": "design/assets/hunting-layered-v006/battle/ui/charge-gauge-65-reference.svg"
+  },
+  "native_ui_note": "HP tracks/fills, text and labels remain native vector/text definitions in layout JSON. They are not baked into screenshots.",
+  "source_atlas": {
+    "figma_node": "2068:232",
+    "image_sha1": "b6f3cf1192a9cfec43006ccab3af60ed6010b4ab",
+    "original_pixels": [
+      1536,
+      1024
+    ],
+    "delivery": "Only the six currently used standalone components are included; the atlas and unused pause art are not republished."
+  }
+}

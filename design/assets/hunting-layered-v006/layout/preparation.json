@@ -1,0 +1,2379 @@
+{
+  "figma_file": "zkbflw9fCdAlWbphhw5pSS",
+  "canvas": [
+    1920,
+    1080
+  ],
+  "scene": {
+    "id": "2062:210",
+    "name": "사냥 준비 / 1920×1080 / editable layers",
+    "type": "FRAME",
+    "x": 48,
+    "y": 168,
+    "width": 1920,
+    "height": 1080,
+    "fills": [
+      {
+        "type": "SOLID",
+        "visible": true,
+        "opacity": 1,
+        "blendMode": "NORMAL",
+        "color": {
+          "r": 1,
+          "g": 1,
+          "b": 1
+        },
+        "boundVariables": {}
+      }
+    ],
+    "clipsContent": true,
+    "children": [
+      {
+        "id": "2062:211",
+        "name": "00 Background / prep-clean-v002.png / 1672×941",
+        "type": "RECTANGLE",
+        "x": 0,
+        "y": 0,
+        "width": 1920,
+        "height": 1080,
+        "fills": [
+          {
+            "type": "IMAGE",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "scaleMode": "FILL",
+            "scalingFactor": 0.5,
+            "rotation": 0,
+            "filters": {
+              "exposure": 0,
+              "contrast": 0,
+              "saturation": 0,
+              "temperature": 0,
+              "tint": 0,
+              "highlights": 0,
+              "shadows": 0
+            },
+            "imageTransform": [
+              [
+                1,
+                0,
+                0
+              ],
+              [
+                0,
+                1,
+                0
+              ]
+            ],
+            "imageHash": "6a2daa16f7be257aaa32ebe39c27b44d34b95fee"
+          }
+        ]
+      },
+      {
+        "id": "2062:212",
+        "name": "D · Deer / independent actor",
+        "type": "FRAME",
+        "x": 790,
+        "y": 220,
+        "width": 430,
+        "height": 430,
+        "clipsContent": true,
+        "children": [
+          {
+            "id": "2064:231",
+            "name": "Ground contact shadow / editable",
+            "type": "ELLIPSE",
+            "x": 80,
+            "y": 346,
+            "width": 260,
+            "height": 40,
+            "fills": [
+              {
+                "type": "SOLID",
+                "visible": true,
+                "opacity": 0.33000001311302185,
+                "blendMode": "NORMAL",
+                "color": {
+                  "r": 0.10000000149011612,
+                  "g": 0.18000000715255737,
+                  "b": 0.03500000014901161
+                },
+                "boundVariables": {}
+              }
+            ],
+            "effects": [
+              {
+                "type": "LAYER_BLUR",
+                "visible": true,
+                "radius": 12,
+                "boundVariables": {},
+                "blurType": "NORMAL"
+              }
+            ],
+            "arcData": {
+              "startingAngle": 0,
+              "endingAngle": 6.2831854820251465,
+              "innerRadius": 0
+            }
+          },
+          {
+            "id": "2062:213",
+            "name": "deer-left-v003-3072.png / actual GLB render",
+            "type": "RECTANGLE",
+            "x": 0,
+            "y": 0,
+            "width": 430,
+            "height": 430,
+            "fills": [
+              {
+                "type": "IMAGE",
+                "visible": true,
+                "opacity": 1,
+                "blendMode": "NORMAL",
+                "scaleMode": "FIT",
+                "scalingFactor": 0.5,
+                "rotation": 0,
+                "filters": {
+                  "exposure": 0,
+                  "contrast": 0,
+                  "saturation": 0,
+                  "temperature": 0,
+                  "tint": 0,
+                  "highlights": 0,
+                  "shadows": 0
+                },
+                "imageTransform": [
+                  [
+                    1,
+                    0,
+                    0
+                  ],
+                  [
+                    0,
+                    1,
+                    0
+                  ]
+                ],
+                "imageHash": "a9ceeb1a01bd2d6c3ac08f5f3a398a9a7e52da14"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "2062:214",
+        "name": "B · Foreground / hunters + foliage",
+        "type": "FRAME",
+        "x": -80,
+        "y": 530,
+        "width": 1050,
+        "height": 598,
+        "clipsContent": true,
+        "children": [
+          {
+            "id": "2062:215",
+            "name": "hunters-foliage-group-v001.png / 1662×946",
+            "type": "RECTANGLE",
+            "x": 0,
+            "y": 0,
+            "width": 1050,
+            "height": 598,
+            "fills": [
+              {
+                "type": "IMAGE",
+                "visible": true,
+                "opacity": 1,
+                "blendMode": "NORMAL",
+                "scaleMode": "FIT",
+                "scalingFactor": 1,
+                "rotation": 0,
+                "filters": {
+                  "exposure": 0,
+                  "contrast": 0,
+                  "saturation": 0,
+                  "temperature": 0,
+                  "tint": 0,
+                  "highlights": 0,
+                  "shadows": 0
+                },
+                "imageTransform": [
+                  [
+                    1,
+                    0,
+                    0
+                  ],
+                  [
+                    0,
+                    1,
+                    0
+                  ]
+                ],
+                "imageHash": "5a173c5090e790990174908130581c898680d242"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "2062:216",
+        "name": "A · Title / fixed image / no arrow",
+        "type": "FRAME",
+        "x": 22,
+        "y": 0,
+        "width": 480,
+        "height": 160,
+        "clipsContent": true,
+        "children": [
+          {
+            "id": "2083:654",
+            "name": "Hunt/Title/사냥 준비 · 고정 이미지 · 중앙 에셋 연결",
+            "type": "INSTANCE",
+            "x": 0,
+            "y": 0,
+            "width": 480,
+            "height": 159.99984741210938,
+            "fills": [
+              {
+                "type": "IMAGE",
+                "visible": true,
+                "opacity": 1,
+                "blendMode": "NORMAL",
+                "scaleMode": "FIT",
+                "scalingFactor": 0.5,
+                "rotation": 0,
+                "filters": {
+                  "exposure": 0,
+                  "contrast": 0,
+                  "saturation": 0,
+                  "temperature": 0,
+                  "tint": 0,
+                  "highlights": 0,
+                  "shadows": 0
+                },
+                "imageTransform": [
+                  [
+                    1,
+                    0,
+                    0
+                  ],
+                  [
+                    0,
+                    1,
+                    0
+                  ]
+                ],
+                "imageHash": "fb2f8a8518af9df2a8e41713ddc82366672071e2"
+              }
+            ],
+            "clipsContent": false,
+            "mainComponentId": "2081:474",
+            "children": []
+          }
+        ]
+      },
+      {
+        "id": "2062:217",
+        "name": "C · Right panel / original hierarchy + shared UI",
+        "type": "FRAME",
+        "x": 1250,
+        "y": 15,
+        "width": 670,
+        "height": 1048,
+        "clipsContent": true,
+        "children": [
+          {
+            "id": "2083:655",
+            "name": "Hunt/BG/준비 패널 · 중앙 에셋 연결",
+            "type": "INSTANCE",
+            "x": 0,
+            "y": 12,
+            "width": 670,
+            "height": 1005,
+            "fills": [
+              {
+                "type": "IMAGE",
+                "visible": true,
+                "opacity": 1,
+                "blendMode": "NORMAL",
+                "scaleMode": "FIT",
+                "scalingFactor": 1,
+                "rotation": 0,
+                "filters": {
+                  "exposure": 0,
+                  "contrast": 0,
+                  "saturation": 0,
+                  "temperature": 0,
+                  "tint": 0,
+                  "highlights": 0,
+                  "shadows": 0
+                },
+                "imageTransform": [
+                  [
+                    1,
+                    0,
+                    0
+                  ],
+                  [
+                    0,
+                    1,
+                    0
+                  ]
+                ],
+                "imageHash": "28a8ebf34b41c005e517ea8fb9786b7c92ac0195"
+              }
+            ],
+            "clipsContent": false,
+            "mainComponentId": "2081:476",
+            "children": []
+          },
+          {
+            "id": "2062:241",
+            "name": "Party cards / visual reference only",
+            "type": "FRAME",
+            "x": 73,
+            "y": 400,
+            "width": 524,
+            "height": 168,
+            "clipsContent": true,
+            "children": [
+              {
+                "id": "2062:242",
+                "name": "주인공 / 편성 미구현 참고",
+                "type": "FRAME",
+                "x": 0,
+                "y": 0,
+                "width": 164,
+                "height": 168,
+                "fills": [
+                  {
+                    "type": "GRADIENT_LINEAR",
+                    "visible": true,
+                    "opacity": 1,
+                    "blendMode": "NORMAL",
+                    "gradientStops": [
+                      {
+                        "color": {
+                          "r": 0.8600000143051147,
+                          "g": 0.6700000166893005,
+                          "b": 0.41999998688697815,
+                          "a": 1
+                        },
+                        "position": 0,
+                        "boundVariables": {}
+                      },
+                      {
+                        "color": {
+                          "r": 1,
+                          "g": 0.9100000262260437,
+                          "b": 0.699999988079071,
+                          "a": 1
+                        },
+                        "position": 1,
+                        "boundVariables": {}
+                      }
+                    ],
+                    "gradientTransform": [
+                      [
+                        0,
+                        1,
+                        0
+                      ],
+                      [
+                        -1,
+                        0,
+                        1
+                      ]
+                    ]
+                  }
+                ],
+                "strokes": [
+                  {
+                    "type": "SOLID",
+                    "visible": true,
+                    "opacity": 1,
+                    "blendMode": "NORMAL",
+                    "color": {
+                      "r": 1,
+                      "g": 0.7799999713897705,
+                      "b": 0.23999999463558197
+                    },
+                    "boundVariables": {}
+                  }
+                ],
+                "effects": [
+                  {
+                    "type": "DROP_SHADOW",
+                    "visible": true,
+                    "radius": 12,
+                    "boundVariables": {},
+                    "color": {
+                      "r": 1,
+                      "g": 0.7300000190734863,
+                      "b": 0.05999999865889549,
+                      "a": 0.699999988079071
+                    },
+                    "offset": {
+                      "x": 0,
+                      "y": 0
+                    },
+                    "spread": 1,
+                    "blendMode": "NORMAL",
+                    "showShadowBehindNode": true
+                  }
+                ],
+                "strokeWeight": 3,
+                "strokeAlign": "INSIDE",
+                "cornerRadius": 18,
+                "clipsContent": true,
+                "children": [
+                  {
+                    "id": "2062:243",
+                    "name": "Portrait crop / source hunter group",
+                    "type": "RECTANGLE",
+                    "x": -430,
+                    "y": -138,
+                    "width": 800,
+                    "height": 455.3500061035156,
+                    "fills": [
+                      {
+                        "type": "IMAGE",
+                        "visible": true,
+                        "opacity": 1,
+                        "blendMode": "NORMAL",
+                        "scaleMode": "FIT",
+                        "scalingFactor": 1,
+                        "rotation": 0,
+                        "filters": {
+                          "exposure": 0,
+                          "contrast": 0,
+                          "saturation": 0,
+                          "temperature": 0,
+                          "tint": 0,
+                          "highlights": 0,
+                          "shadows": 0
+                        },
+                        "imageTransform": [
+                          [
+                            1,
+                            0,
+                            0
+                          ],
+                          [
+                            0,
+                            1,
+                            0
+                          ]
+                        ],
+                        "imageHash": "5a173c5090e790990174908130581c898680d242"
+                      }
+                    ]
+                  },
+                  {
+                    "id": "2062:244",
+                    "name": "Party order",
+                    "type": "ELLIPSE",
+                    "x": 6,
+                    "y": 6,
+                    "width": 36,
+                    "height": 36,
+                    "fills": [
+                      {
+                        "type": "SOLID",
+                        "visible": true,
+                        "opacity": 1,
+                        "blendMode": "NORMAL",
+                        "color": {
+                          "r": 0.41999998688697815,
+                          "g": 0.2199999988079071,
+                          "b": 0.07000000029802322
+                        },
+                        "boundVariables": {}
+                      }
+                    ],
+                    "strokes": [
+                      {
+                        "type": "SOLID",
+                        "visible": true,
+                        "opacity": 1,
+                        "blendMode": "NORMAL",
+                        "color": {
+                          "r": 1,
+                          "g": 0.800000011920929,
+                          "b": 0.23999999463558197
+                        },
+                        "boundVariables": {}
+                      }
+                    ],
+                    "strokeWeight": 2,
+                    "strokeAlign": "INSIDE",
+                    "arcData": {
+                      "startingAngle": 0,
+                      "endingAngle": 6.2831854820251465,
+                      "innerRadius": 0
+                    }
+                  },
+                  {
+                    "id": "2062:245",
+                    "name": "Order label",
+                    "type": "TEXT",
+                    "x": 7,
+                    "y": 6,
+                    "width": 34,
+                    "height": 50,
+                    "fills": [
+                      {
+                        "type": "SOLID",
+                        "visible": true,
+                        "opacity": 1,
+                        "blendMode": "NORMAL",
+                        "color": {
+                          "r": 1,
+                          "g": 0.9100000262260437,
+                          "b": 0.550000011920929
+                        },
+                        "boundVariables": {}
+                      }
+                    ],
+                    "characters": "1",
+                    "fontSize": 23,
+                    "fontName": {
+                      "family": "Noto Sans KR",
+                      "style": "Black",
+                      "variationSettings": {
+                        "wght": 900
+                      }
+                    },
+                    "textAlignHorizontal": "CENTER",
+                    "textAlignVertical": "TOP",
+                    "lineHeight": {
+                      "unit": "PERCENT",
+                      "value": 129.99999523162842
+                    },
+                    "letterSpacing": {
+                      "unit": "PERCENT",
+                      "value": 0
+                    },
+                    "textAutoResize": "NONE"
+                  }
+                ]
+              },
+              {
+                "id": "2062:246",
+                "name": "동료 1 / 편성 미구현 참고",
+                "type": "FRAME",
+                "x": 180,
+                "y": 0,
+                "width": 164,
+                "height": 168,
+                "fills": [
+                  {
+                    "type": "GRADIENT_LINEAR",
+                    "visible": true,
+                    "opacity": 1,
+                    "blendMode": "NORMAL",
+                    "gradientStops": [
+                      {
+                        "color": {
+                          "r": 0.8600000143051147,
+                          "g": 0.6700000166893005,
+                          "b": 0.41999998688697815,
+                          "a": 1
+                        },
+                        "position": 0,
+                        "boundVariables": {}
+                      },
+                      {
+                        "color": {
+                          "r": 1,
+                          "g": 0.9100000262260437,
+                          "b": 0.699999988079071,
+                          "a": 1
+                        },
+                        "position": 1,
+                        "boundVariables": {}
+                      }
+                    ],
+                    "gradientTransform": [
+                      [
+                        0,
+                        1,
+                        0
+                      ],
+                      [
+                        -1,
+                        0,
+                        1
+                      ]
+                    ]
+                  }
+                ],
+                "strokes": [
+                  {
+                    "type": "SOLID",
+                    "visible": true,
+                    "opacity": 1,
+                    "blendMode": "NORMAL",
+                    "color": {
+                      "r": 1,
+                      "g": 0.7799999713897705,
+                      "b": 0.23999999463558197
+                    },
+                    "boundVariables": {}
+                  }
+                ],
+                "strokeWeight": 3,
+                "strokeAlign": "INSIDE",
+                "cornerRadius": 18,
+                "clipsContent": true,
+                "children": [
+                  {
+                    "id": "2062:247",
+                    "name": "Portrait crop / source hunter group",
+                    "type": "RECTANGLE",
+                    "x": -240,
+                    "y": 8,
+                    "width": 800,
+                    "height": 455.3500061035156,
+                    "fills": [
+                      {
+                        "type": "IMAGE",
+                        "visible": true,
+                        "opacity": 1,
+                        "blendMode": "NORMAL",
+                        "scaleMode": "FIT",
+                        "scalingFactor": 1,
+                        "rotation": 0,
+                        "filters": {
+                          "exposure": 0,
+                          "contrast": 0,
+                          "saturation": 0,
+                          "temperature": 0,
+                          "tint": 0,
+                          "highlights": 0,
+                          "shadows": 0
+                        },
+                        "imageTransform": [
+                          [
+                            1,
+                            0,
+                            0
+                          ],
+                          [
+                            0,
+                            1,
+                            0
+                          ]
+                        ],
+                        "imageHash": "5a173c5090e790990174908130581c898680d242"
+                      }
+                    ]
+                  },
+                  {
+                    "id": "2062:248",
+                    "name": "Party order",
+                    "type": "ELLIPSE",
+                    "x": 6,
+                    "y": 6,
+                    "width": 36,
+                    "height": 36,
+                    "fills": [
+                      {
+                        "type": "SOLID",
+                        "visible": true,
+                        "opacity": 1,
+                        "blendMode": "NORMAL",
+                        "color": {
+                          "r": 0.41999998688697815,
+                          "g": 0.2199999988079071,
+                          "b": 0.07000000029802322
+                        },
+                        "boundVariables": {}
+                      }
+                    ],
+                    "strokes": [
+                      {
+                        "type": "SOLID",
+                        "visible": true,
+                        "opacity": 1,
+                        "blendMode": "NORMAL",
+                        "color": {
+                          "r": 1,
+                          "g": 0.800000011920929,
+                          "b": 0.23999999463558197
+                        },
+                        "boundVariables": {}
+                      }
+                    ],
+                    "strokeWeight": 2,
+                    "strokeAlign": "INSIDE",
+                    "arcData": {
+                      "startingAngle": 0,
+                      "endingAngle": 6.2831854820251465,
+                      "innerRadius": 0
+                    }
+                  },
+                  {
+                    "id": "2062:249",
+                    "name": "Order label",
+                    "type": "TEXT",
+                    "x": 7,
+                    "y": 6,
+                    "width": 34,
+                    "height": 50,
+                    "fills": [
+                      {
+                        "type": "SOLID",
+                        "visible": true,
+                        "opacity": 1,
+                        "blendMode": "NORMAL",
+                        "color": {
+                          "r": 1,
+                          "g": 0.9100000262260437,
+                          "b": 0.550000011920929
+                        },
+                        "boundVariables": {}
+                      }
+                    ],
+                    "characters": "2",
+                    "fontSize": 23,
+                    "fontName": {
+                      "family": "Noto Sans KR",
+                      "style": "Black",
+                      "variationSettings": {
+                        "wght": 900
+                      }
+                    },
+                    "textAlignHorizontal": "CENTER",
+                    "textAlignVertical": "TOP",
+                    "lineHeight": {
+                      "unit": "PERCENT",
+                      "value": 129.99999523162842
+                    },
+                    "letterSpacing": {
+                      "unit": "PERCENT",
+                      "value": 0
+                    },
+                    "textAutoResize": "NONE"
+                  }
+                ]
+              },
+              {
+                "id": "2062:250",
+                "name": "동료 2 / 편성 미구현 참고",
+                "type": "FRAME",
+                "x": 360,
+                "y": 0,
+                "width": 164,
+                "height": 168,
+                "fills": [
+                  {
+                    "type": "GRADIENT_LINEAR",
+                    "visible": true,
+                    "opacity": 1,
+                    "blendMode": "NORMAL",
+                    "gradientStops": [
+                      {
+                        "color": {
+                          "r": 0.8600000143051147,
+                          "g": 0.6700000166893005,
+                          "b": 0.41999998688697815,
+                          "a": 1
+                        },
+                        "position": 0,
+                        "boundVariables": {}
+                      },
+                      {
+                        "color": {
+                          "r": 1,
+                          "g": 0.9100000262260437,
+                          "b": 0.699999988079071,
+                          "a": 1
+                        },
+                        "position": 1,
+                        "boundVariables": {}
+                      }
+                    ],
+                    "gradientTransform": [
+                      [
+                        0,
+                        1,
+                        0
+                      ],
+                      [
+                        -1,
+                        0,
+                        1
+                      ]
+                    ]
+                  }
+                ],
+                "strokes": [
+                  {
+                    "type": "SOLID",
+                    "visible": true,
+                    "opacity": 1,
+                    "blendMode": "NORMAL",
+                    "color": {
+                      "r": 1,
+                      "g": 0.7799999713897705,
+                      "b": 0.23999999463558197
+                    },
+                    "boundVariables": {}
+                  }
+                ],
+                "strokeWeight": 3,
+                "strokeAlign": "INSIDE",
+                "cornerRadius": 18,
+                "clipsContent": true,
+                "children": [
+                  {
+                    "id": "2062:251",
+                    "name": "Portrait crop / source hunter group",
+                    "type": "RECTANGLE",
+                    "x": -165,
+                    "y": -100,
+                    "width": 800,
+                    "height": 455.3500061035156,
+                    "fills": [
+                      {
+                        "type": "IMAGE",
+                        "visible": true,
+                        "opacity": 1,
+                        "blendMode": "NORMAL",
+                        "scaleMode": "FIT",
+                        "scalingFactor": 1,
+                        "rotation": 0,
+                        "filters": {
+                          "exposure": 0,
+                          "contrast": 0,
+                          "saturation": 0,
+                          "temperature": 0,
+                          "tint": 0,
+                          "highlights": 0,
+                          "shadows": 0
+                        },
+                        "imageTransform": [
+                          [
+                            1,
+                            0,
+                            0
+                          ],
+                          [
+                            0,
+                            1,
+                            0
+                          ]
+                        ],
+                        "imageHash": "5a173c5090e790990174908130581c898680d242"
+                      }
+                    ]
+                  },
+                  {
+                    "id": "2062:252",
+                    "name": "Party order",
+                    "type": "ELLIPSE",
+                    "x": 6,
+                    "y": 6,
+                    "width": 36,
+                    "height": 36,
+                    "fills": [
+                      {
+                        "type": "SOLID",
+                        "visible": true,
+                        "opacity": 1,
+                        "blendMode": "NORMAL",
+                        "color": {
+                          "r": 0.41999998688697815,
+                          "g": 0.2199999988079071,
+                          "b": 0.07000000029802322
+                        },
+                        "boundVariables": {}
+                      }
+                    ],
+                    "strokes": [
+                      {
+                        "type": "SOLID",
+                        "visible": true,
+                        "opacity": 1,
+                        "blendMode": "NORMAL",
+                        "color": {
+                          "r": 1,
+                          "g": 0.800000011920929,
+                          "b": 0.23999999463558197
+                        },
+                        "boundVariables": {}
+                      }
+                    ],
+                    "strokeWeight": 2,
+                    "strokeAlign": "INSIDE",
+                    "arcData": {
+                      "startingAngle": 0,
+                      "endingAngle": 6.2831854820251465,
+                      "innerRadius": 0
+                    }
+                  },
+                  {
+                    "id": "2062:253",
+                    "name": "Order label",
+                    "type": "TEXT",
+                    "x": 7,
+                    "y": 6,
+                    "width": 34,
+                    "height": 50,
+                    "fills": [
+                      {
+                        "type": "SOLID",
+                        "visible": true,
+                        "opacity": 1,
+                        "blendMode": "NORMAL",
+                        "color": {
+                          "r": 1,
+                          "g": 0.9100000262260437,
+                          "b": 0.550000011920929
+                        },
+                        "boundVariables": {}
+                      }
+                    ],
+                    "characters": "3",
+                    "fontSize": 23,
+                    "fontName": {
+                      "family": "Noto Sans KR",
+                      "style": "Black",
+                      "variationSettings": {
+                        "wght": 900
+                      }
+                    },
+                    "textAlignHorizontal": "CENTER",
+                    "textAlignVertical": "TOP",
+                    "lineHeight": {
+                      "unit": "PERCENT",
+                      "value": 129.99999523162842
+                    },
+                    "letterSpacing": {
+                      "unit": "PERCENT",
+                      "value": 0
+                    },
+                    "textAutoResize": "NONE"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "2083:656",
+            "name": "Quest heading / source style",
+            "type": "TEXT",
+            "x": 75,
+            "y": 122,
+            "width": 520,
+            "height": 64.4000015258789,
+            "fills": [
+              {
+                "type": "SOLID",
+                "visible": true,
+                "opacity": 1,
+                "blendMode": "NORMAL",
+                "color": {
+                  "r": 0.30000001192092896,
+                  "g": 0.12999999523162842,
+                  "b": 0.054999999701976776
+                },
+                "boundVariables": {}
+              }
+            ],
+            "characters": "첫 사냥",
+            "fontSize": 46,
+            "fontName": {
+              "family": "Black Han Sans",
+              "style": "Regular"
+            },
+            "textAlignHorizontal": "CENTER",
+            "textAlignVertical": "CENTER",
+            "lineHeight": {
+              "unit": "PERCENT",
+              "value": 120.00000476837158
+            },
+            "letterSpacing": {
+              "unit": "PERCENT",
+              "value": 0
+            },
+            "textAutoResize": "NONE"
+          },
+          {
+            "id": "2083:657",
+            "name": "Heading underline / gold",
+            "type": "RECTANGLE",
+            "x": 243,
+            "y": 181,
+            "width": 184,
+            "height": 3,
+            "fills": [
+              {
+                "type": "SOLID",
+                "visible": true,
+                "opacity": 0.7799999713897705,
+                "blendMode": "NORMAL",
+                "color": {
+                  "r": 0.8500000238418579,
+                  "g": 0.550000011920929,
+                  "b": 0.10999999940395355
+                },
+                "boundVariables": {}
+              }
+            ],
+            "cornerRadius": 1.5
+          },
+          {
+            "id": "2083:658",
+            "name": "Location band",
+            "type": "RECTANGLE",
+            "x": 135,
+            "y": 194,
+            "width": 400,
+            "height": 48,
+            "fills": [
+              {
+                "type": "SOLID",
+                "visible": true,
+                "opacity": 0.27000001072883606,
+                "blendMode": "NORMAL",
+                "color": {
+                  "r": 0.8600000143051147,
+                  "g": 0.6100000143051147,
+                  "b": 0.3100000023841858
+                },
+                "boundVariables": {}
+              }
+            ],
+            "cornerRadius": 14
+          },
+          {
+            "id": "2083:659",
+            "name": "Location label",
+            "type": "TEXT",
+            "x": 175,
+            "y": 198,
+            "width": 320,
+            "height": 39.20000076293945,
+            "fills": [
+              {
+                "type": "SOLID",
+                "visible": true,
+                "opacity": 1,
+                "blendMode": "NORMAL",
+                "color": {
+                  "r": 0.30000001192092896,
+                  "g": 0.12999999523162842,
+                  "b": 0.054999999701976776
+                },
+                "boundVariables": {}
+              }
+            ],
+            "characters": "숲 가장자리",
+            "fontSize": 28,
+            "fontName": {
+              "family": "Black Han Sans",
+              "style": "Regular"
+            },
+            "textAlignHorizontal": "CENTER",
+            "textAlignVertical": "CENTER",
+            "lineHeight": {
+              "unit": "PERCENT",
+              "value": 120.00000476837158
+            },
+            "letterSpacing": {
+              "unit": "PERCENT",
+              "value": 0
+            },
+            "textAutoResize": "NONE"
+          },
+          {
+            "id": "2083:660",
+            "name": "Objective band",
+            "type": "RECTANGLE",
+            "x": 73,
+            "y": 253,
+            "width": 524,
+            "height": 60,
+            "fills": [
+              {
+                "type": "SOLID",
+                "visible": true,
+                "opacity": 0.3499999940395355,
+                "blendMode": "NORMAL",
+                "color": {
+                  "r": 0.9800000190734863,
+                  "g": 0.8299999833106995,
+                  "b": 0.5799999833106995
+                },
+                "boundVariables": {}
+              }
+            ],
+            "cornerRadius": 16
+          },
+          {
+            "id": "2083:661",
+            "name": "Shared leather label / objective",
+            "type": "INSTANCE",
+            "x": 85,
+            "y": 260,
+            "width": 118,
+            "height": 36,
+            "fills": [
+              {
+                "type": "IMAGE",
+                "visible": true,
+                "opacity": 1,
+                "blendMode": "NORMAL",
+                "scaleMode": "CROP",
+                "scalingFactor": 1,
+                "filters": {
+                  "exposure": 0,
+                  "contrast": 0,
+                  "saturation": 0,
+                  "temperature": 0,
+                  "tint": 0,
+                  "highlights": 0,
+                  "shadows": 0
+                },
+                "imageTransform": [
+                  [
+                    0.41431793570518494,
+                    0,
+                    0.44250282645225525
+                  ],
+                  [
+                    0,
+                    0.24802705645561218,
+                    0.4002254903316498
+                  ]
+                ],
+                "imageHash": "c0b15ab342e934a4cf36babf8ecb132ec4b711a0"
+              }
+            ],
+            "clipsContent": false,
+            "mainComponentId": "1842:426",
+            "children": []
+          },
+          {
+            "id": "2083:662",
+            "name": "Objective caption",
+            "type": "TEXT",
+            "x": 87,
+            "y": 261,
+            "width": 114,
+            "height": 30.799999237060547,
+            "fills": [
+              {
+                "type": "SOLID",
+                "visible": true,
+                "opacity": 1,
+                "blendMode": "NORMAL",
+                "color": {
+                  "r": 1,
+                  "g": 0.9399999976158142,
+                  "b": 0.7699999809265137
+                },
+                "boundVariables": {}
+              }
+            ],
+            "characters": "목표",
+            "fontSize": 22,
+            "fontName": {
+              "family": "Noto Sans KR",
+              "style": "Bold",
+              "variationSettings": {
+                "wght": 700
+              }
+            },
+            "textAlignHorizontal": "CENTER",
+            "textAlignVertical": "CENTER",
+            "lineHeight": {
+              "unit": "PERCENT",
+              "value": 120.00000476837158
+            },
+            "letterSpacing": {
+              "unit": "PERCENT",
+              "value": 0
+            },
+            "textAutoResize": "NONE"
+          },
+          {
+            "id": "2083:663",
+            "name": "Deer objective icon / existing actor",
+            "type": "RECTANGLE",
+            "x": 235,
+            "y": 245,
+            "width": 80,
+            "height": 80,
+            "fills": [
+              {
+                "type": "IMAGE",
+                "visible": true,
+                "opacity": 1,
+                "blendMode": "NORMAL",
+                "scaleMode": "FIT",
+                "scalingFactor": 1,
+                "rotation": 0,
+                "filters": {
+                  "exposure": 0,
+                  "contrast": 0,
+                  "saturation": 0,
+                  "temperature": 0,
+                  "tint": 0,
+                  "highlights": 0,
+                  "shadows": 0
+                },
+                "imageTransform": [
+                  [
+                    1,
+                    0,
+                    0
+                  ],
+                  [
+                    0,
+                    1,
+                    0
+                  ]
+                ],
+                "imageHash": "a9ceeb1a01bd2d6c3ac08f5f3a398a9a7e52da14"
+              }
+            ]
+          },
+          {
+            "id": "2083:664",
+            "name": "Objective target / editable",
+            "type": "TEXT",
+            "x": 320,
+            "y": 263,
+            "width": 244,
+            "height": 39.20000076293945,
+            "fills": [
+              {
+                "type": "SOLID",
+                "visible": true,
+                "opacity": 1,
+                "blendMode": "NORMAL",
+                "color": {
+                  "r": 0.30000001192092896,
+                  "g": 0.12999999523162842,
+                  "b": 0.054999999701976776
+                },
+                "boundVariables": {}
+              }
+            ],
+            "characters": "사슴 처치",
+            "fontSize": 28,
+            "fontName": {
+              "family": "Black Han Sans",
+              "style": "Regular"
+            },
+            "textAlignHorizontal": "CENTER",
+            "textAlignVertical": "CENTER",
+            "lineHeight": {
+              "unit": "PERCENT",
+              "value": 120.00000476837158
+            },
+            "letterSpacing": {
+              "unit": "PERCENT",
+              "value": 0
+            },
+            "textAutoResize": "NONE"
+          },
+          {
+            "id": "2083:665",
+            "name": "Shared leather label / party",
+            "type": "INSTANCE",
+            "x": 73,
+            "y": 331,
+            "width": 210,
+            "height": 48,
+            "fills": [
+              {
+                "type": "IMAGE",
+                "visible": true,
+                "opacity": 1,
+                "blendMode": "NORMAL",
+                "scaleMode": "CROP",
+                "scalingFactor": 1,
+                "filters": {
+                  "exposure": 0,
+                  "contrast": 0,
+                  "saturation": 0,
+                  "temperature": 0,
+                  "tint": 0,
+                  "highlights": 0,
+                  "shadows": 0
+                },
+                "imageTransform": [
+                  [
+                    0.41431793570518494,
+                    0,
+                    0.44250282645225525
+                  ],
+                  [
+                    0,
+                    0.24802705645561218,
+                    0.4002254903316498
+                  ]
+                ],
+                "imageHash": "c0b15ab342e934a4cf36babf8ecb132ec4b711a0"
+              }
+            ],
+            "clipsContent": false,
+            "mainComponentId": "1842:426",
+            "children": []
+          },
+          {
+            "id": "2083:666",
+            "name": "Party label",
+            "type": "TEXT",
+            "x": 78,
+            "y": 333,
+            "width": 200,
+            "height": 37.79999923706055,
+            "fills": [
+              {
+                "type": "SOLID",
+                "visible": true,
+                "opacity": 1,
+                "blendMode": "NORMAL",
+                "color": {
+                  "r": 1,
+                  "g": 0.9399999976158142,
+                  "b": 0.7699999809265137
+                },
+                "boundVariables": {}
+              }
+            ],
+            "characters": "출전 편성",
+            "fontSize": 27,
+            "fontName": {
+              "family": "Noto Sans KR",
+              "style": "Bold",
+              "variationSettings": {
+                "wght": 700
+              }
+            },
+            "textAlignHorizontal": "CENTER",
+            "textAlignVertical": "CENTER",
+            "lineHeight": {
+              "unit": "PERCENT",
+              "value": 120.00000476837158
+            },
+            "letterSpacing": {
+              "unit": "PERCENT",
+              "value": 0
+            },
+            "textAutoResize": "NONE"
+          },
+          {
+            "id": "2083:667",
+            "name": "Party count pill",
+            "type": "RECTANGLE",
+            "x": 501,
+            "y": 335,
+            "width": 96,
+            "height": 35,
+            "fills": [
+              {
+                "type": "SOLID",
+                "visible": true,
+                "opacity": 1,
+                "blendMode": "NORMAL",
+                "color": {
+                  "r": 1,
+                  "g": 0.8999999761581421,
+                  "b": 0.7099999785423279
+                },
+                "boundVariables": {}
+              }
+            ],
+            "strokes": [
+              {
+                "type": "SOLID",
+                "visible": true,
+                "opacity": 0.6000000238418579,
+                "blendMode": "NORMAL",
+                "color": {
+                  "r": 0.8199999928474426,
+                  "g": 0.550000011920929,
+                  "b": 0.27000001072883606
+                },
+                "boundVariables": {}
+              }
+            ],
+            "strokeWeight": 2,
+            "strokeAlign": "INSIDE",
+            "cornerRadius": 17
+          },
+          {
+            "id": "2083:668",
+            "name": "Party count / dynamic",
+            "type": "TEXT",
+            "x": 501,
+            "y": 334,
+            "width": 96,
+            "height": 35,
+            "fills": [
+              {
+                "type": "SOLID",
+                "visible": true,
+                "opacity": 1,
+                "blendMode": "NORMAL",
+                "color": {
+                  "r": 0.30000001192092896,
+                  "g": 0.12999999523162842,
+                  "b": 0.054999999701976776
+                },
+                "boundVariables": {}
+              }
+            ],
+            "characters": "3 / 3",
+            "fontSize": 25,
+            "fontName": {
+              "family": "Black Han Sans",
+              "style": "Regular"
+            },
+            "textAlignHorizontal": "CENTER",
+            "textAlignVertical": "CENTER",
+            "lineHeight": {
+              "unit": "PERCENT",
+              "value": 120.00000476837158
+            },
+            "letterSpacing": {
+              "unit": "PERCENT",
+              "value": 0
+            },
+            "textAutoResize": "NONE"
+          },
+          {
+            "id": "2083:669",
+            "name": "Party selected checks / shared confirmation icons",
+            "type": "FRAME",
+            "x": 73,
+            "y": 400,
+            "width": 524,
+            "height": 180,
+            "clipsContent": false,
+            "children": [
+              {
+                "id": "2083:670",
+                "name": "Selected / shared confirm 1",
+                "type": "INSTANCE",
+                "x": 130,
+                "y": 136,
+                "width": 42,
+                "height": 42,
+                "clipsContent": false,
+                "mainComponentId": "1024:53",
+                "children": [
+                  {
+                    "id": "I2083:670;1024:54",
+                    "name": "confirm 원본 / 비파괴 크롭",
+                    "type": "RECTANGLE",
+                    "x": 0.5833333730697632,
+                    "y": 0,
+                    "width": 40.833335876464844,
+                    "height": 42,
+                    "fills": [
+                      {
+                        "type": "IMAGE",
+                        "visible": true,
+                        "opacity": 1,
+                        "blendMode": "NORMAL",
+                        "scaleMode": "CROP",
+                        "scalingFactor": 1,
+                        "filters": {
+                          "exposure": 0,
+                          "contrast": 0,
+                          "saturation": 0,
+                          "temperature": 0,
+                          "tint": 0,
+                          "highlights": 0,
+                          "shadows": 0
+                        },
+                        "imageTransform": [
+                          [
+                            0.692794919013977,
+                            0,
+                            0.1496437042951584
+                          ],
+                          [
+                            0,
+                            0.7223113775253296,
+                            0.13563403487205505
+                          ]
+                        ],
+                        "imageHash": "be484033c98125ac297d70bb7803b16495bb47bb"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "2083:672",
+                "name": "Selected / shared confirm 2",
+                "type": "INSTANCE",
+                "x": 310,
+                "y": 136,
+                "width": 42,
+                "height": 42,
+                "clipsContent": false,
+                "mainComponentId": "1024:53",
+                "children": [
+                  {
+                    "id": "I2083:672;1024:54",
+                    "name": "confirm 원본 / 비파괴 크롭",
+                    "type": "RECTANGLE",
+                    "x": 0.5833333730697632,
+                    "y": 0,
+                    "width": 40.833335876464844,
+                    "height": 42,
+                    "fills": [
+                      {
+                        "type": "IMAGE",
+                        "visible": true,
+                        "opacity": 1,
+                        "blendMode": "NORMAL",
+                        "scaleMode": "CROP",
+                        "scalingFactor": 1,
+                        "filters": {
+                          "exposure": 0,
+                          "contrast": 0,
+                          "saturation": 0,
+                          "temperature": 0,
+                          "tint": 0,
+                          "highlights": 0,
+                          "shadows": 0
+                        },
+                        "imageTransform": [
+                          [
+                            0.692794919013977,
+                            0,
+                            0.1496437042951584
+                          ],
+                          [
+                            0,
+                            0.7223113775253296,
+                            0.13563403487205505
+                          ]
+                        ],
+                        "imageHash": "be484033c98125ac297d70bb7803b16495bb47bb"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "2083:674",
+                "name": "Selected / shared confirm 3",
+                "type": "INSTANCE",
+                "x": 490,
+                "y": 136,
+                "width": 42,
+                "height": 42,
+                "clipsContent": false,
+                "mainComponentId": "1024:53",
+                "children": [
+                  {
+                    "id": "I2083:674;1024:54",
+                    "name": "confirm 원본 / 비파괴 크롭",
+                    "type": "RECTANGLE",
+                    "x": 0.5833333730697632,
+                    "y": 0,
+                    "width": 40.833335876464844,
+                    "height": 42,
+                    "fills": [
+                      {
+                        "type": "IMAGE",
+                        "visible": true,
+                        "opacity": 1,
+                        "blendMode": "NORMAL",
+                        "scaleMode": "CROP",
+                        "scalingFactor": 1,
+                        "filters": {
+                          "exposure": 0,
+                          "contrast": 0,
+                          "saturation": 0,
+                          "temperature": 0,
+                          "tint": 0,
+                          "highlights": 0,
+                          "shadows": 0
+                        },
+                        "imageTransform": [
+                          [
+                            0.692794919013977,
+                            0,
+                            0.1496437042951584
+                          ],
+                          [
+                            0,
+                            0.7223113775253296,
+                            0.13563403487205505
+                          ]
+                        ],
+                        "imageHash": "be484033c98125ac297d70bb7803b16495bb47bb"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "2083:676",
+            "name": "Power comparison / separate adjustable bars",
+            "type": "FRAME",
+            "x": 73,
+            "y": 592,
+            "width": 524,
+            "height": 108,
+            "clipsContent": true,
+            "children": [
+              {
+                "id": "2083:677",
+                "name": "Comparison panel",
+                "type": "RECTANGLE",
+                "x": 0,
+                "y": 0,
+                "width": 524,
+                "height": 108,
+                "fills": [
+                  {
+                    "type": "SOLID",
+                    "visible": true,
+                    "opacity": 0.3199999928474426,
+                    "blendMode": "NORMAL",
+                    "color": {
+                      "r": 0.9800000190734863,
+                      "g": 0.8199999928474426,
+                      "b": 0.5699999928474426
+                    },
+                    "boundVariables": {}
+                  }
+                ],
+                "strokes": [
+                  {
+                    "type": "SOLID",
+                    "visible": true,
+                    "opacity": 0.25,
+                    "blendMode": "NORMAL",
+                    "color": {
+                      "r": 0.8399999737739563,
+                      "g": 0.5899999737739563,
+                      "b": 0.3100000023841858
+                    },
+                    "boundVariables": {}
+                  }
+                ],
+                "strokeWeight": 2,
+                "strokeAlign": "INSIDE",
+                "cornerRadius": 20
+              },
+              {
+                "id": "2083:678",
+                "name": "Power label",
+                "type": "TEXT",
+                "x": 4,
+                "y": 31,
+                "width": 154,
+                "height": 35,
+                "fills": [
+                  {
+                    "type": "SOLID",
+                    "visible": true,
+                    "opacity": 1,
+                    "blendMode": "NORMAL",
+                    "color": {
+                      "r": 0.30000001192092896,
+                      "g": 0.12999999523162842,
+                      "b": 0.054999999701976776
+                    },
+                    "boundVariables": {}
+                  }
+                ],
+                "characters": "전투력 비교",
+                "fontSize": 25,
+                "fontName": {
+                  "family": "Black Han Sans",
+                  "style": "Regular"
+                },
+                "textAlignHorizontal": "CENTER",
+                "textAlignVertical": "CENTER",
+                "lineHeight": {
+                  "unit": "PERCENT",
+                  "value": 120.00000476837158
+                },
+                "letterSpacing": {
+                  "unit": "PERCENT",
+                  "value": 0
+                },
+                "textAutoResize": "NONE"
+              },
+              {
+                "id": "2083:679",
+                "name": "Vertical divider",
+                "type": "RECTANGLE",
+                "x": 158,
+                "y": 18,
+                "width": 2,
+                "height": 72,
+                "fills": [
+                  {
+                    "type": "SOLID",
+                    "visible": true,
+                    "opacity": 0.44999998807907104,
+                    "blendMode": "NORMAL",
+                    "color": {
+                      "r": 0.6499999761581421,
+                      "g": 0.38999998569488525,
+                      "b": 0.1899999976158142
+                    },
+                    "boundVariables": {}
+                  }
+                ]
+              },
+              {
+                "id": "2083:680",
+                "name": "Ally label background",
+                "type": "RECTANGLE",
+                "x": 177,
+                "y": 18,
+                "width": 58,
+                "height": 30,
+                "fills": [
+                  {
+                    "type": "SOLID",
+                    "visible": true,
+                    "opacity": 1,
+                    "blendMode": "NORMAL",
+                    "color": {
+                      "r": 0.28999999165534973,
+                      "g": 0.4699999988079071,
+                      "b": 0.05999999865889549
+                    },
+                    "boundVariables": {}
+                  }
+                ],
+                "cornerRadius": 8
+              },
+              {
+                "id": "2083:681",
+                "name": "Ally label",
+                "type": "TEXT",
+                "x": 178,
+                "y": 16,
+                "width": 56,
+                "height": 29.399999618530273,
+                "fills": [
+                  {
+                    "type": "SOLID",
+                    "visible": true,
+                    "opacity": 1,
+                    "blendMode": "NORMAL",
+                    "color": {
+                      "r": 1,
+                      "g": 1,
+                      "b": 0.8500000238418579
+                    },
+                    "boundVariables": {}
+                  }
+                ],
+                "characters": "아군",
+                "fontSize": 21,
+                "fontName": {
+                  "family": "Noto Sans KR",
+                  "style": "Bold",
+                  "variationSettings": {
+                    "wght": 700
+                  }
+                },
+                "textAlignHorizontal": "CENTER",
+                "textAlignVertical": "CENTER",
+                "lineHeight": {
+                  "unit": "PERCENT",
+                  "value": 120.00000476837158
+                },
+                "letterSpacing": {
+                  "unit": "PERCENT",
+                  "value": 0
+                },
+                "textAutoResize": "NONE"
+              },
+              {
+                "id": "2083:682",
+                "name": "Enemy label background",
+                "type": "RECTANGLE",
+                "x": 177,
+                "y": 61,
+                "width": 58,
+                "height": 30,
+                "fills": [
+                  {
+                    "type": "SOLID",
+                    "visible": true,
+                    "opacity": 1,
+                    "blendMode": "NORMAL",
+                    "color": {
+                      "r": 0.7200000286102295,
+                      "g": 0.3199999928474426,
+                      "b": 0.014999999664723873
+                    },
+                    "boundVariables": {}
+                  }
+                ],
+                "cornerRadius": 8
+              },
+              {
+                "id": "2083:683",
+                "name": "Enemy label",
+                "type": "TEXT",
+                "x": 178,
+                "y": 59,
+                "width": 56,
+                "height": 29.399999618530273,
+                "fills": [
+                  {
+                    "type": "SOLID",
+                    "visible": true,
+                    "opacity": 1,
+                    "blendMode": "NORMAL",
+                    "color": {
+                      "r": 1,
+                      "g": 0.9599999785423279,
+                      "b": 0.800000011920929
+                    },
+                    "boundVariables": {}
+                  }
+                ],
+                "characters": "적군",
+                "fontSize": 21,
+                "fontName": {
+                  "family": "Noto Sans KR",
+                  "style": "Bold",
+                  "variationSettings": {
+                    "wght": 700
+                  }
+                },
+                "textAlignHorizontal": "CENTER",
+                "textAlignVertical": "CENTER",
+                "lineHeight": {
+                  "unit": "PERCENT",
+                  "value": 120.00000476837158
+                },
+                "letterSpacing": {
+                  "unit": "PERCENT",
+                  "value": 0
+                },
+                "textAutoResize": "NONE"
+              },
+              {
+                "id": "2083:684",
+                "name": "Ally track",
+                "type": "RECTANGLE",
+                "x": 246,
+                "y": 21,
+                "width": 260,
+                "height": 25,
+                "fills": [
+                  {
+                    "type": "SOLID",
+                    "visible": true,
+                    "opacity": 0.18000000715255737,
+                    "blendMode": "NORMAL",
+                    "color": {
+                      "r": 0.47999998927116394,
+                      "g": 0.3199999928474426,
+                      "b": 0.10000000149011612
+                    },
+                    "boundVariables": {}
+                  }
+                ],
+                "cornerRadius": 10
+              },
+              {
+                "id": "2083:685",
+                "name": "Ally fill / visual reference",
+                "type": "RECTANGLE",
+                "x": 246,
+                "y": 21,
+                "width": 260,
+                "height": 25,
+                "fills": [
+                  {
+                    "type": "SOLID",
+                    "visible": true,
+                    "opacity": 1,
+                    "blendMode": "NORMAL",
+                    "color": {
+                      "r": 0.3700000047683716,
+                      "g": 0.6600000262260437,
+                      "b": 0.03999999910593033
+                    },
+                    "boundVariables": {}
+                  }
+                ],
+                "strokes": [
+                  {
+                    "type": "SOLID",
+                    "visible": true,
+                    "opacity": 0.3499999940395355,
+                    "blendMode": "NORMAL",
+                    "color": {
+                      "r": 0.36000001430511475,
+                      "g": 0.28999999165534973,
+                      "b": 0.05999999865889549
+                    },
+                    "boundVariables": {}
+                  }
+                ],
+                "effects": [
+                  {
+                    "type": "INNER_SHADOW",
+                    "visible": true,
+                    "radius": 1,
+                    "boundVariables": {},
+                    "color": {
+                      "r": 1,
+                      "g": 1,
+                      "b": 0.699999988079071,
+                      "a": 0.550000011920929
+                    },
+                    "offset": {
+                      "x": 0,
+                      "y": 2
+                    },
+                    "spread": 0,
+                    "blendMode": "NORMAL"
+                  }
+                ],
+                "strokeWeight": 1,
+                "strokeAlign": "INSIDE",
+                "cornerRadius": 10
+              },
+              {
+                "id": "2083:686",
+                "name": "Enemy track",
+                "type": "RECTANGLE",
+                "x": 246,
+                "y": 64,
+                "width": 260,
+                "height": 25,
+                "fills": [
+                  {
+                    "type": "SOLID",
+                    "visible": true,
+                    "opacity": 0.18000000715255737,
+                    "blendMode": "NORMAL",
+                    "color": {
+                      "r": 0.47999998927116394,
+                      "g": 0.3199999928474426,
+                      "b": 0.10000000149011612
+                    },
+                    "boundVariables": {}
+                  }
+                ],
+                "cornerRadius": 10
+              },
+              {
+                "id": "2083:687",
+                "name": "Enemy fill / visual reference",
+                "type": "RECTANGLE",
+                "x": 246,
+                "y": 64,
+                "width": 125,
+                "height": 25,
+                "fills": [
+                  {
+                    "type": "SOLID",
+                    "visible": true,
+                    "opacity": 1,
+                    "blendMode": "NORMAL",
+                    "color": {
+                      "r": 0.9700000286102295,
+                      "g": 0.5699999928474426,
+                      "b": 0.03999999910593033
+                    },
+                    "boundVariables": {}
+                  }
+                ],
+                "strokes": [
+                  {
+                    "type": "SOLID",
+                    "visible": true,
+                    "opacity": 0.3499999940395355,
+                    "blendMode": "NORMAL",
+                    "color": {
+                      "r": 0.36000001430511475,
+                      "g": 0.28999999165534973,
+                      "b": 0.05999999865889549
+                    },
+                    "boundVariables": {}
+                  }
+                ],
+                "effects": [
+                  {
+                    "type": "INNER_SHADOW",
+                    "visible": true,
+                    "radius": 1,
+                    "boundVariables": {},
+                    "color": {
+                      "r": 1,
+                      "g": 1,
+                      "b": 0.699999988079071,
+                      "a": 0.550000011920929
+                    },
+                    "offset": {
+                      "x": 0,
+                      "y": 2
+                    },
+                    "spread": 0,
+                    "blendMode": "NORMAL"
+                  }
+                ],
+                "strokeWeight": 1,
+                "strokeAlign": "INSIDE",
+                "cornerRadius": 10
+              }
+            ]
+          },
+          {
+            "id": "2083:688",
+            "name": "Ready state / shared icon + editable copy",
+            "type": "FRAME",
+            "x": 158,
+            "y": 720,
+            "width": 354,
+            "height": 46,
+            "clipsContent": true,
+            "children": [
+              {
+                "id": "2083:689",
+                "name": "Ready / shared confirm",
+                "type": "INSTANCE",
+                "x": 6,
+                "y": 3,
+                "width": 40,
+                "height": 40,
+                "clipsContent": false,
+                "mainComponentId": "1024:53",
+                "children": [
+                  {
+                    "id": "I2083:689;1024:54",
+                    "name": "confirm 원본 / 비파괴 크롭",
+                    "type": "RECTANGLE",
+                    "x": 0.555555522441864,
+                    "y": 0,
+                    "width": 38.88888931274414,
+                    "height": 40,
+                    "fills": [
+                      {
+                        "type": "IMAGE",
+                        "visible": true,
+                        "opacity": 1,
+                        "blendMode": "NORMAL",
+                        "scaleMode": "CROP",
+                        "scalingFactor": 1,
+                        "filters": {
+                          "exposure": 0,
+                          "contrast": 0,
+                          "saturation": 0,
+                          "temperature": 0,
+                          "tint": 0,
+                          "highlights": 0,
+                          "shadows": 0
+                        },
+                        "imageTransform": [
+                          [
+                            0.692794919013977,
+                            0,
+                            0.1496437042951584
+                          ],
+                          [
+                            0,
+                            0.7223113775253296,
+                            0.13563403487205505
+                          ]
+                        ],
+                        "imageHash": "be484033c98125ac297d70bb7803b16495bb47bb"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "2083:691",
+                "name": "Ready label",
+                "type": "TEXT",
+                "x": 58,
+                "y": 2.700000762939453,
+                "width": 290,
+                "height": 40.599998474121094,
+                "fills": [
+                  {
+                    "type": "SOLID",
+                    "visible": true,
+                    "opacity": 1,
+                    "blendMode": "NORMAL",
+                    "color": {
+                      "r": 0.30000001192092896,
+                      "g": 0.12999999523162842,
+                      "b": 0.054999999701976776
+                    },
+                    "boundVariables": {}
+                  }
+                ],
+                "characters": "출전 준비 완료",
+                "fontSize": 29,
+                "fontName": {
+                  "family": "Black Han Sans",
+                  "style": "Regular"
+                },
+                "textAlignHorizontal": "CENTER",
+                "textAlignVertical": "CENTER",
+                "lineHeight": {
+                  "unit": "PERCENT",
+                  "value": 120.00000476837158
+                },
+                "letterSpacing": {
+                  "unit": "PERCENT",
+                  "value": 0
+                },
+                "textAutoResize": "NONE"
+              }
+            ]
+          },
+          {
+            "id": "2083:692",
+            "name": "Ready left line",
+            "type": "RECTANGLE",
+            "x": 84,
+            "y": 744,
+            "width": 57,
+            "height": 2,
+            "fills": [
+              {
+                "type": "SOLID",
+                "visible": true,
+                "opacity": 0.6499999761581421,
+                "blendMode": "NORMAL",
+                "color": {
+                  "r": 0.7200000286102295,
+                  "g": 0.44999998807907104,
+                  "b": 0.1899999976158142
+                },
+                "boundVariables": {}
+              }
+            ]
+          },
+          {
+            "id": "2083:693",
+            "name": "Ready right line",
+            "type": "RECTANGLE",
+            "x": 529,
+            "y": 744,
+            "width": 57,
+            "height": 2,
+            "fills": [
+              {
+                "type": "SOLID",
+                "visible": true,
+                "opacity": 0.6499999761581421,
+                "blendMode": "NORMAL",
+                "color": {
+                  "r": 0.7200000286102295,
+                  "g": 0.44999998807907104,
+                  "b": 0.1899999976158142
+                },
+                "boundVariables": {}
+              }
+            ]
+          },
+          {
+            "id": "2083:694",
+            "name": "사냥 시작 / 공통 금색 버튼",
+            "type": "INSTANCE",
+            "x": 73,
+            "y": 779,
+            "width": 524,
+            "height": 101,
+            "clipsContent": false,
+            "mainComponentId": "1518:327",
+            "children": [
+              {
+                "id": "I2083:694;1518:328",
+                "name": "글자·아이콘 없는 배경",
+                "type": "RECTANGLE",
+                "x": 0,
+                "y": 0,
+                "width": 524,
+                "height": 101,
+                "fills": [
+                  {
+                    "type": "IMAGE",
+                    "visible": true,
+                    "opacity": 1,
+                    "blendMode": "NORMAL",
+                    "scaleMode": "CROP",
+                    "scalingFactor": 0.5,
+                    "filters": {
+                      "exposure": 0,
+                      "contrast": 0,
+                      "saturation": 0,
+                      "temperature": 0,
+                      "tint": 0,
+                      "highlights": 0,
+                      "shadows": 0
+                    },
+                    "imageTransform": [
+                      [
+                        0.9723756909370422,
+                        0,
+                        0.013812154531478882
+                      ],
+                      [
+                        0,
+                        0.8149171471595764,
+                        0.08977900445461273
+                      ]
+                    ],
+                    "imageHash": "593f83cafb26732f32e17a68688dd5f02150c79f"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "2083:696",
+            "name": "Start label / editable",
+            "type": "TEXT",
+            "x": 95,
+            "y": 797,
+            "width": 480,
+            "height": 72.80000305175781,
+            "fills": [
+              {
+                "type": "SOLID",
+                "visible": true,
+                "opacity": 1,
+                "blendMode": "NORMAL",
+                "color": {
+                  "r": 0.30000001192092896,
+                  "g": 0.12999999523162842,
+                  "b": 0.054999999701976776
+                },
+                "boundVariables": {}
+              }
+            ],
+            "characters": "사냥 시작",
+            "fontSize": 52,
+            "fontName": {
+              "family": "Black Han Sans",
+              "style": "Regular"
+            },
+            "textAlignHorizontal": "CENTER",
+            "textAlignVertical": "CENTER",
+            "lineHeight": {
+              "unit": "PERCENT",
+              "value": 120.00000476837158
+            },
+            "letterSpacing": {
+              "unit": "PERCENT",
+              "value": 0
+            },
+            "textAutoResize": "NONE"
+          },
+          {
+            "id": "2083:697",
+            "name": "돌아가기 / 퀘스트 보상 크림 버튼",
+            "type": "INSTANCE",
+            "x": 221,
+            "y": 887,
+            "width": 223,
+            "height": 76,
+            "fills": [
+              {
+                "type": "IMAGE",
+                "visible": true,
+                "opacity": 1,
+                "blendMode": "NORMAL",
+                "scaleMode": "CROP",
+                "scalingFactor": 1,
+                "filters": {
+                  "exposure": 0,
+                  "contrast": 0,
+                  "saturation": 0,
+                  "temperature": 0,
+                  "tint": 0,
+                  "highlights": 0,
+                  "shadows": 0
+                },
+                "imageTransform": [
+                  [
+                    0.25930100679397583,
+                    0,
+                    0.14092446863651276
+                  ],
+                  [
+                    0,
+                    0.24802705645561218,
+                    0.4002254903316498
+                  ]
+                ],
+                "imageHash": "c0b15ab342e934a4cf36babf8ecb132ec4b711a0"
+              }
+            ],
+            "clipsContent": false,
+            "mainComponentId": "1842:424",
+            "children": []
+          },
+          {
+            "id": "2083:698",
+            "name": "Back label / editable",
+            "type": "TEXT",
+            "x": 237,
+            "y": 908,
+            "width": 192,
+            "height": 41,
+            "fills": [
+              {
+                "type": "SOLID",
+                "visible": true,
+                "opacity": 1,
+                "blendMode": "NORMAL",
+                "color": {
+                  "r": 0.30000001192092896,
+                  "g": 0.12999999523162842,
+                  "b": 0.054999999701976776
+                },
+                "boundVariables": {}
+              }
+            ],
+            "characters": "돌아가기",
+            "fontSize": 29,
+            "fontName": {
+              "family": "Black Han Sans",
+              "style": "Regular"
+            },
+            "textAlignHorizontal": "CENTER",
+            "textAlignVertical": "CENTER",
+            "lineHeight": {
+              "unit": "PERCENT",
+              "value": 120.00000476837158
+            },
+            "letterSpacing": {
+              "unit": "PERCENT",
+              "value": 0
+            },
+            "textAutoResize": "NONE"
+          }
+        ]
+      }
+    ]
+  },
+  "coordinates": "Parent-relative Figma pixels. The root frame x/y are page placement, not game screen offset.",
+  "omitted_defaults": "Invisible subtrees removed; omitted opacity is 1, rotation is 0, effects/strokes are empty.",
+  "image_binding_file": "../asset-bindings.json"
+}

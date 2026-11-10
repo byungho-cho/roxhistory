@@ -1,0 +1,2591 @@
+{
+  "figma_file": "zkbflw9fCdAlWbphhw5pSS",
+  "canvas": [
+    1920,
+    1080
+  ],
+  "scene": {
+    "id": "2065:254",
+    "name": "S40400 · Battle · 최신 조합 v006 · 1920×1080",
+    "type": "FRAME",
+    "x": 100,
+    "y": 126,
+    "width": 1920,
+    "height": 1080,
+    "clipsContent": true,
+    "children": [
+      {
+        "id": "2127:160",
+        "name": "Environment · central clean battle background",
+        "type": "INSTANCE",
+        "x": 0,
+        "y": 0,
+        "width": 1920,
+        "height": 1080,
+        "fills": [
+          {
+            "type": "IMAGE",
+            "visible": true,
+            "opacity": 1,
+            "blendMode": "NORMAL",
+            "scaleMode": "FIT",
+            "scalingFactor": 1,
+            "rotation": 0,
+            "filters": {
+              "exposure": 0,
+              "contrast": 0,
+              "saturation": 0,
+              "temperature": 0,
+              "tint": 0,
+              "highlights": 0,
+              "shadows": 0
+            },
+            "imageTransform": [
+              [
+                1,
+                0,
+                0
+              ],
+              [
+                0,
+                1,
+                0
+              ]
+            ],
+            "imageHash": "4983463d4c9e2f7f02b09bf3fcf4d4b73d65dbe1"
+          }
+        ],
+        "clipsContent": false,
+        "mainComponentId": "2122:714",
+        "children": []
+      },
+      {
+        "id": "2065:256",
+        "name": "Actors · 4 independent actual 3D renders",
+        "type": "FRAME",
+        "x": 0,
+        "y": 0,
+        "width": 1920,
+        "height": 1080,
+        "clipsContent": false,
+        "children": [
+          {
+            "id": "2072:246",
+            "name": "Ground contact shadow",
+            "type": "ELLIPSE",
+            "x": 1072.5,
+            "y": 634,
+            "width": 125,
+            "height": 9,
+            "fills": [
+              {
+                "type": "SOLID",
+                "visible": true,
+                "opacity": 0.20000000298023224,
+                "blendMode": "NORMAL",
+                "color": {
+                  "r": 0.11999999731779099,
+                  "g": 0.14000000059604645,
+                  "b": 0.05000000074505806
+                },
+                "boundVariables": {}
+              }
+            ],
+            "arcData": {
+              "startingAngle": 0,
+              "endingAngle": 6.2831854820251465,
+              "innerRadius": 0
+            }
+          },
+          {
+            "id": "2072:245",
+            "name": "Ground contact shadow",
+            "type": "ELLIPSE",
+            "x": 671,
+            "y": 689,
+            "width": 58,
+            "height": 9,
+            "fills": [
+              {
+                "type": "SOLID",
+                "visible": true,
+                "opacity": 0.20000000298023224,
+                "blendMode": "NORMAL",
+                "color": {
+                  "r": 0.11999999731779099,
+                  "g": 0.14000000059604645,
+                  "b": 0.05000000074505806
+                },
+                "boundVariables": {}
+              }
+            ],
+            "arcData": {
+              "startingAngle": 0,
+              "endingAngle": 6.2831854820251465,
+              "innerRadius": 0
+            }
+          },
+          {
+            "id": "2072:244",
+            "name": "Ground contact shadow",
+            "type": "ELLIPSE",
+            "x": 690,
+            "y": 569,
+            "width": 60,
+            "height": 9,
+            "fills": [
+              {
+                "type": "SOLID",
+                "visible": true,
+                "opacity": 0.20000000298023224,
+                "blendMode": "NORMAL",
+                "color": {
+                  "r": 0.11999999731779099,
+                  "g": 0.14000000059604645,
+                  "b": 0.05000000074505806
+                },
+                "boundVariables": {}
+              }
+            ],
+            "arcData": {
+              "startingAngle": 0,
+              "endingAngle": 6.2831854820251465,
+              "innerRadius": 0
+            }
+          },
+          {
+            "id": "2072:243",
+            "name": "Ground contact shadow",
+            "type": "ELLIPSE",
+            "x": 837,
+            "y": 638,
+            "width": 60,
+            "height": 9,
+            "fills": [
+              {
+                "type": "SOLID",
+                "visible": true,
+                "opacity": 0.20000000298023224,
+                "blendMode": "NORMAL",
+                "color": {
+                  "r": 0.11999999731779099,
+                  "g": 0.14000000059604645,
+                  "b": 0.05000000074505806
+                },
+                "boundVariables": {}
+              }
+            ],
+            "arcData": {
+              "startingAngle": 0,
+              "endingAngle": 6.2831854820251465,
+              "innerRadius": 0
+            }
+          },
+          {
+            "id": "2127:161",
+            "name": "Actor / hero · actual static 3D",
+            "type": "INSTANCE",
+            "x": 843.9348754882812,
+            "y": 504,
+            "width": 46.13026809692383,
+            "height": 140,
+            "fills": [
+              {
+                "type": "IMAGE",
+                "visible": true,
+                "opacity": 1,
+                "blendMode": "NORMAL",
+                "scaleMode": "CROP",
+                "scalingFactor": 1,
+                "filters": {
+                  "exposure": 0,
+                  "contrast": 0,
+                  "saturation": 0,
+                  "temperature": 0,
+                  "tint": 0,
+                  "highlights": 0,
+                  "shadows": 0
+                },
+                "imageTransform": [
+                  [
+                    0.2799479067325592,
+                    0,
+                    0.3714192807674408
+                  ],
+                  [
+                    0,
+                    0.849609375,
+                    0.0862630233168602
+                  ]
+                ],
+                "imageHash": "0b637136f35ec017cbcce237cf23c2eb51428258"
+              }
+            ],
+            "clipsContent": false,
+            "mainComponentId": "2122:708",
+            "children": []
+          },
+          {
+            "id": "2127:162",
+            "name": "Actor / sturdy_male · actual static 3D",
+            "type": "INSTANCE",
+            "x": 695.0053100585938,
+            "y": 450,
+            "width": 49.98939895629883,
+            "height": 125,
+            "fills": [
+              {
+                "type": "IMAGE",
+                "visible": true,
+                "opacity": 1,
+                "blendMode": "NORMAL",
+                "scaleMode": "CROP",
+                "scalingFactor": 1,
+                "filters": {
+                  "exposure": 0,
+                  "contrast": 0,
+                  "saturation": 0,
+                  "temperature": 0,
+                  "tint": 0,
+                  "highlights": 0,
+                  "shadows": 0
+                },
+                "imageTransform": [
+                  [
+                    0.3069661557674408,
+                    0,
+                    0.3522135317325592
+                  ],
+                  [
+                    0,
+                    0.767578125,
+                    0.1285807341337204
+                  ]
+                ],
+                "imageHash": "1502b802184a3957a09da2021fe0c90f6a04bf62"
+              }
+            ],
+            "clipsContent": false,
+            "mainComponentId": "2122:710",
+            "children": []
+          },
+          {
+            "id": "2127:163",
+            "name": "Actor / female · actual static 3D",
+            "type": "INSTANCE",
+            "x": 677.3961181640625,
+            "y": 565,
+            "width": 45.20780563354492,
+            "height": 130,
+            "fills": [
+              {
+                "type": "IMAGE",
+                "visible": true,
+                "opacity": 1,
+                "blendMode": "NORMAL",
+                "scaleMode": "CROP",
+                "scalingFactor": 1,
+                "filters": {
+                  "exposure": 0,
+                  "contrast": 0,
+                  "saturation": 0,
+                  "temperature": 0,
+                  "tint": 0,
+                  "highlights": 0,
+                  "shadows": 0
+                },
+                "imageTransform": [
+                  [
+                    0.2669270932674408,
+                    0,
+                    0.3834635317325592
+                  ],
+                  [
+                    0,
+                    0.767578125,
+                    0.1285807341337204
+                  ]
+                ],
+                "imageHash": "d1c34fd389d4c5764df14f1fc212e2fc4bd5e72b"
+              }
+            ],
+            "clipsContent": false,
+            "mainComponentId": "2122:712",
+            "children": []
+          },
+          {
+            "id": "2127:164",
+            "name": "Actor / deer · existing central 3072 render",
+            "type": "INSTANCE",
+            "x": 1056.79931640625,
+            "y": 476,
+            "width": 156.40126037597656,
+            "height": 164,
+            "fills": [
+              {
+                "type": "IMAGE",
+                "visible": true,
+                "opacity": 1,
+                "blendMode": "NORMAL",
+                "scaleMode": "CROP",
+                "scalingFactor": 1,
+                "filters": {
+                  "exposure": 0,
+                  "contrast": 0,
+                  "saturation": 0,
+                  "temperature": 0,
+                  "tint": 0,
+                  "highlights": 0,
+                  "shadows": 0
+                },
+                "imageTransform": [
+                  [
+                    0.6901041865348816,
+                    0,
+                    0.1569010466337204
+                  ],
+                  [
+                    0,
+                    0.7236328125,
+                    0.123046875
+                  ]
+                ],
+                "imageHash": "a9ceeb1a01bd2d6c3ac08f5f3a398a9a7e52da14"
+              }
+            ],
+            "clipsContent": false,
+            "mainComponentId": "2081:482",
+            "children": []
+          }
+        ]
+      },
+      {
+        "id": "2065:261",
+        "name": "World status · labels and HP follow actors",
+        "type": "FRAME",
+        "x": 0,
+        "y": 0,
+        "width": 1920,
+        "height": 1080,
+        "clipsContent": false,
+        "children": [
+          {
+            "id": "2131:189",
+            "name": "Deer label background · existing two-sided brush",
+            "type": "INSTANCE",
+            "x": 1055,
+            "y": 405,
+            "width": 160,
+            "height": 50,
+            "clipsContent": true,
+            "mainComponentId": "903:36",
+            "children": [
+              {
+                "id": "I2131:189;903:37",
+                "name": "승인 재질 / left 붓터치",
+                "type": "RECTANGLE",
+                "x": 80,
+                "y": 0,
+                "width": 80,
+                "height": 50,
+                "rotation": -180,
+                "relativeTransform": [
+                  [
+                    -1,
+                    0,
+                    80
+                  ],
+                  [
+                    0,
+                    1,
+                    0
+                  ]
+                ],
+                "fills": [
+                  {
+                    "type": "IMAGE",
+                    "visible": true,
+                    "opacity": 1,
+                    "blendMode": "NORMAL",
+                    "scaleMode": "CROP",
+                    "scalingFactor": 1,
+                    "filters": {
+                      "exposure": 0,
+                      "contrast": 0,
+                      "saturation": 0,
+                      "temperature": 0,
+                      "tint": 0,
+                      "highlights": 0,
+                      "shadows": 0
+                    },
+                    "imageTransform": [
+                      [
+                        0.44999998807907104,
+                        0,
+                        0.5299999713897705
+                      ],
+                      [
+                        0,
+                        0.6800000071525574,
+                        0.1599999964237213
+                      ]
+                    ],
+                    "imageHash": "68df7604685cc83722caa9d8aa7d178243f4952b"
+                  }
+                ]
+              },
+              {
+                "id": "I2131:189;903:38",
+                "name": "승인 재질 / right 붓터치",
+                "type": "RECTANGLE",
+                "x": 80,
+                "y": 0,
+                "width": 80,
+                "height": 50,
+                "fills": [
+                  {
+                    "type": "IMAGE",
+                    "visible": true,
+                    "opacity": 1,
+                    "blendMode": "NORMAL",
+                    "scaleMode": "CROP",
+                    "scalingFactor": 1,
+                    "filters": {
+                      "exposure": 0,
+                      "contrast": 0,
+                      "saturation": 0,
+                      "temperature": 0,
+                      "tint": 0,
+                      "highlights": 0,
+                      "shadows": 0
+                    },
+                    "imageTransform": [
+                      [
+                        0.44999998807907104,
+                        0,
+                        0.5299999713897705
+                      ],
+                      [
+                        0,
+                        0.6800000071525574,
+                        0.1599999964237213
+                      ]
+                    ],
+                    "imageHash": "68df7604685cc83722caa9d8aa7d178243f4952b"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "2065:271",
+            "name": "Deer name",
+            "type": "TEXT",
+            "x": 1075,
+            "y": 410,
+            "width": 120,
+            "height": 37,
+            "fills": [
+              {
+                "type": "SOLID",
+                "visible": true,
+                "opacity": 1,
+                "blendMode": "NORMAL",
+                "color": {
+                  "r": 1,
+                  "g": 0.9599999785423279,
+                  "b": 0.8600000143051147
+                },
+                "boundVariables": {}
+              }
+            ],
+            "strokes": [
+              {
+                "type": "SOLID",
+                "visible": true,
+                "opacity": 1,
+                "blendMode": "NORMAL",
+                "color": {
+                  "r": 0.18000000715255737,
+                  "g": 0.09000000357627869,
+                  "b": 0.03500000014901161
+                },
+                "boundVariables": {}
+              }
+            ],
+            "strokeWeight": 2,
+            "strokeAlign": "OUTSIDE",
+            "characters": "사슴",
+            "fontSize": 25,
+            "fontName": {
+              "family": "Noto Sans KR",
+              "style": "Black",
+              "variationSettings": {
+                "wght": 900
+              }
+            },
+            "textAlignHorizontal": "CENTER",
+            "textAlignVertical": "CENTER",
+            "lineHeight": {
+              "unit": "AUTO"
+            },
+            "letterSpacing": {
+              "unit": "PERCENT",
+              "value": 0
+            },
+            "textAutoResize": "NONE"
+          },
+          {
+            "id": "2127:165",
+            "name": "HP · editable common status bar",
+            "type": "INSTANCE",
+            "x": 842,
+            "y": 490,
+            "width": 50,
+            "height": 9,
+            "clipsContent": false,
+            "mainComponentId": "2122:716",
+            "children": [
+              {
+                "id": "I2127:165;2122:717",
+                "name": "HUD / 진행바 / 빈 바탕",
+                "type": "INSTANCE",
+                "x": 0,
+                "y": 0,
+                "width": 50,
+                "height": 9,
+                "fills": [
+                  {
+                    "type": "SOLID",
+                    "visible": true,
+                    "opacity": 1,
+                    "blendMode": "NORMAL",
+                    "color": {
+                      "r": 0.3199999928474426,
+                      "g": 0.20999999344348907,
+                      "b": 0.12999999523162842
+                    },
+                    "boundVariables": {
+                      "color": {
+                        "type": "VARIABLE_ALIAS",
+                        "id": "VariableID:1783:373"
+                      }
+                    }
+                  }
+                ],
+                "strokes": [
+                  {
+                    "type": "SOLID",
+                    "visible": true,
+                    "opacity": 1,
+                    "blendMode": "NORMAL",
+                    "color": {
+                      "r": 0.5299999713897705,
+                      "g": 0.3100000023841858,
+                      "b": 0.05000000074505806
+                    },
+                    "boundVariables": {
+                      "color": {
+                        "type": "VARIABLE_ALIAS",
+                        "id": "VariableID:1783:374"
+                      }
+                    }
+                  }
+                ],
+                "effects": [
+                  {
+                    "type": "DROP_SHADOW",
+                    "visible": true,
+                    "radius": 1.5,
+                    "boundVariables": {},
+                    "color": {
+                      "r": 0.10000000149011612,
+                      "g": 0.05999999865889549,
+                      "b": 0.009999999776482582,
+                      "a": 0.3499999940395355
+                    },
+                    "offset": {
+                      "x": 0,
+                      "y": 1
+                    },
+                    "spread": 0,
+                    "blendMode": "NORMAL",
+                    "showShadowBehindNode": true
+                  }
+                ],
+                "strokeWeight": 1,
+                "strokeAlign": "INSIDE",
+                "cornerRadius": 10,
+                "clipsContent": false,
+                "mainComponentId": "1783:383",
+                "children": []
+              },
+              {
+                "id": "I2127:165;2122:718",
+                "name": "HUD / 진행바 / 채움",
+                "type": "INSTANCE",
+                "x": 1.5,
+                "y": 1.7999999523162842,
+                "width": 38,
+                "height": 5.400000095367432,
+                "fills": [
+                  {
+                    "type": "GRADIENT_LINEAR",
+                    "visible": true,
+                    "opacity": 1,
+                    "blendMode": "NORMAL",
+                    "gradientStops": [
+                      {
+                        "color": {
+                          "r": 0.9300000071525574,
+                          "g": 1,
+                          "b": 0.4699999988079071,
+                          "a": 1
+                        },
+                        "position": 0,
+                        "boundVariables": {}
+                      },
+                      {
+                        "color": {
+                          "r": 0.49000000953674316,
+                          "g": 0.8199999928474426,
+                          "b": 0.029999999329447746,
+                          "a": 1
+                        },
+                        "position": 0.5,
+                        "boundVariables": {}
+                      },
+                      {
+                        "color": {
+                          "r": 0.1899999976158142,
+                          "g": 0.4000000059604645,
+                          "b": 0.009999999776482582,
+                          "a": 1
+                        },
+                        "position": 1,
+                        "boundVariables": {}
+                      }
+                    ],
+                    "gradientTransform": [
+                      [
+                        0,
+                        1,
+                        0
+                      ],
+                      [
+                        -1,
+                        0,
+                        1
+                      ]
+                    ]
+                  }
+                ],
+                "cornerRadius": 9,
+                "clipsContent": false,
+                "mainComponentId": "1783:384",
+                "children": []
+              }
+            ]
+          },
+          {
+            "id": "2127:168",
+            "name": "HP · editable common status bar",
+            "type": "INSTANCE",
+            "x": 695,
+            "y": 436,
+            "width": 50,
+            "height": 9,
+            "clipsContent": false,
+            "mainComponentId": "2122:716",
+            "children": [
+              {
+                "id": "I2127:168;2122:717",
+                "name": "HUD / 진행바 / 빈 바탕",
+                "type": "INSTANCE",
+                "x": 0,
+                "y": 0,
+                "width": 50,
+                "height": 9,
+                "fills": [
+                  {
+                    "type": "SOLID",
+                    "visible": true,
+                    "opacity": 1,
+                    "blendMode": "NORMAL",
+                    "color": {
+                      "r": 0.3199999928474426,
+                      "g": 0.20999999344348907,
+                      "b": 0.12999999523162842
+                    },
+                    "boundVariables": {
+                      "color": {
+                        "type": "VARIABLE_ALIAS",
+                        "id": "VariableID:1783:373"
+                      }
+                    }
+                  }
+                ],
+                "strokes": [
+                  {
+                    "type": "SOLID",
+                    "visible": true,
+                    "opacity": 1,
+                    "blendMode": "NORMAL",
+                    "color": {
+                      "r": 0.5299999713897705,
+                      "g": 0.3100000023841858,
+                      "b": 0.05000000074505806
+                    },
+                    "boundVariables": {
+                      "color": {
+                        "type": "VARIABLE_ALIAS",
+                        "id": "VariableID:1783:374"
+                      }
+                    }
+                  }
+                ],
+                "effects": [
+                  {
+                    "type": "DROP_SHADOW",
+                    "visible": true,
+                    "radius": 1.5,
+                    "boundVariables": {},
+                    "color": {
+                      "r": 0.10000000149011612,
+                      "g": 0.05999999865889549,
+                      "b": 0.009999999776482582,
+                      "a": 0.3499999940395355
+                    },
+                    "offset": {
+                      "x": 0,
+                      "y": 1
+                    },
+                    "spread": 0,
+                    "blendMode": "NORMAL",
+                    "showShadowBehindNode": true
+                  }
+                ],
+                "strokeWeight": 1,
+                "strokeAlign": "INSIDE",
+                "cornerRadius": 10,
+                "clipsContent": false,
+                "mainComponentId": "1783:383",
+                "children": []
+              },
+              {
+                "id": "I2127:168;2122:718",
+                "name": "HUD / 진행바 / 채움",
+                "type": "INSTANCE",
+                "x": 1.5,
+                "y": 1.7999999523162842,
+                "width": 38,
+                "height": 5.400000095367432,
+                "fills": [
+                  {
+                    "type": "GRADIENT_LINEAR",
+                    "visible": true,
+                    "opacity": 1,
+                    "blendMode": "NORMAL",
+                    "gradientStops": [
+                      {
+                        "color": {
+                          "r": 0.9300000071525574,
+                          "g": 1,
+                          "b": 0.4699999988079071,
+                          "a": 1
+                        },
+                        "position": 0,
+                        "boundVariables": {}
+                      },
+                      {
+                        "color": {
+                          "r": 0.49000000953674316,
+                          "g": 0.8199999928474426,
+                          "b": 0.029999999329447746,
+                          "a": 1
+                        },
+                        "position": 0.5,
+                        "boundVariables": {}
+                      },
+                      {
+                        "color": {
+                          "r": 0.1899999976158142,
+                          "g": 0.4000000059604645,
+                          "b": 0.009999999776482582,
+                          "a": 1
+                        },
+                        "position": 1,
+                        "boundVariables": {}
+                      }
+                    ],
+                    "gradientTransform": [
+                      [
+                        0,
+                        1,
+                        0
+                      ],
+                      [
+                        -1,
+                        0,
+                        1
+                      ]
+                    ]
+                  }
+                ],
+                "cornerRadius": 9,
+                "clipsContent": false,
+                "mainComponentId": "1783:384",
+                "children": []
+              }
+            ]
+          },
+          {
+            "id": "2127:171",
+            "name": "HP · editable common status bar",
+            "type": "INSTANCE",
+            "x": 675,
+            "y": 551,
+            "width": 50,
+            "height": 9,
+            "clipsContent": false,
+            "mainComponentId": "2122:716",
+            "children": [
+              {
+                "id": "I2127:171;2122:717",
+                "name": "HUD / 진행바 / 빈 바탕",
+                "type": "INSTANCE",
+                "x": 0,
+                "y": 0,
+                "width": 50,
+                "height": 9,
+                "fills": [
+                  {
+                    "type": "SOLID",
+                    "visible": true,
+                    "opacity": 1,
+                    "blendMode": "NORMAL",
+                    "color": {
+                      "r": 0.3199999928474426,
+                      "g": 0.20999999344348907,
+                      "b": 0.12999999523162842
+                    },
+                    "boundVariables": {
+                      "color": {
+                        "type": "VARIABLE_ALIAS",
+                        "id": "VariableID:1783:373"
+                      }
+                    }
+                  }
+                ],
+                "strokes": [
+                  {
+                    "type": "SOLID",
+                    "visible": true,
+                    "opacity": 1,
+                    "blendMode": "NORMAL",
+                    "color": {
+                      "r": 0.5299999713897705,
+                      "g": 0.3100000023841858,
+                      "b": 0.05000000074505806
+                    },
+                    "boundVariables": {
+                      "color": {
+                        "type": "VARIABLE_ALIAS",
+                        "id": "VariableID:1783:374"
+                      }
+                    }
+                  }
+                ],
+                "effects": [
+                  {
+                    "type": "DROP_SHADOW",
+                    "visible": true,
+                    "radius": 1.5,
+                    "boundVariables": {},
+                    "color": {
+                      "r": 0.10000000149011612,
+                      "g": 0.05999999865889549,
+                      "b": 0.009999999776482582,
+                      "a": 0.3499999940395355
+                    },
+                    "offset": {
+                      "x": 0,
+                      "y": 1
+                    },
+                    "spread": 0,
+                    "blendMode": "NORMAL",
+                    "showShadowBehindNode": true
+                  }
+                ],
+                "strokeWeight": 1,
+                "strokeAlign": "INSIDE",
+                "cornerRadius": 10,
+                "clipsContent": false,
+                "mainComponentId": "1783:383",
+                "children": []
+              },
+              {
+                "id": "I2127:171;2122:718",
+                "name": "HUD / 진행바 / 채움",
+                "type": "INSTANCE",
+                "x": 1.5,
+                "y": 1.7999999523162842,
+                "width": 38,
+                "height": 5.400000095367432,
+                "fills": [
+                  {
+                    "type": "GRADIENT_LINEAR",
+                    "visible": true,
+                    "opacity": 1,
+                    "blendMode": "NORMAL",
+                    "gradientStops": [
+                      {
+                        "color": {
+                          "r": 0.9300000071525574,
+                          "g": 1,
+                          "b": 0.4699999988079071,
+                          "a": 1
+                        },
+                        "position": 0,
+                        "boundVariables": {}
+                      },
+                      {
+                        "color": {
+                          "r": 0.49000000953674316,
+                          "g": 0.8199999928474426,
+                          "b": 0.029999999329447746,
+                          "a": 1
+                        },
+                        "position": 0.5,
+                        "boundVariables": {}
+                      },
+                      {
+                        "color": {
+                          "r": 0.1899999976158142,
+                          "g": 0.4000000059604645,
+                          "b": 0.009999999776482582,
+                          "a": 1
+                        },
+                        "position": 1,
+                        "boundVariables": {}
+                      }
+                    ],
+                    "gradientTransform": [
+                      [
+                        0,
+                        1,
+                        0
+                      ],
+                      [
+                        -1,
+                        0,
+                        1
+                      ]
+                    ]
+                  }
+                ],
+                "cornerRadius": 9,
+                "clipsContent": false,
+                "mainComponentId": "1783:384",
+                "children": []
+              }
+            ]
+          },
+          {
+            "id": "2127:174",
+            "name": "HP · editable common status bar",
+            "type": "INSTANCE",
+            "x": 1070,
+            "y": 460,
+            "width": 130,
+            "height": 14,
+            "clipsContent": false,
+            "mainComponentId": "2122:720",
+            "children": [
+              {
+                "id": "I2127:174;2122:721",
+                "name": "HUD / 진행바 / 빈 바탕",
+                "type": "INSTANCE",
+                "x": 0,
+                "y": 0,
+                "width": 130,
+                "height": 14,
+                "fills": [
+                  {
+                    "type": "SOLID",
+                    "visible": true,
+                    "opacity": 1,
+                    "blendMode": "NORMAL",
+                    "color": {
+                      "r": 0.3199999928474426,
+                      "g": 0.20999999344348907,
+                      "b": 0.12999999523162842
+                    },
+                    "boundVariables": {
+                      "color": {
+                        "type": "VARIABLE_ALIAS",
+                        "id": "VariableID:1783:373"
+                      }
+                    }
+                  }
+                ],
+                "strokes": [
+                  {
+                    "type": "SOLID",
+                    "visible": true,
+                    "opacity": 1,
+                    "blendMode": "NORMAL",
+                    "color": {
+                      "r": 0.5299999713897705,
+                      "g": 0.3100000023841858,
+                      "b": 0.05000000074505806
+                    },
+                    "boundVariables": {
+                      "color": {
+                        "type": "VARIABLE_ALIAS",
+                        "id": "VariableID:1783:374"
+                      }
+                    }
+                  }
+                ],
+                "effects": [
+                  {
+                    "type": "DROP_SHADOW",
+                    "visible": true,
+                    "radius": 1.5,
+                    "boundVariables": {},
+                    "color": {
+                      "r": 0.10000000149011612,
+                      "g": 0.05999999865889549,
+                      "b": 0.009999999776482582,
+                      "a": 0.3499999940395355
+                    },
+                    "offset": {
+                      "x": 0,
+                      "y": 1
+                    },
+                    "spread": 0,
+                    "blendMode": "NORMAL",
+                    "showShadowBehindNode": true
+                  }
+                ],
+                "strokeWeight": 1,
+                "strokeAlign": "INSIDE",
+                "cornerRadius": 10,
+                "clipsContent": false,
+                "mainComponentId": "1783:383",
+                "children": []
+              },
+              {
+                "id": "I2127:174;2122:722",
+                "name": "HUD / 진행바 / 채움",
+                "type": "INSTANCE",
+                "x": 3.9000000953674316,
+                "y": 2.799999952316284,
+                "width": 98.80000305175781,
+                "height": 8.399999618530273,
+                "fills": [
+                  {
+                    "type": "GRADIENT_LINEAR",
+                    "visible": true,
+                    "opacity": 1,
+                    "blendMode": "NORMAL",
+                    "gradientStops": [
+                      {
+                        "color": {
+                          "r": 1,
+                          "g": 0.6399999856948853,
+                          "b": 0.36000001430511475,
+                          "a": 1
+                        },
+                        "position": 0,
+                        "boundVariables": {}
+                      },
+                      {
+                        "color": {
+                          "r": 0.9100000262260437,
+                          "g": 0.11999999731779099,
+                          "b": 0.019999999552965164,
+                          "a": 1
+                        },
+                        "position": 0.5,
+                        "boundVariables": {}
+                      },
+                      {
+                        "color": {
+                          "r": 0.44999998807907104,
+                          "g": 0.019999999552965164,
+                          "b": 0.009999999776482582,
+                          "a": 1
+                        },
+                        "position": 1,
+                        "boundVariables": {}
+                      }
+                    ],
+                    "gradientTransform": [
+                      [
+                        0,
+                        1,
+                        0
+                      ],
+                      [
+                        -1,
+                        0,
+                        1
+                      ]
+                    ]
+                  }
+                ],
+                "cornerRadius": 9,
+                "clipsContent": false,
+                "mainComponentId": "1783:384",
+                "children": []
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "2065:275",
+        "name": "HUD · independent exit title status controls",
+        "type": "FRAME",
+        "x": 0,
+        "y": 0,
+        "width": 1920,
+        "height": 1080,
+        "clipsContent": false,
+        "children": [
+          {
+            "id": "2071:235",
+            "name": "UI art / party-hp-plate",
+            "type": "INSTANCE",
+            "x": 23,
+            "y": 30,
+            "width": 487,
+            "height": 96,
+            "clipsContent": true,
+            "mainComponentId": "2071:233",
+            "children": [
+              {
+                "id": "I2071:235;2071:234",
+                "name": "Painted art · RGBA crop",
+                "type": "RECTANGLE",
+                "x": 0,
+                "y": 0,
+                "width": 487,
+                "height": 96,
+                "fills": [
+                  {
+                    "type": "IMAGE",
+                    "visible": true,
+                    "opacity": 1,
+                    "blendMode": "NORMAL",
+                    "scaleMode": "CROP",
+                    "scalingFactor": 1,
+                    "filters": {
+                      "exposure": 0,
+                      "contrast": 0,
+                      "saturation": 0,
+                      "temperature": 0,
+                      "tint": 0,
+                      "highlights": 0,
+                      "shadows": 0
+                    },
+                    "imageTransform": [
+                      [
+                        0.5052083134651184,
+                        0,
+                        0.02213541604578495
+                      ],
+                      [
+                        0,
+                        0.1865234375,
+                        0.0693359375
+                      ]
+                    ],
+                    "imageHash": "b6f3cf1192a9cfec43006ccab3af60ed6010b4ab"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "2065:287",
+            "name": "Combat controls · lower-right · safe margins",
+            "type": "FRAME",
+            "x": 1524,
+            "y": 640,
+            "width": 350,
+            "height": 390,
+            "clipsContent": false,
+            "children": [
+              {
+                "id": "2071:247",
+                "name": "UI art / primary-spear",
+                "type": "INSTANCE",
+                "x": 114,
+                "y": 159,
+                "width": 220,
+                "height": 220,
+                "clipsContent": true,
+                "mainComponentId": "2071:245",
+                "children": [
+                  {
+                    "id": "I2071:247;2071:246",
+                    "name": "Painted art · RGBA crop",
+                    "type": "RECTANGLE",
+                    "x": 0,
+                    "y": 0,
+                    "width": 220,
+                    "height": 220,
+                    "fills": [
+                      {
+                        "type": "IMAGE",
+                        "visible": true,
+                        "opacity": 1,
+                        "blendMode": "NORMAL",
+                        "scaleMode": "CROP",
+                        "scalingFactor": 1,
+                        "filters": {
+                          "exposure": 0,
+                          "contrast": 0,
+                          "saturation": 0,
+                          "temperature": 0,
+                          "tint": 0,
+                          "highlights": 0,
+                          "shadows": 0
+                        },
+                        "imageTransform": [
+                          [
+                            0.2799479067325592,
+                            0,
+                            0.2122395783662796
+                          ],
+                          [
+                            0,
+                            0.419921875,
+                            0.29296875
+                          ]
+                        ],
+                        "imageHash": "b6f3cf1192a9cfec43006ccab3af60ed6010b4ab"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "2071:253",
+                "name": "UI art / strong-attack",
+                "type": "INSTANCE",
+                "x": 142,
+                "y": 43,
+                "width": 132,
+                "height": 132,
+                "clipsContent": true,
+                "mainComponentId": "2071:251",
+                "children": [
+                  {
+                    "id": "I2071:253;2071:252",
+                    "name": "Painted art · RGBA crop",
+                    "type": "RECTANGLE",
+                    "x": 0,
+                    "y": 0,
+                    "width": 132,
+                    "height": 132,
+                    "fills": [
+                      {
+                        "type": "IMAGE",
+                        "visible": true,
+                        "opacity": 1,
+                        "blendMode": "NORMAL",
+                        "scaleMode": "CROP",
+                        "scalingFactor": 1,
+                        "filters": {
+                          "exposure": 0,
+                          "contrast": 0,
+                          "saturation": 0,
+                          "temperature": 0,
+                          "tint": 0,
+                          "highlights": 0,
+                          "shadows": 0
+                        },
+                        "imageTransform": [
+                          [
+                            0.2200520783662796,
+                            0,
+                            0.51171875
+                          ],
+                          [
+                            0,
+                            0.333984375,
+                            0.341796875
+                          ]
+                        ],
+                        "imageHash": "b6f3cf1192a9cfec43006ccab3af60ed6010b4ab"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "2071:259",
+                "name": "UI art / cooperative-disabled",
+                "type": "INSTANCE",
+                "x": 26,
+                "y": 126,
+                "width": 126,
+                "height": 126,
+                "clipsContent": true,
+                "mainComponentId": "2071:257",
+                "children": [
+                  {
+                    "id": "I2071:259;2071:258",
+                    "name": "Painted art · RGBA crop",
+                    "type": "RECTANGLE",
+                    "x": 0,
+                    "y": 0,
+                    "width": 126,
+                    "height": 126,
+                    "fills": [
+                      {
+                        "type": "IMAGE",
+                        "visible": true,
+                        "opacity": 1,
+                        "blendMode": "NORMAL",
+                        "scaleMode": "CROP",
+                        "scalingFactor": 1,
+                        "filters": {
+                          "exposure": 0,
+                          "contrast": 0,
+                          "saturation": 0,
+                          "temperature": 0,
+                          "tint": 0,
+                          "highlights": 0,
+                          "shadows": 0
+                        },
+                        "imageTransform": [
+                          [
+                            0.2063802033662796,
+                            0,
+                            0.7565104365348816
+                          ],
+                          [
+                            0,
+                            0.30859375,
+                            0.361328125
+                          ]
+                        ],
+                        "imageHash": "b6f3cf1192a9cfec43006ccab3af60ed6010b4ab"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "2065:291",
+                "name": "Primary cost · example",
+                "type": "TEXT",
+                "x": 179,
+                "y": 307,
+                "width": 90,
+                "height": 44,
+                "fills": [
+                  {
+                    "type": "SOLID",
+                    "visible": true,
+                    "opacity": 1,
+                    "blendMode": "NORMAL",
+                    "color": {
+                      "r": 1,
+                      "g": 0.9599999785423279,
+                      "b": 0.8600000143051147
+                    },
+                    "boundVariables": {}
+                  }
+                ],
+                "strokes": [
+                  {
+                    "type": "SOLID",
+                    "visible": true,
+                    "opacity": 1,
+                    "blendMode": "NORMAL",
+                    "color": {
+                      "r": 0.18000000715255737,
+                      "g": 0.09000000357627869,
+                      "b": 0.03500000014901161
+                    },
+                    "boundVariables": {}
+                  }
+                ],
+                "strokeWeight": 2,
+                "strokeAlign": "OUTSIDE",
+                "characters": "10",
+                "fontSize": 36,
+                "fontName": {
+                  "family": "Noto Sans KR",
+                  "style": "Black",
+                  "variationSettings": {
+                    "wght": 900
+                  }
+                },
+                "textAlignHorizontal": "CENTER",
+                "textAlignVertical": "CENTER",
+                "lineHeight": {
+                  "unit": "AUTO"
+                },
+                "letterSpacing": {
+                  "unit": "PERCENT",
+                  "value": 0
+                },
+                "textAutoResize": "NONE"
+              },
+              {
+                "id": "2065:292",
+                "name": "Strong cost · example",
+                "type": "TEXT",
+                "x": 168,
+                "y": 128,
+                "width": 78,
+                "height": 38,
+                "fills": [
+                  {
+                    "type": "SOLID",
+                    "visible": true,
+                    "opacity": 1,
+                    "blendMode": "NORMAL",
+                    "color": {
+                      "r": 1,
+                      "g": 0.9599999785423279,
+                      "b": 0.8600000143051147
+                    },
+                    "boundVariables": {}
+                  }
+                ],
+                "strokes": [
+                  {
+                    "type": "SOLID",
+                    "visible": true,
+                    "opacity": 1,
+                    "blendMode": "NORMAL",
+                    "color": {
+                      "r": 0.18000000715255737,
+                      "g": 0.09000000357627869,
+                      "b": 0.03500000014901161
+                    },
+                    "boundVariables": {}
+                  }
+                ],
+                "strokeWeight": 2,
+                "strokeAlign": "OUTSIDE",
+                "characters": "50",
+                "fontSize": 28,
+                "fontName": {
+                  "family": "Noto Sans KR",
+                  "style": "Black",
+                  "variationSettings": {
+                    "wght": 900
+                  }
+                },
+                "textAlignHorizontal": "CENTER",
+                "textAlignVertical": "CENTER",
+                "lineHeight": {
+                  "unit": "AUTO"
+                },
+                "letterSpacing": {
+                  "unit": "PERCENT",
+                  "value": 0
+                },
+                "textAutoResize": "NONE"
+              },
+              {
+                "id": "2065:293",
+                "name": "Cooperative cost · example",
+                "type": "TEXT",
+                "x": 48,
+                "y": 204,
+                "width": 82,
+                "height": 36,
+                "fills": [
+                  {
+                    "type": "SOLID",
+                    "visible": true,
+                    "opacity": 1,
+                    "blendMode": "NORMAL",
+                    "color": {
+                      "r": 1,
+                      "g": 0.9599999785423279,
+                      "b": 0.8600000143051147
+                    },
+                    "boundVariables": {}
+                  }
+                ],
+                "strokes": [
+                  {
+                    "type": "SOLID",
+                    "visible": true,
+                    "opacity": 1,
+                    "blendMode": "NORMAL",
+                    "color": {
+                      "r": 0.18000000715255737,
+                      "g": 0.09000000357627869,
+                      "b": 0.03500000014901161
+                    },
+                    "boundVariables": {}
+                  }
+                ],
+                "strokeWeight": 2,
+                "strokeAlign": "OUTSIDE",
+                "characters": "100",
+                "fontSize": 27,
+                "fontName": {
+                  "family": "Noto Sans KR",
+                  "style": "Black",
+                  "variationSettings": {
+                    "wght": 900
+                  }
+                },
+                "textAlignHorizontal": "CENTER",
+                "textAlignVertical": "CENTER",
+                "lineHeight": {
+                  "unit": "AUTO"
+                },
+                "letterSpacing": {
+                  "unit": "PERCENT",
+                  "value": 0
+                },
+                "textAutoResize": "NONE"
+              },
+              {
+                "id": "2127:197",
+                "name": "Charge value plate · central beveled blue",
+                "type": "INSTANCE",
+                "x": 130,
+                "y": 363,
+                "width": 186,
+                "height": 47.349998474121094,
+                "clipsContent": false,
+                "mainComponentId": "2122:724",
+                "children": [
+                  {
+                    "id": "I2127:197;2122:725",
+                    "name": "Frame",
+                    "type": "FRAME",
+                    "x": 0,
+                    "y": 0,
+                    "width": 186,
+                    "height": 47.349998474121094,
+                    "fills": [
+                      {
+                        "type": "SOLID",
+                        "visible": false,
+                        "opacity": 1,
+                        "blendMode": "NORMAL",
+                        "color": {
+                          "r": 1,
+                          "g": 1,
+                          "b": 1
+                        },
+                        "boundVariables": {}
+                      }
+                    ],
+                    "clipsContent": true,
+                    "children": [
+                      {
+                        "id": "I2127:197;2122:726",
+                        "name": "Vector",
+                        "type": "VECTOR",
+                        "x": 3.3818182945251465,
+                        "y": 2.536607027053833,
+                        "width": 179.23635864257812,
+                        "height": 42.27678298950195,
+                        "fills": [
+                          {
+                            "type": "SOLID",
+                            "visible": true,
+                            "opacity": 1,
+                            "blendMode": "NORMAL",
+                            "color": {
+                              "r": 0.22745098173618317,
+                              "g": 0.1882352977991104,
+                              "b": 0.08235294371843338
+                            },
+                            "boundVariables": {}
+                          }
+                        ],
+                        "strokes": [
+                          {
+                            "type": "SOLID",
+                            "visible": true,
+                            "opacity": 1,
+                            "blendMode": "NORMAL",
+                            "color": {
+                              "r": 0.2823529541492462,
+                              "g": 0.239215686917305,
+                              "b": 0.12941177189350128
+                            },
+                            "boundVariables": {}
+                          }
+                        ],
+                        "strokeWeight": 3,
+                        "strokeAlign": "CENTER",
+                        "vectorPaths": [
+                          {
+                            "windingRule": "NONZERO",
+                            "data": "M 16.909090437979067 0 L 159.7909046389022 0 L 171.62726794548755 5.073213958740235 L 179.23635864257812 16.065177536010744 L 178.39090412067918 27.90267677307129 L 169.93635890168963 38.04910469055176 L 157.25454107320533 42.27678298950195 L 19.44545400367593 42.27678298950195 L 6.763636175191627 38.04910469055176 L 0 27.90267677307129 L 0 15.219641876220704 L 7.609090697090581 4.227678298950195 L 16.909090437979067 0 Z"
+                          }
+                        ]
+                      },
+                      {
+                        "id": "I2127:197;2122:727",
+                        "name": "Vector",
+                        "type": "VECTOR",
+                        "x": 5.072727203369141,
+                        "y": 4.227678298950195,
+                        "width": 175.8545379638672,
+                        "height": 38.8946418762207,
+                        "fills": [
+                          {
+                            "type": "GRADIENT_LINEAR",
+                            "visible": true,
+                            "opacity": 1,
+                            "blendMode": "NORMAL",
+                            "gradientStops": [
+                              {
+                                "color": {
+                                  "r": 1,
+                                  "g": 0.95686274766922,
+                                  "b": 0.6941176652908325,
+                                  "a": 1
+                                },
+                                "position": 0,
+                                "boundVariables": {}
+                              },
+                              {
+                                "color": {
+                                  "r": 0.729411780834198,
+                                  "g": 0.45490196347236633,
+                                  "b": 0.1882352977991104,
+                                  "a": 1
+                                },
+                                "position": 0.30000001192092896,
+                                "boundVariables": {}
+                              },
+                              {
+                                "color": {
+                                  "r": 1,
+                                  "g": 0.9450980424880981,
+                                  "b": 0.6352941393852234,
+                                  "a": 1
+                                },
+                                "position": 0.5799999833106995,
+                                "boundVariables": {}
+                              },
+                              {
+                                "color": {
+                                  "r": 0.6549019813537598,
+                                  "g": 0.3607843220233917,
+                                  "b": 0.09803921729326248,
+                                  "a": 1
+                                },
+                                "position": 1,
+                                "boundVariables": {}
+                              }
+                            ],
+                            "gradientTransform": [
+                              [
+                                0,
+                                1,
+                                0
+                              ],
+                              [
+                                -1,
+                                0,
+                                0.5
+                              ]
+                            ]
+                          }
+                        ],
+                        "vectorPaths": [
+                          {
+                            "windingRule": "NONZERO",
+                            "data": "M 15.218181169950046 0 L 158.9454477750338 0 C 170.21817429882665 2.8184522426739256 175.8545379638672 9.300892622574516 175.8545379638672 19.44732093811035 C 175.29090160744173 30.721129908806056 169.09090188833386 37.20357049029806 157.25453875615048 38.8946418762207 L 17.754544698275055 38.8946418762207 C 5.918181566091686 36.076189633546775 0 29.593749253646187 0 19.44732093811035 C 0.5636363564254514 9.300892622574516 5.636363665040546 2.8184522426739256 15.218181169950046 0 Z"
+                          }
+                        ]
+                      },
+                      {
+                        "id": "I2127:197;2122:728",
+                        "name": "Vector",
+                        "type": "VECTOR",
+                        "x": 10.145454406738281,
+                        "y": 8.45535659790039,
+                        "width": 165.70909118652344,
+                        "height": 30.439285278320312,
+                        "fills": [
+                          {
+                            "type": "GRADIENT_LINEAR",
+                            "visible": true,
+                            "opacity": 1,
+                            "blendMode": "NORMAL",
+                            "gradientStops": [
+                              {
+                                "color": {
+                                  "r": 0.03921568766236305,
+                                  "g": 0.20392157137393951,
+                                  "b": 0.42352941632270813,
+                                  "a": 1
+                                },
+                                "position": 0,
+                                "boundVariables": {}
+                              },
+                              {
+                                "color": {
+                                  "r": 0.03921568766236305,
+                                  "g": 0.5843137502670288,
+                                  "b": 0.800000011920929,
+                                  "a": 1
+                                },
+                                "position": 0.47999998927116394,
+                                "boundVariables": {}
+                              },
+                              {
+                                "color": {
+                                  "r": 0.0313725508749485,
+                                  "g": 0.41960784792900085,
+                                  "b": 0.6392157077789307,
+                                  "a": 1
+                                },
+                                "position": 0.5799999833106995,
+                                "boundVariables": {}
+                              },
+                              {
+                                "color": {
+                                  "r": 0.0313725508749485,
+                                  "g": 0.1725490242242813,
+                                  "b": 0.3490196168422699,
+                                  "a": 1
+                                },
+                                "position": 1,
+                                "boundVariables": {}
+                              }
+                            ],
+                            "gradientTransform": [
+                              [
+                                0,
+                                1,
+                                0
+                              ],
+                              [
+                                -1,
+                                0,
+                                0.5
+                              ]
+                            ]
+                          }
+                        ],
+                        "strokes": [
+                          {
+                            "type": "SOLID",
+                            "visible": true,
+                            "opacity": 1,
+                            "blendMode": "NORMAL",
+                            "color": {
+                              "r": 0.8980392217636108,
+                              "g": 0.8117647171020508,
+                              "b": 0.4117647111415863
+                            },
+                            "boundVariables": {}
+                          }
+                        ],
+                        "strokeWeight": 2,
+                        "strokeAlign": "CENTER",
+                        "vectorPaths": [
+                          {
+                            "windingRule": "NONZERO",
+                            "data": "M 10.990909109310229 0 L 152.18181843660315 0 C 161.2000005386461 1.6910714043511286 165.70909118652344 6.764285617404514 165.70909118652344 15.219642639160156 C 165.70909118652344 23.674999660915798 160.63636390530334 28.748213873969185 150.49090934286312 30.439285278320312 L 14.372727296790298 30.439285278320312 C 4.790909367692862 28.748213873969185 0 23.674999660915798 0 15.219642639160156 C 0 7.327976354310117 3.663636101007314 2.2547619396653116 10.990909109310229 0 Z"
+                          }
+                        ]
+                      },
+                      {
+                        "id": "I2127:197;2122:729",
+                        "name": "Vector",
+                        "type": "VECTOR",
+                        "x": 22.827272415161133,
+                        "y": 10.146428108215332,
+                        "width": 139.5,
+                        "height": 0,
+                        "opacity": 0.699999988079071,
+                        "fills": [
+                          {
+                            "type": "SOLID",
+                            "visible": true,
+                            "opacity": 1,
+                            "blendMode": "NORMAL",
+                            "color": {
+                              "r": 0,
+                              "g": 0,
+                              "b": 0
+                            },
+                            "boundVariables": {}
+                          }
+                        ],
+                        "strokes": [
+                          {
+                            "type": "SOLID",
+                            "visible": true,
+                            "opacity": 1,
+                            "blendMode": "NORMAL",
+                            "color": {
+                              "r": 0.5529412031173706,
+                              "g": 0.9372549057006836,
+                              "b": 1
+                            },
+                            "boundVariables": {}
+                          }
+                        ],
+                        "strokeWeight": 2,
+                        "strokeAlign": "CENTER",
+                        "vectorPaths": [
+                          {
+                            "windingRule": "NONZERO",
+                            "data": "M 0 0 L 139.5 0"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "2065:299",
+                "name": "Charge value · example",
+                "type": "TEXT",
+                "x": 143,
+                "y": 369,
+                "width": 157,
+                "height": 34,
+                "fills": [
+                  {
+                    "type": "SOLID",
+                    "visible": true,
+                    "opacity": 1,
+                    "blendMode": "NORMAL",
+                    "color": {
+                      "r": 1,
+                      "g": 0.9599999785423279,
+                      "b": 0.8600000143051147
+                    },
+                    "boundVariables": {}
+                  }
+                ],
+                "strokes": [
+                  {
+                    "type": "SOLID",
+                    "visible": true,
+                    "opacity": 1,
+                    "blendMode": "NORMAL",
+                    "color": {
+                      "r": 0.18000000715255737,
+                      "g": 0.09000000357627869,
+                      "b": 0.03500000014901161
+                    },
+                    "boundVariables": {}
+                  }
+                ],
+                "strokeWeight": 2,
+                "strokeAlign": "OUTSIDE",
+                "characters": "65 / 100",
+                "fontSize": 27,
+                "fontName": {
+                  "family": "Noto Sans KR",
+                  "style": "Black",
+                  "variationSettings": {
+                    "wght": 900
+                  }
+                },
+                "textAlignHorizontal": "CENTER",
+                "textAlignVertical": "CENTER",
+                "lineHeight": {
+                  "unit": "AUTO"
+                },
+                "letterSpacing": {
+                  "unit": "PERCENT",
+                  "value": 0
+                },
+                "textAutoResize": "NONE"
+              },
+              {
+                "id": "2133:841",
+                "name": "Frame 1",
+                "type": "FRAME",
+                "x": 286,
+                "y": 173,
+                "width": 64,
+                "height": 192,
+                "clipsContent": true,
+                "children": [
+                  {
+                    "id": "2127:203",
+                    "name": "Charge gauge · central glowing arc · 65% example",
+                    "type": "INSTANCE",
+                    "x": 0,
+                    "y": 0,
+                    "width": 64,
+                    "height": 192,
+                    "clipsContent": false,
+                    "mainComponentId": "2122:731",
+                    "children": [
+                      {
+                        "id": "I2127:203;2122:732",
+                        "name": "Frame",
+                        "type": "FRAME",
+                        "x": 0,
+                        "y": 0,
+                        "width": 64,
+                        "height": 192,
+                        "fills": [
+                          {
+                            "type": "SOLID",
+                            "visible": false,
+                            "opacity": 1,
+                            "blendMode": "NORMAL",
+                            "color": {
+                              "r": 1,
+                              "g": 1,
+                              "b": 1
+                            },
+                            "boundVariables": {}
+                          }
+                        ],
+                        "effects": [
+                          {
+                            "type": "DROP_SHADOW",
+                            "visible": true,
+                            "radius": 8.228571891784668,
+                            "boundVariables": {},
+                            "color": {
+                              "r": 0.10000000149011612,
+                              "g": 0.949999988079071,
+                              "b": 1,
+                              "a": 0.6499999761581421
+                            },
+                            "offset": {
+                              "x": 0,
+                              "y": 0
+                            },
+                            "spread": 0,
+                            "blendMode": "NORMAL",
+                            "showShadowBehindNode": true
+                          }
+                        ],
+                        "clipsContent": true,
+                        "children": [
+                          {
+                            "id": "I2127:203;2122:733",
+                            "name": "Vector",
+                            "type": "VECTOR",
+                            "x": 9.142857551574707,
+                            "y": 9.142857551574707,
+                            "width": 40.008792877197266,
+                            "height": 173.7142791748047,
+                            "strokes": [
+                              {
+                                "type": "SOLID",
+                                "visible": true,
+                                "opacity": 1,
+                                "blendMode": "NORMAL",
+                                "color": {
+                                  "r": 0.09019608050584793,
+                                  "g": 0.40392157435417175,
+                                  "b": 0.545098066329956
+                                },
+                                "boundVariables": {}
+                              }
+                            ],
+                            "strokeWeight": 10.971428871154785,
+                            "strokeAlign": "CENTER",
+                            "vectorPaths": [
+                              {
+                                "windingRule": "NONE",
+                                "data": "M 0 0 C 12.546225514086055 10.729054074340935 22.619182226569677 24.04878536700393 29.525812880810253 39.04274406594861 C 36.43244353505083 54.03670276489329 40.00879287719728 70.34894929088509 40.008792877197266 86.85713958740234 C 40.00879287719728 103.3653298839196 36.43244353505083 119.67757640991138 29.525812880810253 134.67153510885606 C 22.619182226569677 149.66549380780074 12.546225514086055 162.98522510046377 0 173.7142791748047"
+                              }
+                            ]
+                          },
+                          {
+                            "id": "I2127:203;2122:734",
+                            "name": "Vector",
+                            "type": "VECTOR",
+                            "x": 9.142857551574707,
+                            "y": 9.142857551574707,
+                            "width": 40.01310729980469,
+                            "height": 116.11428833007812,
+                            "strokes": [
+                              {
+                                "type": "GRADIENT_LINEAR",
+                                "visible": true,
+                                "opacity": 1,
+                                "blendMode": "NORMAL",
+                                "gradientStops": [
+                                  {
+                                    "color": {
+                                      "r": 0.10196078568696976,
+                                      "g": 0.48235294222831726,
+                                      "b": 0.7490196228027344,
+                                      "a": 1
+                                    },
+                                    "position": 0,
+                                    "boundVariables": {}
+                                  },
+                                  {
+                                    "color": {
+                                      "r": 0.1764705926179886,
+                                      "g": 0.8549019694328308,
+                                      "b": 1,
+                                      "a": 1
+                                    },
+                                    "position": 0.25,
+                                    "boundVariables": {}
+                                  },
+                                  {
+                                    "color": {
+                                      "r": 0.7137255072593689,
+                                      "g": 1,
+                                      "b": 1,
+                                      "a": 1
+                                    },
+                                    "position": 0.6499999761581421,
+                                    "boundVariables": {}
+                                  },
+                                  {
+                                    "color": {
+                                      "r": 0.0235294122248888,
+                                      "g": 0.7450980544090271,
+                                      "b": 0.8745098114013672,
+                                      "a": 1
+                                    },
+                                    "position": 1,
+                                    "boundVariables": {}
+                                  }
+                                ],
+                                "gradientTransform": [
+                                  [
+                                    0,
+                                    1,
+                                    0
+                                  ],
+                                  [
+                                    -1,
+                                    0,
+                                    0.5
+                                  ]
+                                ]
+                              }
+                            ],
+                            "strokeWeight": 10.057143211364746,
+                            "strokeAlign": "CENTER",
+                            "vectorPaths": [
+                              {
+                                "windingRule": "NONE",
+                                "data": "M 0 0 C 16.353442560992494 13.983435373608936 28.42717490515423 32.29939735151633 34.832195552507514 52.84075174841839 C 41.2372161998608 73.38210614532045 41.71331265803363 95.31433843348889 36.2057132851067 116.11428833007812"
+                              }
+                            ]
+                          },
+                          {
+                            "id": "I2127:203;2122:735",
+                            "name": "Vector",
+                            "type": "VECTOR",
+                            "x": 14.628571510314941,
+                            "y": 16.457143783569336,
+                            "width": 29.300485610961914,
+                            "height": 98.74285888671875,
+                            "strokes": [
+                              {
+                                "type": "SOLID",
+                                "visible": true,
+                                "opacity": 1,
+                                "blendMode": "NORMAL",
+                                "color": {
+                                  "r": 0.7921568751335144,
+                                  "g": 1,
+                                  "b": 1
+                                },
+                                "boundVariables": {}
+                              }
+                            ],
+                            "strokeWeight": 2.7428572177886963,
+                            "strokeAlign": "CENTER",
+                            "vectorPaths": [
+                              {
+                                "windingRule": "NONE",
+                                "data": "M 0 0 C 12.171254524825745 13.02680163910177 20.954877293590823 28.844925872142923 25.57824429618003 46.06298211930509 C 30.20161129876924 63.28103836646726 30.523050778300487 81.37142303305316 26.51428645399049 98.74285888671875"
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "2071:265",
+            "name": "UI art / objective-parchment",
+            "type": "INSTANCE",
+            "x": 676,
+            "y": 954,
+            "width": 600,
+            "height": 71.99999237060547,
+            "clipsContent": true,
+            "mainComponentId": "2071:263",
+            "children": [
+              {
+                "id": "I2071:265;2071:264",
+                "name": "Painted art · RGBA crop",
+                "type": "RECTANGLE",
+                "x": 0,
+                "y": 0,
+                "width": 600,
+                "height": 71.99999237060547,
+                "fills": [
+                  {
+                    "type": "IMAGE",
+                    "visible": true,
+                    "opacity": 1,
+                    "blendMode": "NORMAL",
+                    "scaleMode": "CROP",
+                    "scalingFactor": 1,
+                    "filters": {
+                      "exposure": 0,
+                      "contrast": 0,
+                      "saturation": 0,
+                      "temperature": 0,
+                      "tint": 0,
+                      "highlights": 0,
+                      "shadows": 0
+                    },
+                    "imageTransform": [
+                      [
+                        0.93359375,
+                        0,
+                        0.0338541679084301
+                      ],
+                      [
+                        0,
+                        0.1875,
+                        0.7509765625
+                      ]
+                    ],
+                    "imageHash": "b6f3cf1192a9cfec43006ccab3af60ed6010b4ab"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "2065:301",
+            "name": "Objective",
+            "type": "TEXT",
+            "x": 707,
+            "y": 962,
+            "width": 538,
+            "height": 54,
+            "fills": [
+              {
+                "type": "SOLID",
+                "visible": true,
+                "opacity": 1,
+                "blendMode": "NORMAL",
+                "color": {
+                  "r": 1,
+                  "g": 0.9800000190734863,
+                  "b": 0.9200000166893005
+                },
+                "boundVariables": {}
+              }
+            ],
+            "strokes": [
+              {
+                "type": "SOLID",
+                "visible": true,
+                "opacity": 1,
+                "blendMode": "NORMAL",
+                "color": {
+                  "r": 0.2199999988079071,
+                  "g": 0.10999999940395355,
+                  "b": 0.04500000178813934
+                },
+                "boundVariables": {}
+              }
+            ],
+            "effects": [
+              {
+                "type": "DROP_SHADOW",
+                "visible": true,
+                "radius": 2,
+                "boundVariables": {},
+                "color": {
+                  "r": 0.1599999964237213,
+                  "g": 0.07000000029802322,
+                  "b": 0.019999999552965164,
+                  "a": 0.5
+                },
+                "offset": {
+                  "x": 0,
+                  "y": 2
+                },
+                "spread": 0,
+                "blendMode": "NORMAL",
+                "showShadowBehindNode": true
+              }
+            ],
+            "strokeWeight": 2,
+            "strokeAlign": "OUTSIDE",
+            "characters": "사슴을 처치하세요",
+            "fontSize": 34,
+            "fontName": {
+              "family": "Noto Sans KR",
+              "style": "Bold",
+              "variationSettings": {
+                "wght": 700
+              }
+            },
+            "textAlignHorizontal": "CENTER",
+            "textAlignVertical": "CENTER",
+            "lineHeight": {
+              "unit": "PIXELS",
+              "value": 46
+            },
+            "letterSpacing": {
+              "unit": "PERCENT",
+              "value": 0
+            },
+            "textAutoResize": "NONE"
+          },
+          {
+            "id": "2132:189",
+            "name": "Settings · existing approved asset · test immediate exit",
+            "type": "INSTANCE",
+            "x": 1804,
+            "y": 22,
+            "width": 92,
+            "height": 92,
+            "clipsContent": false,
+            "mainComponentId": "836:96",
+            "children": [
+              {
+                "id": "I2132:189;836:97",
+                "name": "HUD / 환경설정 · 원화 톱니바퀴 / 원화 픽셀",
+                "type": "RECTANGLE",
+                "x": 0,
+                "y": 0,
+                "width": 92,
+                "height": 92,
+                "fills": [
+                  {
+                    "type": "IMAGE",
+                    "visible": true,
+                    "opacity": 1,
+                    "blendMode": "NORMAL",
+                    "scaleMode": "FIT",
+                    "scalingFactor": 1,
+                    "rotation": 0,
+                    "filters": {
+                      "exposure": 0,
+                      "contrast": 0,
+                      "saturation": 0,
+                      "temperature": 0,
+                      "tint": 0,
+                      "highlights": 0,
+                      "shadows": 0
+                    },
+                    "imageTransform": [
+                      [
+                        1,
+                        0,
+                        0
+                      ],
+                      [
+                        0,
+                        1,
+                        0
+                      ]
+                    ],
+                    "imageHash": "828dd52517ec6d0b96f229a652bb3aab3e0fc3fb"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "2139:175",
+            "name": "Party HP · extended label space · example fill ratio retained",
+            "type": "INSTANCE",
+            "x": 151,
+            "y": 66,
+            "width": 327,
+            "height": 24,
+            "clipsContent": false,
+            "mainComponentId": "2122:716",
+            "children": [
+              {
+                "id": "I2139:175;2122:717",
+                "name": "HUD / 진행바 / 빈 바탕",
+                "type": "INSTANCE",
+                "x": 0,
+                "y": 0,
+                "width": 327,
+                "height": 24,
+                "fills": [
+                  {
+                    "type": "SOLID",
+                    "visible": true,
+                    "opacity": 1,
+                    "blendMode": "NORMAL",
+                    "color": {
+                      "r": 0.3199999928474426,
+                      "g": 0.20999999344348907,
+                      "b": 0.12999999523162842
+                    },
+                    "boundVariables": {
+                      "color": {
+                        "type": "VARIABLE_ALIAS",
+                        "id": "VariableID:1783:373"
+                      }
+                    }
+                  }
+                ],
+                "strokes": [
+                  {
+                    "type": "SOLID",
+                    "visible": true,
+                    "opacity": 1,
+                    "blendMode": "NORMAL",
+                    "color": {
+                      "r": 0.5299999713897705,
+                      "g": 0.3100000023841858,
+                      "b": 0.05000000074505806
+                    },
+                    "boundVariables": {
+                      "color": {
+                        "type": "VARIABLE_ALIAS",
+                        "id": "VariableID:1783:374"
+                      }
+                    }
+                  }
+                ],
+                "effects": [
+                  {
+                    "type": "DROP_SHADOW",
+                    "visible": true,
+                    "radius": 1.5,
+                    "boundVariables": {},
+                    "color": {
+                      "r": 0.10000000149011612,
+                      "g": 0.05999999865889549,
+                      "b": 0.009999999776482582,
+                      "a": 0.3499999940395355
+                    },
+                    "offset": {
+                      "x": 0,
+                      "y": 1
+                    },
+                    "spread": 0,
+                    "blendMode": "NORMAL",
+                    "showShadowBehindNode": true
+                  }
+                ],
+                "strokeWeight": 1,
+                "strokeAlign": "INSIDE",
+                "cornerRadius": 10,
+                "clipsContent": false,
+                "mainComponentId": "1783:383",
+                "children": []
+              },
+              {
+                "id": "I2139:175;2122:718",
+                "name": "HUD / 진행바 / 채움",
+                "type": "INSTANCE",
+                "x": 9.8100004196167,
+                "y": 4.800000190734863,
+                "width": 248.52000427246094,
+                "height": 14.399999618530273,
+                "fills": [
+                  {
+                    "type": "GRADIENT_LINEAR",
+                    "visible": true,
+                    "opacity": 1,
+                    "blendMode": "NORMAL",
+                    "gradientStops": [
+                      {
+                        "color": {
+                          "r": 0.9300000071525574,
+                          "g": 1,
+                          "b": 0.4699999988079071,
+                          "a": 1
+                        },
+                        "position": 0,
+                        "boundVariables": {}
+                      },
+                      {
+                        "color": {
+                          "r": 0.49000000953674316,
+                          "g": 0.8199999928474426,
+                          "b": 0.029999999329447746,
+                          "a": 1
+                        },
+                        "position": 0.5,
+                        "boundVariables": {}
+                      },
+                      {
+                        "color": {
+                          "r": 0.1899999976158142,
+                          "g": 0.4000000059604645,
+                          "b": 0.009999999776482582,
+                          "a": 1
+                        },
+                        "position": 1,
+                        "boundVariables": {}
+                      }
+                    ],
+                    "gradientTransform": [
+                      [
+                        0,
+                        1,
+                        0
+                      ],
+                      [
+                        -1,
+                        0,
+                        1
+                      ]
+                    ]
+                  }
+                ],
+                "cornerRadius": 9,
+                "clipsContent": false,
+                "mainComponentId": "1783:384",
+                "children": []
+              }
+            ]
+          },
+          {
+            "id": "2139:178",
+            "name": "Location title plate · restored existing central asset",
+            "type": "INSTANCE",
+            "x": 770,
+            "y": 22,
+            "width": 412,
+            "height": 92,
+            "clipsContent": true,
+            "mainComponentId": "2071:239",
+            "children": [
+              {
+                "id": "I2139:178;2071:240",
+                "name": "Painted art · RGBA crop",
+                "type": "RECTANGLE",
+                "x": 0,
+                "y": 0,
+                "width": 412,
+                "height": 92,
+                "fills": [
+                  {
+                    "type": "IMAGE",
+                    "visible": true,
+                    "opacity": 1,
+                    "blendMode": "NORMAL",
+                    "scaleMode": "CROP",
+                    "scalingFactor": 1,
+                    "filters": {
+                      "exposure": 0,
+                      "contrast": 0,
+                      "saturation": 0,
+                      "temperature": 0,
+                      "tint": 0,
+                      "highlights": 0,
+                      "shadows": 0
+                    },
+                    "imageTransform": [
+                      [
+                        0.4466145932674408,
+                        0,
+                        0.5377604365348816
+                      ],
+                      [
+                        0,
+                        0.166015625,
+                        0.0791015625
+                      ]
+                    ],
+                    "imageHash": "b6f3cf1192a9cfec43006ccab3af60ed6010b4ab"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "id": "2139:180",
+            "name": "Location title · restored",
+            "type": "TEXT",
+            "x": 802,
+            "y": 31,
+            "width": 348,
+            "height": 66,
+            "fills": [
+              {
+                "type": "SOLID",
+                "visible": true,
+                "opacity": 1,
+                "blendMode": "NORMAL",
+                "color": {
+                  "r": 1,
+                  "g": 0.9599999785423279,
+                  "b": 0.8600000143051147
+                },
+                "boundVariables": {}
+              }
+            ],
+            "strokes": [
+              {
+                "type": "SOLID",
+                "visible": true,
+                "opacity": 1,
+                "blendMode": "NORMAL",
+                "color": {
+                  "r": 0.18000000715255737,
+                  "g": 0.09000000357627869,
+                  "b": 0.03500000014901161
+                },
+                "boundVariables": {}
+              }
+            ],
+            "strokeWeight": 2,
+            "strokeAlign": "OUTSIDE",
+            "characters": "숲 가장자리",
+            "fontSize": 43,
+            "fontName": {
+              "family": "Noto Sans KR",
+              "style": "Black",
+              "variationSettings": {
+                "wght": 900
+              }
+            },
+            "textAlignHorizontal": "CENTER",
+            "textAlignVertical": "CENTER",
+            "lineHeight": {
+              "unit": "AUTO"
+            },
+            "letterSpacing": {
+              "unit": "PERCENT",
+              "value": 0
+            },
+            "textAutoResize": "NONE"
+          }
+        ]
+      }
+    ]
+  },
+  "coordinates": "Parent-relative Figma pixels. The root frame x/y are page placement, not game screen offset.",
+  "omitted_defaults": "Invisible subtrees removed; omitted opacity is 1, rotation is 0, effects/strokes are empty.",
+  "image_binding_file": "../asset-bindings.json"
+}

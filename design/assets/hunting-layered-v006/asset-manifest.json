@@ -1,0 +1,313 @@
+{
+  "version": "v006",
+  "state": "latest_requested_design_snapshot_for_development",
+  "repository_base_commit": "e7c4a5ed56a2c1bf0620dd29dbebebdc77aa0685",
+  "figma_file": "zkbflw9fCdAlWbphhw5pSS",
+  "scenes": [
+    "2062:210",
+    "2065:254"
+  ],
+  "files": [
+    {
+      "path": ".gitattributes",
+      "bytes": 83,
+      "sha256": "9865a7fd2a0c4e2baca44640a8197b868ce730cfe73e148238950808294d02d6"
+    },
+    {
+      "path": "README.md",
+      "bytes": 5904,
+      "sha256": "9f72cff56f66aa0b7c12eef1d069c145e97ffaef98575b7c3a35cc1ece17ca41"
+    },
+    {
+      "path": "actor-provenance.json",
+      "bytes": 3257,
+      "sha256": "e443123b33376f156b327306092d59501b03570363c84ac02d408bacd5f700a3"
+    },
+    {
+      "path": "actors/deer-battle-left-3072.png",
+      "bytes": 6902474,
+      "sha256": "0c2f80524123ab13816c301969e5e204dfa7e61855045785c4b9ddd5b5ee0a21",
+      "pixels": [
+        3072,
+        3072
+      ],
+      "mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "role": "static_composition_render",
+      "authored_animation_clips": 0
+    },
+    {
+      "path": "actors/female-battle-right-3072.png",
+      "bytes": 6782254,
+      "sha256": "1a58e4113952a633173dee3b64ff00461c49036a35d0cccdc052c1612fb565b1",
+      "pixels": [
+        3072,
+        3072
+      ],
+      "mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "role": "static_composition_render",
+      "authored_animation_clips": 0
+    },
+    {
+      "path": "actors/hunter-battle-right-3072.png",
+      "bytes": 6943647,
+      "sha256": "2d09651c588720a2345223935472658ad92e91fda0f46b36368c4d313eaac434",
+      "pixels": [
+        3072,
+        3072
+      ],
+      "mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "role": "static_composition_render",
+      "authored_animation_clips": 0
+    },
+    {
+      "path": "actors/sturdy_male-battle-right-3072.png",
+      "bytes": 6887442,
+      "sha256": "0ac7f0b356e65b0050242de9baedcdf0d8bf8377e299109fa070df313a0eed75",
+      "pixels": [
+        3072,
+        3072
+      ],
+      "mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "role": "static_composition_render",
+      "authored_animation_clips": 0
+    },
+    {
+      "path": "asset-bindings.json",
+      "bytes": 27826,
+      "sha256": "d1da95899365c8dff1c4663231f6f95b65a7f523f230f74ecff690a06f572ccf"
+    },
+    {
+      "path": "battle/ui/charge-gauge-65-reference.svg",
+      "bytes": 1679,
+      "sha256": "274f1826dcdc6ec789d71df82f3f8904095864c04b3945060c466c259b5bab4d",
+      "figma_component": "2122:731",
+      "export_type": "native Figma SVG",
+      "display_state": "65 percent example; runtime fill must be dynamic"
+    },
+    {
+      "path": "battle/ui/charge-value-plate.svg",
+      "bytes": 1305,
+      "sha256": "dd2aa3aff85ee2a034d704fbf10f6a36b73d74ad7794c6b6cc87217c3b6b6c32",
+      "figma_component": "2122:724",
+      "export_type": "native Figma SVG",
+      "display_state": "background only; runtime value is a separate label"
+    },
+    {
+      "path": "battle/ui/cooperative-disabled.png",
+      "bytes": 169616,
+      "sha256": "ca24ed99b79d67a52602fa168442baf5b336a2d72ec2b97a9bb751d5f9a99dc3",
+      "pixels": [
+        317,
+        316
+      ],
+      "mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        254
+      ],
+      "figma_component": "2071:257",
+      "export_type": "isolated native-size component PNG",
+      "source_atlas_image_sha1": "b6f3cf1192a9cfec43006ccab3af60ed6010b4ab"
+    },
+    {
+      "path": "battle/ui/forest-title-wood.png",
+      "bytes": 215051,
+      "sha256": "e86525f21a06a5f4df3ce9f6512fc77a448ffa49547f4ddfa661bd3f57e57497",
+      "pixels": [
+        686,
+        170
+      ],
+      "mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        254
+      ],
+      "figma_component": "2071:239",
+      "export_type": "isolated native-size component PNG",
+      "source_atlas_image_sha1": "b6f3cf1192a9cfec43006ccab3af60ed6010b4ab"
+    },
+    {
+      "path": "battle/ui/objective-parchment.png",
+      "bytes": 505884,
+      "sha256": "85a6937ed22b9bf69987405bcbe2d14a2b2b5b2f6f37e6d8df632145200f82fc",
+      "pixels": [
+        1434,
+        192
+      ],
+      "mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        254
+      ],
+      "figma_component": "2071:263",
+      "export_type": "isolated native-size component PNG",
+      "source_atlas_image_sha1": "b6f3cf1192a9cfec43006ccab3af60ed6010b4ab"
+    },
+    {
+      "path": "battle/ui/party-hp-plate.png",
+      "bytes": 264976,
+      "sha256": "d6a48fddeec1b0ef7ea106b699848ba04944259252144d980d164278ad884b87",
+      "pixels": [
+        776,
+        191
+      ],
+      "mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        254
+      ],
+      "figma_component": "2071:233",
+      "export_type": "isolated native-size component PNG",
+      "source_atlas_image_sha1": "b6f3cf1192a9cfec43006ccab3af60ed6010b4ab"
+    },
+    {
+      "path": "battle/ui/primary-spear.png",
+      "bytes": 327776,
+      "sha256": "86f2924d767bb15112d7d8e50ed8f2321c8bbd6e968836e73ff302ee2ff5a818",
+      "pixels": [
+        430,
+        430
+      ],
+      "mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        254
+      ],
+      "figma_component": "2071:245",
+      "export_type": "isolated native-size component PNG",
+      "source_atlas_image_sha1": "b6f3cf1192a9cfec43006ccab3af60ed6010b4ab"
+    },
+    {
+      "path": "battle/ui/strong-attack.png",
+      "bytes": 211296,
+      "sha256": "783efd2f95785e49086261df38fd66920c8e5b64b18549258ad9c4e7f0d7ca56",
+      "pixels": [
+        338,
+        342
+      ],
+      "mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        254
+      ],
+      "figma_component": "2071:251",
+      "export_type": "isolated native-size component PNG",
+      "source_atlas_image_sha1": "b6f3cf1192a9cfec43006ccab3af60ed6010b4ab"
+    },
+    {
+      "path": "layout/battle.json",
+      "bytes": 90219,
+      "sha256": "32a2bfd8909a3e3f0c5de2939e368f7075611bf59c2efdb97c8d0dd45c8f2c51"
+    },
+    {
+      "path": "layout/preparation.json",
+      "bytes": 75454,
+      "sha256": "c609cc8d010eaea41e0ec02fa8d038d745679b0ca16c9de7785346123f0fac4a"
+    },
+    {
+      "path": "preparation/background.png",
+      "bytes": 3397619,
+      "sha256": "bf06ab5e26d52640d80cdf811f8d6e6d2bed1ff2341b88feac33bd3037f83228",
+      "pixels": [
+        1672,
+        941
+      ],
+      "mode": "RGB",
+      "figma_node": "2062:211"
+    },
+    {
+      "path": "preparation/right-panel.png",
+      "bytes": 2234561,
+      "sha256": "6a0b915a30e35999c52183e5455022d3ccc8d3d63430f5b4aa40492305e7c409",
+      "pixels": [
+        1024,
+        1536
+      ],
+      "mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        254
+      ],
+      "figma_component": "2081:476"
+    },
+    {
+      "path": "preparation/title-noarrow.png",
+      "bytes": 1314351,
+      "sha256": "54b819e20fa0168dcb647f5b39e9e493104fb2a06321db946c83a6c34a5c93f8",
+      "pixels": [
+        2172,
+        724
+      ],
+      "mode": "RGBA",
+      "alpha_extrema": [
+        0,
+        255
+      ],
+      "figma_component": "2081:474",
+      "fixed_text_baked": true
+    },
+    {
+      "path": "previews/battle-reference-only.png",
+      "bytes": 4132291,
+      "sha256": "34e5e725d5e092cc0ffb92a8b47bc8ba639cba60b59b07db4db2fa77b8809471",
+      "pixels": [
+        1920,
+        1080
+      ],
+      "mode": "RGBA",
+      "alpha_extrema": [
+        255,
+        255
+      ],
+      "role": "full_composition_reference_only_not_runtime_texture",
+      "figma_node": "2065:254"
+    },
+    {
+      "path": "previews/preparation-reference-only.png",
+      "bytes": 4220623,
+      "sha256": "ea060bbafc135b97c6f3205e82b8ffce70031fa92a69ae14e6bf7d6961175365",
+      "pixels": [
+        1920,
+        1080
+      ],
+      "mode": "RGBA",
+      "alpha_extrema": [
+        255,
+        255
+      ],
+      "role": "full_composition_reference_only_not_runtime_texture",
+      "figma_node": "2062:210"
+    },
+    {
+      "path": "validate_assets.py",
+      "bytes": 1585,
+      "sha256": "632a74e7d99186ee92abf5b948f2a735e7645df80eb31468fc95ed74ff7d4805"
+    }
+  ],
+  "validation": {
+    "PNG_decode_and_alpha": true,
+    "SVG_XML": true,
+    "JSON": true,
+    "current_Figma_image_sha1_matches": true,
+    "all_current_image_nodes_resolved": true,
+    "no_game_code_changed": true,
+    "game_tests": "not_run",
+    "runtime_implementation": "not_included"
+  }
+}
