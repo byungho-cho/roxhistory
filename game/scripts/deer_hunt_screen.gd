@@ -2,22 +2,22 @@ extends Control
 
 const RULES := preload("res://scripts/deer_hunt_rules.gd")
 const DESIGN := Vector2(960,540)
-# Provisional separated v001 artwork, replaceable independently of actors and UI.
+# Separated hunting art from a426690; actors remain live models in combat.
 const GRASS := preload("res://assets/ui/hunting-v001/battle-clean-v001.png")
-const PREP_TITLE := preload("res://assets/ui/hunting-v001/prep-title-bg.svg")
-const PREP_PANEL := preload("res://assets/ui/hunting-v001/prep-panel-bg.svg")
-const BATTLE_TITLE := preload("res://assets/ui/hunting-v001/battle-title-bg.svg")
-const OBJECTIVE := preload("res://assets/ui/hunting-v001/objective-banner-bg.svg")
-const NAME_BRUSH := preload("res://assets/ui/building-menu-v001/brush-black-v003.png")
+const PREP_TITLE := preload("res://assets/ui/hunting-v006/title-noarrow.png")
+const PREP_PANEL := preload("res://assets/ui/hunting-v006/right-panel.png")
+const BATTLE_TITLE := preload("res://assets/ui/hunting-v006/forest-title-wood.png")
+const OBJECTIVE := preload("res://assets/ui/hunting-v006/objective-parchment.png")
+const NAME_BRUSH := preload("res://assets/ui/brush/resource-slot-brush@2x.png")
 const TRANSITION_SECONDS := 0.8
-const TREE := preload("res://assets/environment/tree-v018.png")
-const GEAR := preload("res://assets/ui/v0158/settings.svg")
-const SPEAR := preload("res://assets/ui/s40000/hunt-spear-v001.png")
-const AXE := preload("res://assets/ui/s40000/craft-axe-v001.png")
-const HERO_MARK := preload("res://assets/ui/s40000/portrait.png")
-const HUNTER_SLOTS := [Vector2(408,300),Vector2(336,269),Vector2(344,345)]
+const TREE := preload("res://assets/ui/hunting-v006/hunters-foliage-group-v001.png")
+const GEAR := preload("res://assets/ui/review-v037/settings-figma.png")
+const SPEAR := preload("res://assets/ui/hunting-v006/primary-spear.png")
+const AXE := preload("res://assets/ui/hunting-v006/strong-attack.png")
+const HERO_MARK := preload("res://assets/ui/hunting-v006/cooperative-disabled.png")
+const HUNTER_SLOTS := [Vector2(434,322),Vector2(360,288),Vector2(350,347)]
 const PREP_SLOTS := [Vector2(218,420),Vector2(145,342),Vector2(105,453)]
-const DEER_SLOT := Vector2(573,303)
+const DEER_SLOT := Vector2(568,320)
 
 var app: Node
 var rules := RULES.new()
@@ -26,7 +26,8 @@ var preparation: Control
 var combat: Control
 var combat_top: Control
 var combat_controls: Control
-var prep_title: DemoButton
+var prep_title: TextureRect
+var ground: TextureRect
 var prep_card: TextureRect
 var foreground: TextureRect
 var deer_status: Control
@@ -52,7 +53,7 @@ var exit_button: DemoButton
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
-	var ground: TextureRect = app.picture(self,GRASS,Rect2())
+	ground = app.picture(self,preload("res://assets/ui/hunting-v006/background.png"),Rect2())
 	ground.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	ground.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	canvas = Control.new()
@@ -60,8 +61,7 @@ func _ready() -> void:
 	canvas.size = DESIGN
 	add_child(canvas)
 	canvas.draw.connect(draw_stage)
-	foreground = app.picture(canvas,TREE,Rect2(-100,282,244,258))
-	foreground.modulate = Color(.79,.85,.64)
+	foreground = app.picture(canvas,TREE,Rect2(-40,265,525,299))
 	var actors := Node2D.new()
 	actors.y_sort_enabled = true
 	canvas.add_child(actors)
@@ -71,6 +71,7 @@ func _ready() -> void:
 		hunter.render_size_factor = .5
 		actors.add_child(hunter)
 		hunter.set_enabled(true)
+		hunter.hide()
 		hunter.use_training_spear()
 		hunters.append(hunter)
 	deer = WorldAnimal.new()
@@ -108,45 +109,46 @@ func build_preparation() -> void:
 	enter.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	for state in ["normal","hover","pressed","focus"]:enter.add_theme_stylebox_override(state,StyleBoxEmpty.new())
 	# The full viewport also advances the preparation on wider screens.
-	prep_title = make_button(preparation,"",Rect2(16,12,190,51),app.close_hunt)
-	prep_title.name = "PrepareBack"
-	for state in ["normal","hover","pressed","focus"]:
-		prep_title.add_theme_stylebox_override(state,StyleBoxEmpty.new())
-	app.picture(prep_title,PREP_TITLE,Rect2(Vector2.ZERO,prep_title.size))
-	caption(prep_title,"‹   사냥 준비",Rect2(Vector2.ZERO,prep_title.size),22)
-	prep_card = app.picture(preparation,PREP_PANEL,Rect2(668,28,280,455))
+	prep_title = app.picture(preparation,PREP_TITLE,Rect2(11,0,240,80))
+	prep_card = app.picture(preparation,PREP_PANEL,Rect2(625,7,335,524))
 	var ink := Color("49321e")
-	caption(prep_card,"첫 사냥",Rect2(12,44,256,39),29,ink)
-	caption(prep_card,"숲 가장자리",Rect2(12,83,256,34),20,ink)
-	caption(prep_card,"목표   사슴 처치",Rect2(12,122,256,33),20,ink)
-	caption(prep_card,"사냥꾼 3명",Rect2(12,187,256,34),18,ink)
-	caption(prep_card,"출전 준비 완료",Rect2(12,263,256,32),17,ink)
-	caption(prep_card,"화면을 터치하여 전투 시작",Rect2(10,333,260,46),18,ink)
+	caption(prep_card,"첫 사냥",Rect2(30,58,275,36),29,ink)
+	caption(prep_card,"숲 가장자리",Rect2(30,96,275,27),20,ink)
+	caption(prep_card,"목표    사슴 처치",Rect2(30,124,275,31),19,ink)
+	caption(prep_card,"출전 편성                 3 / 3",Rect2(30,163,275,26),17,ink)
+	caption(prep_card,"주인공   ·   주민 2명",Rect2(30,214,275,30),18,ink)
+	caption(prep_card,"출전 준비 완료",Rect2(30,341,275,32),17,ink)
+	var start := make_button(prep_card,"",Rect2(48,386,239,45),start_combat)
+	start.tooltip_text = "사냥 시작"
+	app.picture(start,preload("res://assets/ui/v0160/quest-track-bg.png"),Rect2(Vector2.ZERO,start.size))
+	caption(start,"사냥 시작",Rect2(Vector2.ZERO,start.size),22,ink)
+	make_button(prep_card,"돌아가기",Rect2(111,441,113,32),app.close_hunt)
 
 func build_combat() -> void:
 	combat = layer()
 	combat.hide()
 	combat_top = layer(combat)
 	combat_controls = layer(combat)
-	hunter_bar = hp_bar(combat_top,Rect2(24,24,245,17),Color("84b73a"))
-	var place: TextureRect = app.picture(combat_top,BATTLE_TITLE,Rect2(381,12,198,46))
+	var hp_art: TextureRect = app.picture(combat_top,preload("res://assets/ui/hunting-v006/party-hp-plate.png"),Rect2(11,15,244,48))
+	hunter_bar = hp_bar(hp_art,Rect2(76,18,163,12),Color("84b73a"))
+	var place: TextureRect = app.picture(combat_top,BATTLE_TITLE,Rect2(385,11,206,46))
 	caption(place,"숲 가장자리",Rect2(Vector2.ZERO,place.size),22)
-	exit_button = make_button(combat_top,"",Rect2(888,10,56,56),app.close_hunt)
+	exit_button = make_button(combat_top,"",Rect2(896,7,56,56),app.close_hunt)
 	exit_button.name = "ExitHunt"
 	exit_button.tooltip_text = "사냥 종료"
 	app.picture(exit_button,GEAR,Rect2(5,5,46,46))
 	deer_status = app.picture(combat_top,NAME_BRUSH,Rect2(528,177,100,27))
 	caption(deer_status,"사슴",Rect2(0,0,100,25),17)
 	deer_bar = hp_bar(deer_status,Rect2(8,26,84,9),Color("c8543e"))
-	var objective: TextureRect = app.picture(combat_controls,OBJECTIVE,Rect2(302,475,356,42))
+	var objective: TextureRect = app.picture(combat_controls,OBJECTIVE,Rect2(338,477,300,36))
 	var objective_text := caption(objective,"사슴을 처치하세요",Rect2(Vector2.ZERO,objective.size),21)
 	objective_text.add_theme_color_override("font_outline_color",Color("492f1b"))
 	objective_text.add_theme_constant_override("outline_size",5)
 	# Secondary controls are added above the primary control for overlapping taps.
-	add_skill("thrust",Rect2(778,341,102,102),SPEAR)
-	add_skill("strike",Rect2(797,283,64,64),AXE)
-	add_skill("team",Rect2(720,326,64,64),HERO_MARK)
-	var gauge_plate := plaque(combat_controls,Rect2(778,447,102,28),Color("164253"),Color("5aa0ae"))
+	add_skill("thrust",Rect2(819,399,110,110),SPEAR)
+	add_skill("strike",Rect2(833,341,66,66),AXE)
+	add_skill("team",Rect2(775,383,63,63),HERO_MARK)
+	var gauge_plate: TextureRect = app.picture(combat_controls,preload("res://assets/ui/hunting-v006/charge-value-plate.svg"),Rect2(827,511,93,23))
 	gauge_text = caption(gauge_plate,"0 / 100",Rect2(Vector2.ZERO,gauge_plate.size),17)
 	update_combat_ui()
 
@@ -208,21 +210,17 @@ func add_skill(id: String, rect: Rect2, texture: Texture2D) -> void:
 	var control := make_button(combat_controls,"",rect,use_skill.bind(id))
 	control.name = id
 	control.tooltip_text = info.label
-	var radius := int(rect.size.x*.5)
-	var color := Color("7c4721") if id=="thrust" else Color("984126") if id=="strike" else Color("6b663a")
-	control.add_theme_stylebox_override("normal",box(color,Color("edbd68"),radius))
-	control.add_theme_stylebox_override("hover",box(color.lightened(.14),Color("ffe4a0"),radius))
-	control.add_theme_stylebox_override("pressed",box(color.darkened(.18),Color("e7ba60"),radius))
-	control.add_theme_stylebox_override("disabled",box(Color("474747"),Color("969696"),radius))
-	var icon_rect := Rect2(rect.size*.16,rect.size*.66)
-	var icon: TextureRect = app.picture(control,texture,icon_rect)
+	for style in ["normal","hover","pressed","disabled","focus"]:
+		control.add_theme_stylebox_override(style,StyleBoxEmpty.new())
+	var icon: TextureRect = app.picture(control,texture,Rect2(Vector2.ZERO,rect.size))
 	var grayscale := Shader.new()
-	grayscale.code = "shader_type canvas_item; uniform bool gray = false; void fragment(){vec4 c=COLOR; if(gray){c.rgb=vec3(dot(c.rgb,vec3(0.299,0.587,0.114)));} COLOR=c;}"
+	grayscale.code = "shader_type canvas_item; uniform bool gray = false; uniform bool team = false; void fragment(){vec4 c=COLOR; if(gray){c.rgb=vec3(dot(c.rgb,vec3(0.299,0.587,0.114)));} else if(team){c.rgb*=vec3(1.0,0.83,0.52);} COLOR=c;}"
 	var material := ShaderMaterial.new()
 	material.shader = grayscale
+	material.set_shader_parameter("team",id=="team")
 	icon.material = material
 	skill_icons[id] = material
-	caption(control,"%s  %d"%[info.label,info.cost],Rect2(0,rect.size.y*.71,rect.size.x,22),13)
+	caption(control,str(info.cost),Rect2(0,rect.size.y*.71,rect.size.x,22),17)
 	skill_buttons[id] = control
 	ready_flashes[id] = 0.0
 
@@ -235,7 +233,9 @@ func start_combat() -> void:
 	if running or transition_elapsed>=0 or not app.application_active:return
 	transition_elapsed = 0.0
 	preparation.get_node("PrepareTap").hide()
-	prep_title.disabled = true
+	prep_card.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	for child in prep_card.get_children():
+		if child is DemoButton:child.disabled = true
 
 func advance_transition(delta: float) -> void:
 	transition_elapsed += delta
@@ -243,15 +243,17 @@ func advance_transition(delta: float) -> void:
 	var travel := size/canvas.scale
 	if progress<.5:
 		var leaving := smoothstep(0,.5,progress)
-		prep_title.position.y = 12-travel.y*leaving
-		prep_card.position.x = 668+travel.x*leaving
+		prep_title.position.y = -travel.y*leaving
+		prep_card.position.x = 625+travel.x*leaving
 		actor_offset = Vector2(-travel.x*leaving,0)
-		foreground.position.x = -100+actor_offset.x
+		foreground.position.x = -40+actor_offset.x
 		deer_offset = Vector2(travel.x*leaving,0)
 	else:
 		if not combat_layout:
 			preparation.hide()
 			foreground.hide()
+			ground.texture = GRASS
+			for hunter in hunters:hunter.show()
 			combat_layout = true
 			combat.show()
 			exit_button.disabled = true
@@ -312,6 +314,7 @@ func update_actors(delta: float) -> void:
 	var beat := sin(clampf(pose_clock/.52,0,1)*PI)
 	for i in hunters.size():
 		var hunter := hunters[i]
+		if not combat_layout:continue
 		var attack := running and pose_clock<.52 and pose!="counter" and (i==0 or pose=="team")
 		var dodge := running and pose=="counter" and i==0
 		var base: Vector2 = HUNTER_SLOTS[i] if combat_layout else PREP_SLOTS[i]
@@ -325,17 +328,18 @@ func update_actors(delta: float) -> void:
 		hunter.tool_3d.visible = true
 		hunter.viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
 	var charge := running and pose=="counter"
-	deer.position = DEER_SLOT+deer_offset+Vector2((-29 if charge else 23)*beat if combat_layout else -45,-8*beat if combat_layout else -38)
-	deer_status.position = Vector2(deer.position.x-50,177)
+	deer.position = DEER_SLOT+deer_offset+Vector2((-29 if charge else 23)*beat if combat_layout else -65,-8*beat if combat_layout else -30)
+	deer.scale = Vector2.ONE*(1.0 if combat_layout else 1.55)
+	deer_status.position = Vector2(deer.position.x-50,204)
 	deer.walking = beat if running else 0.0
 	deer.gait_phase = pose_clock*14
 
 func draw_stage() -> void:
 	if not combat_layout:return
-	var center := Vector2(829,392)+combat_controls.position
-	canvas.draw_arc(center,57,-1.24,1.31,38,Color("15272b"),9,true)
+	var center := Vector2(874,454)+combat_controls.position
+	canvas.draw_arc(center,59,-1.24,1.31,38,Color("15272b"),9,true)
 	if rules.gauge>0:
-		canvas.draw_arc(center,57,-1.24,lerpf(-1.24,1.31,rules.gauge/RULES.MAX_GAUGE),38,Color("57deff"),6,true)
+		canvas.draw_arc(center,59,-1.24,lerpf(-1.24,1.31,rules.gauge/RULES.MAX_GAUGE),38,Color("57deff"),6,true)
 	for id in ["strike","team"]:
 		var flash: float = ready_flashes[id]
 		if flash<=0:continue

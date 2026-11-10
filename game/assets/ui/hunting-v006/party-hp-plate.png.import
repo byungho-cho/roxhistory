@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://vn1imven3xqw"
-path="res://.godot/imported/prep-title-bg.svg-2a2aa90fe7bd2df5ffe1848a3a9a3957.ctex"
+uid="uid://c2m54sj340eaf"
+path="res://.godot/imported/party-hp-plate.png-7c92ce365018eb7e2f0fa0fce9fa3207.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/ui/hunting-v001/prep-title-bg.svg"
-dest_files=["res://.godot/imported/prep-title-bg.svg-2a2aa90fe7bd2df5ffe1848a3a9a3957.ctex"]
+source_file="res://assets/ui/hunting-v006/party-hp-plate.png"
+dest_files=["res://.godot/imported/party-hp-plate.png-7c92ce365018eb7e2f0fa0fce9fa3207.ctex"]
 
 [params]
 
@@ -38,6 +38,3 @@ process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
 detect_3d/compress_to=1
-svg/scale=1.0
-editor/scale_with_editor_scale=false
-editor/convert_colors_with_editor_theme=false

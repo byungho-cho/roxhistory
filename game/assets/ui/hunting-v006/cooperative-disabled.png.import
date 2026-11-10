@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://ceridrreftcs4"
-path="res://.godot/imported/battle-title-bg.svg-6eed5b01badf858e6656e397f2ab3eaa.ctex"
+uid="uid://cwgq8j5qeqdqa"
+path="res://.godot/imported/cooperative-disabled.png-c3f02946adac4c23e53770a3916eb38f.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/ui/hunting-v001/battle-title-bg.svg"
-dest_files=["res://.godot/imported/battle-title-bg.svg-6eed5b01badf858e6656e397f2ab3eaa.ctex"]
+source_file="res://assets/ui/hunting-v006/cooperative-disabled.png"
+dest_files=["res://.godot/imported/cooperative-disabled.png-c3f02946adac4c23e53770a3916eb38f.ctex"]
 
 [params]
 
@@ -38,6 +38,3 @@ process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
 detect_3d/compress_to=1
-svg/scale=1.0
-editor/scale_with_editor_scale=false
-editor/convert_colors_with_editor_theme=false

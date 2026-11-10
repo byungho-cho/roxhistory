@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://c4x5u17ffergm"
-path="res://.godot/imported/prep-panel-bg.svg-2dca7ba0d67becbf23064c6a6aa5de7a.ctex"
+uid="uid://jc83etw6nvyf"
+path="res://.godot/imported/forest-title-wood.png-8d2dc972fa2d3c0c9b144a62b014c25a.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/ui/hunting-v001/prep-panel-bg.svg"
-dest_files=["res://.godot/imported/prep-panel-bg.svg-2dca7ba0d67becbf23064c6a6aa5de7a.ctex"]
+source_file="res://assets/ui/hunting-v006/forest-title-wood.png"
+dest_files=["res://.godot/imported/forest-title-wood.png-8d2dc972fa2d3c0c9b144a62b014c25a.ctex"]
 
 [params]
 
@@ -38,6 +38,3 @@ process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
 detect_3d/compress_to=1
-svg/scale=1.0
-editor/scale_with_editor_scale=false
-editor/convert_colors_with_editor_theme=false

@@ -448,7 +448,7 @@ func title_screen() -> void:
 	var config:=button(stage,"",pause_game)
 	config.name="TitleSettings";config.custom_minimum_size=Vector2.ZERO;config.position=Vector2(w-safe.x-60,safe.y+6);config.size=Vector2(56,56)
 	for state in ["normal","hover","pressed","focus"]:config.add_theme_stylebox_override(state,StyleBoxEmpty.new())
-	picture(config,preload("res://assets/ui/v0158/settings.svg"),Rect2(4,4,48,48))
+	picture(config,preload("res://assets/ui/review-v037/settings-figma.png"),Rect2(4,4,48,48))
 	config.set_meta("semantic_text","설정")
 	title_sound = button(stage,"",toggle_sound)
 	title_sound.name = "TitleSound"

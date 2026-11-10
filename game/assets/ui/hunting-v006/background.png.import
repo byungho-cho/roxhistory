@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://fxjuee1eytbx"
-path="res://.godot/imported/objective-banner-bg.svg-edd0206617dac165c6712ae9c33402af.ctex"
+uid="uid://crdxtqlb074ag"
+path="res://.godot/imported/background.png-710cb73ea149e7ce2793e61492ff6d3f.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/ui/hunting-v001/objective-banner-bg.svg"
-dest_files=["res://.godot/imported/objective-banner-bg.svg-edd0206617dac165c6712ae9c33402af.ctex"]
+source_file="res://assets/ui/hunting-v006/background.png"
+dest_files=["res://.godot/imported/background.png-710cb73ea149e7ce2793e61492ff6d3f.ctex"]
 
 [params]
 
@@ -38,6 +38,3 @@ process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
 detect_3d/compress_to=1
-svg/scale=1.0
-editor/scale_with_editor_scale=false
-editor/convert_colors_with_editor_theme=false
