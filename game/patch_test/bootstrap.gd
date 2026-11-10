@@ -15,7 +15,7 @@ var restart_pending := false
 const TRUST := preload("res://patch_test/patch_key.gd")
 
 var cache := "user://rox-patches-0.2.91/"
-@onready var index := cache + "current.json"
+var index := cache + "current.json"
 var shade:ColorRect
 var popup:CenterContainer
 var update_rows:VBoxContainer
@@ -30,13 +30,18 @@ var previous_mouse_emulation := false
 var cached := {}
 var candidate := {}
 var envelope := PackedByteArray()
-func _ready() -> void:
-	mouse_filter = Control.MOUSE_FILTER_IGNORE
+func _init() -> void:
+	# Autoload _ready runs after the main scene is loaded. Mount before that load.
 	DirAccess.make_dir_recursive_absolute(cache)
 	discard(cache + "incoming.part")
 	discard(index + ".part")
 	cached = verified_manifest(FileAccess.get_file_as_bytes(index)) if FileAccess.file_exists(index) else {}
 	if not cached.is_empty() and not valid_pack(pack_path(cached),cached):cached = {}
+	ProjectSettings.set_setting("roxhistory/update/source_commit",BASE_COMMIT)
+	mount_cached()
+
+func _ready() -> void:
+	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	shade = ColorRect.new()
 	shade.color = Color(0.08, 0.06, 0.03, 0.55)
 	add_child(shade)
@@ -87,8 +92,6 @@ func _ready() -> void:
 	ProjectSettings.set_setting("roxhistory/native/diagnostic_zip",true)
 	shade.hide()
 	popup.hide()
-	ProjectSettings.set_setting("roxhistory/update/source_commit",BASE_COMMIT)
-	mount_cached()
 
 func title_ready() -> void:
 	title_active = true
