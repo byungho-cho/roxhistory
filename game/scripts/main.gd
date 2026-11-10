@@ -23,7 +23,7 @@ var performance_hud:PanelContainer
 var debug_shortcut:DemoButton
 var debug_shortcut_icon:TextureRect
 const HUNT_SCREEN := preload("res://scripts/deer_hunt_screen.gd")
-const INTRO_VIDEO_PATH := "res://assets/video/history_intro_15s_v0.2.94_20261111.ogv"
+const INTRO_VIDEO_PATH := "res://assets/video/history_intro_30s_v0.2.100_20261111.ogv"
 var hunt: HUNT_SCREEN
 var title_sound: DemoButton
 var title_prompt: DemoButton
