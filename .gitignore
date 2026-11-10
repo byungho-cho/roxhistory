@@ -24,3 +24,5 @@ game/reports/
 game/android/build/
 game/android/.build_version
 game/addons/roxhistory_notifications.aar
+/game/benchmark/build-commit.txt
+/scripts/__pycache__/

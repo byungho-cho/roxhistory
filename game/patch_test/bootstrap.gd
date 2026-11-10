@@ -92,12 +92,14 @@ func _ready() -> void:
 	shade.hide()
 	popup.hide()
 	ProjectSettings.set_setting("roxhistory/trial/base_commit",BASE_COMMIT)
-	if not trials.mount_selected():
+	if BenchmarkSession.active:
+		trials.selected = BenchmarkSession.request.mode
+	elif not trials.mount_selected():
 		trials.selected = ""
 		mount_cached()
 
 func title_ready() -> void:
-	if not is_inside_tree():return
+	if not is_inside_tree() or BenchmarkSession.active:return
 	if not checked_title and trials.selected.is_empty() and not OS.get_cmdline_user_args().has("--test-ui"):
 		checked_title = true
 		check_for_patch()

@@ -120,6 +120,7 @@ public final class VillageAlarm extends BroadcastReceiver {
         JSONObject sample = new JSONObject();
         try {
             sample.put("process_pss_kib", memory.getTotalPss());
+            sample.put("screen_interactive", activity.getSystemService(PowerManager.class).isInteractive());
             sample.put("process_cpu_total_ms", android.os.Process.getElapsedCpuTime());
             Intent battery = activity.registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
             if (battery != null && battery.hasExtra(BatteryManager.EXTRA_TEMPERATURE)) {

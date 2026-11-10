@@ -143,9 +143,10 @@ func _ready() -> void:
 	add_child(audio)
 	var save_directory:="user://tests/session" if test_mode else "user://"
 	if not performance_trial.is_empty():save_directory="user://performance-trials/session"
+	if BenchmarkSession.active:save_directory="user://benchmark/"+str(BenchmarkSession.request.run_id)+"/save"
 	model = GameState.new(SaveStore.new(save_directory),true)
 	if not performance_trial.is_empty():prepare_performance_trial()
-	if not test_mode:village_alerts=AndroidVillageNotifications.new(model,performance_trial.is_empty())
+	if not test_mode or BenchmarkSession.active:village_alerts=AndroidVillageNotifications.new(model,performance_trial.is_empty())
 	model.finish_loaded_jobs()
 	model.changed.connect(update_hud)
 	model.failed.connect(show_error)
@@ -157,6 +158,10 @@ func _ready() -> void:
 	ui.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	get_viewport().size_changed.connect(queue_layout)
 	show_screen("title")
+	if BenchmarkSession.active:
+		var runner = load("res://benchmark/runner.gd").new()
+		runner.app = self
+		add_child(runner)
 
 func queue_layout() -> void:
 	if rebuilding:

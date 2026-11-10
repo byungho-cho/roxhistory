@@ -61,6 +61,10 @@ function Assert-Replaceable {
     }
 }
 Assert-Replaceable
+$buildCommit = & git -C $repo rev-parse HEAD
+if ($LASTEXITCODE -ne 0) { throw "Cannot identify benchmark build commit." }
+$stamp = Join-Path $repo "game/benchmark/build-commit.txt"
+$buildCommit | Set-Content -LiteralPath $stamp -Encoding ascii
 & (Join-Path $PSScriptRoot 'prepare-android-notifications.ps1') -GodotPath $GodotPath -AndroidSdkPath $AndroidSdkPath -JavaHome $JavaHome
 $variableNames = @('JAVA_HOME','GODOT_ANDROID_KEYSTORE_DEBUG_PATH','GODOT_ANDROID_KEYSTORE_DEBUG_USER','GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD')
 $savedEnvironment = @{}
