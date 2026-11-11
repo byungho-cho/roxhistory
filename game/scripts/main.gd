@@ -536,6 +536,7 @@ func open_title_update() -> void:
 func update_title_patch_action(_result:int,_code:int,_headers:PackedStringArray,_body:PackedByteArray) -> void:
 	var updates := get_node("/root/PatchBootstrap/Overlay")
 	if title_update_in_flight:finish_title_update_check()
+	if updates.has_method("begin_manifest_check"):return
 	if updates.restart_pending or updates.downloading:return
 	if updates.candidate.is_empty():
 		if updates.popup.visible and updates.check_status.is_empty():
@@ -573,6 +574,10 @@ func check_title_update(manual:=false) -> void:
 	title_update_in_flight = true
 	updates.title_active = true
 	updates.checked_title = true
+	var url := str(updates.RELEASE_ROOT)+"latest.json?check="+str(Time.get_unix_time_from_system())
+	if updates.has_method("begin_manifest_check"):
+		if not updates.begin_manifest_check(url):finish_title_update_check()
+		return
 	updates.candidate.clear()
 	updates.update_button.disabled = true
 	updates.status.text = "업데이트 확인 중…"
@@ -581,7 +586,6 @@ func check_title_update(manual:=false) -> void:
 	updates.request.timeout = TITLE_UPDATE_TIMEOUT
 	updates.request.download_file = ""
 	updates.request.body_size_limit = 8192
-	var url := str(updates.RELEASE_ROOT)+"latest.json?check="+str(Time.get_unix_time_from_system())
 	if updates.request.request(url) != OK:
 		updates.show_failure()
 		finish_title_update_check()

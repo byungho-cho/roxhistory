@@ -18,7 +18,12 @@ var cache := "user://rox-patches-0.2.91/"
 var index := cache + "current.json"
 var shade:ColorRect
 var popup:CenterContainer
-var update_rows:VBoxContainer
+enum Phase { IDLE, CHECKING, AVAILABLE, CURRENT, DOWNLOADING, VERIFYING, READY, CHECK_FAILED, DOWNLOAD_FAILED }
+var phase := Phase.IDLE
+var dialog: Control
+var verification_generation := 0
+var failure_message := ""
+var check_url := RELEASE_ROOT + "latest.json"
 var request: HTTPRequest
 var status: Label
 var update_button: Button
@@ -44,47 +49,22 @@ func _init() -> void:
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	shade = ColorRect.new()
-	shade.color = Color(0.08, 0.06, 0.03, 0.55)
+	shade.color = Color(0.08, 0.06, 0.03, 0.64)
 	add_child(shade)
 	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	popup = CenterContainer.new()
 	add_child(popup)
 	popup.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	var panel := PanelContainer.new()
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color("34261b")
-	style.border_color = Color("d4a45f")
-	style.set_border_width_all(2)
-	style.set_corner_radius_all(18)
-	style.set_content_margin_all(24)
-	panel.add_theme_stylebox_override("panel", style)
-	popup.add_child(panel)
-	update_rows = VBoxContainer.new()
-	var rows:=update_rows
-	rows.custom_minimum_size.x = 360
-	rows.add_theme_constant_override("separation", 14)
-	panel.add_child(rows)
-	status = Label.new()
-	status.add_theme_font_override("font", load("res://assets/fonts/BlackHanSans-Regular.ttf"))
-	status.add_theme_font_size_override("font_size", 24)
-	status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	status.text = "설치된 게임 버전  " + cached.get("version",embedded_version)
-	rows.add_child(status)
-	progress_bar = ProgressBar.new()
-	progress_bar.custom_minimum_size.y = 24
-	progress_bar.show_percentage = false
-	progress_bar.hide()
-	rows.add_child(progress_bar)
-	progress_text = Label.new()
-	progress_text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	progress_text.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	progress_text.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	progress_text.add_theme_color_override("font_outline_color", Color.BLACK)
-	progress_text.add_theme_constant_override("outline_size", 4)
-	progress_bar.add_child(progress_text)
-	progress_text.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	update_button = action(rows, "업데이트 받기", download_patch)
-	close_button = action(rows, "닫기", close_popup)
+	dialog = load("res://patch_test/patch_dialog.gd").new()
+	popup.add_child(dialog)
+	status = dialog.heading
+	progress_bar = dialog.progress_bar
+	progress_text = dialog.progress_text
+	update_button = dialog.update_button
+	close_button = dialog.close_button
+	update_button.pressed.connect(primary_action)
+	close_button.pressed.connect(close_popup)
+	render_phase()
 	request = HTTPRequest.new()
 	request.timeout = 30.0
 	request.body_size_limit = 8192
@@ -102,7 +82,7 @@ func title_ready() -> void:
 		check_for_patch()
 
 func show_popup() -> void:
-	previous_mouse_emulation = Input.emulate_mouse_from_touch
+	if not popup.visible:previous_mouse_emulation = Input.emulate_mouse_from_touch
 	Input.emulate_mouse_from_touch = true
 	shade.show()
 	popup.show()
@@ -112,17 +92,20 @@ func leave_title() -> void:
 	close_popup()
 
 func close_popup()->void:
+	if restart_pending:return
+	verification_generation += 1
 	if popup.visible:
 		request.cancel_request()
 		discard(cache + "incoming.part")
 	downloading=false
+	phase = Phase.IDLE
 	progress_bar.hide()
 	if popup.visible:Input.emulate_mouse_from_touch = previous_mouse_emulation
 	popup.hide()
 	shade.hide()
 
 func _process(_delta: float) -> void:
-	if downloading:
+	if phase==Phase.DOWNLOADING:
 		update_download_progress(request.get_downloaded_bytes(), int(candidate.size))
 
 func update_download_progress(received: int, total: int) -> void:
@@ -132,92 +115,123 @@ func update_download_progress(received: int, total: int) -> void:
 		floori(progress_bar.value), downloaded / 1000000.0, total / 1000000.0
 	]
 
-func action(rows: Container, caption: String, callback: Callable) -> Button:
-	var button := Button.new()
-	button.text = caption
-	button.add_theme_font_override("font",status.get_theme_font("font"))
-	button.custom_minimum_size.y = 52
-	button.pressed.connect(callback)
-	rows.add_child(button)
-	return button
+func render_phase() -> void:
+	update_button.disabled = false
+	close_button.disabled = false
+	match phase:
+		Phase.CHECKING:
+			dialog.render("업데이트 확인 중…","새 버전이 있는지 확인하고 있습니다.","","","",false,"닫기","")
+		Phase.AVAILABLE:
+			dialog.render("게임 업데이트","새 버전이 준비되었습니다.\n게임 파일을 다운로드할까요?",
+				"다운로드 용량 %.1f MB"%(int(candidate.size)/1000000.0),
+				str(ProjectSettings.get_setting("application/config/version",embedded_version))+"   →",candidate.version,false,"나중에","업데이트 받기")
+		Phase.CURRENT:
+			dialog.render("이미 최신 버전입니다","현재 버전으로 게임을 시작할 수 있습니다.","","","",false,"닫기","")
+		Phase.DOWNLOADING:
+			dialog.render("업데이트 다운로드 중","새 게임 파일을 받고 있습니다.\n잠시만 기다려 주세요.","취소하면 다운로드를 중단합니다.","","",true,"다운로드 취소","")
+		Phase.VERIFYING:
+			dialog.render("파일 확인 중…","내려받은 게임 파일을 확인하고 있습니다.","","","",true,"","")
+		Phase.READY:
+			dialog.render("업데이트 준비 완료","게임 파일을 내려받고 확인했습니다.\n재실행하면 새 버전이 적용됩니다.",
+				"아래 버튼을 눌러 게임을 다시 시작해 주세요." if failure_message.is_empty() else failure_message,
+				"새 버전",candidate.version,false,"","게임 재실행",220.0)
+		Phase.CHECK_FAILED, Phase.DOWNLOAD_FAILED:
+			dialog.render("업데이트를 진행하지 못했습니다",failure_message,"연결 상태를 확인한 뒤 다시 시도해 주세요.","","",false,"닫기","다시 시도")
+		_:
+			dialog.render("게임 업데이트","","","","",false,"닫기","")
 
 func check_for_patch() -> void:
-	update_button.disabled = true
-	status.text = "업데이트 확인 중…"
-	check_status = status.text
+	begin_manifest_check(RELEASE_ROOT+"latest.json")
+
+func begin_manifest_check(url: String) -> bool:
+	if downloading or restart_pending or phase==Phase.CHECKING:return false
+	check_url = url
+	candidate.clear()
+	failure_message = ""
+	phase = Phase.CHECKING
+	render_phase()
+	check_status = "업데이트 확인 중…"
 	request.cancel_request()
 	request.download_file = ""
 	request.body_size_limit = 8192
-	if request.request(RELEASE_ROOT + "latest.json") != OK:
-		show_failure()
+	request.timeout = 4.0
+	if request.request(check_url)==OK:return true
+	show_failure()
+	return false
 
 func request_completed(result: int, code: int, _headers: PackedStringArray, body: PackedByteArray) -> void:
+	if phase not in [Phase.CHECKING,Phase.DOWNLOADING]:return
+	request.timeout = 30.0
 	if result != HTTPRequest.RESULT_SUCCESS or code != 200:
 		show_failure()
 		return
-	if not downloading:
+	if phase==Phase.CHECKING:
 		var remote := verify_payload(body)
 		if compatible(remote) and remote.get("version")==BASE_VERSION and remote.get("patch_available")==false:
-			check_status = ""
-			return
-		candidate = verified_manifest(body)
-		if candidate.is_empty():
-			show_failure()
-			return
-		if version_number(candidate.version) <= version_number(cached.get("version", embedded_version)):
-			status.text = "이미 최신 버전입니다"
-			check_status = ""
-			update_button.disabled = false
-			return
-		envelope = body
-		status.text = "새 버전 "+candidate.version
-		update_button.disabled=false
-		update_rows.show()
-		check_status = ""
-		if title_active:
-			show_popup()
+			phase = Phase.CURRENT
 		else:
-			checked_title = false
+			candidate = verified_manifest(body)
+			if candidate.is_empty():
+				show_failure("업데이트 정보의 서명 또는 호환성을 확인하지 못했습니다.")
+				return
+			phase = Phase.AVAILABLE if version_number(candidate.version)>version_number(cached.get("version",embedded_version)) else Phase.CURRENT
+		check_status = ""
+		if phase==Phase.AVAILABLE:
+			envelope = body
+			if title_active:show_popup()
+			else:checked_title = false
+		render_phase()
 		return
-	if not valid_pack(cache + "incoming.part",candidate):
-		show_failure()
+	phase = Phase.VERIFYING
+	update_download_progress(int(candidate.size),int(candidate.size))
+	render_phase()
+	var generation := verification_generation
+	# Allow a rendered frame before the synchronous file hash.
+	await get_tree().process_frame
+	await get_tree().process_frame
+	if generation!=verification_generation or phase!=Phase.VERIFYING:return
+	if not valid_pack(cache+"incoming.part",candidate):
+		show_failure("다운로드한 파일의 크기 또는 해시가 일치하지 않습니다.")
 		return
-	if DirAccess.rename_absolute(cache + "incoming.part",pack_path(candidate)) != OK:
-		show_failure()
-		return
-	if not save_index():
-		show_failure()
+	if DirAccess.rename_absolute(cache+"incoming.part",pack_path(candidate))!=OK or not save_index():
+		show_failure("업데이트 파일을 저장하지 못했습니다.")
 		return
 	downloading = false
-	progress_bar.hide()
 	restart_pending = true
-	status.hide()
-	close_button.hide()
-	update_button.text = "게임 재실행"
-	update_button.disabled = false
+	failure_message = ""
+	check_status = ""
+	phase = Phase.READY
+	render_phase()
 
-func download_patch()->void:
+func primary_action() -> void:
+	if phase==Phase.CHECK_FAILED:
+		begin_manifest_check(check_url)
+	elif phase in [Phase.AVAILABLE,Phase.DOWNLOAD_FAILED,Phase.READY]:
+		download_patch()
+
+func download_patch() -> void:
 	if restart_pending:
 		update_button.disabled = true
 		if OS.has_feature("android"):
-			# The Android export host restarts its process for create_instance().
-			if OS.create_instance(PackedStringArray()) < 0:
-				status.text = "게임을 다시 열지 못했습니다. 한 번 더 눌러 주세요."
-				status.show()
-				update_button.disabled = false
+			if OS.create_instance(PackedStringArray())<0:
+				failure_message = "게임을 다시 열지 못했습니다. 한 번 더 눌러 주세요."
+				render_phase()
 		else:
-			OS.set_restart_on_exit(true, OS.get_cmdline_args())
+			OS.set_restart_on_exit(true,OS.get_cmdline_args())
 			get_tree().quit()
 		return
-	if candidate.is_empty():return
-	update_button.disabled=true
-	downloading=true
-	update_download_progress(0, int(candidate.size))
-	progress_bar.show()
-	status.text=candidate.version+" 다운로드 중…"
-	request.download_file=cache+"incoming.part"
-	request.body_size_limit=int(candidate.size)
+	if downloading or candidate.is_empty() or phase not in [Phase.AVAILABLE,Phase.DOWNLOAD_FAILED]:return
+	downloading = true
+	phase = Phase.DOWNLOADING
+	failure_message = ""
+	check_status = ""
+	update_download_progress(0,int(candidate.size))
+	render_phase()
+	request.timeout = 30.0
+	request.download_file = cache+"incoming.part"
+	request.body_size_limit = int(candidate.size)
 	if request.request(RELEASE_ROOT+candidate.file)!=OK:show_failure()
+
 
 func verify_payload(bytes:PackedByteArray) -> Dictionary:
 	if bytes.is_empty():return {}
@@ -279,13 +293,18 @@ func mount_cached() -> bool:
 	ProjectSettings.set_setting("roxhistory/update/source_commit",cached.commit)
 	return true
 
-func show_failure() -> void:
+func show_failure(message := "") -> void:
+	var download_failed := downloading
+	phase = Phase.DOWNLOAD_FAILED if download_failed else Phase.CHECK_FAILED
 	downloading = false
-	progress_bar.hide()
-	discard(cache + "incoming.part")
-	status.text = "업데이트 확인 또는 다운로드 실패"
-	check_status = status.text
-	update_button.disabled = false
+	request.timeout = 30.0
+	discard(cache+"incoming.part")
+	failure_message = message
+	if failure_message.is_empty():
+		failure_message = "게임 파일을 내려받지 못했습니다." if download_failed else "새 버전 정보를 가져오지 못했습니다."
+	check_status = failure_message
+	render_phase()
+
 
 func discard(path: String) -> void:
 	if FileAccess.file_exists(path):

@@ -159,14 +159,15 @@ func fit_layout() -> void:
 	canvas.position = safe_start+(safe_size-DESIGN*fit)*.5
 	var start := (safe_start-canvas.position)/fit
 	var end := (safe_end-canvas.position)/fit
-	header_left.position = start+Vector2(0,1)
-	header_right.position = Vector2(end.x-DESIGN.x,start.y+1)
-	power_header.position = Vector2(-45,start.y)
+	var margin := Vector2.ONE*20.0/fit
+	header_left.position = start+margin-Vector2(3,0)
+	header_right.position = Vector2(end.x-DESIGN.x-margin.x+3,start.y+margin.y-3)
+	power_header.position = Vector2(-45,start.y+margin.y-4)
 	battle_header.position = power_header.position
-	roster_edge.position = start+Vector2(0,72)
-	footer_left.position = Vector2(start.x,end.y-DESIGN.y)
-	footer_right.position = end-DESIGN
-	combat_controls.position = footer_right.position
+	roster_edge.position = Vector2(start.x+margin.x,(start.y+end.y-355)*.5)
+	footer_left.position = Vector2(start.x+margin.x-3,end.y-DESIGN.y-margin.y+2)
+	footer_right.position = end-DESIGN-margin+Vector2(3,3)
+	combat_controls.position = end-DESIGN
 	fit_exit_shade()
 
 
