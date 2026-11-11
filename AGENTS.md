@@ -1,6 +1,7 @@
 # RoxHistory development and releases
 
 - Preserve existing local work, Git commit history, branches, tags, and release records.
+- Unless the user explicitly scopes a task to debugging or local verification, complete the authorized development work through verification and GitHub distribution. Prefer the existing signed PCK update flow when compatible, and provide a new APK when the installed updater or native runtime requires it.
 - On weekdays from 08:00 to 18:00 Korea time, publish Android only unless Windows is specifically needed. At other times, publish Android and Windows from the same source commit and version.
 - The only local distribution directory is the repository's `build/` directory (`D:\workspace\roxhistory\build` on MY-NUROX). Do not place distribution copies in other folders.
 - Name the files exactly `Roxhistory_<version>.apk` and `Roxhistory_<version>.exe`. Do not append dates, machine names, or other suffixes.
