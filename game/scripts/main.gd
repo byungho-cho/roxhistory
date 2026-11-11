@@ -35,6 +35,9 @@ var intro_preparing := false
 var intro_leaving := false
 var intro_cloud_layer: CanvasLayer
 var intro_cloud: ColorRect
+signal intro_world_prepared
+var prepared_intro_world: DemoWorld
+var preparing_intro_world := false
 var intro_loading: Label
 var intro_probe := OS.is_debug_build() and OS.has_feature("android")
 var intro_cloud_tween: Tween
@@ -173,7 +176,7 @@ func _ready() -> void:
 	show_screen("title")
 
 func queue_layout() -> void:
-	if rebuilding or screen in ["hunt","intro"] or village_entry_active():
+	if rebuilding or screen in ["hunt","intro"] or intro_leaving or village_entry_active():
 		return
 	rebuilding = true
 	call_deferred("relayout")
@@ -203,7 +206,7 @@ func clear_children(node: Node) -> void:
 		node.remove_child(child)
 		child.queue_free()
 
-func show_screen(next: String) -> void:
+func show_screen(next: String,spread_hud:=false) -> void:
 	if screen=="title" and next!="title":get_node("/root/PatchBootstrap/Overlay").leave_title()
 	finish_village_entry()
 	if menu_tween:menu_tween.kill()
@@ -247,7 +250,7 @@ func show_screen(next: String) -> void:
 		"intro": intro_screen()
 		"region": region_screen()
 		"chapter": ChapterSelection.new(self).open()
-		"play": play_hud()
+		"play": await play_hud(spread_hud)
 		"hunt":
 			hunt = HUNT_SCREEN.new()
 			hunt.app = self
@@ -622,7 +625,8 @@ func reveal_intro_destination() -> void:
 		intro_cloud_layer.queue_free()
 		intro_cloud = null
 		intro_leaving = false
-		first_village_loading = false)
+		first_village_loading = false
+		if screen=="play" and get_viewport().get_visible_rect().size!=Vector2(w,h):queue_layout())
 
 func intro_screen() -> void:
 	var backdrop := ColorRect.new()
@@ -679,33 +683,46 @@ func leave_intro_under_cover() -> void:
 	intro_player = null
 	intro_stream = null
 	if not model.state.is_empty() and not is_instance_valid(world):
-		intro_loading.text = "마을 준비 중…"
-		intro_loading.show()
-		var world_started := Time.get_ticks_usec()
-		var assembling_world := DemoWorld.new(model)
-		assembling_world.spread_startup = true
-		assembling_world.hide()
-		assembling_world.process_mode = Node.PROCESS_MODE_DISABLED
-		add_child(assembling_world)
-		await assembling_world.startup_completed
-		world = assembling_world
+		if not is_instance_valid(prepared_intro_world):
+			intro_loading.text = "마을 준비 중…"
+			intro_loading.show()
+			prepare_intro_world()
+			await intro_world_prepared
+		world = prepared_intro_world
+		prepared_intro_world = null
+		world.resume_staged_startup()
 		world.feedback.sound_cue.connect(audio.cue)
-		intro_probe_step("world",world_started)
 		await get_tree().process_frame
 	while not application_active:
 		await get_tree().process_frame
-	continue_to_village()
+	await continue_to_village()
 	await get_tree().process_frame
 	intro_probe_step("covered_to_first_frame",covered_at)
 	reveal_intro_destination()
 
+func prepare_intro_world() -> void:
+	if preparing_intro_world or is_instance_valid(prepared_intro_world) or is_instance_valid(world) or model.state.is_empty():
+		return
+	preparing_intro_world = true
+	var world_started := Time.get_ticks_usec()
+	var assembling_world := DemoWorld.new(model)
+	assembling_world.spread_startup = true
+	assembling_world.hide()
+	assembling_world.process_mode = Node.PROCESS_MODE_DISABLED
+	add_child(assembling_world)
+	await assembling_world.startup_completed
+	prepared_intro_world = assembling_world
+	preparing_intro_world = false
+	intro_probe_step("world",world_started)
+	intro_world_prepared.emit()
+
 func intro_probe_step(phase: String, started: int) -> void:
-	if intro_probe and intro_leaving:
+	if intro_probe and (intro_leaving or screen=="intro"):
 		print("ROX_INTRO_TIMING ",phase," ms=",(Time.get_ticks_usec()-started)/1000.0)
 
 func continue_to_village() -> void:
 	if model.state.is_empty():chapter_menu()
-	else:enter_game()
+	else:await enter_game(false,true)
 
 func toggle_sound() -> void:
 	settings.set_value("app","sound",not settings.get_value("app","sound",true))
@@ -774,7 +791,7 @@ func start_region() -> void:
 			world = null
 		enter_game(true)
 
-func enter_game(first_entry:=false) -> void:
+func enter_game(first_entry:=false,spread_hud:=false) -> void:
 	if model.state.is_empty():
 		return
 	if village_alerts and VillageNotifications.EVENTS.any(func(event):return VillageNotifications.setting(model.state,event)):
@@ -796,7 +813,7 @@ func enter_game(first_entry:=false) -> void:
 	world.player.set_character_3d(true)
 	world.player.camera.reset_smoothing()
 	intro_probe_step("hero_3d",hero_started)
-	show_screen("play")
+	await show_screen("play",spread_hud)
 	if first_entry:
 		gestures.clear()
 		village_entry=VillageEntry.new(world.player,world.boundary_root.get_node_or_null("UnlockedPerimeter"),not first_village_loading)
@@ -816,7 +833,7 @@ func village_entry_active()->bool:
 func finish_village_entry()->void:
 	if village_entry_active():village_entry.finish()
 
-func play_hud() -> void:
+func play_hud(spread:=false) -> void:
 	var hud_started := Time.get_ticks_usec()
 	performance_hud=PERFORMANCE_HUD.new()
 	stage.add_child(performance_hud)
@@ -884,6 +901,7 @@ func play_hud() -> void:
 	menu_toggle.text="";menu_toggle.icon=null
 	var toggle_visual:=MenuToggleVisual.new();toggle_visual.name="ToggleVisual";menu_toggle.add_child(toggle_visual)
 	apply_menu_state()
+	if spread:await get_tree().process_frame
 	build_side=BuildSideMenu.new(self);stage.add_child(build_side)
 	build_side.visibility_changed.connect(update_construction_row)
 	tutorial=IntroTutorial.new(self);stage.add_child(tutorial)
@@ -906,6 +924,7 @@ func play_hud() -> void:
 	intro_probe_step("hud_before_map",hud_started)
 	var map_started := Time.get_ticks_usec()
 	world_map = null
+	if spread:await get_tree().process_frame
 	intro_probe_step("hud_map",map_started)
 	map_toggle=button(stage,"",toggle_world_map);map_toggle.icon=AssetCatalog.texture("UI-MAP");map_toggle.expand_icon=true;map_toggle.add_theme_constant_override("icon_max_width",48);map_toggle.custom_minimum_size=Vector2.ZERO;map_toggle.position=Vector2(w-safe.x-64,safe.y+90);map_toggle.size=Vector2(56,56);map_toggle.z_index=31
 	for state in ["normal","hover","pressed","focus"]:map_toggle.add_theme_stylebox_override(state,StyleBoxEmpty.new())
@@ -1081,6 +1100,7 @@ func _process(delta: float) -> void:
 			var position := intro_player.stream_position
 			intro_stall = intro_stall+delta if intro_preparing or is_equal_approx(position,intro_position) else 0.0
 			intro_position = position
+			if not intro_preparing and position>=5.0:prepare_intro_world()
 			if not intro_player.is_playing() or intro_stall>=3.0:finish_intro()
 			elif intro_preparing:intro_loading.visible = intro_stall>=1.0
 		return

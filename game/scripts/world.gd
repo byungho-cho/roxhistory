@@ -143,10 +143,14 @@ func _ready() -> void:
 	add_child(ResourceRegrowth.new(self))
 	model.changed.connect(refresh)
 	refresh()
-	if spread_startup:process_mode = Node.PROCESS_MODE_INHERIT
+	if not spread_startup:
+		resume_staged_startup()
+	startup_completed.emit()
+
+func resume_staged_startup() -> void:
+	process_mode = Node.PROCESS_MODE_INHERIT
 	call_deferred("restore_clear_position")
 	call_deferred("spawn_outer_bears")
-	startup_completed.emit()
 
 func add_wildlife(species:String,at:Vector2,height:float,heading:float)->WorldAnimal:
 	var animal:=WorldAnimal.new()

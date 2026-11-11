@@ -31,12 +31,14 @@ func _ready()->void:
 	var backing:=CanvasLayer.new();backing.layer=-100;backing.custom_viewport=village_view;village_view.add_child(backing)
 	var ground:=TextureRect.new();ground.texture=load("res://assets/terrain-review-v001/ground-a.png");ground.expand_mode=TextureRect.EXPAND_IGNORE_SIZE;ground.size=Vector2.ONE*PIXELS
 	var mat:=ShaderMaterial.new();mat.shader=load("res://shaders/minimap_terrain_extension.gdshader");ground.material=mat;backing.add_child(ground)
+	village_view.render_target_update_mode=SubViewport.UPDATE_ONCE
+func ensure_world_overview()->void:
+	if is_instance_valid(map_view):return
 	map_view=make_view()
 	overview=VillageWorldMap.new(app);overview.natural_only=true;map_view.add_child(overview)
 	overview.size=Vector2(app.w,app.h)*5/CONTENT_ZOOM;overview.show();overview.set_process_input(false)
 	var map_scale:float=PIXELS/(app.h*5)*CONTENT_ZOOM
 	map_view.canvas_transform=Transform2D(Vector2(map_scale,0),Vector2(0,map_scale),(Vector2.ONE*PIXELS-overview.size*map_scale)*.5)
-	village_view.render_target_update_mode=SubViewport.UPDATE_ONCE
 	map_view.render_target_update_mode=SubViewport.UPDATE_ONCE
 func _process(delta:float)->void:
 	if not app.application_active or app.screen!="play":return
@@ -44,10 +46,12 @@ func _process(delta:float)->void:
 	if elapsed<.2:return
 	elapsed=0
 	if app.world_map_open:
+		ensure_world_overview()
 		overview.queue_redraw();map_view.render_target_update_mode=SubViewport.UPDATE_ONCE
 	else:village_view.render_target_update_mode=SubViewport.UPDATE_ONCE
 	app.chrome.queue_redraw()
 func current_texture()->Texture2D:
+	if app.world_map_open:ensure_world_overview()
 	return map_view.get_texture() if app.world_map_open else village_view.get_texture()
 func normalized_point(world_point:Vector2)->Vector2:
 	# Same uniform scale and centering used by each render target.
