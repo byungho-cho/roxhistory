@@ -1,0 +1,48 @@
+{
+  "asset": "RoxHistory final intro",
+  "approval_date": "2026-11-11",
+  "status": "approved_final",
+  "archive_revision": 1,
+  "filename": "history_orbit_opening_35s.mp4",
+  "sha256": "d54a9f39d43cf57f13946b31042e0c9a2e6cd173a1ff8de7dcb8d0587ec47994",
+  "bytes": 10541811,
+  "duration_seconds": 35.0,
+  "width": 854,
+  "height": 480,
+  "fps": 30,
+  "frames": 1050,
+  "video_codec": "h264",
+  "pixel_format": "yuv420p",
+  "audio_streams": 0,
+  "edit_description": "5-second front-to-side opening followed by the complete preferred 30-second adult sequence, with the approved short black fade at the join.",
+  "handoff_fade_seconds": 0.2,
+  "sources": [
+    {
+      "filename": "stone_orbit_5s.mp4",
+      "duration_seconds": 5.0,
+      "width": 854,
+      "height": 480,
+      "bytes": 10785807,
+      "sha256": "8c718df984c299c85a9884850d15c7ab76d2880d73e40cd88ba68814646cba59"
+    },
+    {
+      "filename": "history_adult_30s.mp4",
+      "duration_seconds": 30.0,
+      "width": 854,
+      "height": 480,
+      "bytes": 38479073,
+      "sha256": "1547f171d365e1d42a12d5457c80bd5c2c15d3ffc81c37e6dc35d9b03778a761"
+    }
+  ],
+  "verification": {
+    "matches_approved_file_bytes": true,
+    "original_shared_workspace_copy_matches": true,
+    "ffmpeg_full_decode": "passed"
+  },
+  "integration_status": "archived_only_not_integrated_into_game",
+  "notes": [
+    "The approved 35-second MP4 is stored unchanged, without re-encoding.",
+    "The two inspected component sources are also 480p. They have a higher bitrate, not a higher verified resolution.",
+    "No unverified game version is appended to the filename. The date identifies this approved asset snapshot."
+  ]
+}
