@@ -12,7 +12,7 @@ static var reserved_icon:Texture2D
 
 func _ready()->void:
 	if reserved_icon==null:
-		reserved_icon=IntegratedMenuArt.trimmed(preload("res://assets/ui/v0158/lock.png"))
+		reserved_icon=IntegratedMenuArt.lock_icon()
 
 func update_amount(left:float,capacity:float)->void:
 	remaining=left;total=maxf(1,capacity);queue_redraw()

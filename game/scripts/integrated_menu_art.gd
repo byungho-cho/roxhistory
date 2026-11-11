@@ -33,9 +33,17 @@ static func refresh(button:DemoButton,highlight:bool=false)->void:
 	if result==null:result=texture(str(button.get_meta("integrated_key")),"normal")
 	image.texture=result
 
-static func trimmed(source:Texture2D)->Texture2D:
-	var tex:=AtlasTexture.new();tex.atlas=source;tex.region=source.get_image().get_used_rect();tex.filter_clip=true
+static func trimmed(source:Texture2D,bounds:=Rect2())->AtlasTexture:
+	var tex := AtlasTexture.new()
+	tex.atlas = source
+	tex.region = source.get_image().get_used_rect() if bounds == Rect2() else bounds
+	tex.filter_clip = true
 	return tex
+
+static func lock_icon()->AtlasTexture:
+	if not cache.has("lock_icon"):
+		cache["lock_icon"] = trimmed(preload("res://assets/ui/v0158/lock.png"),Rect2(15,1,161,175))
+	return cache["lock_icon"]
 static func install_parts(button:DemoButton,key:String,dimensions:Vector2)->void:
 	button.text="";button.custom_minimum_size=dimensions;button.size=dimensions
 	button.set_meta("integrated_art",true);button.set_meta("integrated_key",key);button.set_meta("separated_menu",true)

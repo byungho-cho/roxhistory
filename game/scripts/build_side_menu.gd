@@ -207,7 +207,13 @@ static func install_side_art(button:DemoButton,kind:String)->void:
 	match kind:
 		"farm","hearth","wood_store","shrine","stone_store":
 			var icon:=TextureRect.new()
-			icon.texture=IntegratedMenuArt.trimmed(MENU_ICONS[kind])
+			# Opaque bounds measured from the approved menu PNGs.
+			const ICON_BOUNDS := {
+				"farm": Rect2(67,25,1167,1200), "hearth": Rect2(0,17,1270,1208),
+				"wood_store": Rect2(0,15,1284,1210), "shrine": Rect2(0,17,1300,1182),
+				"stone_store": Rect2(0,20,1294,1179)
+			}
+			icon.texture=IntegratedMenuArt.trimmed(MENU_ICONS[kind],ICON_BOUNDS[kind])
 			icon.expand_mode=TextureRect.EXPAND_IGNORE_SIZE
 			var native:=icon.texture.get_size()
 			var slot_scale:=composition.scale*art.scale
@@ -220,5 +226,5 @@ static func install_side_art(button:DemoButton,kind:String)->void:
 		"training":image_slot(art,kind,Vector2(30.18,37.5),Vector2(119.64,137.5),Rect2(-.1084,-.3522,5.2337,1.5178))
 		"hut":image_slot(art,kind,Vector2(16.13,48.7),Vector2(143.75,124.301),Rect2(-.25,-.966,6.3882,2.4626))
 	var label:=Label.new();label.name="MenuLabel";label.text={"hut":"움집","farm":"농장","training":"훈련소","hearth":"화덕","shrine":"신당","outpost":"초소","stone_store":"석재소","wood_store":"제재소"}[kind];label.theme=DemoArt.theme();label.add_theme_font_size_override("font_size",27);label.add_theme_color_override("font_color",Color("fff2cf"));label.position=Vector2(6.666,137);label.size=Vector2(166.667,45);label.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER;label.vertical_alignment=VERTICAL_ALIGNMENT_CENTER;label.mouse_filter=Control.MOUSE_FILTER_IGNORE;composition.add_child(label)
-	var locked:=TextureRect.new();locked.name="Locked";locked.texture=IntegratedMenuArt.trimmed(load("res://assets/ui/v0158/lock.png"));locked.expand_mode=TextureRect.EXPAND_IGNORE_SIZE;locked.stretch_mode=TextureRect.STRETCH_KEEP_ASPECT_CENTERED;locked.position=Vector2(4,137);locked.size=Vector2.ONE*48;locked.modulate.a=.85;locked.mouse_filter=Control.MOUSE_FILTER_IGNORE;composition.add_child(locked)
+	var locked:=TextureRect.new();locked.name="Locked";locked.texture=IntegratedMenuArt.lock_icon();locked.expand_mode=TextureRect.EXPAND_IGNORE_SIZE;locked.stretch_mode=TextureRect.STRETCH_KEEP_ASPECT_CENTERED;locked.position=Vector2(4,137);locked.size=Vector2.ONE*48;locked.modulate.a=.85;locked.mouse_filter=Control.MOUSE_FILTER_IGNORE;composition.add_child(locked)
 	button.enable_art_feedback()

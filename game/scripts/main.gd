@@ -678,6 +678,22 @@ func leave_intro_under_cover() -> void:
 	if is_instance_valid(intro_player):intro_player.stop()
 	intro_player = null
 	intro_stream = null
+	if not model.state.is_empty() and not is_instance_valid(world):
+		intro_loading.text = "마을 준비 중…"
+		intro_loading.show()
+		var world_started := Time.get_ticks_usec()
+		var assembling_world := DemoWorld.new(model)
+		assembling_world.spread_startup = true
+		assembling_world.hide()
+		assembling_world.process_mode = Node.PROCESS_MODE_DISABLED
+		add_child(assembling_world)
+		await assembling_world.startup_completed
+		world = assembling_world
+		world.feedback.sound_cue.connect(audio.cue)
+		intro_probe_step("world",world_started)
+		await get_tree().process_frame
+	while not application_active:
+		await get_tree().process_frame
 	continue_to_village()
 	await get_tree().process_frame
 	intro_probe_step("covered_to_first_frame",covered_at)
@@ -852,13 +868,13 @@ func play_hud() -> void:
 		for color_name in ["font_color","font_hover_color","font_pressed_color","font_disabled_color","font_focus_color"]:b.add_theme_color_override(color_name,Color.TRANSPARENT)
 		if caption=="채집":
 			gather_button=b
-			gather_lock_icon=picture(b,IntegratedMenuArt.trimmed(preload("res://assets/ui/v0158/lock.png")),Rect2(3,37,23,23))
+			gather_lock_icon=picture(b,IntegratedMenuArt.lock_icon(),Rect2(3,37,23,23))
 		if caption=="건설":
 			build_button=b
 			build_visual=visual
 			build_return_badge=picture(b,preload("res://assets/ui/construction-side-v006/return-badge.svg"),Rect2(35,0,28,28))
 			build_return_badge.hide()
-			build_lock_icon=picture(b,IntegratedMenuArt.trimmed(preload("res://assets/ui/v0158/lock.png")),Rect2(3,37,23,23))
+			build_lock_icon=picture(b,IntegratedMenuArt.lock_icon(),Rect2(3,37,23,23))
 			build_lock_icon.visible=first_construction_locked()
 			b.disabled=build_lock_icon.visible
 	menu_toggle=button(action_row,"‹",toggle_menu);menu_toggle.name="MenuToggle";menu_toggle.custom_minimum_size=Vector2(56,56);menu_toggle.size_flags_vertical=Control.SIZE_SHRINK_CENTER;menu_toggle.hint_text="보조 메뉴 펼침·접힘"
@@ -889,7 +905,7 @@ func play_hud() -> void:
 	for state in ["normal","hover","pressed"]:map_hit.add_theme_stylebox_override(state,StyleBoxEmpty.new())
 	intro_probe_step("hud_before_map",hud_started)
 	var map_started := Time.get_ticks_usec()
-	world_map=VillageWorldMap.new(self);stage.add_child(world_map);stage.move_child(world_map,0)
+	world_map = null
 	intro_probe_step("hud_map",map_started)
 	map_toggle=button(stage,"",toggle_world_map);map_toggle.icon=AssetCatalog.texture("UI-MAP");map_toggle.expand_icon=true;map_toggle.add_theme_constant_override("icon_max_width",48);map_toggle.custom_minimum_size=Vector2.ZERO;map_toggle.position=Vector2(w-safe.x-64,safe.y+90);map_toggle.size=Vector2(56,56);map_toggle.z_index=31
 	for state in ["normal","hover","pressed","focus"]:map_toggle.add_theme_stylebox_override(state,StyleBoxEmpty.new())
@@ -909,7 +925,8 @@ func play_hud() -> void:
 
 func toggle_world_map()->void:
 	if modal or map_transition_active:return
-	map_transition_active=true;gestures.clear();world_map.clear_input()
+	map_transition_active=true;gestures.clear()
+	if is_instance_valid(world_map):world_map.clear_input()
 	world.player.direction=Vector2.ZERO;world.player.presentation_paused=true
 	map_transition=ColorRect.new();map_transition.name="MapCloudTransition"
 	map_transition.mouse_filter=Control.MOUSE_FILTER_STOP;map_transition.z_index=20
@@ -925,6 +942,10 @@ func toggle_world_map()->void:
 		world.player.presentation_paused=modal or not application_active)
 
 func switch_map_scene()->void:
+	if not is_instance_valid(world_map):
+		world_map = VillageWorldMap.new(self)
+		stage.add_child(world_map)
+		stage.move_child(world_map,0)
 	chrome.clear_effects()
 	world_map_open=not world_map_open
 	gestures.clear()

@@ -1,6 +1,9 @@
 class_name DemoWorld
 extends Node2D
 
+signal startup_completed
+
+var spread_startup := false
 var model: GameState
 var simulation_paused:=false
 var player: DemoPlayer
@@ -60,9 +63,10 @@ func _ready() -> void:
 
 	# Small natural silhouettes entirely outside the expanded movement boundary.
 	var mountains:=Node2D.new();mountains.name="NorthernMountains";mountains.z_index=-19;add_child(mountains)
-	for entry in [["mountain-a-green-peak.png",500.0,260.0],["mountain-b-low-ridge.png",1100.0,330.0]]:
+	if spread_startup:await get_tree().process_frame
+	for entry in [["mountain-a-green-peak.png",500.0,260.0,Rect2(0,9,1644,932)],["mountain-b-low-ridge.png",1100.0,330.0,Rect2(0,23,1924,786)]]:
 		var mountain:=Sprite2D.new();mountain.texture=load("res://assets/village-edge-v001/"+str(entry[0]))
-		var used:Rect2=mountain.texture.get_image().get_used_rect()
+		var used:Rect2=entry[3]
 		mountain.centered=false;mountain.offset=-Vector2(used.get_center().x,used.end.y)
 		mountain.scale=Vector2.ONE*float(entry[2])/used.size.x;mountain.position=Vector2(float(entry[1]),-420)
 		mountains.add_child(mountain)
@@ -100,9 +104,15 @@ func _ready() -> void:
 	get_node("ExistingHut").sprite.position.y+=3.0
 	prop("props",Vector2(1035,660),65,Vector2(40,20),"PotteryAndGrindingStone")
 	get_node("PotteryAndGrindingStone").hide()
+	if spread_startup:await get_tree().process_frame
 	# Clean approved terrain: independent scenery owns both silhouette and footprint.
 	# Removed all six legacy canopy masks and five painted-rock collision regions.
-	for n in model.nodes():add_resource_art(n)
+	var batch_started := Time.get_ticks_usec()
+	for n in model.nodes():
+		add_resource_art(n)
+		if spread_startup and Time.get_ticks_usec()-batch_started>=24000:
+			await get_tree().process_frame
+			batch_started = Time.get_ticks_usec()
 	site = Node2D.new()
 	site.position = DemoConfig.point(DemoConfig.get_data().build_site)
 	add_child(site)
@@ -110,13 +120,19 @@ func _ready() -> void:
 		var hut := prop("hut",DemoConfig.BUILD_SITES[i],230,Vector2.ZERO,"QuestHome"+str(i))
 		homes.append(hut)
 	home=homes[0]
+	if spread_startup:await get_tree().process_frame
 	player = DemoPlayer.new()
 	var edge_clouds:=VillageEdgeClouds.new();edge_clouds.player=player;add_child(edge_clouds)
 	player.position = DemoConfig.point(model.state.position)
 	add_child(player)
+	if spread_startup:await get_tree().process_frame
+	batch_started = Time.get_ticks_usec()
 	# Wildlife stays outside the settlement and clear of the demo resource/build routes.
 	for entry in [["deer",470,430,75,-0.8],["rabbit",1680,1040,30,0.6],["rabbit",1790,1080,28,-0.4],["deer",600,450,68,0.9],["deer",-350,400,68,0.9],["rabbit",900,-130,30,0.6],["rabbit",2450,1430,30,0.6]]:
 		add_wildlife(entry[0],Vector2(entry[1],entry[2]),entry[3],entry[4])
+		if spread_startup and Time.get_ticks_usec()-batch_started>=24000:
+			await get_tree().process_frame
+			batch_started = Time.get_ticks_usec()
 	objectives=WorldObjectives.new(self);add_child(objectives)
 	feedback = WorldFeedback.new(self)
 	add_child(feedback)
@@ -127,8 +143,10 @@ func _ready() -> void:
 	add_child(ResourceRegrowth.new(self))
 	model.changed.connect(refresh)
 	refresh()
+	if spread_startup:process_mode = Node.PROCESS_MODE_INHERIT
 	call_deferred("restore_clear_position")
 	call_deferred("spawn_outer_bears")
+	startup_completed.emit()
 
 func add_wildlife(species:String,at:Vector2,height:float,heading:float)->WorldAnimal:
 	var animal:=WorldAnimal.new()
