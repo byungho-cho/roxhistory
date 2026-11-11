@@ -52,6 +52,10 @@ var approach := 0.0
 var ally_hud: Control
 var enemy_hud: Control
 var duel_ally_portrait: TextureRect
+var prep_ally_portrait: TextureRect
+var battle_header: Control
+var location_brush: TextureRect
+var location_caption: Label
 var versus: Control
 var versus_letters: Array[TextureRect] = []
 var deer_health_text: Label
@@ -124,7 +128,7 @@ func _ready() -> void:
 	update_actors(0.1)
 
 func fit_layout() -> void:
-	var inset := Vector2(20,14)
+	var inset := Vector2.ZERO
 	if OS.has_feature("android"):
 		var area := DisplayServer.get_display_safe_area()
 		var physical := Vector2(DisplayServer.screen_get_size())
@@ -152,30 +156,80 @@ func hunter_portrait(index: int) -> Texture2D:
 
 func build_preparation() -> void:
 	preparation = layer()
-	var roster: TextureRect = app.picture(preparation,preload("res://assets/ui/hunting-formation/roster.png"),Rect2(10,102.5,165,355))
+	var roster: TextureRect = app.picture(preparation,preload("res://assets/ui/hunting-formation/roster.png"),Rect2(31.5,79.5,165,355))
+	roster.stretch_mode = TextureRect.STRETCH_SCALE
 	var ink := Color("49321e")
-	caption(roster,"출전 편성",Rect2(26,78,141,20),17,ink)
-	caption(roster,"%d / 3"%hunters.size(),Rect2(49,98,91,17),15,ink)
+	caption(roster,"출전 편성",Rect2(17,40,131,25),17,ink)
+	caption(roster,"%d / 3"%hunters.size(),Rect2(37.5,65,90,21),15,ink)
 	for index in hunters.size():
-		var card := make_button(roster,"",Rect2(49,114+59*index,80,56),select_hunter.bind(index))
+		var card := make_button(roster,"",Rect2(35,90+85*index,95,77),select_hunter.bind(index))
 		clear_button_art(card)
 		card.name = "Hunter%d"%index
-		var frame: TextureRect = app.picture(card,PORTRAIT_FRAME,Rect2(0,0,80,56))
+		var frame: TextureRect = app.picture(card,PORTRAIT_FRAME,Rect2(0,0,95,77))
 		portrait_frames.append(frame)
-		var portrait: TextureRect = app.picture(card,hunter_portrait(index),Rect2(5,2,70,51))
-		portrait.stretch_mode = TextureRect.STRETCH_SCALE
-		app.picture(card,preload("res://assets/ui/hunting-formation/swap.svg"),Rect2(61,37,19,19))
+		var portrait: TextureRect = app.picture(card,hunter_portrait(index),Rect2(5,2,85,72))
+		portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+		app.picture(card,preload("res://assets/ui/hunting-formation/swap.svg"),Rect2(71,53,24,24))
 	select_hunter(0)
-	artwork_button(preparation,Rect2(700,452.5,240,67.5),"전투 시작","png/preparation/start-battle-background.png",start_combat,Color("49321e")).name = "StartBattle"
-	var quick := artwork_button(preparation,Rect2(525,462.5,160,55),"빠른 출전","png/preparation/quick-sortie-background.png",func():pass)
+	var start := artwork_button(preparation,Rect2(776.5,474.5,160,50),"사냥 시작","png/preparation/start-battle-background.png",start_combat,ink)
+	start.name = "StartBattle"
+	var quick := artwork_button(preparation,Rect2(604,474.5,160,50),"빠른 출전","png/preparation/quick-sortie-background.png",func():pass)
 	quick.disabled = true
-	var plaque_art: TextureRect = app.picture(preparation,preload("res://assets/ui/hunting-v006/forest-title-wood.png"),Rect2(12,475,150,37))
-	caption(plaque_art,"사냥 준비",Rect2(0,0,150,37),16)
-	var bag := make_button(preparation,"",Rect2(138,464,56,62),app.inventory_summary)
+	for control in [start,quick]:
+		var background: TextureRect = control.get_child(0)
+		background.stretch_mode = TextureRect.STRETCH_SCALE
+		control.get_child(1).add_theme_font_size_override("font_size",18)
+	build_preparation_plaque()
+	build_power_comparison()
+
+func build_preparation_plaque() -> void:
+	const ATLAS := preload("res://assets/ui/hunting-formation/preparation-plaque-atlas.png")
+	const LEFT := Rect2(.53775,.0791,.0703125,.1660)
+	const CENTER := Rect2(.60837,.0791,.3060,.1660)
+	const RIGHT := Rect2(.9140625,.0791,.0703125,.1660)
+	var regions := [LEFT,CENTER,RIGHT]
+	var positions := [Rect2(33.5,473.5,23.506,37),Rect2(57.006,473.5,101.99,37),Rect2(158.996,473.5,23.41,37)]
+	for index in regions.size():
+		var region: Rect2 = regions[index]
+		var art: TextureRect = app.picture(preparation,crop(ATLAS,Rect2(region.position*ATLAS.get_size(),region.size*ATLAS.get_size())),positions[index])
+		art.stretch_mode = TextureRect.STRETCH_SCALE
+	caption(preparation,"사냥 준비",Rect2(33.5,473.5,150,37),16)
+	var bag := make_button(preparation,"",Rect2(142.5,462.5,56,62),app.inventory_summary)
 	clear_button_art(bag)
-	app.picture(bag,preload("res://assets/ui/hunting-formation/bag.png"),Rect2(2,0,52,48))
-	app.picture(bag,NAME_BRUSH,Rect2(0,43,56,19))
-	caption(bag,"가방",Rect2(4,41,48,19),13)
+	app.picture(bag,preload("res://assets/ui/hunting-formation/bag.png"),Rect2(5.2,0,45.6,48))
+	var brush: TextureRect = app.picture(bag,NAME_BRUSH,Rect2(0,41,56,19))
+	brush.modulate.a = .8
+	caption(bag,"가방",Rect2(4,41,48,19),12)
+
+func build_power_comparison() -> void:
+	var ally_icon := plaque(preparation,Rect2(297,4,48,48),Color("1c291f"),Color("f2bd4d"))
+	prep_ally_portrait = app.picture(ally_icon,hunter_portrait(selected_hunter),Rect2(2,2,44,44))
+	app.picture(preparation,preload("res://assets/ui/hunting-combat/png/common/hp-portrait-deer.png"),Rect2(705,4,48,48))
+	# Lv 1 planning values shown by the preparation mockup. No combat rules read them.
+	add_power_digits("12,300",Vector2(425,25))
+	add_power_digits("8,000",Vector2(625,25))
+	app.picture(preparation,preload("res://assets/ui/hunting-formation/vs-backdrop.svg"),Rect2(507,10,36,36))
+	app.picture(preparation,preload("res://assets/ui/hunting-formation/vs-v.svg"),Rect2(510,17,18,22.5))
+	app.picture(preparation,preload("res://assets/ui/hunting-formation/vs-s.svg"),Rect2(522.3,17,18,22.5))
+
+func add_power_digits(value: String, center: Vector2) -> void:
+	const GLYPHS := {
+		"0": preload("res://assets/ui/hunting-formation/power-0.svg"),
+		"1": preload("res://assets/ui/hunting-formation/power-1.svg"),
+		"2": preload("res://assets/ui/hunting-formation/power-2.svg"),
+		"3": preload("res://assets/ui/hunting-formation/power-3.svg"),
+		"8": preload("res://assets/ui/hunting-formation/power-8.svg"),
+		",": preload("res://assets/ui/hunting-formation/power-comma.svg")
+	}
+	const OVERLAP := 5.0
+	var width := OVERLAP
+	for digit in value:width += (GLYPHS[digit] as Texture2D).get_width()*.5-OVERLAP
+	var x := center.x-width*.5
+	for digit in value:
+		var glyph: Texture2D = GLYPHS[digit]
+		var dimensions := glyph.get_size()*.5
+		app.picture(preparation,glyph,Rect2(Vector2(x,center.y-dimensions.y*.5),dimensions))
+		x += dimensions.x-OVERLAP
 
 func clear_button_art(control: DemoButton) -> void:
 	for state in ["normal","hover","pressed","disabled","focus"]:
@@ -186,20 +240,24 @@ func select_hunter(index: int) -> void:
 	selected_hunter = index
 	for i in portrait_frames.size():
 		portrait_frames[i].texture = PORTRAIT_SELECTED if i==index else PORTRAIT_FRAME
+	if prep_ally_portrait:
+		prep_ally_portrait.texture = hunter_portrait(index)
 	if duel_ally_portrait:
 		duel_ally_portrait.texture = hunter_portrait(index)
 
 func build_duel_header() -> void:
 	var header := layer()
-	var place: TextureRect = app.picture(header,NAME_BRUSH,Rect2(25,18,198,41))
-	caption(place,"숲 가장자리",Rect2(21,0,160,41),20)
-	exit_button = make_button(header,"",Rect2(16,18,48,48),request_exit)
+	location_brush = app.picture(header,NAME_BRUSH,Rect2(10,1,220,56))
+	location_caption = caption(location_brush,"숲 가장자리",Rect2(44,0,163,56),21)
+	exit_button = make_button(header,"",Rect2(10,5,48,48),request_exit)
 	exit_button.name = "ExitHunt"
 	exit_button.tooltip_text = "뒤로가기"
 	clear_button_art(exit_button)
 	app.picture(exit_button,FigmaArt.texture("back"),Rect2(0,0,48,48))
-	ally_hud = layer(header)
-	enemy_hud = layer(header)
+	battle_header = layer(header)
+	battle_header.hide()
+	ally_hud = layer(battle_header)
+	enemy_hud = layer(battle_header)
 	hunter_bar = hp_bar(ally_hud,Rect2(339,32,160,32),true)
 	deer_bar = hp_bar(enemy_hud,Rect2(552,32,160,32),false)
 	deer_health_text = caption(deer_bar,"",Rect2(0,0,160,32),15)
@@ -208,13 +266,13 @@ func build_duel_header() -> void:
 	var ally_icon := plaque(ally_hud,Rect2(297,24,48,48),Color("1c291f"),Color("f2bd4d"))
 	duel_ally_portrait = app.picture(ally_icon,hunter_portrait(selected_hunter),Rect2(2,2,44,44))
 	app.picture(enemy_hud,preload("res://assets/ui/hunting-combat/png/common/hp-portrait-deer.png"),Rect2(706,24,48,48))
-	versus = layer(header)
+	versus = layer(battle_header)
 	app.picture(versus,preload("res://assets/ui/hunting-formation/vs-backdrop.svg"),Rect2(507,30,36,36))
 	versus_letters.append(app.picture(versus,preload("res://assets/ui/hunting-formation/vs-v.svg"),Rect2(510,37,18,22.5)))
 	versus_letters.append(app.picture(versus,preload("res://assets/ui/hunting-formation/vs-s.svg"),Rect2(522.3,37,18,22.5)))
 	for letter in versus_letters:letter.pivot_offset = letter.size*.5
-	auto_button = toggle_control(header,Rect2(840,22,48,48),"AUTO","auto",toggle_auto)
-	speed_button = toggle_control(header,Rect2(896,22,48,48),"X2","speed-2x",toggle_speed)
+	auto_button = toggle_control(header,Rect2(840,4,48,48),"AUTO","auto",toggle_auto)
+	speed_button = toggle_control(header,Rect2(894,4,48,48),"X2","speed-2x",toggle_speed)
 	update_toggles()
 
 func toggle_control(parent: Control, rect: Rect2, label: String, asset: String, action: Callable) -> DemoButton:
@@ -233,7 +291,7 @@ func toggle_control(parent: Control, rect: Rect2, label: String, asset: String, 
 
 func toggle_auto() -> void:
 	if exit_popup or app.modal or result_shown:return
-	rules.set_auto(not rules.auto_enabled)
+	rules.set_auto(not rules.auto_enabled and transition_elapsed>=0 or running and not rules.auto_enabled)
 	update_toggles()
 
 func toggle_speed() -> void:
@@ -242,8 +300,9 @@ func toggle_speed() -> void:
 	update_toggles()
 
 func update_toggles() -> void:
-	auto_button.get_meta("toggle_material").set_shader_parameter("gray",not rules.auto_enabled)
-	speed_button.get_meta("toggle_material").set_shader_parameter("gray",speed!=2.0)
+	var in_battle := transition_elapsed>=0 or running
+	auto_button.get_meta("toggle_material").set_shader_parameter("gray",in_battle and not rules.auto_enabled)
+	speed_button.get_meta("toggle_material").set_shader_parameter("gray",in_battle and speed!=2.0)
 
 func build_combat() -> void:
 	combat = layer()
@@ -432,6 +491,9 @@ func start_combat() -> void:
 	preparation.mouse_behavior_recursive = Control.MOUSE_BEHAVIOR_DISABLED
 	combat.show()
 	combat.modulate.a = 0.0
+	battle_header.modulate.a = 0.0
+	battle_header.show()
+	update_toggles()
 
 func advance_transition(delta: float) -> void:
 	transition_elapsed += delta
@@ -441,6 +503,15 @@ func advance_transition(delta: float) -> void:
 	placement_grid.modulate.a = fade
 	preparation.modulate.a = fade
 	combat.modulate.a = smoothstep(.45,1.0,progress)
+	battle_header.modulate.a = 1.0-fade
+	var header_progress := 1.0-fade
+	location_brush.position = Vector2(10,1).lerp(Vector2(25,18),header_progress)
+	location_brush.size = Vector2(220,56).lerp(Vector2(198,41),header_progress)
+	location_caption.position = Vector2(44,0).lerp(Vector2(21,0),header_progress)
+	location_caption.size = Vector2(163,56).lerp(Vector2(160,41),header_progress)
+	exit_button.position = Vector2(10,5).lerp(Vector2(16,18),header_progress)
+	auto_button.position = Vector2(840,4).lerp(Vector2(840,22),header_progress)
+	speed_button.position = Vector2(894,4).lerp(Vector2(896,22),header_progress)
 	var matching := sin(progress*PI)*22.0
 	ally_hud.position.x = -matching
 	enemy_hud.position.x = matching
@@ -567,12 +638,16 @@ func update_actors(delta: float) -> void:
 		hunter.scale = Vector2.ONE*lerpf(.60,.76,approach)
 		var lunge := 64 if basic_attack else 32
 		hunter.position = base + Vector2((lunge if attack else -18 if dodge else 0)*beat,-5*beat if attack else 0)
-		var heading := Vector2(1,-.65).lerp(Vector2.RIGHT,approach)
+		var heading := Vector2(1,.55).lerp(Vector2.RIGHT,approach)
 		hunter.animate(delta,heading,pose_clock*12,dodge or transition_elapsed>=0,"" if not attack else "hunt",pose_clock,false)
 		if attack:
 			hunter.blend_bone("spine",Vector3(.10+beat*.12,0,-.08),.9)
 			hunter.blend_bone("armR",Vector3(-.88-beat*.38,0,-.15),1)
 			hunter.blend_bone("forearmR",Vector3(-.95+beat*.75,0,0),1)
+		if not running and transition_elapsed<0:
+			hunter.blend_bone("spine",Vector3(.21,0,-.09),.65)
+			hunter.blend_bone("armR",Vector3(-.48,0,-.2),.65)
+			hunter.blend_bone("forearmR",Vector3(-.63,0,0),.65)
 		hunter.tool_3d.visible = true
 		hunter.viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
 	var charge := running and pose=="counter"
@@ -580,8 +655,9 @@ func update_actors(delta: float) -> void:
 	deer.position = cell_center(ENEMY_ORIGIN,4).lerp(DEER_SLOT,approach)+(deer_motion*beat if running else Vector2.ZERO)
 	if basic_recoil>0:
 		deer.position += Vector2(13,-3)*basic_recoil/BASIC_RECOIL_TIME
-	deer.scale = Vector2.ONE*lerpf(.67,.86,approach)
+	deer.scale = Vector2.ONE*lerpf(.60,.86,approach)
 	deer.walking = beat if running else 1.0 if transition_elapsed>=0 else 0.0
+	deer.heading = lerp_angle(-PI*.34,-PI*.72,approach)
 	deer.gait_phase = pose_clock*14
 	deer.clock += delta
 	deer.animate_rig(delta)
