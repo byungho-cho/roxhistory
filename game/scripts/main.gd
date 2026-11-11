@@ -55,6 +55,8 @@ var first_village_loading := false
 var title_prompt_time := 0.0
 var title_update_at := -60000
 var title_cloud_seen := false
+var title_reveal: Tween
+var title_loader_first_frame := false
 var task_bar: ProgressBar
 var toast_label: Label
 var toast_time := 0.0
@@ -184,7 +186,7 @@ func _ready() -> void:
 	show_screen("title")
 
 func queue_layout() -> void:
-	if rebuilding or screen in ["hunt","intro"] or intro_leaving or village_entry_active():
+	if rebuilding or screen in ["hunt","intro"] or title_reveal or intro_leaving or village_entry_active():
 		return
 	rebuilding = true
 	call_deferred("relayout")
@@ -215,7 +217,11 @@ func clear_children(node: Node) -> void:
 		child.queue_free()
 
 func show_screen(next: String,spread_hud:=false) -> void:
-	if screen=="title" and next!="title":get_node("/root/PatchBootstrap/Overlay").leave_title()
+	if screen=="title" and next!="title":
+		get_node("/root/PatchBootstrap/Overlay").leave_title()
+		if title_reveal:
+			title_reveal.kill()
+			title_reveal = null
 	finish_village_entry()
 	if menu_tween:menu_tween.kill()
 	menu_animating=false
@@ -462,15 +468,16 @@ func title_screen() -> void:
 	var background:=picture(stage,title_art,Rect2(0,0,w,h))
 	background.stretch_mode=TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	if not title_cloud_seen:
-		title_cloud_seen=true
+		title_reveal = stage.create_tween().set_parallel()
 		for i in 2:
-			var cloud:=picture(stage,VillageEntry.BANK_A if i==0 else VillageEntry.BANK_B,Rect2(-w*.15,h*(.05 if i==0 else .45),w*1.3,h*.55))
-			cloud.add_to_group("title_reveal_clouds")
-			cloud.modulate.a=.85
-			var reveal:=cloud.create_tween().set_parallel()
-			reveal.tween_property(cloud,"position:x",w*(.45 if i==0 else -.72),1.25).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
-			reveal.tween_property(cloud,"modulate:a",0.0,1.25)
-			reveal.chain().tween_callback(cloud.queue_free)
+			var cloud := picture(stage,VillageEntry.BANK_A if i==0 else VillageEntry.BANK_B,Rect2(-w*.15,h*(.05 if i==0 else .45),w*1.3,h*.55))
+			cloud.modulate.a = .85
+			title_reveal.tween_property(cloud,"position:x",w*(.45 if i==0 else -.72),1.25).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+			title_reveal.tween_property(cloud,"modulate:a",0.0,1.25)
+			title_reveal.finished.connect(cloud.queue_free)
+		title_reveal.finished.connect(finish_title_reveal)
+		if not application_active:title_reveal.pause()
+
 	var logo_width:=minf(w*(.62 if w<h else .31),h*.61)
 	var logo:=picture(stage,preload("res://assets/ui/title-hanbando/hanbando-upheaval-logo-v1.png"),Rect2((w-logo_width)*.5,safe.y+h*.022,logo_width,logo_width*.5))
 	logo.name="HanbandoTitleLogo"
@@ -510,7 +517,7 @@ func title_screen() -> void:
 	call_deferred("check_title_update")
 
 func open_title_update() -> void:
-	if screen!="title" or not application_active or modal or is_instance_valid(intro_cloud):return
+	if screen!="title" or not application_active or modal or title_input_blocked() or is_instance_valid(intro_cloud):return
 	var updates := get_node("/root/PatchBootstrap/Overlay")
 	updates.show_popup()
 	check_title_update(true)
@@ -543,7 +550,7 @@ func style_start_prompt(start: DemoButton) -> void:
 	start.add_theme_color_override("font_outline_color",Color("49321e"));start.add_theme_constant_override("outline_size",3)
 
 func check_title_update(manual:=false) -> void:
-	if screen!="title" or not application_active or modal or is_instance_valid(intro_cloud):return
+	if screen!="title" or not application_active or modal or title_input_blocked() or is_instance_valid(intro_cloud):return
 	if test_mode and not manual:return
 	var updates := get_node("/root/PatchBootstrap/Overlay")
 	if updates.downloading or updates.restart_pending:return
@@ -581,16 +588,36 @@ func install_title_loader(start: Button) -> void:
 	title_loading.add_theme_stylebox_override("background",track)
 	title_loading.add_theme_stylebox_override("fill",fill)
 	stage.add_child(title_loading)
-	title_loading.visible = title_needs_loading()
-	start.visible = not title_loading.visible
+	refresh_title_loading_visibility()
+
+func finish_title_reveal() -> void:
+	title_cloud_seen = true
+	title_reveal = null
+	if get_viewport().get_visible_rect().size != Vector2(w,h):
+		queue_layout()
+		return
+	refresh_title_loading_visibility()
+	if not title_loading.visible:call_deferred("check_title_update")
+
+func refresh_title_loading_visibility() -> void:
+	title_loading.visible = not title_reveal and title_needs_loading()
+	title_prompt.visible = not title_reveal and not title_loading.visible
+	title_loader_first_frame = title_loading.visible
 	title_loader_started_at = Time.get_ticks_usec()
+
+func title_input_blocked() -> bool:
+	return screen=="title" and (title_reveal != null or (is_instance_valid(title_loading) and title_loading.visible))
 
 func title_needs_loading() -> bool:
 	return not is_instance_valid(world) and (not intro_preload_started or not intro_preload_paths.is_empty() or
 		(not model.state.is_empty() and not is_instance_valid(prepared_intro_world)))
 
 func advance_title_loading() -> void:
-	if not is_instance_valid(title_loading) or not title_loading.visible or not application_active:return
+	if title_reveal or not is_instance_valid(title_loading) or not title_loading.visible or not application_active:return
+	# Render the bar once before issuing requests or creating the hidden world.
+	if title_loader_first_frame:
+		title_loader_first_frame = false
+		return
 	preload_intro_assets()
 	var assets_progress := 1.0-float(intro_preload_paths.size())/maxi(1,intro_preload_total)
 	if not model.state.is_empty():
@@ -601,15 +628,14 @@ func advance_title_loading() -> void:
 	if not title_needs_loading():
 		title_loading.hide()
 		title_prompt.show()
+		call_deferred("check_title_update")
 		if intro_probe:print("ROX_INTRO_TIMING title_ready ms=",(Time.get_ticks_usec()-title_loader_started_at)/1000.0)
 
 func start_or_continue()->void:
-	if is_instance_valid(title_loading) and title_loading.visible and not test_mode:return
+	if title_input_blocked() and not test_mode:return
 	if modal or screen!="title" or not application_active or is_instance_valid(intro_cloud):return
 	get_node("/root/PatchBootstrap/Overlay").leave_title()
 	cover_intro(prepare_intro)
-	for cloud in get_tree().get_nodes_in_group("title_reveal_clouds"):
-		cloud.create_tween().tween_property(cloud,"self_modulate:a",0.0,.36)
 	for control in [title_prompt,stage.get_node_or_null("HanbandoTitleLogo")]:
 		if is_instance_valid(control):
 			control.create_tween().tween_property(control,"self_modulate:a",0.0,.24)
@@ -1789,6 +1815,7 @@ func close_hunt() -> void:
 	show_screen("play")
 
 func go_back() -> void:
+	if title_input_blocked():return
 	if screen=="intro":
 		finish_intro()
 	elif is_instance_valid(intro_cloud):
@@ -1810,6 +1837,10 @@ func go_back() -> void:
 	elif screen == "region": show_screen("title")
 	else:
 		show_modal("여정을 나갈까요?","앱을 종료합니다.",[{"text":"돌아가기","action":close_modal},{"text":"종료","action":func(): get_tree().quit()}],false,false,false,Vector2.ZERO,true)
+
+func _input(event: InputEvent) -> void:
+	if title_input_blocked() and (event is InputEventScreenTouch or event is InputEventScreenDrag or event is InputEventMouseButton or event.is_action("ui_accept") or event.is_action("ui_cancel")):
+		get_viewport().set_input_as_handled()
 
 func _unhandled_input(event: InputEvent) -> void:
 	if map_transition_active or (is_instance_valid(intro_cloud) and screen!="intro"):return
@@ -1833,6 +1864,7 @@ func _notification(what: int) -> void:
 		if gestures: gestures.clear()
 		if is_instance_valid(chrome): chrome.clear_effects()
 		application_active = false
+		if title_reveal:title_reveal.pause()
 		if intro_cloud_tween and intro_cloud_tween.is_valid():intro_cloud_tween.pause()
 		if is_instance_valid(intro_player):intro_player.paused = true
 		sync_audio()
@@ -1845,6 +1877,7 @@ func _notification(what: int) -> void:
 			if not was_demolition:model.save_position(world.player.position)
 	elif what == NOTIFICATION_APPLICATION_RESUMED or what == NOTIFICATION_APPLICATION_FOCUS_IN:
 		application_active = true
+		if title_reveal:title_reveal.play()
 		if screen=="title":call_deferred("check_title_update")
 		if intro_cloud_tween and intro_cloud_tween.is_valid():intro_cloud_tween.play()
 		if is_instance_valid(intro_player) and not intro_leaving:intro_player.paused = false
