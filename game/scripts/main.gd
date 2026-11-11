@@ -38,6 +38,9 @@ var intro_cloud: ColorRect
 signal intro_world_prepared
 var prepared_intro_world: DemoWorld
 var preparing_intro_world := false
+var intro_preload_paths: Array[String] = []
+var intro_preloaded: Array[Resource] = []
+var intro_preload_started := false
 var intro_loading: Label
 var intro_probe := OS.is_debug_build() and OS.has_feature("android")
 var intro_cloud_tween: Tween
@@ -700,6 +703,24 @@ func leave_intro_under_cover() -> void:
 	intro_probe_step("covered_to_first_frame",covered_at)
 	reveal_intro_destination()
 
+func preload_intro_assets() -> void:
+	if is_instance_valid(world) or model.state.is_empty():return
+	if not intro_preload_started:
+		intro_preload_started = true
+		var paths: Array[String] = ["res://assets/characters/meshy01/hero.glb"]
+		for path in WorldAnimal.MODELS.values():paths.append(path)
+		for path in paths:
+			if ResourceLoader.load_threaded_request(path,"PackedScene")==OK:
+				intro_preload_paths.append(path)
+	for index in range(intro_preload_paths.size()-1,-1,-1):
+		var path := intro_preload_paths[index]
+		match ResourceLoader.load_threaded_get_status(path):
+			ResourceLoader.THREAD_LOAD_LOADED:
+				intro_preloaded.append(ResourceLoader.load_threaded_get(path))
+				intro_preload_paths.remove_at(index)
+			ResourceLoader.THREAD_LOAD_FAILED, ResourceLoader.THREAD_LOAD_INVALID_RESOURCE:
+				intro_preload_paths.remove_at(index)
+
 func prepare_intro_world() -> void:
 	if preparing_intro_world or is_instance_valid(prepared_intro_world) or is_instance_valid(world) or model.state.is_empty():
 		return
@@ -712,6 +733,7 @@ func prepare_intro_world() -> void:
 	add_child(assembling_world)
 	await assembling_world.startup_completed
 	prepared_intro_world = assembling_world
+	intro_preloaded.clear()
 	preparing_intro_world = false
 	intro_probe_step("world",world_started)
 	intro_world_prepared.emit()
@@ -1100,7 +1122,7 @@ func _process(delta: float) -> void:
 			var position := intro_player.stream_position
 			intro_stall = intro_stall+delta if intro_preparing or is_equal_approx(position,intro_position) else 0.0
 			intro_position = position
-			if not intro_preparing and position>=5.0:prepare_intro_world()
+			if not intro_preparing and position>=1.0:preload_intro_assets()
 			if not intro_player.is_playing() or intro_stall>=3.0:finish_intro()
 			elif intro_preparing:intro_loading.visible = intro_stall>=1.0
 		return
