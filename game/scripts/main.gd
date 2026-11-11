@@ -57,6 +57,10 @@ var title_update_at := -60000
 var title_cloud_seen := false
 var title_reveal: Tween
 var title_loader_first_frame := false
+var title_initial_update_done := false
+var title_update_in_flight := false
+const TITLE_UPDATE_TIMEOUT := 4.0
+const PATCH_DOWNLOAD_TIMEOUT := 30.0
 var task_bar: ProgressBar
 var toast_label: Label
 var toast_time := 0.0
@@ -511,19 +515,27 @@ func title_screen() -> void:
 	stage.add_child(patch_status)
 	patch_status.process_mode=Node.PROCESS_MODE_ALWAYS
 	updates.check_status_changed.connect(patch_status.set_text)
+	if not updates.popup.visibility_changed.is_connected(on_title_patch_popup_changed):
+		updates.popup.visibility_changed.connect(on_title_patch_popup_changed)
 	patch_status.text=updates.check_status
 	if not updates.request.request_completed.is_connected(update_title_patch_action):
 		updates.request.request_completed.connect(update_title_patch_action)
 	call_deferred("check_title_update")
 
+func on_title_patch_popup_changed() -> void:
+	if not get_node("/root/PatchBootstrap/Overlay").popup.visible and title_update_in_flight:
+		finish_title_update_check()
+	refresh_title_start_prompt()
+
 func open_title_update() -> void:
 	if screen!="title" or not application_active or modal or title_input_blocked() or is_instance_valid(intro_cloud):return
 	var updates := get_node("/root/PatchBootstrap/Overlay")
-	updates.show_popup()
+	if not updates.popup.visible:updates.show_popup()
 	check_title_update(true)
 
 func update_title_patch_action(_result:int,_code:int,_headers:PackedStringArray,_body:PackedByteArray) -> void:
 	var updates := get_node("/root/PatchBootstrap/Overlay")
+	if title_update_in_flight:finish_title_update_check()
 	if updates.restart_pending or updates.downloading:return
 	if updates.candidate.is_empty():
 		if updates.popup.visible and updates.check_status.is_empty():
@@ -550,14 +562,15 @@ func style_start_prompt(start: DemoButton) -> void:
 	start.add_theme_color_override("font_outline_color",Color("49321e"));start.add_theme_constant_override("outline_size",3)
 
 func check_title_update(manual:=false) -> void:
-	if screen!="title" or not application_active or modal or title_input_blocked() or is_instance_valid(intro_cloud):return
+	if screen!="title" or not application_active or modal or title_reveal or title_update_in_flight or is_instance_valid(intro_cloud):return
 	if test_mode and not manual:return
 	var updates := get_node("/root/PatchBootstrap/Overlay")
 	if updates.downloading or updates.restart_pending:return
 	if not manual and updates.popup.visible:return
 	var now := Time.get_ticks_msec()
-	if not manual and now-title_update_at<5000:return
+	if not manual and title_initial_update_done and now-title_update_at<5000:return
 	title_update_at = now
+	title_update_in_flight = true
 	updates.title_active = true
 	updates.checked_title = true
 	updates.candidate.clear()
@@ -565,10 +578,23 @@ func check_title_update(manual:=false) -> void:
 	updates.status.text = "업데이트 확인 중…"
 	updates.check_status = updates.status.text
 	updates.request.cancel_request()
+	updates.request.timeout = TITLE_UPDATE_TIMEOUT
 	updates.request.download_file = ""
 	updates.request.body_size_limit = 8192
 	var url := str(updates.RELEASE_ROOT)+"latest.json?check="+str(Time.get_unix_time_from_system())
-	if updates.request.request(url) != OK:updates.show_failure()
+	if updates.request.request(url) != OK:
+		updates.show_failure()
+		finish_title_update_check()
+
+func finish_title_update_check() -> void:
+	title_update_in_flight = false
+	title_initial_update_done = true
+	get_node("/root/PatchBootstrap/Overlay").request.timeout = PATCH_DOWNLOAD_TIMEOUT
+	refresh_title_start_prompt()
+
+func refresh_title_start_prompt() -> void:
+	if screen!="title" or not is_instance_valid(title_prompt):return
+	title_prompt.visible = not title_input_blocked()
 
 func install_title_loader(start: Button) -> void:
 	title_loading = ProgressBar.new()
@@ -597,16 +623,19 @@ func finish_title_reveal() -> void:
 		queue_layout()
 		return
 	refresh_title_loading_visibility()
-	if not title_loading.visible:call_deferred("check_title_update")
+	call_deferred("check_title_update")
 
 func refresh_title_loading_visibility() -> void:
 	title_loading.visible = not title_reveal and title_needs_loading()
-	title_prompt.visible = not title_reveal and not title_loading.visible
+	refresh_title_start_prompt()
 	title_loader_first_frame = title_loading.visible
 	title_loader_started_at = Time.get_ticks_usec()
 
 func title_input_blocked() -> bool:
-	return screen=="title" and (title_reveal != null or (is_instance_valid(title_loading) and title_loading.visible))
+	if screen!="title":return false
+	var popup: Control = get_node("/root/PatchBootstrap/Overlay").popup
+	return title_reveal!=null or (is_instance_valid(title_loading) and title_loading.visible) or (
+		not test_mode and not title_initial_update_done) or popup.visible
 
 func title_needs_loading() -> bool:
 	return not is_instance_valid(world) and (not intro_preload_started or not intro_preload_paths.is_empty() or
@@ -627,8 +656,7 @@ func advance_title_loading() -> void:
 		title_loading.value = assets_progress
 	if not title_needs_loading():
 		title_loading.hide()
-		title_prompt.show()
-		call_deferred("check_title_update")
+		refresh_title_start_prompt()
 		if intro_probe:print("ROX_INTRO_TIMING title_ready ms=",(Time.get_ticks_usec()-title_loader_started_at)/1000.0)
 
 func start_or_continue()->void:
@@ -768,6 +796,8 @@ func leave_intro_under_cover() -> void:
 		prepared_intro_world = null
 		world.resume_staged_startup()
 		world.feedback.sound_cue.connect(audio.cue)
+		await get_tree().physics_frame
+		world.refresh_residents()
 		await get_tree().process_frame
 	while not application_active:
 		await get_tree().process_frame
@@ -1218,7 +1248,8 @@ func _process(delta: float) -> void:
 		return
 	if screen=="title" and application_active and is_instance_valid(title_prompt):
 		advance_title_loading()
-		if Time.get_ticks_msec()-title_update_at>=60000:check_title_update()
+		if not title_initial_update_done or Time.get_ticks_msec()-title_update_at>=60000:check_title_update()
+		refresh_title_start_prompt()
 		title_prompt_time=fposmod(title_prompt_time+delta,3.0)
 		title_prompt.modulate.a=.87+.13*cos(title_prompt_time*TAU/3.0)
 	if is_instance_valid(toast_panel): toast_panel.visible = toast_time > 0 and toast_label.text != ""
@@ -1839,7 +1870,7 @@ func go_back() -> void:
 		show_modal("여정을 나갈까요?","앱을 종료합니다.",[{"text":"돌아가기","action":close_modal},{"text":"종료","action":func(): get_tree().quit()}],false,false,false,Vector2.ZERO,true)
 
 func _input(event: InputEvent) -> void:
-	if title_input_blocked() and (event is InputEventScreenTouch or event is InputEventScreenDrag or event is InputEventMouseButton or event.is_action("ui_accept") or event.is_action("ui_cancel")):
+	if title_input_blocked() and not get_node("/root/PatchBootstrap/Overlay").popup.visible and (event is InputEventScreenTouch or event is InputEventScreenDrag or event is InputEventMouseButton or event.is_action("ui_accept") or event.is_action("ui_cancel")):
 		get_viewport().set_input_as_handled()
 
 func _unhandled_input(event: InputEvent) -> void:

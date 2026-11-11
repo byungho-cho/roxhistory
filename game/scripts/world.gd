@@ -273,7 +273,7 @@ func refresh() -> void:
 	refresh_boundary()
 	refresh_chief()
 	refresh_resources()
-	refresh_residents()
+	if not spread_startup or process_mode!=Node.PROCESS_MODE_DISABLED:refresh_residents()
 	var saved_homes:=model.homes()
 	while homes.size()<saved_homes.size():
 		var hut:=prop("hut",Vector2.ZERO,230,Vector2.ZERO,"QuestHome"+str(homes.size()))
