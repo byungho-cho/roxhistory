@@ -14,13 +14,22 @@ const ALLY_ORIGIN := Vector2(272,348)
 const ENEMY_ORIGIN := ALLY_ORIGIN + CELL_X * 3.155
 const CELL_SIZE := Vector2(107,76.246)
 const NAME_BRUSH := preload("res://assets/ui/brush/resource-slot-brush@2x.png")
-const TRANSITION_SECONDS := 2.4
-const HUNTER_SLOTS := [Vector2(434,314),Vector2(304,299),Vector2(358,361)]
-const DEER_SLOT := Vector2(568,320)
+const ARRIVAL_SECONDS := 1.15
+const TRANSITION_SECONDS := .94
+const BATTLE_CUT := .30
+const HUNTER_SLOTS := [Vector2(378,261),Vector2(249,345),Vector2(428,379)]
+const DEER_SLOT := Vector2(598,245)
 
 var app: Node
 var rules := RULES.new()
 var canvas: Control
+var header: Control
+var entry_cloud: ColorRect
+var entry_cloud_material: ShaderMaterial
+var battle_fade: ColorRect
+var arrival_elapsed := 0.0
+var hunter_markers: Array[Control] = []
+var hunter_field_bars: Array[TextureProgressBar] = []
 var roster_edge: Control
 var footer_left: Control
 var footer_right: Control
@@ -65,6 +74,7 @@ var location_caption: Label
 var versus: Control
 var versus_letters: Array[TextureRect] = []
 var deer_health_text: Label
+var hunter_health_text: Label
 var transition_elapsed := -1.0
 var combat_layout := false
 var hunters: Array[HybridCharacter] = []
@@ -132,6 +142,7 @@ func _ready() -> void:
 	resized.connect(fit_layout)
 	fit_layout()
 	update_actors(0.1)
+	build_arrival()
 
 func fit_layout() -> void:
 	var safe_start := Vector2.ZERO
@@ -155,7 +166,42 @@ func fit_layout() -> void:
 	roster_edge.position = start+Vector2(0,72)
 	footer_left.position = Vector2(start.x,end.y-DESIGN.y)
 	footer_right.position = end-DESIGN
+	combat_controls.position = footer_right.position
 	fit_exit_shade()
+
+
+func build_arrival() -> void:
+	entry_cloud = ColorRect.new()
+	entry_cloud.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(entry_cloud)
+	entry_cloud.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	entry_cloud_material = ShaderMaterial.new()
+	entry_cloud_material.shader = preload("res://shaders/cloud_transition.gdshader")
+	entry_cloud_material.set_shader_parameter("textured",true)
+	entry_cloud_material.set_shader_parameter("cloud_bank",VillageEntry.BANK_A)
+	entry_cloud.material = entry_cloud_material
+	entry_cloud.resized.connect(func():
+		entry_cloud_material.set_shader_parameter("aspect",entry_cloud.size.x/maxf(1.0,entry_cloud.size.y)))
+	entry_cloud_material.set_shader_parameter("aspect",size.x/maxf(1.0,size.y))
+	entry_cloud_material.set_shader_parameter("coverage",1.0)
+	battle_fade = ColorRect.new()
+	battle_fade.color = Color("232b1e")
+	battle_fade.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(battle_fade)
+	battle_fade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	battle_fade.hide()
+	preparation.modulate.a = 0.0
+	header.modulate.a = 0.0
+	update_camera(0.0)
+
+func advance_arrival(delta: float) -> void:
+	arrival_elapsed = minf(ARRIVAL_SECONDS,arrival_elapsed+delta)
+	var progress := arrival_elapsed/ARRIVAL_SECONDS
+	entry_cloud_material.set_shader_parameter("coverage",1.0-smoothstep(.06,.78,progress))
+	preparation.modulate.a = smoothstep(.52,1.0,progress)
+	header.modulate.a = preparation.modulate.a
+	if arrival_elapsed>=ARRIVAL_SECONDS:
+		entry_cloud.queue_free()
 
 
 func cell_center(origin: Vector2, index: int) -> Vector2:
@@ -268,7 +314,7 @@ func select_hunter(index: int) -> void:
 		duel_ally_portrait.texture = hunter_portrait(index)
 
 func build_duel_header() -> void:
-	var header := layer()
+	header = layer()
 	header_left = layer(header)
 	header_right = layer(header)
 	location_brush = app.picture(header_left,NAME_BRUSH,Rect2(3,0,220,56))
@@ -284,12 +330,18 @@ func build_duel_header() -> void:
 	enemy_hud = layer(battle_header)
 	hunter_bar = hp_bar(ally_hud,Rect2(339,32,160,32),true)
 	deer_bar = hp_bar(enemy_hud,Rect2(552,32,160,32),false)
-	deer_health_text = caption(deer_bar,"",Rect2(0,0,160,32),15)
-	deer_health_text.add_theme_color_override("font_outline_color",Color("331a12"))
-	deer_health_text.add_theme_constant_override("outline_size",4)
+	hunter_health_text = caption(hunter_bar,"",Rect2(0,0,160,28),15)
+	deer_health_text = caption(deer_bar,"",Rect2(0,0,160,28),15)
+	for text in [hunter_health_text,deer_health_text]:
+		text.add_theme_color_override("font_outline_color",Color("331a12"))
+		text.add_theme_constant_override("outline_size",4)
 	var ally_icon := plaque(ally_hud,Rect2(297,24,48,48),Color("1c291f"),Color("f2bd4d"))
 	duel_ally_portrait = app.picture(ally_icon,hunter_portrait(selected_hunter),Rect2(2,2,44,44))
 	app.picture(enemy_hud,preload("res://assets/ui/hunting-combat/png/common/hp-portrait-deer.png"),Rect2(706,24,48,48))
+	# This first encounter uses the same level on both portraits.
+	for badge in [[ally_hud,321],[enemy_hud,730]]:
+		var brush: TextureRect = app.picture(badge[0],NAME_BRUSH,Rect2(badge[1]-27,65,54,16))
+		caption(brush,"Lv 1",Rect2(0,0,54,16),11)
 	versus = layer(battle_header)
 	app.picture(versus,preload("res://assets/ui/hunting-formation/vs-backdrop.svg"),Rect2(507,30,36,36))
 	versus_letters.append(app.picture(versus,preload("res://assets/ui/hunting-formation/vs-v.svg"),Rect2(510,37,18,22.5)))
@@ -341,7 +393,12 @@ func build_combat() -> void:
 	prey_hud.hide()
 	app.picture(prey_hud,NAME_BRUSH,Rect2(-30,-15,60,16))
 	caption(prey_hud,"사슴",Rect2(-30,-16,60,16),13)
-	prey_hp = hp_bar(prey_hud,Rect2(-27,3,54,8),false)
+	prey_hp = hp_bar(prey_hud,Rect2(-29.6,3,59.2,11.84),false)
+	for hunter in hunters:
+		var marker := layer(battlefield)
+		marker.hide()
+		hunter_markers.append(marker)
+		hunter_field_bars.append(hp_bar(marker,Rect2(-18.4,0,36.8,7.36),true))
 
 func artwork_button(parent: Control, rect: Rect2, label: String, asset: String, action: Callable, ink := Color("fff0d0")) -> DemoButton:
 	var button := make_button(parent,"",rect,action)
@@ -351,6 +408,7 @@ func artwork_button(parent: Control, rect: Rect2, label: String, asset: String, 
 	return button
 
 func request_exit() -> void:
+	if arrival_elapsed<ARRIVAL_SECONDS or transition_elapsed>=0:return
 	if app.modal:
 		app.close_modal()
 		return
@@ -482,7 +540,7 @@ func _input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 
 func _gui_input(event: InputEvent) -> void:
-	if exit_popup or not app.application_active or app.modal:return
+	if arrival_elapsed<ARRIVAL_SECONDS or exit_popup or not app.application_active or app.modal:return
 	if running and not result_shown:
 		if event is InputEventMagnifyGesture:
 			zoom = clampf(zoom*event.factor,1.0,1.55)
@@ -510,8 +568,10 @@ func move_hunter(index: int) -> void:
 	assigned_cells[selected_hunter] = index
 
 func start_combat() -> void:
-	if running or transition_elapsed>=0 or not app.application_active or app.modal:return
+	if arrival_elapsed<ARRIVAL_SECONDS or running or transition_elapsed>=0 or not app.application_active or app.modal:return
 	transition_elapsed = 0.0
+	battle_fade.modulate.a = 0.0
+	battle_fade.show()
 	preparation.mouse_behavior_recursive = Control.MOUSE_BEHAVIOR_DISABLED
 	combat.show()
 	combat.modulate.a = 0.0
@@ -522,7 +582,13 @@ func start_combat() -> void:
 func advance_transition(delta: float) -> void:
 	transition_elapsed += delta
 	var progress := clampf(transition_elapsed/TRANSITION_SECONDS,0,1)
-	approach = smoothstep(.16,1.0,progress)
+	if transition_elapsed<BATTLE_CUT:
+		battle_fade.modulate.a = smoothstep(0.0,BATTLE_CUT,transition_elapsed)
+	else:
+		if approach==0.0:
+			approach = 1.0
+			update_actors(0.0)
+		battle_fade.modulate.a = 1.0-smoothstep(BATTLE_CUT,TRANSITION_SECONDS,transition_elapsed)
 	var fade := 1.0-smoothstep(0.0,.38,progress)
 	placement_grid.modulate.a = fade
 	preparation.modulate.a = fade
@@ -542,6 +608,7 @@ func advance_transition(delta: float) -> void:
 		versus_letters[index].scale = Vector2.ONE*(1.0+.40*sin(beat*PI))
 	if progress>=1.0:
 		transition_elapsed = -1.0
+		battle_fade.hide()
 		preparation.hide()
 		placement_grid.hide()
 		combat_layout = true
@@ -558,11 +625,12 @@ func play_pose(id: String) -> void:
 func _process(delta: float) -> void:
 	if not app.application_active or exit_popup or app.modal:return
 	sound_delay = maxf(0.0,sound_delay-delta)
+	if arrival_elapsed<ARRIVAL_SECONDS:advance_arrival(delta)
 	var elapsed := delta*speed
 	pose_clock += elapsed
 	basic_recoil = maxf(0.0,basic_recoil-elapsed)
 	if transition_elapsed>=0:
-		advance_transition(elapsed)
+		advance_transition(delta)
 	elif running and not result_shown:
 		var move := rules.advance(elapsed)
 		if not move.is_empty():play_pose(move)
@@ -590,7 +658,9 @@ func update_combat_ui(delta := 0.0) -> void:
 	hunter_bar.value = lerpf(hunter_bar.value,rules.hunter_hp,weight)
 	deer_bar.value = lerpf(deer_bar.value,rules.deer_hp,weight)
 	prey_hp.value = deer_bar.value
-	deer_health_text.text = "%d / %d"%[rules.deer_hp,RULES.MAX_HP]
+	for bar in hunter_field_bars:bar.value = hunter_bar.value
+	hunter_health_text.text = str(rules.hunter_hp)
+	deer_health_text.text = str(rules.deer_hp)
 	var filled := rules.orbs()
 	var chime := filled>last_orbs or rules.orb_filled
 	for index in orb_icons.size():
@@ -623,7 +693,13 @@ func update_combat_ui(delta := 0.0) -> void:
 
 func update_camera(delta: float) -> void:
 	var focus := Vector2(480,285).lerp(Vector2(495,305),approach)
-	var target := zoom * lerpf(1.0,1.07,approach)
+	var target := zoom
+	if arrival_elapsed<ARRIVAL_SECONDS:
+		var drop := smoothstep(0.0,ARRIVAL_SECONDS,arrival_elapsed)
+		target = lerpf(1.27,1.0,drop)
+		focus = Vector2(420,165).lerp(Vector2(480,285),drop)
+	elif transition_elapsed>=0 and approach>=1.0:
+		target = 1.0+.13*(1.0-smoothstep(BATTLE_CUT,TRANSITION_SECONDS,transition_elapsed))
 	if pose in ["strike","team"] and pose_clock < RULES.POSE_SECONDS:
 		var accent := sin(pose_clock/RULES.POSE_SECONDS*PI)
 		var center := hunters[0].position
@@ -632,7 +708,7 @@ func update_camera(delta: float) -> void:
 			center /= hunters.size()
 		focus = focus.lerp(center,.45*accent)
 		target += .12*accent
-	var weight := 1.0-exp(-delta*11.0)
+	var weight := 1.0 if delta==0.0 or arrival_elapsed<ARRIVAL_SECONDS or transition_elapsed>=0 else 1.0-exp(-delta*11.0)
 	battlefield.scale = battlefield.scale.lerp(Vector2.ONE*target,weight)
 	var anchor := Vector2(480,285).lerp(focus,clampf((battlefield.scale.x-1.0)*2.0,0.0,1.0))
 	battlefield.position = battlefield.position.lerp(anchor-focus*battlefield.scale,weight)
@@ -644,10 +720,10 @@ func update_actors(delta: float) -> void:
 	if absf(camera_progress-approach)>.001:
 		camera_progress = approach
 		for hunter in hunters:
-			hunter.camera.position.y = lerpf(7.45,5.7,approach)
+			hunter.camera.position.y = lerpf(7.45,7.05,approach)
 			hunter.camera.look_at(Vector3(0,1.45,0))
 			hunter.display.position = -hunter.camera.unproject_position(Vector3.ZERO)*hunter.display.scale
-		deer.camera.position.y = lerpf(7.0,5.4,approach)
+		deer.camera.position.y = lerpf(7.0,6.65,approach)
 		deer.camera.look_at(Vector3(0,1,0))
 		deer.update_geometry()
 	var beat := sin(clampf(pose_clock/.52,0,1)*PI)
@@ -657,34 +733,37 @@ func update_actors(delta: float) -> void:
 		var attack := running and pose_clock<.52 and pose!="counter" and (i==0 or pose=="team")
 		var dodge := running and pose=="counter" and i==0
 		var base := cell_center(ALLY_ORIGIN,assigned_cells[i]).lerp(HUNTER_SLOTS[i],approach)
-		hunter.scale = Vector2.ONE*lerpf(.60,.76,approach)
-		var lunge := 64 if basic_attack else 32
-		hunter.position = base + Vector2((lunge if attack else -18 if dodge else 0)*beat,-5*beat if attack else 0)
-		var heading := Vector2(1,.55).lerp(Vector2.RIGHT,approach)
-		hunter.animate(delta,heading,pose_clock*12,dodge or transition_elapsed>=0,"" if not attack else "hunt",pose_clock,false)
+		hunter.scale = Vector2.ONE*lerpf(.60,.56,approach)
+		var lunge := 42 if basic_attack else 24
+		var attack_direction := base.direction_to(DEER_SLOT)
+		hunter.position = base + attack_direction*(lunge if attack else -18 if dodge else 0)*beat
+		var heading := Vector2(1,.55).lerp(Vector2(1,.28),approach)
+		hunter.animate(delta,heading,pose_clock*12,dodge,"" if not attack else "hunt",pose_clock,false)
 		if attack:
 			hunter.blend_bone("spine",Vector3(.10+beat*.12,0,-.08),.9)
 			hunter.blend_bone("armR",Vector3(-.88-beat*.38,0,-.15),1)
 			hunter.blend_bone("forearmR",Vector3(-.95+beat*.75,0,0),1)
-		if not running and transition_elapsed<0:
+		if not attack and not dodge:
 			hunter.blend_bone("spine",Vector3(.21,0,-.09),.65)
 			hunter.blend_bone("armR",Vector3(-.48,0,-.2),.65)
 			hunter.blend_bone("forearmR",Vector3(-.63,0,0),.65)
 		hunter.tool_3d.visible = true
 		hunter.viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
+		hunter_markers[i].position = hunter.position+Vector2(0,-63)
+		hunter_markers[i].visible = approach>=1.0
 	var charge := running and pose=="counter"
 	var deer_motion := Vector2(-29,-8) if charge else Vector2.ZERO if basic_attack else Vector2(23,-8)
 	deer.position = cell_center(ENEMY_ORIGIN,4).lerp(DEER_SLOT,approach)+(deer_motion*beat if running else Vector2.ZERO)
 	if basic_recoil>0:
 		deer.position += Vector2(13,-3)*basic_recoil/BASIC_RECOIL_TIME
-	deer.scale = Vector2.ONE*lerpf(.60,.86,approach)
-	deer.walking = beat if running else 1.0 if transition_elapsed>=0 else 0.0
-	deer.heading = lerp_angle(-PI*.34,-PI*.72,approach)
+	deer.scale = Vector2.ONE*lerpf(.60,.63,approach)
+	deer.walking = beat if running and (charge or basic_recoil>0.0) else 0.0
+	deer.heading = lerp_angle(-PI*.34,-PI*.35,approach)
 	deer.gait_phase = pose_clock*14
 	deer.clock += delta
 	deer.animate_rig(delta)
-	prey_hud.position = deer.position + Vector2(0,-deer.world_height*deer.scale.y-17)
-	prey_hud.visible = combat_layout
+	prey_hud.position = deer.position + Vector2(0,-deer.world_height*deer.scale.y-15)
+	prey_hud.visible = approach>=1.0
 
 func draw_stage() -> void:
 	if not combat_layout:return
