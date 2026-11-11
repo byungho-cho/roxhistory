@@ -21,6 +21,12 @@ const DEER_SLOT := Vector2(568,320)
 var app: Node
 var rules := RULES.new()
 var canvas: Control
+var roster_edge: Control
+var footer_left: Control
+var footer_right: Control
+var header_left: Control
+var header_right: Control
+var power_header: Control
 var battlefield: Control
 var ground: TextureRect
 var zoom := 1.0
@@ -128,17 +134,29 @@ func _ready() -> void:
 	update_actors(0.1)
 
 func fit_layout() -> void:
-	var inset := Vector2.ZERO
+	var safe_start := Vector2.ZERO
+	var safe_end := size
 	if OS.has_feature("android"):
 		var area := DisplayServer.get_display_safe_area()
 		var physical := Vector2(DisplayServer.screen_get_size())
-		if physical.x>0 and physical.y>0:
-			var edge := Vector2(maxi(area.position.x,int(physical.x)-area.end.x),maxi(area.position.y,int(physical.y)-area.end.y))
-			inset = inset.max(edge*size/physical)
-	var fit := minf((size.x-inset.x*2)/DESIGN.x,(size.y-inset.y*2)/DESIGN.y)
-	canvas.scale = Vector2.ONE*maxf(.1,fit)
-	canvas.position = (size-DESIGN*canvas.scale)*.5
+		if physical.x>0 and physical.y>0 and area.has_area():
+			safe_start = (Vector2(area.position)*size/physical).clamp(Vector2.ZERO,size)
+			safe_end = (Vector2(area.end)*size/physical).clamp(safe_start,size)
+	var safe_size := safe_end-safe_start
+	var fit := maxf(.1,minf(safe_size.x/DESIGN.x,safe_size.y/DESIGN.y))
+	canvas.scale = Vector2.ONE*fit
+	canvas.position = safe_start+(safe_size-DESIGN*fit)*.5
+	var start := (safe_start-canvas.position)/fit
+	var end := (safe_end-canvas.position)/fit
+	header_left.position = start+Vector2(0,1)
+	header_right.position = Vector2(end.x-DESIGN.x,start.y+1)
+	power_header.position = Vector2(-45,start.y)
+	battle_header.position = power_header.position
+	roster_edge.position = start+Vector2(0,72)
+	footer_left.position = Vector2(start.x,end.y-DESIGN.y)
+	footer_right.position = end-DESIGN
 	fit_exit_shade()
+
 
 func cell_center(origin: Vector2, index: int) -> Vector2:
 	return origin + CELL_X*(index%3) + CELL_Y*floori(index/3.0)
@@ -156,7 +174,11 @@ func hunter_portrait(index: int) -> Texture2D:
 
 func build_preparation() -> void:
 	preparation = layer()
-	var roster: TextureRect = app.picture(preparation,preload("res://assets/ui/hunting-formation/roster.png"),Rect2(31.5,79.5,165,355))
+	roster_edge = layer(preparation)
+	footer_left = layer(preparation)
+	footer_right = layer(preparation)
+	power_header = layer(preparation)
+	var roster: TextureRect = app.picture(roster_edge,preload("res://assets/ui/hunting-formation/roster.png"),Rect2(0,0,165,355))
 	roster.stretch_mode = TextureRect.STRETCH_SCALE
 	var ink := Color("49321e")
 	caption(roster,"출전 편성",Rect2(17,40,131,25),17,ink)
@@ -171,9 +193,9 @@ func build_preparation() -> void:
 		portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 		app.picture(card,preload("res://assets/ui/hunting-formation/swap.svg"),Rect2(71,53,24,24))
 	select_hunter(0)
-	var start := artwork_button(preparation,Rect2(776.5,474.5,160,50),"사냥 시작","png/preparation/start-battle-background.png",start_combat,ink)
+	var start := artwork_button(footer_right,Rect2(797,487,160,50),"사냥 시작","png/preparation/start-battle-background.png",start_combat,ink)
 	start.name = "StartBattle"
-	var quick := artwork_button(preparation,Rect2(604,474.5,160,50),"빠른 출전","png/preparation/quick-sortie-background.png",func():pass)
+	var quick := artwork_button(footer_right,Rect2(629,487,160,50),"빠른 출전","png/preparation/quick-sortie-background.png",func():pass)
 	quick.disabled = true
 	for control in [start,quick]:
 		var background: TextureRect = control.get_child(0)
@@ -188,13 +210,13 @@ func build_preparation_plaque() -> void:
 	const CENTER := Rect2(.60837,.0791,.3060,.1660)
 	const RIGHT := Rect2(.9140625,.0791,.0703125,.1660)
 	var regions := [LEFT,CENTER,RIGHT]
-	var positions := [Rect2(33.5,473.5,23.506,37),Rect2(57.006,473.5,101.99,37),Rect2(158.996,473.5,23.41,37)]
+	var positions := [Rect2(3,490.5,23.506,37),Rect2(26.506,490.5,101.99,37),Rect2(128.496,490.5,23.41,37)]
 	for index in regions.size():
 		var region: Rect2 = regions[index]
-		var art: TextureRect = app.picture(preparation,crop(ATLAS,Rect2(region.position*ATLAS.get_size(),region.size*ATLAS.get_size())),positions[index])
+		var art: TextureRect = app.picture(footer_left,crop(ATLAS,Rect2(region.position*ATLAS.get_size(),region.size*ATLAS.get_size())),positions[index])
 		art.stretch_mode = TextureRect.STRETCH_SCALE
-	caption(preparation,"사냥 준비",Rect2(33.5,473.5,150,37),16)
-	var bag := make_button(preparation,"",Rect2(142.5,462.5,56,62),app.inventory_summary)
+	caption(footer_left,"사냥 준비",Rect2(3,490.5,150,37),16)
+	var bag := make_button(footer_left,"",Rect2(112,476,56,62),app.inventory_summary)
 	clear_button_art(bag)
 	app.picture(bag,preload("res://assets/ui/hunting-formation/bag.png"),Rect2(5.2,0,45.6,48))
 	var brush: TextureRect = app.picture(bag,NAME_BRUSH,Rect2(0,41,56,19))
@@ -202,15 +224,15 @@ func build_preparation_plaque() -> void:
 	caption(bag,"가방",Rect2(4,41,48,19),12)
 
 func build_power_comparison() -> void:
-	var ally_icon := plaque(preparation,Rect2(297,4,48,48),Color("1c291f"),Color("f2bd4d"))
+	var ally_icon := plaque(power_header,Rect2(297,4,48,48),Color("1c291f"),Color("f2bd4d"))
 	prep_ally_portrait = app.picture(ally_icon,hunter_portrait(selected_hunter),Rect2(2,2,44,44))
-	app.picture(preparation,preload("res://assets/ui/hunting-combat/png/common/hp-portrait-deer.png"),Rect2(705,4,48,48))
+	app.picture(power_header,preload("res://assets/ui/hunting-combat/png/common/hp-portrait-deer.png"),Rect2(705,4,48,48))
 	# Lv 1 planning values shown by the preparation mockup. No combat rules read them.
 	add_power_digits("12,300",Vector2(425,25))
 	add_power_digits("8,000",Vector2(625,25))
-	app.picture(preparation,preload("res://assets/ui/hunting-formation/vs-backdrop.svg"),Rect2(507,10,36,36))
-	app.picture(preparation,preload("res://assets/ui/hunting-formation/vs-v.svg"),Rect2(510,17,18,22.5))
-	app.picture(preparation,preload("res://assets/ui/hunting-formation/vs-s.svg"),Rect2(522.3,17,18,22.5))
+	app.picture(power_header,preload("res://assets/ui/hunting-formation/vs-backdrop.svg"),Rect2(507,10,36,36))
+	app.picture(power_header,preload("res://assets/ui/hunting-formation/vs-v.svg"),Rect2(510,17,18,22.5))
+	app.picture(power_header,preload("res://assets/ui/hunting-formation/vs-s.svg"),Rect2(522.3,17,18,22.5))
 
 func add_power_digits(value: String, center: Vector2) -> void:
 	const GLYPHS := {
@@ -228,7 +250,7 @@ func add_power_digits(value: String, center: Vector2) -> void:
 	for digit in value:
 		var glyph: Texture2D = GLYPHS[digit]
 		var dimensions := glyph.get_size()*.5
-		app.picture(preparation,glyph,Rect2(Vector2(x,center.y-dimensions.y*.5),dimensions))
+		app.picture(power_header,glyph,Rect2(Vector2(x,center.y-dimensions.y*.5),dimensions))
 		x += dimensions.x-OVERLAP
 
 func clear_button_art(control: DemoButton) -> void:
@@ -247,9 +269,11 @@ func select_hunter(index: int) -> void:
 
 func build_duel_header() -> void:
 	var header := layer()
-	location_brush = app.picture(header,NAME_BRUSH,Rect2(10,1,220,56))
+	header_left = layer(header)
+	header_right = layer(header)
+	location_brush = app.picture(header_left,NAME_BRUSH,Rect2(3,0,220,56))
 	location_caption = caption(location_brush,"숲 가장자리",Rect2(44,0,163,56),21)
-	exit_button = make_button(header,"",Rect2(10,5,48,48),request_exit)
+	exit_button = make_button(header_left,"",Rect2(3,4,48,48),request_exit)
 	exit_button.name = "ExitHunt"
 	exit_button.tooltip_text = "뒤로가기"
 	clear_button_art(exit_button)
@@ -271,8 +295,8 @@ func build_duel_header() -> void:
 	versus_letters.append(app.picture(versus,preload("res://assets/ui/hunting-formation/vs-v.svg"),Rect2(510,37,18,22.5)))
 	versus_letters.append(app.picture(versus,preload("res://assets/ui/hunting-formation/vs-s.svg"),Rect2(522.3,37,18,22.5)))
 	for letter in versus_letters:letter.pivot_offset = letter.size*.5
-	auto_button = toggle_control(header,Rect2(840,4,48,48),"AUTO","auto",toggle_auto)
-	speed_button = toggle_control(header,Rect2(894,4,48,48),"X2","speed-2x",toggle_speed)
+	auto_button = toggle_control(header_right,Rect2(857,3,48,48),"AUTO","auto",toggle_auto)
+	speed_button = toggle_control(header_right,Rect2(909,3,48,48),"X2","speed-2x",toggle_speed)
 	update_toggles()
 
 func toggle_control(parent: Control, rect: Rect2, label: String, asset: String, action: Callable) -> DemoButton:
@@ -505,13 +529,11 @@ func advance_transition(delta: float) -> void:
 	combat.modulate.a = smoothstep(.45,1.0,progress)
 	battle_header.modulate.a = 1.0-fade
 	var header_progress := 1.0-fade
-	location_brush.position = Vector2(10,1).lerp(Vector2(25,18),header_progress)
+	location_brush.position = Vector2(3,0).lerp(Vector2(3,3),header_progress)
 	location_brush.size = Vector2(220,56).lerp(Vector2(198,41),header_progress)
 	location_caption.position = Vector2(44,0).lerp(Vector2(21,0),header_progress)
 	location_caption.size = Vector2(163,56).lerp(Vector2(160,41),header_progress)
-	exit_button.position = Vector2(10,5).lerp(Vector2(16,18),header_progress)
-	auto_button.position = Vector2(840,4).lerp(Vector2(840,22),header_progress)
-	speed_button.position = Vector2(894,4).lerp(Vector2(896,22),header_progress)
+	exit_button.position = Vector2(3,4).lerp(Vector2(3,3),header_progress)
 	var matching := sin(progress*PI)*22.0
 	ally_hud.position.x = -matching
 	enemy_hud.position.x = matching
