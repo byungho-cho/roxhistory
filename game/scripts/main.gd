@@ -41,6 +41,11 @@ var preparing_intro_world := false
 var intro_preload_paths: Array[String] = []
 var intro_preloaded: Array[Resource] = []
 var intro_preload_started := false
+var intro_preload_total := 0
+var title_loading: ProgressBar
+var title_world_progress := 0.0
+var title_load_generation := 0
+var title_loader_started_at := 0
 var intro_loading: Label
 var intro_probe := OS.is_debug_build() and OS.has_feature("android")
 var intro_cloud_tween: Tween
@@ -477,6 +482,7 @@ func title_screen() -> void:
 	title_prompt=start
 	title_prompt_time=0
 	style_start_prompt(start)
+	install_title_loader(start)
 	var config:=button(stage,"",pause_game)
 	config.name="TitleSettings";config.custom_minimum_size=Vector2.ZERO;config.position=Vector2(w-safe.x-56,h-safe.y-56);config.size=Vector2(56,56)
 	for state in ["normal","hover","pressed","focus"]:config.add_theme_stylebox_override(state,StyleBoxEmpty.new())
@@ -557,7 +563,48 @@ func check_title_update(manual:=false) -> void:
 	var url := str(updates.RELEASE_ROOT)+"latest.json?check="+str(Time.get_unix_time_from_system())
 	if updates.request.request(url) != OK:updates.show_failure()
 
+func install_title_loader(start: Button) -> void:
+	title_loading = ProgressBar.new()
+	title_loading.name = "TitleLoading"
+	title_loading.show_percentage = false
+	title_loading.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	title_loading.position = Vector2(w*.5-minf(w*.54,270.0)*.5,start.position.y+start.size.y*.5-4)
+	title_loading.size = Vector2(minf(w*.54,270.0),8)
+	title_loading.max_value = 1.0
+	title_loading.step = 0.0
+	var track := StyleBoxFlat.new()
+	track.bg_color = Color(.12,.09,.06,.40)
+	track.set_corner_radius_all(4)
+	var fill := StyleBoxFlat.new()
+	fill.bg_color = Color(.94,.80,.54,.66)
+	fill.set_corner_radius_all(4)
+	title_loading.add_theme_stylebox_override("background",track)
+	title_loading.add_theme_stylebox_override("fill",fill)
+	stage.add_child(title_loading)
+	title_loading.visible = title_needs_loading()
+	start.visible = not title_loading.visible
+	title_loader_started_at = Time.get_ticks_usec()
+
+func title_needs_loading() -> bool:
+	return not is_instance_valid(world) and (not intro_preload_started or not intro_preload_paths.is_empty() or
+		(not model.state.is_empty() and not is_instance_valid(prepared_intro_world)))
+
+func advance_title_loading() -> void:
+	if not is_instance_valid(title_loading) or not title_loading.visible or not application_active:return
+	preload_intro_assets()
+	var assets_progress := 1.0-float(intro_preload_paths.size())/maxi(1,intro_preload_total)
+	if not model.state.is_empty():
+		title_loading.value = assets_progress*.32+title_world_progress*.68
+		if intro_preload_paths.is_empty():prepare_intro_world()
+	else:
+		title_loading.value = assets_progress
+	if not title_needs_loading():
+		title_loading.hide()
+		title_prompt.show()
+		if intro_probe:print("ROX_INTRO_TIMING title_ready ms=",(Time.get_ticks_usec()-title_loader_started_at)/1000.0)
+
 func start_or_continue()->void:
+	if is_instance_valid(title_loading) and title_loading.visible and not test_mode:return
 	if modal or screen!="title" or not application_active or is_instance_valid(intro_cloud):return
 	get_node("/root/PatchBootstrap/Overlay").leave_title()
 	cover_intro(prepare_intro)
@@ -704,7 +751,7 @@ func leave_intro_under_cover() -> void:
 	reveal_intro_destination()
 
 func preload_intro_assets() -> void:
-	if is_instance_valid(world) or model.state.is_empty():return
+	if is_instance_valid(world):return
 	if not intro_preload_started:
 		intro_preload_started = true
 		var paths: Array[String] = ["res://assets/characters/meshy01/hero.glb"]
@@ -712,6 +759,7 @@ func preload_intro_assets() -> void:
 		for path in paths:
 			if ResourceLoader.load_threaded_request(path,"PackedScene")==OK:
 				intro_preload_paths.append(path)
+		intro_preload_total = intro_preload_paths.size()
 	for index in range(intro_preload_paths.size()-1,-1,-1):
 		var path := intro_preload_paths[index]
 		match ResourceLoader.load_threaded_get_status(path):
@@ -725,13 +773,20 @@ func prepare_intro_world() -> void:
 	if preparing_intro_world or is_instance_valid(prepared_intro_world) or is_instance_valid(world) or model.state.is_empty():
 		return
 	preparing_intro_world = true
+	var generation := title_load_generation
+	title_world_progress = 0.0
 	var world_started := Time.get_ticks_usec()
 	var assembling_world := DemoWorld.new(model)
 	assembling_world.spread_startup = true
+	assembling_world.startup_progress.connect(func(progress: float):title_world_progress = progress)
 	assembling_world.hide()
 	assembling_world.process_mode = Node.PROCESS_MODE_DISABLED
 	add_child(assembling_world)
 	await assembling_world.startup_completed
+	if generation!=title_load_generation:
+		assembling_world.queue_free()
+		preparing_intro_world = false
+		return
 	prepared_intro_world = assembling_world
 	intro_preloaded.clear()
 	preparing_intro_world = false
@@ -739,7 +794,7 @@ func prepare_intro_world() -> void:
 	intro_world_prepared.emit()
 
 func intro_probe_step(phase: String, started: int) -> void:
-	if intro_probe and (intro_leaving or screen=="intro"):
+	if intro_probe and (intro_leaving or screen in ["intro","title"]):
 		print("ROX_INTRO_TIMING ",phase," ms=",(Time.get_ticks_usec()-started)/1000.0)
 
 func continue_to_village() -> void:
@@ -762,6 +817,7 @@ func update_title_sound() -> void:
 
 
 func chapter_menu() -> void:
+	discard_prepared_intro_world()
 	close_modal()
 	show_screen("chapter")
 
@@ -770,10 +826,17 @@ func new_game_prompt() -> void:
 		{"text":"돌아가기","action":close_modal},
 		{"text":"새로 시작","action":chapter_menu,"primary":true}],false,false,false,Vector2.ZERO,true)
 
+func discard_prepared_intro_world() -> void:
+	title_load_generation += 1
+	if is_instance_valid(prepared_intro_world):prepared_intro_world.queue_free()
+	prepared_intro_world = null
+	title_world_progress = 0.0
+
 func full_reset() -> void:
 	if not model.store.erase_progress():show_error(model.store.message);return
 	settings.clear()
 	if settings.save(prefs_path)!=OK:show_error("설정 초기화를 저장하지 못했습니다.");return
+	discard_prepared_intro_world()
 	model.state.clear();cancel_task()
 	if village_alerts:village_alerts.sync()
 	if is_instance_valid(world):remove_child(world);world.queue_free();world=null
@@ -1122,11 +1185,11 @@ func _process(delta: float) -> void:
 			var position := intro_player.stream_position
 			intro_stall = intro_stall+delta if intro_preparing or is_equal_approx(position,intro_position) else 0.0
 			intro_position = position
-			if not intro_preparing and position>=1.0:preload_intro_assets()
 			if not intro_player.is_playing() or intro_stall>=3.0:finish_intro()
 			elif intro_preparing:intro_loading.visible = intro_stall>=1.0
 		return
 	if screen=="title" and application_active and is_instance_valid(title_prompt):
+		advance_title_loading()
 		if Time.get_ticks_msec()-title_update_at>=60000:check_title_update()
 		title_prompt_time=fposmod(title_prompt_time+delta,3.0)
 		title_prompt.modulate.a=.87+.13*cos(title_prompt_time*TAU/3.0)

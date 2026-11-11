@@ -2,6 +2,7 @@ class_name DemoWorld
 extends Node2D
 
 signal startup_completed
+signal startup_progress(progress: float)
 
 var spread_startup := false
 var model: GameState
@@ -104,7 +105,9 @@ func _ready() -> void:
 	get_node("ExistingHut").sprite.position.y+=3.0
 	prop("props",Vector2(1035,660),65,Vector2(40,20),"PotteryAndGrindingStone")
 	get_node("PotteryAndGrindingStone").hide()
-	if spread_startup:await get_tree().process_frame
+	if spread_startup:
+		startup_progress.emit(.38)
+		await get_tree().process_frame
 	# Clean approved terrain: independent scenery owns both silhouette and footprint.
 	# Removed all six legacy canopy masks and five painted-rock collision regions.
 	var batch_started := Time.get_ticks_usec()
@@ -120,12 +123,16 @@ func _ready() -> void:
 		var hut := prop("hut",DemoConfig.BUILD_SITES[i],230,Vector2.ZERO,"QuestHome"+str(i))
 		homes.append(hut)
 	home=homes[0]
-	if spread_startup:await get_tree().process_frame
+	if spread_startup:
+		startup_progress.emit(.55)
+		await get_tree().process_frame
 	player = DemoPlayer.new()
 	var edge_clouds:=VillageEdgeClouds.new();edge_clouds.player=player;add_child(edge_clouds)
 	player.position = DemoConfig.point(model.state.position)
 	add_child(player)
-	if spread_startup:await get_tree().process_frame
+	if spread_startup:
+		startup_progress.emit(.72)
+		await get_tree().process_frame
 	batch_started = Time.get_ticks_usec()
 	# Wildlife stays outside the settlement and clear of the demo resource/build routes.
 	for entry in [["deer",470,430,75,-0.8],["rabbit",1680,1040,30,0.6],["rabbit",1790,1080,28,-0.4],["deer",600,450,68,0.9],["deer",-350,400,68,0.9],["rabbit",900,-130,30,0.6],["rabbit",2450,1430,30,0.6]]:
@@ -145,6 +152,7 @@ func _ready() -> void:
 	refresh()
 	if not spread_startup:
 		resume_staged_startup()
+	startup_progress.emit(1.0)
 	startup_completed.emit()
 
 func resume_staged_startup() -> void:
