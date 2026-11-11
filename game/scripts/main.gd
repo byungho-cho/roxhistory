@@ -36,6 +36,7 @@ var intro_leaving := false
 var intro_cloud_layer: CanvasLayer
 var intro_cloud: ColorRect
 var intro_loading: Label
+var intro_probe := OS.is_debug_build() and OS.has_feature("android")
 var intro_cloud_tween: Tween
 var transition_started_at := 0
 var transition_prepare_ms := 0.0
@@ -680,6 +681,10 @@ func leave_intro_under_cover() -> void:
 	await get_tree().process_frame
 	reveal_intro_destination()
 
+func intro_probe_step(phase: String, started: int) -> void:
+	if intro_probe and intro_leaving:
+		print("ROX_INTRO_TIMING ",phase," ms=",(Time.get_ticks_usec()-started)/1000.0)
+
 func continue_to_village() -> void:
 	if model.state.is_empty():chapter_menu()
 	else:enter_game()
@@ -875,7 +880,10 @@ func play_hud() -> void:
 	var map_hit:=button(stage,"",recenter_map);map_hit.name="RecenterCamera";map_hit.custom_minimum_size=Vector2.ZERO;map_hit.position=Vector2(w-safe.x-100,safe.y+10);map_hit.size=Vector2(100,100)
 	map_hit.hint_text="현재 위치로 지도 맞추기"
 	for state in ["normal","hover","pressed"]:map_hit.add_theme_stylebox_override(state,StyleBoxEmpty.new())
+	intro_probe_step("hud_before_map",hud_started)
+	var map_started := Time.get_ticks_usec()
 	world_map=VillageWorldMap.new(self);stage.add_child(world_map);stage.move_child(world_map,0)
+	intro_probe_step("hud_map",map_started)
 	map_toggle=button(stage,"",toggle_world_map);map_toggle.icon=AssetCatalog.texture("UI-MAP");map_toggle.expand_icon=true;map_toggle.add_theme_constant_override("icon_max_width",48);map_toggle.custom_minimum_size=Vector2.ZERO;map_toggle.position=Vector2(w-safe.x-64,safe.y+90);map_toggle.size=Vector2(56,56);map_toggle.z_index=31
 	for state in ["normal","hover","pressed","focus"]:map_toggle.add_theme_stylebox_override(state,StyleBoxEmpty.new())
 	var settings_button:=button(stage,"",pause_game);settings_button.name="SettingsButton";settings_button.z_index=31
