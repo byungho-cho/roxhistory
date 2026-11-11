@@ -674,11 +674,13 @@ func finish_intro() -> void:
 	cover_intro(leave_intro_under_cover)
 
 func leave_intro_under_cover() -> void:
+	var covered_at := Time.get_ticks_usec()
 	if is_instance_valid(intro_player):intro_player.stop()
 	intro_player = null
 	intro_stream = null
 	continue_to_village()
 	await get_tree().process_frame
+	intro_probe_step("covered_to_first_frame",covered_at)
 	reveal_intro_destination()
 
 func intro_probe_step(phase: String, started: int) -> void:
@@ -762,8 +764,10 @@ func enter_game(first_entry:=false) -> void:
 	if village_alerts and VillageNotifications.EVENTS.any(func(event):return VillageNotifications.setting(model.state,event)):
 		village_alerts.request_permission()
 	if not is_instance_valid(world):
+		var world_started := Time.get_ticks_usec()
 		world = DemoWorld.new(model)
 		add_child(world)
+		intro_probe_step("world",world_started)
 		world.feedback.sound_cue.connect(audio.cue)
 	if not is_instance_valid(building_workflow):
 		building_workflow=BuildingWorkflow.new(self);add_child(building_workflow)
@@ -772,8 +776,10 @@ func enter_game(first_entry:=false) -> void:
 		building_work_audio=BuildingWorkAudio.new(self);add_child(building_work_audio)
 	if not is_instance_valid(navigation):
 		navigation=AutoTravel.new(self);add_child(navigation)
+	var hero_started := Time.get_ticks_usec()
 	world.player.set_character_3d(true)
 	world.player.camera.reset_smoothing()
+	intro_probe_step("hero_3d",hero_started)
 	show_screen("play")
 	if first_entry:
 		gestures.clear()
@@ -795,6 +801,7 @@ func finish_village_entry()->void:
 	if village_entry_active():village_entry.finish()
 
 func play_hud() -> void:
+	var hud_started := Time.get_ticks_usec()
 	performance_hud=PERFORMANCE_HUD.new()
 	stage.add_child(performance_hud)
 	performance_hud.position=Vector2(w-safe.x-193,safe.y+156)
@@ -898,6 +905,7 @@ func play_hud() -> void:
 	stage.add_child(building_menu)
 	world_map_open=false
 	update_hud()
+	intro_probe_step("hud_total",hud_started)
 
 func toggle_world_map()->void:
 	if modal or map_transition_active:return
