@@ -1,0 +1,424 @@
+{
+  "id": "2319:340",
+  "name": "Hunting battle / latest independently editable UI",
+  "type": "FRAME",
+  "x": 0,
+  "y": 70,
+  "width": 1920,
+  "height": 1080,
+  "visible": true,
+  "children": [
+    {
+      "id": "2323:743",
+      "name": "01 Background / reused preparation raster",
+      "type": "INSTANCE",
+      "x": 0,
+      "y": 0,
+      "width": 1920,
+      "height": 1080.5740966796875,
+      "visible": true,
+      "mainComponentId": "2255:548"
+    },
+    {
+      "id": "2323:745",
+      "name": "02 Battlefield / actors and floating HP",
+      "type": "FRAME",
+      "x": 0,
+      "y": 0,
+      "width": 1920,
+      "height": 1080,
+      "visible": true,
+      "children": [
+        {
+          "id": "2323:746",
+          "name": "Hunter / Leader",
+          "type": "INSTANCE",
+          "x": 705,
+          "y": 397,
+          "width": 106.5999984741211,
+          "height": 111.79999542236328,
+          "visible": true,
+          "mainComponentId": "2255:553"
+        },
+        {
+          "id": "2323:749",
+          "name": "Hunter / Leader / floating HP",
+          "type": "INSTANCE",
+          "x": 722,
+          "y": 376,
+          "width": 73.5999984741211,
+          "height": 14.720000267028809,
+          "visible": true,
+          "mainComponentId": "2281:523"
+        },
+        {
+          "id": "2323:755",
+          "name": "Hunter / Sturdy",
+          "type": "INSTANCE",
+          "x": 450,
+          "y": 567,
+          "width": 114.39999389648438,
+          "height": 110.49999237060547,
+          "visible": true,
+          "mainComponentId": "2255:558"
+        },
+        {
+          "id": "2323:758",
+          "name": "Hunter / Sturdy / floating HP",
+          "type": "INSTANCE",
+          "x": 470,
+          "y": 546,
+          "width": 73.5999984741211,
+          "height": 14.720000267028809,
+          "visible": true,
+          "mainComponentId": "2281:523"
+        },
+        {
+          "id": "2323:764",
+          "name": "Hunter / Female",
+          "type": "INSTANCE",
+          "x": 810,
+          "y": 637,
+          "width": 103.75,
+          "height": 110,
+          "visible": true,
+          "mainComponentId": "2255:563"
+        },
+        {
+          "id": "2323:767",
+          "name": "Hunter / Female / floating HP",
+          "type": "INSTANCE",
+          "x": 827,
+          "y": 616,
+          "width": 73.5999984741211,
+          "height": 14.720000267028809,
+          "visible": true,
+          "mainComponentId": "2281:523"
+        },
+        {
+          "id": "2323:773",
+          "name": "Prey / Deer",
+          "type": "INSTANCE",
+          "x": 1135,
+          "y": 345,
+          "width": 118.82500457763672,
+          "height": 137.1999969482422,
+          "visible": true,
+          "mainComponentId": "2255:568"
+        },
+        {
+          "id": "2323:776",
+          "name": "Prey / Deer / floating HP",
+          "type": "INSTANCE",
+          "x": 1136,
+          "y": 318,
+          "width": 118.4000015258789,
+          "height": 23.68000030517578,
+          "visible": true,
+          "mainComponentId": "2281:529"
+        },
+        {
+          "id": "2337:1149",
+          "name": "Prey name / shared two-ended brush",
+          "type": "INSTANCE",
+          "x": 1123.5,
+          "y": 276.5,
+          "width": 138,
+          "height": 36,
+          "visible": true,
+          "mainComponentId": "863:38"
+        },
+        {
+          "id": "2323:782",
+          "name": "Prey name / editable",
+          "type": "TEXT",
+          "x": 1170,
+          "y": 280,
+          "width": 45,
+          "height": 29,
+          "visible": true,
+          "characters": "사슴"
+        }
+      ]
+    },
+    {
+      "id": "2323:783",
+      "name": "03 Fixed HUD / independent components",
+      "type": "FRAME",
+      "x": 0,
+      "y": 0,
+      "width": 1920,
+      "height": 1080,
+      "visible": true,
+      "children": [
+        {
+          "id": "2323:784",
+          "name": "Top row / aligned centerline",
+          "type": "FRAME",
+          "x": 32,
+          "y": 36,
+          "width": 1856,
+          "height": 112,
+          "visible": true,
+          "children": [
+            {
+              "id": "2323:785",
+              "name": "Location and back / editable title",
+              "type": "INSTANCE",
+              "x": 0,
+              "y": 0,
+              "width": 440,
+              "height": 112,
+              "visible": true,
+              "mainComponentId": "2281:561"
+            },
+            {
+              "id": "2323:792",
+              "name": "HP duel / editable values and fills",
+              "type": "INSTANCE",
+              "x": 564,
+              "y": 0,
+              "width": 960,
+              "height": 112,
+              "visible": true,
+              "mainComponentId": "2281:535"
+            },
+            {
+              "id": "2323:827",
+              "name": "Auto and speed / independent controls",
+              "type": "FRAME",
+              "x": 1648,
+              "y": 8,
+              "width": 208,
+              "height": 96,
+              "visible": true,
+              "children": [
+                {
+                  "id": "2323:828",
+                  "name": "Preserved original / automatic battle control",
+                  "type": "INSTANCE",
+                  "x": 0,
+                  "y": 0,
+                  "width": 96,
+                  "height": 96,
+                  "visible": false,
+                  "mainComponentId": "2283:541"
+                },
+                {
+                  "id": "2323:832",
+                  "name": "Preserved original / speed control",
+                  "type": "INSTANCE",
+                  "x": 0,
+                  "y": 0,
+                  "width": 96,
+                  "height": 96,
+                  "visible": false,
+                  "mainComponentId": "2283:549"
+                },
+                {
+                  "id": "2355:744",
+                  "name": "AUTO / icon and label",
+                  "type": "FRAME",
+                  "x": 0,
+                  "y": 0,
+                  "width": 96,
+                  "height": 96,
+                  "visible": true
+                },
+                {
+                  "id": "2355:747",
+                  "name": "X2 / icon and label",
+                  "type": "FRAME",
+                  "x": 112,
+                  "y": 0,
+                  "width": 96,
+                  "height": 96,
+                  "visible": true
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "2323:834",
+          "name": "Skill cluster / independently movable buttons and orbs",
+          "type": "FRAME",
+          "x": 1360,
+          "y": 510,
+          "width": 520,
+          "height": 550,
+          "visible": true,
+          "children": [
+            {
+              "id": "2323:835",
+              "name": "타격 / 차분한 녹색 / 독립 3단 레이어",
+              "type": "INSTANCE",
+              "x": 110,
+              "y": 190,
+              "width": 300,
+              "height": 300,
+              "visible": true,
+              "mainComponentId": "2341:1141"
+            },
+            {
+              "id": "2323:837",
+              "name": "강타 / 주황 돌망치 / 독립 3단 레이어",
+              "type": "INSTANCE",
+              "x": 47.16331481933594,
+              "y": 112.36248016357422,
+              "width": 136,
+              "height": 136,
+              "visible": true,
+              "mainComponentId": "2341:1141"
+            },
+            {
+              "id": "2323:839",
+              "name": "협동 / 빨강 3인 찌르기 / 독립 3단 레이어",
+              "type": "INSTANCE",
+              "x": 182,
+              "y": 21.5,
+              "width": 170,
+              "height": 170,
+              "visible": true,
+              "mainComponentId": "2341:1141"
+            },
+            {
+              "id": "2323:841",
+              "name": "Strong cost / 1 orb",
+              "type": "INSTANCE",
+              "x": 106.36331176757812,
+              "y": 216.36248779296875,
+              "width": 17.600000381469727,
+              "height": 17.600000381469727,
+              "visible": true,
+              "mainComponentId": "2322:573"
+            },
+            {
+              "id": "2323:849",
+              "name": "Cooperation cost / orb 1",
+              "type": "INSTANCE",
+              "x": 241,
+              "y": 151.5,
+              "width": 22,
+              "height": 22,
+              "visible": true,
+              "mainComponentId": "2322:573"
+            },
+            {
+              "id": "2323:857",
+              "name": "Cooperation cost / orb 2",
+              "type": "INSTANCE",
+              "x": 271,
+              "y": 151.5,
+              "width": 22,
+              "height": 22,
+              "visible": true,
+              "mainComponentId": "2322:573"
+            },
+            {
+              "id": "2323:865",
+              "name": "Energy reservoir / 1 of 3",
+              "type": "INSTANCE",
+              "x": 412.12481689453125,
+              "y": 307.3608093261719,
+              "width": 49.400001525878906,
+              "height": 49.400001525878906,
+              "visible": true,
+              "mainComponentId": "2322:573"
+            },
+            {
+              "id": "2323:873",
+              "name": "Energy reservoir / 2 of 3",
+              "type": "INSTANCE",
+              "x": 406.540771484375,
+              "y": 360.4680480957031,
+              "width": 49.400001525878906,
+              "height": 49.400001525878906,
+              "visible": true,
+              "mainComponentId": "2322:573"
+            },
+            {
+              "id": "2323:881",
+              "name": "Energy reservoir / 3 of 3",
+              "type": "INSTANCE",
+              "x": 385.62158203125,
+              "y": 409.6000061035156,
+              "width": 49.400001525878906,
+              "height": 49.400001525878906,
+              "visible": true,
+              "mainComponentId": "2322:573"
+            }
+          ]
+        },
+        {
+          "id": "2341:1453",
+          "name": "Hunter level / editable badge",
+          "type": "FRAME",
+          "x": 606,
+          "y": 124,
+          "width": 124,
+          "height": 34,
+          "visible": true,
+          "children": [
+            {
+              "id": "2341:1454",
+              "name": "Level / shared two-ended brush",
+              "type": "INSTANCE",
+              "x": 0,
+              "y": 0,
+              "width": 124,
+              "height": 34,
+              "visible": true,
+              "mainComponentId": "863:38"
+            },
+            {
+              "id": "2341:1455",
+              "name": "Lv 1 / editable text",
+              "type": "TEXT",
+              "x": 40.5,
+              "y": 3,
+              "width": 43,
+              "height": 28,
+              "visible": true,
+              "characters": "Lv 1"
+            }
+          ]
+        },
+        {
+          "id": "2341:1456",
+          "name": "Deer level / editable badge",
+          "type": "FRAME",
+          "x": 1422,
+          "y": 124,
+          "width": 124,
+          "height": 34,
+          "visible": true,
+          "children": [
+            {
+              "id": "2341:1457",
+              "name": "Level / shared two-ended brush",
+              "type": "INSTANCE",
+              "x": 0,
+              "y": 0,
+              "width": 124,
+              "height": 34,
+              "visible": true,
+              "mainComponentId": "863:38"
+            },
+            {
+              "id": "2341:1458",
+              "name": "Lv 1 / editable text",
+              "type": "TEXT",
+              "x": 40.5,
+              "y": 3,
+              "width": 43,
+              "height": 28,
+              "visible": true,
+              "characters": "Lv 1"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

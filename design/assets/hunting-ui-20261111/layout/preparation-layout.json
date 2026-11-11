@@ -1,0 +1,841 @@
+{
+  "id": "2265:75",
+  "name": "Hunting preparation / final v16.1",
+  "type": "FRAME",
+  "x": 48,
+  "y": 156,
+  "width": 1920,
+  "height": 1080,
+  "visible": true,
+  "children": [
+    {
+      "id": "2265:76",
+      "name": "01 Background / independent",
+      "type": "INSTANCE",
+      "x": 0,
+      "y": 0,
+      "width": 1920,
+      "height": 1080,
+      "visible": true,
+      "mainComponentId": "2255:548",
+      "children": [
+        {
+          "id": "I2265:76;2255:549",
+          "name": "Background only · raster",
+          "type": "RECTANGLE",
+          "x": 0,
+          "y": 0,
+          "width": 1920,
+          "height": 1080,
+          "visible": true
+        }
+      ]
+    },
+    {
+      "id": "2265:78",
+      "name": "02 Battlefield / move all together",
+      "type": "FRAME",
+      "x": 438,
+      "y": 235.95654296875,
+      "width": 968.052978515625,
+      "height": 685.68798828125,
+      "visible": true,
+      "children": [
+        {
+          "id": "2265:79",
+          "name": "Ally grid / 9 cell instances",
+          "type": "INSTANCE",
+          "x": 0,
+          "y": 236.210693359375,
+          "width": 634,
+          "height": 449.4772644042969,
+          "visible": true,
+          "mainComponentId": "2260:423",
+          "children": [
+            {
+              "id": "I2265:79;2260:424",
+              "name": "Cell 0,0",
+              "type": "INSTANCE",
+              "x": 0,
+              "y": 148.492431640625,
+              "width": 214,
+              "height": 152.492431640625,
+              "visible": true,
+              "mainComponentId": "2255:574"
+            },
+            {
+              "id": "I2265:79;2260:426",
+              "name": "Cell 0,1",
+              "type": "INSTANCE",
+              "x": 105,
+              "y": 222.73863220214844,
+              "width": 214,
+              "height": 152.492431640625,
+              "visible": true,
+              "mainComponentId": "2255:574"
+            },
+            {
+              "id": "I2265:79;2260:428",
+              "name": "Cell 0,2",
+              "type": "INSTANCE",
+              "x": 210,
+              "y": 296.98486328125,
+              "width": 214,
+              "height": 152.492431640625,
+              "visible": true,
+              "mainComponentId": "2255:574"
+            },
+            {
+              "id": "I2265:79;2260:430",
+              "name": "Cell 1,0",
+              "type": "INSTANCE",
+              "x": 105,
+              "y": 74.2462158203125,
+              "width": 214,
+              "height": 152.492431640625,
+              "visible": true,
+              "mainComponentId": "2255:574"
+            },
+            {
+              "id": "I2265:79;2260:432",
+              "name": "Cell 1,1",
+              "type": "INSTANCE",
+              "x": 210,
+              "y": 148.492431640625,
+              "width": 214,
+              "height": 152.492431640625,
+              "visible": true,
+              "mainComponentId": "2255:574"
+            },
+            {
+              "id": "I2265:79;2260:434",
+              "name": "Cell 1,2",
+              "type": "INSTANCE",
+              "x": 315,
+              "y": 222.73863220214844,
+              "width": 214,
+              "height": 152.492431640625,
+              "visible": true,
+              "mainComponentId": "2255:574"
+            },
+            {
+              "id": "I2265:79;2260:436",
+              "name": "Cell 2,0",
+              "type": "INSTANCE",
+              "x": 210,
+              "y": 0,
+              "width": 214,
+              "height": 152.492431640625,
+              "visible": true,
+              "mainComponentId": "2255:574"
+            },
+            {
+              "id": "I2265:79;2260:438",
+              "name": "Cell 2,1",
+              "type": "INSTANCE",
+              "x": 315,
+              "y": 74.2462158203125,
+              "width": 214,
+              "height": 152.492431640625,
+              "visible": true,
+              "mainComponentId": "2255:574"
+            },
+            {
+              "id": "I2265:79;2260:440",
+              "name": "Cell 2,2",
+              "type": "INSTANCE",
+              "x": 420,
+              "y": 148.492431640625,
+              "width": 214,
+              "height": 152.492431640625,
+              "visible": true,
+              "mainComponentId": "2255:574"
+            }
+          ]
+        },
+        {
+          "id": "2265:107",
+          "name": "Enemy grid / 9 cell instances",
+          "type": "INSTANCE",
+          "x": 334.052734375,
+          "y": -3.125001057924237e-8,
+          "width": 634,
+          "height": 449.4772644042969,
+          "visible": true,
+          "mainComponentId": "2260:442",
+          "children": [
+            {
+              "id": "I2265:107;2260:443",
+              "name": "Cell 0,0",
+              "type": "INSTANCE",
+              "x": 0,
+              "y": 148.492431640625,
+              "width": 214,
+              "height": 152.492431640625,
+              "visible": true,
+              "mainComponentId": "2255:578"
+            },
+            {
+              "id": "I2265:107;2260:445",
+              "name": "Cell 0,1",
+              "type": "INSTANCE",
+              "x": 105,
+              "y": 222.73863220214844,
+              "width": 214,
+              "height": 152.492431640625,
+              "visible": true,
+              "mainComponentId": "2255:578"
+            },
+            {
+              "id": "I2265:107;2260:447",
+              "name": "Cell 0,2",
+              "type": "INSTANCE",
+              "x": 210,
+              "y": 296.98486328125,
+              "width": 214,
+              "height": 152.492431640625,
+              "visible": true,
+              "mainComponentId": "2255:578"
+            },
+            {
+              "id": "I2265:107;2260:449",
+              "name": "Cell 1,0",
+              "type": "INSTANCE",
+              "x": 105,
+              "y": 74.2462158203125,
+              "width": 214,
+              "height": 152.492431640625,
+              "visible": true,
+              "mainComponentId": "2255:578"
+            },
+            {
+              "id": "I2265:107;2260:451",
+              "name": "Cell 1,1",
+              "type": "INSTANCE",
+              "x": 210,
+              "y": 148.492431640625,
+              "width": 214,
+              "height": 152.492431640625,
+              "visible": true,
+              "mainComponentId": "2255:578"
+            },
+            {
+              "id": "I2265:107;2260:453",
+              "name": "Cell 1,2",
+              "type": "INSTANCE",
+              "x": 315,
+              "y": 222.73863220214844,
+              "width": 214,
+              "height": 152.492431640625,
+              "visible": true,
+              "mainComponentId": "2255:578"
+            },
+            {
+              "id": "I2265:107;2260:455",
+              "name": "Cell 2,0",
+              "type": "INSTANCE",
+              "x": 210,
+              "y": 0,
+              "width": 214,
+              "height": 152.492431640625,
+              "visible": true,
+              "mainComponentId": "2255:578"
+            },
+            {
+              "id": "I2265:107;2260:457",
+              "name": "Cell 2,1",
+              "type": "INSTANCE",
+              "x": 315,
+              "y": 74.2462158203125,
+              "width": 214,
+              "height": 152.492431640625,
+              "visible": true,
+              "mainComponentId": "2255:578"
+            },
+            {
+              "id": "I2265:107;2260:459",
+              "name": "Cell 2,2",
+              "type": "INSTANCE",
+              "x": 420,
+              "y": 148.492431640625,
+              "width": 214,
+              "height": 152.492431640625,
+              "visible": true,
+              "mainComponentId": "2255:578"
+            }
+          ]
+        },
+        {
+          "id": "2272:260",
+          "name": "Actor / Leader / sprite + shadow",
+          "type": "GROUP",
+          "x": 274,
+          "y": 219.636962890625,
+          "width": 108.7796859741211,
+          "height": 111.80000305175781,
+          "visible": true,
+          "children": [
+            {
+              "id": "2265:135",
+              "name": "주인공 · 접지 그림자",
+              "type": "ELLIPSE",
+              "x": 274,
+              "y": 310.45703125,
+              "width": 62,
+              "height": 20,
+              "visible": true
+            },
+            {
+              "id": "2265:139",
+              "name": "Hunter / Leader",
+              "type": "INSTANCE",
+              "x": 276.1796875,
+              "y": 219.636962890625,
+              "width": 106.5999984741211,
+              "height": 111.80000305175781,
+              "visible": true,
+              "mainComponentId": "2255:553"
+            }
+          ]
+        },
+        {
+          "id": "2272:261",
+          "name": "Actor / Sturdy / sprite + shadow",
+          "type": "GROUP",
+          "x": 61.630859375,
+          "y": 369.689453125,
+          "width": 114.4000015258789,
+          "height": 110.5,
+          "visible": true,
+          "children": [
+            {
+              "id": "2265:136",
+              "name": "건장한 남성 · 접지 그림자",
+              "type": "ELLIPSE",
+              "x": 64,
+              "y": 458.949462890625,
+              "width": 62,
+              "height": 20,
+              "visible": true
+            },
+            {
+              "id": "2265:142",
+              "name": "Hunter / Sturdy",
+              "type": "INSTANCE",
+              "x": 61.630859375,
+              "y": 369.689453125,
+              "width": 114.4000015258789,
+              "height": 110.5,
+              "visible": true,
+              "mainComponentId": "2255:558"
+            }
+          ]
+        },
+        {
+          "id": "2272:262",
+          "name": "Actor / Female / sprite + shadow",
+          "type": "GROUP",
+          "x": 379,
+          "y": 442.820556640625,
+          "width": 108.25,
+          "height": 110.375,
+          "visible": true,
+          "children": [
+            {
+              "id": "2265:137",
+              "name": "여성 · 접지 그림자",
+              "type": "ELLIPSE",
+              "x": 379,
+              "y": 533.195556640625,
+              "width": 62,
+              "height": 20,
+              "visible": true
+            },
+            {
+              "id": "2265:145",
+              "name": "Hunter / Female",
+              "type": "INSTANCE",
+              "x": 383.5,
+              "y": 442.820556640625,
+              "width": 103.75,
+              "height": 110,
+              "visible": true,
+              "mainComponentId": "2255:563"
+            }
+          ]
+        },
+        {
+          "id": "2272:263",
+          "name": "Actor / Deer / sprite + shadow",
+          "type": "GROUP",
+          "x": 581.2265625,
+          "y": 117.4287109375,
+          "width": 118.82499694824219,
+          "height": 137.1999969482422,
+          "visible": true,
+          "children": [
+            {
+              "id": "2265:138",
+              "name": "사슴 · 접지 그림자",
+              "type": "ELLIPSE",
+              "x": 608.052734375,
+              "y": 222.738525390625,
+              "width": 76,
+              "height": 20,
+              "visible": true
+            },
+            {
+              "id": "2265:148",
+              "name": "Prey / Deer",
+              "type": "INSTANCE",
+              "x": 581.2265625,
+              "y": 117.4287109375,
+              "width": 118.82499694824219,
+              "height": 137.1999969482422,
+              "visible": true,
+              "mainComponentId": "2255:568"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "2265:151",
+      "name": "03 UI / independent editable instances",
+      "type": "FRAME",
+      "x": 0,
+      "y": 0,
+      "width": 1920,
+      "height": 1080,
+      "visible": true,
+      "children": [
+        {
+          "id": "2265:152",
+          "name": "SOURCE v14.1 · Header",
+          "type": "INSTANCE",
+          "x": 20,
+          "y": 20,
+          "width": 440,
+          "height": 175,
+          "visible": false,
+          "mainComponentId": "2263:448",
+          "children": []
+        },
+        {
+          "id": "2265:164",
+          "name": "SOURCE v14.1 · Power comparison",
+          "type": "INSTANCE",
+          "x": 600,
+          "y": 40,
+          "width": 900,
+          "height": 150,
+          "visible": false,
+          "mainComponentId": "2263:457",
+          "children": []
+        },
+        {
+          "id": "2265:174",
+          "name": "Roster / 3 editable cards",
+          "type": "INSTANCE",
+          "x": 20,
+          "y": 205,
+          "width": 330,
+          "height": 710,
+          "visible": true,
+          "mainComponentId": "2263:519",
+          "children": [
+            {
+              "id": "I2265:174;2263:520",
+              "name": "Hunt/BG/준비 패널 · 사슴 문양 · v002",
+              "type": "INSTANCE",
+              "x": 0,
+              "y": 0,
+              "width": 330,
+              "height": 710,
+              "visible": true,
+              "mainComponentId": "2081:476"
+            },
+            {
+              "id": "I2265:174;2263:521",
+              "name": "출전 편성",
+              "type": "TEXT",
+              "x": 34,
+              "y": 80,
+              "width": 262,
+              "height": 50,
+              "visible": true,
+              "characters": "출전 편성"
+            },
+            {
+              "id": "I2265:174;2263:522",
+              "name": "3 / 3",
+              "type": "TEXT",
+              "x": 75,
+              "y": 130,
+              "width": 180,
+              "height": 42,
+              "visible": true,
+              "characters": "3 / 3"
+            },
+            {
+              "id": "I2265:174;2263:523",
+              "name": "Roster cards",
+              "type": "FRAME",
+              "x": 70,
+              "y": 180,
+              "width": 190,
+              "height": 494,
+              "visible": true
+            }
+          ]
+        },
+        {
+          "id": "2265:263",
+          "name": "SOURCE v14.1 · Bag",
+          "type": "INSTANCE",
+          "x": 24,
+          "y": 930,
+          "width": 300,
+          "height": 112,
+          "visible": false,
+          "mainComponentId": "2263:467",
+          "children": []
+        },
+        {
+          "id": "2265:275",
+          "name": "Quick sortie / latest dark metal",
+          "type": "INSTANCE",
+          "x": 1050,
+          "y": 925,
+          "width": 320,
+          "height": 110,
+          "visible": true,
+          "mainComponentId": "2339:593",
+          "children": [
+            {
+              "id": "I2265:275;2339:594",
+              "name": "Silver beveled rim / fixed r16",
+              "type": "RECTANGLE",
+              "x": 0,
+              "y": 0,
+              "width": 320,
+              "height": 110,
+              "visible": true
+            },
+            {
+              "id": "I2265:275;2339:595",
+              "name": "Inner bevel / fixed r14",
+              "type": "RECTANGLE",
+              "x": 3,
+              "y": 3,
+              "width": 314,
+              "height": 104,
+              "visible": true
+            },
+            {
+              "id": "I2265:275;2339:596",
+              "name": "Dark metal face / fixed r11",
+              "type": "RECTANGLE",
+              "x": 6,
+              "y": 6,
+              "width": 308,
+              "height": 98,
+              "visible": true
+            },
+            {
+              "id": "I2265:275;2339:597",
+              "name": "Original gold-button material / dark metal treatment / fixed r10",
+              "type": "RECTANGLE",
+              "x": 7,
+              "y": 7,
+              "width": 306,
+              "height": 96,
+              "visible": true
+            },
+            {
+              "id": "I2265:275;2361:1094",
+              "name": "Material relief / gloss and lower shading",
+              "type": "RECTANGLE",
+              "x": 7,
+              "y": 7,
+              "width": 306,
+              "height": 96,
+              "visible": true
+            },
+            {
+              "id": "I2265:275;2339:598",
+              "name": "Inner highlight / fixed r9",
+              "type": "RECTANGLE",
+              "x": 10,
+              "y": 10,
+              "width": 300,
+              "height": 90,
+              "visible": true
+            },
+            {
+              "id": "I2265:275;2339:599",
+              "name": "Label / centered at every size",
+              "type": "FRAME",
+              "x": 28,
+              "y": 0,
+              "width": 264,
+              "height": 110,
+              "visible": true
+            }
+          ]
+        },
+        {
+          "id": "2265:278",
+          "name": "Start battle / latest gold",
+          "type": "INSTANCE",
+          "x": 1400,
+          "y": 905,
+          "width": 480,
+          "height": 135,
+          "visible": true,
+          "mainComponentId": "2358:1090",
+          "children": [
+            {
+              "id": "I2265:278;2358:1091",
+              "name": "Gold beveled rim / fixed r16",
+              "type": "RECTANGLE",
+              "x": 0,
+              "y": 0,
+              "width": 480,
+              "height": 135,
+              "visible": true
+            },
+            {
+              "id": "I2265:278;2358:1092",
+              "name": "Inner bevel / fixed r14",
+              "type": "RECTANGLE",
+              "x": 3,
+              "y": 3,
+              "width": 474,
+              "height": 129,
+              "visible": true
+            },
+            {
+              "id": "I2265:278;2358:1093",
+              "name": "Gold face / fixed r11",
+              "type": "RECTANGLE",
+              "x": 6,
+              "y": 6,
+              "width": 468,
+              "height": 123,
+              "visible": true
+            },
+            {
+              "id": "I2265:278;2358:1094",
+              "name": "Original gold-button material / gold treatment / fixed r10",
+              "type": "RECTANGLE",
+              "x": 7,
+              "y": 7,
+              "width": 466,
+              "height": 121,
+              "visible": true
+            },
+            {
+              "id": "I2265:278;2361:1095",
+              "name": "Material relief / gloss and lower shading",
+              "type": "RECTANGLE",
+              "x": 7,
+              "y": 7,
+              "width": 466,
+              "height": 121,
+              "visible": true
+            },
+            {
+              "id": "I2265:278;2358:1095",
+              "name": "Inner highlight / fixed r9",
+              "type": "RECTANGLE",
+              "x": 10,
+              "y": 10,
+              "width": 460,
+              "height": 115,
+              "visible": true
+            },
+            {
+              "id": "I2265:278;2358:1096",
+              "name": "Label / centered at every size",
+              "type": "FRAME",
+              "x": 28,
+              "y": 0,
+              "width": 424,
+              "height": 135,
+              "visible": true
+            }
+          ]
+        },
+        {
+          "id": "2275:740",
+          "name": "SOURCE text controls",
+          "type": "INSTANCE",
+          "x": 1692,
+          "y": 28,
+          "width": 192,
+          "height": 54,
+          "visible": false,
+          "mainComponentId": "2275:546",
+          "children": []
+        },
+        {
+          "id": "2282:309",
+          "name": "HP duel / placeholder current-max",
+          "type": "INSTANCE",
+          "x": 570,
+          "y": 40,
+          "width": 960,
+          "height": 112,
+          "visible": true,
+          "mainComponentId": "2281:535",
+          "children": [
+            {
+              "id": "I2282:309;2281:536",
+              "name": "Duel layout",
+              "type": "FRAME",
+              "x": 24,
+              "y": 8,
+              "width": 912,
+              "height": 96,
+              "visible": true
+            }
+          ]
+        },
+        {
+          "id": "2282:353",
+          "name": "Area title / forest edge / back on left",
+          "type": "INSTANCE",
+          "x": 20,
+          "y": 20,
+          "width": 440,
+          "height": 112,
+          "visible": true,
+          "mainComponentId": "2281:561",
+          "children": [
+            {
+              "id": "I2282:353;2281:562",
+              "name": "MAT-004 · 자원바 붓터치 원본",
+              "type": "INSTANCE",
+              "x": 0,
+              "y": 0,
+              "width": 440,
+              "height": 112,
+              "visible": true,
+              "mainComponentId": "863:38"
+            },
+            {
+              "id": "I2282:353;2281:563",
+              "name": "Label / centered",
+              "type": "FRAME",
+              "x": 88,
+              "y": 0,
+              "width": 326,
+              "height": 112,
+              "visible": true
+            },
+            {
+              "id": "I2282:353;2281:565",
+              "name": "Back / overlaps left front of brush",
+              "type": "INSTANCE",
+              "x": 0,
+              "y": 8,
+              "width": 95.99999237060547,
+              "height": 95.99999237060547,
+              "visible": true,
+              "mainComponentId": "176:489"
+            }
+          ]
+        },
+        {
+          "id": "2285:753",
+          "name": "Auto and speed / OFF preview",
+          "type": "FRAME",
+          "x": 1680,
+          "y": 48,
+          "width": 204,
+          "height": 96,
+          "visible": true,
+          "children": [
+            {
+              "id": "2285:754",
+              "name": "Preserved original / auto control",
+              "type": "INSTANCE",
+              "x": 0,
+              "y": 0,
+              "width": 96,
+              "height": 96,
+              "visible": false,
+              "mainComponentId": "2283:541"
+            },
+            {
+              "id": "2285:758",
+              "name": "Preserved original / speed control",
+              "type": "INSTANCE",
+              "x": 0,
+              "y": 0,
+              "width": 96,
+              "height": 96,
+              "visible": false,
+              "mainComponentId": "2283:549"
+            },
+            {
+              "id": "2375:763",
+              "name": "AUTO / latest battle icon and label",
+              "type": "FRAME",
+              "x": 0,
+              "y": 0,
+              "width": 96,
+              "height": 96,
+              "visible": true
+            },
+            {
+              "id": "2375:769",
+              "name": "X2 / latest battle icon and label",
+              "type": "FRAME",
+              "x": 108,
+              "y": 0,
+              "width": 96,
+              "height": 96,
+              "visible": true
+            }
+          ]
+        },
+        {
+          "id": "2295:350",
+          "name": "Lower-left / preparation plaque + bag overlap",
+          "type": "GROUP",
+          "x": 24,
+          "y": 928,
+          "width": 354,
+          "height": 124,
+          "visible": true,
+          "children": [
+            {
+              "id": "2282:362",
+              "name": "Preparation plaque / lower-left",
+              "type": "INSTANCE",
+              "x": 24,
+              "y": 950,
+              "width": 300,
+              "height": 73.99999237060547,
+              "visible": true,
+              "mainComponentId": "2281:568"
+            },
+            {
+              "id": "2282:372",
+              "name": "Bag / overlaps right of preparation plaque",
+              "type": "INSTANCE",
+              "x": 266,
+              "y": 928,
+              "width": 112,
+              "height": 124,
+              "visible": true,
+              "mainComponentId": "2281:575"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

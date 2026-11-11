@@ -827,5 +827,15 @@
     "path": "game/assets/ui/building-menu-v001/icon-upgrade.png",
     "bytes": 738286,
     "sha256": "a089b3cc8e00081b21ae9de66dbe5048a30bf9feb2b8262e1133429a266dadda"
+  },
+  {
+    "path": "game/assets/ui/hunting-formation/clearing.png",
+    "bytes": 2743068,
+    "sha256": "6f4b629a063f10c01399fccfa93bfd898eba61e28996856d916edab6a9030747"
+  },
+  {
+    "path": "game/assets/ui/hunting-formation/portraits.png",
+    "bytes": 1801773,
+    "sha256": "7bd58f9b6498a990abf672553dd47ed21c56780cf68c302545be352c9929ec4a"
   }
 ]

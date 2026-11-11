@@ -1,0 +1,852 @@
+[
+  {
+    "id": "2323:792",
+    "name": "HP duel / editable values and fills",
+    "type": "INSTANCE",
+    "x": 564,
+    "y": 0,
+    "w": 960,
+    "h": 112,
+    "visible": true,
+    "main": "2281:535",
+    "children": [
+      {
+        "id": "I2323:792;2281:536",
+        "name": "Duel layout",
+        "type": "FRAME",
+        "x": 24,
+        "y": 8,
+        "w": 912,
+        "h": 96,
+        "visible": true,
+        "children": [
+          {
+            "id": "I2323:792;2281:537",
+            "name": "Character side",
+            "type": "FRAME",
+            "x": 0,
+            "y": 0,
+            "w": 404,
+            "h": 96,
+            "visible": true,
+            "children": [
+              {
+                "id": "I2323:792;2281:538",
+                "name": "Hunting/UI/HP icon / selected hunter",
+                "type": "INSTANCE",
+                "x": 0,
+                "y": 0,
+                "w": 96,
+                "h": 96,
+                "visible": true,
+                "main": "2281:513"
+              },
+              {
+                "id": "I2323:792;2281:542",
+                "name": "Hunting/UI/HP bar / Ally",
+                "type": "INSTANCE",
+                "x": 84,
+                "y": 16,
+                "w": 320,
+                "h": 64,
+                "visible": true,
+                "main": "2281:523"
+              }
+            ]
+          },
+          {
+            "id": "I2323:792;2284:568",
+            "name": "VS / separate background V S",
+            "type": "INSTANCE",
+            "x": 420,
+            "y": 12,
+            "w": 72,
+            "h": 72,
+            "visible": true,
+            "main": "2284:556",
+            "children": [
+              {
+                "id": "I2323:792;2284:568;2284:557",
+                "name": "Hunting/Match/VS / Backdrop",
+                "type": "INSTANCE",
+                "x": 0,
+                "y": 0,
+                "w": 72,
+                "h": 72,
+                "visible": true,
+                "main": "2284:541"
+              },
+              {
+                "id": "I2323:792;2284:568;2284:564",
+                "name": "Hunting/Match/VS / V",
+                "type": "INSTANCE",
+                "x": 6.1875,
+                "y": 13.5,
+                "w": 36,
+                "h": 45,
+                "visible": true,
+                "main": "2284:548"
+              },
+              {
+                "id": "I2323:792;2284:568;2284:566",
+                "name": "Hunting/Match/VS / S",
+                "type": "INSTANCE",
+                "x": 30.65625,
+                "y": 13.5,
+                "w": 36,
+                "h": 45,
+                "visible": true,
+                "main": "2284:552"
+              }
+            ]
+          },
+          {
+            "id": "I2323:792;2281:552",
+            "name": "Monster side",
+            "type": "FRAME",
+            "x": 508,
+            "y": 0,
+            "w": 404,
+            "h": 96,
+            "visible": true,
+            "children": [
+              {
+                "id": "I2323:792;2281:553",
+                "name": "Hunting/UI/HP bar / Enemy",
+                "type": "INSTANCE",
+                "x": 0,
+                "y": 16,
+                "w": 320,
+                "h": 64,
+                "visible": true,
+                "main": "2281:529"
+              },
+              {
+                "id": "I2323:792;2281:559",
+                "name": "Hunting/UI/HP icon / deer",
+                "type": "INSTANCE",
+                "x": 308,
+                "y": 0,
+                "w": 96,
+                "h": 96,
+                "visible": true,
+                "main": "2281:517"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "2355:744",
+    "name": "AUTO / icon and label",
+    "type": "FRAME",
+    "x": 0,
+    "y": 0,
+    "w": 96,
+    "h": 96,
+    "visible": true,
+    "children": [
+      {
+        "id": "2355:1596",
+        "name": "Background / 70%",
+        "type": "ELLIPSE",
+        "x": 3.200000047683716,
+        "y": 3.200000047683716,
+        "w": 89.5999984741211,
+        "h": 89.5999984741211,
+        "visible": true
+      },
+      {
+        "id": "2355:745",
+        "name": "Playback icon / editable vectors",
+        "type": "FRAME",
+        "x": 20,
+        "y": 13,
+        "w": 56,
+        "h": 44,
+        "visible": true,
+        "children": [
+          {
+            "id": "2355:750",
+            "name": "Auto repeat arrows / editable vector",
+            "type": "VECTOR",
+            "x": 8.5,
+            "y": 1,
+            "w": 39,
+            "h": 42,
+            "visible": true
+          },
+          {
+            "id": "2355:751",
+            "name": "Large play triangle / editable vector",
+            "type": "VECTOR",
+            "x": 19,
+            "y": 7.3333001136779785,
+            "w": 22,
+            "h": 29.33329963684082,
+            "visible": true
+          }
+        ]
+      },
+      {
+        "id": "2355:746",
+        "name": "AUTO / editable label",
+        "type": "TEXT",
+        "x": 16,
+        "y": 57,
+        "w": 64,
+        "h": 26,
+        "visible": true,
+        "text": "AUTO"
+      }
+    ]
+  },
+  {
+    "id": "2355:747",
+    "name": "X2 / icon and label",
+    "type": "FRAME",
+    "x": 112,
+    "y": 0,
+    "w": 96,
+    "h": 96,
+    "visible": true,
+    "children": [
+      {
+        "id": "2355:1597",
+        "name": "Background / 70%",
+        "type": "ELLIPSE",
+        "x": 3.200000047683716,
+        "y": 3.200000047683716,
+        "w": 89.5999984741211,
+        "h": 89.5999984741211,
+        "visible": true
+      },
+      {
+        "id": "2355:748",
+        "name": "Playback icon / editable vectors",
+        "type": "FRAME",
+        "x": 20,
+        "y": 13,
+        "w": 56,
+        "h": 44,
+        "visible": true,
+        "children": [
+          {
+            "id": "2355:752",
+            "name": "Fast forward / real icon",
+            "type": "INSTANCE",
+            "x": 4,
+            "y": -2,
+            "w": 48,
+            "h": 48,
+            "visible": true,
+            "main": "2355:742",
+            "children": [
+              {
+                "id": "I2355:752;56576:33928",
+                "name": "icon",
+                "type": "VECTOR",
+                "x": 4.999999523162842,
+                "y": 12,
+                "w": 38,
+                "h": 24,
+                "visible": true
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "2355:749",
+        "name": "X2 / editable label",
+        "type": "TEXT",
+        "x": 16,
+        "y": 57,
+        "w": 64,
+        "h": 26,
+        "visible": true,
+        "text": "X2"
+      }
+    ]
+  },
+  {
+    "id": "I2265:174;2263:523",
+    "name": "Roster cards",
+    "type": "FRAME",
+    "x": 70,
+    "y": 180,
+    "w": 190,
+    "h": 494,
+    "visible": true,
+    "children": [
+      {
+        "id": "I2265:174;2263:524",
+        "name": "Hunting/UI/Card/Leader",
+        "type": "INSTANCE",
+        "x": 0,
+        "y": 0,
+        "w": 190,
+        "h": 154,
+        "visible": true,
+        "main": "2263:486",
+        "children": [
+          {
+            "id": "I2265:174;2263:524;2263:487",
+            "name": "Hunting/UI/Card frame/Selected",
+            "type": "INSTANCE",
+            "x": 0,
+            "y": 0,
+            "w": 190,
+            "h": 154,
+            "visible": true,
+            "main": "2268:501",
+            "children": [
+              {
+                "id": "I2265:174;2263:524;2263:487;2268:502",
+                "name": "ui/portrait-slot-selected.svg",
+                "type": "FRAME",
+                "x": 0,
+                "y": 0,
+                "w": 190,
+                "h": 154,
+                "visible": true
+              }
+            ]
+          },
+          {
+            "id": "I2265:174;2263:524;2263:492",
+            "name": "Portrait / Leader",
+            "type": "INSTANCE",
+            "x": 9,
+            "y": 4,
+            "w": 172,
+            "h": 141,
+            "visible": true,
+            "main": "2263:441",
+            "children": [
+              {
+                "id": "I2265:174;2263:524;2263:492;2263:442",
+                "name": "Transparent portrait atlas",
+                "type": "RECTANGLE",
+                "x": -3.8222222328186035,
+                "y": 0,
+                "w": 553.457763671875,
+                "h": 143.78028869628906,
+                "visible": true
+              }
+            ]
+          },
+          {
+            "id": "I2265:174;2263:524;2263:494",
+            "name": "Hunting/UI/Swap",
+            "type": "INSTANCE",
+            "x": 144,
+            "y": 108,
+            "w": 46,
+            "h": 46,
+            "visible": true,
+            "main": "2263:483",
+            "children": [
+              {
+                "id": "I2265:174;2263:524;2263:494;2263:484",
+                "name": "Ellipse",
+                "type": "ELLIPSE",
+                "x": 0,
+                "y": 0,
+                "w": 46,
+                "h": 46,
+                "visible": true
+              },
+              {
+                "id": "I2265:174;2263:524;2263:494;2263:485",
+                "name": "Vector",
+                "type": "VECTOR",
+                "x": 9,
+                "y": 9,
+                "w": 28,
+                "h": 30,
+                "visible": true
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "I2265:174;2263:535",
+        "name": "Hunting/UI/Card/Sturdy",
+        "type": "INSTANCE",
+        "x": 0,
+        "y": 170,
+        "w": 190,
+        "h": 154,
+        "visible": true,
+        "main": "2263:497",
+        "children": [
+          {
+            "id": "I2265:174;2263:535;2263:498",
+            "name": "Hunting/UI/Card frame/Default",
+            "type": "INSTANCE",
+            "x": 0,
+            "y": 0,
+            "w": 190,
+            "h": 154,
+            "visible": true,
+            "main": "2268:506",
+            "children": [
+              {
+                "id": "I2265:174;2263:535;2263:498;2268:507",
+                "name": "ui/portrait-slot-normal.svg",
+                "type": "FRAME",
+                "x": 0,
+                "y": 0,
+                "w": 190,
+                "h": 154,
+                "visible": true
+              }
+            ]
+          },
+          {
+            "id": "I2265:174;2263:535;2263:503",
+            "name": "Portrait / Sturdy",
+            "type": "INSTANCE",
+            "x": 9,
+            "y": 4,
+            "w": 172,
+            "h": 141,
+            "visible": true,
+            "main": "2263:443",
+            "children": [
+              {
+                "id": "I2265:174;2263:535;2263:503;2263:444",
+                "name": "Transparent portrait atlas",
+                "type": "RECTANGLE",
+                "x": -180.72463989257812,
+                "y": 0,
+                "w": 541.4260864257812,
+                "h": 143.78028869628906,
+                "visible": true
+              }
+            ]
+          },
+          {
+            "id": "I2265:174;2263:535;2263:505",
+            "name": "Hunting/UI/Swap",
+            "type": "INSTANCE",
+            "x": 144,
+            "y": 108,
+            "w": 46,
+            "h": 46,
+            "visible": true,
+            "main": "2263:483",
+            "children": [
+              {
+                "id": "I2265:174;2263:535;2263:505;2263:484",
+                "name": "Ellipse",
+                "type": "ELLIPSE",
+                "x": 0,
+                "y": 0,
+                "w": 46,
+                "h": 46,
+                "visible": true
+              },
+              {
+                "id": "I2265:174;2263:535;2263:505;2263:485",
+                "name": "Vector",
+                "type": "VECTOR",
+                "x": 9,
+                "y": 9,
+                "w": 28,
+                "h": 30,
+                "visible": true
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "I2265:174;2263:546",
+        "name": "Hunting/UI/Card/Female",
+        "type": "INSTANCE",
+        "x": 0,
+        "y": 340,
+        "w": 190,
+        "h": 154,
+        "visible": true,
+        "main": "2263:508",
+        "children": [
+          {
+            "id": "I2265:174;2263:546;2263:509",
+            "name": "Hunting/UI/Card frame/Default",
+            "type": "INSTANCE",
+            "x": 0,
+            "y": 0,
+            "w": 190,
+            "h": 154,
+            "visible": true,
+            "main": "2268:506",
+            "children": [
+              {
+                "id": "I2265:174;2263:546;2263:509;2268:507",
+                "name": "ui/portrait-slot-normal.svg",
+                "type": "FRAME",
+                "x": 0,
+                "y": 0,
+                "w": 190,
+                "h": 154,
+                "visible": true
+              }
+            ]
+          },
+          {
+            "id": "I2265:174;2263:546;2263:514",
+            "name": "Portrait / Female",
+            "type": "INSTANCE",
+            "x": 9,
+            "y": 4,
+            "w": 172,
+            "h": 141,
+            "visible": true,
+            "main": "2263:445",
+            "children": [
+              {
+                "id": "I2265:174;2263:546;2263:514;2263:446",
+                "name": "Transparent portrait atlas",
+                "type": "RECTANGLE",
+                "x": -421.5409851074219,
+                "y": -2.0142858028411865,
+                "w": 612.4328002929688,
+                "h": 145.83428955078125,
+                "visible": true
+              }
+            ]
+          },
+          {
+            "id": "I2265:174;2263:546;2263:516",
+            "name": "Hunting/UI/Swap",
+            "type": "INSTANCE",
+            "x": 144,
+            "y": 108,
+            "w": 46,
+            "h": 46,
+            "visible": true,
+            "main": "2263:483",
+            "children": [
+              {
+                "id": "I2265:174;2263:546;2263:516;2263:484",
+                "name": "Ellipse",
+                "type": "ELLIPSE",
+                "x": 0,
+                "y": 0,
+                "w": 46,
+                "h": 46,
+                "visible": true
+              },
+              {
+                "id": "I2265:174;2263:546;2263:516;2263:485",
+                "name": "Vector",
+                "type": "VECTOR",
+                "x": 9,
+                "y": 9,
+                "w": 28,
+                "h": 30,
+                "visible": true
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "2281:523",
+    "name": "Hunting/UI/HP bar / Ally",
+    "type": "COMPONENT",
+    "x": 432,
+    "y": 0,
+    "w": 320,
+    "h": 64,
+    "visible": true,
+    "children": [
+      {
+        "id": "2281:524",
+        "name": "HUD / 진행바 / 빈 바탕",
+        "type": "INSTANCE",
+        "x": 0,
+        "y": 0,
+        "w": 320,
+        "h": 64,
+        "visible": true,
+        "main": "1783:383",
+        "children": []
+      },
+      {
+        "id": "2281:525",
+        "name": "HP fill mask / full preview",
+        "type": "FRAME",
+        "x": 5,
+        "y": 5,
+        "w": 310,
+        "h": 54,
+        "visible": true,
+        "children": [
+          {
+            "id": "2281:526",
+            "name": "HP fill / independently editable width",
+            "type": "INSTANCE",
+            "x": 0,
+            "y": 0,
+            "w": 310,
+            "h": 54,
+            "visible": true,
+            "main": "1783:384",
+            "children": []
+          }
+        ]
+      },
+      {
+        "id": "2281:527",
+        "name": "Label / centered",
+        "type": "FRAME",
+        "x": 12,
+        "y": 0,
+        "w": 296,
+        "h": 64,
+        "visible": true,
+        "children": [
+          {
+            "id": "2281:528",
+            "name": "1,260 / 1,260",
+            "type": "TEXT",
+            "x": 0,
+            "y": 14.600000381469727,
+            "w": 296,
+            "h": 34.79999923706055,
+            "visible": true,
+            "text": "1,260 / 1,260"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "2281:529",
+    "name": "Hunting/UI/HP bar / Enemy",
+    "type": "COMPONENT",
+    "x": 808,
+    "y": 0,
+    "w": 320,
+    "h": 64,
+    "visible": true,
+    "children": [
+      {
+        "id": "2281:530",
+        "name": "HUD / 진행바 / 빈 바탕",
+        "type": "INSTANCE",
+        "x": 0,
+        "y": 0,
+        "w": 320,
+        "h": 64,
+        "visible": true,
+        "main": "1783:383",
+        "children": []
+      },
+      {
+        "id": "2281:531",
+        "name": "HP fill mask / full preview",
+        "type": "FRAME",
+        "x": 5,
+        "y": 5,
+        "w": 310,
+        "h": 54,
+        "visible": true,
+        "children": [
+          {
+            "id": "2281:532",
+            "name": "HP fill / independently editable width",
+            "type": "INSTANCE",
+            "x": 0,
+            "y": 0,
+            "w": 310,
+            "h": 54,
+            "visible": true,
+            "main": "1783:384",
+            "children": []
+          }
+        ]
+      },
+      {
+        "id": "2281:533",
+        "name": "Label / centered",
+        "type": "FRAME",
+        "x": 12,
+        "y": 0,
+        "w": 296,
+        "h": 64,
+        "visible": true,
+        "children": [
+          {
+            "id": "2281:534",
+            "name": "920 / 920",
+            "type": "TEXT",
+            "x": 0,
+            "y": 14.600000381469727,
+            "w": 296,
+            "h": 34.79999923706055,
+            "visible": true,
+            "text": "920 / 920"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "2281:575",
+    "name": "Hunting/UI/Bag / icon plus small brush",
+    "type": "COMPONENT",
+    "x": 3082,
+    "y": 0,
+    "w": 112,
+    "h": 124,
+    "visible": true,
+    "children": [
+      {
+        "id": "2281:576",
+        "name": "Hunting/UI/Bag icon / existing artwork",
+        "type": "INSTANCE",
+        "x": 10.399999618530273,
+        "y": 0,
+        "w": 91.20000457763672,
+        "h": 96,
+        "visible": true,
+        "main": "2277:544",
+        "children": [
+          {
+            "id": "I2281:576;2277:545",
+            "name": "Existing bag icon / transparent crop",
+            "type": "RECTANGLE",
+            "x": 0,
+            "y": 0,
+            "w": 91.20000457763672,
+            "h": 96,
+            "visible": true
+          }
+        ]
+      },
+      {
+        "id": "2281:578",
+        "name": "MAT-004 · 자원바 붓터치 원본",
+        "type": "INSTANCE",
+        "x": 0,
+        "y": 82,
+        "w": 112,
+        "h": 38,
+        "visible": true,
+        "main": "863:38",
+        "children": []
+      },
+      {
+        "id": "2281:579",
+        "name": "Label / centered",
+        "type": "FRAME",
+        "x": 8,
+        "y": 82,
+        "w": 96,
+        "h": 38,
+        "visible": true,
+        "children": [
+          {
+            "id": "2281:580",
+            "name": "가방",
+            "type": "TEXT",
+            "x": 0,
+            "y": 4.600000381469727,
+            "w": 96,
+            "h": 28.799999237060547,
+            "visible": true,
+            "text": "가방"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "2281:568",
+    "name": "Hunting/UI/Preparation plaque / white centered",
+    "type": "COMPONENT",
+    "x": 2696,
+    "y": 0,
+    "w": 330,
+    "h": 82,
+    "visible": true,
+    "children": [
+      {
+        "id": "2281:569",
+        "name": "Hunting/UI/Wood plaque / endcaps fixed",
+        "type": "INSTANCE",
+        "x": 0,
+        "y": 0,
+        "w": 329.9999694824219,
+        "h": 82,
+        "visible": true,
+        "main": "2275:501",
+        "children": [
+          {
+            "id": "I2281:569;2275:502",
+            "name": "Left / fixed",
+            "type": "RECTANGLE",
+            "x": 0,
+            "y": 0,
+            "w": 52.0941162109375,
+            "h": 82,
+            "visible": true
+          },
+          {
+            "id": "I2281:569;2275:503",
+            "name": "Center / stretch",
+            "type": "RECTANGLE",
+            "x": 52.094120025634766,
+            "y": 0,
+            "w": 225.811767578125,
+            "h": 82,
+            "visible": true
+          },
+          {
+            "id": "I2281:569;2275:504",
+            "name": "Right / fixed",
+            "type": "RECTANGLE",
+            "x": 277.9058837890625,
+            "y": 0,
+            "w": 52.0941162109375,
+            "h": 82,
+            "visible": true
+          }
+        ]
+      },
+      {
+        "id": "2281:573",
+        "name": "Label / centered",
+        "type": "FRAME",
+        "x": 20,
+        "y": 0,
+        "w": 290,
+        "h": 82,
+        "visible": true,
+        "children": [
+          {
+            "id": "2281:574",
+            "name": "사냥 준비",
+            "type": "TEXT",
+            "x": 0,
+            "y": 21.799999237060547,
+            "w": 290,
+            "h": 38.400001525878906,
+            "visible": true,
+            "text": "사냥 준비"
+          }
+        ]
+      }
+    ]
+  }
+]

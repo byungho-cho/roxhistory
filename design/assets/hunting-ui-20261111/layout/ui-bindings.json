@@ -1,0 +1,222 @@
+{
+  "schema_version": 1,
+  "coordinate_space": [
+    1920,
+    1080
+  ],
+  "layer_order": [
+    "background",
+    "effect",
+    "icon"
+  ],
+  "skills": {
+    "strike": {
+      "scene_node": "2323:835",
+      "local_rect": [
+        110,
+        190,
+        300,
+        300
+      ],
+      "assets": [
+        "skills/strike-background",
+        "skills/strike-effect",
+        "skills/strike-icon"
+      ],
+      "disabled": "skills/strike-disabled",
+      "cost_orbs": 0,
+      "cost_note": "No displayed cost orb; precise ordinary attack resource rules are not set by this handoff."
+    },
+    "strong": {
+      "scene_node": "2323:837",
+      "local_rect": [
+        47.1633148193,
+        112.362480164,
+        136,
+        136
+      ],
+      "assets": [
+        "skills/strong-background",
+        "skills/strong-effect",
+        "skills/strong-icon"
+      ],
+      "disabled": "skills/strong-disabled",
+      "cost_orbs": 1
+    },
+    "cooperation": {
+      "scene_node": "2323:839",
+      "local_rect": [
+        182,
+        21.5,
+        170,
+        170
+      ],
+      "assets": [
+        "skills/cooperation-background",
+        "skills/cooperation-effect",
+        "skills/cooperation-icon"
+      ],
+      "disabled": "skills/cooperation-disabled",
+      "cost_orbs": 2
+    }
+  },
+  "skill_cluster_origin": [
+    1360,
+    510
+  ],
+  "charge_orbs": {
+    "active": "skills/orb-active",
+    "inactive": "skills/orb-inactive",
+    "local_rects": [
+      [
+        412.1248168945,
+        307.3608093262,
+        49.4,
+        49.4
+      ],
+      [
+        406.5407714844,
+        360.4680480957,
+        49.4,
+        49.4
+      ],
+      [
+        385.6215820313,
+        409.6000061035,
+        49.4,
+        49.4
+      ]
+    ],
+    "charge_seconds": null
+  },
+  "cost_orb_rects": {
+    "strong": [
+      [
+        106.3633117676,
+        216.362487793,
+        17.6,
+        17.6
+      ]
+    ],
+    "cooperation": [
+      [
+        241,
+        151.5,
+        22,
+        22
+      ],
+      [
+        271,
+        151.5,
+        22,
+        22
+      ]
+    ]
+  },
+  "shared_source_bindings": {
+    "2255:548": "background/forest-edge",
+    "2255:553": "actor/leader",
+    "2255:558": "actor/sturdy",
+    "2255:563": "actor/female",
+    "2255:568": "actor/deer",
+    "2081:476": "preparation/roster-panel",
+    "2277:544": "common/bag",
+    "2275:501": "common/wood-plaque",
+    "863:38": "common/brush",
+    "176:489": "common/back",
+    "2255:574": "preparation/ally-cell",
+    "2255:578": "preparation/enemy-cell",
+    "2268:501": "preparation/portrait-selected",
+    "2268:506": "preparation/portrait-normal",
+    "2263:483": "preparation/swap"
+  },
+  "portrait_atlas_roles": {
+    "2263:441": "leader",
+    "2263:443": "sturdy",
+    "2263:445": "female"
+  },
+  "hp": {
+    "track": "common/hp-track",
+    "ally_fill": "common/hp-fill-ally",
+    "enemy_fill": "common/hp-fill-enemy",
+    "fill_rect": [
+      5,
+      5,
+      310,
+      54
+    ],
+    "logical_size": [
+      320,
+      64
+    ],
+    "portrait_hunter": "common/hp-portrait-hunter",
+    "portrait_deer": "common/hp-portrait-deer",
+    "example_values_are_not_balance": true
+  },
+  "vs": {
+    "logical_size": [
+      72,
+      72
+    ],
+    "background": "common/vs-backdrop",
+    "v_rect": [
+      6.1875,
+      13.5,
+      36,
+      45
+    ],
+    "v": "common/vs-v",
+    "s_rect": [
+      30.65625,
+      13.5,
+      36,
+      45
+    ],
+    "s": "common/vs-s"
+  },
+  "controls": {
+    "auto": "common/auto",
+    "speed_2x": "common/speed-2x",
+    "logical_size": [
+      96,
+      96
+    ],
+    "states": "Current supplied visual is static. Toggle state behavior must be implemented."
+  },
+  "popup": {
+    "rect": [
+      520,
+      370,
+      880,
+      340
+    ],
+    "dim_black_alpha": 0.6,
+    "panel": "popup/panel",
+    "question": "전투를 종료할까요?",
+    "question_rect": [
+      56,
+      64,
+      768,
+      68
+    ],
+    "question_font_size": 48,
+    "exit_button_rect": [
+      84,
+      172,
+      340,
+      104
+    ],
+    "exit_background": "popup/exit-button-background",
+    "exit_text": "종료",
+    "continue_button_rect": [
+      456,
+      172,
+      340,
+      104
+    ],
+    "continue_background": "popup/continue-button-background",
+    "continue_text": "계속",
+    "button_font_size": 36,
+    "pause_return_reward_policy": "Unresolved; do not invent."
+  }
+}

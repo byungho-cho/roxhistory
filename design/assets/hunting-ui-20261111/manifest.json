@@ -1,0 +1,969 @@
+{
+  "schema_version": 1,
+  "captured_at_utc": "2026-11-11T12:27:54.635001+00:00",
+  "status": "Static assets and development handoff only. No gameplay implementation or deployment.",
+  "figma_file_key": "zkbflw9fCdAlWbphhw5pSS",
+  "preparation_node": "2265:75",
+  "battle_node": "2319:340",
+  "exit_popup_node": "2337:1123",
+  "base_commit": "57cdef0994ad2a4e597651b17ecbcccd99db052e",
+  "formation_reference_commit": "cb74af74ad4bcd98eb98072798b3b3e73f50858b",
+  "assets": [
+    {
+      "id": "common/bag",
+      "path": "design/assets/hunting-ui-20261111/png/common/bag.png",
+      "format": "png",
+      "figma_node_id": "2277:544",
+      "logical_size": [
+        76,
+        80
+      ],
+      "bytes": 11536,
+      "sha256": "9b6e9f2cc2a63987fe8dfde612a9bf9d6f55bb265f23f36a28b59ba918e3eda7",
+      "pixel_size": [
+        76,
+        80
+      ],
+      "alpha_range": [
+        0,
+        254
+      ],
+      "render_offset": [
+        0,
+        0
+      ],
+      "render_size": [
+        76,
+        80
+      ]
+    },
+    {
+      "id": "common/brush",
+      "path": "design/assets/hunting-ui-20261111/png/common/brush.png",
+      "format": "png",
+      "figma_node_id": "863:38",
+      "logical_size": [
+        552,
+        144
+      ],
+      "bytes": 57946,
+      "sha256": "e5449dedd6cfc2434d3d53a82762889053bb18293437332643f38d1d5f246f7e",
+      "pixel_size": [
+        552,
+        144
+      ],
+      "alpha_range": [
+        0,
+        192
+      ],
+      "render_offset": [
+        0,
+        0
+      ],
+      "render_size": [
+        552,
+        144
+      ]
+    },
+    {
+      "id": "common/back",
+      "path": "design/assets/hunting-ui-20261111/png/common/back.png",
+      "format": "png",
+      "figma_node_id": "176:489",
+      "logical_size": [
+        84,
+        84
+      ],
+      "bytes": 14944,
+      "sha256": "121c2cf9b13c89c69d6f36a01cc0df78d2314a88ecc714930310ec8861160ec8",
+      "pixel_size": [
+        84,
+        84
+      ],
+      "alpha_range": [
+        0,
+        254
+      ],
+      "render_offset": [
+        0,
+        0
+      ],
+      "render_size": [
+        84,
+        84
+      ]
+    },
+    {
+      "id": "common/hp-portrait-hunter",
+      "path": "design/assets/hunting-ui-20261111/png/common/hp-portrait-hunter.png",
+      "format": "png",
+      "figma_node_id": "I2323:792;2281:538",
+      "logical_size": [
+        96,
+        96
+      ],
+      "bytes": 15907,
+      "sha256": "6ed1ec221b1f6cedbedb597ea02d06084ad0dedcc3ff9c9aa9906cf5da99fdfa",
+      "pixel_size": [
+        96,
+        96
+      ],
+      "alpha_range": [
+        0,
+        255
+      ],
+      "render_offset": [
+        0,
+        0
+      ],
+      "render_size": [
+        96,
+        96
+      ]
+    },
+    {
+      "id": "common/hp-portrait-deer",
+      "path": "design/assets/hunting-ui-20261111/png/common/hp-portrait-deer.png",
+      "format": "png",
+      "figma_node_id": "I2323:792;2281:559",
+      "logical_size": [
+        96,
+        96
+      ],
+      "bytes": 16670,
+      "sha256": "9306b9fa65167b52b2df642f57c601ebdece8f1d192c3e722822ae105dd1dc47",
+      "pixel_size": [
+        96,
+        96
+      ],
+      "alpha_range": [
+        0,
+        255
+      ],
+      "render_offset": [
+        0,
+        0
+      ],
+      "render_size": [
+        96,
+        96
+      ]
+    },
+    {
+      "id": "common/hp-track",
+      "path": "design/assets/hunting-ui-20261111/png/common/hp-track.png",
+      "format": "png",
+      "figma_node_id": "2281:524",
+      "logical_size": [
+        320,
+        64
+      ],
+      "bytes": 2937,
+      "sha256": "abc359d00b78b54cc64fae3feecbd98193e5ac8d2bec038f70c741d693f573d1",
+      "pixel_size": [
+        323,
+        67
+      ],
+      "alpha_range": [
+        0,
+        255
+      ],
+      "render_offset": [
+        -1.5,
+        -0.5
+      ],
+      "render_size": [
+        323,
+        67
+      ]
+    },
+    {
+      "id": "common/hp-fill-ally",
+      "path": "design/assets/hunting-ui-20261111/png/common/hp-fill-ally.png",
+      "format": "png",
+      "figma_node_id": "2281:526",
+      "logical_size": [
+        310,
+        54
+      ],
+      "bytes": 12419,
+      "sha256": "862ef1b32c10b0e84f843ead6b85f488062698ac9f6493944ae2992f9d291196",
+      "pixel_size": [
+        310,
+        54
+      ],
+      "alpha_range": [
+        255,
+        255
+      ],
+      "render_offset": [
+        0,
+        0
+      ],
+      "render_size": [
+        310,
+        54
+      ]
+    },
+    {
+      "id": "common/hp-fill-enemy",
+      "path": "design/assets/hunting-ui-20261111/png/common/hp-fill-enemy.png",
+      "format": "png",
+      "figma_node_id": "2281:532",
+      "logical_size": [
+        310,
+        54
+      ],
+      "bytes": 12511,
+      "sha256": "06dd193d825ac8bbc28fb980659509909be62db20646bf951d15ce779649cae4",
+      "pixel_size": [
+        310,
+        54
+      ],
+      "alpha_range": [
+        255,
+        255
+      ],
+      "render_offset": [
+        0,
+        0
+      ],
+      "render_size": [
+        310,
+        54
+      ]
+    },
+    {
+      "id": "skills/strike-background",
+      "path": "design/assets/hunting-ui-20261111/png/skills/strike-background.png",
+      "format": "png",
+      "figma_node_id": "2346:775",
+      "logical_size": [
+        512,
+        512
+      ],
+      "bytes": 275517,
+      "sha256": "4a8ed1ccc5530cc4532e257c27af21bd2daa62e33e32253e8fc838a0d08b2215",
+      "pixel_size": [
+        512,
+        512
+      ],
+      "alpha_range": [
+        0,
+        255
+      ],
+      "render_offset": [
+        0,
+        0
+      ],
+      "render_size": [
+        512,
+        512
+      ]
+    },
+    {
+      "id": "skills/strong-background",
+      "path": "design/assets/hunting-ui-20261111/png/skills/strong-background.png",
+      "format": "png",
+      "figma_node_id": "2340:636",
+      "logical_size": [
+        512,
+        512
+      ],
+      "bytes": 286742,
+      "sha256": "39bb7f5d30c5440aa2e6774b94331b5b649258b5d68293ecf6fad09664f7982b",
+      "pixel_size": [
+        512,
+        512
+      ],
+      "alpha_range": [
+        0,
+        255
+      ],
+      "render_offset": [
+        0,
+        0
+      ],
+      "render_size": [
+        512,
+        512
+      ]
+    },
+    {
+      "id": "skills/cooperation-background",
+      "path": "design/assets/hunting-ui-20261111/png/skills/cooperation-background.png",
+      "format": "png",
+      "figma_node_id": "2340:639",
+      "logical_size": [
+        512,
+        512
+      ],
+      "bytes": 298651,
+      "sha256": "58ff2f92dd5198aae9421c537441b9088184ee45586da15e5ed6edf6fc8a533f",
+      "pixel_size": [
+        512,
+        512
+      ],
+      "alpha_range": [
+        0,
+        255
+      ],
+      "render_offset": [
+        0,
+        0
+      ],
+      "render_size": [
+        512,
+        512
+      ]
+    },
+    {
+      "id": "skills/strike-icon",
+      "path": "design/assets/hunting-ui-20261111/png/skills/strike-icon.png",
+      "format": "png",
+      "figma_node_id": "2340:642",
+      "logical_size": [
+        512,
+        512
+      ],
+      "bytes": 83977,
+      "sha256": "85022f7292ac15cc4ddcfd6fff5aee0392137e36c031f618e77c12e3c8b069d0",
+      "pixel_size": [
+        512,
+        512
+      ],
+      "alpha_range": [
+        0,
+        254
+      ],
+      "render_offset": [
+        0,
+        0
+      ],
+      "render_size": [
+        512,
+        512
+      ]
+    },
+    {
+      "id": "skills/strong-icon",
+      "path": "design/assets/hunting-ui-20261111/png/skills/strong-icon.png",
+      "format": "png",
+      "figma_node_id": "2340:646",
+      "logical_size": [
+        512,
+        512
+      ],
+      "bytes": 151505,
+      "sha256": "6cb448dd0a105fc05eec6f7374ee8e50b5faf56e51ebd48027b861ffd33d6cfb",
+      "pixel_size": [
+        512,
+        512
+      ],
+      "alpha_range": [
+        0,
+        254
+      ],
+      "render_offset": [
+        0,
+        0
+      ],
+      "render_size": [
+        512,
+        512
+      ]
+    },
+    {
+      "id": "skills/cooperation-icon",
+      "path": "design/assets/hunting-ui-20261111/png/skills/cooperation-icon.png",
+      "format": "png",
+      "figma_node_id": "2340:644",
+      "logical_size": [
+        512,
+        512
+      ],
+      "bytes": 118221,
+      "sha256": "d1b609b689d746929d0a4031a93e5f9a0072add3948c9021200d43ef56638226",
+      "pixel_size": [
+        512,
+        512
+      ],
+      "alpha_range": [
+        0,
+        254
+      ],
+      "render_offset": [
+        0,
+        0
+      ],
+      "render_size": [
+        512,
+        512
+      ]
+    },
+    {
+      "id": "skills/strike-disabled",
+      "path": "design/assets/hunting-ui-20261111/png/skills/strike-disabled.png",
+      "format": "png",
+      "figma_node_id": "2346:897",
+      "logical_size": [
+        512,
+        512
+      ],
+      "bytes": 235152,
+      "sha256": "f66feff5f0dafcce9d793f7de1f4ec596acae35373ddde16dafcd4fb4be6deed",
+      "pixel_size": [
+        512,
+        512
+      ],
+      "alpha_range": [
+        0,
+        255
+      ],
+      "render_offset": [
+        0,
+        0
+      ],
+      "render_size": [
+        512,
+        512
+      ]
+    },
+    {
+      "id": "skills/strong-disabled",
+      "path": "design/assets/hunting-ui-20261111/png/skills/strong-disabled.png",
+      "format": "png",
+      "figma_node_id": "2346:996",
+      "logical_size": [
+        512,
+        512
+      ],
+      "bytes": 252234,
+      "sha256": "834d10932c258f834a5f3aa67e9eec7f2dae7ec72f5629cf2306289517713401",
+      "pixel_size": [
+        512,
+        512
+      ],
+      "alpha_range": [
+        0,
+        255
+      ],
+      "render_offset": [
+        0,
+        0
+      ],
+      "render_size": [
+        512,
+        512
+      ]
+    },
+    {
+      "id": "skills/cooperation-disabled",
+      "path": "design/assets/hunting-ui-20261111/png/skills/cooperation-disabled.png",
+      "format": "png",
+      "figma_node_id": "2346:1133",
+      "logical_size": [
+        512,
+        512
+      ],
+      "bytes": 248953,
+      "sha256": "a0658eff7cd437399cbf1201fb1910bca0ef01816b1fbaa9ce1cb62cc5a0af1b",
+      "pixel_size": [
+        512,
+        512
+      ],
+      "alpha_range": [
+        0,
+        255
+      ],
+      "render_offset": [
+        0,
+        0
+      ],
+      "render_size": [
+        512,
+        512
+      ]
+    },
+    {
+      "id": "preparation/quick-sortie-background",
+      "path": "design/assets/hunting-ui-20261111/png/preparation/quick-sortie-background.png",
+      "format": "png",
+      "figma_node_id": "2265:275",
+      "logical_size": [
+        320,
+        110
+      ],
+      "bytes": 44163,
+      "sha256": "a39a15a2f630a71ca25237f24f96d2cc779fb6b0540696394a094a86e0547bcf",
+      "pixel_size": [
+        326,
+        116
+      ],
+      "alpha_range": [
+        0,
+        255
+      ],
+      "render_offset": [
+        -3,
+        0
+      ],
+      "render_size": [
+        326,
+        116
+      ]
+    },
+    {
+      "id": "preparation/start-battle-background",
+      "path": "design/assets/hunting-ui-20261111/png/preparation/start-battle-background.png",
+      "format": "png",
+      "figma_node_id": "2265:278",
+      "logical_size": [
+        480,
+        135
+      ],
+      "bytes": 84636,
+      "sha256": "8c0f0adcdc22d6e4e897251e0d13fe3a33f4bc79246b0641555a73804ea2455c",
+      "pixel_size": [
+        486,
+        141
+      ],
+      "alpha_range": [
+        0,
+        255
+      ],
+      "render_offset": [
+        -3,
+        0
+      ],
+      "render_size": [
+        486,
+        141
+      ]
+    },
+    {
+      "id": "common/vs-backdrop",
+      "path": "design/assets/hunting-ui-20261111/png/common/vs-backdrop.png",
+      "format": "png",
+      "figma_node_id": "2284:541",
+      "logical_size": [
+        512,
+        512
+      ],
+      "bytes": 151424,
+      "sha256": "8992d904f97e0b3df7baac7a9fd3ce870b16bfc80f16b3efcced36b4156cca7f",
+      "pixel_size": [
+        516,
+        531
+      ],
+      "alpha_range": [
+        0,
+        255
+      ],
+      "render_offset": [
+        -1.515625,
+        0
+      ],
+      "render_size": [
+        515.03125,
+        530.123046875
+      ]
+    },
+    {
+      "id": "common/vs-v",
+      "path": "design/assets/hunting-ui-20261111/png/common/vs-v.png",
+      "format": "png",
+      "figma_node_id": "2284:548",
+      "logical_size": [
+        256,
+        320
+      ],
+      "bytes": 46324,
+      "sha256": "e976f9ac2d999e347229868693557bd2f172010209391cb0223ae81b5807f856",
+      "pixel_size": [
+        266,
+        320
+      ],
+      "alpha_range": [
+        0,
+        255
+      ],
+      "render_offset": [
+        -1.00390625,
+        0
+      ],
+      "render_size": [
+        266.0078125,
+        320
+      ]
+    },
+    {
+      "id": "common/vs-s",
+      "path": "design/assets/hunting-ui-20261111/png/common/vs-s.png",
+      "format": "png",
+      "figma_node_id": "2284:552",
+      "logical_size": [
+        256,
+        320
+      ],
+      "bytes": 50960,
+      "sha256": "6cad27ddc0ec8d4f6d00ed426004fa693317609f85dbcbfc28c2aecea888df33",
+      "pixel_size": [
+        256,
+        320
+      ],
+      "alpha_range": [
+        0,
+        255
+      ],
+      "render_offset": [
+        0,
+        0
+      ],
+      "render_size": [
+        256,
+        320
+      ]
+    },
+    {
+      "id": "popup/panel",
+      "path": "design/assets/hunting-ui-20261111/png/popup/panel.png",
+      "format": "png",
+      "figma_node_id": "I2337:1123;2337:947",
+      "logical_size": [
+        880,
+        340
+      ],
+      "bytes": 484654,
+      "sha256": "364009a312f31ce3bb942e4f4ff1b8e702db524b2d726ea93e87b1f8323a5a80",
+      "pixel_size": [
+        896,
+        356
+      ],
+      "alpha_range": [
+        0,
+        254
+      ],
+      "render_offset": [
+        -8,
+        -2
+      ],
+      "render_size": [
+        896,
+        356
+      ]
+    },
+    {
+      "id": "popup/exit-button-background",
+      "path": "design/assets/hunting-ui-20261111/png/popup/exit-button-background.png",
+      "format": "png",
+      "figma_node_id": "2339:593",
+      "logical_size": [
+        340,
+        104
+      ],
+      "bytes": 43947,
+      "sha256": "2aea7c6739a4580cb2ff5f0c0beee5d1f562797d7f4da77641ce0e1d15371c81",
+      "pixel_size": [
+        346,
+        110
+      ],
+      "alpha_range": [
+        0,
+        255
+      ],
+      "render_offset": [
+        -3,
+        0
+      ],
+      "render_size": [
+        346,
+        110
+      ]
+    },
+    {
+      "id": "popup/continue-button-background",
+      "path": "design/assets/hunting-ui-20261111/png/popup/continue-button-background.png",
+      "format": "png",
+      "figma_node_id": "2358:1090",
+      "logical_size": [
+        340,
+        104
+      ],
+      "bytes": 49743,
+      "sha256": "2485272ccd5f02fe0d35dd66e9b041dc7fad47c61412c61a900fc74ee28b06e4",
+      "pixel_size": [
+        346,
+        110
+      ],
+      "alpha_range": [
+        0,
+        255
+      ],
+      "render_offset": [
+        -3,
+        0
+      ],
+      "render_size": [
+        346,
+        110
+      ]
+    },
+    {
+      "id": "skills/strike-effect",
+      "path": "design/assets/hunting-ui-20261111/svg/skills/strike-effect.svg",
+      "format": "svg",
+      "figma_node_id": "2340:651",
+      "logical_size": [
+        512,
+        512
+      ],
+      "bytes": 1568,
+      "sha256": "92a29c1df2fc4d6b9edd891734687cfd9ac16a17fb051336040e6d0a28c0d270"
+    },
+    {
+      "id": "skills/strong-effect",
+      "path": "design/assets/hunting-ui-20261111/svg/skills/strong-effect.svg",
+      "format": "svg",
+      "figma_node_id": "2340:664",
+      "logical_size": [
+        512,
+        512
+      ],
+      "bytes": 1861,
+      "sha256": "51627ecdf3f3e2323e421956e7c93297b432929e8c5e1369d93120b42b5a520d"
+    },
+    {
+      "id": "skills/cooperation-effect",
+      "path": "design/assets/hunting-ui-20261111/svg/skills/cooperation-effect.svg",
+      "format": "svg",
+      "figma_node_id": "2340:683",
+      "logical_size": [
+        512,
+        512
+      ],
+      "bytes": 2028,
+      "sha256": "0c7134c6140d344efa972f099db0f8b431d1a2069c0e02fa1846b0a9dde476d4"
+    },
+    {
+      "id": "skills/orb-active",
+      "path": "design/assets/hunting-ui-20261111/svg/skills/orb-active.svg",
+      "format": "svg",
+      "figma_node_id": "2322:573",
+      "logical_size": [
+        96,
+        96
+      ],
+      "bytes": 1647,
+      "sha256": "1310c2f5c9f06006291d236124af9839d46ea651f42896ee6b2b66ef14976027"
+    },
+    {
+      "id": "skills/orb-inactive",
+      "path": "design/assets/hunting-ui-20261111/svg/skills/orb-inactive.svg",
+      "format": "svg",
+      "figma_node_id": "2333:569",
+      "logical_size": [
+        96,
+        96
+      ],
+      "bytes": 1647,
+      "sha256": "2445fc8e851927f4088696be2d888d6f50df6b2b200cc6c8da631f044c499c61"
+    },
+    {
+      "id": "preparation/ally-cell",
+      "path": "design/assets/hunting-ui-20261111/svg/preparation/ally-cell.svg",
+      "format": "svg",
+      "figma_node_id": "2255:574",
+      "logical_size": [
+        214,
+        152.492431640625
+      ],
+      "bytes": 237,
+      "sha256": "46bac298ac6650c237441c8f8e306c152c69df752456ef764129ee8acf3c3f79"
+    },
+    {
+      "id": "preparation/enemy-cell",
+      "path": "design/assets/hunting-ui-20261111/svg/preparation/enemy-cell.svg",
+      "format": "svg",
+      "figma_node_id": "2255:578",
+      "logical_size": [
+        214,
+        152.492431640625
+      ],
+      "bytes": 205,
+      "sha256": "ae4bfe63fa4ebdbcb705e95a97058a81ddf12a8ff8b2cfe16f3eec0fb726cf21"
+    },
+    {
+      "id": "preparation/portrait-selected",
+      "path": "design/assets/hunting-ui-20261111/svg/preparation/portrait-selected.svg",
+      "format": "svg",
+      "figma_node_id": "2268:501",
+      "logical_size": [
+        190,
+        154
+      ],
+      "bytes": 1376,
+      "sha256": "426004a15abada5824ce8e1acd95e319500e34a1a643dd4965d32783b955dccc"
+    },
+    {
+      "id": "preparation/portrait-normal",
+      "path": "design/assets/hunting-ui-20261111/svg/preparation/portrait-normal.svg",
+      "format": "svg",
+      "figma_node_id": "2268:506",
+      "logical_size": [
+        190,
+        154
+      ],
+      "bytes": 1376,
+      "sha256": "aabebee6f297e406547b7842a58902bff5a8a97f9c40072531af85a5c5b684ed"
+    },
+    {
+      "id": "preparation/swap",
+      "path": "design/assets/hunting-ui-20261111/svg/preparation/swap.svg",
+      "format": "svg",
+      "figma_node_id": "2263:483",
+      "logical_size": [
+        46,
+        46
+      ],
+      "bytes": 294,
+      "sha256": "2b512f59988f7d86e9c07fb09103c154c2fb1c1d5199049f8b85574b42b647db"
+    },
+    {
+      "id": "common/auto",
+      "path": "design/assets/hunting-ui-20261111/svg/common/auto.svg",
+      "format": "svg",
+      "figma_node_id": "2355:744",
+      "logical_size": [
+        96,
+        96
+      ],
+      "bytes": 5167,
+      "sha256": "10130ffce266c96cc9ac0a1cb72ed15e6f7fde3fac8c1870074ec0cbcf1f8ad7"
+    },
+    {
+      "id": "common/speed-2x",
+      "path": "design/assets/hunting-ui-20261111/svg/common/speed-2x.svg",
+      "format": "svg",
+      "figma_node_id": "2355:747",
+      "logical_size": [
+        96,
+        96
+      ],
+      "bytes": 4092,
+      "sha256": "2f1b23fee686598856d439970f8a2c1cdc1f576c655c1e8ec2fe9581d8ff14df"
+    }
+  ],
+  "reused": [
+    {
+      "id": "background/forest-edge",
+      "repo_path": "game/assets/ui/hunting-formation/clearing.png",
+      "source_commit": "cb74af74ad4bcd98eb98072798b3b3e73f50858b",
+      "sha256": "6f4b629a063f10c01399fccfa93bfd898eba61e28996856d916edab6a9030747",
+      "bytes": 2743068,
+      "copied_existing_git_blob": true
+    },
+    {
+      "id": "preparation/portrait-atlas",
+      "repo_path": "game/assets/ui/hunting-formation/portraits.png",
+      "source_commit": "cb74af74ad4bcd98eb98072798b3b3e73f50858b",
+      "sha256": "7bd58f9b6498a990abf672553dd47ed21c56780cf68c302545be352c9929ec4a",
+      "bytes": 1801773,
+      "copied_existing_git_blob": true
+    },
+    {
+      "id": "preparation/roster-panel",
+      "repo_path": "game/assets/ui/hunting-v006/right-panel.png",
+      "sha256": "6a0b915a30e35999c52183e5455022d3ccc8d3d63430f5b4aa40492305e7c409",
+      "bytes": 2234561,
+      "copied_existing_git_blob": false
+    },
+    {
+      "id": "common/wood-plaque",
+      "repo_path": "game/assets/ui/hunting-v006/forest-title-wood.png",
+      "sha256": "e86525f21a06a5f4df3ce9f6512fc77a448ffa49547f4ddfa661bd3f57e57497",
+      "bytes": 215051,
+      "copied_existing_git_blob": false
+    },
+    {
+      "id": "actor/leader",
+      "repo_path": "game/assets/characters/meshy01/hero.glb",
+      "sha256": "44c5c760d84b48d73a011a1e442f3eec9c8a5c37a5a11031c854375f4f959785",
+      "bytes": 17153260,
+      "copied_existing_git_blob": false
+    },
+    {
+      "id": "actor/sturdy",
+      "repo_path": "game/assets/characters/residents/sturdy_male.glb",
+      "sha256": "cc2ab8f43acd80c6eb9215252f8641510f915b616fc387cf231a3be4052d0feb",
+      "bytes": 1303360,
+      "copied_existing_git_blob": false
+    },
+    {
+      "id": "actor/female",
+      "repo_path": "game/assets/characters/residents/female.glb",
+      "sha256": "9c2bb747a2231210435c6cf9c8bd1b4d5b525a7ca854814f2267ef3411632f02",
+      "bytes": 1301648,
+      "copied_existing_git_blob": false
+    },
+    {
+      "id": "actor/deer",
+      "repo_path": "game/assets/animals/deer-rigged.glb",
+      "sha256": "505a0ca1a4949e86e7e0b9c412acec68c52f4312dbe65a8cd0a7ca34ee70264e",
+      "bytes": 1091260,
+      "copied_existing_git_blob": false
+    },
+    {
+      "id": "font/korean",
+      "repo_path": "game/assets/fonts/NotoSansKR.ttf",
+      "sha256": "194018e6b2b293a7964f037b25c0249ce1418bc9ab3c971060a03aa57861e252",
+      "bytes": 10414588,
+      "copied_existing_git_blob": false
+    }
+  ],
+  "portrait_regions": {
+    "leader": [
+      15,
+      0,
+      675,
+      710
+    ],
+    "sturdy": [
+      725,
+      0,
+      690,
+      710
+    ],
+    "female": [
+      1495,
+      10,
+      610,
+      700
+    ]
+  },
+  "implementation_notes": {
+    "design_size": [
+      1920,
+      1080
+    ],
+    "existing_engine_design_size": [
+      960,
+      540
+    ],
+    "font_family": "Noto Sans KR",
+    "shader_disabled_mask": {
+      "center": [
+        256,
+        256
+      ],
+      "radius": 213,
+      "rule": "desaturate interior only; preserve gold border; hide press effect"
+    },
+    "primary_orb_cost": null,
+    "strong_orb_cost": 1,
+    "cooperation_orb_cost": 2,
+    "charge_seconds": null,
+    "strong_cooperation_lock_seconds_approx": 1,
+    "primary_excluded_from_skill_lock": true
+  }
+}
