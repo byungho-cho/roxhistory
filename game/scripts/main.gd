@@ -1650,7 +1650,7 @@ func go_back() -> void:
 	elif is_instance_valid(intro_cloud):
 		return
 	elif screen=="hunt":
-		close_hunt()
+		hunt.request_exit()
 	elif village_entry_active():
 		finish_village_entry()
 	elif overlay is CharacterGuide:

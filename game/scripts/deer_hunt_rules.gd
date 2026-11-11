@@ -1,58 +1,92 @@
 extends RefCounted
-## First deer encounter tuning. These values are independent from village progression.
-const MAX_GAUGE := 100.0
+## Provisional encounter timing. The shared lock applies only to orb skills.
 const MAX_HP := 100
-const CHARGE_PER_SECOND := 14.0
+const MAX_ORBS := 3
+const ORB_SECONDS := 100.0 / 14.0 / MAX_ORBS
+const BASIC_INTERVAL := 10.0 / 14.0
+const POSE_SECONDS := 0.52
 const AUTO_INTERVAL := 2.6
-const AUTO_DAMAGE := 1
-const AUTO_COUNTER_DAMAGE := 2
 const SKILLS := {
-	"thrust": {"label":"찌르기", "cost":10, "damage":8},
-	"strike": {"label":"강타", "cost":50, "damage":31},
-	"team": {"label":"협동", "cost":100, "damage":58},
+	"thrust": {"label": "타격", "cost": 0, "damage": 8},
+	"strike": {"label": "강타", "cost": 1, "damage": 31},
+	"team": {"label": "협동", "cost": 2, "damage": 58},
 }
 
-var gauge := 0.0
+var charge := 0.0
 var hunter_hp := MAX_HP
 var deer_hp := MAX_HP
 var outcome := ""
-var auto_clock := 0.0
+var exchange_clock := 0.0
 var hunter_turn := true
-var pending_basic_damage := 0
+var basic_lock := 0.0
+var orb_lock := 0.0
+var action_lock := 0.0
+var orb_filled := false
+var auto_enabled := false
+var reserved_skill := ""
+var rng := RandomNumberGenerator.new()
+
+func orbs() -> int:
+	return mini(MAX_ORBS,floori(charge+0.000001))
+
+func set_auto(enabled: bool) -> void:
+	auto_enabled = enabled and outcome.is_empty()
+	reserved_skill = next_auto_skill() if auto_enabled else ""
+
+func next_auto_skill() -> String:
+	return "strike" if rng.randi_range(0, 1) == 0 else "team"
 
 func can_use(skill: String) -> bool:
-	return outcome.is_empty() and pending_basic_damage==0 and gauge >= SKILLS[skill].cost
+	if not SKILLS.has(skill) or not outcome.is_empty() or action_lock > 0:
+		return false
+	if skill == "thrust":
+		return basic_lock <= 0
+	return orb_lock <= 0 and orbs() >= SKILLS[skill].cost
 
 func use_skill(skill: String) -> bool:
-	if not can_use(skill):return false
-	gauge -= SKILLS[skill].cost
-	if skill=="thrust":
-		pending_basic_damage = SKILLS[skill].damage
-		return true
-	deer_hp = maxi(0,deer_hp-int(SKILLS[skill].damage))
-	if deer_hp==0:outcome = "win"
+	if not can_use(skill):
+		return false
+	action_lock = POSE_SECONDS
+	if skill == "thrust":
+		basic_lock = BASIC_INTERVAL
+	else:
+		charge = maxf(0.0,charge-SKILLS[skill].cost)
+		orb_lock = 1.0
+	damage_deer(SKILLS[skill].damage)
 	return true
 
-func resolve_basic_impact() -> bool:
-	if pending_basic_damage==0:return false
-	deer_hp = maxi(0,deer_hp-pending_basic_damage)
-	pending_basic_damage = 0
-	if deer_hp==0:outcome = "win"
-	return true
+func damage_deer(amount: int) -> void:
+	deer_hp = maxi(0, deer_hp - amount)
+	if deer_hp == 0:
+		outcome = "win"
+		set_auto(false)
 
-func advance(delta: float) -> Array[String]:
-	var moves: Array[String] = []
-	if not outcome.is_empty():return moves
-	gauge = minf(MAX_GAUGE,gauge+delta*CHARGE_PER_SECOND)
-	auto_clock += delta
-	while auto_clock>=AUTO_INTERVAL and outcome.is_empty() and pending_basic_damage==0:
-		auto_clock -= AUTO_INTERVAL
-		if hunter_turn:
-			pending_basic_damage = AUTO_DAMAGE
-			moves.append("auto_thrust")
-		else:
-			hunter_hp = maxi(0,hunter_hp-AUTO_COUNTER_DAMAGE)
-			moves.append("counter")
-			if hunter_hp==0:outcome = "loss"
-		hunter_turn = not hunter_turn
-	return moves
+func advance(delta: float) -> String:
+	orb_filled = false
+	if not outcome.is_empty():
+		return ""
+	var previous_orbs := orbs()
+	charge = minf(MAX_ORBS, charge + delta / ORB_SECONDS)
+	orb_filled = orbs() > previous_orbs
+	action_lock = maxf(0.0, action_lock - delta)
+	basic_lock = maxf(0.0, basic_lock - delta)
+	orb_lock = maxf(0.0, orb_lock - delta)
+	exchange_clock = minf(AUTO_INTERVAL, exchange_clock + delta)
+	var queued := reserved_skill
+	if auto_enabled and use_skill(queued):
+		if auto_enabled:
+			reserved_skill = next_auto_skill()
+		return queued
+	if exchange_clock < AUTO_INTERVAL or action_lock > 0:
+		return ""
+	exchange_clock = 0.0
+	action_lock = POSE_SECONDS
+	hunter_turn = not hunter_turn
+	if not hunter_turn:
+		damage_deer(1)
+		return "auto_thrust"
+	hunter_hp = maxi(0, hunter_hp - 2)
+	if hunter_hp == 0:
+		outcome = "loss"
+		set_auto(false)
+	return "counter"
