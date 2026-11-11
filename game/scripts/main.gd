@@ -817,6 +817,7 @@ func update_title_sound() -> void:
 
 
 func chapter_menu() -> void:
+	if preparing_intro_world:await intro_world_prepared
 	discard_prepared_intro_world()
 	close_modal()
 	show_screen("chapter")
@@ -833,6 +834,7 @@ func discard_prepared_intro_world() -> void:
 	title_world_progress = 0.0
 
 func full_reset() -> void:
+	if preparing_intro_world:await intro_world_prepared
 	if not model.store.erase_progress():show_error(model.store.message);return
 	settings.clear()
 	if settings.save(prefs_path)!=OK:show_error("설정 초기화를 저장하지 못했습니다.");return
