@@ -1,0 +1,41 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="72.4259" height="74.5485" viewBox="0 0 72.4259 74.5485" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="Hunting/Match/VS / Backdrop">
+<path id="Side streaks" d="M1.90044 22.2188L20.4629 23.3438L13.1504 30.6562L0.494188 32.3438L1.90044 22.2188ZM70.5254 39.6562L51.9629 40.7812L59.2754 48.0938L71.9317 49.7812L70.5254 39.6562Z" fill="#172933" stroke-width="0.84375" stroke="#CC8521"/>
+<g id="Bronze diamond" filter="url(#filter0_d_0_455)">
+<path d="M36.2129 3.09375L67.7129 36L36.2129 68.9062L4.71294 36L36.2129 3.09375Z" fill="url(#paint0_linear_0_455)" stroke-width="1.96875" stroke="url(#paint1_linear_0_455)"/>
+</g>
+<path id="Inset rim" d="M36.2129 7.59375L63.3536 36L36.2129 64.4062L9.07231 36L36.2129 7.59375Z" stroke-width="0.5625" stroke="#FFC245" stroke-opacity="0.6"/>
+<path id="Ally accent" d="M11.7442 35.0156L35.0879 10.8281L31.7129 18.7031L15.9629 35.2969L11.7442 35.0156Z" fill="url(#paint2_linear_0_455)"/>
+<path id="Enemy accent" d="M60.6817 36.9844L37.3379 61.1719L40.7129 53.2969L56.4629 36.7031L60.6817 36.9844Z" fill="url(#paint3_linear_0_455)"/>
+<path id="Center sheen" d="M36.2129 11.5312L54.0723 30.5156L36.2129 49.7812L18.3536 30.5156L36.2129 11.5312Z" fill="#FFD15C" fill-opacity="0.045"/>
+</g>
+<defs>
+<filter id="filter0_d_0_455" x="1.10024" y="1.38897" width="70.2254" height="73.1596" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+<feFlood flood-opacity="0" result="BackgroundImageFix"/>
+<feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+<feOffset dy="1.96875"/>
+<feGaussianBlur stdDeviation="1.125"/>
+<feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.5 0"/>
+<feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_0_455"/>
+<feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_0_455" result="shape"/>
+</filter>
+<linearGradient id="paint0_linear_0_455" x1="36.2129" y1="3.09375" x2="36.2129" y2="68.9062" gradientUnits="userSpaceOnUse">
+<stop stop-color="#4F3B1F"/>
+<stop offset="0.42" stop-color="#29211A"/>
+<stop offset="1" stop-color="#0B0F12"/>
+</linearGradient>
+<linearGradient id="paint1_linear_0_455" x1="36.2129" y1="3.09375" x2="36.2129" y2="68.9062" gradientUnits="userSpaceOnUse">
+<stop stop-color="#FFE07D"/>
+<stop offset="0.5" stop-color="#BD6B13"/>
+<stop offset="1" stop-color="#FFB329"/>
+</linearGradient>
+<linearGradient id="paint2_linear_0_455" x1="23.4161" y1="10.8281" x2="23.4161" y2="35.2969" gradientUnits="userSpaceOnUse">
+<stop stop-color="#30CCFF"/>
+<stop offset="1" stop-color="#05477A"/>
+</linearGradient>
+<linearGradient id="paint3_linear_0_455" x1="49.0098" y1="36.7031" x2="49.0098" y2="61.1719" gradientUnits="userSpaceOnUse">
+<stop stop-color="#FF781F"/>
+<stop offset="1" stop-color="#8C1206"/>
+</linearGradient>
+</defs>
+</svg>

@@ -1,0 +1,30 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="37.4074" height="45" viewBox="0 0 37.4074 45" fill="none" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="Hunting/Match/VS / V">
+<g id="V / outlined glyph" filter="url(#filter0_d_0_405)">
+<use xlink:href="#stroke0_0_405" fill="url(#paint0_linear_0_405)"/>
+<mask id="stroke1_0_405" maskUnits="userSpaceOnUse" x="-0.453112" y="1.79688" width="37" height="41" fill="black">
+<rect fill="white" x="-0.453112" y="1.79688" width="37" height="41"/>
+<use xlink:href="#stroke0_0_405"/>
+</mask>
+<path d="M12.7437 41.2031L1.54689 3.79688H11.0365L15.3044 20.8682C15.8734 22.8766 16.3588 24.8515 16.7604 26.7929C17.1956 28.7344 17.6809 30.7428 18.2165 32.8181H18.4676C19.0366 30.7428 19.522 28.7344 19.9236 26.7929C20.3588 24.8515 20.8442 22.8766 21.3797 20.8682L25.5973 3.79688H34.7355L23.5387 41.2031H12.7437Z" stroke-width="3.09375" stroke-linejoin="round" stroke="#2E1806" mask="url(#stroke1_0_405)"/>
+</g>
+</g>
+<defs>
+<filter id="filter0_d_0_405" x="0" y="2.25" width="37.4074" height="42.4688" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+<feFlood flood-opacity="0" result="BackgroundImageFix"/>
+<feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+<feOffset dx="0.84375" dy="1.6875"/>
+<feGaussianBlur stdDeviation="0.140625"/>
+<feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.65 0"/>
+<feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_0_405"/>
+<feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_0_405" result="shape"/>
+</filter>
+<linearGradient id="paint0_linear_0_405" x1="18.1412" y1="3.79688" x2="18.1412" y2="41.2031" gradientUnits="userSpaceOnUse">
+<stop stop-color="#FFFFC9"/>
+<stop offset="0.32" stop-color="#FFE059"/>
+<stop offset="0.53" stop-color="#FF990B"/>
+<stop offset="1" stop-color="#BF4003"/>
+</linearGradient>
+<path id="stroke0_0_405" d="M12.7437 41.2031L1.54689 3.79688H11.0365L15.3044 20.8682C15.8734 22.8766 16.3588 24.8515 16.7604 26.7929C17.1956 28.7344 17.6809 30.7428 18.2165 32.8181H18.4676C19.0366 30.7428 19.522 28.7344 19.9236 26.7929C20.3588 24.8515 20.8442 22.8766 21.3797 20.8682L25.5973 3.79688H34.7355L23.5387 41.2031H12.7437Z"/>
+</defs>
+</svg>

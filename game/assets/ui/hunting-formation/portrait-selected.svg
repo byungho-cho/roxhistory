@@ -1,0 +1,14 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="190" height="154" viewBox="0 0 190 154" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="ui/portrait-slot-selected.svg">
+<path id="Vector" d="M160.312 5.13333H29.6875C17.2266 5.13333 7.125 12.4112 7.125 21.3889V132.611C7.125 141.589 17.2266 148.867 29.6875 148.867H160.312C172.773 148.867 182.875 141.589 182.875 132.611V21.3889C182.875 12.4112 172.773 5.13333 160.312 5.13333Z" fill="url(#paint0_linear_0_423)" stroke-width="9" stroke="#60361E"/>
+<path id="Vector_2" d="M29.6875 5.13333H160.312C172.773 5.13333 182.875 12.4112 182.875 21.3889V132.611C182.875 141.589 172.773 148.867 160.312 148.867H29.6875C17.2266 148.867 7.125 141.589 7.125 132.611V21.3889C7.125 12.4112 17.2266 5.13333 29.6875 5.13333Z" stroke-width="7" stroke="#FFCF24"/>
+<path id="Vector_3" d="M30.875 10.2667H159.125C168.307 10.2667 175.75 15.6293 175.75 22.2444V131.756C175.75 138.371 168.307 143.733 159.125 143.733H30.875C21.6933 143.733 14.25 138.371 14.25 131.756V22.2444C14.25 15.6293 21.6933 10.2667 30.875 10.2667Z" stroke-width="2" stroke="#FFF4BC"/>
+</g>
+<defs>
+<linearGradient id="paint0_linear_0_423" x1="7.125" y1="5.13333" x2="115.121" y2="170.198" gradientUnits="userSpaceOnUse">
+<stop stop-color="#FFF1C8"/>
+<stop offset="0.5" stop-color="#F8DCA5"/>
+<stop offset="1" stop-color="#E8B879"/>
+</linearGradient>
+</defs>
+</svg>
