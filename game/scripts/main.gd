@@ -262,6 +262,14 @@ func show_screen(next: String) -> void:
 	if screen in ["onboarding","title"]:
 		var info:=label(stage,"버전 "+str(ProjectSettings.get_setting("application/config/version"))+" · 생성일자 "+str(ProjectSettings.get_setting("application/config/build_date","")),12,Color("fff0d0"))
 		info.position=Vector2(safe.x,h-safe.y-15);info.add_theme_constant_override("outline_size",3);info.add_theme_color_override("font_outline_color",Color("30271b"))
+		if screen=="title":
+			var version_button := button(stage,"",open_title_update)
+			version_button.name = "VersionUpdate"
+			version_button.custom_minimum_size = Vector2.ZERO
+			version_button.position = Vector2(safe.x-4,h-safe.y-35)
+			version_button.size = Vector2(310,40)
+			for state in ["normal","hover","pressed","focus"]:
+				version_button.add_theme_stylebox_override(state,StyleBoxEmpty.new())
 	sync_audio()
 	if next != previous and not is_instance_valid(intro_cloud):
 		var fade := ColorRect.new()
@@ -463,15 +471,19 @@ func title_screen() -> void:
 	title_prompt_time=0
 	style_start_prompt(start)
 	var config:=button(stage,"",pause_game)
-	config.name="TitleSettings";config.custom_minimum_size=Vector2.ZERO;config.position=Vector2(w-safe.x-60,safe.y+6);config.size=Vector2(56,56)
+	config.name="TitleSettings";config.custom_minimum_size=Vector2.ZERO;config.position=Vector2(w-safe.x-56,h-safe.y-56);config.size=Vector2(56,56)
 	for state in ["normal","hover","pressed","focus"]:config.add_theme_stylebox_override(state,StyleBoxEmpty.new())
 	picture(config,preload("res://assets/ui/review-v037/settings-figma.png"),Rect2(4,4,48,48))
 	config.set_meta("semantic_text","설정")
 	title_sound = button(stage,"",toggle_sound)
 	title_sound.name = "TitleSound"
 	title_sound.custom_minimum_size = Vector2.ZERO
-	title_sound.position = Vector2(safe.x+4,safe.y+6)
+	title_sound.position = Vector2(w-safe.x-64,safe.y+2)
 	title_sound.size = Vector2(56,56)
+	for state in ["normal","hover","pressed","focus"]:
+		title_sound.add_theme_stylebox_override(state,StyleBoxEmpty.new())
+	title_sound.expand_icon = true
+	title_sound.add_theme_constant_override("icon_max_width",48)
 	update_title_sound()
 	var patch_status:=Label.new()
 	patch_status.position=Vector2(safe.x,h-safe.y-37)
@@ -480,12 +492,27 @@ func title_screen() -> void:
 	patch_status.process_mode=Node.PROCESS_MODE_ALWAYS
 	updates.check_status_changed.connect(patch_status.set_text)
 	patch_status.text=updates.check_status
-	var retry_update := button(stage,"업데이트 확인",check_title_update.bind(true))
-	retry_update.custom_minimum_size = Vector2.ZERO
-	retry_update.position = Vector2(w-safe.x-154,h-safe.y-42)
-	retry_update.size = Vector2(154,40)
-	retry_update.add_theme_font_size_override("font_size",16)
+	if not updates.request.request_completed.is_connected(update_title_patch_action):
+		updates.request.request_completed.connect(update_title_patch_action)
 	call_deferred("check_title_update")
+
+func open_title_update() -> void:
+	if screen!="title" or not application_active or modal or is_instance_valid(intro_cloud):return
+	var updates := get_node("/root/PatchBootstrap/Overlay")
+	updates.show_popup()
+	check_title_update(true)
+
+func update_title_patch_action(_result:int,_code:int,_headers:PackedStringArray,_body:PackedByteArray) -> void:
+	var updates := get_node("/root/PatchBootstrap/Overlay")
+	if updates.restart_pending or updates.downloading:return
+	if updates.candidate.is_empty():
+		if updates.popup.visible and updates.check_status.is_empty():
+			updates.status.text = "이미 최신 버전입니다"
+			updates.update_button.disabled = true
+	else:
+		var current := str(ProjectSettings.get_setting("application/config/version"))
+		if updates.version_number(updates.candidate.version)<=updates.version_number(current):
+			updates.update_button.disabled = true
 
 func style_start_prompt(start: DemoButton) -> void:
 	start.name="StartGame";start.custom_minimum_size=Vector2.ZERO
@@ -507,11 +534,13 @@ func check_title_update(manual:=false) -> void:
 	if test_mode and not manual:return
 	var updates := get_node("/root/PatchBootstrap/Overlay")
 	if updates.downloading or updates.restart_pending:return
+	if not manual and updates.popup.visible:return
 	var now := Time.get_ticks_msec()
 	if not manual and now-title_update_at<5000:return
 	title_update_at = now
 	updates.title_active = true
 	updates.checked_title = true
+	updates.candidate.clear()
 	updates.update_button.disabled = true
 	updates.status.text = "업데이트 확인 중…"
 	updates.check_status = updates.status.text
