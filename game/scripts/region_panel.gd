@@ -60,7 +60,7 @@ func _ready() -> void:
 	title_art=FigmaArt.picture(content,"title-dongsam.png",Rect2(127.586,200.24,146.841,58.96))
 	era_label=FigmaArt.text(content,"",Rect2(25,268,347,40),30)
 	resources=Control.new();resources.mouse_filter=Control.MOUSE_FILTER_IGNORE;resources.position=Vector2(25,313);resources.size=Vector2(347,76);content.add_child(resources)
-	start_button=FigmaArt.button(surface,"gold",Rect2(0,407,397,76),"이곳에서 시작",app.start_region,app);start_button.name="RegionStart";start_button.enable_art_feedback()
+	start_button=FigmaArt.button(surface,"gold",Rect2(0,407,397,76),"이곳에서 시작",app.request_first_village,app);start_button.name="RegionStart";start_button.enable_art_feedback()
 	var close:=DemoButton.new();close.name="CloseRegionDetails";close.text="×";close.position=Vector2(349,8);close.size=Vector2(44,44);close.set_meta("semantic_text","지역 상세 닫기")
 	for state in ["normal","hover","pressed","disabled","focus"]:close.add_theme_stylebox_override(state,StyleBoxEmpty.new())
 	close.add_theme_font_size_override("font_size",26);close.add_theme_color_override("font_color",Color("705536"));surface.add_child(close)

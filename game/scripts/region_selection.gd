@@ -178,7 +178,7 @@ func end_pointer(index:int,at:Vector2) -> void:
 	if fingers.is_empty():trace_state("gesture_end")
 
 func _input(event:InputEvent) -> void:
-	if app.screen!="region":return
+	if app.screen!="region" or is_instance_valid(app.intro_cloud):return
 	if event is InputEventMouseButton and event.pressed and event.ctrl_pressed and event.button_index in [MOUSE_BUTTON_WHEEL_UP,MOUSE_BUTTON_WHEEL_DOWN] and not ui_hit(event.position):
 		if motion and motion.is_valid():motion.kill()
 		var anchor:Vector2=(event.position-pan)/(factor*zoom)

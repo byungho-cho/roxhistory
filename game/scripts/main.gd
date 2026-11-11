@@ -37,6 +37,9 @@ var intro_cloud_layer: CanvasLayer
 var intro_cloud: ColorRect
 var intro_loading: Label
 var intro_cloud_tween: Tween
+var transition_started_at := 0
+var transition_prepare_ms := 0.0
+var first_village_loading := false
 var title_prompt_time := 0.0
 var title_cloud_seen := false
 var task_bar: ProgressBar
@@ -168,7 +171,7 @@ func _ready() -> void:
 	show_screen("title")
 
 func queue_layout() -> void:
-	if rebuilding or screen in ["hunt","intro"]:
+	if rebuilding or screen in ["hunt","intro"] or village_entry_active():
 		return
 	rebuilding = true
 	call_deferred("relayout")
@@ -266,7 +269,7 @@ func show_screen(next: String) -> void:
 		ui.add_child(fade); fade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 		fade.modulate.a = 0.45
 		var transition := create_tween()
-		transition.tween_property(fade,"modulate:a",0.0,0.28)
+		transition.tween_property(fade,"modulate:a",0.0,0.18 if previous=="chapter" and next=="region" else 0.28)
 		transition.tween_callback(fade.queue_free)
 	if screen == "title" and not model.store.message.is_empty():
 		toast(model.store.message,8)
@@ -500,8 +503,12 @@ func check_title_update() -> void:
 func start_or_continue()->void:
 	if modal or screen!="title" or not application_active or is_instance_valid(intro_cloud):return
 	get_node("/root/PatchBootstrap/Overlay").leave_title()
-	get_tree().call_group("title_reveal_clouds","hide")
 	cover_intro(prepare_intro)
+	for cloud in get_tree().get_nodes_in_group("title_reveal_clouds"):
+		cloud.create_tween().tween_property(cloud,"self_modulate:a",0.0,.36)
+	for control in [title_prompt,stage.get_node_or_null("HanbandoTitleLogo")]:
+		if is_instance_valid(control):
+			control.create_tween().tween_property(control,"self_modulate:a",0.0,.24)
 
 func prepare_intro() -> void:
 	if ResourceLoader.exists(INTRO_VIDEO_PATH, "VideoStream"):
@@ -536,7 +543,10 @@ func cover_intro(covered: Callable) -> void:
 		intro_loading.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 		intro_loading.hide()
 	intro_cloud.mouse_filter = Control.MOUSE_FILTER_STOP
-	animate_intro_cloud(1.0,.36,covered)
+	transition_prepare_ms = 0.0
+	animate_intro_cloud(1.0,.36,func():
+		transition_started_at = Time.get_ticks_usec()
+		covered.call())
 
 func fit_intro_cloud() -> void:
 	(intro_cloud.material as ShaderMaterial).set_shader_parameter(
@@ -553,13 +563,15 @@ func animate_intro_cloud(target: float, duration: float, completed: Callable) ->
 	if not application_active:intro_cloud_tween.pause()
 
 func reveal_intro_destination() -> void:
+	transition_prepare_ms = (Time.get_ticks_usec()-transition_started_at)/1000.0
 	intro_loading.hide()
 	if screen=="intro":
 		intro_cloud.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	animate_intro_cloud(0.0,.44,func():
 		intro_cloud_layer.queue_free()
 		intro_cloud = null
-		intro_leaving = false)
+		intro_leaving = false
+		first_village_loading = false)
 
 func intro_screen() -> void:
 	var backdrop := ColorRect.new()
@@ -659,6 +671,26 @@ func region_screen() -> void:
 	region_selection=RegionSelection.new(self,region_snapshot)
 	stage.add_child(region_selection)
 
+func request_first_village() -> void:
+	if screen!="region" or is_instance_valid(intro_cloud) or not application_active:return
+	if is_instance_valid(region_selection) and region_selection.selected!="amsa":
+		toast("현재 데모는 암사동에서 시작할 수 있습니다.");return
+	first_village_loading = true
+	region_selection.cancel_input()
+	cover_intro(start_region_under_cover)
+	intro_loading.text = "마을 준비 중…"
+
+func start_region_under_cover() -> void:
+	intro_loading.show()
+	# Present the loading notice before synchronous world creation.
+	await get_tree().process_frame
+	await get_tree().process_frame
+	while not application_active:
+		await get_tree().process_frame
+	start_region()
+	await get_tree().process_frame
+	reveal_intro_destination()
+
 func start_region() -> void:
 	if is_instance_valid(region_selection) and region_selection.selected!="amsa":
 		toast("현재 데모는 암사동에서 시작할 수 있습니다.");return
@@ -690,8 +722,16 @@ func enter_game(first_entry:=false) -> void:
 	show_screen("play")
 	if first_entry:
 		gestures.clear()
-		village_entry=VillageEntry.new(world.player,world.boundary_root.get_node_or_null("UnlockedPerimeter"))
-		stage.add_child(village_entry)
+		village_entry=VillageEntry.new(world.player,world.boundary_root.get_node_or_null("UnlockedPerimeter"),not first_village_loading)
+		stage.modulate.a = 0.0
+		village_entry.completed.connect(reveal_first_village_hud.bind(stage))
+		ui.add_child(village_entry)
+
+func reveal_first_village_hud(hud: Control) -> void:
+	if is_instance_valid(hud):
+		hud.create_tween().tween_property(hud,"modulate:a",1.0,.22)
+	if get_viewport().get_visible_rect().size != Vector2(w,h):
+		call_deferred("queue_layout")
 
 func village_entry_active()->bool:
 	return is_instance_valid(village_entry) and not village_entry.is_queued_for_deletion()
@@ -948,6 +988,7 @@ func first_construction_locked()->bool:
 	return model.chief_level()==0 and model.pending_construction_count("chief")==0 and FirstQuests.current(model.state) in [0,1]
 
 func _process(delta: float) -> void:
+	performance_diagnostics.tick(self,delta)
 	if screen=="intro":
 		if application_active and not intro_leaving and is_instance_valid(intro_player):
 			var position := intro_player.stream_position
@@ -956,7 +997,6 @@ func _process(delta: float) -> void:
 			if not intro_player.is_playing() or intro_stall>=3.0:finish_intro()
 			elif intro_preparing:intro_loading.visible = intro_stall>=1.0
 		return
-	performance_diagnostics.tick(self,delta)
 	if screen=="title" and application_active and is_instance_valid(title_prompt):
 		title_prompt_time=fposmod(title_prompt_time+delta,3.0)
 		title_prompt.modulate.a=.87+.13*cos(title_prompt_time*TAU/3.0)
@@ -1436,12 +1476,14 @@ func show_modal(title: String, body: String, actions: Array, compact: bool = fal
 		world.player.presentation_paused = true
 	if is_instance_valid(overlay):
 		if overlay.has_meta("restore_stage_visibility") and is_instance_valid(stage):stage.visible=overlay.get_meta("restore_stage_visibility")
-		ui.remove_child(overlay)
-		overlay.queue_free()
+		retire_modal(overlay)
 	modal = true
 	sync_audio()
 	overlay = Control.new();overlay.z_index=50
+	overlay.set_meta("fade_modal",true)
+	overlay.modulate.a = 0.0
 	ui.add_child(overlay)
+	overlay.create_tween().tween_property(overlay,"modulate:a",1.0,.15)
 	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
 	var dismiss:Callable=actions[0].action if confirmation and actions.size()>1 else close_modal
@@ -1505,13 +1547,24 @@ func close_modal() -> void:
 	demolition_key=""
 	if is_instance_valid(overlay):
 		if overlay.has_meta("restore_stage_visibility") and is_instance_valid(stage):stage.visible=overlay.get_meta("restore_stage_visibility")
-		ui.remove_child(overlay)
-		overlay.queue_free()
+		retire_modal(overlay)
 	overlay = null
 	modal = false
 	if is_instance_valid(joystick): joystick.clear()
 	if is_instance_valid(world): world.player.presentation_paused = not application_active
 	sync_audio()
+
+func retire_modal(closing: Control) -> void:
+	if closing.has_meta("fade_modal"):
+		closing.mouse_behavior_recursive = Control.MOUSE_BEHAVIOR_DISABLED
+		closing.process_mode = Node.PROCESS_MODE_DISABLED
+		closing.z_index = 49
+		var fade := closing.create_tween().set_pause_mode(Tween.TWEEN_PAUSE_PROCESS)
+		fade.tween_property(closing,"modulate:a",0.0,.12)
+		fade.tween_callback(closing.queue_free)
+	else:
+		ui.remove_child(closing)
+		closing.queue_free()
 
 func sync_audio() -> void:
 	if is_instance_valid(audio): audio.configure(settings.get_value("app","sound",true),application_active,screen == "play",modal,screen == "region",screen == "title")

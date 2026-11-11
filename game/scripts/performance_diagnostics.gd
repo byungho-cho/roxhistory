@@ -28,23 +28,34 @@ func tick(app: Node, _delta: float) -> void:
 		return
 	var playing:bool=app.screen=="play" and is_instance_valid(app.world)
 	var next_scene:String=app.screen
-	if playing:
+	if is_instance_valid(app.intro_cloud):
+		next_scene="first_village_transition" if app.first_village_loading else "intro_transition"
+	elif playing:
 		if app.village_entry_active():next_scene="village_entry"
 		elif app.build_side.visible:next_scene="construction_menu"
 		elif app.building_menu.visible:next_scene="building_selection_menu"
 		else:next_scene="village_popup" if app.modal else "village"
+	var now:=Time.get_ticks_usec()
 	if next_scene!=scene:
+		if last_tick>0 and scene in ["intro_transition","first_village_transition","intro"]:
+			collect_frame(now)
+			record_window(app,now,playing)
 		reset_window(next_scene)
 		previous_sample_at=0
 		entry_sampled=false
 	if scene=="village_entry" and entry_sampled:return
-	var now:=Time.get_ticks_usec()
-	if last_tick>0:
-		var ms:float=(now-last_tick)/1000.0
-		frame_times.append(ms)
-		elapsed+=ms/1000.0
+	if last_tick>0:collect_frame(now)
 	last_tick=now
 	if elapsed<(1.5 if scene=="village_entry" else INTERVAL):return
+	record_window(app,now,playing)
+
+func collect_frame(now: int) -> void:
+	var ms := (now-last_tick)/1000.0
+	frame_times.append(ms)
+	elapsed+=ms/1000.0
+
+func record_window(app: Node, now: int, playing: bool) -> void:
+	if frame_times.is_empty() or elapsed<=0.0:return
 	var working:=0
 	if playing:
 		for resident in app.world.residents:
@@ -78,6 +89,9 @@ func tick(app: Node, _delta: float) -> void:
 	sample.measured_fps=count/elapsed
 	sample.frame_p50_ms=frame_times[(count-1)/2]
 	sample.frame_p95_ms=frame_times[ceili(count*.95)-1]
+	sample.frame_max_ms=frame_times[count-1]
+	if scene in ["intro_transition","first_village_transition"]:
+		sample.transition_prepare_ms=app.transition_prepare_ms
 	entry_sampled=scene=="village_entry"
 	reset_window(scene)
 	var engine_memory:=OS.get_static_memory_usage()

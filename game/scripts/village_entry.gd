@@ -1,5 +1,6 @@
 class_name VillageEntry
 extends Control
+signal completed
 
 const DURATION:=2.8
 const BANK_A:=preload("res://assets/village-entry-v001/cloud_bank_a.png")
@@ -22,9 +23,11 @@ var perimeter:Line2D
 var perimeter_was_visible:=false
 var normal_zoom:float
 var elapsed:=0.0
+var draw_clouds: bool
 
-func _init(actor:DemoPlayer,debug_outline:Line2D)->void:
+func _init(actor:DemoPlayer,debug_outline:Line2D,with_clouds:=true)->void:
 	player=actor
+	draw_clouds=with_clouds
 	perimeter=debug_outline
 	normal_zoom=player.zoom_factor
 	name="VillageEntry"
@@ -50,7 +53,7 @@ func _process(delta:float)->void:
 		finish()
 		return
 	update_camera(smoothstep(0.0,DURATION,elapsed))
-	queue_redraw()
+	if draw_clouds:queue_redraw()
 
 func finish()->void:
 	if is_queued_for_deletion():return
@@ -63,8 +66,10 @@ func finish()->void:
 	hide()
 	set_process(false)
 	queue_free()
+	completed.emit()
 
 func _draw()->void:
+	if not draw_clouds:return
 	var extent:=get_viewport_rect().size
 	var progress:=clampf(elapsed/DURATION,0,1)
 	for i in CLOUDS.size():
