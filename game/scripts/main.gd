@@ -41,6 +41,7 @@ var transition_started_at := 0
 var transition_prepare_ms := 0.0
 var first_village_loading := false
 var title_prompt_time := 0.0
+var title_update_at := -60000
 var title_cloud_seen := false
 var task_bar: ProgressBar
 var toast_label: Label
@@ -479,6 +480,11 @@ func title_screen() -> void:
 	patch_status.process_mode=Node.PROCESS_MODE_ALWAYS
 	updates.check_status_changed.connect(patch_status.set_text)
 	patch_status.text=updates.check_status
+	var retry_update := button(stage,"업데이트 확인",check_title_update.bind(true))
+	retry_update.custom_minimum_size = Vector2.ZERO
+	retry_update.position = Vector2(w-safe.x-154,h-safe.y-42)
+	retry_update.size = Vector2(154,40)
+	retry_update.add_theme_font_size_override("font_size",16)
 	call_deferred("check_title_update")
 
 func style_start_prompt(start: DemoButton) -> void:
@@ -496,9 +502,24 @@ func style_start_prompt(start: DemoButton) -> void:
 	start.add_theme_color_override("font_color",Color("fff0d0"))
 	start.add_theme_color_override("font_outline_color",Color("49321e"));start.add_theme_constant_override("outline_size",3)
 
-func check_title_update() -> void:
-	if screen=="title" and not is_instance_valid(intro_cloud):
-		get_node("/root/PatchBootstrap/Overlay").title_ready()
+func check_title_update(manual:=false) -> void:
+	if screen!="title" or not application_active or modal or is_instance_valid(intro_cloud):return
+	if test_mode and not manual:return
+	var updates := get_node("/root/PatchBootstrap/Overlay")
+	if updates.downloading or updates.restart_pending:return
+	var now := Time.get_ticks_msec()
+	if not manual and now-title_update_at<5000:return
+	title_update_at = now
+	updates.title_active = true
+	updates.checked_title = true
+	updates.update_button.disabled = true
+	updates.status.text = "업데이트 확인 중…"
+	updates.check_status = updates.status.text
+	updates.request.cancel_request()
+	updates.request.download_file = ""
+	updates.request.body_size_limit = 8192
+	var url := str(updates.RELEASE_ROOT)+"latest.json?check="+str(Time.get_unix_time_from_system())
+	if updates.request.request(url) != OK:updates.show_failure()
 
 func start_or_continue()->void:
 	if modal or screen!="title" or not application_active or is_instance_valid(intro_cloud):return
@@ -998,6 +1019,7 @@ func _process(delta: float) -> void:
 			elif intro_preparing:intro_loading.visible = intro_stall>=1.0
 		return
 	if screen=="title" and application_active and is_instance_valid(title_prompt):
+		if Time.get_ticks_msec()-title_update_at>=60000:check_title_update()
 		title_prompt_time=fposmod(title_prompt_time+delta,3.0)
 		title_prompt.modulate.a=.87+.13*cos(title_prompt_time*TAU/3.0)
 	if is_instance_valid(toast_panel): toast_panel.visible = toast_time > 0 and toast_label.text != ""
@@ -1650,6 +1672,7 @@ func _notification(what: int) -> void:
 			if not was_demolition:model.save_position(world.player.position)
 	elif what == NOTIFICATION_APPLICATION_RESUMED or what == NOTIFICATION_APPLICATION_FOCUS_IN:
 		application_active = true
+		if screen=="title":call_deferred("check_title_update")
 		if intro_cloud_tween and intro_cloud_tween.is_valid():intro_cloud_tween.play()
 		if is_instance_valid(intro_player) and not intro_leaving:intro_player.paused = false
 		sync_audio()
