@@ -177,7 +177,14 @@ func has_pending_rewards()->bool:
 	return false
 
 func _ready() -> void:
-	if OS.has_feature("android"):Engine.max_fps=60
+	if OS.has_feature("android"):
+		Engine.max_fps=60
+		if FileAccess.file_exists("user://resident-walk-trial.txt"):
+			var trial = load("res://scripts/resident_walk_trial.gd").new()
+			trial.pose_count = 12 if FileAccess.get_file_as_string("user://resident-walk-trial.txt").strip_edges()=="12" else 6
+			add_child(trial)
+			set_process(false)
+			return
 	gestures=WorldGestures.new(self);add_child(gestures)
 	get_tree().auto_accept_quit = false
 	get_tree().quit_on_go_back = false

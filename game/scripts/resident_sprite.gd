@@ -4,6 +4,7 @@ const FRAME:=Vector2(96,120)
 const ASSET_ROOT:="res://assets/characters/residents/"
 const ROWS:={"idle":Vector2i(0,2),"walk":Vector2i(2,6),"wood":Vector2i(8,4),"stone":Vector2i(12,4),
 	"carry_wood":Vector2i(16,6),"carry_stone":Vector2i(22,6),"carry_grain":Vector2i(28,6)}
+var walk_pose_count := 6
 var direction_index:=0
 var variant:="sturdy_male"
 
@@ -11,7 +12,8 @@ static func atlas_path(kind:String)->String:
 	return ASSET_ROOT+kind.replace("_","-")+"-trial-atlas.png"
 
 func _ready()->void:
-	texture=load(atlas_path(variant))
+	var use_walk_trial := walk_pose_count==12 and variant=="sturdy_male"
+	texture=load(ASSET_ROOT+"sturdy-male-walk12-test.png" if use_walk_trial else atlas_path(variant))
 	centered=false
 	region_enabled=true
 	region_filter_clip_enabled=true
@@ -31,4 +33,8 @@ func pose(facing:Vector2,phase:float,walking:bool,action:String,action_time:floa
 	if walking or state.begins_with("carry_"):
 		cycle=fposmod(phase,TAU)/TAU
 	var track:Vector2i=ROWS[state]
-	region_rect.position=Vector2(direction_index,track.x+floori(cycle*track.y))*FRAME
+	var row := track.x+floori(cycle*track.y)
+	if state=="walk" and walk_pose_count==12 and variant=="sturdy_male":
+		var walk_frame := floori(cycle*12.0)
+		row = 2+walk_frame/2 if walk_frame%2==0 else 34+walk_frame/2
+	region_rect.position=Vector2(direction_index,row)*FRAME
