@@ -1,0 +1,555 @@
+{
+  "schema": 1,
+  "figma_file": "zkbflw9fCdAlWbphhw5pSS",
+  "preparation": "2265:75",
+  "battle": "2319:340",
+  "source_commit": "536c29fd479e65f853286fe150b34dbd935827a7",
+  "asset_base_commit": "266eda5a3222618e9456718381a78a9fe8c2bbb2",
+  "exports": [
+    {
+      "id": "2441:1182",
+      "path": "svg/vs/v.svg",
+      "format": "SVG",
+      "name": "Hunting/VS/V",
+      "width": 100,
+      "height": 104,
+      "bounds": {
+        "x": 25888,
+        "y": 380,
+        "width": 100,
+        "height": 104
+      },
+      "renderBounds": {
+        "x": 25888,
+        "y": 380,
+        "width": 101.5,
+        "height": 105.70001220703125
+      },
+      "clipsContent": false,
+      "bytes": 1461,
+      "render_offset": [
+        0,
+        0
+      ]
+    },
+    {
+      "id": "2441:1185",
+      "path": "svg/vs/s.svg",
+      "format": "SVG",
+      "name": "Hunting/VS/S",
+      "width": 100,
+      "height": 104,
+      "bounds": {
+        "x": 26096,
+        "y": 380,
+        "width": 100,
+        "height": 104
+      },
+      "renderBounds": {
+        "x": 26094.5,
+        "y": 380,
+        "width": 101.5,
+        "height": 105.70001220703125
+      },
+      "clipsContent": false,
+      "bytes": 1548,
+      "render_offset": [
+        -1.5,
+        0
+      ]
+    },
+    {
+      "id": "2441:2415",
+      "path": "svg/motifs/stone-axe.svg",
+      "format": "SVG",
+      "name": "Background/Motif/Stone axe",
+      "width": 96,
+      "height": 96,
+      "bounds": {
+        "x": 25920,
+        "y": 1240,
+        "width": 96,
+        "height": 96
+      },
+      "renderBounds": {
+        "x": 25920,
+        "y": 1240,
+        "width": 96,
+        "height": 96
+      },
+      "clipsContent": false,
+      "bytes": 610,
+      "render_offset": [
+        0,
+        0
+      ]
+    },
+    {
+      "id": "2441:2421",
+      "path": "svg/motifs/pottery.svg",
+      "format": "SVG",
+      "name": "Background/Motif/Pottery",
+      "width": 96,
+      "height": 96,
+      "bounds": {
+        "x": 26340,
+        "y": 1240,
+        "width": 96,
+        "height": 96
+      },
+      "renderBounds": {
+        "x": 26340,
+        "y": 1240,
+        "width": 96,
+        "height": 96
+      },
+      "clipsContent": false,
+      "bytes": 625,
+      "render_offset": [
+        0,
+        0
+      ]
+    },
+    {
+      "id": "2441:2426",
+      "path": "svg/motifs/tripitaka-woodblock.svg",
+      "format": "SVG",
+      "name": "Background/Motif/Tripitaka woodblock",
+      "width": 96,
+      "height": 96,
+      "bounds": {
+        "x": 26760,
+        "y": 1240,
+        "width": 96,
+        "height": 96
+      },
+      "renderBounds": {
+        "x": 26760,
+        "y": 1240,
+        "width": 96,
+        "height": 96
+      },
+      "clipsContent": false,
+      "bytes": 935,
+      "render_offset": [
+        0,
+        0
+      ]
+    },
+    {
+      "id": "2442:1569",
+      "path": "svg/power/fine-fibres.svg",
+      "format": "SVG",
+      "name": "Fine fibres / old cloud shapes hidden",
+      "width": 712,
+      "height": 178,
+      "bounds": {
+        "x": 1006,
+        "y": 2931,
+        "width": 712,
+        "height": 178
+      },
+      "renderBounds": {
+        "x": 1006,
+        "y": 2931,
+        "width": 712,
+        "height": 178
+      },
+      "clipsContent": true,
+      "bytes": 9568,
+      "render_offset": [
+        0,
+        0
+      ]
+    },
+    {
+      "id": "2442:1675",
+      "path": "png/power/deer-head.png",
+      "format": "PNG",
+      "name": "Deer / transparent head silhouette",
+      "width": 120,
+      "height": 157.5,
+      "bounds": {
+        "x": 1492,
+        "y": 2925,
+        "width": 120,
+        "height": 157.5
+      },
+      "renderBounds": {
+        "x": 1492,
+        "y": 2925,
+        "width": 120,
+        "height": 157.5
+      },
+      "clipsContent": false,
+      "bytes": 69669,
+      "render_offset": [
+        0,
+        0
+      ]
+    },
+    {
+      "id": "2402:1166",
+      "path": "svg/power/digit-0.svg",
+      "format": "SVG",
+      "name": "Glyph=0",
+      "width": 72,
+      "height": 112,
+      "bounds": {
+        "x": 23992,
+        "y": 392,
+        "width": 72,
+        "height": 112
+      },
+      "renderBounds": {
+        "x": 23992,
+        "y": 392,
+        "width": 72,
+        "height": 112
+      },
+      "clipsContent": false,
+      "bytes": 4612,
+      "render_offset": [
+        0,
+        0
+      ]
+    },
+    {
+      "id": "2402:1170",
+      "path": "svg/power/digit-1.svg",
+      "format": "SVG",
+      "name": "Glyph=1",
+      "width": 72,
+      "height": 112,
+      "bounds": {
+        "x": 24104,
+        "y": 392,
+        "width": 72,
+        "height": 112
+      },
+      "renderBounds": {
+        "x": 24104,
+        "y": 392,
+        "width": 72,
+        "height": 112
+      },
+      "clipsContent": false,
+      "bytes": 2453,
+      "render_offset": [
+        0,
+        0
+      ]
+    },
+    {
+      "id": "2402:1174",
+      "path": "svg/power/digit-2.svg",
+      "format": "SVG",
+      "name": "Glyph=2",
+      "width": 72,
+      "height": 112,
+      "bounds": {
+        "x": 24216,
+        "y": 392,
+        "width": 72,
+        "height": 112
+      },
+      "renderBounds": {
+        "x": 24216,
+        "y": 392,
+        "width": 72,
+        "height": 112
+      },
+      "clipsContent": false,
+      "bytes": 4013,
+      "render_offset": [
+        0,
+        0
+      ]
+    },
+    {
+      "id": "2402:1178",
+      "path": "svg/power/digit-3.svg",
+      "format": "SVG",
+      "name": "Glyph=3",
+      "width": 72,
+      "height": 112,
+      "bounds": {
+        "x": 24328,
+        "y": 392,
+        "width": 72,
+        "height": 112
+      },
+      "renderBounds": {
+        "x": 24328,
+        "y": 392,
+        "width": 72,
+        "height": 112
+      },
+      "clipsContent": false,
+      "bytes": 5504,
+      "render_offset": [
+        0,
+        0
+      ]
+    },
+    {
+      "id": "2402:1182",
+      "path": "svg/power/digit-4.svg",
+      "format": "SVG",
+      "name": "Glyph=4",
+      "width": 72,
+      "height": 112,
+      "bounds": {
+        "x": 24440,
+        "y": 392,
+        "width": 72,
+        "height": 112
+      },
+      "renderBounds": {
+        "x": 24440,
+        "y": 392,
+        "width": 72,
+        "height": 112
+      },
+      "clipsContent": false,
+      "bytes": 2667,
+      "render_offset": [
+        0,
+        0
+      ]
+    },
+    {
+      "id": "2402:1186",
+      "path": "svg/power/digit-5.svg",
+      "format": "SVG",
+      "name": "Glyph=5",
+      "width": 72,
+      "height": 112,
+      "bounds": {
+        "x": 24552,
+        "y": 392,
+        "width": 72,
+        "height": 112
+      },
+      "renderBounds": {
+        "x": 24552,
+        "y": 392,
+        "width": 72,
+        "height": 112
+      },
+      "clipsContent": false,
+      "bytes": 4550,
+      "render_offset": [
+        0,
+        0
+      ]
+    },
+    {
+      "id": "2402:1190",
+      "path": "svg/power/digit-6.svg",
+      "format": "SVG",
+      "name": "Glyph=6",
+      "width": 72,
+      "height": 112,
+      "bounds": {
+        "x": 24664,
+        "y": 392,
+        "width": 72,
+        "height": 112
+      },
+      "renderBounds": {
+        "x": 24664,
+        "y": 392,
+        "width": 72,
+        "height": 112
+      },
+      "clipsContent": false,
+      "bytes": 5708,
+      "render_offset": [
+        0,
+        0
+      ]
+    },
+    {
+      "id": "2402:1194",
+      "path": "svg/power/digit-7.svg",
+      "format": "SVG",
+      "name": "Glyph=7",
+      "width": 72,
+      "height": 112,
+      "bounds": {
+        "x": 24776,
+        "y": 392,
+        "width": 72,
+        "height": 112
+      },
+      "renderBounds": {
+        "x": 24776,
+        "y": 392,
+        "width": 72,
+        "height": 112
+      },
+      "clipsContent": false,
+      "bytes": 3009,
+      "render_offset": [
+        0,
+        0
+      ]
+    },
+    {
+      "id": "2402:1198",
+      "path": "svg/power/digit-8.svg",
+      "format": "SVG",
+      "name": "Glyph=8",
+      "width": 72,
+      "height": 112,
+      "bounds": {
+        "x": 24888,
+        "y": 392,
+        "width": 72,
+        "height": 112
+      },
+      "renderBounds": {
+        "x": 24888,
+        "y": 392,
+        "width": 72,
+        "height": 112
+      },
+      "clipsContent": false,
+      "bytes": 6680,
+      "render_offset": [
+        0,
+        0
+      ]
+    },
+    {
+      "id": "2402:1202",
+      "path": "svg/power/digit-9.svg",
+      "format": "SVG",
+      "name": "Glyph=9",
+      "width": 72,
+      "height": 112,
+      "bounds": {
+        "x": 25000,
+        "y": 392,
+        "width": 72,
+        "height": 112
+      },
+      "renderBounds": {
+        "x": 25000,
+        "y": 392,
+        "width": 72,
+        "height": 112
+      },
+      "clipsContent": false,
+      "bytes": 5745,
+      "render_offset": [
+        0,
+        0
+      ]
+    },
+    {
+      "id": "2402:1206",
+      "path": "svg/power/digit-comma.svg",
+      "format": "SVG",
+      "name": "Glyph=Comma",
+      "width": 32,
+      "height": 112,
+      "bounds": {
+        "x": 25112,
+        "y": 392,
+        "width": 32,
+        "height": 112
+      },
+      "renderBounds": {
+        "x": 25112,
+        "y": 392,
+        "width": 32,
+        "height": 112.27987670898438
+      },
+      "clipsContent": false,
+      "bytes": 3316,
+      "render_offset": [
+        0,
+        0
+      ]
+    },
+    {
+      "id": "2442:1674",
+      "path": "png/power/hunter-head.png",
+      "format": "PNG",
+      "name": "Hunter / transparent portrait / no box",
+      "width": 128,
+      "height": 128,
+      "bounds": {
+        "x": 1108,
+        "y": 2953,
+        "width": 128,
+        "height": 128
+      },
+      "renderBounds": {
+        "x": 1108,
+        "y": 2953,
+        "width": 128,
+        "height": 128
+      },
+      "bytes": 84494,
+      "render_offset": [
+        0,
+        0
+      ]
+    },
+    {
+      "id": "2442:1680",
+      "path": "png/power/stone-spear.png",
+      "format": "PNG",
+      "name": "Power / existing stone spear icon",
+      "width": 42,
+      "height": 42,
+      "bounds": {
+        "x": 1076.4169921875,
+        "y": 3062.109375,
+        "width": 42,
+        "height": 42
+      },
+      "renderBounds": {
+        "x": 1076.4169921875,
+        "y": 3062.109375,
+        "width": 42,
+        "height": 42
+      },
+      "bytes": 5858,
+      "render_offset": [
+        0,
+        0
+      ]
+    },
+    {
+      "id": "2441:1189",
+      "path": "png/vs/stone-spear-source.png",
+      "format": "PNG",
+      "name": "Animation part / left stone spear / independent",
+      "width": 200,
+      "height": 200,
+      "bounds": {
+        "x": 26286,
+        "y": 362,
+        "width": 200,
+        "height": 200
+      },
+      "renderBounds": {
+        "x": 26286,
+        "y": 362,
+        "width": 200,
+        "height": 200
+      },
+      "opacity": 0.7200000286102295,
+      "bytes": 89647,
+      "render_offset": [
+        0,
+        0
+      ]
+    }
+  ],
+  "snapshot_note": "Portrait exports keep prior larger source size for quality; current final placement is in layout.json."
+}
