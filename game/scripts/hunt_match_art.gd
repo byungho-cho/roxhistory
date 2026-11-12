@@ -63,13 +63,15 @@ static func versus(parent: Control, center: Vector2, span: float) -> Dictionary:
 		spear.flip_h = index==1
 		spear.pivot_offset = spear.size*.5
 		spears.append(spear)
+	var letter_layer := layer(root,Vector2.ZERO)
+	letter_layer.pivot_offset = Vector2(82,82)
 	var letters: Array[TextureRect] = [
-		picture(root,preload("res://assets/ui/hunting-match/svg/vs/v.svg"),Rect2(5,32,83.64,86.92)),
-		picture(root,preload("res://assets/ui/hunting-match/svg/vs/s.svg"),Rect2(71.5,56,83.64,86.92))
+		picture(letter_layer,preload("res://assets/ui/hunting-match/svg/vs/v.svg"),Rect2(5,32,83.64,86.92)),
+		picture(letter_layer,preload("res://assets/ui/hunting-match/svg/vs/s.svg"),Rect2(71.5,56,83.64,86.92))
 	]
 	for letter in letters:letter.pivot_offset = Vector2(41,42.64)
 	root.scale = Vector2.ONE*factor
-	return {"root":root,"spears":spears,"letters":letters}
+	return {"root":root,"spears":spears,"letter_layer":letter_layer}
 
 static func format_power(value: int) -> String:
 	if value<0:return "—"

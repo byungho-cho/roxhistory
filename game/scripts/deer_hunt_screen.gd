@@ -1,5 +1,7 @@
 extends Control
 
+signal preparation_ready
+
 const MATCH := preload("res://scripts/hunt_match_art.gd")
 const RULES := preload("res://scripts/deer_hunt_rules.gd")
 const DESIGN := Vector2(960,540)
@@ -15,7 +17,7 @@ const ALLY_ORIGIN := Vector2(272,348)
 const ENEMY_ORIGIN := ALLY_ORIGIN + CELL_X * 3.155
 const CELL_SIZE := Vector2(107,76.246)
 const NAME_BRUSH := preload("res://assets/ui/brush/resource-slot-brush@2x.png")
-const ARRIVAL_SECONDS := 1.15
+const MATCH_SEQUENCE := preload("res://scripts/hunt_match_sequence.gd")
 const TRANSITION_SECONDS := .94
 const BATTLE_CUT := .30
 const HUNTER_SLOTS := [Vector2(378,261),Vector2(249,345),Vector2(428,379)]
@@ -25,10 +27,16 @@ var app: Node
 var rules := RULES.new()
 var canvas: Control
 var header: Control
-var match_backdrop: Control
+var match_details: Control
+var match_shade: ColorRect
+var match_impact: TextureRect
+var impact_atlas: AtlasTexture
+var impact_sheets: Array[Texture2D] = []
+var arrival_variant: int
+var arrival_duration: float
+var arrival_finished := false
 var match_vs: Dictionary
 var match_deer: TextureRect
-var match_flash: ColorRect
 var match_home := Vector2.ZERO
 var battle_fade: ColorRect
 var arrival_elapsed := 0.0
@@ -167,7 +175,9 @@ func fit_layout() -> void:
 	header_left.position = start+margin-Vector2(3,0)
 	header_right.position = Vector2(end.x-DESIGN.x-margin.x+3,start.y+margin.y-3)
 	match_home = Vector2(240,start.y+margin.y)
-	if arrival_elapsed>=ARRIVAL_SECONDS:power_header.position = match_home
+	if arrival_finished:power_header.position = match_home
+	match_shade.position = -canvas.position/fit
+	match_shade.size = size/fit
 	battle_header.position = Vector2(-45,start.y+margin.y-4)
 	roster_edge.position = Vector2(start.x+margin.x,(start.y+end.y-355)*.5)
 	footer_left.position = Vector2(start.x+margin.x-3,end.y-DESIGN.y-margin.y+2)
@@ -177,6 +187,20 @@ func fit_layout() -> void:
 
 
 func build_arrival() -> void:
+	var forced := 0
+	for arg in OS.get_cmdline_user_args():
+		if arg.begins_with("--hunt-match="):
+			forced = arg.get_slice("=",1).to_int()
+	var by_ground: Dictionary = ProjectSettings.get_setting("roxhistory/hunt/match_variants_by_ground",{})
+	arrival_variant = MATCH_SEQUENCE.choose("forest_edge",forced,by_ground)
+	arrival_duration = 5.55 if arrival_variant==1 else 6.30
+	for effect in (["soft"] if arrival_variant==1 else ["medium","strong"]):
+		impact_sheets.append(load("res://assets/ui/hunting-match/effects/impact_%s.png" % effect) as Texture2D)
+	impact_atlas = AtlasTexture.new()
+	impact_atlas.filter_clip = true
+	match_impact = MATCH.picture(preparation,impact_atlas,Rect2(MATCH_SEQUENCE.CENTER-Vector2(120,120.25),Vector2(240,240)))
+	match_impact.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+	match_impact.texture_repeat = CanvasItem.TEXTURE_REPEAT_DISABLED
 	battle_fade = ColorRect.new()
 	battle_fade.color = Color("232b1e")
 	battle_fade.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -188,31 +212,27 @@ func build_arrival() -> void:
 	advance_arrival(0.0)
 
 func advance_arrival(delta: float) -> void:
-	arrival_elapsed = minf(ARRIVAL_SECONDS,arrival_elapsed+delta)
-	var time := arrival_elapsed
-	var land := smoothstep(.61,.93,time)
-	var center := DESIGN*.5-Vector2(240,49.5)
-	power_header.pivot_offset = Vector2(240,49.5)
-	power_header.position = center.lerp(match_home,land)
-	power_header.scale = Vector2.ONE*lerpf(lerpf(.72,1.24,smoothstep(0.0,.16,time)),1.0,land)
-	match_backdrop.modulate.a = smoothstep(0.0,.17,time)
-	prep_ally_portrait.modulate.a = smoothstep(.12,.29,time)
-	match_deer.modulate.a = smoothstep(.23,.40,time)
-	var cross := smoothstep(.34,.56,time)
-	for index in 2:
-		var spear: TextureRect = match_vs.spears[index]
-		var direction := -1.0 if index==0 else 1.0
-		spear.position = Vector2(-18+direction*125*(1.0-cross),-18-25*(1.0-cross))
-		spear.rotation = direction*.45*(1.0-cross)
-		spear.modulate.a = smoothstep(.34,.45,time)
-	for letter in match_vs.letters:letter.modulate.a = smoothstep(.49,.60,time)
-	match_flash.modulate.a = sin(PI*clampf((time-.49)/.16,0.0,1.0))*.5
-	for part in [header,roster_edge,placement_grid,footer_left,footer_right]:
-		var delay := .86 if part in [header,roster_edge] else .95
-		part.modulate.a = smoothstep(delay,ARRIVAL_SECONDS,time)
-	if time>=ARRIVAL_SECONDS:
+	if arrival_finished:
+		return
+	arrival_elapsed = minf(arrival_duration,arrival_elapsed+delta)
+	MATCH_SEQUENCE.render(self)
+	if arrival_elapsed>=arrival_duration:
+		arrival_finished = true
+		match_shade.hide()
+		impact_atlas.atlas = null
+		impact_sheets.clear()
 		preparation.mouse_behavior_recursive = Control.MOUSE_BEHAVIOR_INHERITED
 		header.mouse_behavior_recursive = Control.MOUSE_BEHAVIOR_INHERITED
+		preparation_ready.emit()
+
+
+func show_match_impact(index: int, elapsed: float) -> void:
+	match_impact.visible = elapsed>=0.0 and elapsed<.42 and impact_sheets[index]!=null
+	if match_impact.visible:
+		var frame := floori(elapsed*30.0)
+		impact_atlas.atlas = impact_sheets[index]
+		impact_atlas.region = Rect2((frame%4)*320,floori(frame/4.0)*320,320,320)
+
 
 func cell_center(origin: Vector2, index: int) -> Vector2:
 	return origin + CELL_X*(index%3) + CELL_Y*floori(index/3.0)
@@ -230,6 +250,10 @@ func hunter_portrait(index: int) -> Texture2D:
 
 func build_preparation() -> void:
 	preparation = layer()
+	match_shade = ColorRect.new()
+	match_shade.color = Color8(8,13,16,107)
+	match_shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	preparation.add_child(match_shade)
 	roster_edge = layer(preparation)
 	footer_left = layer(preparation)
 	footer_right = layer(preparation)
@@ -248,7 +272,7 @@ func build_preparation() -> void:
 		var portrait: TextureRect = app.picture(card,hunter_portrait(index),Rect2(5,2,85,72))
 		portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 		app.picture(card,preload("res://assets/ui/hunting-formation/swap.svg"),Rect2(71,53,24,24))
-	select_hunter(0)
+	portrait_frames[0].texture = PORTRAIT_SELECTED
 	var start := artwork_button(footer_right,Rect2(797,487,160,50),"사냥 시작","png/preparation/start-battle-background.png",start_combat,ink)
 	start.name = "StartBattle"
 	var quick := artwork_button(footer_right,Rect2(629,487,160,50),"빠른 출전","png/preparation/quick-sortie-background.png",func():pass)
@@ -280,22 +304,17 @@ func build_preparation_plaque() -> void:
 	caption(bag,"가방",Rect2(4,41,48,19),12)
 
 func build_power_comparison() -> void:
-	match_backdrop = MATCH.backdrop(power_header)
+	power_header.pivot_offset = MATCH_SEQUENCE.PIVOT
+	match_details = MATCH.layer(power_header,Vector2.ZERO)
+	MATCH.backdrop(match_details)
 	for x in [97.8,259.0]:
-		MATCH.picture(power_header,MATCH.BRUSH,Rect2(x,78,124,12)).modulate.a = .72
-	prep_ally_portrait = MATCH.picture(power_header,preload("res://assets/ui/hunting-match/png/power/hunter-head.png"),Rect2(138.2,20.4,51.2,51.2))
-	match_deer = MATCH.picture(power_header,preload("res://assets/ui/hunting-match/png/power/deer-head.png"),Rect2(293,7.875,48,63))
+		MATCH.picture(match_details,MATCH.BRUSH,Rect2(x,78,124,12)).modulate.a = .72
+	prep_ally_portrait = MATCH.picture(power_header,preload("res://assets/ui/hunting-match/png/power/hunter-head.png"),Rect2(MATCH_SEQUENCE.ALLY,Vector2(51.2,51.2)))
+	match_deer = MATCH.picture(power_header,preload("res://assets/ui/hunting-match/png/power/deer-head.png"),Rect2(MATCH_SEQUENCE.DEER,Vector2(48,63)))
 	match_vs = MATCH.versus(power_header,Vector2(240,49),57.4)
-	match_flash = ColorRect.new()
-	match_flash.color = Color("ffe3a1")
-	match_flash.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	match_flash.position = Vector2(224,47)
-	match_flash.size = Vector2(32,2)
-	match_flash.rotation = -.30
-	power_header.add_child(match_flash)
 	# Ratings are display data. No combat rule currently defines a power formula.
-	MATCH.power(power_header,Vector2(159.8,66),-1)
-	MATCH.power(power_header,Vector2(321,66),-1)
+	MATCH.power(match_details,Vector2(159.8,66),-1)
+	MATCH.power(match_details,Vector2(321,66),-1)
 
 
 func clear_button_art(control: DemoButton) -> void:
@@ -303,7 +322,7 @@ func clear_button_art(control: DemoButton) -> void:
 		control.add_theme_stylebox_override(state,StyleBoxEmpty.new())
 
 func select_hunter(index: int) -> void:
-	if transition_elapsed>=0 or running:return
+	if not arrival_finished or transition_elapsed>=0 or running:return
 	selected_hunter = index
 	for i in portrait_frames.size():
 		portrait_frames[i].texture = PORTRAIT_SELECTED if i==index else PORTRAIT_FRAME
@@ -403,7 +422,7 @@ func artwork_button(parent: Control, rect: Rect2, label: String, asset: String, 
 	return button
 
 func request_exit() -> void:
-	if arrival_elapsed<ARRIVAL_SECONDS:
+	if not arrival_finished:
 		app.close_hunt()
 		return
 	if transition_elapsed>=0:return
@@ -538,7 +557,7 @@ func _input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 
 func _gui_input(event: InputEvent) -> void:
-	if arrival_elapsed<ARRIVAL_SECONDS or exit_popup or not app.application_active or app.modal:return
+	if not arrival_finished or exit_popup or not app.application_active or app.modal:return
 	if running and not result_shown:
 		if event is InputEventMagnifyGesture:
 			zoom = clampf(zoom*event.factor,1.0,1.55)
@@ -566,7 +585,7 @@ func move_hunter(index: int) -> void:
 	assigned_cells[selected_hunter] = index
 
 func start_combat() -> void:
-	if arrival_elapsed<ARRIVAL_SECONDS or running or transition_elapsed>=0 or not app.application_active or app.modal:return
+	if not arrival_finished or running or transition_elapsed>=0 or not app.application_active or app.modal:return
 	transition_elapsed = 0.0
 	battle_fade.modulate.a = 0.0
 	battle_fade.show()
@@ -620,7 +639,7 @@ func play_pose(id: String) -> void:
 func _process(delta: float) -> void:
 	if not app.application_active or exit_popup or app.modal:return
 	sound_delay = maxf(0.0,sound_delay-delta)
-	if arrival_elapsed<ARRIVAL_SECONDS:advance_arrival(delta)
+	if not arrival_finished:advance_arrival(delta)
 	var elapsed := delta*speed
 	pose_clock += elapsed
 	basic_recoil = maxf(0.0,basic_recoil-elapsed)
@@ -699,7 +718,7 @@ func update_camera(delta: float) -> void:
 			center /= hunters.size()
 		focus = focus.lerp(center,.45*accent)
 		target += .12*accent
-	var weight := 1.0 if delta==0.0 or arrival_elapsed<ARRIVAL_SECONDS or transition_elapsed>=0 else 1.0-exp(-delta*11.0)
+	var weight := 1.0 if delta==0.0 or not arrival_finished or transition_elapsed>=0 else 1.0-exp(-delta*11.0)
 	battlefield.scale = battlefield.scale.lerp(Vector2.ONE*target,weight)
 	var anchor := Vector2(480,285).lerp(focus,clampf((battlefield.scale.x-1.0)*2.0,0.0,1.0))
 	battlefield.position = battlefield.position.lerp(anchor-focus*battlefield.scale,weight)
