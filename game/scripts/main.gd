@@ -169,7 +169,6 @@ func update_quest()->void:
 		var cost:=model.building_cost(kind,2 if current==5 else 1)
 		quest_wood.text="%d/%d"%[mini(int(model.state.wood),int(cost.wood)),int(cost.wood)]
 		quest_stone.text="%d/%d"%[mini(int(model.state.stone),int(cost.stone)),int(cost.stone)]
-		objective.get_parent().tooltip_text=FirstQuests.OBJECTIVES[current] if current>=0 else "첫 여정 완료"
 
 func has_pending_rewards()->bool:
 	for i in model.built_count():
