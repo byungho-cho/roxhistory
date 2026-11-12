@@ -5,7 +5,6 @@ const CYCLE := 5.5
 const LETTER_INTERVAL := 1.1
 const LETTER_LIFETIME := 2.5
 const INK:=Color("ecf7ff")
-const OUTLINE:=Color("334b59")
 var model:GameState
 var key:String
 var sprite:Sprite2D
@@ -42,7 +41,7 @@ func glyph_sample(index:int)->Dictionary:
 	var progress := clampf(elapsed/LETTER_LIFETIME,0.0,1.0)
 	var alpha := smoothstep(0.0,.22,progress)*(1.0-smoothstep(.42,1.0,progress))*.9
 	return {
-		"position": Vector2(float(index)*34.0+progress*12.0,-progress*52.0),
+		"position": Vector2(34.0,-10.0)*float(index)+Vector2(52.0,-15.0)*progress,
 		"size": roundi(44.0+progress*28.0),
 		"alpha": alpha,
 	}
@@ -54,6 +53,4 @@ func _draw()->void:
 		var glyph:=glyph_sample(index)
 		if glyph.alpha<=0.0:continue
 		var ink:=INK;ink.a=glyph.alpha
-		var outline:=OUTLINE;outline.a=glyph.alpha*.85
-		draw_string_outline(font,glyph.position,"z",HORIZONTAL_ALIGNMENT_LEFT,-1,glyph.size,6,outline)
 		draw_string(font,glyph.position,"z",HORIZONTAL_ALIGNMENT_LEFT,-1,glyph.size,ink)
