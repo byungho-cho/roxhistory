@@ -79,6 +79,9 @@ func index()->int:
 		if app.model.home_key(i)==selected_key:return i
 	return -1
 func hit_key(at:Vector2)->String:
+	if is_instance_valid(app.resident_panel):
+		var bubble_key: String = app.resident_panel.building_at_bubble(app.world.get_global_transform_with_canvas()*at)
+		if not bubble_key.is_empty():return bubble_key
 	var signs: BuildingUpgradeSigns = app.stage.get_node_or_null("BuildingUpgradeSigns")
 	if signs:
 		var sign_key := signs.hit_key(app.world.get_global_transform_with_canvas()*at)

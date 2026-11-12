@@ -116,6 +116,21 @@ func show_building(key:String)->void:
 		art(row,icon("idle"),Vector2(48,48));var text:Label=app.label(row,display_name(id)+" · "+job_name(item.job),18);text.size_flags_horizontal=Control.SIZE_EXPAND_FILL
 		var target:int=index;var button:=action(row,"배정",func():assign(target,job,key));button.disabled=id in assigned or (not multiple and not assigned.is_empty())
 	app.label(list,"선택한 주민의 기존 배정은 해제됩니다.",15)
+func assignment_menu_open(key: String) -> bool:
+	return app.building_menu.visible and app.building_menu.selected_key == key
+
+func building_at_bubble(screen_point: Vector2) -> String:
+	if app.choosing_plot:return ""
+	for key in bubbles:
+		var button: DemoButton = bubbles[key]
+		if button.is_visible_in_tree() and button.get_global_rect().has_point(screen_point):
+			return key
+	return ""
+
+func open_bubble_assignment(key: String) -> void:
+	if assignment_menu_open(key) and not app.choosing_plot and not app.modal:
+		show_building(key)
+
 func _process(_delta:float)->void:
 	if not is_instance_valid(app.world):return
 	var keys:Array[String]=[]
@@ -126,7 +141,7 @@ func _process(_delta:float)->void:
 		if not key in keys:bubbles[key].queue_free();bubbles.erase(key)
 	for key in keys:
 		if not bubbles.has(key):
-			var target:=key;var button:DemoButton=app.button(self,"",func():show_building(target));button.name="AssignmentBubble_"+key.replace(":","_")
+			var target:=key;var button:DemoButton=app.button(self,"",open_bubble_assignment.bind(target));button.name="AssignmentBubble_"+key.replace(":","_")
 			var frame:=StyleBoxFlat.new();frame.bg_color=Color("f4e5bf");frame.border_color=Color("aa8348");frame.set_border_width_all(1);frame.set_corner_radius_all(8)
 			for state in ["normal","hover","pressed","disabled","focus"]:button.add_theme_stylebox_override(state,StyleBoxEmpty.new())
 			button.custom_minimum_size=Vector2(46,44);button.size=button.custom_minimum_size
@@ -134,8 +149,11 @@ func _process(_delta:float)->void:
 			var portrait:=art(visual,icon("idle"),Vector2.ZERO);portrait.name="AssignmentPortrait";portrait.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT);bubbles[key]=button
 		var button:DemoButton=bubbles[key];var occupant:=ResidentJobs.new(app.model).assigned_to(key)
 		button.get_node("BubbleVisual/AssignmentPortrait").modulate.a=1.0 if key=="chief" or not occupant.is_empty() else .18
-		button.tooltip_text="전체 주민 배분" if key=="chief" else "주민 배정 · "+("미배정" if occupant.is_empty() else display_name(occupant))
-		var emphasized:bool=app.building_menu.visible and app.building_menu.selected_key==key
+		var emphasized := assignment_menu_open(key)
+		var input_filter := Control.MOUSE_FILTER_STOP if emphasized and not app.choosing_plot else Control.MOUSE_FILTER_IGNORE
+		if button.mouse_filter != input_filter:
+			button.clear()
+			button.mouse_filter = input_filter
 		button.get_node("BubbleVisual").scale=Vector2.ONE*(1.0 if emphasized else .5)
 		var sprite:Sprite2D=app.world.building_sprite(key)
 		button.visible=not app.modal and app.screen=="play" and not app.world_map_open and is_instance_valid(sprite) and sprite.is_visible_in_tree()

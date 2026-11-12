@@ -7,6 +7,10 @@ var finger := -1
 var working:=false
 var art_feedback:Control
 
+func _get_tooltip(_at_position: Vector2) -> String:
+	return ""
+
+
 func enable_art_feedback() -> void:
 	if art_feedback:return
 	art_feedback=Control.new();art_feedback.name="PressVisuals";art_feedback.mouse_filter=Control.MOUSE_FILTER_IGNORE

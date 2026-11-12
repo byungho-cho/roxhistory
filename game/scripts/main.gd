@@ -1124,16 +1124,16 @@ func play_hud(spread:=false) -> void:
 	return_village_button=button(stage,"",return_to_village)
 	return_village_button.name="ReturnToVillage"
 	return_village_button.custom_minimum_size=Vector2.ZERO
-	return_village_button.position=Vector2(w-safe.x-103,maxf(safe.y+176,action_row.position.y-63))
-	return_village_button.size=Vector2(96,42)
-	return_village_button.tooltip_text="마을로"
+	return_village_button.position=Vector2(w-safe.x-48,(h-48)*.5)
+	return_village_button.size=Vector2(48,48)
+	return_village_button.set_meta("semantic_text","마을로")
 	for state in ["normal","hover","pressed","focus"]:
 		return_village_button.add_theme_stylebox_override(state,StyleBoxEmpty.new())
 	var return_icon := AtlasTexture.new()
 	return_icon.atlas = preload("res://assets/ui/title-hanbando/return-village-v1.png")
 	return_icon.region = Rect2(149,164,930,950)
 	return_icon.filter_clip = true
-	picture(return_village_button,return_icon,Rect2(48,-3,48,48))
+	picture(return_village_button,return_icon,Rect2(0,0,48,48))
 	return_village_button.z_index=36
 	return_village_button.hide()
 	debug_shortcut=button(stage,"",toggle_performance_debug)

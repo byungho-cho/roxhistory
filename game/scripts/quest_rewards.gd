@@ -54,11 +54,11 @@ static func caption(app:Node,parent:Control,value:String,rect:Rect2,font_size:in
 	return label
 
 static func install_entry(app:Node)->Label:
-	var at:=Vector2(app.safe.x,app.h-app.safe.y-87)
-	var journal:=art_button(app,app.stage,"JournalButton",Rect2(at,Vector2(64,83)),app.quest_details)
+	var at:=Vector2(app.safe.x,app.action_row.position.y)
+	var journal:=art_button(app,app.stage,"JournalButton",Rect2(at,Vector2(64,77)),app.quest_details)
 	journal.z_index=35
 	entry_art(app,journal,DemoArt.play_icon("scroll"),"임무",219.0/244.0,1.2)
-	var button:=art_button(app,app.stage,"QuestRewardEntry",Rect2(at+Vector2(67,0),Vector2(64,83)),func():
+	var button:=art_button(app,app.stage,"QuestRewardEntry",Rect2(at+Vector2(67,0),Vector2(64,77)),func():
 		if not app.modal and not app.world_map_open and not app.map_transition_active:open(app))
 	button.z_index=35
 	entry_art(app,button,part(ICONS,BAG),"보상",303.0/310.0)
@@ -79,12 +79,17 @@ static func entry_art(app:Node,button:DemoButton,icon:Texture2D,title:String,vis
 	var base_size:=dimensions*minf(54.0/dimensions.x,54.0/dimensions.y)
 	var display_size:=base_size*icon_scale
 	var baseline_offset := visible_height*display_size.y
-	var entry_icon:TextureRect=app.picture(button,trimmed,Rect2(Vector2((64-display_size.x)*.5,56-baseline_offset),display_size))
+	var entry_icon:TextureRect=app.picture(button,trimmed,Rect2(Vector2((64-display_size.x)*.5,68-baseline_offset),display_size))
 	entry_icon.name="EntryIcon"
 	entry_icon.set_meta("visible_baseline",baseline_offset)
-	var brush:TextureRect=app.picture(button,preload("res://assets/ui/construction-side-v006/brush.png"),Rect2(0,49,64,26))
+	var brush_texture := AtlasTexture.new()
+	brush_texture.atlas = preload("res://assets/ui/construction-side-v006/brush.png")
+	brush_texture.region = Rect2(0,160,2172,410)
+	brush_texture.filter_clip = true
+	var brush := app.picture(button,brush_texture,Rect2(0,63,64,14)) as TextureRect
+	brush.stretch_mode = TextureRect.STRETCH_SCALE
 	brush.modulate.a=.8
-	caption(app,button,title,Rect2(0,50,64,24),14,CREAM)
+	caption(app,button,title,Rect2(0,55,64,22),14,CREAM)
 
 static func open(app:Node)->void:
 	app.show_modal("","",[],false,true)

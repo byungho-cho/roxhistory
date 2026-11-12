@@ -80,10 +80,6 @@ func _process(_delta:float)->void:
 		art.position=Vector2.ONE*(hit_extent-visual_extent)*.5
 		marker.size=Vector2.ONE*hit_extent
 		marker.position=south-Vector2(hit_extent*.5,hit_extent*.8)
-		if app.building_menu.visible and app.building_menu.selected_key==key:
-			var menu_action:Rect2=app.building_menu.upgrade_button.get_global_rect()
-			if menu_action.has_point(marker.get_global_rect().get_center()):
-				marker.position.y=menu_action.position.y-hit_extent-4.0
 		var hit_bounds := marker.get_global_rect()
 		marker.visible = screen.intersects(bounds) and screen.intersects(hit_bounds)
 		# Sort at the ground anchor so the building cannot cover its own sign.
