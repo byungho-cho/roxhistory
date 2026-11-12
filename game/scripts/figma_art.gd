@@ -70,6 +70,9 @@ static func button(parent:Node,key:String,rect:Rect2,value:String,callback:Calla
 	node.add_theme_font_size_override("font_size",1);parent.add_child(node)
 	picture(node,key,Rect2(Vector2.ZERO,rect.size))
 	if value!="":text(node,value,Rect2(Vector2.ZERO,rect.size),35,TITLE,Color("401a05"))
-	node.pressed.connect(callback);node.pressed.connect(func():app.audio.cue("ui"))
+	node.pressed.connect(func():
+		var popup_before: int = app.popup_sound_revision
+		callback.call()
+		if popup_before == app.popup_sound_revision:app.audio.cue("ui"))
 	node.unavailable.connect(func(reason:String):app.toast(reason,2.5))
 	return node

@@ -4,11 +4,11 @@ const FRAME:=Vector2(96,120)
 const ASSET_ROOT:="res://assets/characters/residents/"
 const ROWS:={"idle":Vector2i(0,2),"walk":Vector2i(2,6),"wood":Vector2i(8,4),"stone":Vector2i(12,4),
 	"carry_wood":Vector2i(16,6),"carry_stone":Vector2i(22,6),"carry_grain":Vector2i(28,6)}
-var female_trial := false
 var direction_index:=0
 var variant:="sturdy_male"
 
 static func atlas_path(kind:String)->String:
+	if kind == "female":return ASSET_ROOT+"female-meshy6k-work-atlas.png"
 	return ASSET_ROOT+kind.replace("_","-")+"-trial-atlas.png"
 
 func _ready()->void:
@@ -20,11 +20,6 @@ func _ready()->void:
 	scale=Vector2.ONE*(.46/1.5)*4.0*(1.08 if variant=="female" else 1.16)
 	position=-Vector2(48,107)*scale
 	region_rect=Rect2(Vector2.ZERO,FRAME)
-
-func set_female_trial(enabled: bool) -> void:
-	if female_trial == enabled:return
-	female_trial = enabled
-	texture = preload("res://assets/characters/residents/female-meshy6k-trial-atlas.png") if enabled else load(atlas_path(variant))
 
 func pose(facing:Vector2,phase:float,walking:bool,action:String,action_time:float,idle_time:float,cargo:Dictionary)->void:
 	if facing.length_squared()>.01:

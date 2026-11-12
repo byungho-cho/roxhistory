@@ -25,12 +25,13 @@ var last_interface_ms := -1000
 const APPROVED := {
 	"ui":"menu-stone-tap", "building_select":"building-select", "bird":"bird-calls",
 	"complete":"construction-complete", "reward":"reward-obtain", "river":"river-flow",
-	"hearth":"hearth-fire", "popup_open":"popup-open", "popup_close":"popup-close",
+	"hearth":"hearth-fire",
 }
 const REGION_MUSIC_DB := -10.0
 const PLAY_MUSIC_DB := -12.0
 const REGION_WATER_DB := -25.0
 const INTERFACE_GAP_MS := 75
+const ACTION_CUES := ["quest_click","action_click","popup_open","popup_close","map_open","map_close"]
 
 func _ready() -> void:
 	nature_random.randomize()
@@ -38,6 +39,12 @@ func _ready() -> void:
 		streams[key] = load("res://assets/audio/"+key+".wav")
 	for key in APPROVED:
 		streams[key] = load("res://assets/audio/d0004-approved/"+APPROVED[key]+".wav")
+	streams["quest_click"] = preload("res://assets/audio/d0001-approved/quest-click.wav")
+	streams["action_click"] = preload("res://assets/audio/d0001-approved/action-click.wav")
+	streams["popup_open"] = preload("res://assets/audio/d0001-approved/popup-open.mp3")
+	streams["popup_close"] = preload("res://assets/audio/d0001-approved/popup-close.mp3")
+	streams["map_open"] = preload("res://assets/audio/d0001-approved/map-open.mp3")
+	streams["map_close"] = preload("res://assets/audio/d0001-approved/map-close.mp3")
 	for key in ["wood","stone","build","demolish"]:
 		streams["recorded_"+key]=load("res://assets/audio/recorded-actions-v001/"+key+"-hit.wav")
 	streams["recorded_stone"] = preload("res://assets/audio/village-sfx-v02/stone-gather-v02.wav")
@@ -155,6 +162,10 @@ func cue(key: String) -> void:
 		# Replace their previous tail instead of stacking up to four 250ms cues.
 		for previous in voices:
 			if previous.stream in [streams.get("ui"),streams.get("select"),streams.get("building_select")]:previous.stop()
+	if key in ACTION_CUES:
+		for previous in voices:
+			if previous.has_meta("action_cue") and previous.get_meta("action_cue"):
+				previous.stop()
 	var work := key in ["wood","stone","build"]
 	if work:
 		variant = (variant+1)%2
@@ -167,6 +178,7 @@ func cue(key: String) -> void:
 	voice.stream = streams[key]
 	voice.bus = &"Environment" if key == "bird" else &"SFX"
 	voice.set_meta("work",work)
+	voice.set_meta("action_cue",key in ACTION_CUES)
 	voice.volume_db = -8 if work else (-20 if key == "bird" else -12)
 	voice.pitch_scale = nature_random.randf_range(.96,1.02) if key == "bird" else 1.0
 	voice.play()

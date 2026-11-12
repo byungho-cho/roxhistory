@@ -5,6 +5,7 @@ var resident_id:=""
 var jobs:ResidentJobs
 var job_phase:="idle"
 var job_target:=""
+var gather_visual_target:=Vector2.ZERO
 var job_kind:="idle"
 var job_timer:=0.0
 var job_route:=PackedVector2Array()
@@ -100,6 +101,8 @@ func _physics_process(delta:float)->void:
 		var facing:Vector2=(farm_origin-position).normalized() if action=="farm_care" or (job_kind=="farmer" and job_phase=="harvest") else velocity.normalized()
 		var action_time:=duty_clock if action in ["farm_care","guard"] else maxf(0,(1.2 if job_kind=="farmer" else gather_seconds())-job_timer)
 		if resident_sprite:
+			if variant == "female" and action in ["wood","stone"]:
+				facing = (gather_visual_target-position).normalized()
 			resident_sprite.pose(facing,phase,travelled>.01,action,action_time,idle_time,cargo)
 		else:
 			carried_load.update_load(cargo)
@@ -178,7 +181,8 @@ func _job_tick(delta:float)->bool:
 		for node in candidates:
 			if node.kind!=job_kind or int(jobs.model.state.depleted.get(node.id,0))>=int(node.charges) or not jobs.model.gather_available(node.id,resident_id):continue
 			for side in [Vector2(0,65),Vector2(65,0),Vector2(-65,0),Vector2(0,-65)]:
-				if _plan_job_route(DemoConfig.point(node.position)+side) and jobs.model.claim_gather(node.id,resident_id):job_target=node.id;job_phase="travel";break
+				if _plan_job_route(DemoConfig.point(node.position)+side) and jobs.model.claim_gather(node.id,resident_id):
+					job_target=node.id;gather_visual_target=DemoConfig.point(node.position);job_phase="travel";break
 			if not job_route.is_empty():break
 		if job_route.is_empty():_job_wait();return true
 	if job_route.is_empty():return true

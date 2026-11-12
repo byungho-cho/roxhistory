@@ -147,7 +147,9 @@ func camera_modal()->bool:
 func toggle_quest()->void:
 	quest_expanded=not quest_expanded
 	update_quest()
+	audio.cue("quest_click")
 
+var popup_sound_revision := 0
 var quest_reward_count:Label
 
 func update_quest()->void:
@@ -347,7 +349,7 @@ func paragraph(parent: Node, text: String, font_size: int = 19, color: Color = C
 	l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	return l
 
-func button(parent: Node, text: String, callback: Callable, primary: bool = false, icon_key: String = "") -> DemoButton:
+func button(parent: Node, text: String, callback: Callable, primary: bool = false, icon_key: String = "", click_cue: String = "ui") -> DemoButton:
 	var b := DemoButton.new()
 	b.texture_filter=CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	b.text = text
@@ -360,9 +362,11 @@ func button(parent: Node, text: String, callback: Callable, primary: bool = fals
 		b.expand_icon = true
 		b.add_theme_constant_override("icon_max_width",42)
 		b.add_theme_constant_override("h_separation",8)
-	b.pressed.connect(callback)
 	b.pressed.connect(func():
-		audio.cue("ui"))
+		var popup_before := popup_sound_revision
+		callback.call()
+		if not click_cue.is_empty() and popup_before == popup_sound_revision:
+			audio.cue(click_cue))
 	b.unavailable.connect(func(reason: String): toast(reason,2.5))
 	parent.add_child(b)
 	return b
@@ -883,7 +887,6 @@ func prepare_intro_world() -> void:
 	title_world_progress = 0.0
 	var world_started := Time.get_ticks_usec()
 	var assembling_world := DemoWorld.new(model)
-	assembling_world.female_resident_trial = female_resident_trial_enabled()
 	assembling_world.spread_startup = true
 	assembling_world.startup_progress.connect(func(progress: float):title_world_progress = progress)
 	assembling_world.hide()
@@ -1043,7 +1046,6 @@ func enter_game(first_entry:=false,spread_hud:=false) -> void:
 	if not is_instance_valid(world):
 		var world_started := Time.get_ticks_usec()
 		world = DemoWorld.new(model)
-		world.female_resident_trial = female_resident_trial_enabled()
 		add_child(world)
 		intro_probe_step("world",world_started)
 		world.feedback.sound_cue.connect(audio.cue)
@@ -1100,7 +1102,7 @@ func play_hud(spread:=false) -> void:
 	performance_hud.position=Vector2(w-safe.x-193,safe.y+156)
 	performance_hud.visible=PerformanceDiagnostics.hud_enabled(settings)
 	performance_hud.update_sample(performance_diagnostics.latest)
-	var quest_panel:=button(stage,"",toggle_quest);quest_panel.name="QuestPanel";quest_panel.z_index=40;quest_panel.custom_minimum_size=Vector2.ZERO
+	var quest_panel:=button(stage,"",toggle_quest,false,"","");quest_panel.name="QuestPanel";quest_panel.z_index=40;quest_panel.custom_minimum_size=Vector2.ZERO
 	quest_panel.position=Vector2(safe.x,safe.y+(112 if w<h else 59));quest_panel.size=Vector2(240,84)
 	for state in ["normal","hover","pressed","focus"]:quest_panel.add_theme_stylebox_override(state,StyleBoxEmpty.new())
 	var quest_bg:=picture(quest_panel,preload("res://assets/ui/v0158/quest-hud-paper.png"),Rect2(0,0,240,84))
@@ -1146,8 +1148,8 @@ func play_hud(spread:=false) -> void:
 	update_debug_shortcut()
 	for data in [["사냥","spear"],["채집","berries"],["제작","hammer"],["가방","bag"],["건설","hut"]]:
 		var caption:String=data[0]
-		var callback:Callable=open_hunt if caption=="사냥" else gather_action if caption=="채집" else construction_menu if caption=="건설" else inventory_summary if caption=="가방" else func():toast("아직 준비 중인 기능입니다")
-		var b:=button(action_row,caption,callback,false,data[1]);b.custom_minimum_size=Vector2(action_width,72)
+		var callback:Callable=open_hunt if caption=="사냥" else gather_from_menu if caption=="채집" else construction_menu if caption=="건설" else inventory_summary if caption=="가방" else func():toast("아직 준비 중인 기능입니다")
+		var b:=button(action_row,caption,callback,false,data[1],"");b.custom_minimum_size=Vector2(action_width,72)
 		b.set_meta("permanent_action",true)
 		b.set_meta("auxiliary_action",caption!="건설")
 		if caption=="사냥":b.name="HuntButton"
@@ -1169,7 +1171,7 @@ func play_hud(spread:=false) -> void:
 			build_lock_icon=picture(b,IntegratedMenuArt.lock_icon(),Rect2(3,37,23,23))
 			build_lock_icon.visible=first_construction_locked()
 			b.disabled=build_lock_icon.visible
-	menu_toggle=button(action_row,"‹",toggle_menu);menu_toggle.name="MenuToggle";menu_toggle.custom_minimum_size=Vector2(56,56);menu_toggle.size_flags_vertical=Control.SIZE_SHRINK_CENTER;menu_toggle.hint_text="보조 메뉴 펼침·접힘"
+	menu_toggle=button(action_row,"‹",toggle_menu,false,"","");menu_toggle.name="MenuToggle";menu_toggle.custom_minimum_size=Vector2(56,56);menu_toggle.size_flags_vertical=Control.SIZE_SHRINK_CENTER;menu_toggle.hint_text="보조 메뉴 펼침·접힘"
 	menu_toggle.icon=null;menu_toggle.expand_icon=true;menu_toggle.add_theme_constant_override("icon_max_width",54)
 	var circle:=StyleBoxEmpty.new()
 	for state in ["normal","hover","pressed","focus"]:menu_toggle.add_theme_stylebox_override(state,circle)
@@ -1201,7 +1203,7 @@ func play_hud(spread:=false) -> void:
 	world_map = null
 	if spread:await get_tree().process_frame
 	intro_probe_step("hud_map",map_started)
-	map_toggle=button(stage,"",toggle_world_map);map_toggle.icon=AssetCatalog.texture("UI-MAP");map_toggle.expand_icon=true;map_toggle.add_theme_constant_override("icon_max_width",48);map_toggle.custom_minimum_size=Vector2.ZERO;map_toggle.position=Vector2(w-safe.x-64,safe.y+90);map_toggle.size=Vector2(56,56);map_toggle.z_index=31
+	map_toggle=button(stage,"",toggle_world_map,false,"","");map_toggle.icon=AssetCatalog.texture("UI-MAP");map_toggle.expand_icon=true;map_toggle.add_theme_constant_override("icon_max_width",48);map_toggle.custom_minimum_size=Vector2.ZERO;map_toggle.position=Vector2(w-safe.x-64,safe.y+90);map_toggle.size=Vector2(56,56);map_toggle.z_index=31
 	for state in ["normal","hover","pressed","focus"]:map_toggle.add_theme_stylebox_override(state,StyleBoxEmpty.new())
 	var settings_button:=button(stage,"",pause_game);settings_button.name="SettingsButton";settings_button.z_index=31
 	settings_button.icon=load("res://assets/ui/review-v037/settings-figma.png");settings_button.expand_icon=true
@@ -1242,6 +1244,7 @@ func switch_map_scene()->void:
 		stage.move_child(world_map,0)
 	chrome.clear_effects()
 	world_map_open=not world_map_open
+	audio.cue("map_open" if world_map_open else "map_close")
 	gestures.clear()
 	world_map.activate(world_map_open)
 	world.visible=not world_map_open
@@ -1290,6 +1293,7 @@ func toggle_menu()->void:
 	if is_instance_valid(gestures):gestures.clear()
 	menu_expanded=not menu_expanded
 	apply_menu_state(true)
+	audio.cue("action_click")
 
 func apply_menu_state(animated:bool=false)->void:
 	if not is_instance_valid(action_row):return
@@ -1482,30 +1486,33 @@ func _process(delta: float) -> void:
 		autosave = 0
 		model.save_position(world.player.position)
 
-func gather_action(selected_id:String="") -> void:
-	if modal or gestures.blocked or screen != "play": return
+func gather_from_menu() -> void:
+	if gather_action():audio.cue("action_click")
+
+func gather_action(selected_id:String="") -> bool:
+	if modal or gestures.blocked or screen != "play": return false
 	if task!="":
 		reserve_action({"kind":"gather","id":selected_id})
-		return
+		return pending_action.get("kind","") == "gather" and pending_action.get("id","") == selected_id
 	var n := world.nearest()
 	if selected_id!="":
 		n={}
 		for candidate in model.nodes():
 			if candidate.id==selected_id and not world.exhausted(candidate):n=candidate;break
-		if n.is_empty():toast("예약한 채집 대상이 사라졌어요");return
-	if not n.is_empty() and ResourceStorage.room(model,n.kind)<=0:toast("%s 저장 공간이 가득 찼어요"%("목재" if n.kind=="wood" else "석재"));return
+		if n.is_empty():toast("예약한 채집 대상이 사라졌어요");return false
+	if not n.is_empty() and ResourceStorage.room(model,n.kind)<=0:toast("%s 저장 공간이 가득 찼어요"%("목재" if n.kind=="wood" else "석재"));return false
 	if not n.is_empty() and not model.gather_available(n.id,"hero"):
-		toast("다른 채집자가 선택한 대상이에요");return
+		toast("다른 채집자가 선택한 대상이에요");return false
 	if n.is_empty():
 		var candidates:=model.nodes().filter(func(c):return model.gather_available(c.id,"hero") and not world.exhausted(c) and world.player.position.distance_to(DemoConfig.point(c.position))<=GATHER_SEARCH_RADIUS)
 		candidates.sort_custom(func(a,b):return world.player.position.distance_squared_to(DemoConfig.point(a.position))<world.player.position.distance_squared_to(DemoConfig.point(b.position)))
 		for candidate in candidates:
-			if navigation.start("gather",candidate.id,world.gather_stand(DemoConfig.point(candidate.position),candidate.kind),0,[],true):return
-		toast("주변에 접근 가능한 채집물이 없어요");return
+			if navigation.start("gather",candidate.id,world.gather_stand(DemoConfig.point(candidate.position),candidate.kind),0,[],true):return true
+		toast("주변에 접근 가능한 채집물이 없어요");return false
 	if world.player.position.distance_to(DemoConfig.point(n.position))>float(DemoConfig.get_data().interact_radius):
-		navigation.start("gather",n.id,world.gather_stand(DemoConfig.point(n.position),n.kind));return
+		return navigation.start("gather",n.id,world.gather_stand(DemoConfig.point(n.position),n.kind))
 	navigation.cancel()
-	if not model.claim_gather(n.id,"hero"):return
+	if not model.claim_gather(n.id,"hero"):return false
 	task = "gather"
 	world.player.face_target(DemoConfig.point(n.position))
 	var target_point:=DemoConfig.point(n.position)
@@ -1519,6 +1526,7 @@ func gather_action(selected_id:String="") -> void:
 	task_remaining = task_total
 	task_bar.visible = false
 	context.text = "자원 옆에 자리 잡는 중" if gather_approach else "채집 중… 이동하면 멈춥니다"
+	return true
 
 func construction_menu()->void:
 	if menu_animating or build_side.transition:return
@@ -1530,8 +1538,10 @@ func construction_menu()->void:
 			build_side.select_kind("chief")
 		else:
 			start_first_chief_placement()
+		if choosing_plot:audio.cue("action_click")
 		return
 	build_side.toggle_animated()
+	audio.cue("action_click")
 
 func start_first_chief_placement()->void:
 	if screen!="play" or not is_instance_valid(world) or model.chief_level()>0 or model.pending_construction_count("chief")>0:return
@@ -1831,20 +1841,6 @@ func export_performance_logs()->void:
 		destination="다운로드/"+zip.get_file()
 	show_modal("진단 기록 저장 완료",destination,[{"text":"확인","action":show_development_settings}])
 
-func female_resident_trial_enabled() -> bool:
-	return settings.get_value("development","female_resident_trial",false)
-
-func set_female_resident_trial(enabled: bool) -> void:
-	var previous := female_resident_trial_enabled()
-	settings.set_value("development","female_resident_trial",enabled)
-	if settings.save(prefs_path) != OK:
-		settings.set_value("development","female_resident_trial",previous)
-		show_error("여성 주민 시험 설정을 저장하지 못했습니다.")
-		return
-	if is_instance_valid(world):
-		world.female_resident_trial = enabled
-		world.refresh_female_resident_trial()
-
 func set_performance_diagnostics(enabled:bool)->void:
 	var previous:=PerformanceDiagnostics.enabled(settings)
 	settings.set_value("development","performance_diagnostics",enabled)
@@ -1893,6 +1889,7 @@ func show_modal(title: String, body: String, actions: Array, compact: bool = fal
 		retire_modal(overlay)
 	modal = true
 	sync_audio()
+	popup_sound_revision += 1
 	audio.cue("popup_open")
 	overlay = Control.new();overlay.z_index=50
 	overlay.set_meta("fade_modal",true)
@@ -1961,7 +1958,9 @@ func close_modal() -> void:
 	if is_instance_valid(building_workflow):building_workflow.confirmation_target=-1
 	demolition_key=""
 	if is_instance_valid(overlay):
-		if overlay.has_meta("fade_modal"):audio.cue("popup_close")
+		if overlay.has_meta("fade_modal"):
+			popup_sound_revision += 1
+			audio.cue("popup_close")
 		if overlay.has_meta("restore_stage_visibility") and is_instance_valid(stage):stage.visible=overlay.get_meta("restore_stage_visibility")
 		retire_modal(overlay)
 	overlay = null
@@ -2005,6 +2004,7 @@ func open_hunt() -> void:
 	world.player.direction = Vector2.ZERO
 	hunt_preparing = true
 	hunt_preparation_cancelled = false
+	audio.cue("action_click")
 	toast("사냥터 준비 중…")
 	var paths := ["res://assets/characters/meshy01/hero.glb","res://assets/characters/residents/sturdy_male.glb",
 		"res://assets/characters/residents/female.glb",WorldAnimal.MODELS.deer]
