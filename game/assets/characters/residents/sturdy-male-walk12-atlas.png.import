@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://mhre8fvavihs"
-path="res://.godot/imported/sturdy-male-walk12-test.png-79795b88520e40d9b3d5991599fb10e0.ctex"
+uid="uid://gb8kx1v632qr"
+path="res://.godot/imported/sturdy-male-walk12-atlas.png-e4fb607e615bf5f8d68d5e0a03a67854.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/characters/residents/sturdy-male-walk12-test.png"
-dest_files=["res://.godot/imported/sturdy-male-walk12-test.png-79795b88520e40d9b3d5991599fb10e0.ctex"]
+source_file="res://assets/characters/residents/sturdy-male-walk12-atlas.png"
+dest_files=["res://.godot/imported/sturdy-male-walk12-atlas.png-e4fb607e615bf5f8d68d5e0a03a67854.ctex"]
 
 [params]
 
