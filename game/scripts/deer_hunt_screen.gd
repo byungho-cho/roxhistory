@@ -36,6 +36,7 @@ var impact_sheets: Array[Texture2D] = []
 var arrival_variant: int
 var arrival_duration: float
 var arrival_finished := false
+var arrival_skip_pointer := -2
 var match_vs: Dictionary
 var match_deer: TextureRect
 var match_home := Vector2.ZERO
@@ -313,10 +314,12 @@ func build_preparation_plaque() -> void:
 	caption(footer_left,"사냥 준비",Rect2(3,490.5,150,37),16)
 	var bag := make_button(footer_left,"",Rect2(112,476,56,62),app.inventory_summary)
 	clear_button_art(bag)
-	app.picture(bag,preload("res://assets/ui/hunting-formation/bag.png"),Rect2(5.2,0,45.6,48))
-	var brush: TextureRect = app.picture(bag,NAME_BRUSH,Rect2(0,41,56,19))
+	app.picture(bag,preload("res://assets/ui/hunting-formation/bag.png"),Rect2(5.2,6,45.6,48))
+	var brush_art := preload("res://assets/ui/construction-side-v006/brush.png")
+	var brush: TextureRect = app.picture(bag,crop(brush_art,Rect2(0,160,2172,410)),Rect2(0,43,56,17))
+	brush.stretch_mode = TextureRect.STRETCH_SCALE
 	brush.modulate.a = .8
-	caption(bag,"가방",Rect2(4,41,48,19),12)
+	caption(bag,"가방",Rect2(4,43,48,17),12)
 
 func build_power_comparison() -> void:
 	power_header.pivot_offset = MATCH_SEQUENCE.PIVOT
@@ -359,7 +362,6 @@ func build_duel_header() -> void:
 	location_caption = caption(location_brush,"숲 가장자리",Rect2(44,0,163,56),21)
 	exit_button = make_button(header_left,"",Rect2(3,4,48,48),request_exit)
 	exit_button.name = "ExitHunt"
-	exit_button.tooltip_text = "뒤로가기"
 	clear_button_art(exit_button)
 	app.picture(exit_button,FigmaArt.texture("back"),Rect2(0,0,48,48))
 	battle_header = layer(header)
@@ -582,7 +584,28 @@ func add_skill(id: String, asset: String, rect: Rect2, cost_slots: Array) -> voi
 	ready_flashes[id] = 0.0
 	effect.hide()
 
+func handle_arrival_skip(event: InputEvent) -> bool:
+	var pointer := -2
+	if event is InputEventScreenTouch or event is InputEventScreenDrag:
+		pointer = event.index
+	elif event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
+		pointer = -1
+	if pointer == -2:return false
+	if pointer == arrival_skip_pointer:
+		if not event is InputEventScreenDrag and not event.pressed:
+			arrival_skip_pointer = -2
+		return true
+	if arrival_finished or not app.application_active or app.modal or not event.is_pressed() or event.is_canceled():
+		return false
+	arrival_skip_pointer = pointer
+	advance_arrival(arrival_duration)
+	return true
+
+
 func _input(event: InputEvent) -> void:
+	if handle_arrival_skip(event):
+		get_viewport().set_input_as_handled()
+		return
 	if drag_pointer!=-2 and handle_formation_pointer(event,true):
 		get_viewport().set_input_as_handled()
 		return

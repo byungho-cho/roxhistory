@@ -61,7 +61,6 @@ static func install_entry(app:Node)->Label:
 	var button:=art_button(app,app.stage,"QuestRewardEntry",Rect2(at+Vector2(67,0),Vector2(64,83)),func():
 		if not app.modal and not app.world_map_open and not app.map_transition_active:open(app))
 	button.z_index=35
-	button.tooltip_text="퀘스트 보상"
 	entry_art(app,button,part(ICONS,BAG),"보상",303.0/310.0)
 	var badge:=Panel.new()
 	badge.position=Vector2(44,0)

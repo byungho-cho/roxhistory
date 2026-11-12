@@ -1778,8 +1778,8 @@ func update_debug_shortcut() -> void:
 	if not is_instance_valid(debug_shortcut):return
 	var active:=PerformanceDiagnostics.enabled(settings) or PerformanceDiagnostics.hud_enabled(settings)
 	debug_shortcut.visible=debug_shortcut_visible()
-	debug_shortcut.tooltip_text="성능 로그·HUD 끄기" if active else "성능 로그·HUD 켜기"
-	debug_shortcut.set_meta("semantic_text",debug_shortcut.tooltip_text)
+	var semantic_label := "성능 로그·HUD 끄기" if active else "성능 로그·HUD 켜기"
+	debug_shortcut.set_meta("semantic_text",semantic_label)
 	debug_shortcut_icon.modulate=Color("92eea8") if active else Color("a2a6ad")
 
 func toggle_performance_debug() -> void:
