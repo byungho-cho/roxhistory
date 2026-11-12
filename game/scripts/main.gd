@@ -522,8 +522,7 @@ func title_screen() -> void:
 	title_sound.size = Vector2(56,56)
 	for state in ["normal","hover","pressed","focus"]:
 		title_sound.add_theme_stylebox_override(state,StyleBoxEmpty.new())
-	title_sound.expand_icon = true
-	title_sound.add_theme_constant_override("icon_max_width",48)
+	install_conch_icon(title_sound)
 	update_title_sound()
 	var patch_status:=Label.new()
 	patch_status.position=Vector2(safe.x,h-safe.y-37)
@@ -774,7 +773,7 @@ func intro_screen() -> void:
 	intro_sound.offset_top = 10
 	intro_sound.offset_bottom = 66
 	intro_sound.custom_minimum_size = Vector2.ZERO
-	intro_sound.expand_icon = true
+	install_conch_icon(intro_sound)
 	for state in ["normal","hover","pressed","focus"]:
 		intro_sound.add_theme_stylebox_override(state,StyleBoxEmpty.new())
 	intro_music_choice = button(stage,"",cycle_intro_music)
@@ -921,12 +920,53 @@ func toggle_sound() -> void:
 		update_title_sound()
 		toast("소리 켜짐" if settings.get_value("app","sound",true) else "소리 꺼짐")
 
+func install_conch_icon(control: DemoButton) -> void:
+	var art := Node2D.new()
+	art.position = Vector2(1,9)
+	art.scale = Vector2.ONE * .45
+	control.add_child(art)
+	# Sample the original painted conch and rays without their background.
+	var texture := preload("res://assets/ui/title-hanbando/hanbando-start-background-v1.png")
+	var outlines := [
+		PackedVector2Array([Vector2(9,44), Vector2(15,47), Vector2(23,51), Vector2(32,51),
+			Vector2(40,48), Vector2(47,39), Vector2(50,34), Vector2(50,28), Vector2(54,24),
+			Vector2(56,17), Vector2(60,12), Vector2(67,10), Vector2(75,11), Vector2(84,17),
+			Vector2(88,23), Vector2(89,31), Vector2(86,38), Vector2(83,44), Vector2(80,50),
+			Vector2(76,55), Vector2(74,65), Vector2(70,70), Vector2(63,74), Vector2(50,75),
+			Vector2(48,72), Vector2(38,74), Vector2(28,74), Vector2(19,69), Vector2(13,64),
+			Vector2(9,56), Vector2(8,48)]),
+		PackedVector2Array([Vector2(97,32),Vector2(111,22),Vector2(116,21),Vector2(116,26),Vector2(100,35),Vector2(97,35)]),
+		PackedVector2Array([Vector2(98,39),Vector2(119,39),Vector2(122,41),Vector2(121,46),Vector2(99,46),Vector2(97,43)]),
+		PackedVector2Array([Vector2(98,50),Vector2(115,58),Vector2(116,63),Vector2(112,64),Vector2(98,55),Vector2(96,52)]),
+	]
+	for outline in outlines:
+		var shape := Polygon2D.new()
+		var uv := PackedVector2Array()
+		for point in outline:
+			uv.append(point + Vector2(1580,22))
+		shape.texture = texture
+		shape.polygon = outline
+		shape.uv = uv
+		shape.antialiased = true
+		art.add_child(shape)
+	var muted := Line2D.new()
+	muted.points = PackedVector2Array([Vector2(21,21),Vector2(80,76)])
+	muted.width = 8.0
+	muted.default_color = Color("f1d6ab")
+	muted.antialiased = true
+	art.add_child(muted)
+	control.set_meta("conch_icon",art)
+
+
 func update_title_sound() -> void:
 	var enabled: bool = settings.get_value("app","sound",true)
-	var icon := preload("res://assets/ui/v0158/sound-on.svg") if enabled else preload("res://assets/ui/v0158/sound-off.svg")
 	for control in [title_sound,intro_sound]:
 		if not is_instance_valid(control):continue
-		control.icon = icon
+		var art: Node2D = control.get_meta("conch_icon")
+		art.get_child(0).modulate = Color.WHITE if enabled else Color(.55,.55,.55)
+		for i in range(1,4):
+			art.get_child(i).visible = enabled
+		art.get_child(4).visible = not enabled
 		control.tooltip_text = "소리 끄기" if enabled else "소리 켜기"
 	if is_instance_valid(intro_music_choice):
 		intro_music_choice.text = "BGM%d" % (intro_track_index()+1)

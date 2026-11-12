@@ -32,7 +32,7 @@ func _ready()->void:
 	refresh_reward()
 
 func open_rewards()->void:
-	if not app.modal and not app.world_map_open and not app.map_transition_active:
+	if not app.choosing_plot and not app.modal and not app.world_map_open and not app.map_transition_active:
 		QuestRewards.open(app)
 
 func refresh_reward()->void:
@@ -53,14 +53,21 @@ func wiggle()->void:
 		tween.tween_property(marker,"rotation",angle,.075)
 
 func _process(delta:float)->void:
-	visible=app.model.chief_level()>0 and not app.modal and not app.world_map_open and not app.map_transition_active and not app.tutorial.active()
-	if not visible or not app.application_active:return
+	if app.model.chief_level()<=0 or app.world_map_open or app.map_transition_active or app.tutorial.active():
+		hide()
+		return
+	var input_filter := Control.MOUSE_FILTER_IGNORE if app.choosing_plot or app.modal else Control.MOUSE_FILTER_STOP
+	if mouse_filter != input_filter:
+		clear()
+		mouse_filter = input_filter
+	if not app.application_active:return
 	var world:Node2D=app.world
 	var transform_to_screen:=world.get_global_transform_with_canvas()
 	var at:Vector2=transform_to_screen*(app.model.building_position("chief")+EAST_CORNER)
 	scale=Vector2.ONE*app.world.player.zoom_factor
 	position=at-size*scale*Vector2(.18,1)
 	visible=Rect2(Vector2.ZERO,Vector2(app.w,app.h)).intersects(get_global_rect())
+	if not visible:return
 	art.place(world,position,scale)
 	if marker.visible:
 		pulse_elapsed+=delta

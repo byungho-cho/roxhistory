@@ -27,7 +27,7 @@ func refresh()->void:
 	for key in keys:
 		var reason:String=app.building_workflow.upgrade_block_reason(app.model.chief_level()+1) if key=="chief" else app.building_workflow.owned_upgrade_reason(key)
 		if not signs.has(key) and reason.is_empty():
-			var button:DemoButton=QuestRewards.art_button(app,self,"UpgradeSign",Rect2(Vector2.ZERO,HIT_SIZE),app.building_workflow.request_owned_upgrade.bind(key))
+			var button:DemoButton=QuestRewards.art_button(app,self,"UpgradeSign",Rect2(Vector2.ZERO,HIT_SIZE),request_upgrade.bind(key))
 			button.tooltip_text="업그레이드"
 			var world_art:=WORLD_ART.new()
 			world_art.bind(button,app.world)
@@ -36,10 +36,15 @@ func refresh()->void:
 			signs[key]=button
 		if signs.has(key):signs[key].disabled=not reason.is_empty()
 
+func request_upgrade(key:String)->void:
+	if not app.choosing_plot and not app.modal:
+		app.building_workflow.request_owned_upgrade(key)
+
 func _process(_delta:float)->void:
-	visible=app.application_active and not app.modal and not app.world_map_open and not app.map_transition_active and not app.choosing_plot and not app.tutorial.active()
+	visible=app.application_active and not app.world_map_open and not app.map_transition_active and not app.tutorial.active()
 	if not visible:return
 	if dirty:refresh()
+	var input_filter := Control.MOUSE_FILTER_IGNORE if app.choosing_plot or app.modal else Control.MOUSE_FILTER_STOP
 	var screen:=Rect2(Vector2.ZERO,Vector2(app.w,app.h))
 	var zoom:float=app.world.player.zoom_factor
 	var visual_extent:=40.0*clampf(zoom,.78,1.6)
@@ -64,5 +69,10 @@ func _process(_delta:float)->void:
 			var menu_action:Rect2=app.building_menu.upgrade_button.get_global_rect()
 			if menu_action.has_point(button.get_global_rect().get_center()):
 				button.position.y=menu_action.position.y-hit_extent-4.0
-		button.visible=screen.intersects(bounds) and screen.encloses(button.get_global_rect()) and not app.resident_panel.hud_occludes(button.get_global_rect())
+		var hit_bounds := button.get_global_rect()
+		button.visible = screen.intersects(bounds) and screen.intersects(hit_bounds)
+		var sign_filter := Control.MOUSE_FILTER_IGNORE if app.resident_panel.hud_occludes(hit_bounds) else input_filter
+		if button.mouse_filter != sign_filter:
+			button.clear()
+			button.mouse_filter = sign_filter
 		world_art.place(app.world,button.position,Vector2.ONE)
