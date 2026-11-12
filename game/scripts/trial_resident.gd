@@ -44,6 +44,8 @@ func _ready()->void:
 	if resident_id.begins_with("resident-") and ResourceLoader.exists(RESIDENT_SPRITE.atlas_path(variant)):
 		resident_sprite=RESIDENT_SPRITE.new()
 		resident_sprite.variant=variant
+		if get_tree().has_meta("village_walk_pose_count"):
+			resident_sprite.walk_pose_count = get_tree().get_meta("village_walk_pose_count")
 		add_child(resident_sprite)
 	else:
 		visual=HybridCharacter.new();visual.model_path="res://assets/characters/residents/"+variant+".glb";visual.render_size_factor=.5;add_child(visual);visual.scale=Vector2.ONE*(1.08 if variant=="female" else 1.16);visual.set_enabled(true)

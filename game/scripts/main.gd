@@ -179,12 +179,6 @@ func has_pending_rewards()->bool:
 func _ready() -> void:
 	if OS.has_feature("android"):
 		Engine.max_fps=60
-		if FileAccess.file_exists("user://resident-walk-trial.txt"):
-			var trial = load("res://scripts/resident_walk_trial.gd").new()
-			trial.pose_count = 12 if FileAccess.get_file_as_string("user://resident-walk-trial.txt").strip_edges()=="12" else 6
-			add_child(trial)
-			set_process(false)
-			return
 	gestures=WorldGestures.new(self);add_child(gestures)
 	get_tree().auto_accept_quit = false
 	get_tree().quit_on_go_back = false
@@ -192,12 +186,22 @@ func _ready() -> void:
 	if test_mode:
 		prefs_path = "user://tests/preferences.cfg"
 		performance_diagnostics.path = "user://tests/performance-diagnostics.jsonl"
+	var village_walk_trial := OS.has_feature("android") and FileAccess.file_exists("user://village-walk-trial/mode.txt")
+	if village_walk_trial:
+		var mode := FileAccess.get_file_as_string("user://village-walk-trial/mode.txt").strip_edges()
+		var count := 6 if mode == "6" else 12
+		get_tree().set_meta("village_walk_pose_count", count)
+		print("ROX_VILLAGE_WALK_POSES=", count)
+		prefs_path = "user://village-walk-trial/preferences.cfg"
+		performance_diagnostics.path = "user://village-walk-trial/performance-diagnostics.jsonl"
 	settings.load(prefs_path)
 	audio = DemoSoundscape.new()
 	add_child(audio)
 	var save_directory:="user://tests/session" if test_mode else "user://"
+	if village_walk_trial:
+		save_directory = "user://village-walk-trial"
 	model = GameState.new(SaveStore.new(save_directory),true)
-	if not test_mode:village_alerts=AndroidVillageNotifications.new(model)
+	if not test_mode and not village_walk_trial:village_alerts=AndroidVillageNotifications.new(model)
 	model.finish_loaded_jobs()
 	model.changed.connect(update_hud)
 	model.failed.connect(show_error)
@@ -208,7 +212,10 @@ func _ready() -> void:
 	canvas.add_child(ui)
 	ui.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	get_viewport().size_changed.connect(queue_layout)
-	show_screen("title")
+	if village_walk_trial and not model.state.is_empty():
+		continue_to_village.call_deferred()
+	else:
+		show_screen("title")
 
 func queue_layout() -> void:
 	if rebuilding or screen in ["hunt","intro"] or title_reveal or intro_leaving or village_entry_active():
