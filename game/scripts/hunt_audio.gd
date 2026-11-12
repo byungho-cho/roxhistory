@@ -38,6 +38,13 @@ func _ready() -> void:
 		music.append(player)
 
 
+func _exit_tree() -> void:
+	for player in pool + music:
+		player.stop()
+		player.stream = null
+	streams.clear()
+
+
 func update(delta: float, audible: bool, held: bool) -> void:
 	if enabled!=audible:
 		enabled = audible
