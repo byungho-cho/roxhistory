@@ -1,6 +1,13 @@
 extends Node
 
 const ROOT := "res://assets/audio/hunt-d0003/"
+const APPROVED := {
+	"S02":"menu-stone-tap", "S06":"menu-stone-tap", "S07":"popup-open", "S08":"popup-close",
+	"S11":"vs-collision", "S12":"battle-start", "S16":"normal-hit", "S18":"heavy-hit",
+	"S20":"cooperative-attack", "S22":"deer-hurt", "S23":"orb-full", "S24":"skill-ready",
+	"S26":"victory", "S27":"hunt-failure",
+}
+const APPROVED_ROOT := "res://assets/audio/d0004-approved/"
 const LEVELS := {
 	"S01":-20.0,"S02":-18.0,"S03":-20.0,"S04":-16.0,"S05":-18.0,"S06":-18.0,
 	"S07":-18.0,"S08":-18.0,"S09":-15.0,"S10":-17.0,"S11":-11.0,"S12":-12.0,
@@ -21,10 +28,12 @@ var blend := 0.0
 
 func _ready() -> void:
 	for id in LEVELS:
-		streams[id] = load(ROOT+id+".wav")
+		var path := APPROVED_ROOT+str(APPROVED[id]) if APPROVED.has(id) else ROOT+str(id)
+		streams[id] = load(path+".wav")
 	for index in 6:
 		var player := AudioStreamPlayer.new()
 		add_child(player)
+		player.bus = &"SFX"
 		pool.append(player)
 		priorities.append(0)
 	for id in ["B03","B01","B02"]:
@@ -35,6 +44,7 @@ func _ready() -> void:
 		stream.loop_end = roundi(stream.get_length()*stream.mix_rate)
 		player.stream = stream
 		add_child(player)
+		player.bus = &"BGM"
 		music.append(player)
 
 
@@ -65,7 +75,14 @@ func update(delta: float, audible: bool, held: bool) -> void:
 func cue(id: String, priority := 1) -> void:
 	if not enabled or paused or not streams.has(id):return
 	var now := Time.get_ticks_msec()
-	if now-int(recent.get(id,-1000))<90:return
+	var gap := 420 if id == "S22" else 90
+	var cue_key: String = APPROVED.get(id,id)
+	if now-int(recent.get(cue_key,-1000))<gap:return
+	if APPROVED.has(id):
+		for voice in pool:
+			if voice.playing and voice.stream == streams[id]:
+				if id == "S22":return
+				voice.stop()
 	var slot := -1
 	for index in pool.size():
 		if not pool[index].playing:
@@ -74,7 +91,7 @@ func cue(id: String, priority := 1) -> void:
 		if priorities[index]<priority and (slot<0 or priorities[index]<priorities[slot]):
 			slot = index
 	if slot<0:return
-	recent[id] = now
+	recent[cue_key] = now
 	priorities[slot] = priority
 	var player := pool[slot]
 	player.stop()

@@ -177,6 +177,7 @@ func has_pending_rewards()->bool:
 	return false
 
 func _ready() -> void:
+	AudioServer.set_bus_layout(preload("res://default_bus_layout.tres"))
 	if OS.has_feature("android"):Engine.max_fps=60
 	gestures=WorldGestures.new(self);add_child(gestures)
 	get_tree().auto_accept_quit = false
@@ -785,6 +786,7 @@ func intro_screen() -> void:
 	update_title_sound()
 	for track in INTRO_TRACKS:
 		var player := AudioStreamPlayer.new()
+		player.bus = &"BGM"
 		player.stream = load(track)
 		stage.add_child(player)
 		intro_music.append(player)
@@ -1346,6 +1348,7 @@ func show_pending_quest_guide()->void:
 
 func claim_intro_reward(index:int)->void:
 	if not model.claim_quest_reward(index):return
+	audio.cue("reward")
 	if model.state.get("guided_intro",false):world.player.release_tutorial_camera()
 	var kind:String=FirstQuests.INTRO_KINDS[index] if index!=2 else "tokens"
 	for i in 5:
@@ -1391,6 +1394,12 @@ func _process(delta: float) -> void:
 		farm_tick+=delta
 		if farm_tick>=1.0:
 			FarmProduction.tick(model,farm_tick);farm_tick=0.0
+			var hearth_distance := INF
+			for facility in model.facilities():
+				if facility.kind == "hearth":
+					var at := model.building_position("hearth:"+str(facility.uid))
+					hearth_distance = minf(hearth_distance,world.player.position.distance_to(at))
+			audio.hearth_proximity = 1.0-smoothstep(60,430,hearth_distance)
 	var river_distance:=INF
 	for i in world.SHORE.size()-1:
 		var closest:=Geometry2D.get_closest_point_to_segment(world.player.position,world.SHORE[i],world.SHORE[i+1])
@@ -1858,6 +1867,7 @@ func show_modal(title: String, body: String, actions: Array, compact: bool = fal
 		retire_modal(overlay)
 	modal = true
 	sync_audio()
+	audio.cue("popup_open")
 	overlay = Control.new();overlay.z_index=50
 	overlay.set_meta("fade_modal",true)
 	overlay.modulate.a = 0.0
@@ -1925,6 +1935,7 @@ func close_modal() -> void:
 	if is_instance_valid(building_workflow):building_workflow.confirmation_target=-1
 	demolition_key=""
 	if is_instance_valid(overlay):
+		if overlay.has_meta("fade_modal"):audio.cue("popup_close")
 		if overlay.has_meta("restore_stage_visibility") and is_instance_valid(stage):stage.visible=overlay.get_meta("restore_stage_visibility")
 		retire_modal(overlay)
 	overlay = null

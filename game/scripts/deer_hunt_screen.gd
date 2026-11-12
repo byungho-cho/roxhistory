@@ -8,6 +8,7 @@ const DESIGN := Vector2(960,540)
 const CLEARING := preload("res://assets/ui/hunting-formation/clearing-dirt.png")
 const ALLY_CELL := preload("res://assets/ui/hunting-formation/ally-cell.svg")
 const ENEMY_CELL := preload("res://assets/ui/hunting-formation/enemy-cell.svg")
+const APPROVED_DEER := preload("res://assets/ui/hunting-combat/png/common/deer-approved.png")
 const PORTRAITS := preload("res://assets/ui/hunting-formation/portraits.png")
 # Final 1920×1080 placement centers expressed in the 960×540 game canvas.
 const ALLY_CELLS := [Vector2(396.5,377.5),Vector2(422.75,321.75),Vector2(475.25,358.75),
@@ -289,7 +290,6 @@ func build_preparation() -> void:
 		app.picture(card,preload("res://assets/ui/hunting-formation/swap.svg"),Rect2(71,53,24,24))
 	var start := artwork_button(footer_right,Rect2(797,487,160,50),"사냥 시작","png/preparation/start-battle-background.png",start_combat,ink)
 	start.name = "StartBattle"
-	start.button_down.connect(func():hunt_audio.cue("S01"))
 	var quick := artwork_button(footer_right,Rect2(629,487,160,50),"빠른 출전","png/preparation/quick-sortie-background.png",func():pass)
 	quick.disabled = true
 	for control in [start,quick]:
@@ -324,7 +324,8 @@ func build_power_comparison() -> void:
 	MATCH.backdrop(match_details)
 
 	prep_ally_portrait = MATCH.picture(power_header,preload("res://assets/ui/hunting-match/png/power/hunter-head.png"),Rect2(MATCH_SEQUENCE.ALLY,Vector2(51.2,51.2)))
-	match_deer = MATCH.picture(power_header,preload("res://assets/ui/hunting-match/png/power/deer-head.png"),Rect2(MATCH_SEQUENCE.DEER,Vector2(48,63)))
+	match_deer = MATCH.picture(power_header,APPROVED_DEER,Rect2(MATCH_SEQUENCE.DEER,Vector2(48,63)))
+	match_deer.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	match_vs = MATCH.versus(power_header,Vector2(240,49),57.4)
 	# Forest Edge Lv 1 preview values. The battle rules do not use these ratings.
 	MATCH.power(match_details,Vector2(159.8,65),12300)
@@ -365,20 +366,22 @@ func build_duel_header() -> void:
 	battle_header.hide()
 	ally_hud = layer(battle_header)
 	enemy_hud = layer(battle_header)
-	hunter_bar = hp_bar(ally_hud,Rect2(339,32,160,32),true)
-	deer_bar = hp_bar(enemy_hud,Rect2(552,32,160,32),false)
-	hunter_health_text = caption(hunter_bar,"",Rect2(0,0,160,28),15)
-	deer_health_text = caption(deer_bar,"",Rect2(0,0,160,28),15)
+	hunter_bar = hp_bar(ally_hud,Rect2(339,32,160,32),true,true)
+	deer_bar = hp_bar(enemy_hud,Rect2(552,32,160,32),false,true)
+	hunter_health_text = caption(hunter_bar,"",Rect2(0,0,155,27),15,Color.WHITE)
+	deer_health_text = caption(deer_bar,"",Rect2(0,0,155,27),15,Color.WHITE)
 	for text in [hunter_health_text,deer_health_text]:
 		text.add_theme_color_override("font_outline_color",Color("331a12"))
 		text.add_theme_constant_override("outline_size",4)
-	var ally_icon := plaque(ally_hud,Rect2(297,24,48,48),Color("1c291f"),Color("f2bd4d"))
-	duel_ally_portrait = app.picture(ally_icon,hunter_portrait(selected_hunter),Rect2(2,2,44,44))
-	app.picture(enemy_hud,preload("res://assets/ui/hunting-combat/png/common/hp-portrait-deer.png"),Rect2(706,24,48,48))
+	duel_ally_portrait = app.picture(ally_hud,hunter_portrait(selected_hunter),Rect2(303,13,46,49))
+	duel_ally_portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	var deer_portrait: TextureRect = app.picture(enemy_hud,APPROVED_DEER,Rect2(701,11,54,52))
+	deer_portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	# This first encounter uses the same level on both portraits.
 	for badge in [[ally_hud,321],[enemy_hud,730]]:
-		var brush: TextureRect = app.picture(badge[0],NAME_BRUSH,Rect2(badge[1]-27,65,54,16))
-		caption(brush,"Lv 1",Rect2(0,0,54,16),11)
+		var brush: TextureRect = app.picture(badge[0],NAME_BRUSH,Rect2(badge[1]-28,57,56,16))
+		brush.modulate.a = .8
+		caption(brush,"Lv 1",Rect2(0,0,56,16),11)
 	versus = MATCH.versus(battle_header,Vector2(525,48),36).root
 	auto_button = toggle_control(header_right,Rect2(857,3,48,48),"AUTO","auto",toggle_auto)
 	speed_button = toggle_control(header_right,Rect2(909,3,48,48),"X2","speed-2x",toggle_speed)
@@ -399,14 +402,14 @@ func toggle_control(parent: Control, rect: Rect2, label: String, asset: String, 
 	return button
 
 func toggle_auto() -> void:
-	hunt_audio.cue("S06")
 	if exit_popup or app.modal or result_shown:return
+	hunt_audio.cue("S06")
 	rules.set_auto(not rules.auto_enabled and transition_elapsed>=0 or running and not rules.auto_enabled)
 	update_toggles()
 
 func toggle_speed() -> void:
-	hunt_audio.cue("S06")
 	if exit_popup or app.modal or result_shown:return
+	hunt_audio.cue("S06")
 	speed = 1.0 if speed == 2.0 else 2.0
 	update_toggles()
 
@@ -541,17 +544,21 @@ func caption(parent: Control, value: String, rect: Rect2, font_size: int, color 
 	line.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	return line
 
-func hp_bar(parent: Control, rect: Rect2, ally: bool) -> TextureProgressBar:
+func hp_bar(parent: Control, rect: Rect2, ally: bool, duel := false) -> TextureProgressBar:
 	var bar := TextureProgressBar.new()
 	bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	bar.max_value = RULES.MAX_HP
 	bar.step = 0.0
 	bar.value = RULES.MAX_HP
 	bar.nine_patch_stretch = true
-	app.picture(parent,preload("res://assets/ui/hunting-combat/png/common/hp-track.png"),rect)
+	if duel:
+		var track := plaque(parent,rect,Color("523621"),Color("f5bf4f"))
+		track.add_theme_stylebox_override("panel",box(Color("523621"),Color("f5bf4f"),8))
+	else:
+		app.picture(parent,preload("res://assets/ui/hunting-combat/png/common/hp-track.png"),rect)
 	bar.texture_progress = preload("res://assets/ui/hunting-combat/png/common/hp-fill-ally.png") if ally else preload("res://assets/ui/hunting-combat/png/common/hp-fill-enemy.png")
 	bar.fill_mode = TextureProgressBar.FILL_LEFT_TO_RIGHT
-	var inset := Vector2.ONE*minf(2.0,rect.size.y*.12)
+	var inset := Vector2.ONE*(2.5 if duel else minf(2.0,rect.size.y*.12))
 	bar.position = rect.position+inset
 	bar.size = rect.size-inset*2
 	parent.add_child(bar)
@@ -896,8 +903,12 @@ func update_combat_ui(delta := 0.0) -> void:
 		layers.effect.visible = ready and (ready_flashes[id]>0 or control.is_pressed())
 		layers.effect.modulate.a = 1.0 if control.is_pressed() else ready_flashes[id]/.36
 		for cost in layers.costs:cost.texture = ORB_FULL if charged else ORB_EMPTY
-	if chime and sound_delay<=0:
-		hunt_audio.cue("S23" if filled_now else "S24",2)
+	if filled_now:
+		rules.orb_filled = false
+		hunt_audio.cue("S23",2)
+		sound_delay = .24
+	elif chime and sound_delay<=0:
+		hunt_audio.cue("S24",2)
 		sound_delay = .24
 
 func update_camera(delta: float) -> void:

@@ -97,7 +97,9 @@ func show_at(screen_point:Vector2)->bool:
 	app.cancel_build_preview();app.build_side.hide();app.navigation.cancel()
 	if not framing_active:saved_camera_offset=app.world.player.camera.offset;framing_active=true
 	selected_key=key;state_dirty=true;layout_bounds=Rect2()
-	show();refresh();return true
+	show();refresh()
+	if visible:app.audio.cue("building_select")
+	return true
 func refresh()->void:
 	if state_dirty:refresh_actions()
 	if visible:refresh_position()

@@ -118,7 +118,9 @@ static func open(app:Node)->void:
 	cards.add_theme_constant_override("separation",8)
 	scroll.add_child(cards)
 	var claim_all:=art_button(app,panel,"ClaimAllQuestRewards",Rect2(315,693,370,76),func():
-		if app.model.claim_all_quest_rewards():fill_cards(app,cards))
+		if app.model.claim_all_quest_rewards():
+			app.audio.cue("reward")
+			fill_cards(app,cards))
 	sliced_art(claim_all,part(PARTS,CLAIM),Rect2(0,0,370,56),38)
 	caption(app,claim_all,"모두 받기",Rect2(0,0,370,56),32,INK)
 	fill_cards(app,cards)
@@ -147,6 +149,8 @@ static func fill_cards(app:Node,cards:VBoxContainer)->void:
 		app.picture(card,part(ICONS,CORN),Rect2(524,24,54,55))
 		caption(app,card,str(FirstQuests.MANUAL_AMOUNT),Rect2(582,0,75,104),37,INK)
 		var claim:=art_button(app,card,"ClaimQuest%d"%index,Rect2(687,16,142,71),func():
-			if app.model.claim_quest_reward(index):fill_cards(app,cards))
+			if app.model.claim_quest_reward(index):
+				app.audio.cue("reward")
+				fill_cards(app,cards))
 		sliced_art(claim,part(PARTS,CLAIM),Rect2(0,0,142,71),38)
 		caption(app,claim,"받기",Rect2(0,0,142,71),32,INK)

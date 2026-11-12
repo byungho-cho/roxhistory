@@ -10,6 +10,8 @@ var ducked := false
 var voices: Array[AudioStreamPlayer] = []
 var recorded_work:AudioStreamPlayer
 var river: AudioStreamPlayer
+var hearth: AudioStreamPlayer
+var hearth_proximity := 0.0
 var wind: AudioStreamPlayer
 var bgm: AudioStreamPlayer
 var play_bgm: AudioStreamPlayer
@@ -20,6 +22,11 @@ var river_proximity := 0.5
 var bird_wait := 11.0
 var nature_random := RandomNumberGenerator.new()
 var last_interface_ms := -1000
+const APPROVED := {
+	"ui":"menu-stone-tap", "building_select":"building-select", "bird":"bird-calls",
+	"complete":"construction-complete", "reward":"reward-obtain", "river":"river-flow",
+	"hearth":"hearth-fire", "popup_open":"popup-open", "popup_close":"popup-close",
+}
 const REGION_MUSIC_DB := -10.0
 const PLAY_MUSIC_DB := -12.0
 const REGION_WATER_DB := -25.0
@@ -27,22 +34,25 @@ const INTERFACE_GAP_MS := 75
 
 func _ready() -> void:
 	nature_random.randomize()
-	for key in ["ui","select","bird","a303_bgm","play_bgm","wood_0","wood_1","stone_0","stone_1","build_0","build_1","gain","complete","reward","river","wind"]:
+	for key in ["select","a303_bgm","play_bgm","wood_0","wood_1","stone_0","stone_1","build_0","build_1","gain","wind"]:
 		streams[key] = load("res://assets/audio/"+key+".wav")
+	for key in APPROVED:
+		streams[key] = load("res://assets/audio/d0004-approved/"+APPROVED[key]+".wav")
 	for key in ["wood","stone","build","demolish"]:
 		streams["recorded_"+key]=load("res://assets/audio/recorded-actions-v001/"+key+"-hit.wav")
 	streams["hunt_impact"] = streams["stone_0"]
-	recorded_work=AudioStreamPlayer.new();recorded_work.name="RecordedActionVoice";recorded_work.bus="Master";add_child(recorded_work)
+	recorded_work=AudioStreamPlayer.new();recorded_work.name="RecordedActionVoice";recorded_work.bus=&"SFX";add_child(recorded_work)
 	for i in 6:
 		var voice := AudioStreamPlayer.new()
-		voice.bus = "Master"
+		voice.bus = &"SFX"
 		add_child(voice); voices.append(voice)
-	river = ambience("river",-30)
-	wind = ambience("wind",-35)
-	bgm = ambience("a303_bgm",-60)
-	play_bgm = ambience("play_bgm",-60)
+	river = ambience("river",-30,&"Environment")
+	hearth = ambience("hearth",-60,&"Environment")
+	wind = ambience("wind",-35,&"Environment")
+	bgm = ambience("a303_bgm",-60,&"BGM")
+	play_bgm = ambience("play_bgm",-60,&"BGM")
 
-func ambience(key: String, volume: float) -> AudioStreamPlayer:
+func ambience(key: String, volume: float, bus: StringName) -> AudioStreamPlayer:
 	var player := AudioStreamPlayer.new()
 	var stream: AudioStreamWAV = streams[key].duplicate()
 	var loop_frames := roundi(stream.get_length()*stream.mix_rate)
@@ -58,17 +68,18 @@ func ambience(key: String, volume: float) -> AudioStreamPlayer:
 	stream.loop_mode = AudioStreamWAV.LOOP_FORWARD
 	stream.loop_begin = 0
 	stream.loop_end = loop_frames
-	player.stream = stream; player.volume_db = volume
+	player.stream = stream; player.volume_db = volume; player.bus = bus
 	add_child(player)
 	return player
 
 func configure(sound: bool, foreground: bool, playing: bool, popup: bool, region: bool = false, title: bool = false) -> void:
-	var was_region := in_region
+	var was_nature := in_region or in_world
+	if (in_world and not playing) or (in_region and not region): stop_effects()
 	var was_audible := enabled and active
 	enabled = sound; active = foreground; in_world = playing; ducked = popup; in_region = region
 	menu_music = region or title
 	if popup or not playing:stop_work()
-	if not was_region and in_region: bird_wait = nature_random.randf_range(9,14)
+	if not was_nature and (in_region or in_world): bird_wait = nature_random.randf_range(9,14)
 	if enabled and active and not was_audible: last_interface_ms = -1000
 	if not enabled or not active:
 		stop_effects()
@@ -103,6 +114,7 @@ func configure(sound: bool, foreground: bool, playing: bool, popup: bool, region
 		if enabled and active and in_world:
 			if not wind.playing: wind.volume_db = -55; wind.play()
 		else: wind.stop() # The region map uses one quiet water bed beneath the music.
+	if not enabled or not active or not in_world: hearth.stop()
 	trace_status("configure")
 
 func trace_status(reason: String) -> void:
@@ -132,14 +144,14 @@ func cue(key: String) -> void:
 		events.append("recorded_"+key)
 		if events.size()>96:events.pop_front()
 		return
-	if key in ["ui","select"]:
+	if key in ["ui","select","building_select"]:
 		var now := interface_time_ms()
 		if now-last_interface_ms < INTERFACE_GAP_MS: return
 		last_interface_ms = now
 		# UI and region cues share one audible slot, even after the rate gate.
 		# Replace their previous tail instead of stacking up to four 250ms cues.
 		for previous in voices:
-			if previous.stream in [streams.get("ui"),streams.get("select")]:previous.stop()
+			if previous.stream in [streams.get("ui"),streams.get("select"),streams.get("building_select")]:previous.stop()
 	var work := key in ["wood","stone","build"]
 	if work:
 		variant = (variant+1)%2
@@ -150,6 +162,7 @@ func cue(key: String) -> void:
 		if not candidate.playing: voice = candidate; break
 	if voice == null: return # Bounded pool; never stack unbounded effects.
 	voice.stream = streams[key]
+	voice.bus = &"Environment" if key == "bird" else &"SFX"
 	voice.set_meta("work",work)
 	voice.volume_db = -8 if work else (-20 if key == "bird" else -12)
 	voice.pitch_scale = nature_random.randf_range(.96,1.02) if key == "bird" else 1.0
@@ -173,7 +186,14 @@ func _process(delta: float) -> void:
 		var water_level := REGION_WATER_DB if in_region else lerpf(-36.0206,-26.0206,river_proximity)
 		river.volume_db = move_toward(river.volume_db,water_level+duck,delta*22)
 		wind.volume_db = move_toward(wind.volume_db,-39+duck,delta*22)
-	if in_region and not ducked:
+	if in_world and hearth_proximity > 0.0 and not hearth.playing:
+		hearth.volume_db = -60.0
+		hearth.play()
+	if hearth.playing:
+		var fire_db := lerpf(-60.0,-24.0,hearth_proximity) - (8.0 if ducked else 0.0)
+		hearth.volume_db = move_toward(hearth.volume_db,fire_db,delta*35)
+		if hearth_proximity <= 0.0 and hearth.volume_db <= -59.9: hearth.stop()
+	if (in_region or in_world) and not ducked:
 		bird_wait -= minf(delta,.1)
 		if bird_wait <= 0:
 			cue("bird")
