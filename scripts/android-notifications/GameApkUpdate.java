@@ -13,6 +13,7 @@ import android.content.pm.Signature;
 import android.net.Uri;
 import android.os.Build;
 import android.provider.Settings;
+import android.util.Log;
 import org.json.JSONObject;
 import java.io.File;
 import java.io.FileInputStream;
@@ -26,6 +27,7 @@ import java.util.Locale;
 import javax.net.ssl.HttpsURLConnection;
 
 public final class GameApkUpdate extends BroadcastReceiver {
+    private static final String TAG = "RoxApkUpdate";
     private static final String PACKAGE = "com.roxhistory.demo";
     private static final String ACTION = PACKAGE + ".APK_INSTALL_RESULT";
     private static final String ROOT = "https://github.com/byungho-cho/roxhistory/releases/download/";
@@ -246,6 +248,7 @@ public final class GameApkUpdate extends BroadcastReceiver {
     private static void commitInstall(Context context) {
         PackageInstaller installer = context.getPackageManager().getPackageInstaller();
         int id = -1;
+        String phase = "verify APK";
         try {
             if (verified.length() != verifiedSize || !matchesPackage(context, verified, verifiedCode, verifiedName)) {
                 throw new SecurityException();
@@ -254,28 +257,35 @@ public final class GameApkUpdate extends BroadcastReceiver {
             params.setAppPackageName(PACKAGE);
             params.setSize(verifiedSize);
             if (Build.VERSION.SDK_INT >= 31) params.setRequireUserAction(PackageInstaller.SessionParams.USER_ACTION_REQUIRED);
+            phase = "create session";
             id = installer.createSession(params);
-            try (PackageInstaller.Session session = installer.openSession(id);
-                 InputStream input = new FileInputStream(verified);
-                 OutputStream output = session.openWrite("base.apk", 0, verifiedSize)) {
-                MessageDigest digest = MessageDigest.getInstance("SHA-256");
-                byte[] bytes = new byte[128 * 1024];
-                for (int count; (count = input.read(bytes)) != -1;) {
-                    digest.update(bytes, 0, count);
-                    output.write(bytes, 0, count);
+            try (PackageInstaller.Session session = installer.openSession(id)) {
+                phase = "stage APK";
+                try (InputStream input = new FileInputStream(verified);
+                     OutputStream output = session.openWrite("base.apk", 0, verifiedSize)) {
+                    MessageDigest digest = MessageDigest.getInstance("SHA-256");
+                    byte[] bytes = new byte[128 * 1024];
+                    for (int count; (count = input.read(bytes)) != -1;) {
+                        digest.update(bytes, 0, count);
+                        output.write(bytes, 0, count);
+                    }
+                    if (!verifiedHash.equals(hex(digest.digest()))) {
+                        throw new SecurityException("APK digest changed before staging");
+                    }
+                    session.fsync(output);
                 }
-                if (!verifiedHash.equals(hex(digest.digest()))) throw new SecurityException();
-                session.fsync(output);
-                output.close();
+                phase = "save session state";
                 if (!prefs(context).edit().putLong("pending_code", verifiedCode).putInt("session", id).commit()) {
                     throw new IllegalStateException();
                 }
                 Intent callback = new Intent(context, GameApkUpdate.class).setAction(ACTION).putExtra("rox_session", id);
                 int flags = PendingIntent.FLAG_UPDATE_CURRENT;
                 if (Build.VERSION.SDK_INT >= 31) flags |= PendingIntent.FLAG_MUTABLE;
+                phase = "commit session";
                 session.commit(PendingIntent.getBroadcast(context, id, callback, flags).getIntentSender());
             }
-        } catch (Exception ignored) {
+        } catch (Exception failure) {
+            Log.w(TAG, "APK install failed at " + phase + ", session " + id, failure);
             if (id >= 0) try { installer.abandonSession(id); } catch (Exception ignoredAgain) { }
             prefs(context).edit().clear().apply();
             state = "install_failed";
@@ -286,16 +296,19 @@ public final class GameApkUpdate extends BroadcastReceiver {
         if (!ACTION.equals(intent.getAction()) ||
                 intent.getIntExtra("rox_session", -1) != prefs(context).getInt("session", -2)) return;
         int status = intent.getIntExtra(PackageInstaller.EXTRA_STATUS, PackageInstaller.STATUS_FAILURE);
+        Log.i(TAG, "APK install callback status=" + status + ", session " + intent.getIntExtra("rox_session", -1));
         if (status == PackageInstaller.STATUS_PENDING_USER_ACTION) {
             Intent confirmation = intent.getParcelableExtra(Intent.EXTRA_INTENT);
             try {
                 if (confirmation == null) throw new IllegalStateException();
                 context.startActivity(confirmation.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
-            } catch (RuntimeException ignored) {
+            } catch (RuntimeException failure) {
+                Log.w(TAG, "Cannot open Android install confirmation", failure);
                 prefs(context).edit().clear().apply();
                 state = "install_failed";
             }
         } else if (status != PackageInstaller.STATUS_SUCCESS) {
+            Log.w(TAG, "Android rejected APK install: " + intent.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE));
             prefs(context).edit().clear().apply();
             state = status == PackageInstaller.STATUS_FAILURE_ABORTED ? "install_cancelled" : "install_failed";
         }
