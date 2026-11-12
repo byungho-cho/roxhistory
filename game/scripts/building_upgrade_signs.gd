@@ -10,6 +10,7 @@ var dirty:=true
 
 func _init(owner:Node)->void:
 	app=owner
+	name="BuildingUpgradeSigns"
 	mouse_filter=Control.MOUSE_FILTER_IGNORE
 	z_index=19
 
@@ -20,59 +21,72 @@ func refresh()->void:
 	dirty=false
 	var keys:=OwnedBuildingUpgrades.keys(app.model)
 	if app.model.chief_level()>0:keys.append("chief")
+	var eligible: Array[String] = []
+	for key in keys:
+		var reason: String = app.building_workflow.upgrade_block_reason(app.model.chief_level()+1) if key=="chief" else app.building_workflow.owned_upgrade_reason(key)
+		if reason.is_empty():eligible.append(key)
 	for key in signs.keys():
-		if key not in keys:
+		if key not in eligible:
+			signs[key].hide()
 			signs[key].queue_free()
 			signs.erase(key)
-	for key in keys:
-		var reason:String=app.building_workflow.upgrade_block_reason(app.model.chief_level()+1) if key=="chief" else app.building_workflow.owned_upgrade_reason(key)
-		if not signs.has(key) and reason.is_empty():
-			var button:DemoButton=QuestRewards.art_button(app,self,"UpgradeSign",Rect2(Vector2.ZERO,HIT_SIZE),request_upgrade.bind(key))
-			button.tooltip_text="업그레이드"
-			var world_art:=WORLD_ART.new()
-			world_art.bind(button,app.world)
-			app.picture(world_art,ART,Rect2(2,2,40,40))
-			button.set_meta("world_art",world_art)
-			signs[key]=button
-		if signs.has(key):signs[key].disabled=not reason.is_empty()
+	for key in eligible:
+		if signs.has(key):continue
+		var marker := Control.new()
+		marker.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(marker)
+		var world_art := WORLD_ART.new()
+		world_art.bind(marker,app.world)
+		app.picture(world_art,ART,Rect2(2,2,40,40))
+		marker.set_meta("world_art",world_art)
+		signs[key] = marker
 
-func request_upgrade(key:String)->void:
-	if not app.choosing_plot and not app.modal:
-		app.building_workflow.request_owned_upgrade(key)
+func hit_key(screen_point: Vector2) -> String:
+	if not is_visible_in_tree() or app.choosing_plot:return ""
+	var result := ""
+	var frontmost := -INF
+	for key in signs:
+		var marker: Control = signs[key]
+		var bounds := marker.get_global_rect()
+		if not marker.is_visible_in_tree() or not bounds.has_point(screen_point):continue
+		if app.resident_panel.hud_occludes(bounds):continue
+		var world_art: Node2D = marker.get_meta("world_art")
+		if world_art.position.y > frontmost:
+			result = key
+			frontmost = world_art.position.y
+	return result
 
 func _process(_delta:float)->void:
 	visible=app.application_active and not app.world_map_open and not app.map_transition_active and not app.tutorial.active()
 	if not visible:return
 	if dirty:refresh()
-	var input_filter := Control.MOUSE_FILTER_IGNORE if app.choosing_plot or app.modal else Control.MOUSE_FILTER_STOP
 	var screen:=Rect2(Vector2.ZERO,Vector2(app.w,app.h))
 	var zoom:float=app.world.player.zoom_factor
 	var visual_extent:=40.0*clampf(zoom,.78,1.6)
 	var hit_extent:=maxf(HIT_SIZE.x,visual_extent+4.0)
 	for key in signs:
-		var button:DemoButton=signs[key]
+		var marker:Control=signs[key]
 		var sprite:Sprite2D=app.world.building_sprite(key)
-		if button.disabled or not is_instance_valid(sprite) or not sprite.is_visible_in_tree():
-			button.hide()
+		if not is_instance_valid(sprite) or not sprite.is_visible_in_tree():
+			marker.hide()
 			continue
 		var bounds:=sprite.get_global_transform_with_canvas()*BuildingVisuals.visible_rect(sprite)
 		var ground_offset:=132.0 if key=="chief" else 85.0
 		if key.begins_with("wood_store:") or key.begins_with("stone_store:"):ground_offset=46.0
 		var south:Vector2=app.world.get_global_transform_with_canvas()*(app.model.building_position(key)+Vector2(0,ground_offset))
-		var world_art:Node2D=button.get_meta("world_art")
+		var world_art:Node2D=marker.get_meta("world_art")
 		var art:TextureRect=world_art.get_child(0)
 		art.size=Vector2.ONE*visual_extent
 		art.position=Vector2.ONE*(hit_extent-visual_extent)*.5
-		button.size=Vector2.ONE*hit_extent
-		button.position=south-Vector2(hit_extent*.5,hit_extent*.8)
+		marker.size=Vector2.ONE*hit_extent
+		marker.position=south-Vector2(hit_extent*.5,hit_extent*.8)
 		if app.building_menu.visible and app.building_menu.selected_key==key:
 			var menu_action:Rect2=app.building_menu.upgrade_button.get_global_rect()
-			if menu_action.has_point(button.get_global_rect().get_center()):
-				button.position.y=menu_action.position.y-hit_extent-4.0
-		var hit_bounds := button.get_global_rect()
-		button.visible = screen.intersects(bounds) and screen.intersects(hit_bounds)
-		var sign_filter := Control.MOUSE_FILTER_IGNORE if app.resident_panel.hud_occludes(hit_bounds) else input_filter
-		if button.mouse_filter != sign_filter:
-			button.clear()
-			button.mouse_filter = sign_filter
-		world_art.place(app.world,button.position,Vector2.ONE)
+			if menu_action.has_point(marker.get_global_rect().get_center()):
+				marker.position.y=menu_action.position.y-hit_extent-4.0
+		var hit_bounds := marker.get_global_rect()
+		marker.visible = screen.intersects(bounds) and screen.intersects(hit_bounds)
+		# Sort at the ground anchor so the building cannot cover its own sign.
+		var sort_anchor := Vector2(marker.position.x,south.y)
+		art.position.y += marker.position.y-sort_anchor.y
+		world_art.place(app.world,sort_anchor,Vector2.ONE)

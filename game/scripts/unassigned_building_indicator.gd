@@ -1,7 +1,9 @@
 class_name UnassignedBuildingIndicator
 extends Node2D
 ## Presentation only. Assignment, production and saved clocks remain authoritative.
-const CYCLE:=2.8
+const CYCLE := 5.5
+const LETTER_INTERVAL := 1.1
+const LETTER_LIFETIME := 2.5
 const INK:=Color("ecf7ff")
 const OUTLINE:=Color("334b59")
 var model:GameState
@@ -36,14 +38,22 @@ func _process(delta:float)->void:
 	queue_redraw()
 
 func glyph_sample(index:int)->Dictionary:
-	var progress:=fposmod(clock+float(index)*CYCLE/3.0,CYCLE)/CYCLE
-	return {"position":Vector2(progress*30,-progress*52),"size":roundi(22+progress*14),"alpha":sin(progress*PI)*.9}
+	var elapsed := clock-float(index)*LETTER_INTERVAL
+	var progress := clampf(elapsed/LETTER_LIFETIME,0.0,1.0)
+	var alpha := smoothstep(0.0,.22,progress)*(1.0-smoothstep(.42,1.0,progress))*.9
+	return {
+		"position": Vector2(float(index)*34.0+progress*12.0,-progress*52.0),
+		"size": roundi(44.0+progress*28.0),
+		"alpha": alpha,
+	}
+
 
 func _draw()->void:
 	var font:=DemoArt.theme().default_font
 	for index in 3:
 		var glyph:=glyph_sample(index)
+		if glyph.alpha<=0.0:continue
 		var ink:=INK;ink.a=glyph.alpha
 		var outline:=OUTLINE;outline.a=glyph.alpha*.85
-		draw_string_outline(font,glyph.position,"z",HORIZONTAL_ALIGNMENT_LEFT,-1,glyph.size,4,outline)
+		draw_string_outline(font,glyph.position,"z",HORIZONTAL_ALIGNMENT_LEFT,-1,glyph.size,6,outline)
 		draw_string(font,glyph.position,"z",HORIZONTAL_ALIGNMENT_LEFT,-1,glyph.size,ink)

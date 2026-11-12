@@ -79,6 +79,10 @@ func index()->int:
 		if app.model.home_key(i)==selected_key:return i
 	return -1
 func hit_key(at:Vector2)->String:
+	var signs: BuildingUpgradeSigns = app.stage.get_node_or_null("BuildingUpgradeSigns")
+	if signs:
+		var sign_key := signs.hit_key(app.world.get_global_transform_with_canvas()*at)
+		if not sign_key.is_empty():return sign_key
 	var keys:Array[String]=OwnedBuildingUpgrades.keys(app.model)
 	if app.model.chief_level()>0:keys.append("chief")
 	# The frontmost rendered building owns overlapping roof taps.
