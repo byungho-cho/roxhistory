@@ -5,6 +5,7 @@ const BASE_COMMIT := "9c97f052b583c255c4512bc122919c625bef9551"
 const RUNTIME := "godot-4.5.1-android-pck-2"
 const RELEASE_ROOT := "https://github.com/byungho-cho/roxhistory/releases/download/android-patches-0.2.91/"
 signal check_status_changed(value: String)
+signal manifest_check_failed_to_start
 var check_status := "":
 	set(value):
 		check_status = value
@@ -18,7 +19,15 @@ var cache := "user://rox-patches-0.2.91/"
 var index := cache + "current.json"
 var shade:ColorRect
 var popup:CenterContainer
-enum Phase { IDLE, CHECKING, AVAILABLE, CURRENT, DOWNLOADING, VERIFYING, READY, CHECK_FAILED, DOWNLOAD_FAILED }
+enum Phase { IDLE, CHECKING, AVAILABLE, CURRENT, DOWNLOADING, VERIFYING, READY, CHECK_FAILED, DOWNLOAD_FAILED,
+	APK_READY, APK_PERMISSION, APK_INSTALLING, APK_INSTALL_FAILED }
+const APK_CHANNEL := "https://github.com/byungho-cho/roxhistory/releases/download/android-apk-channel/apk-latest.json"
+var apk_bridge: Object
+var android_activity: Object
+var installed_apk := {}
+var checking_apk := false
+var apk_selected := false
+var apk_candidate := {}
 var phase := Phase.IDLE
 var dialog: Control
 var verification_generation := 0
@@ -70,6 +79,7 @@ func _ready() -> void:
 	request.body_size_limit = 8192
 	add_child(request)
 	request.request_completed.connect(request_completed)
+	setup_apk_bridge()
 	ProjectSettings.set_setting("roxhistory/native/diagnostic_zip",true)
 	shade.hide()
 	popup.hide()
@@ -93,11 +103,13 @@ func leave_title() -> void:
 
 func close_popup()->void:
 	if restart_pending:return
+	if apk_selected and downloading:apk_bridge.cancel()
 	verification_generation += 1
 	if popup.visible:
 		request.cancel_request()
 		discard(cache + "incoming.part")
 	downloading=false
+	checking_apk = false
 	phase = Phase.IDLE
 	progress_bar.hide()
 	if popup.visible:Input.emulate_mouse_from_touch = previous_mouse_emulation
@@ -105,7 +117,9 @@ func close_popup()->void:
 	shade.hide()
 
 func _process(_delta: float) -> void:
-	if phase==Phase.DOWNLOADING:
+	if apk_bridge and apk_selected:
+		poll_apk()
+	if phase==Phase.DOWNLOADING and not apk_selected:
 		update_download_progress(request.get_downloaded_bytes(), int(candidate.size))
 
 func update_download_progress(received: int, total: int) -> void:
@@ -122,9 +136,9 @@ func render_phase() -> void:
 		Phase.CHECKING:
 			dialog.render("업데이트 확인 중…","새 버전이 있는지 확인하고 있습니다.","","","",false,"닫기","")
 		Phase.AVAILABLE:
-			dialog.render("게임 업데이트","새 버전이 준비되었습니다.\n게임 파일을 다운로드할까요?",
-				"다운로드 용량 %.1f MB"%(int(candidate.size)/1000000.0),
-				str(ProjectSettings.get_setting("application/config/version",embedded_version))+"   →",candidate.version,false,"나중에","업데이트 받기")
+			dialog.render("앱 업데이트" if apk_selected else "게임 업데이트","새 버전이 준비되었습니다.\n게임 파일을 다운로드할까요?",
+				"다운로드 용량 %.1f MB"%(int(apk_candidate.size if apk_selected else candidate.size)/1000000.0),
+				str(installed_apk.version if apk_selected else ProjectSettings.get_setting("application/config/version",embedded_version))+"   →",apk_candidate.version if apk_selected else candidate.version,false,"나중에","다운로드" if apk_selected else "업데이트 받기")
 		Phase.CURRENT:
 			dialog.render("이미 최신 버전입니다","현재 버전으로 게임을 시작할 수 있습니다.","","","",false,"닫기","")
 		Phase.DOWNLOADING:
@@ -135,6 +149,14 @@ func render_phase() -> void:
 			dialog.render("업데이트 준비 완료","게임 파일을 내려받고 확인했습니다.\n재실행하면 새 버전이 적용됩니다.",
 				"아래 버튼을 눌러 게임을 다시 시작해 주세요." if failure_message.is_empty() else failure_message,
 				"새 버전",candidate.version,false,"","게임 재실행",220.0)
+		Phase.APK_READY:
+			dialog.render("설치 준비 완료","Android 설치 화면에서 확인해 주세요.","설치 후 게임을 다시 열어 주세요.","새 앱 버전",apk_candidate.version,false,"나중에","설치하기")
+		Phase.APK_PERMISSION:
+			dialog.render("이 앱의 설치 허용이 필요합니다","설정에서 RoxHistory의 앱 설치를 허용해 주세요.","허용한 뒤 돌아와 설치할 수 있습니다.","","",false,"나중에","설정 열기")
+		Phase.APK_INSTALLING:
+			dialog.render("설치 확인 대기","Android 설치 화면에서 확인해 주세요.","설치 후 게임을 다시 열어 주세요.","","",false,"닫기","")
+		Phase.APK_INSTALL_FAILED:
+			dialog.render("앱을 설치하지 못했습니다",failure_message,"기존 앱에서 계속하거나 다시 시도할 수 있습니다.","","",false,"나중에","다시 시도")
 		Phase.CHECK_FAILED, Phase.DOWNLOAD_FAILED:
 			dialog.render("업데이트를 진행하지 못했습니다",failure_message,"연결 상태를 확인한 뒤 다시 시도해 주세요.","","",false,"닫기","다시 시도")
 		_:
@@ -147,6 +169,7 @@ func begin_manifest_check(url: String) -> bool:
 	if downloading or restart_pending or phase==Phase.CHECKING:return false
 	check_url = url
 	candidate.clear()
+	apk_selected = false
 	failure_message = ""
 	phase = Phase.CHECKING
 	render_phase()
@@ -154,13 +177,36 @@ func begin_manifest_check(url: String) -> bool:
 	request.cancel_request()
 	request.download_file = ""
 	request.body_size_limit = 8192
+	checking_apk = apk_bridge!=null and not installed_apk.is_empty()
+	if checking_apk:
+		request.timeout = 2.0
+		if request.request(APK_CHANNEL)==OK:return true
+		checking_apk = false
+	return begin_pck_check()
+
+func begin_pck_check() -> bool:
+	if phase!=Phase.CHECKING:return false
 	request.timeout = 4.0
 	if request.request(check_url)==OK:return true
 	show_failure()
+	manifest_check_failed_to_start.emit()
 	return false
 
 func request_completed(result: int, code: int, _headers: PackedStringArray, body: PackedByteArray) -> void:
-	if phase not in [Phase.CHECKING,Phase.DOWNLOADING]:return
+	if phase not in [Phase.CHECKING,Phase.DOWNLOADING] or (downloading and apk_selected):return
+	if checking_apk:
+		checking_apk = false
+		apk_candidate = verified_apk_catalog(body) if result==HTTPRequest.RESULT_SUCCESS and code==200 else {}
+		if apk_candidate.is_empty():
+			# Reuse the request only after the current signal has unwound.
+			call_deferred("begin_pck_check")
+		else:
+			apk_selected = true
+			phase = Phase.AVAILABLE
+			check_status = ""
+			render_phase()
+			if title_active:show_popup()
+		return
 	request.timeout = 30.0
 	if result != HTTPRequest.RESULT_SUCCESS or code != 200:
 		show_failure()
@@ -206,6 +252,19 @@ func request_completed(result: int, code: int, _headers: PackedStringArray, body
 func primary_action() -> void:
 	if phase==Phase.CHECK_FAILED:
 		begin_manifest_check(check_url)
+	elif apk_selected:
+		match phase:
+			Phase.AVAILABLE, Phase.DOWNLOAD_FAILED: start_apk_download()
+			Phase.APK_READY, Phase.APK_INSTALL_FAILED:
+				if not apk_bridge.allowed(android_activity):
+					phase = Phase.APK_PERMISSION
+				elif apk_bridge.install(android_activity):
+					phase = Phase.APK_INSTALLING
+				else:
+					phase = Phase.DOWNLOAD_FAILED
+					failure_message = "설치 파일을 다시 받아 주세요."
+				render_phase()
+			Phase.APK_PERMISSION: apk_bridge.openPermission(android_activity)
 	elif phase in [Phase.AVAILABLE,Phase.DOWNLOAD_FAILED,Phase.READY]:
 		download_patch()
 
@@ -231,6 +290,85 @@ func download_patch() -> void:
 	request.download_file = cache+"incoming.part"
 	request.body_size_limit = int(candidate.size)
 	if request.request(RELEASE_ROOT+candidate.file)!=OK:show_failure()
+
+
+func setup_apk_bridge() -> void:
+	if not OS.has_feature("android") or not Engine.has_singleton("AndroidRuntime"):return
+	apk_bridge = Engine.get_singleton("JavaClassWrapper").wrap("com.roxhistory.notifications.GameApkUpdate")
+	if not apk_bridge:return
+	android_activity = Engine.get_singleton("AndroidRuntime").getActivity()
+	if not android_activity:
+		apk_bridge = null
+		return
+	var data: Variant = JSON.parse_string(apk_bridge.installed(android_activity))
+	if data is Dictionary:installed_apk = data
+	if str(apk_bridge.snapshot()).begins_with("installed:"):
+		check_status = "앱 업데이트가 완료되었습니다."
+	elif str(apk_bridge.snapshot()).begins_with("install_interrupted:"):
+		check_status = "앱 설치를 완료하지 못했습니다."
+
+func is_manifest_check_pending() -> bool:
+	return phase==Phase.CHECKING
+
+func verified_apk_catalog(body: PackedByteArray) -> Dictionary:
+	var data := verify_payload(body)
+	if data.get("schema")!=1 or data.get("kind")!="apk" or data.get("package")!=installed_apk.get("package"):
+		return {}
+	var syntax := RegEx.new()
+	syntax.compile("^[0-9]{1,4}[.][0-9]{1,4}[.][0-9]{1,4}$")
+	if not data.get("version") is String or syntax.search(data.version)==null:return {}
+	syntax.compile("^[0-9a-f]{64}$")
+	if not data.get("sha256") is String or syntax.search(data.sha256)==null:return {}
+	syntax.compile("^[0-9a-f]{40}$")
+	if not data.get("commit") is String or syntax.search(data.commit)==null:return {}
+	for key in ["code","size","min_sdk"]:
+		if not data.get(key) is float or data[key]!=floorf(data[key]) or data[key]<=0:return {}
+	if data.code<=installed_apk.get("code",0) or data.size>800000000 or data.min_sdk>installed_apk.get("sdk",0):return {}
+	if data.get("file")!="Roxhistory_%s.apk"%data.version or data.get("tag")!="v"+data.version:return {}
+	if not data.get("signer") is String or data.signer.is_empty() or data.signer!=installed_apk.get("signer"):return {}
+	if not data.get("abis") is Array or not data.abis.any(func(abi):return abi in installed_apk.get("abis",[])):return {}
+	if apk_bridge and not apk_bridge.acceptCode(android_activity,int(data.code)):return {}
+	return data
+
+func start_apk_download() -> void:
+	if downloading or apk_candidate.is_empty():return
+	if not apk_bridge.download(android_activity,apk_candidate.version,int(apk_candidate.code),int(apk_candidate.size),apk_candidate.sha256):
+		phase = Phase.DOWNLOAD_FAILED
+		failure_message = "설치 파일을 받을 수 없습니다. 저장공간을 확인해 주세요."
+	else:
+		downloading = true
+		phase = Phase.DOWNLOADING
+		update_download_progress(0,int(apk_candidate.size))
+	render_phase()
+
+func poll_apk() -> void:
+	var snapshot := str(apk_bridge.snapshot()).split(":")
+	if snapshot.size()!=2:return
+	if downloading:
+		update_download_progress(int(snapshot[1]),int(apk_candidate.size))
+		match snapshot[0]:
+			"verifying":
+				if phase!=Phase.VERIFYING:
+					phase = Phase.VERIFYING
+					render_phase()
+			"ready":
+				downloading = false
+				phase = Phase.APK_READY
+				render_phase()
+			"download_failed","cancelled":
+				show_failure("앱 파일을 내려받거나 검증하지 못했습니다.")
+	elif phase==Phase.APK_PERMISSION:
+		if apk_bridge.allowed(android_activity):
+			phase = Phase.APK_READY
+			render_phase()
+		elif snapshot[0]=="permission_failed":
+			phase = Phase.APK_INSTALL_FAILED
+			failure_message = "설치 허용 설정을 열지 못했습니다."
+			render_phase()
+	elif phase==Phase.APK_INSTALLING and snapshot[0] in ["install_failed","install_cancelled"]:
+		phase = Phase.APK_INSTALL_FAILED
+		failure_message = "설치를 취소했습니다." if snapshot[0]=="install_cancelled" else "Android가 앱을 설치하지 못했습니다."
+		render_phase()
 
 
 func verify_payload(bytes:PackedByteArray) -> Dictionary:

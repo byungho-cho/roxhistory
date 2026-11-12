@@ -84,6 +84,9 @@ try {
     if ($LASTEXITCODE -ne 0 -or -not ($manifestTree -match 'android.permission.POST_NOTIFICATIONS') -or -not ($manifestTree -match 'com.roxhistory.notifications.VillageAlarm')) {
         throw 'Android notification permission or receiver is missing from the APK.'
     }
+    if (-not ($manifestTree -match 'android.permission.REQUEST_INSTALL_PACKAGES') -or -not ($manifestTree -match 'com.roxhistory.notifications.GameApkUpdate')) {
+        throw 'APK update permission or callback receiver is missing from the APK.'
+    }
     $signatureLog = Get-Content -Raw (Join-Path $logs 'android-signature.log')
     & (Join-Path $JavaHome 'bin/keytool.exe') -exportcert -keystore $key -alias $keyUser -storepass:env GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD -file (Join-Path $logs 'signer-certificate.der') *> (Join-Path $logs 'certificate-export.log')
     if ($LASTEXITCODE -ne 0) { throw 'Public signing certificate export failed.' }

@@ -1,0 +1,444 @@
+{
+  "schema": 1,
+  "asset_count": 21,
+  "png": 4,
+  "svg": 17,
+  "figma_file": "zkbflw9fCdAlWbphhw5pSS",
+  "source_commit": "536c29fd479e65f853286fe150b34dbd935827a7",
+  "assets": [
+    {
+      "path": "svg/vs/v.svg",
+      "node_id": "2441:1182",
+      "sha256": "93c3611fddd8c5f16b31398ea80e0998fb81ea479d9a70076a0c9e748e11292e",
+      "bytes": 1387,
+      "logical_size": [
+        100,
+        104
+      ],
+      "render_offset": [
+        0,
+        0
+      ],
+      "view_box": "0 0 102 106",
+      "export_size": [
+        102.0,
+        106.0
+      ]
+    },
+    {
+      "path": "svg/vs/s.svg",
+      "node_id": "2441:1185",
+      "sha256": "77658b62300691f303a15530937337083169ef9d67689df3ff0d2afd523a860d",
+      "bytes": 1474,
+      "logical_size": [
+        100,
+        104
+      ],
+      "render_offset": [
+        -1.5,
+        0
+      ],
+      "view_box": "0 0 102 106",
+      "export_size": [
+        102.0,
+        106.0
+      ]
+    },
+    {
+      "path": "svg/motifs/stone-axe.svg",
+      "node_id": "2441:2415",
+      "sha256": "5f1e9c4df5bce1c2ef36b86b04365ed60e61070b24838c0809a54df6c183259f",
+      "bytes": 441,
+      "logical_size": [
+        96,
+        96
+      ],
+      "render_offset": [
+        0,
+        0
+      ],
+      "view_box": "0 0 96 96",
+      "export_size": [
+        96.0,
+        96.0
+      ]
+    },
+    {
+      "path": "svg/motifs/pottery.svg",
+      "node_id": "2441:2421",
+      "sha256": "f36a44ec7f9aebc5b9e7607373d3066013992a895b7d539a82f3f482bc2c4e72",
+      "bytes": 499,
+      "logical_size": [
+        96,
+        96
+      ],
+      "render_offset": [
+        0,
+        0
+      ],
+      "view_box": "0 0 96 96",
+      "export_size": [
+        96.0,
+        96.0
+      ]
+    },
+    {
+      "path": "svg/motifs/tripitaka-woodblock.svg",
+      "node_id": "2441:2426",
+      "sha256": "acdf33e8ade2531c9913d2b10463e87879c8866434279f2d68fcf998297247a4",
+      "bytes": 683,
+      "logical_size": [
+        96,
+        96
+      ],
+      "render_offset": [
+        0,
+        0
+      ],
+      "view_box": "0 0 96 96",
+      "export_size": [
+        96.0,
+        96.0
+      ]
+    },
+    {
+      "path": "svg/power/fine-fibres.svg",
+      "node_id": "2442:1569",
+      "sha256": "df7e04baf327cff28ce081d515ed4f847dc331376fe164c9407fdfcd9ffb7c08",
+      "bytes": 8196,
+      "logical_size": [
+        712,
+        178
+      ],
+      "render_offset": [
+        0,
+        0
+      ],
+      "view_box": "0 0 712 178",
+      "export_size": [
+        712.0,
+        178.0
+      ]
+    },
+    {
+      "path": "png/power/deer-head.png",
+      "node_id": "2442:1675",
+      "sha256": "d39befac91b2d6ec23d57a5878f71f5f2ccc69f8fa6f2db39e77b2250edd8b05",
+      "bytes": 69669,
+      "logical_size": [
+        120,
+        157.5
+      ],
+      "render_offset": [
+        0,
+        0
+      ],
+      "pixel_size": [
+        240,
+        315
+      ],
+      "rgba": "RGBA",
+      "alpha_range": [
+        0,
+        254
+      ],
+      "export_scale": 2
+    },
+    {
+      "path": "svg/power/digit-0.svg",
+      "node_id": "2402:1166",
+      "sha256": "05ff497480f67d49f36e1c2681afd86df49052623eb99bfc5e9f98b926d714eb",
+      "bytes": 4553,
+      "logical_size": [
+        72,
+        112
+      ],
+      "render_offset": [
+        0,
+        0
+      ],
+      "view_box": "0 0 72 112",
+      "export_size": [
+        72.0,
+        112.0
+      ]
+    },
+    {
+      "path": "svg/power/digit-1.svg",
+      "node_id": "2402:1170",
+      "sha256": "a382c7d0dcee0731505d522df132170be24ab26a911eb880d5279db226c6c6bf",
+      "bytes": 2394,
+      "logical_size": [
+        72,
+        112
+      ],
+      "render_offset": [
+        0,
+        0
+      ],
+      "view_box": "0 0 72 112",
+      "export_size": [
+        72.0,
+        112.0
+      ]
+    },
+    {
+      "path": "svg/power/digit-2.svg",
+      "node_id": "2402:1174",
+      "sha256": "3a5c2547416b888ae078484801718002d9b2f9d1b7d647ed483b1f824f8ad3bc",
+      "bytes": 3954,
+      "logical_size": [
+        72,
+        112
+      ],
+      "render_offset": [
+        0,
+        0
+      ],
+      "view_box": "0 0 72 112",
+      "export_size": [
+        72.0,
+        112.0
+      ]
+    },
+    {
+      "path": "svg/power/digit-3.svg",
+      "node_id": "2402:1178",
+      "sha256": "f1d74379e53eb7e63e3805fa769356e34a9c569032086a2100c421fe42fa0048",
+      "bytes": 5445,
+      "logical_size": [
+        72,
+        112
+      ],
+      "render_offset": [
+        0,
+        0
+      ],
+      "view_box": "0 0 72 112",
+      "export_size": [
+        72.0,
+        112.0
+      ]
+    },
+    {
+      "path": "svg/power/digit-4.svg",
+      "node_id": "2402:1182",
+      "sha256": "6e4da1aca060087b6d6caf36cba54e53b197dbc346731d3d6991b10ba625da0d",
+      "bytes": 2608,
+      "logical_size": [
+        72,
+        112
+      ],
+      "render_offset": [
+        0,
+        0
+      ],
+      "view_box": "0 0 72 112",
+      "export_size": [
+        72.0,
+        112.0
+      ]
+    },
+    {
+      "path": "svg/power/digit-5.svg",
+      "node_id": "2402:1186",
+      "sha256": "604928a36237283734ddf2daac7f46865761ce76bda84863b9b67ff14b9cd6dc",
+      "bytes": 4491,
+      "logical_size": [
+        72,
+        112
+      ],
+      "render_offset": [
+        0,
+        0
+      ],
+      "view_box": "0 0 72 112",
+      "export_size": [
+        72.0,
+        112.0
+      ]
+    },
+    {
+      "path": "svg/power/digit-6.svg",
+      "node_id": "2402:1190",
+      "sha256": "853724111929e5ad32ec312a78d156e4ca038aa51482ef7c5f12baf2358b11b8",
+      "bytes": 5649,
+      "logical_size": [
+        72,
+        112
+      ],
+      "render_offset": [
+        0,
+        0
+      ],
+      "view_box": "0 0 72 112",
+      "export_size": [
+        72.0,
+        112.0
+      ]
+    },
+    {
+      "path": "svg/power/digit-7.svg",
+      "node_id": "2402:1194",
+      "sha256": "7d4b9594a48eb63c0bf3cc269dada9c318a638770548ea13439bdc365ee6a0c7",
+      "bytes": 2950,
+      "logical_size": [
+        72,
+        112
+      ],
+      "render_offset": [
+        0,
+        0
+      ],
+      "view_box": "0 0 72 112",
+      "export_size": [
+        72.0,
+        112.0
+      ]
+    },
+    {
+      "path": "svg/power/digit-8.svg",
+      "node_id": "2402:1198",
+      "sha256": "89bf18538226f707ffcec05c0452bc7f61eb4ab2848d95f3fa31572fb201e924",
+      "bytes": 6621,
+      "logical_size": [
+        72,
+        112
+      ],
+      "render_offset": [
+        0,
+        0
+      ],
+      "view_box": "0 0 72 112",
+      "export_size": [
+        72.0,
+        112.0
+      ]
+    },
+    {
+      "path": "svg/power/digit-9.svg",
+      "node_id": "2402:1202",
+      "sha256": "0aac713334b4f6c7a299bbcdd50ac5e757e082b837311ce4d92aabfb5652d78e",
+      "bytes": 5686,
+      "logical_size": [
+        72,
+        112
+      ],
+      "render_offset": [
+        0,
+        0
+      ],
+      "view_box": "0 0 72 112",
+      "export_size": [
+        72.0,
+        112.0
+      ]
+    },
+    {
+      "path": "svg/power/digit-comma.svg",
+      "node_id": "2402:1206",
+      "sha256": "cd198612f58cf5fafae69bb2b50e1bee13dc713dc06e994ae42c0c7edb9b28a0",
+      "bytes": 3253,
+      "logical_size": [
+        32,
+        112
+      ],
+      "render_offset": [
+        0,
+        0
+      ],
+      "view_box": "0 0 32 113",
+      "export_size": [
+        32.0,
+        113.0
+      ]
+    },
+    {
+      "path": "png/power/hunter-head.png",
+      "node_id": "2442:1674",
+      "sha256": "751d8aa4a48fdfb6c338b92f13f50788b0debec34692efde3755e73114081009",
+      "bytes": 84494,
+      "logical_size": [
+        128,
+        128
+      ],
+      "render_offset": [
+        0,
+        0
+      ],
+      "pixel_size": [
+        256,
+        256
+      ],
+      "rgba": "RGBA",
+      "alpha_range": [
+        0,
+        254
+      ],
+      "export_scale": 2
+    },
+    {
+      "path": "png/power/stone-spear.png",
+      "node_id": "2442:1680",
+      "sha256": "df9b2722a6d72c3dc04fedac1b4e14401665b5940fe5dc63d288ed13acadf170",
+      "bytes": 5858,
+      "logical_size": [
+        42,
+        42
+      ],
+      "render_offset": [
+        0,
+        0
+      ],
+      "pixel_size": [
+        84,
+        84
+      ],
+      "rgba": "RGBA",
+      "alpha_range": [
+        0,
+        254
+      ],
+      "export_scale": 2
+    },
+    {
+      "path": "png/vs/stone-spear-source.png",
+      "node_id": "2441:1189",
+      "sha256": "550bb97b8d3a95b381fa9b301ef206df0e3be02bc9df7311cb4ed68f13640d2d",
+      "bytes": 89647,
+      "logical_size": [
+        200,
+        200
+      ],
+      "render_offset": [
+        0,
+        0
+      ],
+      "pixel_size": [
+        400,
+        400
+      ],
+      "rgba": "RGBA",
+      "alpha_range": [
+        0,
+        183
+      ],
+      "export_scale": 2
+    }
+  ],
+  "validation": {
+    "xml_png_parse": "passed",
+    "external_svg_references": 0,
+    "godot_image_load": "21/21 passed on Godot4.6.3; target4.5.1 and device not tested"
+  },
+  "quality_notes": [
+    "Exact source exports. Deer head mask retains some source color near antlers; intended for the selected dark header, not a universal clean sprite.",
+    "SVG shadows/filters may render differently in target Godot; compare against Figma.",
+    "No app implementation, APK build, Android installation or deployment tested."
+  ],
+  "revision": "matching-entry-and-edge-inset20",
+  "notes": [
+    "Crossed spears are now assembled from one high-resolution source reused as two independent mirrored instances; combined preview PNG is not a runtime asset.",
+    "Larger exported portrait rasters remain unchanged; final reduced placement comes from current layout.json."
+  ]
+}

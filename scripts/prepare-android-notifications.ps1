@@ -32,7 +32,7 @@ $classes = Join-Path $work 'classes'
 $addons = Join-Path $repo 'game/addons'
 New-Item -ItemType Directory -Path $classes, $addons -Force | Out-Null
 $platform = Join-Path $AndroidSdkPath 'platforms/android-35/android.jar'
-& (Join-Path $JavaHome 'bin/javac.exe') -encoding UTF-8 -source 8 -target 8 -classpath $platform -d $classes (Join-Path $source 'VillageAlarm.java')
+& (Join-Path $JavaHome 'bin/javac.exe') -encoding UTF-8 -source 8 -target 8 -classpath $platform -d $classes (Join-Path $source 'VillageAlarm.java') (Join-Path $source 'GameApkUpdate.java')
 if ($LASTEXITCODE -ne 0) { throw 'Android notification bridge compilation failed.' }
 $jar = Join-Path $JavaHome 'bin/jar.exe'
 & $jar --create --file (Join-Path $work 'classes.jar') -C $classes .

@@ -1,0 +1,2871 @@
+{
+  "schema": 1,
+  "design_canvas": [
+    1920,
+    1080
+  ],
+  "selected_header_origin": [
+    480,
+    20
+  ],
+  "selected_header_size": [
+    960,
+    198
+  ],
+  "raw_selected_layers": [
+    {
+      "id": "2442:1565",
+      "name": "Preparation / selected 70% / historical motifs / shared VS",
+      "type": "FRAME",
+      "x": 480,
+      "y": 20,
+      "w": 960,
+      "h": 198,
+      "visible": true,
+      "opacity": 1,
+      "transform": [
+        [
+          1,
+          0,
+          480
+        ],
+        [
+          0,
+          1,
+          20
+        ]
+      ],
+      "children": [
+        {
+          "id": "2442:1566",
+          "name": "Unified portrait and VS backdrop / shared ink texture",
+          "type": "INSTANCE",
+          "x": 124,
+          "y": 6,
+          "w": 712,
+          "h": 178,
+          "visible": true,
+          "opacity": 0.699999988079071,
+          "transform": [
+            [
+              1,
+              0,
+              124
+            ],
+            [
+              0,
+              1,
+              6
+            ]
+          ],
+          "children": []
+        },
+        {
+          "id": "2442:1567",
+          "name": "Historical motifs and fibres / independently visible groups",
+          "type": "FRAME",
+          "x": 124,
+          "y": 6,
+          "w": 712,
+          "h": 178,
+          "visible": true,
+          "opacity": 1,
+          "transform": [
+            [
+              1,
+              0,
+              124
+            ],
+            [
+              0,
+              1,
+              6
+            ]
+          ],
+          "children": [
+            {
+              "id": "2442:1568",
+              "name": "Brush alpha mask",
+              "type": "INSTANCE",
+              "x": 0,
+              "y": 0,
+              "w": 712,
+              "h": 178,
+              "visible": true,
+              "opacity": 1,
+              "transform": [
+                [
+                  1,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  1,
+                  0
+                ]
+              ],
+              "children": []
+            },
+            {
+              "id": "2442:1569",
+              "name": "Fine fibres / old cloud shapes hidden",
+              "type": "FRAME",
+              "x": 0,
+              "y": 0,
+              "w": 712,
+              "h": 178,
+              "visible": true,
+              "opacity": 1,
+              "transform": [
+                [
+                  1,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  1,
+                  0
+                ]
+              ],
+              "children": [
+                {
+                  "id": "2442:1570",
+                  "name": "Group",
+                  "type": "GROUP",
+                  "x": 22.3741455078125,
+                  "y": 29,
+                  "w": 608.5875244140625,
+                  "h": 90,
+                  "visible": false,
+                  "opacity": 1,
+                  "transform": [
+                    [
+                      1,
+                      0,
+                      22.3741455078125
+                    ],
+                    [
+                      0,
+                      1,
+                      29
+                    ]
+                  ]
+                },
+                {
+                  "id": "2442:1574",
+                  "name": "Group",
+                  "type": "GROUP",
+                  "x": 6,
+                  "y": 0,
+                  "w": 694,
+                  "h": 167,
+                  "visible": true,
+                  "opacity": 1,
+                  "transform": [
+                    [
+                      1,
+                      0,
+                      6
+                    ],
+                    [
+                      0,
+                      1,
+                      0
+                    ]
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "2442:1663",
+              "name": "Stone axe / toggle independently",
+              "type": "FRAME",
+              "x": 0,
+              "y": 0,
+              "w": 712,
+              "h": 178,
+              "visible": true,
+              "opacity": 1,
+              "transform": [
+                [
+                  1,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  1,
+                  0
+                ]
+              ],
+              "children": [
+                {
+                  "id": "2442:1664",
+                  "name": "Background/Motif/Stone axe",
+                  "type": "INSTANCE",
+                  "x": 26,
+                  "y": 40,
+                  "w": 48,
+                  "h": 48,
+                  "visible": true,
+                  "opacity": 0.75,
+                  "transform": [
+                    [
+                      1,
+                      0,
+                      26
+                    ],
+                    [
+                      0,
+                      1,
+                      40
+                    ]
+                  ]
+                },
+                {
+                  "id": "2442:1665",
+                  "name": "Background/Motif/Stone axe",
+                  "type": "INSTANCE",
+                  "x": 448,
+                  "y": 40,
+                  "w": 48,
+                  "h": 48,
+                  "visible": true,
+                  "opacity": 0.75,
+                  "transform": [
+                    [
+                      1,
+                      0,
+                      448
+                    ],
+                    [
+                      0,
+                      1,
+                      40
+                    ]
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "2442:1666",
+              "name": "Pottery / toggle independently",
+              "type": "FRAME",
+              "x": 0,
+              "y": 0,
+              "w": 712,
+              "h": 178,
+              "visible": true,
+              "opacity": 1,
+              "transform": [
+                [
+                  1,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  1,
+                  0
+                ]
+              ],
+              "children": [
+                {
+                  "id": "2442:1667",
+                  "name": "Background/Motif/Pottery",
+                  "type": "INSTANCE",
+                  "x": 74,
+                  "y": 107,
+                  "w": 44,
+                  "h": 44,
+                  "visible": true,
+                  "opacity": 0.75,
+                  "transform": [
+                    [
+                      1,
+                      0,
+                      74
+                    ],
+                    [
+                      0,
+                      1,
+                      107
+                    ]
+                  ]
+                },
+                {
+                  "id": "2442:1668",
+                  "name": "Background/Motif/Pottery",
+                  "type": "INSTANCE",
+                  "x": 610,
+                  "y": 32,
+                  "w": 48,
+                  "h": 48,
+                  "visible": true,
+                  "opacity": 0.75,
+                  "transform": [
+                    [
+                      1,
+                      0,
+                      610
+                    ],
+                    [
+                      0,
+                      1,
+                      32
+                    ]
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "2442:1669",
+              "name": "Tripitaka woodblock / toggle independently",
+              "type": "FRAME",
+              "x": 0,
+              "y": 0,
+              "w": 712,
+              "h": 178,
+              "visible": true,
+              "opacity": 1,
+              "transform": [
+                [
+                  1,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  1,
+                  0
+                ]
+              ],
+              "children": [
+                {
+                  "id": "2442:1670",
+                  "name": "Background/Motif/Tripitaka woodblock",
+                  "type": "INSTANCE",
+                  "x": 215,
+                  "y": 42,
+                  "w": 46,
+                  "h": 46,
+                  "visible": true,
+                  "opacity": 0.75,
+                  "transform": [
+                    [
+                      1,
+                      0,
+                      215
+                    ],
+                    [
+                      0,
+                      1,
+                      42
+                    ]
+                  ]
+                },
+                {
+                  "id": "2442:1671",
+                  "name": "Background/Motif/Tripitaka woodblock",
+                  "type": "INSTANCE",
+                  "x": 628,
+                  "y": 110,
+                  "w": 48,
+                  "h": 48,
+                  "visible": true,
+                  "opacity": 0.75,
+                  "transform": [
+                    [
+                      1,
+                      0,
+                      628
+                    ],
+                    [
+                      0,
+                      1,
+                      110
+                    ]
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "2442:1672",
+          "name": "Thin two-ended brush / below power",
+          "type": "INSTANCE",
+          "x": 195.60000610351562,
+          "y": 156,
+          "w": 248,
+          "h": 24,
+          "visible": true,
+          "opacity": 0.7200000286102295,
+          "transform": [
+            [
+              1,
+              0,
+              195.60000610351562
+            ],
+            [
+              0,
+              1,
+              156
+            ]
+          ],
+          "children": []
+        },
+        {
+          "id": "2442:1673",
+          "name": "Thin two-ended brush / below power",
+          "type": "INSTANCE",
+          "x": 518,
+          "y": 156,
+          "w": 248,
+          "h": 24,
+          "visible": true,
+          "opacity": 0.7200000286102295,
+          "transform": [
+            [
+              1,
+              0,
+              518
+            ],
+            [
+              0,
+              1,
+              156
+            ]
+          ],
+          "children": []
+        },
+        {
+          "id": "2442:1674",
+          "name": "Hunter / transparent portrait / no box",
+          "type": "INSTANCE",
+          "x": 276.3999938964844,
+          "y": 40.79999542236328,
+          "w": 102.40000915527344,
+          "h": 102.40000915527344,
+          "visible": true,
+          "opacity": 1,
+          "transform": [
+            [
+              1,
+              0,
+              276.3999938964844
+            ],
+            [
+              0,
+              1,
+              40.79999542236328
+            ]
+          ],
+          "children": [
+            {
+              "id": "I2442:1674;2281:514",
+              "name": "Portrait clip",
+              "type": "FRAME",
+              "x": 4.266666889190674,
+              "y": 4.266666889190674,
+              "w": 93.86666870117188,
+              "h": 93.86666870117188,
+              "visible": true,
+              "opacity": 1,
+              "transform": [
+                [
+                  1,
+                  0,
+                  4.266666889190674
+                ],
+                [
+                  0,
+                  1,
+                  4.266666889190674
+                ]
+              ],
+              "children": [
+                {
+                  "id": "I2442:1674;2281:515",
+                  "name": "Hunting/Portrait/Leader",
+                  "type": "INSTANCE",
+                  "x": 2.133333444595337,
+                  "y": 0,
+                  "w": 89.60000610351562,
+                  "h": 93.86666870117188,
+                  "visible": true,
+                  "opacity": 1,
+                  "transform": [
+                    [
+                      1,
+                      0,
+                      2.133333444595337
+                    ],
+                    [
+                      0,
+                      1,
+                      0
+                    ]
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "2442:1675",
+          "name": "Deer / transparent head silhouette",
+          "type": "FRAME",
+          "x": 586,
+          "y": 15.75,
+          "w": 96,
+          "h": 126,
+          "visible": true,
+          "opacity": 1,
+          "transform": [
+            [
+              1,
+              0,
+              586
+            ],
+            [
+              0,
+              1,
+              15.75
+            ]
+          ],
+          "children": [
+            {
+              "id": "2442:1676",
+              "name": "Head and antlers / editable silhouette mask",
+              "type": "VECTOR",
+              "x": 0,
+              "y": 0,
+              "w": 96,
+              "h": 126,
+              "visible": true,
+              "opacity": 1,
+              "transform": [
+                [
+                  1,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  1,
+                  0
+                ]
+              ]
+            },
+            {
+              "id": "2442:1677",
+              "name": "Deer / transparent head and intact antlers",
+              "type": "RECTANGLE",
+              "x": 0,
+              "y": 0,
+              "w": 96,
+              "h": 126,
+              "visible": true,
+              "opacity": 1,
+              "transform": [
+                [
+                  1,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  1,
+                  0
+                ]
+              ]
+            }
+          ]
+        },
+        {
+          "id": "2442:1678",
+          "name": "VS / shared strike assembly / independent V S backdrop",
+          "type": "INSTANCE",
+          "x": 422.6000061035156,
+          "y": 40.60000228881836,
+          "w": 114.79999542236328,
+          "h": 114.79999542236328,
+          "visible": true,
+          "opacity": 1,
+          "transform": [
+            [
+              1,
+              0,
+              422.6000061035156
+            ],
+            [
+              0,
+              1,
+              40.60000228881836
+            ]
+          ],
+          "children": [
+            {
+              "id": "I2442:1678;2445:33",
+              "name": "Hunting/VS/Crossed stone spears",
+              "type": "INSTANCE",
+              "x": 0,
+              "y": 0,
+              "w": 114.79999542236328,
+              "h": 114.79999542236328,
+              "visible": true,
+              "opacity": 1,
+              "transform": [
+                [
+                  1,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  1,
+                  0
+                ]
+              ],
+              "children": [
+                {
+                  "id": "I2442:1678;2445:33;2441:1189",
+                  "name": "Animation part / left stone spear / independent",
+                  "type": "RECTANGLE",
+                  "x": -12.59999942779541,
+                  "y": -12.59999942779541,
+                  "w": 140,
+                  "h": 140,
+                  "visible": true,
+                  "opacity": 0.7200000286102295,
+                  "transform": [
+                    [
+                      1,
+                      0,
+                      -12.59999942779541
+                    ],
+                    [
+                      0,
+                      1,
+                      -12.59999942779541
+                    ]
+                  ]
+                },
+                {
+                  "id": "I2442:1678;2445:33;2441:1190",
+                  "name": "Animation part / right stone spear / independent",
+                  "type": "RECTANGLE",
+                  "x": 127.4000015258789,
+                  "y": -12.59999942779541,
+                  "w": 140,
+                  "h": 140,
+                  "visible": true,
+                  "opacity": 0.7200000286102295,
+                  "transform": [
+                    [
+                      -1,
+                      0,
+                      127.4000015258789
+                    ],
+                    [
+                      0,
+                      1,
+                      -12.59999942779541
+                    ]
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "I2442:1678;2445:36",
+              "name": "Hunting/VS/V",
+              "type": "INSTANCE",
+              "x": 3.5,
+              "y": 22.399999618530273,
+              "w": 57.39999771118164,
+              "h": 59.69599914550781,
+              "visible": true,
+              "opacity": 1,
+              "transform": [
+                [
+                  1,
+                  0,
+                  3.5
+                ],
+                [
+                  0,
+                  1,
+                  22.399999618530273
+                ]
+              ],
+              "children": [
+                {
+                  "id": "I2442:1678;2445:36;2441:1183",
+                  "name": "V / sharp slanted gold vector",
+                  "type": "FRAME",
+                  "x": 0,
+                  "y": 0,
+                  "w": 57.39999771118164,
+                  "h": 59.69599914550781,
+                  "visible": true,
+                  "opacity": 1,
+                  "transform": [
+                    [
+                      1,
+                      0,
+                      0
+                    ],
+                    [
+                      0,
+                      1,
+                      0
+                    ]
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "I2442:1678;2445:39",
+              "name": "Hunting/VS/S",
+              "type": "INSTANCE",
+              "x": 51.099998474121094,
+              "y": 39.20000076293945,
+              "w": 57.39999771118164,
+              "h": 59.69599914550781,
+              "visible": true,
+              "opacity": 1,
+              "transform": [
+                [
+                  1,
+                  0,
+                  51.099998474121094
+                ],
+                [
+                  0,
+                  1,
+                  39.20000076293945
+                ]
+              ],
+              "children": [
+                {
+                  "id": "I2442:1678;2445:39;2441:1186",
+                  "name": "S / sharp slanted gold vector",
+                  "type": "FRAME",
+                  "x": 0,
+                  "y": 0,
+                  "w": 57.39999771118164,
+                  "h": 59.69599914550781,
+                  "visible": true,
+                  "opacity": 1,
+                  "transform": [
+                    [
+                      1,
+                      0,
+                      0
+                    ],
+                    [
+                      0,
+                      1,
+                      0
+                    ]
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "2442:1679",
+          "name": "Ally / power icon and 12,300",
+          "type": "FRAME",
+          "x": 224.01695251464844,
+          "y": 132,
+          "w": 191.1660919189453,
+          "h": 52.2188835144043,
+          "visible": true,
+          "opacity": 1,
+          "transform": [
+            [
+              1,
+              0,
+              224.01695251464844
+            ],
+            [
+              0,
+              1,
+              132
+            ]
+          ],
+          "children": [
+            {
+              "id": "2442:1680",
+              "name": "Power / existing stone spear icon",
+              "type": "RECTANGLE",
+              "x": 0,
+              "y": 5.109441757202148,
+              "w": 42,
+              "h": 42,
+              "visible": true,
+              "opacity": 1,
+              "transform": [
+                [
+                  1,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  1,
+                  5.109441757202148
+                ]
+              ]
+            },
+            {
+              "id": "2442:1681",
+              "name": "Power / 12,300 / editable glyph instances",
+              "type": "FRAME",
+              "x": 46,
+              "y": 0,
+              "w": 145.1660919189453,
+              "h": 52.2188835144043,
+              "visible": true,
+              "opacity": 1,
+              "transform": [
+                [
+                  1,
+                  0,
+                  46
+                ],
+                [
+                  0,
+                  1,
+                  0
+                ]
+              ],
+              "children": [
+                {
+                  "id": "2442:1682",
+                  "name": "Digit / 1",
+                  "type": "INSTANCE",
+                  "x": 0,
+                  "y": 0,
+                  "w": 33.56928253173828,
+                  "h": 52.2188835144043,
+                  "visible": true,
+                  "opacity": 1,
+                  "transform": [
+                    [
+                      1,
+                      0,
+                      0
+                    ],
+                    [
+                      0,
+                      1,
+                      0
+                    ]
+                  ]
+                },
+                {
+                  "id": "2442:1683",
+                  "name": "Digit / 2",
+                  "type": "INSTANCE",
+                  "x": 26.04928207397461,
+                  "y": 0,
+                  "w": 33.56928253173828,
+                  "h": 52.2188835144043,
+                  "visible": true,
+                  "opacity": 1,
+                  "transform": [
+                    [
+                      1,
+                      0,
+                      26.04928207397461
+                    ],
+                    [
+                      0,
+                      1,
+                      0
+                    ]
+                  ]
+                },
+                {
+                  "id": "2442:1684",
+                  "name": "Digit / Comma",
+                  "type": "INSTANCE",
+                  "x": 52.09856414794922,
+                  "y": 0,
+                  "w": 14.91968059539795,
+                  "h": 52.2188835144043,
+                  "visible": true,
+                  "opacity": 1,
+                  "transform": [
+                    [
+                      1,
+                      0,
+                      52.09856414794922
+                    ],
+                    [
+                      0,
+                      1,
+                      0
+                    ]
+                  ]
+                },
+                {
+                  "id": "2442:1685",
+                  "name": "Digit / 3",
+                  "type": "INSTANCE",
+                  "x": 59.49824523925781,
+                  "y": 0,
+                  "w": 33.56928253173828,
+                  "h": 52.2188835144043,
+                  "visible": true,
+                  "opacity": 1,
+                  "transform": [
+                    [
+                      1,
+                      0,
+                      59.49824523925781
+                    ],
+                    [
+                      0,
+                      1,
+                      0
+                    ]
+                  ]
+                },
+                {
+                  "id": "2442:1686",
+                  "name": "Digit / 0",
+                  "type": "INSTANCE",
+                  "x": 85.54753112792969,
+                  "y": 0,
+                  "w": 33.56928253173828,
+                  "h": 52.2188835144043,
+                  "visible": true,
+                  "opacity": 1,
+                  "transform": [
+                    [
+                      1,
+                      0,
+                      85.54753112792969
+                    ],
+                    [
+                      0,
+                      1,
+                      0
+                    ]
+                  ]
+                },
+                {
+                  "id": "2442:1687",
+                  "name": "Digit / 0",
+                  "type": "INSTANCE",
+                  "x": 111.59681701660156,
+                  "y": 0,
+                  "w": 33.56928253173828,
+                  "h": 52.2188835144043,
+                  "visible": true,
+                  "opacity": 1,
+                  "transform": [
+                    [
+                      1,
+                      0,
+                      111.59681701660156
+                    ],
+                    [
+                      0,
+                      1,
+                      0
+                    ]
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "2442:1688",
+          "name": "Deer / power icon and 8,000",
+          "type": "FRAME",
+          "x": 559.4415893554688,
+          "y": 132,
+          "w": 165.11680603027344,
+          "h": 52.2188835144043,
+          "visible": true,
+          "opacity": 1,
+          "transform": [
+            [
+              1,
+              0,
+              559.4415893554688
+            ],
+            [
+              0,
+              1,
+              132
+            ]
+          ],
+          "children": [
+            {
+              "id": "2442:1689",
+              "name": "Power / existing stone spear icon",
+              "type": "RECTANGLE",
+              "x": 0,
+              "y": 5.109441757202148,
+              "w": 42,
+              "h": 42,
+              "visible": true,
+              "opacity": 1,
+              "transform": [
+                [
+                  1,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  1,
+                  5.109441757202148
+                ]
+              ]
+            },
+            {
+              "id": "2442:1690",
+              "name": "Power / 8,000 / editable glyph instances",
+              "type": "FRAME",
+              "x": 46,
+              "y": 0,
+              "w": 119.11681365966797,
+              "h": 52.2188835144043,
+              "visible": true,
+              "opacity": 1,
+              "transform": [
+                [
+                  1,
+                  0,
+                  46
+                ],
+                [
+                  0,
+                  1,
+                  0
+                ]
+              ],
+              "children": [
+                {
+                  "id": "2442:1691",
+                  "name": "Digit / 8",
+                  "type": "INSTANCE",
+                  "x": 0,
+                  "y": 0,
+                  "w": 33.56928253173828,
+                  "h": 52.2188835144043,
+                  "visible": true,
+                  "opacity": 1,
+                  "transform": [
+                    [
+                      1,
+                      0,
+                      0
+                    ],
+                    [
+                      0,
+                      1,
+                      0
+                    ]
+                  ]
+                },
+                {
+                  "id": "2442:1692",
+                  "name": "Digit / Comma",
+                  "type": "INSTANCE",
+                  "x": 26.04928207397461,
+                  "y": 0,
+                  "w": 14.91968059539795,
+                  "h": 52.2188835144043,
+                  "visible": true,
+                  "opacity": 1,
+                  "transform": [
+                    [
+                      1,
+                      0,
+                      26.04928207397461
+                    ],
+                    [
+                      0,
+                      1,
+                      0
+                    ]
+                  ]
+                },
+                {
+                  "id": "2442:1693",
+                  "name": "Digit / 0",
+                  "type": "INSTANCE",
+                  "x": 33.4489631652832,
+                  "y": 0,
+                  "w": 33.56928253173828,
+                  "h": 52.2188835144043,
+                  "visible": true,
+                  "opacity": 1,
+                  "transform": [
+                    [
+                      1,
+                      0,
+                      33.4489631652832
+                    ],
+                    [
+                      0,
+                      1,
+                      0
+                    ]
+                  ]
+                },
+                {
+                  "id": "2442:1694",
+                  "name": "Digit / 0",
+                  "type": "INSTANCE",
+                  "x": 59.49824523925781,
+                  "y": 0,
+                  "w": 33.56928253173828,
+                  "h": 52.2188835144043,
+                  "visible": true,
+                  "opacity": 1,
+                  "transform": [
+                    [
+                      1,
+                      0,
+                      59.49824523925781
+                    ],
+                    [
+                      0,
+                      1,
+                      0
+                    ]
+                  ]
+                },
+                {
+                  "id": "2442:1695",
+                  "name": "Digit / 0",
+                  "type": "INSTANCE",
+                  "x": 85.54753112792969,
+                  "y": 0,
+                  "w": 33.56928253173828,
+                  "h": 52.2188835144043,
+                  "visible": true,
+                  "opacity": 1,
+                  "transform": [
+                    [
+                      1,
+                      0,
+                      85.54753112792969
+                    ],
+                    [
+                      0,
+                      1,
+                      0
+                    ]
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "I2323:792;2284:568",
+      "name": "VS / shared strike assembly / independent V S crossed spears",
+      "type": "INSTANCE",
+      "x": 420,
+      "y": 12,
+      "w": 72,
+      "h": 72,
+      "visible": true,
+      "opacity": 1,
+      "rotation": 0,
+      "transform": [
+        [
+          1,
+          0,
+          420
+        ],
+        [
+          0,
+          1,
+          12
+        ]
+      ],
+      "children": [
+        {
+          "id": "I2323:792;2284:568;2445:63",
+          "name": "Hunting/VS/Crossed stone spears",
+          "type": "INSTANCE",
+          "x": 0,
+          "y": 0,
+          "w": 71.99999237060547,
+          "h": 71.99999237060547,
+          "visible": true,
+          "opacity": 1,
+          "rotation": 0,
+          "transform": [
+            [
+              1,
+              0,
+              0
+            ],
+            [
+              0,
+              1,
+              0
+            ]
+          ],
+          "children": [
+            {
+              "id": "I2323:792;2284:568;2445:63;2441:1189",
+              "name": "Stone spear / diagonal right",
+              "type": "RECTANGLE",
+              "x": -7.902439117431641,
+              "y": -7.902439117431641,
+              "w": 87.80487060546875,
+              "h": 87.80487060546875,
+              "visible": true,
+              "opacity": 0.7200000286102295,
+              "rotation": 0,
+              "transform": [
+                [
+                  1,
+                  0,
+                  -7.902439117431641
+                ],
+                [
+                  0,
+                  1,
+                  -7.902439117431641
+                ]
+              ]
+            },
+            {
+              "id": "I2323:792;2284:568;2445:63;2441:1190",
+              "name": "Stone spear / diagonal left",
+              "type": "RECTANGLE",
+              "x": 79.9024429321289,
+              "y": -7.902439117431641,
+              "w": 87.80487060546875,
+              "h": 87.80487060546875,
+              "visible": true,
+              "opacity": 0.7200000286102295,
+              "rotation": -180,
+              "transform": [
+                [
+                  -1,
+                  0,
+                  79.9024429321289
+                ],
+                [
+                  0,
+                  1,
+                  -7.902439117431641
+                ]
+              ]
+            }
+          ]
+        },
+        {
+          "id": "I2323:792;2284:568;2445:66",
+          "name": "Hunting/VS/V",
+          "type": "INSTANCE",
+          "x": 2.195122003555298,
+          "y": 14.04878044128418,
+          "w": 36,
+          "h": 37.439998626708984,
+          "visible": true,
+          "opacity": 1,
+          "rotation": 0,
+          "transform": [
+            [
+              1,
+              0,
+              2.195122003555298
+            ],
+            [
+              0,
+              1,
+              14.04878044128418
+            ]
+          ],
+          "children": [
+            {
+              "id": "I2323:792;2284:568;2445:66;2441:1183",
+              "name": "V / sharp slanted gold vector",
+              "type": "FRAME",
+              "x": 0,
+              "y": 0,
+              "w": 36,
+              "h": 37.439998626708984,
+              "visible": true,
+              "opacity": 1,
+              "rotation": 0,
+              "transform": [
+                [
+                  1,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  1,
+                  0
+                ]
+              ],
+              "children": [
+                {
+                  "id": "I2323:792;2284:568;2445:66;2441:1184",
+                  "name": "Vector",
+                  "type": "VECTOR",
+                  "x": 5.039999961853027,
+                  "y": 0.7199999690055847,
+                  "w": 30.959999084472656,
+                  "h": 35.279998779296875,
+                  "visible": true,
+                  "opacity": 1,
+                  "rotation": 0,
+                  "transform": [
+                    [
+                      1,
+                      0,
+                      5.039999961853027
+                    ],
+                    [
+                      0,
+                      1,
+                      0.7199999690055847
+                    ]
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "I2323:792;2284:568;2445:69",
+          "name": "Hunting/VS/S",
+          "type": "INSTANCE",
+          "x": 32.04877853393555,
+          "y": 24.585365295410156,
+          "w": 36,
+          "h": 37.439998626708984,
+          "visible": true,
+          "opacity": 1,
+          "rotation": 0,
+          "transform": [
+            [
+              1,
+              0,
+              32.04877853393555
+            ],
+            [
+              0,
+              1,
+              24.585365295410156
+            ]
+          ],
+          "children": [
+            {
+              "id": "I2323:792;2284:568;2445:69;2441:1186",
+              "name": "S / sharp slanted gold vector",
+              "type": "FRAME",
+              "x": 0,
+              "y": 0,
+              "w": 36,
+              "h": 37.439998626708984,
+              "visible": true,
+              "opacity": 1,
+              "rotation": 0,
+              "transform": [
+                [
+                  1,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  1,
+                  0
+                ]
+              ],
+              "children": [
+                {
+                  "id": "I2323:792;2284:568;2445:69;2441:1187",
+                  "name": "Vector",
+                  "type": "VECTOR",
+                  "x": 0.35999998450279236,
+                  "y": 0.7199999690055847,
+                  "w": 33.47999954223633,
+                  "h": 35.279998779296875,
+                  "visible": true,
+                  "opacity": 1,
+                  "rotation": 0,
+                  "transform": [
+                    [
+                      1,
+                      0,
+                      0.35999998450279236
+                    ],
+                    [
+                      0,
+                      1,
+                      0.7199999690055847
+                    ]
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "vs_assembly": {
+    "logical_size": [
+      164,
+      164
+    ],
+    "left_spear": {
+      "asset": "png/vs/stone-spear-source.png",
+      "logical_rect": [
+        -18,
+        -18,
+        200,
+        200
+      ],
+      "horizontal_flip": false,
+      "source_alpha_baked": 0.72
+    },
+    "right_spear": {
+      "asset": "png/vs/stone-spear-source.png",
+      "logical_rect": [
+        -18,
+        -18,
+        200,
+        200
+      ],
+      "horizontal_flip": true,
+      "source_alpha_baked": 0.72
+    },
+    "v": {
+      "path": "svg/vs/v.svg",
+      "logical_rect": [
+        5,
+        32,
+        82,
+        85.28
+      ],
+      "scale": 0.82
+    },
+    "s": {
+      "path": "svg/vs/s.svg",
+      "logical_rect": [
+        73,
+        56,
+        82,
+        85.28
+      ],
+      "scale": 0.82
+    },
+    "prep_position": [
+      422.6,
+      40.6
+    ],
+    "prep_scale": 0.7,
+    "battle_scale": 0.43902439024390244
+  },
+  "power_digits": {
+    "logical_glyph_size": [
+      72,
+      112
+    ],
+    "comma_size": [
+      32,
+      112
+    ],
+    "selected_scale": 0.46624,
+    "letter_spacing": -7.52,
+    "number_height": 52.21888,
+    "reflow": "Lay out glyphs with current widths and spacing, then recenter full icon+number group about ally x319.6 / enemy x642 in the header. Do not hardcode example values."
+  },
+  "notes": [
+    "Raw children x/y are relative to their parent. Do not treat descendants as screen coordinates.",
+    "Source SVG export pixel extent can include shadow beyond logical component. Use render_offset + exported viewBox; do not stretch export to logical size.",
+    "Brush alpha clipping must also clip fine-fibres and all motifs.",
+    "Motif SVG includes internal opacity 0.55; selected instance opacity 0.75 applies once. Single spear PNG already includes its source alpha; do not apply source opacity again.",
+    "Deer-head is exact selected header mask, not a new cleaned universal sprite. Thin yellow/green source remnants are present near antlers; compare at target size on brush.",
+    "Current selected portrait sizes are hunter102.4x102.4 and deer96x126; retain larger exported rasters and scale once to these final sizes.",
+    "Inset20 is measured from all screen edges in the1920x1080 design, including button shadow bounds; it is not only a header y offset.",
+    "Matching entry motion is a development plan only; no Figma animation or app behavior has been implemented.",
+    "New axe-shaped number backdrop proposal is excluded; keep selected brush design."
+  ],
+  "preparation_ui": {
+    "id": "2265:151",
+    "name": "03 UI / independent editable instances",
+    "type": "FRAME",
+    "visible": true,
+    "x": 0,
+    "y": 0,
+    "w": 1920,
+    "h": 1080,
+    "screenBounds": {
+      "x": 0,
+      "y": 0,
+      "width": 1920,
+      "height": 1080
+    },
+    "renderBounds": {
+      "x": 0,
+      "y": 0,
+      "width": 1920,
+      "height": 1080
+    },
+    "children": [
+      {
+        "id": "2265:152",
+        "name": "SOURCE v14.1 · Header",
+        "type": "INSTANCE",
+        "visible": false,
+        "x": 20,
+        "y": 20,
+        "w": 440,
+        "h": 175,
+        "screenBounds": {
+          "x": 20,
+          "y": 20,
+          "width": 440,
+          "height": 175
+        },
+        "renderBounds": null,
+        "children": []
+      },
+      {
+        "id": "2265:164",
+        "name": "SOURCE v14.1 · Power comparison",
+        "type": "INSTANCE",
+        "visible": false,
+        "x": 600,
+        "y": 40,
+        "w": 900,
+        "h": 150,
+        "screenBounds": {
+          "x": 600,
+          "y": 40,
+          "width": 900,
+          "height": 150
+        },
+        "renderBounds": null,
+        "children": []
+      },
+      {
+        "id": "2265:174",
+        "name": "Roster / 3 editable cards",
+        "type": "INSTANCE",
+        "visible": true,
+        "x": 20,
+        "y": 159,
+        "w": 330,
+        "h": 710,
+        "screenBounds": {
+          "x": 20,
+          "y": 159,
+          "width": 330,
+          "height": 710
+        },
+        "renderBounds": {
+          "x": 20,
+          "y": 159,
+          "width": 330,
+          "height": 710
+        },
+        "children": [
+          {
+            "id": "I2265:174;2263:520",
+            "name": "Hunt/BG/준비 패널 · 사슴 문양 · v002",
+            "type": "INSTANCE",
+            "visible": true,
+            "x": 0,
+            "y": 0,
+            "w": 330,
+            "h": 710,
+            "screenBounds": {
+              "x": 20,
+              "y": 159,
+              "width": 330,
+              "height": 710
+            },
+            "renderBounds": {
+              "x": 20,
+              "y": 159,
+              "width": 330,
+              "height": 710
+            }
+          },
+          {
+            "id": "I2265:174;2263:521",
+            "name": "출전 편성",
+            "type": "TEXT",
+            "visible": true,
+            "x": 34,
+            "y": 80,
+            "w": 262,
+            "h": 50,
+            "screenBounds": {
+              "x": 54,
+              "y": 239,
+              "width": 262,
+              "height": 50
+            },
+            "renderBounds": {
+              "x": 120.05575561523438,
+              "y": 249.508056640625,
+              "width": 127.91915893554688,
+              "height": 31.517822265625
+            }
+          },
+          {
+            "id": "I2265:174;2263:522",
+            "name": "3 / 3",
+            "type": "TEXT",
+            "visible": true,
+            "x": 75,
+            "y": 130,
+            "w": 180,
+            "h": 42,
+            "screenBounds": {
+              "x": 95,
+              "y": 289,
+              "width": 180,
+              "height": 42
+            },
+            "renderBounds": {
+              "x": 155.48703002929688,
+              "y": 297.820068359375,
+              "width": 58.130645751953125,
+              "height": 29.60986328125
+            }
+          },
+          {
+            "id": "I2265:174;2263:523",
+            "name": "Roster cards",
+            "type": "FRAME",
+            "visible": true,
+            "x": 70,
+            "y": 180,
+            "w": 190,
+            "h": 494,
+            "screenBounds": {
+              "x": 90,
+              "y": 339,
+              "width": 190,
+              "height": 494
+            },
+            "renderBounds": {
+              "x": 90,
+              "y": 339,
+              "width": 190,
+              "height": 494
+            }
+          }
+        ]
+      },
+      {
+        "id": "2265:263",
+        "name": "SOURCE v14.1 · Bag",
+        "type": "INSTANCE",
+        "visible": false,
+        "x": 24,
+        "y": 930,
+        "w": 300,
+        "h": 112,
+        "screenBounds": {
+          "x": 24,
+          "y": 930,
+          "width": 300,
+          "height": 112
+        },
+        "renderBounds": null,
+        "children": []
+      },
+      {
+        "id": "2265:275",
+        "name": "Quick sortie / latest dark metal",
+        "type": "INSTANCE",
+        "visible": true,
+        "x": 1232,
+        "y": 954,
+        "w": 320,
+        "h": 100,
+        "screenBounds": {
+          "x": 1232,
+          "y": 954,
+          "width": 320,
+          "height": 100
+        },
+        "renderBounds": {
+          "x": 1229,
+          "y": 954,
+          "width": 326,
+          "height": 106
+        },
+        "children": [
+          {
+            "id": "I2265:275;2339:594",
+            "name": "Silver beveled rim / fixed r16",
+            "type": "RECTANGLE",
+            "visible": true,
+            "x": 0,
+            "y": 0,
+            "w": 320,
+            "h": 100,
+            "screenBounds": {
+              "x": 1232,
+              "y": 954,
+              "width": 320,
+              "height": 100
+            },
+            "renderBounds": {
+              "x": 1229,
+              "y": 954,
+              "width": 326,
+              "height": 106
+            }
+          },
+          {
+            "id": "I2265:275;2339:595",
+            "name": "Inner bevel / fixed r14",
+            "type": "RECTANGLE",
+            "visible": true,
+            "x": 3,
+            "y": 3,
+            "w": 314,
+            "h": 94,
+            "screenBounds": {
+              "x": 1235,
+              "y": 957,
+              "width": 314,
+              "height": 94
+            },
+            "renderBounds": {
+              "x": 1235,
+              "y": 957,
+              "width": 314,
+              "height": 94
+            }
+          },
+          {
+            "id": "I2265:275;2339:596",
+            "name": "Dark metal face / fixed r11",
+            "type": "RECTANGLE",
+            "visible": true,
+            "x": 6,
+            "y": 6,
+            "w": 308,
+            "h": 88,
+            "screenBounds": {
+              "x": 1238,
+              "y": 960,
+              "width": 308,
+              "height": 88
+            },
+            "renderBounds": {
+              "x": 1238,
+              "y": 960,
+              "width": 308,
+              "height": 88
+            }
+          },
+          {
+            "id": "I2265:275;2339:597",
+            "name": "Original gold-button material / dark metal treatment / fixed r10",
+            "type": "RECTANGLE",
+            "visible": true,
+            "x": 7,
+            "y": 7,
+            "w": 306,
+            "h": 86,
+            "screenBounds": {
+              "x": 1239,
+              "y": 961,
+              "width": 306,
+              "height": 86
+            },
+            "renderBounds": {
+              "x": 1239,
+              "y": 961,
+              "width": 306,
+              "height": 86
+            }
+          },
+          {
+            "id": "I2265:275;2361:1094",
+            "name": "Material relief / gloss and lower shading",
+            "type": "RECTANGLE",
+            "visible": true,
+            "x": 7,
+            "y": 7,
+            "w": 306,
+            "h": 86,
+            "screenBounds": {
+              "x": 1239,
+              "y": 961,
+              "width": 306,
+              "height": 86
+            },
+            "renderBounds": {
+              "x": 1239,
+              "y": 961,
+              "width": 306,
+              "height": 86
+            }
+          },
+          {
+            "id": "I2265:275;2339:598",
+            "name": "Inner highlight / fixed r9",
+            "type": "RECTANGLE",
+            "visible": true,
+            "x": 10,
+            "y": 10,
+            "w": 300,
+            "h": 80,
+            "screenBounds": {
+              "x": 1242,
+              "y": 964,
+              "width": 300,
+              "height": 80
+            },
+            "renderBounds": {
+              "x": 1242,
+              "y": 964,
+              "width": 300,
+              "height": 80
+            }
+          },
+          {
+            "id": "I2265:275;2339:599",
+            "name": "Label / centered at every size",
+            "type": "FRAME",
+            "visible": true,
+            "x": 28,
+            "y": 0,
+            "w": 264,
+            "h": 100,
+            "screenBounds": {
+              "x": 1260,
+              "y": 954,
+              "width": 264,
+              "height": 100
+            },
+            "renderBounds": {
+              "x": 1260,
+              "y": 954,
+              "width": 264,
+              "height": 100
+            }
+          }
+        ]
+      },
+      {
+        "id": "2265:278",
+        "name": "Start battle / latest gold",
+        "type": "INSTANCE",
+        "visible": true,
+        "x": 1577,
+        "y": 954,
+        "w": 320,
+        "h": 100,
+        "screenBounds": {
+          "x": 1577,
+          "y": 954,
+          "width": 320,
+          "height": 100
+        },
+        "renderBounds": {
+          "x": 1574,
+          "y": 954,
+          "width": 326,
+          "height": 106
+        },
+        "children": [
+          {
+            "id": "I2265:278;2358:1091",
+            "name": "Gold beveled rim / fixed r16",
+            "type": "RECTANGLE",
+            "visible": true,
+            "x": 0,
+            "y": 0,
+            "w": 320,
+            "h": 100,
+            "screenBounds": {
+              "x": 1577,
+              "y": 954,
+              "width": 320,
+              "height": 100
+            },
+            "renderBounds": {
+              "x": 1574,
+              "y": 954,
+              "width": 326,
+              "height": 106
+            }
+          },
+          {
+            "id": "I2265:278;2358:1092",
+            "name": "Inner bevel / fixed r14",
+            "type": "RECTANGLE",
+            "visible": true,
+            "x": 3,
+            "y": 3,
+            "w": 314,
+            "h": 94,
+            "screenBounds": {
+              "x": 1580,
+              "y": 957,
+              "width": 314,
+              "height": 94
+            },
+            "renderBounds": {
+              "x": 1580,
+              "y": 957,
+              "width": 314,
+              "height": 94
+            }
+          },
+          {
+            "id": "I2265:278;2358:1093",
+            "name": "Gold face / fixed r11",
+            "type": "RECTANGLE",
+            "visible": true,
+            "x": 6,
+            "y": 6,
+            "w": 308,
+            "h": 88,
+            "screenBounds": {
+              "x": 1583,
+              "y": 960,
+              "width": 308,
+              "height": 88
+            },
+            "renderBounds": {
+              "x": 1583,
+              "y": 960,
+              "width": 308,
+              "height": 88
+            }
+          },
+          {
+            "id": "I2265:278;2358:1094",
+            "name": "Original gold-button material / gold treatment / fixed r10",
+            "type": "RECTANGLE",
+            "visible": true,
+            "x": 7,
+            "y": 7,
+            "w": 306,
+            "h": 86,
+            "screenBounds": {
+              "x": 1584,
+              "y": 961,
+              "width": 306,
+              "height": 86
+            },
+            "renderBounds": {
+              "x": 1584,
+              "y": 961,
+              "width": 306,
+              "height": 86
+            }
+          },
+          {
+            "id": "I2265:278;2361:1095",
+            "name": "Material relief / gloss and lower shading",
+            "type": "RECTANGLE",
+            "visible": true,
+            "x": 7,
+            "y": 7,
+            "w": 306,
+            "h": 86,
+            "screenBounds": {
+              "x": 1584,
+              "y": 961,
+              "width": 306,
+              "height": 86
+            },
+            "renderBounds": {
+              "x": 1584,
+              "y": 961,
+              "width": 306,
+              "height": 86
+            }
+          },
+          {
+            "id": "I2265:278;2358:1095",
+            "name": "Inner highlight / fixed r9",
+            "type": "RECTANGLE",
+            "visible": true,
+            "x": 10,
+            "y": 10,
+            "w": 300,
+            "h": 80,
+            "screenBounds": {
+              "x": 1587,
+              "y": 964,
+              "width": 300,
+              "height": 80
+            },
+            "renderBounds": {
+              "x": 1587,
+              "y": 964,
+              "width": 300,
+              "height": 80
+            }
+          },
+          {
+            "id": "I2265:278;2358:1096",
+            "name": "Label / centered at every size",
+            "type": "FRAME",
+            "visible": true,
+            "x": 28,
+            "y": 0,
+            "w": 264,
+            "h": 100,
+            "screenBounds": {
+              "x": 1605,
+              "y": 954,
+              "width": 264,
+              "height": 100
+            },
+            "renderBounds": {
+              "x": 1605,
+              "y": 954,
+              "width": 264,
+              "height": 100
+            }
+          }
+        ]
+      },
+      {
+        "id": "2275:740",
+        "name": "SOURCE text controls",
+        "type": "INSTANCE",
+        "visible": false,
+        "x": 1692,
+        "y": 28,
+        "w": 192,
+        "h": 54,
+        "screenBounds": {
+          "x": 1692,
+          "y": 28,
+          "width": 192,
+          "height": 54
+        },
+        "renderBounds": null,
+        "children": []
+      },
+      {
+        "id": "2282:309",
+        "name": "Preserved previous preparation HP preview / hidden",
+        "type": "INSTANCE",
+        "visible": false,
+        "x": 570,
+        "y": 0,
+        "w": 960,
+        "h": 112,
+        "screenBounds": {
+          "x": 570,
+          "y": 0,
+          "width": 960,
+          "height": 112
+        },
+        "renderBounds": null,
+        "children": []
+      },
+      {
+        "id": "2399:648",
+        "name": "Preserved previous user header / before integrated comparison",
+        "type": "FRAME",
+        "visible": false,
+        "x": 570,
+        "y": 0,
+        "w": 960,
+        "h": 112,
+        "screenBounds": {
+          "x": 570,
+          "y": 0,
+          "width": 960,
+          "height": 112
+        },
+        "renderBounds": null,
+        "children": [
+          {
+            "id": "2386:2059",
+            "name": "Level / shared two-ended brush",
+            "type": "INSTANCE",
+            "visible": true,
+            "x": 601,
+            "y": 69,
+            "w": 353,
+            "h": 34,
+            "screenBounds": {
+              "x": 1171,
+              "y": 69,
+              "width": 353,
+              "height": 34
+            },
+            "renderBounds": null
+          },
+          {
+            "id": "2399:649",
+            "name": "Ally / portrait and power",
+            "type": "FRAME",
+            "visible": true,
+            "x": 24,
+            "y": 8,
+            "w": 404,
+            "h": 96,
+            "screenBounds": {
+              "x": 594,
+              "y": 8,
+              "width": 404,
+              "height": 96
+            },
+            "renderBounds": null
+          },
+          {
+            "id": "2399:658",
+            "name": "VS / polished 90px / independent backdrop V S",
+            "type": "INSTANCE",
+            "visible": true,
+            "x": 435,
+            "y": 11,
+            "w": 90,
+            "h": 90,
+            "screenBounds": {
+              "x": 1005,
+              "y": 11,
+              "width": 90,
+              "height": 90
+            },
+            "renderBounds": null
+          },
+          {
+            "id": "2399:670",
+            "name": "Deer / power and portrait",
+            "type": "FRAME",
+            "visible": true,
+            "x": 532,
+            "y": 8,
+            "w": 404,
+            "h": 96,
+            "screenBounds": {
+              "x": 1102,
+              "y": 8,
+              "width": 404,
+              "height": 96
+            },
+            "renderBounds": null
+          }
+        ]
+      },
+      {
+        "id": "2282:353",
+        "name": "Area title / forest edge / back on left",
+        "type": "INSTANCE",
+        "visible": true,
+        "x": 20,
+        "y": 20,
+        "w": 440,
+        "h": 112,
+        "screenBounds": {
+          "x": 20,
+          "y": 20,
+          "width": 440,
+          "height": 112
+        },
+        "renderBounds": {
+          "x": 20,
+          "y": 20,
+          "width": 440,
+          "height": 112
+        },
+        "children": [
+          {
+            "id": "I2282:353;2281:562",
+            "name": "MAT-004 · 자원바 붓터치 원본",
+            "type": "INSTANCE",
+            "visible": true,
+            "x": 0,
+            "y": 0,
+            "w": 440,
+            "h": 112,
+            "screenBounds": {
+              "x": 20,
+              "y": 20,
+              "width": 440,
+              "height": 112
+            },
+            "renderBounds": {
+              "x": 20,
+              "y": 20,
+              "width": 440,
+              "height": 112
+            }
+          },
+          {
+            "id": "I2282:353;2281:563",
+            "name": "Label / centered",
+            "type": "FRAME",
+            "visible": true,
+            "x": 88,
+            "y": 0,
+            "w": 326,
+            "h": 112,
+            "screenBounds": {
+              "x": 108,
+              "y": 20,
+              "width": 326,
+              "height": 112
+            },
+            "renderBounds": {
+              "x": 108,
+              "y": 20,
+              "width": 326,
+              "height": 112
+            }
+          },
+          {
+            "id": "I2282:353;2281:565",
+            "name": "Back / overlaps left front of brush",
+            "type": "INSTANCE",
+            "visible": true,
+            "x": 0,
+            "y": 8,
+            "w": 95.99999237060547,
+            "h": 95.99999237060547,
+            "screenBounds": {
+              "x": 20,
+              "y": 28,
+              "width": 95.99999237060547,
+              "height": 95.99999237060547
+            },
+            "renderBounds": {
+              "x": 20,
+              "y": 28,
+              "width": 96,
+              "height": 96
+            }
+          }
+        ]
+      },
+      {
+        "id": "2285:753",
+        "name": "Auto and speed / OFF preview",
+        "type": "FRAME",
+        "visible": true,
+        "x": 1696,
+        "y": 20,
+        "w": 204,
+        "h": 96,
+        "screenBounds": {
+          "x": 1696,
+          "y": 20,
+          "width": 204,
+          "height": 96
+        },
+        "renderBounds": {
+          "x": 1696,
+          "y": 20,
+          "width": 204,
+          "height": 96
+        },
+        "children": [
+          {
+            "id": "2285:754",
+            "name": "Preserved original / auto control",
+            "type": "INSTANCE",
+            "visible": false,
+            "x": 0,
+            "y": 0,
+            "w": 96,
+            "h": 96,
+            "screenBounds": {
+              "x": 1696,
+              "y": 20,
+              "width": 96,
+              "height": 96
+            },
+            "renderBounds": null
+          },
+          {
+            "id": "2285:758",
+            "name": "Preserved original / speed control",
+            "type": "INSTANCE",
+            "visible": false,
+            "x": 0,
+            "y": 0,
+            "w": 96,
+            "h": 96,
+            "screenBounds": {
+              "x": 1696,
+              "y": 20,
+              "width": 96,
+              "height": 96
+            },
+            "renderBounds": null
+          },
+          {
+            "id": "2375:763",
+            "name": "AUTO / latest battle icon and label",
+            "type": "FRAME",
+            "visible": true,
+            "x": 0,
+            "y": 0,
+            "w": 96,
+            "h": 96,
+            "screenBounds": {
+              "x": 1696,
+              "y": 20,
+              "width": 96,
+              "height": 96
+            },
+            "renderBounds": {
+              "x": 1696,
+              "y": 20,
+              "width": 101,
+              "height": 96
+            }
+          },
+          {
+            "id": "2375:769",
+            "name": "X2 / latest battle icon and label",
+            "type": "FRAME",
+            "visible": true,
+            "x": 108,
+            "y": 0,
+            "w": 96,
+            "h": 96,
+            "screenBounds": {
+              "x": 1804,
+              "y": 20,
+              "width": 96,
+              "height": 96
+            },
+            "renderBounds": {
+              "x": 1799,
+              "y": 20,
+              "width": 101,
+              "height": 96
+            }
+          }
+        ]
+      },
+      {
+        "id": "2295:350",
+        "name": "Lower-left / preparation plaque + bag overlap",
+        "type": "GROUP",
+        "visible": true,
+        "x": 20,
+        "y": 936,
+        "w": 330,
+        "h": 124,
+        "screenBounds": {
+          "x": 20,
+          "y": 936,
+          "width": 330,
+          "height": 124
+        },
+        "renderBounds": {
+          "x": 20,
+          "y": 936,
+          "width": 330,
+          "height": 124
+        },
+        "children": [
+          {
+            "id": "2282:362",
+            "name": "Preparation plaque / lower-left",
+            "type": "INSTANCE",
+            "visible": true,
+            "x": 20,
+            "y": 958,
+            "w": 300,
+            "h": 73.99999237060547,
+            "screenBounds": {
+              "x": 20,
+              "y": 958,
+              "width": 300,
+              "height": 73.99999237060547
+            },
+            "renderBounds": {
+              "x": 20,
+              "y": 958,
+              "width": 300,
+              "height": 74
+            }
+          },
+          {
+            "id": "2282:372",
+            "name": "Bag / overlaps right of preparation plaque",
+            "type": "INSTANCE",
+            "visible": true,
+            "x": 238,
+            "y": 936,
+            "w": 112,
+            "h": 124,
+            "screenBounds": {
+              "x": 238,
+              "y": 936,
+              "width": 112,
+              "height": 124
+            },
+            "renderBounds": {
+              "x": 238,
+              "y": 936,
+              "width": 112,
+              "height": 124
+            }
+          }
+        ]
+      },
+      {
+        "id": "2437:1473",
+        "name": "Preserved previous 60 percent header / before historical motif selection",
+        "type": "FRAME",
+        "visible": false,
+        "x": 570,
+        "y": 0,
+        "w": 960,
+        "h": 198,
+        "screenBounds": {
+          "x": 570,
+          "y": 0,
+          "width": 960,
+          "height": 198
+        },
+        "renderBounds": null,
+        "children": [
+          {
+            "id": "2437:1474",
+            "name": "Unified portrait and VS backdrop / shared ink texture",
+            "type": "INSTANCE",
+            "visible": true,
+            "x": 124,
+            "y": 6,
+            "w": 712,
+            "h": 178,
+            "screenBounds": {
+              "x": 694,
+              "y": 6,
+              "width": 712,
+              "height": 178
+            },
+            "renderBounds": null
+          },
+          {
+            "id": "2437:1475",
+            "name": "Subtle cloud motif and paper fibres / clipped to brush",
+            "type": "FRAME",
+            "visible": true,
+            "x": 124,
+            "y": 6,
+            "w": 712,
+            "h": 178,
+            "screenBounds": {
+              "x": 694,
+              "y": 6,
+              "width": 712,
+              "height": 178
+            },
+            "renderBounds": null
+          },
+          {
+            "id": "2437:1571",
+            "name": "Thin two-ended brush / below power",
+            "type": "INSTANCE",
+            "visible": true,
+            "x": 166,
+            "y": 156,
+            "w": 248,
+            "h": 24,
+            "screenBounds": {
+              "x": 736,
+              "y": 156,
+              "width": 248,
+              "height": 24
+            },
+            "renderBounds": null
+          },
+          {
+            "id": "2437:1572",
+            "name": "Thin two-ended brush / below power",
+            "type": "INSTANCE",
+            "visible": true,
+            "x": 546,
+            "y": 156,
+            "w": 248,
+            "h": 24,
+            "screenBounds": {
+              "x": 1116,
+              "y": 156,
+              "width": 248,
+              "height": 24
+            },
+            "renderBounds": null
+          },
+          {
+            "id": "2437:1573",
+            "name": "Hunter / transparent portrait / no box",
+            "type": "INSTANCE",
+            "visible": true,
+            "x": 226,
+            "y": 28,
+            "w": 128,
+            "h": 128,
+            "screenBounds": {
+              "x": 796,
+              "y": 28,
+              "width": 128,
+              "height": 128
+            },
+            "renderBounds": null
+          },
+          {
+            "id": "2437:1574",
+            "name": "Deer / transparent head silhouette",
+            "type": "FRAME",
+            "visible": true,
+            "x": 610,
+            "y": 0,
+            "w": 120,
+            "h": 157.5,
+            "screenBounds": {
+              "x": 1180,
+              "y": 0,
+              "width": 120,
+              "height": 157.5
+            },
+            "renderBounds": null
+          },
+          {
+            "id": "2437:1577",
+            "name": "VS / redesigned 164px / independent backdrop V S",
+            "type": "FRAME",
+            "visible": true,
+            "x": 398,
+            "y": 16,
+            "w": 164,
+            "h": 164,
+            "screenBounds": {
+              "x": 968,
+              "y": 16,
+              "width": 164,
+              "height": 164
+            },
+            "renderBounds": null
+          },
+          {
+            "id": "2437:1585",
+            "name": "Ally / power icon and 12,300",
+            "type": "FRAME",
+            "visible": true,
+            "x": 194.41696166992188,
+            "y": 132,
+            "w": 191.1660919189453,
+            "h": 52.2188835144043,
+            "screenBounds": {
+              "x": 764.4169921875,
+              "y": 132,
+              "width": 191.1660919189453,
+              "height": 52.2188835144043
+            },
+            "renderBounds": null
+          },
+          {
+            "id": "2437:1594",
+            "name": "Deer / power icon and 8,000",
+            "type": "FRAME",
+            "visible": true,
+            "x": 587.4415893554688,
+            "y": 132,
+            "w": 165.11680603027344,
+            "h": 52.2188835144043,
+            "screenBounds": {
+              "x": 1157.441650390625,
+              "y": 132,
+              "width": 165.11680603027344,
+              "height": 52.2188835144043
+            },
+            "renderBounds": null
+          }
+        ]
+      },
+      {
+        "id": "2442:1565",
+        "name": "Preparation / selected 70% / historical motifs / shared VS",
+        "type": "FRAME",
+        "visible": true,
+        "x": 480,
+        "y": 20,
+        "w": 960,
+        "h": 198,
+        "screenBounds": {
+          "x": 480,
+          "y": 20,
+          "width": 960,
+          "height": 198
+        },
+        "renderBounds": {
+          "x": 480,
+          "y": 20,
+          "width": 960,
+          "height": 198
+        },
+        "children": [
+          {
+            "id": "2442:1566",
+            "name": "Unified portrait and VS backdrop / shared ink texture",
+            "type": "INSTANCE",
+            "visible": true,
+            "x": 124,
+            "y": 6,
+            "w": 712,
+            "h": 178,
+            "screenBounds": {
+              "x": 604,
+              "y": 26,
+              "width": 712,
+              "height": 178
+            },
+            "renderBounds": {
+              "x": 604,
+              "y": 26,
+              "width": 712,
+              "height": 178
+            }
+          },
+          {
+            "id": "2442:1567",
+            "name": "Historical motifs and fibres / independently visible groups",
+            "type": "FRAME",
+            "visible": true,
+            "x": 124,
+            "y": 6,
+            "w": 712,
+            "h": 178,
+            "screenBounds": {
+              "x": 604,
+              "y": 26,
+              "width": 712,
+              "height": 178
+            },
+            "renderBounds": {
+              "x": 604,
+              "y": 26,
+              "width": 712,
+              "height": 178
+            }
+          },
+          {
+            "id": "2442:1672",
+            "name": "Thin two-ended brush / below power",
+            "type": "INSTANCE",
+            "visible": true,
+            "x": 195.60000610351562,
+            "y": 156,
+            "w": 248,
+            "h": 24,
+            "screenBounds": {
+              "x": 675.5999755859375,
+              "y": 176,
+              "width": 248,
+              "height": 24
+            },
+            "renderBounds": {
+              "x": 675.5999755859375,
+              "y": 176,
+              "width": 248,
+              "height": 24
+            }
+          },
+          {
+            "id": "2442:1673",
+            "name": "Thin two-ended brush / below power",
+            "type": "INSTANCE",
+            "visible": true,
+            "x": 518,
+            "y": 156,
+            "w": 248,
+            "h": 24,
+            "screenBounds": {
+              "x": 998,
+              "y": 176,
+              "width": 248,
+              "height": 24
+            },
+            "renderBounds": {
+              "x": 998,
+              "y": 176,
+              "width": 248,
+              "height": 24
+            }
+          },
+          {
+            "id": "2442:1674",
+            "name": "Hunter / transparent portrait / no box",
+            "type": "INSTANCE",
+            "visible": true,
+            "x": 276.3999938964844,
+            "y": 40.79999542236328,
+            "w": 102.40000915527344,
+            "h": 102.40000915527344,
+            "screenBounds": {
+              "x": 756.4000244140625,
+              "y": 60.800048828125,
+              "width": 102.40000915527344,
+              "height": 102.40000915527344
+            },
+            "renderBounds": {
+              "x": 756.4000244140625,
+              "y": 60.800048828125,
+              "width": 102.4000244140625,
+              "height": 102.40000915527344
+            }
+          },
+          {
+            "id": "2442:1675",
+            "name": "Deer / transparent head silhouette",
+            "type": "FRAME",
+            "visible": true,
+            "x": 586,
+            "y": 15.75,
+            "w": 96,
+            "h": 126,
+            "screenBounds": {
+              "x": 1066,
+              "y": 35.75,
+              "width": 96,
+              "height": 126
+            },
+            "renderBounds": {
+              "x": 1066,
+              "y": 35.75,
+              "width": 96,
+              "height": 126
+            }
+          },
+          {
+            "id": "2442:1678",
+            "name": "VS / shared strike assembly / independent V S backdrop",
+            "type": "INSTANCE",
+            "visible": true,
+            "x": 422.6000061035156,
+            "y": 40.60000228881836,
+            "w": 114.79999542236328,
+            "h": 114.79999542236328,
+            "screenBounds": {
+              "x": 902.5999755859375,
+              "y": 60.60009765625,
+              "width": 114.79999542236328,
+              "height": 114.79999542236328
+            },
+            "renderBounds": {
+              "x": 890,
+              "y": 48,
+              "width": 140,
+              "height": 140
+            }
+          },
+          {
+            "id": "2442:1679",
+            "name": "Ally / power icon and 12,300",
+            "type": "FRAME",
+            "visible": true,
+            "x": 224.01695251464844,
+            "y": 132,
+            "w": 191.1660919189453,
+            "h": 52.2188835144043,
+            "screenBounds": {
+              "x": 704.0169677734375,
+              "y": 152,
+              "width": 191.1660919189453,
+              "height": 52.2188835144043
+            },
+            "renderBounds": {
+              "x": 704.0169677734375,
+              "y": 152,
+              "width": 191.1661376953125,
+              "height": 52.349365234375
+            }
+          },
+          {
+            "id": "2442:1688",
+            "name": "Deer / power icon and 8,000",
+            "type": "FRAME",
+            "visible": true,
+            "x": 559.4415893554688,
+            "y": 132,
+            "w": 165.11680603027344,
+            "h": 52.2188835144043,
+            "screenBounds": {
+              "x": 1039.441650390625,
+              "y": 152,
+              "width": 165.11680603027344,
+              "height": 52.2188835144043
+            },
+            "renderBounds": {
+              "x": 1039.441650390625,
+              "y": 152,
+              "width": 165.1168212890625,
+              "height": 52.349365234375
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "screen_edge_inset": 20,
+  "matching_entry_plan": {
+    "status": "approved sequence; timing provisional; not implemented",
+    "scope": "hunting preparation entry only; preserve game-start and intro clouds",
+    "steps": [
+      "preload battlefield and required assets",
+      "expand header brush at screen center",
+      "reveal hunter then deer portrait",
+      "animate left/right spear independently to cross; reveal VS with short lightning",
+      "scale entire header group down and move to final top position",
+      "reveal remaining UI sequentially"
+    ],
+    "proposed_total_seconds": [
+      0.9,
+      1.3
+    ],
+    "final_header_origin": [
+      480,
+      20
+    ],
+    "axis_inset": 20,
+    "excluded_proposal": "unconfirmed axe-shaped number backdrop",
+    "independent_layers": [
+      "header brush",
+      "historical motif groups",
+      "hunter portrait",
+      "deer portrait",
+      "power digit groups",
+      "left spear instance",
+      "right spear instance",
+      "V",
+      "S",
+      "runtime lightning effect"
+    ]
+  }
+}

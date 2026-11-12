@@ -25,6 +25,8 @@ var debug_shortcut_icon:TextureRect
 const HUNT_SCREEN := preload("res://scripts/deer_hunt_screen.gd")
 const INTRO_VIDEO_PATH := "res://assets/video/intro.ogv"
 var hunt: HUNT_SCREEN
+var hunt_preparing := false
+var hunt_preparation_cancelled := false
 var title_sound: DemoButton
 var title_prompt: DemoButton
 var intro_player: VideoStreamPlayer
@@ -520,6 +522,8 @@ func title_screen() -> void:
 	patch_status.text=updates.check_status
 	if not updates.request.request_completed.is_connected(update_title_patch_action):
 		updates.request.request_completed.connect(update_title_patch_action)
+	if updates.has_signal("manifest_check_failed_to_start") and not updates.is_connected("manifest_check_failed_to_start",finish_title_update_check):
+		updates.connect("manifest_check_failed_to_start",finish_title_update_check)
 	call_deferred("check_title_update")
 
 func on_title_patch_popup_changed() -> void:
@@ -535,7 +539,7 @@ func open_title_update() -> void:
 
 func update_title_patch_action(_result:int,_code:int,_headers:PackedStringArray,_body:PackedByteArray) -> void:
 	var updates := get_node("/root/PatchBootstrap/Overlay")
-	if title_update_in_flight:finish_title_update_check()
+	if title_update_in_flight and (not updates.has_method("is_manifest_check_pending") or not updates.is_manifest_check_pending()):finish_title_update_check()
 	if updates.has_method("begin_manifest_check"):return
 	if updates.restart_pending or updates.downloading:return
 	if updates.candidate.is_empty():
@@ -1837,12 +1841,37 @@ func display_error(message: String) -> void:
 	show_modal("저장 확인",message+"\n저장 공간을 확인한 뒤 다시 시도해 주세요.",[{"text":"확인","action":close_modal}])
 
 func open_hunt() -> void:
-	if screen!="play" or modal or world_map_open or map_transition_active or village_entry_active() or tutorial.active():
+	if hunt_preparing or screen!="play" or modal or world_map_open or map_transition_active or village_entry_active() or tutorial.active():
 		return
 	cancel_task()
 	gestures.clear()
 	world.player.direction = Vector2.ZERO
-	show_screen("hunt")
+	hunt_preparing = true
+	hunt_preparation_cancelled = false
+	toast("사냥터 준비 중…")
+	var paths := ["res://assets/characters/meshy01/hero.glb","res://assets/characters/residents/sturdy_male.glb",
+		"res://assets/characters/residents/female.glb",WorldAnimal.MODELS.deer]
+	var pending: Array[String] = []
+	var warmed: Array[Resource] = []
+	for path: String in paths:
+		if ResourceLoader.load_threaded_request(path,"PackedScene")==OK:pending.append(path)
+	while not pending.is_empty():
+		await get_tree().process_frame
+		for index in range(pending.size()-1,-1,-1):
+			var path := pending[index]
+			match ResourceLoader.load_threaded_get_status(path):
+				ResourceLoader.THREAD_LOAD_LOADED:
+					warmed.append(ResourceLoader.load_threaded_get(path))
+					pending.remove_at(index)
+				ResourceLoader.THREAD_LOAD_FAILED, ResourceLoader.THREAD_LOAD_INVALID_RESOURCE:
+					pending.remove_at(index)
+	while not application_active and not hunt_preparation_cancelled:
+		await get_tree().process_frame
+	hunt_preparing = false
+	if not hunt_preparation_cancelled and screen=="play" and not modal and not world_map_open:
+		toast_time = 0.0
+		show_screen("hunt")
+
 
 func close_hunt() -> void:
 	if screen!="hunt":return
@@ -1850,6 +1879,10 @@ func close_hunt() -> void:
 	show_screen("play")
 
 func go_back() -> void:
+	if hunt_preparing:
+		hunt_preparation_cancelled = true
+		toast_time = 0.0
+		return
 	if title_input_blocked():return
 	if screen=="intro":
 		finish_intro()

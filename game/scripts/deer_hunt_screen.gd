@@ -1,5 +1,6 @@
 extends Control
 
+const MATCH := preload("res://scripts/hunt_match_art.gd")
 const RULES := preload("res://scripts/deer_hunt_rules.gd")
 const DESIGN := Vector2(960,540)
 const CLEARING := preload("res://assets/ui/hunting-formation/clearing.png")
@@ -24,8 +25,11 @@ var app: Node
 var rules := RULES.new()
 var canvas: Control
 var header: Control
-var entry_cloud: ColorRect
-var entry_cloud_material: ShaderMaterial
+var match_backdrop: Control
+var match_vs: Dictionary
+var match_deer: TextureRect
+var match_flash: ColorRect
+var match_home := Vector2.ZERO
 var battle_fade: ColorRect
 var arrival_elapsed := 0.0
 var hunter_markers: Array[Control] = []
@@ -72,7 +76,7 @@ var battle_header: Control
 var location_brush: TextureRect
 var location_caption: Label
 var versus: Control
-var versus_letters: Array[TextureRect] = []
+
 var deer_health_text: Label
 var hunter_health_text: Label
 var transition_elapsed := -1.0
@@ -159,11 +163,12 @@ func fit_layout() -> void:
 	canvas.position = safe_start+(safe_size-DESIGN*fit)*.5
 	var start := (safe_start-canvas.position)/fit
 	var end := (safe_end-canvas.position)/fit
-	var margin := Vector2.ONE*20.0/fit
+	var margin := Vector2.ONE*10.0
 	header_left.position = start+margin-Vector2(3,0)
 	header_right.position = Vector2(end.x-DESIGN.x-margin.x+3,start.y+margin.y-3)
-	power_header.position = Vector2(-45,start.y+margin.y-4)
-	battle_header.position = power_header.position
+	match_home = Vector2(240,start.y+margin.y)
+	if arrival_elapsed>=ARRIVAL_SECONDS:power_header.position = match_home
+	battle_header.position = Vector2(-45,start.y+margin.y-4)
 	roster_edge.position = Vector2(start.x+margin.x,(start.y+end.y-355)*.5)
 	footer_left.position = Vector2(start.x+margin.x-3,end.y-DESIGN.y-margin.y+2)
 	footer_right.position = end-DESIGN-margin+Vector2(3,3)
@@ -172,38 +177,42 @@ func fit_layout() -> void:
 
 
 func build_arrival() -> void:
-	entry_cloud = ColorRect.new()
-	entry_cloud.mouse_filter = Control.MOUSE_FILTER_STOP
-	add_child(entry_cloud)
-	entry_cloud.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	entry_cloud_material = ShaderMaterial.new()
-	entry_cloud_material.shader = preload("res://shaders/cloud_transition.gdshader")
-	entry_cloud_material.set_shader_parameter("textured",true)
-	entry_cloud_material.set_shader_parameter("cloud_bank",VillageEntry.BANK_A)
-	entry_cloud.material = entry_cloud_material
-	entry_cloud.resized.connect(func():
-		entry_cloud_material.set_shader_parameter("aspect",entry_cloud.size.x/maxf(1.0,entry_cloud.size.y)))
-	entry_cloud_material.set_shader_parameter("aspect",size.x/maxf(1.0,size.y))
-	entry_cloud_material.set_shader_parameter("coverage",1.0)
 	battle_fade = ColorRect.new()
 	battle_fade.color = Color("232b1e")
 	battle_fade.mouse_filter = Control.MOUSE_FILTER_STOP
 	add_child(battle_fade)
 	battle_fade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	battle_fade.hide()
-	preparation.modulate.a = 0.0
-	header.modulate.a = 0.0
-	update_camera(0.0)
+	preparation.mouse_behavior_recursive = Control.MOUSE_BEHAVIOR_DISABLED
+	header.mouse_behavior_recursive = Control.MOUSE_BEHAVIOR_DISABLED
+	advance_arrival(0.0)
 
 func advance_arrival(delta: float) -> void:
 	arrival_elapsed = minf(ARRIVAL_SECONDS,arrival_elapsed+delta)
-	var progress := arrival_elapsed/ARRIVAL_SECONDS
-	entry_cloud_material.set_shader_parameter("coverage",1.0-smoothstep(.06,.78,progress))
-	preparation.modulate.a = smoothstep(.52,1.0,progress)
-	header.modulate.a = preparation.modulate.a
-	if arrival_elapsed>=ARRIVAL_SECONDS:
-		entry_cloud.queue_free()
-
+	var time := arrival_elapsed
+	var land := smoothstep(.61,.93,time)
+	var center := DESIGN*.5-Vector2(240,49.5)
+	power_header.pivot_offset = Vector2(240,49.5)
+	power_header.position = center.lerp(match_home,land)
+	power_header.scale = Vector2.ONE*lerpf(lerpf(.72,1.24,smoothstep(0.0,.16,time)),1.0,land)
+	match_backdrop.modulate.a = smoothstep(0.0,.17,time)
+	prep_ally_portrait.modulate.a = smoothstep(.12,.29,time)
+	match_deer.modulate.a = smoothstep(.23,.40,time)
+	var cross := smoothstep(.34,.56,time)
+	for index in 2:
+		var spear: TextureRect = match_vs.spears[index]
+		var direction := -1.0 if index==0 else 1.0
+		spear.position = Vector2(-18+direction*125*(1.0-cross),-18-25*(1.0-cross))
+		spear.rotation = direction*.45*(1.0-cross)
+		spear.modulate.a = smoothstep(.34,.45,time)
+	for letter in match_vs.letters:letter.modulate.a = smoothstep(.49,.60,time)
+	match_flash.modulate.a = sin(PI*clampf((time-.49)/.16,0.0,1.0))*.5
+	for part in [header,roster_edge,placement_grid,footer_left,footer_right]:
+		var delay := .86 if part in [header,roster_edge] else .95
+		part.modulate.a = smoothstep(delay,ARRIVAL_SECONDS,time)
+	if time>=ARRIVAL_SECONDS:
+		preparation.mouse_behavior_recursive = Control.MOUSE_BEHAVIOR_INHERITED
+		header.mouse_behavior_recursive = Control.MOUSE_BEHAVIOR_INHERITED
 
 func cell_center(origin: Vector2, index: int) -> Vector2:
 	return origin + CELL_X*(index%3) + CELL_Y*floori(index/3.0)
@@ -271,34 +280,23 @@ func build_preparation_plaque() -> void:
 	caption(bag,"가방",Rect2(4,41,48,19),12)
 
 func build_power_comparison() -> void:
-	var ally_icon := plaque(power_header,Rect2(297,4,48,48),Color("1c291f"),Color("f2bd4d"))
-	prep_ally_portrait = app.picture(ally_icon,hunter_portrait(selected_hunter),Rect2(2,2,44,44))
-	app.picture(power_header,preload("res://assets/ui/hunting-combat/png/common/hp-portrait-deer.png"),Rect2(705,4,48,48))
-	# Lv 1 planning values shown by the preparation mockup. No combat rules read them.
-	add_power_digits("12,300",Vector2(425,25))
-	add_power_digits("8,000",Vector2(625,25))
-	app.picture(power_header,preload("res://assets/ui/hunting-formation/vs-backdrop.svg"),Rect2(507,10,36,36))
-	app.picture(power_header,preload("res://assets/ui/hunting-formation/vs-v.svg"),Rect2(510,17,18,22.5))
-	app.picture(power_header,preload("res://assets/ui/hunting-formation/vs-s.svg"),Rect2(522.3,17,18,22.5))
+	match_backdrop = MATCH.backdrop(power_header)
+	for x in [97.8,259.0]:
+		MATCH.picture(power_header,MATCH.BRUSH,Rect2(x,78,124,12)).modulate.a = .72
+	prep_ally_portrait = MATCH.picture(power_header,preload("res://assets/ui/hunting-match/png/power/hunter-head.png"),Rect2(138.2,20.4,51.2,51.2))
+	match_deer = MATCH.picture(power_header,preload("res://assets/ui/hunting-match/png/power/deer-head.png"),Rect2(293,7.875,48,63))
+	match_vs = MATCH.versus(power_header,Vector2(240,49),57.4)
+	match_flash = ColorRect.new()
+	match_flash.color = Color("ffe3a1")
+	match_flash.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	match_flash.position = Vector2(224,47)
+	match_flash.size = Vector2(32,2)
+	match_flash.rotation = -.30
+	power_header.add_child(match_flash)
+	# Ratings are display data. No combat rule currently defines a power formula.
+	MATCH.power(power_header,Vector2(159.8,66),-1)
+	MATCH.power(power_header,Vector2(321,66),-1)
 
-func add_power_digits(value: String, center: Vector2) -> void:
-	const GLYPHS := {
-		"0": preload("res://assets/ui/hunting-formation/power-0.svg"),
-		"1": preload("res://assets/ui/hunting-formation/power-1.svg"),
-		"2": preload("res://assets/ui/hunting-formation/power-2.svg"),
-		"3": preload("res://assets/ui/hunting-formation/power-3.svg"),
-		"8": preload("res://assets/ui/hunting-formation/power-8.svg"),
-		",": preload("res://assets/ui/hunting-formation/power-comma.svg")
-	}
-	const OVERLAP := 5.0
-	var width := OVERLAP
-	for digit in value:width += (GLYPHS[digit] as Texture2D).get_width()*.5-OVERLAP
-	var x := center.x-width*.5
-	for digit in value:
-		var glyph: Texture2D = GLYPHS[digit]
-		var dimensions := glyph.get_size()*.5
-		app.picture(power_header,glyph,Rect2(Vector2(x,center.y-dimensions.y*.5),dimensions))
-		x += dimensions.x-OVERLAP
 
 func clear_button_art(control: DemoButton) -> void:
 	for state in ["normal","hover","pressed","disabled","focus"]:
@@ -310,7 +308,7 @@ func select_hunter(index: int) -> void:
 	for i in portrait_frames.size():
 		portrait_frames[i].texture = PORTRAIT_SELECTED if i==index else PORTRAIT_FRAME
 	if prep_ally_portrait:
-		prep_ally_portrait.texture = hunter_portrait(index)
+		prep_ally_portrait.texture = preload("res://assets/ui/hunting-match/png/power/hunter-head.png") if index==0 else hunter_portrait(index)
 	if duel_ally_portrait:
 		duel_ally_portrait.texture = hunter_portrait(index)
 
@@ -343,11 +341,7 @@ func build_duel_header() -> void:
 	for badge in [[ally_hud,321],[enemy_hud,730]]:
 		var brush: TextureRect = app.picture(badge[0],NAME_BRUSH,Rect2(badge[1]-27,65,54,16))
 		caption(brush,"Lv 1",Rect2(0,0,54,16),11)
-	versus = layer(battle_header)
-	app.picture(versus,preload("res://assets/ui/hunting-formation/vs-backdrop.svg"),Rect2(507,30,36,36))
-	versus_letters.append(app.picture(versus,preload("res://assets/ui/hunting-formation/vs-v.svg"),Rect2(510,37,18,22.5)))
-	versus_letters.append(app.picture(versus,preload("res://assets/ui/hunting-formation/vs-s.svg"),Rect2(522.3,37,18,22.5)))
-	for letter in versus_letters:letter.pivot_offset = letter.size*.5
+	versus = MATCH.versus(battle_header,Vector2(525,48),36).root
 	auto_button = toggle_control(header_right,Rect2(857,3,48,48),"AUTO","auto",toggle_auto)
 	speed_button = toggle_control(header_right,Rect2(909,3,48,48),"X2","speed-2x",toggle_speed)
 	update_toggles()
@@ -409,7 +403,10 @@ func artwork_button(parent: Control, rect: Rect2, label: String, asset: String, 
 	return button
 
 func request_exit() -> void:
-	if arrival_elapsed<ARRIVAL_SECONDS or transition_elapsed>=0:return
+	if arrival_elapsed<ARRIVAL_SECONDS:
+		app.close_hunt()
+		return
+	if transition_elapsed>=0:return
 	if app.modal:
 		app.close_modal()
 		return
@@ -604,9 +601,6 @@ func advance_transition(delta: float) -> void:
 	var matching := sin(progress*PI)*22.0
 	ally_hud.position.x = -matching
 	enemy_hud.position.x = matching
-	for index in versus_letters.size():
-		var beat := clampf((progress-.1-index*.18)/.42,0.0,1.0)
-		versus_letters[index].scale = Vector2.ONE*(1.0+.40*sin(beat*PI))
 	if progress>=1.0:
 		transition_elapsed = -1.0
 		battle_fade.hide()
@@ -695,11 +689,7 @@ func update_combat_ui(delta := 0.0) -> void:
 func update_camera(delta: float) -> void:
 	var focus := Vector2(480,285).lerp(Vector2(495,305),approach)
 	var target := zoom
-	if arrival_elapsed<ARRIVAL_SECONDS:
-		var drop := smoothstep(0.0,ARRIVAL_SECONDS,arrival_elapsed)
-		target = lerpf(1.27,1.0,drop)
-		focus = Vector2(420,165).lerp(Vector2(480,285),drop)
-	elif transition_elapsed>=0 and approach>=1.0:
+	if transition_elapsed>=0 and approach>=1.0:
 		target = 1.0+.13*(1.0-smoothstep(BATTLE_CUT,TRANSITION_SECONDS,transition_elapsed))
 	if pose in ["strike","team"] and pose_clock < RULES.POSE_SECONDS:
 		var accent := sin(pose_clock/RULES.POSE_SECONDS*PI)

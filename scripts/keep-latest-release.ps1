@@ -27,9 +27,23 @@ $confirmed = @(Api "repos/$Repository/releases/$($keep.release.id)/assets?per_pa
 foreach ($id in $keep.ids) {
     if (-not ($confirmed | Where-Object { $_.id -eq $id -and $_.state -eq 'uploaded' -and $_.size -gt 0 })) { throw 'Latest pair changed. Cleanup stopped.' }
 }
+$apkChannel = @($releases | Where-Object tag_name -CEQ 'android-apk-channel')
+$protectedApkTag = ''
+$protectedApkName = ''
+if ($apkChannel.Count) {
+    $pointer = Invoke-RestMethod "https://github.com/$Repository/releases/download/android-apk-channel/apk-latest.json"
+    $payload = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($pointer.payload)) | ConvertFrom-Json
+    if ($payload.kind -cne 'apk' -or $payload.version -notmatch '^\d+\.\d+\.\d+$' -or
+        $payload.tag -cne "v$($payload.version)" -or $payload.file -cne "Roxhistory_$($payload.version).apk") {
+        throw 'APK channel target cannot be identified. Cleanup stopped.'
+    }
+    $protectedApkTag = $payload.tag
+    $protectedApkName = $payload.file
+}
 foreach ($release in $releases) {
     foreach ($asset in $release.assets) {
         if ($asset.state -ne 'uploaded' -or $asset.id -in $keep.ids) { continue }
+        if ($release.tag_name -ceq $protectedApkTag -and $asset.name -ceq $protectedApkName) { continue }
         if ($asset.name -notmatch '^Roxhistory[_-](\d+\.\d+\.\d+).*\.(apk|exe)$') { continue }
         # A newer release may still be uploading its second platform. Never delete it.
         if ([version]$Matches[1] -gt $keep.version) { continue }
