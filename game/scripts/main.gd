@@ -139,6 +139,7 @@ var building_work_audio:BuildingWorkAudio
 var building_workflow:BuildingWorkflow
 var building_menu:BuildingMenu
 var farm_tick:=0.0
+var animal_trial_hz := 0.0
 var resident_panel:ResidentPanel
 
 func camera_modal()->bool:
@@ -185,10 +186,17 @@ func _ready() -> void:
 	if test_mode:
 		prefs_path = "user://tests/preferences.cfg"
 		performance_diagnostics.path = "user://tests/performance-diagnostics.jsonl"
+	if OS.has_feature("android") and FileAccess.file_exists("user://animal-trial.txt"):
+		animal_trial_hz = clampf(FileAccess.get_file_as_string("user://animal-trial.txt").to_float(),12.0,20.0)
+		test_mode = true
+		prefs_path = "user://animal-trial/preferences.cfg"
 	settings.load(prefs_path)
+	if animal_trial_hz>0:
+		settings.set_value("development","performance_diagnostics",false)
+		settings.set_value("development","performance_hud",false)
 	audio = DemoSoundscape.new()
 	add_child(audio)
-	var save_directory:="user://tests/session" if test_mode else "user://"
+	var save_directory:="user://animal-trial/" if animal_trial_hz>0 else ("user://tests/session" if test_mode else "user://")
 	model = GameState.new(SaveStore.new(save_directory),true)
 	if not test_mode:village_alerts=AndroidVillageNotifications.new(model)
 	model.finish_loaded_jobs()
@@ -201,7 +209,32 @@ func _ready() -> void:
 	canvas.add_child(ui)
 	ui.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	get_viewport().size_changed.connect(queue_layout)
-	show_screen("title")
+	if animal_trial_hz>0:
+		call_deferred("start_animal_trial")
+	else:
+		show_screen("title")
+
+
+func start_animal_trial() -> void:
+	if model.state.is_empty():
+		push_error("Animal trial save missing")
+		return
+	await enter_game()
+	var viewport_center := get_viewport().get_visible_rect().size*.5
+	world.player.zoom_at(viewport_center,.78,Vector2(1200,675))
+	var zoom := world.player.camera.zoom.x
+	var small := 0
+	for animal in world.animals:
+		animal.far_refresh_hz = animal_trial_hz
+		if animal.is_far_render_target():
+			small += 1
+	print("ANIMAL_TRIAL hz=%.0f zoom=%.3f small=%d total=%d" % [animal_trial_hz,zoom,small,world.animals.size()])
+	for seconds in [10.0,40.0,40.0]:
+		await get_tree().create_timer(seconds).timeout
+		var updates := 0
+		for animal in world.animals:updates += animal.trial_far_updates
+		print("ANIMAL_TRIAL_UPDATES hz=%.0f updates=%d" % [animal_trial_hz,updates])
+
 
 func queue_layout() -> void:
 	if rebuilding or screen in ["hunt","intro"] or title_reveal or intro_leaving or village_entry_active():

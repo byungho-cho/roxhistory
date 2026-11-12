@@ -31,6 +31,10 @@ var walking:=0.0
 var random:=RandomNumberGenerator.new()
 var walked_distance:=0.0
 var footprint_body: StaticBody2D
+const FAR_SCREEN_HEIGHT := 65.0
+const NORMAL_REFRESH_HZ := 20.0
+var far_refresh_hz := NORMAL_REFRESH_HZ
+var trial_far_updates := 0
 const BEAR_BUILDING_CLEARANCE:=400.0
 const BEAR_PERSON_CLEARANCE:=240.0
 
@@ -116,10 +120,22 @@ func _process(delta: float) -> void:
 	if effects_enabled and not presentation_paused:
 		clock += delta
 		animate_rig(delta)
+	var distant := is_far_render_target()
+	var refresh_hz := far_refresh_hz if distant else NORMAL_REFRESH_HZ
+	var interval := 1.0/refresh_hz
 	frame_clock += delta
-	if frame_clock >= 1.0/20.0:
-		frame_clock = fmod(frame_clock,1.0/20.0)
+	if frame_clock >= interval:
+		frame_clock = fmod(frame_clock,interval)
 		viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
+		if distant:trial_far_updates += 1
+
+
+func is_far_render_target() -> bool:
+	var screen := get_viewport_rect()
+	var at := get_global_transform_with_canvas().origin
+	var zoom := get_canvas_transform().get_scale().x
+	return world_height*global_scale.y*zoom<FAR_SCREEN_HEIGHT and at.distance_to(screen.get_center())>screen.size.y*.23
+
 
 func _draw() -> void:
 	draw_set_transform(SceneStyle.CONTACT_OFFSET,0,Vector2(1,0.28))
