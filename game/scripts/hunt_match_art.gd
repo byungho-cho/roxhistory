@@ -82,15 +82,18 @@ static func format_power(value: int) -> String:
 		formatted += digits[index]
 	return formatted
 
-static func power(parent: Control, center: Vector2, value: int) -> void:
+static func power(parent: Control, center: Vector2, value: int, mirrored := false) -> void:
 	var group := layer(parent,center)
 	picture(group,BRUSH,Rect2(-55,6,110,16)).modulate.a = .8
 	var axe := picture(group,preload("res://assets/ui/s40000/craft-axe-v001.png"),Rect2(-58,-11,48,48))
 	axe.pivot_offset = axe.size*.5
-	axe.rotation = -2.45
+	axe.rotation = -2.45 if not mirrored else 2.45
+	if mirrored:
+		axe.flip_h = true
+		axe.position.x = 10
 	var digits := Label.new()
 	digits.text = format_power(value)
-	digits.position = Vector2(-27,-8)
+	digits.position = Vector2(-55 if mirrored else -27,-6.5)
 	digits.size = Vector2(82,32)
 	digits.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	digits.add_theme_font_size_override("font_size",22)

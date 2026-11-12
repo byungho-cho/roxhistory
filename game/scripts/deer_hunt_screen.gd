@@ -5,20 +5,22 @@ signal preparation_ready
 const MATCH := preload("res://scripts/hunt_match_art.gd")
 const RULES := preload("res://scripts/deer_hunt_rules.gd")
 const DESIGN := Vector2(960,540)
-const CLEARING := preload("res://assets/village-ground-review-v002/ground-only.png")
+const CLEARING := preload("res://assets/ui/hunting-formation/clearing-dirt.png")
 const ALLY_CELL := preload("res://assets/ui/hunting-formation/ally-cell.svg")
 const ENEMY_CELL := preload("res://assets/ui/hunting-formation/enemy-cell.svg")
 const PORTRAITS := preload("res://assets/ui/hunting-formation/portraits.png")
-const CELL_X := Vector2(52.5,-37.123)
-const CELL_Y := Vector2(52.5,37.123)
-const ALLY_ORIGIN := Vector2(272,348)
-const ENEMY_ORIGIN := ALLY_ORIGIN + CELL_X * 3.155
-const CELL_SIZE := Vector2(107,76.246)
+# Final 1920×1080 placement centers expressed in the 960×540 game canvas.
+const ALLY_CELLS := [Vector2(396.5,377.5),Vector2(422.75,321.75),Vector2(475.25,358.75),
+	Vector2(449,266),Vector2(501.5,303),Vector2(554,340)]
+const ENEMY_CELLS := [Vector2(686.5,172.5),Vector2(607.75,191.25),Vector2(660.25,228.25),
+	Vector2(529,210),Vector2(581.5,247),Vector2(634,284)]
+const CELL_SIZE := Vector2(87.74,62.52)
 const NAME_BRUSH := preload("res://assets/ui/brush/resource-slot-brush@2x.png")
 const MATCH_SEQUENCE := preload("res://scripts/hunt_match_sequence.gd")
 const TRANSITION_SECONDS := 2.35
 const HUNT_AUDIO := preload("res://scripts/hunt_audio.gd")
-const HUNTER_SLOTS := [Vector2(378,261),Vector2(249,345),Vector2(428,379)]
+const HUNTER_BATTLE_CENTER := Vector2(521,279)
+const FORMATION_CENTER := Vector2(473,325)
 const DEER_SLOT := Vector2(598,245)
 
 var app: Node
@@ -75,7 +77,7 @@ var combat: Control
 var combat_controls: Control
 var placement_grid: Control
 var portrait_frames: Array[Panel] = []
-var assigned_cells: Array[int] = [2,0,7]
+var assigned_cells: Array[int] = [3,0,5]
 var selected_hunter := 0
 var drag_pointer := -2
 var drag_start := Vector2.ZERO
@@ -128,9 +130,9 @@ func _ready() -> void:
 	build_scenery()
 	battlefield.draw.connect(draw_stage)
 	placement_grid = layer(battlefield)
-	for i in 9:
-		app.picture(placement_grid,ALLY_CELL,Rect2(cell_center(ALLY_ORIGIN,i)-CELL_SIZE*.5,CELL_SIZE))
-		app.picture(placement_grid,ENEMY_CELL,Rect2(cell_center(ENEMY_ORIGIN,i)-CELL_SIZE*.5,CELL_SIZE))
+	for i in ALLY_CELLS.size():
+		app.picture(placement_grid,ALLY_CELL,Rect2(ALLY_CELLS[i]-CELL_SIZE*.5,CELL_SIZE))
+		app.picture(placement_grid,ENEMY_CELL,Rect2(ENEMY_CELLS[i]-CELL_SIZE*.5,CELL_SIZE))
 	var actors := Node2D.new()
 	actors.y_sort_enabled = true
 	battlefield.add_child(actors)
@@ -168,19 +170,11 @@ func _ready() -> void:
 	build_arrival()
 
 func build_scenery() -> void:
-	var tree := preload("res://assets/environment/tree-v018.png")
-	var stone := preload("res://assets/environment/rock-v018.png")
-	var logs := preload("res://assets/environment/fallen-logs.png")
-	var cloud := preload("res://assets/village-entry-v001/cloud_puff_c.png")
-	for item in [[tree,Rect2(12,8,84,113)],[tree,Rect2(22,403,92,124)],
-			[tree,Rect2(860,398,104,140)],[stone,Rect2(102,468,63,42)],
-			[stone,Rect2(780,73,55,36)],[logs,Rect2(845,49,83,36)],
-			[logs,Rect2(156,427,50,21)]]:
-		var sprite := MATCH.picture(battlefield,item[0],item[1])
-		sprite.pivot_offset = Vector2(sprite.size.x*.5,sprite.size.y*.96)
-	for rect in [Rect2(-76,-42,216,106),Rect2(813,-57,218,105),
-			Rect2(-94,461,235,119),Rect2(821,453,230,119)]:
-		MATCH.picture(battlefield,cloud,rect).modulate.a = .72
+	# The supplied dirt painting already includes edge clouds and foliage.
+	# This small rock uses a distinct unpainted location and remains independent.
+	var rock := MATCH.picture(battlefield,preload("res://assets/environment/rock-v018.png"),Rect2(767,346,38,25))
+	rock.name = "ReactiveRock"
+	rock.pivot_offset = Vector2(rock.size.x*.5,rock.size.y*.85)
 
 
 func fit_layout() -> void:
@@ -206,7 +200,7 @@ func fit_layout() -> void:
 	match_shade.position = -canvas.position/fit
 	match_shade.size = size/fit
 	battle_header.position = Vector2(-45,start.y+margin.y-4)
-	roster_edge.position = Vector2(start.x+margin.x,(start.y+end.y-355)*.5)
+	roster_edge.position = Vector2(start.x+margin.x,(start.y+end.y-330)*.5)
 	footer_left.position = Vector2(start.x+margin.x-3,end.y-DESIGN.y-margin.y+2)
 	footer_right.position = end-DESIGN-margin+Vector2(3,3)
 	combat_controls.position = end-DESIGN
@@ -255,9 +249,6 @@ func show_match_impact(index: int, elapsed: float) -> void:
 		impact_atlas.region = Rect2((frame%4)*320,floori(frame/4.0)*320,320,320)
 
 
-func cell_center(origin: Vector2, index: int) -> Vector2:
-	return origin + CELL_X*(index%3) + CELL_Y*floori(index/3.0)
-
 func crop(texture: Texture2D, rect: Rect2) -> AtlasTexture:
 	var result := AtlasTexture.new()
 	result.atlas = texture
@@ -279,13 +270,12 @@ func build_preparation() -> void:
 	footer_left = layer(preparation)
 	footer_right = layer(preparation)
 	power_header = layer(preparation)
-	var roster: TextureRect = app.picture(roster_edge,preload("res://assets/ui/hunting-formation/roster.png"),Rect2(0,0,165,355))
-	roster.stretch_mode = TextureRect.STRETCH_SCALE
+	var roster := plaque(roster_edge,Rect2(6,0,152,330),Color(0.20,0.17,0.13,.92),Color("a07d50"))
 	var ink := Color("49321e")
-	caption(roster,"출전 편성",Rect2(17,40,131,25),17,ink)
-	caption(roster,"%d / 3"%hunters.size(),Rect2(37.5,65,90,21),15,ink)
+	caption(roster,"출전 편성",Rect2(11,16,130,25),17,Color("eed9b4"))
+	caption(roster,"%d / 3"%hunters.size(),Rect2(31,42,90,21),15,Color("eed9b4"))
 	for index in hunters.size():
-		var card := make_button(roster,"",Rect2(35,90+85*index,95,77),select_hunter.bind(index))
+		var card := make_button(roster,"",Rect2(28,67+85*index,95,77),select_hunter.bind(index))
 		clear_button_art(card)
 		card.name = "Hunter%d"%index
 		var frame := Panel.new()
@@ -338,7 +328,7 @@ func build_power_comparison() -> void:
 	match_vs = MATCH.versus(power_header,Vector2(240,49),57.4)
 	# Forest Edge Lv 1 preview values. The battle rules do not use these ratings.
 	MATCH.power(match_details,Vector2(159.8,65),12300)
-	MATCH.power(match_details,Vector2(321,65),8000)
+	MATCH.power(match_details,Vector2(321,65),8000,true)
 
 
 func clear_button_art(control: DemoButton) -> void:
@@ -682,15 +672,16 @@ func handle_pan(event: InputEvent, at: Vector2) -> bool:
 	if pan_pointer!=pointer:return false
 	if not pan_moved and at.distance_to(pan_start)<7.0:return true
 	pan_moved = true
-	pan = (pan+(at-pan_last)/canvas.scale).clamp(Vector2(-76,-45),Vector2(76,45))
+	var margin := Vector2(45,25)+DESIGN*(zoom-1.0)*.15
+	pan = (pan+(at-pan_last)/canvas.scale).clamp(-margin,margin)
 	pan_last = at
 	return true
 
 
 func formation_cell(at: Vector2) -> int:
-	for index in 9:
-		var gap := (at-cell_center(ALLY_ORIGIN,index)).abs()
-		if gap.x/CELL_X.x+gap.y/CELL_Y.y<=1.0:return index
+	for index in ALLY_CELLS.size():
+		var gap: Vector2 = (at-ALLY_CELLS[index]).abs()/(CELL_SIZE*.5)
+		if gap.x+gap.y<=1.0:return index
 	return -1
 
 
@@ -719,7 +710,7 @@ func handle_formation_pointer(event: InputEvent, global_coordinates: bool) -> bo
 	if drag_pointer==-2:
 		if not pressed:return false
 		for index in hunters.size():
-			var feet := cell_center(ALLY_ORIGIN,assigned_cells[index])
+			var feet: Vector2 = ALLY_CELLS[assigned_cells[index]]
 			if Rect2(feet-Vector2(22,53),Vector2(44,58)).has_point(at):
 				select_hunter(index)
 				drag_pointer = pointer
@@ -756,7 +747,7 @@ func clear_formation_drag() -> void:
 
 
 func move_hunter(index: int) -> void:
-	if index<0 or index>=9 or transition_elapsed>=0 or running:return
+	if index<0 or index>=ALLY_CELLS.size() or transition_elapsed>=0 or running:return
 	if index==assigned_cells[selected_hunter]:return
 	var occupying := assigned_cells.find(index)
 	if occupying>=0:assigned_cells[occupying] = assigned_cells[selected_hunter]
@@ -916,7 +907,7 @@ func update_camera(delta: float) -> void:
 		target += .12*sin(approach*PI*.5)
 	if pose in ["strike","team"] and pose_clock < RULES.POSE_SECONDS:
 		var accent := sin(pose_clock/RULES.POSE_SECONDS*PI)
-		var center := hunters[0].position
+		var center: Vector2 = hunters[0].position
 		if pose=="team":
 			for index in range(1,hunters.size()):center += hunters[index].position
 			center /= hunters.size()
@@ -926,7 +917,7 @@ func update_camera(delta: float) -> void:
 	battlefield.scale = battlefield.scale.lerp(Vector2.ONE*target,weight)
 	var anchor := Vector2(480,285).lerp(focus,clampf((battlefield.scale.x-1.0)*2.0,0.0,1.0))
 	battlefield.position = battlefield.position.lerp(anchor-focus*battlefield.scale+pan,weight)
-	ground.scale = battlefield.scale*1.24
+	ground.scale = battlefield.scale*1.10
 	ground.position = (size-size*ground.scale)*.5 + (battlefield.position + DESIGN*(battlefield.scale-Vector2.ONE)*.5)*canvas.scale
 	ground.position = ground.position.clamp(size-size*ground.scale,Vector2.ZERO)
 
@@ -946,7 +937,9 @@ func update_actors(delta: float) -> void:
 		var hunter := hunters[i]
 		var attack := running and pose_clock<.52 and pose!="counter" and (i==0 or pose=="team")
 		var dodge := running and pose=="counter" and i==0
-		var base := cell_center(ALLY_ORIGIN,assigned_cells[i]).lerp(HUNTER_SLOTS[i],approach)
+		var placed: Vector2 = ALLY_CELLS[assigned_cells[i]]
+		var battle_target := HUNTER_BATTLE_CENTER+(placed-FORMATION_CENTER)*.62
+		var base := placed.lerp(battle_target,approach)
 		hunter.scale = Vector2.ONE*lerpf(.60,.56,approach)
 		var lunge := 42 if basic_attack else 24
 		var attack_direction := base.direction_to(DEER_SLOT)
@@ -968,7 +961,7 @@ func update_actors(delta: float) -> void:
 		hunter_field_bars[i].get_parent().visible = approach>=1.0
 	var charge := running and pose=="counter"
 	var deer_motion := Vector2(-29,-8) if charge else Vector2.ZERO if basic_attack else Vector2(23,-8)
-	deer.position = cell_center(ENEMY_ORIGIN,4).lerp(DEER_SLOT,approach)+(deer_motion*beat if running else Vector2.ZERO)
+	deer.position = ENEMY_CELLS[4].lerp(DEER_SLOT,approach)+(deer_motion*beat if running else Vector2.ZERO)
 	if basic_recoil>0:
 		deer.position += Vector2(13,-3)*basic_recoil/BASIC_RECOIL_TIME
 	deer.scale = Vector2.ONE*lerpf(.60,.63,approach)
@@ -984,8 +977,8 @@ func update_actors(delta: float) -> void:
 func draw_stage() -> void:
 	if arrival_finished and transition_elapsed<0 and not combat_layout:
 		var cell := drag_cell if dragging and drag_cell>=0 else assigned_cells[selected_hunter]
-		var center := cell_center(ALLY_ORIGIN,cell)
-		var corners := PackedVector2Array([center-Vector2(0,37),center+Vector2(52,0),center+Vector2(0,37),center-Vector2(52,0)])
+		var center: Vector2 = ALLY_CELLS[cell]
+		var corners := PackedVector2Array([center-Vector2(0,CELL_SIZE.y*.5),center+Vector2(CELL_SIZE.x*.5,0),center+Vector2(0,CELL_SIZE.y*.5),center-Vector2(CELL_SIZE.x*.5,0)])
 		battlefield.draw_colored_polygon(corners,Color(.1,.55,1,.35))
 		corners.append(corners[0])
 		battlefield.draw_polyline(corners,Color(.32,.78,1),2,true)

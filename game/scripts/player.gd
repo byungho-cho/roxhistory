@@ -11,6 +11,7 @@ const STRIDE := 104.0
 const MIN_ZOOM := 0.56 # Previous 0.8 minimum reduced by another 30%.
 const MAX_ZOOM := 1.6 # Maximum unchanged during the additional zoom-out review.
 const WORLD_SIZE := VillageBounds.WORLD_SIZE
+const OVERVIEW_PAN_MARGIN := Vector2(500,300)
 var direction := Vector2.ZERO
 var phase := 0.0
 var walk_weight := 0.0
@@ -46,10 +47,26 @@ func can_pan()->bool:
 	return visible_world.x<bounds.size.x-1 or visible_world.y<bounds.size.y-1
 
 func camera_bounds()->Rect2:
-	# Center an oversized viewport without reversing clamp endpoints. Physical bounds stay unchanged.
+	# At minimum zoom the viewport can exceed the playable world. Reserve
+	# independent camera travel over the cloud fringe without extending collisions.
 	var visible_size:=get_viewport_rect().size/camera.zoom
-	var padding:Vector2=(visible_size-WORLD_SIZE).max(Vector2.ZERO)*.5
-	return Rect2(VillageBounds.WORLD_RECT.position-padding,WORLD_SIZE+padding*2)
+	var margin := OVERVIEW_PAN_MARGIN*(1.0-smoothstep(MIN_ZOOM,.88,zoom_factor))
+	var size := WORLD_SIZE.max(visible_size)+margin*2.0
+	return Rect2(VillageBounds.WORLD_RECT.get_center()-size*.5,size)
+
+
+func village_camera_distance() -> float:
+	return camera.get_screen_center_position().distance_to(VillageBounds.WORLD_RECT.get_center())
+
+
+func return_to_village() -> void:
+	hold_tutorial_camera(VillageBounds.WORLD_RECT.get_center())
+	tutorial_camera_tween.finished.connect(func():
+		camera.position = camera_center-global_position
+		camera.reset_smoothing()
+		camera.force_update_scroll()
+	,CONNECT_ONE_SHOT)
+
 
 func pan_camera(screen_delta:Vector2)->void:
 	cancel_camera_guide()
@@ -167,6 +184,10 @@ func fit_camera() -> void:
 	var bounds:=camera_bounds()
 	camera.limit_left=roundi(bounds.position.x);camera.limit_top=roundi(bounds.position.y)
 	camera.limit_right=roundi(bounds.end.x);camera.limit_bottom=roundi(bounds.end.y)
+	if manual_camera:
+		var half := viewport_size*.5/camera.zoom
+		camera_center = camera_center.clamp(bounds.position+half,bounds.end-half)
+		camera.position = camera_center-global_position
 	if is_instance_valid(hybrid):hybrid.set_render_zoom(zoom_factor)
 	camera.reset_smoothing()
 

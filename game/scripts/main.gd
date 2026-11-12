@@ -28,14 +28,18 @@ var hunt: HUNT_SCREEN
 var hunt_preparing := false
 var hunt_preparation_cancelled := false
 const INTRO_TRACKS := [
-	"res://assets/audio/intro-d0003/A_Echoes_of_History_35s.mp3",
-	"res://assets/audio/intro-d0003/B_Journey_to_Tomorrow_Retouch_v2_35s.mp3",
+	"res://assets/audio/intro-d0004/05_Direct_Era_Rise_Story_End_Smooth_v2_35s.mp3",
+	"res://assets/audio/intro-d0004/07_Runway_Opening_Ending_35s.mp3",
 ]
 var intro_music: Array[AudioStreamPlayer] = []
 var intro_music_fade: Tween
 var intro_music_choice: DemoButton
+var intro_playback_failed := false
 var intro_sound: DemoButton
 var title_sound: DemoButton
+var return_village_button: DemoButton
+const RETURN_VILLAGE_SHOW := 460.0
+const RETURN_VILLAGE_HIDE := 300.0
 var title_prompt: DemoButton
 var intro_player: VideoStreamPlayer
 var intro_stream: VideoStream
@@ -688,11 +692,8 @@ func start_or_continue()->void:
 func prepare_intro() -> void:
 	if ResourceLoader.exists(INTRO_VIDEO_PATH, "VideoStream"):
 		intro_stream = load(INTRO_VIDEO_PATH) as VideoStream
-	if intro_stream:
-		intro_preparing = true
-		show_screen("intro")
-	else:
-		leave_intro_under_cover()
+	intro_preparing = true
+	show_screen("intro")
 
 func cover_intro(covered: Callable) -> void:
 	if not is_instance_valid(intro_cloud):
@@ -758,6 +759,8 @@ func intro_screen() -> void:
 	intro_player = VideoStreamPlayer.new()
 	intro_player.stream = intro_stream
 	intro_player.expand = true
+	intro_player.loop = true
+	intro_playback_failed = false
 	intro_player.volume_db = 0.0 if settings.get_value("app","sound",true) else -80.0
 	intro_player.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	stage.add_child(intro_player)
@@ -785,19 +788,23 @@ func intro_screen() -> void:
 		player.stream = load(track)
 		stage.add_child(player)
 		intro_music.append(player)
-	var skip := button(stage,"화면을 터치하여 스킵",finish_intro)
+	var skip := button(stage,"화면을 터치하여 시작",finish_intro)
 	style_start_prompt(skip)
 	skip.name = "SkipIntro"
 	skip.offset_left = -116
 	skip.offset_right = 116
 	intro_position = -1.0
 	intro_stall = 0.0
-	intro_player.finished.connect(finish_intro)
 	var texture := intro_player.get_video_texture()
 	if texture:texture.changed.connect(intro_first_frame_ready,CONNECT_ONE_SHOT)
-	intro_player.play()
-	intro_player.paused = not application_active
-	fit_intro_video()
+	if intro_stream:
+		intro_player.play()
+		intro_player.paused = not application_active
+		fit_intro_video()
+	else:
+		intro_playback_failed = true
+		intro_preparing = false
+		reveal_intro_destination()
 
 func intro_first_frame_ready() -> void:
 	if screen!="intro" or not intro_preparing:return
@@ -815,20 +822,24 @@ func fit_intro_video() -> void:
 	intro_player.size = source_size * minf(stage.size.x/source_size.x,stage.size.y/source_size.y)
 	intro_player.position = (stage.size-intro_player.size)*0.5
 
-func finish_intro() -> void:
+func finish_intro(return_to_title := false) -> void:
 	if screen!="intro" or intro_leaving:return
 	intro_leaving = true
 	sync_intro_music()
 	intro_preparing = false
 	if is_instance_valid(intro_player):intro_player.paused = true
-	cover_intro(leave_intro_under_cover)
+	cover_intro(leave_intro_under_cover.bind(return_to_title))
 
-func leave_intro_under_cover() -> void:
+func leave_intro_under_cover(return_to_title := false) -> void:
 	var covered_at := Time.get_ticks_usec()
 	if is_instance_valid(intro_player):intro_player.stop()
 	intro_player = null
 	intro_music.clear()
 	intro_stream = null
+	if return_to_title:
+		show_screen("title")
+		reveal_intro_destination()
+		return
 	if not model.state.is_empty() and not is_instance_valid(world):
 		if not is_instance_valid(prepared_intro_world):
 			intro_loading.text = "마을 준비 중…"
@@ -916,7 +927,7 @@ func update_title_sound() -> void:
 		control.icon = icon
 		control.tooltip_text = "소리 끄기" if enabled else "소리 켜기"
 	if is_instance_valid(intro_music_choice):
-		intro_music_choice.text = "BGM "+("A" if intro_track_index()==0 else "B")
+		intro_music_choice.text = "BGM%d" % (intro_track_index()+1)
 
 
 func intro_track_index() -> int:
@@ -934,7 +945,7 @@ func cycle_intro_music() -> void:
 func sync_intro_music(crossfade := false) -> void:
 	if intro_music.size()!=2:return
 	if intro_music_fade and intro_music_fade.is_valid():intro_music_fade.kill()
-	var audible: bool = screen=="intro" and application_active and not intro_leaving and not intro_preparing and settings.get_value("app","sound",true)
+	var audible: bool = screen=="intro" and application_active and not intro_leaving and not intro_preparing and not intro_playback_failed and settings.get_value("app","sound",true)
 	var selected := intro_track_index()
 	for index in intro_music.size():
 		var player := intro_music[index]
@@ -1061,6 +1072,21 @@ func village_entry_active()->bool:
 func finish_village_entry()->void:
 	if village_entry_active():village_entry.finish()
 
+func update_return_village_button() -> void:
+	if not is_instance_valid(return_village_button):return
+	var player := world.player
+	var distance := player.village_camera_distance()
+	var threshold := RETURN_VILLAGE_HIDE if return_village_button.visible else RETURN_VILLAGE_SHOW
+	var guided := is_instance_valid(tutorial) and tutorial.active()
+	return_village_button.visible = player.manual_camera and distance>threshold and not modal and not guided
+
+
+func return_to_village() -> void:
+	if screen!="play" or modal or not application_active or not is_instance_valid(world):return
+	gestures.clear()
+	world.player.return_to_village()
+
+
 func play_hud(spread:=false) -> void:
 	var hud_started := Time.get_ticks_usec()
 	performance_hud=PERFORMANCE_HUD.new()
@@ -1089,6 +1115,13 @@ func play_hud(spread:=false) -> void:
 	action_row=Control.new();action_row.name="Actions";action_row.z_index=31;action_row.mouse_filter=Control.MOUSE_FILTER_IGNORE;stage.add_child(action_row)
 	action_row.position=Vector2(w-safe.x-menu_width,h-safe.y-76);action_row.size=Vector2(menu_width,72)
 	if w<h:action_row.position.y=h-safe.y-220
+	return_village_button=button(stage,"마을로",return_to_village,true)
+	return_village_button.name="ReturnToVillage"
+	return_village_button.custom_minimum_size=Vector2.ZERO
+	return_village_button.position=Vector2(w-safe.x-103,maxf(safe.y+176,action_row.position.y-63))
+	return_village_button.size=Vector2(96,42)
+	return_village_button.z_index=36
+	return_village_button.hide()
 	debug_shortcut=button(stage,"",toggle_performance_debug)
 	debug_shortcut.name="PerformanceDebugShortcut"
 	debug_shortcut.custom_minimum_size=Vector2.ZERO
@@ -1324,11 +1357,19 @@ func first_construction_locked()->bool:
 func _process(delta: float) -> void:
 	performance_diagnostics.tick(self,delta)
 	if screen=="intro":
-		if application_active and not intro_leaving and is_instance_valid(intro_player):
+		if application_active and not intro_leaving and not intro_playback_failed and is_instance_valid(intro_player):
 			var position := intro_player.stream_position
+			if position+.5<intro_position:
+				for player in intro_music:player.stop()
+				sync_intro_music()
 			intro_stall = intro_stall+delta if intro_preparing or is_equal_approx(position,intro_position) else 0.0
 			intro_position = position
-			if not intro_player.is_playing() or intro_stall>=3.0:finish_intro()
+			if intro_stall>=3.0:
+				intro_playback_failed = true
+				intro_player.paused = true
+				intro_preparing = false
+				sync_intro_music()
+				reveal_intro_destination()
 			elif intro_preparing:intro_loading.visible = intro_stall>=1.0
 		return
 	if screen=="title" and application_active and is_instance_valid(title_prompt):
@@ -1345,6 +1386,7 @@ func _process(delta: float) -> void:
 	if screen != "play" or world_map_open or map_transition_active or is_instance_valid(intro_cloud) or village_entry_active() or not is_instance_valid(world):
 		return
 	show_pending_quest_guide()
+	update_return_village_button()
 	if application_active:
 		farm_tick+=delta
 		if farm_tick>=1.0:
@@ -1963,7 +2005,7 @@ func go_back() -> void:
 		return
 	if title_input_blocked():return
 	if screen=="intro":
-		finish_intro()
+		finish_intro(true)
 	elif is_instance_valid(intro_cloud):
 		return
 	elif screen=="hunt":
@@ -2026,7 +2068,7 @@ func _notification(what: int) -> void:
 		if title_reveal:title_reveal.play()
 		if screen=="title":call_deferred("check_title_update")
 		if intro_cloud_tween and intro_cloud_tween.is_valid():intro_cloud_tween.play()
-		if is_instance_valid(intro_player) and not intro_leaving:intro_player.paused = false
+		if is_instance_valid(intro_player) and not intro_leaving and not intro_playback_failed:intro_player.paused = false
 		sync_audio()
 		if is_instance_valid(world): world.player.presentation_paused = modal
 	elif what == NOTIFICATION_WM_CLOSE_REQUEST:

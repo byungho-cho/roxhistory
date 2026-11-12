@@ -25,5 +25,6 @@ void fragment() {
 	float edge = smoothstep(0.0, 80.0, distance);
 	float density = smoothstep(15.0, 460.0, distance + drift) * edge;
 	vec3 cloud = mix(vec3(0.69, 0.77, 0.79), vec3(0.99, 0.96, 0.87), bank * 0.65 + detail * 0.35);
-	COLOR = vec4(cloud, density * 0.94);
+	float opaque_bank = smoothstep(430.0, 780.0, distance);
+	COLOR = vec4(mix(cloud, vec3(0.97, 0.97, 0.94), opaque_bank), mix(density * 0.94, 1.0, opaque_bank));
 }
