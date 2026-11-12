@@ -511,7 +511,7 @@ func title_screen() -> void:
 	title_sound = button(stage,"",toggle_sound)
 	title_sound.name = "TitleSound"
 	title_sound.custom_minimum_size = Vector2.ZERO
-	title_sound.position = Vector2(w-safe.x-64,safe.y+2)
+	title_sound.position = Vector2(config.position.x,safe.y+2)
 	title_sound.size = Vector2(56,56)
 	for state in ["normal","hover","pressed","focus"]:
 		title_sound.add_theme_stylebox_override(state,StyleBoxEmpty.new())
@@ -930,7 +930,7 @@ func update_title_sound() -> void:
 		if not is_instance_valid(control):continue
 		var image: TextureRect = control.get_meta("speaker_icon")
 		image.texture.atlas = source
-		control.tooltip_text = "소리 끄기" if enabled else "소리 켜기"
+		control.set_meta("semantic_text","소리 끄기" if enabled else "소리 켜기")
 	if is_instance_valid(intro_music_choice):
 		intro_music_choice.text = "음원 %d" % (intro_track_index()+1)
 
