@@ -21,7 +21,7 @@ var shade:ColorRect
 var popup:CenterContainer
 enum Phase { IDLE, CHECKING, AVAILABLE, CURRENT, DOWNLOADING, VERIFYING, READY, CHECK_FAILED, DOWNLOAD_FAILED,
 	APK_READY, APK_PERMISSION, APK_INSTALLING, APK_INSTALL_FAILED }
-const APK_CHANNEL := "https://github.com/byungho-cho/roxhistory/releases/download/android-apk-channel/apk-latest.json"
+const APK_CHANNEL := "http://127.0.0.1:18232/apk-latest.json"
 var apk_bridge: Object
 var android_activity: Object
 var installed_apk := {}

@@ -24,13 +24,13 @@ import java.net.URL;
 import java.security.MessageDigest;
 import java.util.Arrays;
 import java.util.Locale;
-import javax.net.ssl.HttpsURLConnection;
+import java.net.HttpURLConnection;
 
 public final class GameApkUpdate extends BroadcastReceiver {
     private static final String TAG = "RoxApkUpdate";
     private static final String PACKAGE = "com.roxhistory.demo";
     private static final String ACTION = PACKAGE + ".APK_INSTALL_RESULT";
-    private static final String ROOT = "https://github.com/byungho-cho/roxhistory/releases/download/";
+    private static final String ROOT = "http://127.0.0.1:18232/";
     private static final long MAX_BYTES = 800_000_000L;
     private static volatile String state = "idle";
     private static volatile long received;
@@ -40,7 +40,7 @@ public final class GameApkUpdate extends BroadcastReceiver {
     private static long verifiedCode;
     private static String verifiedName;
     private static long verifiedSize;
-    private static volatile HttpsURLConnection connection;
+    private static volatile HttpURLConnection connection;
 
     private static SharedPreferences prefs(Context context) {
         return context.getSharedPreferences("roxhistory_apk_update", Context.MODE_PRIVATE);
@@ -148,12 +148,12 @@ public final class GameApkUpdate extends BroadcastReceiver {
     private static void receive(Context context, File directory, String version, long targetCode, long size, String hash) {
         File part = new File(directory, "incoming.part");
         File finalFile = new File(directory, "verified.apk");
-        HttpsURLConnection active = null;
+        HttpURLConnection active = null;
         String terminal = "download_failed";
         try {
             URL url = new URL(ROOT + "v" + version + "/Roxhistory_" + version + ".apk");
             for (int redirects = 0; ; redirects++) {
-                active = (HttpsURLConnection) url.openConnection();
+                active = (HttpURLConnection) url.openConnection();
                 connection = active;
                 if (cancelled) throw new IllegalStateException();
                 connection.setConnectTimeout(15000);
@@ -231,7 +231,7 @@ public final class GameApkUpdate extends BroadcastReceiver {
     public static void cancel() {
         if ("downloading".equals(state) || "verifying".equals(state)) {
             cancelled = true;
-            HttpsURLConnection active = connection;
+            HttpURLConnection active = connection;
             if (active != null) new Thread(active::disconnect, "RoxApkCancel").start();
         }
     }
