@@ -479,13 +479,7 @@ func welcome(sound: bool) -> void:
 
 func title_screen() -> void:
 	var updates := get_node("/root/PatchBootstrap/Overlay")
-	var title_art:=AtlasTexture.new()
-	title_art.atlas=preload("res://assets/ui/title-hanbando/hanbando-start-background-v1.png")
-	# The supplied composite has static controls on the right and lower edges.
-	# Leave those strips out so only the live controls are drawn.
-	title_art.region=Rect2(0,0,1580,720)
-	title_art.filter_clip=true
-	var background:=picture(stage,title_art,Rect2(0,0,w,h))
+	var background:=picture(stage,preload("res://assets/ui/title-hanbando/start-background-clean-v1.png"),Rect2(0,0,w,h))
 	background.stretch_mode=TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	if not title_cloud_seen:
 		title_reveal = stage.create_tween().set_parallel()
@@ -522,7 +516,7 @@ func title_screen() -> void:
 	title_sound.size = Vector2(56,56)
 	for state in ["normal","hover","pressed","focus"]:
 		title_sound.add_theme_stylebox_override(state,StyleBoxEmpty.new())
-	install_conch_icon(title_sound)
+	install_speaker_icon(title_sound)
 	update_title_sound()
 	var patch_status:=Label.new()
 	patch_status.position=Vector2(safe.x,h-safe.y-37)
@@ -773,15 +767,17 @@ func intro_screen() -> void:
 	intro_sound.offset_top = 10
 	intro_sound.offset_bottom = 66
 	intro_sound.custom_minimum_size = Vector2.ZERO
-	install_conch_icon(intro_sound)
+	install_speaker_icon(intro_sound)
 	for state in ["normal","hover","pressed","focus"]:
 		intro_sound.add_theme_stylebox_override(state,StyleBoxEmpty.new())
 	intro_music_choice = button(stage,"",cycle_intro_music)
-	intro_music_choice.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT)
-	intro_music_choice.offset_left = 22
-	intro_music_choice.offset_right = 112
-	intro_music_choice.offset_top = -65
-	intro_music_choice.offset_bottom = -22
+	style_start_prompt(intro_music_choice)
+	intro_music_choice.name = "IntroMusicChoice"
+	intro_music_choice.anchor_left = 1.0
+	intro_music_choice.anchor_right = 1.0
+	intro_music_choice.offset_left = -118
+	intro_music_choice.offset_right = -22
+	intro_music_choice.alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	update_title_sound()
 	for track in INTRO_TRACKS:
 		var player := AudioStreamPlayer.new()
@@ -888,6 +884,7 @@ func prepare_intro_world() -> void:
 	title_world_progress = 0.0
 	var world_started := Time.get_ticks_usec()
 	var assembling_world := DemoWorld.new(model)
+	assembling_world.female_resident_trial = female_resident_trial_enabled()
 	assembling_world.spread_startup = true
 	assembling_world.startup_progress.connect(func(progress: float):title_world_progress = progress)
 	assembling_world.hide()
@@ -920,56 +917,23 @@ func toggle_sound() -> void:
 		update_title_sound()
 		toast("소리 켜짐" if settings.get_value("app","sound",true) else "소리 꺼짐")
 
-func install_conch_icon(control: DemoButton) -> void:
-	var art := Node2D.new()
-	art.position = Vector2(1,9)
-	art.scale = Vector2.ONE * .45
-	control.add_child(art)
-	# Sample the original painted conch and rays without their background.
-	var texture := preload("res://assets/ui/title-hanbando/hanbando-start-background-v1.png")
-	var outlines := [
-		PackedVector2Array([Vector2(9,44), Vector2(15,47), Vector2(23,51), Vector2(32,51),
-			Vector2(40,48), Vector2(47,39), Vector2(50,34), Vector2(50,28), Vector2(54,24),
-			Vector2(56,17), Vector2(60,12), Vector2(67,10), Vector2(75,11), Vector2(84,17),
-			Vector2(88,23), Vector2(89,31), Vector2(86,38), Vector2(83,44), Vector2(80,50),
-			Vector2(76,55), Vector2(74,65), Vector2(70,70), Vector2(63,74), Vector2(50,75),
-			Vector2(48,72), Vector2(38,74), Vector2(28,74), Vector2(19,69), Vector2(13,64),
-			Vector2(9,56), Vector2(8,48)]),
-		PackedVector2Array([Vector2(97,32),Vector2(111,22),Vector2(116,21),Vector2(116,26),Vector2(100,35),Vector2(97,35)]),
-		PackedVector2Array([Vector2(98,39),Vector2(119,39),Vector2(122,41),Vector2(121,46),Vector2(99,46),Vector2(97,43)]),
-		PackedVector2Array([Vector2(98,50),Vector2(115,58),Vector2(116,63),Vector2(112,64),Vector2(98,55),Vector2(96,52)]),
-	]
-	for outline in outlines:
-		var shape := Polygon2D.new()
-		var uv := PackedVector2Array()
-		for point in outline:
-			uv.append(point + Vector2(1580,22))
-		shape.texture = texture
-		shape.polygon = outline
-		shape.uv = uv
-		shape.antialiased = true
-		art.add_child(shape)
-	var muted := Line2D.new()
-	muted.points = PackedVector2Array([Vector2(21,21),Vector2(80,76)])
-	muted.width = 8.0
-	muted.default_color = Color("f1d6ab")
-	muted.antialiased = true
-	art.add_child(muted)
-	control.set_meta("conch_icon",art)
+func install_speaker_icon(control: DemoButton) -> void:
+	var icon := AtlasTexture.new()
+	icon.region = Rect2(170,153,905,929)
+	icon.filter_clip = true
+	control.set_meta("speaker_icon",picture(control,icon,Rect2(4,4,48,48)))
 
 
 func update_title_sound() -> void:
 	var enabled: bool = settings.get_value("app","sound",true)
+	var source := preload("res://assets/ui/title-hanbando/speaker-on-v2.png") if enabled else preload("res://assets/ui/title-hanbando/speaker-off-v2.png")
 	for control in [title_sound,intro_sound]:
 		if not is_instance_valid(control):continue
-		var art: Node2D = control.get_meta("conch_icon")
-		art.get_child(0).modulate = Color.WHITE if enabled else Color(.55,.55,.55)
-		for i in range(1,4):
-			art.get_child(i).visible = enabled
-		art.get_child(4).visible = not enabled
+		var image: TextureRect = control.get_meta("speaker_icon")
+		image.texture.atlas = source
 		control.tooltip_text = "소리 끄기" if enabled else "소리 켜기"
 	if is_instance_valid(intro_music_choice):
-		intro_music_choice.text = "BGM%d" % (intro_track_index()+1)
+		intro_music_choice.text = "음원 %d" % (intro_track_index()+1)
 
 
 func intro_track_index() -> int:
@@ -1080,6 +1044,7 @@ func enter_game(first_entry:=false,spread_hud:=false) -> void:
 	if not is_instance_valid(world):
 		var world_started := Time.get_ticks_usec()
 		world = DemoWorld.new(model)
+		world.female_resident_trial = female_resident_trial_enabled()
 		add_child(world)
 		intro_probe_step("world",world_started)
 		world.feedback.sound_cue.connect(audio.cue)
@@ -1157,11 +1122,19 @@ func play_hud(spread:=false) -> void:
 	action_row=Control.new();action_row.name="Actions";action_row.z_index=31;action_row.mouse_filter=Control.MOUSE_FILTER_IGNORE;stage.add_child(action_row)
 	action_row.position=Vector2(w-safe.x-menu_width,h-safe.y-76);action_row.size=Vector2(menu_width,72)
 	if w<h:action_row.position.y=h-safe.y-220
-	return_village_button=button(stage,"마을로",return_to_village,true)
+	return_village_button=button(stage,"",return_to_village)
 	return_village_button.name="ReturnToVillage"
 	return_village_button.custom_minimum_size=Vector2.ZERO
 	return_village_button.position=Vector2(w-safe.x-103,maxf(safe.y+176,action_row.position.y-63))
 	return_village_button.size=Vector2(96,42)
+	return_village_button.tooltip_text="마을로"
+	for state in ["normal","hover","pressed","focus"]:
+		return_village_button.add_theme_stylebox_override(state,StyleBoxEmpty.new())
+	var return_icon := AtlasTexture.new()
+	return_icon.atlas = preload("res://assets/ui/title-hanbando/return-village-v1.png")
+	return_icon.region = Rect2(149,164,930,950)
+	return_icon.filter_clip = true
+	picture(return_village_button,return_icon,Rect2(48,-3,48,48))
 	return_village_button.z_index=36
 	return_village_button.hide()
 	debug_shortcut=button(stage,"",toggle_performance_debug)
@@ -1858,6 +1831,20 @@ func export_performance_logs()->void:
 			return
 		destination="다운로드/"+zip.get_file()
 	show_modal("진단 기록 저장 완료",destination,[{"text":"확인","action":show_development_settings}])
+
+func female_resident_trial_enabled() -> bool:
+	return settings.get_value("development","female_resident_trial",false)
+
+func set_female_resident_trial(enabled: bool) -> void:
+	var previous := female_resident_trial_enabled()
+	settings.set_value("development","female_resident_trial",enabled)
+	if settings.save(prefs_path) != OK:
+		settings.set_value("development","female_resident_trial",previous)
+		show_error("여성 주민 시험 설정을 저장하지 못했습니다.")
+		return
+	if is_instance_valid(world):
+		world.female_resident_trial = enabled
+		world.refresh_female_resident_trial()
 
 func set_performance_diagnostics(enabled:bool)->void:
 	var previous:=PerformanceDiagnostics.enabled(settings)

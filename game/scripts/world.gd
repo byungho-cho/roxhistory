@@ -667,6 +667,16 @@ func resource_transition(id:String,reveal:bool,delay:float=0.0,animate:bool=true
 		tween.tween_callback(node.hide)
 	tween.tween_callback(func():resource_tweens.erase(id))
 
+var female_resident_trial := false
+
+func refresh_female_resident_trial() -> void:
+	var trial_selected := false
+	for resident in residents:
+		if resident.variant != "female" or not is_instance_valid(resident.resident_sprite):continue
+		var use_trial := female_resident_trial and not trial_selected
+		resident.resident_sprite.set_female_trial(use_trial)
+		trial_selected = trial_selected or use_trial
+
 func refresh_residents()->void:
 	var roster:=ResidentAdmission.ids(model.state)
 	for actor in residents.duplicate():
@@ -681,6 +691,7 @@ func refresh_residents()->void:
 		var resident:=TrialResident.new();resident.variant="female" if index%2==0 else "sturdy_male"
 		resident.resident_id=id;resident.name="Resident_%d"%index
 		resident.position=resident_spawn_position(index);add_child(resident);residents.append(resident)
+	refresh_female_resident_trial()
 	var visiting:=model.family_visitor_count() if model.family_available() else 0
 	while visitors.size()>visiting:
 		var visitor:TrialResident=visitors.pop_back()

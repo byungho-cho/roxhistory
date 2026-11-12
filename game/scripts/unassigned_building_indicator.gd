@@ -1,9 +1,9 @@
 class_name UnassignedBuildingIndicator
 extends Node2D
 ## Presentation only. Assignment, production and saved clocks remain authoritative.
-const CYCLE := 5.5
-const LETTER_INTERVAL := 1.1
+const LETTER_COUNT := 3
 const LETTER_LIFETIME := 2.5
+const CYCLE := LETTER_COUNT*LETTER_LIFETIME+.8
 const INK:=Color("ecf7ff")
 var model:GameState
 var key:String
@@ -37,7 +37,7 @@ func _process(delta:float)->void:
 	queue_redraw()
 
 func glyph_sample(index:int)->Dictionary:
-	var elapsed := clock-float(index)*LETTER_INTERVAL
+	var elapsed := clock-float(index)*LETTER_LIFETIME
 	var progress := clampf(elapsed/LETTER_LIFETIME,0.0,1.0)
 	var alpha := smoothstep(0.0,.22,progress)*(1.0-smoothstep(.42,1.0,progress))*.9
 	return {
@@ -49,7 +49,7 @@ func glyph_sample(index:int)->Dictionary:
 
 func _draw()->void:
 	var font:=DemoArt.theme().default_font
-	for index in 3:
+	for index in LETTER_COUNT:
 		var glyph:=glyph_sample(index)
 		if glyph.alpha<=0.0:continue
 		var ink:=INK;ink.a=glyph.alpha

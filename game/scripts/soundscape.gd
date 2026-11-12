@@ -34,12 +34,15 @@ const INTERFACE_GAP_MS := 75
 
 func _ready() -> void:
 	nature_random.randomize()
-	for key in ["select","a303_bgm","play_bgm","wood_0","wood_1","stone_0","stone_1","build_0","build_1","gain","wind"]:
+	for key in ["select","a303_bgm","play_bgm","wood_0","wood_1","stone_0","stone_1","build_0","build_1","gain"]:
 		streams[key] = load("res://assets/audio/"+key+".wav")
 	for key in APPROVED:
 		streams[key] = load("res://assets/audio/d0004-approved/"+APPROVED[key]+".wav")
 	for key in ["wood","stone","build","demolish"]:
 		streams["recorded_"+key]=load("res://assets/audio/recorded-actions-v001/"+key+"-hit.wav")
+	streams["recorded_stone"] = preload("res://assets/audio/village-sfx-v02/stone-gather-v02.wav")
+	streams["recorded_build"] = preload("res://assets/audio/village-sfx-v02/construction-work-v02.wav")
+	streams["wind"] = preload("res://assets/audio/village-sfx-v02/village-wind-b02.wav")
 	streams["hunt_impact"] = streams["stone_0"]
 	recorded_work=AudioStreamPlayer.new();recorded_work.name="RecordedActionVoice";recorded_work.bus=&"SFX";add_child(recorded_work)
 	for i in 6:
@@ -185,7 +188,10 @@ func _process(delta: float) -> void:
 		var duck := -8.0 if ducked else 0.0
 		var water_level := REGION_WATER_DB if in_region else lerpf(-36.0206,-26.0206,river_proximity)
 		river.volume_db = move_toward(river.volume_db,water_level+duck,delta*22)
-		wind.volume_db = move_toward(wind.volume_db,-39+duck,delta*22)
+
+		if wind.playing:
+			var variation := sin(TAU*wind.get_playback_position()/wind.stream.get_length())*1.5
+			wind.volume_db = move_toward(wind.volume_db,-39+duck+variation,delta*22)
 	if in_world and hearth_proximity > 0.0 and not hearth.playing:
 		hearth.volume_db = -60.0
 		hearth.play()
