@@ -27,6 +27,14 @@ const INTRO_VIDEO_PATH := "res://assets/video/intro.ogv"
 var hunt: HUNT_SCREEN
 var hunt_preparing := false
 var hunt_preparation_cancelled := false
+const INTRO_TRACKS := [
+	"res://assets/audio/intro-d0003/A_Echoes_of_History_35s.mp3",
+	"res://assets/audio/intro-d0003/B_Journey_to_Tomorrow_Retouch_v2_35s.mp3",
+]
+var intro_music: Array[AudioStreamPlayer] = []
+var intro_music_fade: Tween
+var intro_music_choice: DemoButton
+var intro_sound: DemoButton
 var title_sound: DemoButton
 var title_prompt: DemoButton
 var intro_player: VideoStreamPlayer
@@ -468,8 +476,9 @@ func title_screen() -> void:
 	var updates := get_node("/root/PatchBootstrap/Overlay")
 	var title_art:=AtlasTexture.new()
 	title_art.atlas=preload("res://assets/ui/title-hanbando/hanbando-start-background-v1.png")
-	# The handoff image includes static controls along the lower edge.
-	title_art.region=Rect2(0,0,title_art.atlas.get_width(),720)
+	# The supplied composite has static controls on the right and lower edges.
+	# Leave those strips out so only the live controls are drawn.
+	title_art.region=Rect2(0,0,1580,720)
 	title_art.filter_clip=true
 	var background:=picture(stage,title_art,Rect2(0,0,w,h))
 	background.stretch_mode=TextureRect.STRETCH_KEEP_ASPECT_COVERED
@@ -742,7 +751,7 @@ func reveal_intro_destination() -> void:
 
 func intro_screen() -> void:
 	var backdrop := ColorRect.new()
-	backdrop.color = Color.BLACK
+	backdrop.color = Color("141710")
 	backdrop.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	stage.add_child(backdrop)
 	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -753,6 +762,29 @@ func intro_screen() -> void:
 	intro_player.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	stage.add_child(intro_player)
 	stage.resized.connect(fit_intro_video)
+	intro_sound = button(stage,"",toggle_sound)
+	intro_sound.name = "IntroSound"
+	intro_sound.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
+	intro_sound.offset_left = -74
+	intro_sound.offset_right = -18
+	intro_sound.offset_top = 10
+	intro_sound.offset_bottom = 66
+	intro_sound.custom_minimum_size = Vector2.ZERO
+	intro_sound.expand_icon = true
+	for state in ["normal","hover","pressed","focus"]:
+		intro_sound.add_theme_stylebox_override(state,StyleBoxEmpty.new())
+	intro_music_choice = button(stage,"",cycle_intro_music)
+	intro_music_choice.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT)
+	intro_music_choice.offset_left = 22
+	intro_music_choice.offset_right = 112
+	intro_music_choice.offset_top = -65
+	intro_music_choice.offset_bottom = -22
+	update_title_sound()
+	for track in INTRO_TRACKS:
+		var player := AudioStreamPlayer.new()
+		player.stream = load(track)
+		stage.add_child(player)
+		intro_music.append(player)
 	var skip := button(stage,"화면을 터치하여 스킵",finish_intro)
 	style_start_prompt(skip)
 	skip.name = "SkipIntro"
@@ -771,6 +803,7 @@ func intro_first_frame_ready() -> void:
 	if screen!="intro" or not intro_preparing:return
 	intro_preparing = false
 	intro_stall = 0.0
+	sync_intro_music()
 	fit_intro_video()
 	reveal_intro_destination()
 
@@ -785,6 +818,7 @@ func fit_intro_video() -> void:
 func finish_intro() -> void:
 	if screen!="intro" or intro_leaving:return
 	intro_leaving = true
+	sync_intro_music()
 	intro_preparing = false
 	if is_instance_valid(intro_player):intro_player.paused = true
 	cover_intro(leave_intro_under_cover)
@@ -793,6 +827,7 @@ func leave_intro_under_cover() -> void:
 	var covered_at := Time.get_ticks_usec()
 	if is_instance_valid(intro_player):intro_player.stop()
 	intro_player = null
+	intro_music.clear()
 	intro_stream = null
 	if not model.state.is_empty() and not is_instance_valid(world):
 		if not is_instance_valid(prepared_intro_world):
@@ -874,10 +909,52 @@ func toggle_sound() -> void:
 		toast("소리 켜짐" if settings.get_value("app","sound",true) else "소리 꺼짐")
 
 func update_title_sound() -> void:
-	if not is_instance_valid(title_sound):return
 	var enabled: bool = settings.get_value("app","sound",true)
-	title_sound.icon = preload("res://assets/ui/v0158/sound-on.svg") if enabled else preload("res://assets/ui/v0158/sound-off.svg")
-	title_sound.tooltip_text = "소리 끄기" if enabled else "소리 켜기"
+	var icon := preload("res://assets/ui/v0158/sound-on.svg") if enabled else preload("res://assets/ui/v0158/sound-off.svg")
+	for control in [title_sound,intro_sound]:
+		if not is_instance_valid(control):continue
+		control.icon = icon
+		control.tooltip_text = "소리 끄기" if enabled else "소리 켜기"
+	if is_instance_valid(intro_music_choice):
+		intro_music_choice.text = "BGM "+("A" if intro_track_index()==0 else "B")
+
+
+func intro_track_index() -> int:
+	return clampi(int(settings.get_value("app","intro_bgm",0)),0,1)
+
+
+func cycle_intro_music() -> void:
+	if screen!="intro" or intro_leaving:return
+	settings.set_value("app","intro_bgm",1-intro_track_index())
+	if settings.save(prefs_path)!=OK:show_error("인트로 음악 설정을 저장하지 못했습니다.")
+	update_title_sound()
+	sync_intro_music(true)
+
+
+func sync_intro_music(crossfade := false) -> void:
+	if intro_music.size()!=2:return
+	if intro_music_fade and intro_music_fade.is_valid():intro_music_fade.kill()
+	var audible: bool = screen=="intro" and application_active and not intro_leaving and not intro_preparing and settings.get_value("app","sound",true)
+	var selected := intro_track_index()
+	for index in intro_music.size():
+		var player := intro_music[index]
+		if not is_instance_valid(player):continue
+		if not audible:
+			player.stop()
+		elif index==selected:
+			if not player.playing:
+				player.volume_db = -40.0 if crossfade else -9.0
+				player.play(maxf(0.0,intro_player.stream_position))
+			elif not crossfade:
+				player.volume_db = -9.0
+		elif not crossfade:
+			player.stop()
+	if not audible or not crossfade:return
+	intro_music_fade = create_tween().set_parallel()
+	intro_music_fade.tween_property(intro_music[selected],"volume_db",-9.0,.24)
+	var outgoing := intro_music[1-selected]
+	intro_music_fade.tween_property(outgoing,"volume_db",-48.0,.24)
+	intro_music_fade.chain().tween_callback(outgoing.stop)
 
 
 func chapter_menu() -> void:
@@ -1827,6 +1904,7 @@ func retire_modal(closing: Control) -> void:
 		closing.queue_free()
 
 func sync_audio() -> void:
+	sync_intro_music()
 	if is_instance_valid(audio): audio.configure(settings.get_value("app","sound",true),application_active,screen == "play",modal,screen == "region",screen == "title")
 
 func toast(message: String, seconds: float = 3.0) -> void:

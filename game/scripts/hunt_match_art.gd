@@ -83,24 +83,18 @@ static func format_power(value: int) -> String:
 	return formatted
 
 static func power(parent: Control, center: Vector2, value: int) -> void:
-	var formatted := format_power(value)
 	var group := layer(parent,center)
-	picture(group,preload("res://assets/ui/hunting-match/png/power/stone-spear.png"),Rect2(-32,2.55,21,21))
-	if value<0:
-		var pending := Label.new()
-		pending.text = formatted
-		pending.add_theme_font_size_override("font_size",24)
-		pending.add_theme_color_override("font_color",Color("ffd278"))
-		pending.position = Vector2(-6,-4)
-		group.add_child(pending)
-		return
-	var width := 23.0
-	var x := width
-	for digit in formatted:
-		var file := "comma" if digit=="," else digit
-		var tex: Texture2D = load(ROOT+"svg/power/digit-"+file+".svg")
-		var glyph_width := 7.45 if digit=="," else 16.8
-		picture(group,tex,Rect2(x,0,glyph_width,26.1))
-		x += glyph_width-3.8
-	group.get_child(0).position.x = 0.0
-	group.position.x -= (x+3.8)*.5
+	picture(group,BRUSH,Rect2(-55,6,110,16)).modulate.a = .8
+	var axe := picture(group,preload("res://assets/ui/s40000/craft-axe-v001.png"),Rect2(-58,-11,48,48))
+	axe.pivot_offset = axe.size*.5
+	axe.rotation = -2.45
+	var digits := Label.new()
+	digits.text = format_power(value)
+	digits.position = Vector2(-27,-8)
+	digits.size = Vector2(82,32)
+	digits.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	digits.add_theme_font_size_override("font_size",22)
+	digits.add_theme_color_override("font_color",Color("ffd278"))
+	digits.add_theme_color_override("font_outline_color",Color("35200e"))
+	digits.add_theme_constant_override("outline_size",4)
+	group.add_child(digits)

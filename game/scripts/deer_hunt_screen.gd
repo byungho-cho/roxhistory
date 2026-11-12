@@ -5,12 +5,10 @@ signal preparation_ready
 const MATCH := preload("res://scripts/hunt_match_art.gd")
 const RULES := preload("res://scripts/deer_hunt_rules.gd")
 const DESIGN := Vector2(960,540)
-const CLEARING := preload("res://assets/ui/hunting-formation/clearing.png")
+const CLEARING := preload("res://assets/village-ground-review-v002/ground-only.png")
 const ALLY_CELL := preload("res://assets/ui/hunting-formation/ally-cell.svg")
 const ENEMY_CELL := preload("res://assets/ui/hunting-formation/enemy-cell.svg")
 const PORTRAITS := preload("res://assets/ui/hunting-formation/portraits.png")
-const PORTRAIT_FRAME := preload("res://assets/ui/hunting-formation/portrait-frame.svg")
-const PORTRAIT_SELECTED := preload("res://assets/ui/hunting-formation/portrait-selected.svg")
 const CELL_X := Vector2(52.5,-37.123)
 const CELL_Y := Vector2(52.5,37.123)
 const ALLY_ORIGIN := Vector2(272,348)
@@ -18,8 +16,8 @@ const ENEMY_ORIGIN := ALLY_ORIGIN + CELL_X * 3.155
 const CELL_SIZE := Vector2(107,76.246)
 const NAME_BRUSH := preload("res://assets/ui/brush/resource-slot-brush@2x.png")
 const MATCH_SEQUENCE := preload("res://scripts/hunt_match_sequence.gd")
-const TRANSITION_SECONDS := .94
-const BATTLE_CUT := .30
+const TRANSITION_SECONDS := 2.35
+const HUNT_AUDIO := preload("res://scripts/hunt_audio.gd")
 const HUNTER_SLOTS := [Vector2(378,261),Vector2(249,345),Vector2(428,379)]
 const DEER_SLOT := Vector2(598,245)
 
@@ -38,7 +36,6 @@ var arrival_finished := false
 var match_vs: Dictionary
 var match_deer: TextureRect
 var match_home := Vector2.ZERO
-var battle_fade: ColorRect
 var arrival_elapsed := 0.0
 var hunter_markers: Array[Control] = []
 var hunter_field_bars: Array[TextureProgressBar] = []
@@ -51,6 +48,11 @@ var power_header: Control
 var battlefield: Control
 var ground: TextureRect
 var zoom := 1.0
+var pan := Vector2.ZERO
+var pan_pointer := -2
+var pan_last := Vector2.ZERO
+var pan_start := Vector2.ZERO
+var pan_moved := false
 var touch_points := {}
 var speed := 1.0
 var auto_button: DemoButton
@@ -72,9 +74,16 @@ var preparation: Control
 var combat: Control
 var combat_controls: Control
 var placement_grid: Control
-var portrait_frames: Array[TextureRect] = []
+var portrait_frames: Array[Panel] = []
 var assigned_cells: Array[int] = [2,0,7]
 var selected_hunter := 0
+var drag_pointer := -2
+var drag_start := Vector2.ZERO
+var drag_cell := -1
+var dragging := false
+var hunt_audio = HUNT_AUDIO.new()
+var impact_pending := false
+var last_step := -1
 var approach := 0.0
 var ally_hud: Control
 var enemy_hud: Control
@@ -106,6 +115,7 @@ var pose := ""
 var exit_button: DemoButton
 
 func _ready() -> void:
+	add_child(hunt_audio)
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	ground = app.picture(self,CLEARING,Rect2())
 	ground.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -115,6 +125,7 @@ func _ready() -> void:
 	canvas.size = DESIGN
 	add_child(canvas)
 	battlefield = layer()
+	build_scenery()
 	battlefield.draw.connect(draw_stage)
 	placement_grid = layer(battlefield)
 	for i in 9:
@@ -155,6 +166,22 @@ func _ready() -> void:
 	fit_layout()
 	update_actors(0.1)
 	build_arrival()
+
+func build_scenery() -> void:
+	var tree := preload("res://assets/environment/tree-v018.png")
+	var stone := preload("res://assets/environment/rock-v018.png")
+	var logs := preload("res://assets/environment/fallen-logs.png")
+	var cloud := preload("res://assets/village-entry-v001/cloud_puff_c.png")
+	for item in [[tree,Rect2(12,8,84,113)],[tree,Rect2(22,403,92,124)],
+			[tree,Rect2(860,398,104,140)],[stone,Rect2(102,468,63,42)],
+			[stone,Rect2(780,73,55,36)],[logs,Rect2(845,49,83,36)],
+			[logs,Rect2(156,427,50,21)]]:
+		var sprite := MATCH.picture(battlefield,item[0],item[1])
+		sprite.pivot_offset = Vector2(sprite.size.x*.5,sprite.size.y*.96)
+	for rect in [Rect2(-76,-42,216,106),Rect2(813,-57,218,105),
+			Rect2(-94,461,235,119),Rect2(821,453,230,119)]:
+		MATCH.picture(battlefield,cloud,rect).modulate.a = .72
+
 
 func fit_layout() -> void:
 	var safe_start := Vector2.ZERO
@@ -201,12 +228,6 @@ func build_arrival() -> void:
 	match_impact = MATCH.picture(preparation,impact_atlas,Rect2(MATCH_SEQUENCE.CENTER-Vector2(120,120.25),Vector2(240,240)))
 	match_impact.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	match_impact.texture_repeat = CanvasItem.TEXTURE_REPEAT_DISABLED
-	battle_fade = ColorRect.new()
-	battle_fade.color = Color("232b1e")
-	battle_fade.mouse_filter = Control.MOUSE_FILTER_STOP
-	add_child(battle_fade)
-	battle_fade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	battle_fade.hide()
 	preparation.mouse_behavior_recursive = Control.MOUSE_BEHAVIOR_DISABLED
 	header.mouse_behavior_recursive = Control.MOUSE_BEHAVIOR_DISABLED
 	advance_arrival(0.0)
@@ -267,14 +288,18 @@ func build_preparation() -> void:
 		var card := make_button(roster,"",Rect2(35,90+85*index,95,77),select_hunter.bind(index))
 		clear_button_art(card)
 		card.name = "Hunter%d"%index
-		var frame: TextureRect = app.picture(card,PORTRAIT_FRAME,Rect2(0,0,95,77))
+		var frame := Panel.new()
+		frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		frame.size = Vector2(95,77)
+		card.add_child(frame)
+		style_portrait(frame,index==0)
 		portrait_frames.append(frame)
 		var portrait: TextureRect = app.picture(card,hunter_portrait(index),Rect2(5,2,85,72))
 		portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 		app.picture(card,preload("res://assets/ui/hunting-formation/swap.svg"),Rect2(71,53,24,24))
-	portrait_frames[0].texture = PORTRAIT_SELECTED
 	var start := artwork_button(footer_right,Rect2(797,487,160,50),"사냥 시작","png/preparation/start-battle-background.png",start_combat,ink)
 	start.name = "StartBattle"
+	start.button_down.connect(func():hunt_audio.cue("S01"))
 	var quick := artwork_button(footer_right,Rect2(629,487,160,50),"빠른 출전","png/preparation/quick-sortie-background.png",func():pass)
 	quick.disabled = true
 	for control in [start,quick]:
@@ -307,25 +332,29 @@ func build_power_comparison() -> void:
 	power_header.pivot_offset = MATCH_SEQUENCE.PIVOT
 	match_details = MATCH.layer(power_header,Vector2.ZERO)
 	MATCH.backdrop(match_details)
-	for x in [97.8,259.0]:
-		MATCH.picture(match_details,MATCH.BRUSH,Rect2(x,78,124,12)).modulate.a = .72
+
 	prep_ally_portrait = MATCH.picture(power_header,preload("res://assets/ui/hunting-match/png/power/hunter-head.png"),Rect2(MATCH_SEQUENCE.ALLY,Vector2(51.2,51.2)))
 	match_deer = MATCH.picture(power_header,preload("res://assets/ui/hunting-match/png/power/deer-head.png"),Rect2(MATCH_SEQUENCE.DEER,Vector2(48,63)))
 	match_vs = MATCH.versus(power_header,Vector2(240,49),57.4)
-	# Ratings are display data. No combat rule currently defines a power formula.
-	MATCH.power(match_details,Vector2(159.8,66),-1)
-	MATCH.power(match_details,Vector2(321,66),-1)
+	# Forest Edge Lv 1 preview values. The battle rules do not use these ratings.
+	MATCH.power(match_details,Vector2(159.8,65),12300)
+	MATCH.power(match_details,Vector2(321,65),8000)
 
 
 func clear_button_art(control: DemoButton) -> void:
 	for state in ["normal","hover","pressed","disabled","focus"]:
 		control.add_theme_stylebox_override(state,StyleBoxEmpty.new())
 
+func style_portrait(frame: Panel, selected: bool) -> void:
+	frame.add_theme_stylebox_override("panel",box(Color("146bc1") if selected else Color("202c38"),Color("55bdff") if selected else Color("53616b"),8))
+
+
 func select_hunter(index: int) -> void:
 	if not arrival_finished or transition_elapsed>=0 or running:return
 	selected_hunter = index
+	hunt_audio.cue("S02")
 	for i in portrait_frames.size():
-		portrait_frames[i].texture = PORTRAIT_SELECTED if i==index else PORTRAIT_FRAME
+		style_portrait(portrait_frames[i],i==index)
 	if prep_ally_portrait:
 		prep_ally_portrait.texture = preload("res://assets/ui/hunting-match/png/power/hunter-head.png") if index==0 else hunter_portrait(index)
 	if duel_ally_portrait:
@@ -380,11 +409,13 @@ func toggle_control(parent: Control, rect: Rect2, label: String, asset: String, 
 	return button
 
 func toggle_auto() -> void:
+	hunt_audio.cue("S06")
 	if exit_popup or app.modal or result_shown:return
 	rules.set_auto(not rules.auto_enabled and transition_elapsed>=0 or running and not rules.auto_enabled)
 	update_toggles()
 
 func toggle_speed() -> void:
+	hunt_audio.cue("S06")
 	if exit_popup or app.modal or result_shown:return
 	speed = 1.0 if speed == 2.0 else 2.0
 	update_toggles()
@@ -405,14 +436,28 @@ func build_combat() -> void:
 		orb_icons.append(app.picture(combat_controls,ORB_EMPTY,Rect2(center-Vector2.ONE*12.35,Vector2.ONE*24.7)))
 	prey_hud = layer(battlefield)
 	prey_hud.hide()
-	app.picture(prey_hud,NAME_BRUSH,Rect2(-30,-15,60,16))
-	caption(prey_hud,"사슴",Rect2(-30,-16,60,16),13)
-	prey_hp = hp_bar(prey_hud,Rect2(-29.6,3,59.2,11.84),false)
+	build_level(prey_hud,false)
+	prey_hp = hp_bar(layer(prey_hud),Rect2(-29.6,3,59.2,11.84),false)
 	for hunter in hunters:
 		var marker := layer(battlefield)
 		marker.hide()
 		hunter_markers.append(marker)
-		hunter_field_bars.append(hp_bar(marker,Rect2(-18.4,0,36.8,7.36),true))
+		build_level(marker,true)
+		hunter_field_bars.append(hp_bar(layer(marker),Rect2(-18.4,0,36.8,7.36),true))
+
+func build_level(marker: Control, ally: bool) -> void:
+	app.picture(marker,NAME_BRUSH,Rect2(-19,-16,38,13)).modulate.a = .8
+	caption(marker,"Lv 1",Rect2(-12,-17,30,15),10)
+	var badge := ColorRect.new()
+	badge.color = Color("368b38") if ally else Color("ac3027")
+	badge.position = Vector2(-21,-14)
+	badge.size = Vector2(9,9)
+	badge.pivot_offset = badge.size*.5
+	badge.rotation = PI*.25
+	badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	marker.add_child(badge)
+	app.picture(marker,preload("res://assets/ui/hunting-match/png/power/stone-spear.png") if ally else preload("res://assets/ui/hunting-match/png/power/deer-head.png"),Rect2(-22,-15,11,11))
+
 
 func artwork_button(parent: Control, rect: Rect2, label: String, asset: String, action: Callable, ink := Color("fff0d0")) -> DemoButton:
 	var button := make_button(parent,"",rect,action)
@@ -422,6 +467,8 @@ func artwork_button(parent: Control, rect: Rect2, label: String, asset: String, 
 	return button
 
 func request_exit() -> void:
+	pan_pointer = -2
+	clear_formation_drag()
 	if not arrival_finished:
 		app.close_hunt()
 		return
@@ -436,6 +483,7 @@ func request_exit() -> void:
 		app.close_hunt()
 		return
 	if result_shown:return
+	hunt_audio.cue("S07")
 	exit_popup = layer()
 	exit_popup.mouse_filter = Control.MOUSE_FILTER_STOP
 	exit_shade = ColorRect.new()
@@ -456,6 +504,8 @@ func fit_exit_shade() -> void:
 	exit_shade.size = size/canvas.scale
 
 func resume_battle() -> void:
+	hunt_audio.paused = false
+	hunt_audio.cue("S08")
 	exit_popup.hide()
 	exit_popup.queue_free()
 	exit_popup = null
@@ -536,59 +586,192 @@ func add_skill(id: String, asset: String, rect: Rect2, cost_slots: Array) -> voi
 	effect.hide()
 
 func _input(event: InputEvent) -> void:
-	if not running or result_shown or exit_popup or app.modal or not app.application_active:
+	if drag_pointer!=-2 and handle_formation_pointer(event,true):
+		get_viewport().set_input_as_handled()
+		return
+	if pan_pointer!=-2 and event is InputEventMouse and handle_pan(event,event.position):
+		get_viewport().set_input_as_handled()
+		return
+	if not arrival_finished or transition_elapsed>=0 or result_shown or exit_popup or app.modal or not app.application_active:
+		pan_pointer = -2
 		touch_points.clear()
 		return
 	if event is InputEventScreenTouch:
 		if event.pressed:
 			touch_points[event.index] = event.position
+			if touch_points.size()>1:pan_pointer = -2
 		else:
 			touch_points.erase(event.index)
+			if pan_pointer==event.index and handle_pan(event,event.position):
+				get_viewport().set_input_as_handled()
 	elif event is InputEventScreenDrag and touch_points.has(event.index):
 		var previous: Vector2 = touch_points[event.index]
 		touch_points[event.index] = event.position
-		if touch_points.size()!=2:return
+		if touch_points.size()!=2:
+			if pan_pointer==event.index and handle_pan(event,event.position):get_viewport().set_input_as_handled()
+			return
+		pan_pointer = -2
 		var keys := touch_points.keys()
 		var other: Vector2 = touch_points[keys[0] if keys[1]==event.index else keys[1]]
 		var span := previous.distance_to(other)
 		if span>1.0:
-			zoom = clampf(zoom*event.position.distance_to(other)/span,1.0,1.55)
+			zoom = clampf(zoom*event.position.distance_to(other)/span,1.0,1.30)
 			for button in skill_buttons.values():button.clear()
 			get_viewport().set_input_as_handled()
 
 func _gui_input(event: InputEvent) -> void:
 	if not arrival_finished or exit_popup or not app.application_active or app.modal:return
-	if running and not result_shown:
-		if event is InputEventMagnifyGesture:
-			zoom = clampf(zoom*event.factor,1.0,1.55)
-			accept_event()
-		elif event is InputEventMouseButton and event.pressed and event.button_index in [MOUSE_BUTTON_WHEEL_UP,MOUSE_BUTTON_WHEEL_DOWN]:
-			zoom = clampf(zoom+(.10 if event.button_index==MOUSE_BUTTON_WHEEL_UP else -.10),1.0,1.55)
-			accept_event()
+	if transition_elapsed>=0 or result_shown:return
+	if not running and handle_formation_pointer(event,false):
+		accept_event()
 		return
-	if transition_elapsed>=0:return
+	if event is InputEventMagnifyGesture:
+		zoom = clampf(zoom*event.factor,1.0,1.30)
+		accept_event()
+		return
+	if event is InputEventMouseButton and event.pressed and event.button_index in [MOUSE_BUTTON_WHEEL_UP,MOUSE_BUTTON_WHEEL_DOWN]:
+		zoom = clampf(zoom+(.10 if event.button_index==MOUSE_BUTTON_WHEEL_UP else -.10),1.0,1.30)
+		accept_event()
+		return
+	if event is InputEventMouse or event is InputEventScreenTouch or event is InputEventScreenDrag:
+		if touch_points.size()<2 and handle_pan(event,get_global_transform()*event.position):
+			accept_event()
+			return
+	if running or event.is_canceled():return
 	var released: bool = (event is InputEventScreenTouch and not event.pressed) or (
 		event is InputEventMouseButton and event.button_index==MOUSE_BUTTON_LEFT and not event.pressed)
 	if not released:return
-	var at: Vector2 = canvas.get_global_transform().affine_inverse() * (get_global_transform() * event.position)
+	var at: Vector2 = battlefield.get_global_transform().affine_inverse() * (get_global_transform() * event.position)
+	var index := formation_cell(at)
+	if index>=0:
+		move_hunter(index)
+		accept_event()
+
+
+func handle_pan(event: InputEvent, at: Vector2) -> bool:
+	var pointer := -2
+	var press := false
+	var release := false
+	if event is InputEventScreenTouch:
+		pointer = event.index
+		press = event.pressed
+		release = not press
+	elif event is InputEventScreenDrag:
+		pointer = event.index
+	elif event is InputEventMouseButton and event.button_index==MOUSE_BUTTON_LEFT:
+		pointer = -1
+		press = event.pressed
+		release = not press
+	elif event is InputEventMouseMotion:
+		pointer = -1
+	else:return false
+	if not arrival_finished or transition_elapsed>=0 or result_shown or exit_popup or app.modal or not app.application_active:
+		pan_pointer = -2
+		return false
+	if release:
+		if pan_pointer!=pointer:return false
+		pan_pointer = -2
+		return pan_moved or running
+	if press:
+		if pan_pointer!=-2:return false
+		pan_pointer = pointer
+		pan_last = at
+		pan_start = at
+		pan_moved = false
+		return true
+	if pan_pointer!=pointer:return false
+	if not pan_moved and at.distance_to(pan_start)<7.0:return true
+	pan_moved = true
+	pan = (pan+(at-pan_last)/canvas.scale).clamp(Vector2(-76,-45),Vector2(76,45))
+	pan_last = at
+	return true
+
+
+func formation_cell(at: Vector2) -> int:
 	for index in 9:
-		var difference: Vector2 = (at-cell_center(ALLY_ORIGIN,index)).abs()
-		if difference.x/52.5 + difference.y/37.123 <= 1.0:
-			move_hunter(index)
-			accept_event()
-			return
+		var gap := (at-cell_center(ALLY_ORIGIN,index)).abs()
+		if gap.x/CELL_X.x+gap.y/CELL_Y.y<=1.0:return index
+	return -1
+
+
+func handle_formation_pointer(event: InputEvent, global_coordinates: bool) -> bool:
+	var pointer := -2
+	var pressed := false
+	var released := false
+	if event is InputEventScreenTouch:
+		pointer = event.index
+		pressed = event.pressed
+		released = not pressed
+	elif event is InputEventScreenDrag:
+		pointer = event.index
+	elif event is InputEventMouseButton and event.button_index==MOUSE_BUTTON_LEFT:
+		pointer = -1
+		pressed = event.pressed
+		released = not pressed
+	elif event is InputEventMouseMotion:
+		pointer = -1
+	else:return false
+	if not arrival_finished or running or transition_elapsed>=0 or not app.application_active or app.modal:
+		clear_formation_drag()
+		return false
+	var viewport_position: Vector2 = event.position if global_coordinates else get_global_transform()*event.position
+	var at := battlefield.get_global_transform().affine_inverse()*viewport_position
+	if drag_pointer==-2:
+		if not pressed:return false
+		for index in hunters.size():
+			var feet := cell_center(ALLY_ORIGIN,assigned_cells[index])
+			if Rect2(feet-Vector2(22,53),Vector2(44,58)).has_point(at):
+				select_hunter(index)
+				drag_pointer = pointer
+				drag_start = at
+				return true
+		return false
+	if pointer!=drag_pointer:return true
+	if released:
+		var target := formation_cell(at)
+		if not event.is_canceled() and dragging:
+			if target>=0 and not pointer_over_preparation_ui(viewport_position):move_hunter(target)
+			else:hunt_audio.cue("S05")
+		clear_formation_drag()
+	elif not pressed:
+		if not dragging and at.distance_to(drag_start)>=7:
+			dragging = true
+			hunt_audio.cue("S03")
+		if dragging:drag_cell = formation_cell(at)
+	return true
+
+
+func pointer_over_preparation_ui(at: Vector2) -> bool:
+	if roster_edge.get_child(0).get_global_rect().has_point(at):return true
+	for group in [header_left,header_right,footer_left,footer_right]:
+		for control in group.get_children():
+			if control is DemoButton and control.get_global_rect().has_point(at):return true
+	return false
+
+
+func clear_formation_drag() -> void:
+	drag_pointer = -2
+	drag_cell = -1
+	dragging = false
+
 
 func move_hunter(index: int) -> void:
 	if index<0 or index>=9 or transition_elapsed>=0 or running:return
+	if index==assigned_cells[selected_hunter]:return
 	var occupying := assigned_cells.find(index)
 	if occupying>=0:assigned_cells[occupying] = assigned_cells[selected_hunter]
 	assigned_cells[selected_hunter] = index
+	hunt_audio.cue("S04")
 
 func start_combat() -> void:
 	if not arrival_finished or running or transition_elapsed>=0 or not app.application_active or app.modal:return
+	clear_formation_drag()
+	pan_pointer = -2
+	touch_points.clear()
+	pan = Vector2.ZERO
+	hunt_audio.cue("S12",2)
+	hunt_audio.battle = true
 	transition_elapsed = 0.0
-	battle_fade.modulate.a = 0.0
-	battle_fade.show()
 	preparation.mouse_behavior_recursive = Control.MOUSE_BEHAVIOR_DISABLED
 	combat.show()
 	combat.modulate.a = 0.0
@@ -599,13 +782,12 @@ func start_combat() -> void:
 func advance_transition(delta: float) -> void:
 	transition_elapsed += delta
 	var progress := clampf(transition_elapsed/TRANSITION_SECONDS,0,1)
-	if transition_elapsed<BATTLE_CUT:
-		battle_fade.modulate.a = smoothstep(0.0,BATTLE_CUT,transition_elapsed)
-	else:
-		if approach==0.0:
-			approach = 1.0
-			update_actors(0.0)
-		battle_fade.modulate.a = 1.0-smoothstep(BATTLE_CUT,TRANSITION_SECONDS,transition_elapsed)
+	approach = smoothstep(.06,.98,progress)
+	var step := floori(transition_elapsed*4.0)
+	if step!=last_step and approach>0.0 and approach<1.0:
+		last_step = step
+		hunt_audio.cue("S13",0)
+		hunt_audio.cue("S14",0)
 	var fade := 1.0-smoothstep(0.0,.38,progress)
 	placement_grid.modulate.a = fade
 	preparation.modulate.a = fade
@@ -622,24 +804,40 @@ func advance_transition(delta: float) -> void:
 	enemy_hud.position.x = matching
 	if progress>=1.0:
 		transition_elapsed = -1.0
-		battle_fade.hide()
 		preparation.hide()
 		placement_grid.hide()
 		combat_layout = true
 		running = true
 func use_skill(id: String) -> void:
-	if not running or result_shown or exit_popup or app.modal or not app.application_active or not rules.use_skill(id):return
+	if not running or result_shown or exit_popup or app.modal or not app.application_active:return
+	if not rules.use_skill(id):
+		hunt_audio.cue("S25")
+		return
 	play_pose(id)
 	update_combat_ui()
 
 func play_pose(id: String) -> void:
 	pose = id
 	pose_clock = 0.0
+	impact_pending = true
+	match id:
+		"thrust","auto_thrust":hunt_audio.cue("S15",2)
+		"strike":hunt_audio.cue("S17",2)
+		"team":hunt_audio.cue("S19",2)
 
 func _process(delta: float) -> void:
-	if not app.application_active or exit_popup or app.modal:return
+	hunt_audio.update(delta,app.application_active and app.settings.get_value("app","sound",true),exit_popup!=null or app.modal)
+	if not app.application_active or exit_popup or app.modal:
+		clear_formation_drag()
+		return
 	sound_delay = maxf(0.0,sound_delay-delta)
-	if not arrival_finished:advance_arrival(delta)
+	if not arrival_finished:
+		var before := arrival_elapsed
+		advance_arrival(delta)
+		var hits := [1.98] if arrival_variant==1 else [1.42,2.04]
+		for threshold in [.28,1.34]+hits:
+			if before<threshold and arrival_elapsed>=threshold:
+				hunt_audio.cue("S09" if threshold==.28 else ("S10" if threshold==1.34 else "S11"),2)
 	var elapsed := delta*speed
 	pose_clock += elapsed
 	basic_recoil = maxf(0.0,basic_recoil-elapsed)
@@ -648,13 +846,18 @@ func _process(delta: float) -> void:
 	elif running and not result_shown:
 		var move := rules.advance(elapsed)
 		if not move.is_empty():play_pose(move)
-		if pose in ["thrust","auto_thrust","strike","team"] and pose_clock>=.26 and pose_clock-elapsed<.26:
-			basic_recoil = BASIC_RECOIL_TIME
-			app.audio.cue("hunt_impact")
+		if impact_pending and pose_clock>=.26:
+			impact_pending = false
+			if pose=="counter":
+				hunt_audio.cue("S21",2)
+			else:
+				basic_recoil = BASIC_RECOIL_TIME
+				hunt_audio.cue("S18" if pose=="strike" else ("S20" if pose=="team" else "S16"),3)
+				if pose!="team":hunt_audio.cue("S22",1)
 	if running:
 		for id in ready_flashes:ready_flashes[id] = maxf(0.0,ready_flashes[id]-elapsed)
 		update_combat_ui(elapsed)
-		if not result_shown and not rules.outcome.is_empty():show_result()
+		if not result_shown and not rules.outcome.is_empty() and not impact_pending:show_result()
 	if result_shown:
 		result_timer -= delta
 		if result_timer<=0:
@@ -676,7 +879,8 @@ func update_combat_ui(delta := 0.0) -> void:
 	hunter_health_text.text = str(rules.hunter_hp)
 	deer_health_text.text = str(rules.deer_hp)
 	var filled := rules.orbs()
-	var chime := filled>last_orbs or rules.orb_filled
+	var filled_now := filled>last_orbs or rules.orb_filled
+	var chime := filled_now
 	for index in orb_icons.size():
 		var orb := orb_icons[index]
 		orb.texture = ORB_FULL if index<filled else ORB_EMPTY
@@ -702,14 +906,14 @@ func update_combat_ui(delta := 0.0) -> void:
 		layers.effect.modulate.a = 1.0 if control.is_pressed() else ready_flashes[id]/.36
 		for cost in layers.costs:cost.texture = ORB_FULL if charged else ORB_EMPTY
 	if chime and sound_delay<=0:
-		app.audio.cue("gain")
+		hunt_audio.cue("S23" if filled_now else "S24",2)
 		sound_delay = .24
 
 func update_camera(delta: float) -> void:
 	var focus := Vector2(480,285).lerp(Vector2(495,305),approach)
 	var target := zoom
-	if transition_elapsed>=0 and approach>=1.0:
-		target = 1.0+.13*(1.0-smoothstep(BATTLE_CUT,TRANSITION_SECONDS,transition_elapsed))
+	if transition_elapsed>=0:
+		target += .12*sin(approach*PI*.5)
 	if pose in ["strike","team"] and pose_clock < RULES.POSE_SECONDS:
 		var accent := sin(pose_clock/RULES.POSE_SECONDS*PI)
 		var center := hunters[0].position
@@ -721,8 +925,8 @@ func update_camera(delta: float) -> void:
 	var weight := 1.0 if delta==0.0 or not arrival_finished or transition_elapsed>=0 else 1.0-exp(-delta*11.0)
 	battlefield.scale = battlefield.scale.lerp(Vector2.ONE*target,weight)
 	var anchor := Vector2(480,285).lerp(focus,clampf((battlefield.scale.x-1.0)*2.0,0.0,1.0))
-	battlefield.position = battlefield.position.lerp(anchor-focus*battlefield.scale,weight)
-	ground.scale = battlefield.scale
+	battlefield.position = battlefield.position.lerp(anchor-focus*battlefield.scale+pan,weight)
+	ground.scale = battlefield.scale*1.24
 	ground.position = (size-size*ground.scale)*.5 + (battlefield.position + DESIGN*(battlefield.scale-Vector2.ONE)*.5)*canvas.scale
 	ground.position = ground.position.clamp(size-size*ground.scale,Vector2.ZERO)
 
@@ -748,7 +952,7 @@ func update_actors(delta: float) -> void:
 		var attack_direction := base.direction_to(DEER_SLOT)
 		hunter.position = base + attack_direction*(lunge if attack else -18 if dodge else 0)*beat
 		var heading := Vector2(1,.55).lerp(Vector2(1,.28),approach)
-		hunter.animate(delta,heading,pose_clock*12,dodge,"" if not attack else "hunt",pose_clock,false)
+		hunter.animate(delta,heading,pose_clock*12,(dodge or (transition_elapsed>=0 and approach>0.0 and approach<1.0)),"" if not attack else "hunt",pose_clock,false)
 		if attack:
 			hunter.blend_bone("spine",Vector3(.10+beat*.12,0,-.08),.9)
 			hunter.blend_bone("armR",Vector3(-.88-beat*.38,0,-.15),1)
@@ -760,22 +964,31 @@ func update_actors(delta: float) -> void:
 		hunter.tool_3d.visible = true
 		hunter.viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
 		hunter_markers[i].position = hunter.position+Vector2(0,-63)
-		hunter_markers[i].visible = approach>=1.0
+		hunter_markers[i].visible = arrival_finished
+		hunter_field_bars[i].get_parent().visible = approach>=1.0
 	var charge := running and pose=="counter"
 	var deer_motion := Vector2(-29,-8) if charge else Vector2.ZERO if basic_attack else Vector2(23,-8)
 	deer.position = cell_center(ENEMY_ORIGIN,4).lerp(DEER_SLOT,approach)+(deer_motion*beat if running else Vector2.ZERO)
 	if basic_recoil>0:
 		deer.position += Vector2(13,-3)*basic_recoil/BASIC_RECOIL_TIME
 	deer.scale = Vector2.ONE*lerpf(.60,.63,approach)
-	deer.walking = beat if running and (charge or basic_recoil>0.0) else 0.0
+	deer.walking = 1.0 if transition_elapsed>=0 and approach>0.0 and approach<1.0 else (beat if running and (charge or basic_recoil>0.0) else 0.0)
 	deer.heading = lerp_angle(-PI*.34,-PI*.35,approach)
 	deer.gait_phase = pose_clock*14
 	deer.clock += delta
 	deer.animate_rig(delta)
 	prey_hud.position = deer.position + Vector2(0,-deer.world_height*deer.scale.y-15)
-	prey_hud.visible = approach>=1.0
+	prey_hud.visible = arrival_finished
+	prey_hp.get_parent().visible = approach>=1.0
 
 func draw_stage() -> void:
+	if arrival_finished and transition_elapsed<0 and not combat_layout:
+		var cell := drag_cell if dragging and drag_cell>=0 else assigned_cells[selected_hunter]
+		var center := cell_center(ALLY_ORIGIN,cell)
+		var corners := PackedVector2Array([center-Vector2(0,37),center+Vector2(52,0),center+Vector2(0,37),center-Vector2(52,0)])
+		battlefield.draw_colored_polygon(corners,Color(.1,.55,1,.35))
+		corners.append(corners[0])
+		battlefield.draw_polyline(corners,Color(.32,.78,1),2,true)
 	if not combat_layout:return
 	if basic_recoil>0:
 		var hit := deer.position+Vector2(-24,-39)
@@ -786,6 +999,7 @@ func draw_stage() -> void:
 
 func show_result() -> void:
 	result_shown = true
+	hunt_audio.cue("S26" if rules.outcome=="win" else "S27",4)
 	rules.set_auto(false)
 	update_toggles()
 	result_timer = 1.6
