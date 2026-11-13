@@ -22,6 +22,8 @@ const PERFORMANCE_HUD:=preload("res://scripts/performance_hud.gd")
 var performance_hud:PanelContainer
 var debug_shortcut:DemoButton
 var debug_shortcut_icon:TextureRect
+const HUNT_SELECTION := preload("res://scripts/hunt_stage_selection.gd")
+var hunt_stage := 0
 const HUNT_SCREEN := preload("res://scripts/deer_hunt_screen.gd")
 const INTRO_VIDEO_PATH := "res://assets/video/intro.ogv"
 var hunt: HUNT_SCREEN
@@ -276,7 +278,7 @@ func show_screen(next: String,spread_hud:=false) -> void:
 		if next != "play": world.feedback.clear_transients()
 		world.visible = screen == "play"
 		world.set_process_mode(Node.PROCESS_MODE_INHERIT if screen == "play" else Node.PROCESS_MODE_DISABLED)
-	if screen not in ["play","region","title","hunt","intro"]:
+	if screen not in ["play","region","title","hunt","hunt_select","intro"]:
 		menu_background()
 	match screen:
 		"onboarding": onboarding()
@@ -285,6 +287,11 @@ func show_screen(next: String,spread_hud:=false) -> void:
 		"region": region_screen()
 		"chapter": ChapterSelection.new(self).open()
 		"play": await play_hud(spread_hud)
+		"hunt_select":
+			var selection := HUNT_SELECTION.new()
+			selection.app = self
+			stage.add_child(selection)
+			selection.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 		"hunt":
 			hunt = HUNT_SCREEN.new()
 			hunt.app = self
@@ -2019,6 +2026,12 @@ func open_hunt() -> void:
 	cancel_task()
 	gestures.clear()
 	world.player.direction = Vector2.ZERO
+	hunt_stage = clampi(int(model.state.get("hunt_cleared",0)), 0, HUNT_SELECTION.TOTAL_STAGES - 1)
+	show_screen("hunt_select")
+
+func prepare_selected_hunt() -> void:
+	if screen != "hunt_select" or hunt_preparing or modal or hunt_stage > int(model.state.get("hunt_cleared", 0)):
+		return
 	hunt_preparing = true
 	hunt_preparation_cancelled = false
 	audio.cue("action_click")
@@ -2041,15 +2054,23 @@ func open_hunt() -> void:
 	while not application_active and not hunt_preparation_cancelled:
 		await get_tree().process_frame
 	hunt_preparing = false
-	if not hunt_preparation_cancelled and screen=="play" and not modal and not world_map_open:
+	if not hunt_preparation_cancelled and screen=="hunt_select" and not modal and not world_map_open:
 		toast_time = 0.0
 		show_screen("hunt")
 
 
+func record_hunt_win() -> void:
+	if hunt_stage != int(model.state.get("hunt_cleared", 0)):
+		return
+	var next := model.state.duplicate(true)
+	next.hunt_cleared = hunt_stage + 1
+	if not model.commit(next):
+		toast("사냥 진행을 저장하지 못했습니다.")
+
 func close_hunt() -> void:
 	if screen!="hunt":return
 	hunt = null
-	show_screen("play")
+	show_screen("hunt_select")
 
 func go_back() -> void:
 	if hunt_preparing:
@@ -2069,6 +2090,8 @@ func go_back() -> void:
 		overlay.advance()
 	elif modal:
 		close_modal()
+	elif screen == "hunt_select":
+		show_screen("play")
 	elif screen == "play":
 		show_modal("게임을 종료할까요?","진행은 기기에 저장됩니다.",[
 			{"text":"취소","action":close_modal},

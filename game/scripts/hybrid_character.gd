@@ -260,8 +260,10 @@ func apply_training_pose(seconds:float)->void:
 func use_training_spear()->void:
 	for child in tool_3d.get_children():child.queue_free()
 	tool_3d.name="TrainingSpear"
-	if meshy_hunt_rig:tool_3d.scale = Vector3.ONE / MESHY_HUNT_SCALE
-	cone(tool_3d,Vector3(0,0,.48),.018,.022,1.15,material("775039")).rotation.x=PI/2
+	if meshy_hunt_rig:
+		var hand_rest := rig.get_bone_global_rest(bones.handR).basis.orthonormalized()
+		tool_3d.transform = Transform3D(hand_rest.inverse().scaled(Vector3.ONE / MESHY_HUNT_SCALE), Vector3.ZERO)
+	cone(tool_3d,Vector3(0,0,.42),.018,.022,1.15,material("775039")).rotation.x=PI/2
 	cone(tool_3d,Vector3(0,0,1.13),0,.075,.23,material("b0b3a2")).rotation.x=PI/2
 
 func apply_pose(phase: float, strike: float) -> void:

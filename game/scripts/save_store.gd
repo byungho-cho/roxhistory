@@ -31,6 +31,7 @@ func valid(s: Variant) -> bool:
 		if job.from!=hq or job.to!=hq+1:return false
 	for serial in ["outpost_serial","home_serial","construction_serial"]:
 		if s.has(serial) and not BuildingRules.valid_number(s[serial],0,BuildingRules.MAX_RESOURCE,true):return false
+	if s.has("hunt_cleared") and not BuildingRules.valid_number(s.hunt_cleared,0,12,true):return false
 	if not _valid_buildings(s,int(hq)):return false
 	if not ResidentAdmission.valid_saved_population(s):return false
 	if not ResidentJobs.valid_saved_jobs(s):return false

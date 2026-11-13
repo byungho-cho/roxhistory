@@ -29,7 +29,7 @@ func bake() -> void:
 	var pick := axe.duplicate() as Node3D
 	axe.get_parent().add_child(pick)
 	var pick_head := pick.get_child(1) as MeshInstance3D
-	pick_head.scale = Vector3(1.5, .55, .68)
+	pick_head.scale = Vector3(.96, .33, .55)
 	pick_head.rotation.z = .55
 	var atlas := Image.create_empty(FRAME.x * 8, FRAME.y * 26, false, Image.FORMAT_RGBA8)
 	var row := 0
@@ -39,7 +39,7 @@ func bake() -> void:
 		var cargo: String = entry[2]
 		load_visual.update_load({ "kind": cargo })
 		if load_visual.prop:
-			load_visual.prop.scale *= .85 if cargo == "wood" else 1.12
+			load_visual.prop.scale *= .69 if cargo == "wood" else .95
 		var work: bool = entry[0] in ["wood", "stone"]
 		for direction in 4:
 			target.pivot.rotation.y = direction * TAU / 4.0
@@ -62,6 +62,20 @@ func bake() -> void:
 					delta = Quaternion.IDENTITY.slerp(delta, strength)
 					target.rig.set_bone_pose_rotation(target_index,
 						target.rotation_left[target_index] * delta * target.rotation_right[target_index])
+				if work:
+					# Drive the striking hand toward the target; keep the other arm near the torso.
+					var stroke := sin(fraction * TAU)
+					target.rotate_bone("armR", Vector3(-1.28 - .76 * stroke, 0, -.15))
+					target.rotate_bone("forearmR", Vector3(-.58 - .32 * stroke, 0, 0))
+					target.rotate_bone("armL", Vector3(-.18, 0, .09))
+					target.rotate_bone("forearmL", Vector3(-.25, 0, 0))
+				elif not cargo.is_empty():
+					var swing := .14 * sin(fraction * TAU)
+					target.rotate_bone("spine", Vector3(.12, 0, 0))
+					target.rotate_bone("armL", Vector3(swing, 0, .07))
+					target.rotate_bone("armR", Vector3(-swing, 0, -.07))
+					target.rotate_bone("forearmL", Vector3(-.16, 0, 0))
+					target.rotate_bone("forearmR", Vector3(-.16, 0, 0))
 				axe.visible = entry[0] == "wood"
 				pick.visible = entry[0] == "stone"
 				target.viewport.render_target_update_mode = SubViewport.UPDATE_ONCE

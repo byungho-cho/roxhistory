@@ -86,6 +86,7 @@ var drag_pointer := -2
 var drag_start := Vector2.ZERO
 var drag_cell := -1
 var dragging := false
+var drag_ghost: Sprite2D
 var hunt_audio = HUNT_AUDIO.new()
 var battle_music_started := false
 var impact_pending := false
@@ -122,7 +123,6 @@ var pose := ""
 var exit_button: DemoButton
 
 func _ready() -> void:
-	rules.enable_motion_trial()
 	add_child(hunt_audio)
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	ground = app.picture(self,CLEARING,Rect2())
@@ -763,7 +763,9 @@ func handle_formation_pointer(event: InputEvent, global_coordinates: bool) -> bo
 		if not dragging and at.distance_to(drag_start)>=7:
 			dragging = true
 			hunt_audio.cue("S03")
-		if dragging:drag_cell = formation_cell(at)
+		if dragging:
+			drag_cell = -1 if pointer_over_preparation_ui(viewport_position) else formation_cell(at)
+			update_drag_preview(at)
 	return true
 
 
@@ -775,7 +777,27 @@ func pointer_over_preparation_ui(at: Vector2) -> bool:
 	return false
 
 
+func update_drag_preview(at: Vector2) -> void:
+	var actor := hunters[selected_hunter]
+	if not is_instance_valid(drag_ghost):
+		drag_ghost = Sprite2D.new()
+		drag_ghost.centered = false
+		drag_ghost.texture = actor.display.texture
+		drag_ghost.texture_filter = actor.display.texture_filter
+		drag_ghost.scale = actor.display.scale * actor.scale
+		drag_ghost.z_index = 25
+		battlefield.add_child(drag_ghost)
+	actor.modulate.a = .38
+	var feet: Vector2 = ALLY_CELLS[drag_cell] if drag_cell >= 0 else at
+	drag_ghost.position = feet + actor.display.position * actor.scale
+
 func clear_formation_drag() -> void:
+	if is_instance_valid(drag_ghost):
+		drag_ghost.hide()
+		drag_ghost.queue_free()
+		drag_ghost = null
+		for actor in hunters:
+			actor.modulate.a = 1.0
 	drag_pointer = -2
 	drag_cell = -1
 	dragging = false
@@ -1055,7 +1077,9 @@ func draw_stage() -> void:
 
 func show_result() -> void:
 	result_shown = true
-	if rules.outcome == "win":hunt_audio.cue("monster_death",4)
+	if rules.outcome == "win":
+		app.record_hunt_win()
+		hunt_audio.cue("monster_death",4)
 	hunt_audio.cue("S26" if rules.outcome=="win" else "S27",4)
 	rules.set_auto(false)
 	update_toggles()

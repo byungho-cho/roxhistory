@@ -165,7 +165,16 @@ func _job_tick(delta:float)->bool:
 	elif job_kind in ["farmer","guard"]:
 		_station_tick(delta,item);return true
 	elif job_phase=="harvest":
-		job_timer-=delta
+		var previous_work := gather_seconds() - job_timer
+		job_timer -= delta
+		if job_kind in ["wood", "stone"]:
+			var work_time := gather_seconds() - job_timer
+			if floori((work_time + .45) / 1.2) > floori((previous_work + .45) / 1.2):
+				var world: DemoWorld = get_parent()
+				if world.art_nodes.has(job_target):
+					var art: Node2D = world.art_nodes[job_target]
+					var at := art.position + Vector2(0,-28 if job_kind=="wood" else -13)
+					world.feedback.burst(at, Color("d4bd92") if job_kind=="wood" else Color("b6b7a4"), 4, .24, job_kind)
 		if job_timer<=0:
 			var harvested:=false
 			for node in jobs.model.nodes():
