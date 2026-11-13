@@ -31,14 +31,14 @@ var bird_wait := 11.0
 var nature_random := RandomNumberGenerator.new()
 var last_interface_ms := -1000
 const APPROVED := {
-	"ui":"menu-stone-tap", "building_select":"building-select", "bird":"bird-calls",
+	"debug_click":"menu-stone-tap", "building_select":"building-select", "bird":"bird-calls",
 	"complete":"construction-complete", "reward":"reward-obtain", "river":"river-flow",
 	"hearth":"hearth-fire",
 }
 const REGION_MUSIC_DB := -10.0
 const REGION_WATER_DB := -25.0
 const INTERFACE_GAP_MS := 75
-const ACTION_CUES := ["quest_click","action_click","popup_open","popup_close","map_open","map_close"]
+const ACTION_CUES := ["ui","debug_click","quest_click","action_click","popup_open","popup_close","map_open","map_close"]
 
 func _ready() -> void:
 	nature_random.randomize()
@@ -47,7 +47,8 @@ func _ready() -> void:
 	for key in APPROVED:
 		streams[key] = load("res://assets/audio/d0004-approved/"+APPROVED[key]+".wav")
 	streams["quest_click"] = preload("res://assets/audio/d0001-approved/quest-click.wav")
-	streams["action_click"] = preload("res://assets/audio/d0001-approved/action-click.wav")
+	streams["action_click"] = streams["quest_click"]
+	streams["ui"] = streams["quest_click"]
 	streams["popup_open"] = preload("res://assets/audio/d0001-approved/popup-open.mp3")
 	streams["popup_close"] = preload("res://assets/audio/d0001-approved/popup-close.mp3")
 	streams["map_open"] = preload("res://assets/audio/d0001-approved/map-open.mp3")

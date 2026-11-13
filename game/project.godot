@@ -2,7 +2,7 @@ config_version=5
 
 [application]
 config/name="RoxHistory"
-config/version="0.2.140"
+config/version="0.2.141"
 config/build_date="2026.11.13"
 config/icon="res://assets/app-icon-pioneer.png"
 run/main_scene="res://scenes/main.tscn"
@@ -32,3 +32,7 @@ pointing/android/disable_scroll_deadzone=true
 pointing/android/enable_pan_and_scale_gestures=false
 pointing/emulate_touch_from_mouse=false
 pointing/emulate_mouse_from_touch=false
+
+[roxhistory]
+
+development/settings_entry=true

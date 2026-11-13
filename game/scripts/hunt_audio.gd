@@ -2,7 +2,7 @@ extends Node
 
 const ROOT := "res://assets/audio/hunt-d0003/"
 const APPROVED := {
-	"S02":"menu-stone-tap", "S06":"menu-stone-tap", "S07":"popup-open", "S08":"popup-close",
+	"S07":"popup-open", "S08":"popup-close",
 	"S11":"vs-collision", "S12":"battle-start", "S16":"normal-hit", "S18":"heavy-hit",
 	"S20":"cooperative-attack", "S22":"deer-hurt", "S23":"orb-full", "S24":"skill-ready",
 	"S26":"victory", "S27":"hunt-failure",
@@ -29,6 +29,10 @@ func _ready() -> void:
 	for id in LEVELS:
 		var path := APPROVED_ROOT+str(APPROVED[id]) if APPROVED.has(id) else ROOT+str(id)
 		streams[id] = load(path+".wav")
+	for id in ["S02", "S03", "S04", "S05", "S06"]:
+		streams[id] = preload("res://assets/audio/d0001-approved/quest-click.wav")
+	streams["S07"] = preload("res://assets/audio/d0001-approved/popup-open.mp3")
+	streams["S08"] = preload("res://assets/audio/d0001-approved/popup-close.mp3")
 	for index in 6:
 		var player := AudioStreamPlayer.new()
 		add_child(player)
@@ -57,7 +61,7 @@ func cue(id: String, priority := 1) -> void:
 	var gap := 420 if id == "S22" else 90
 	var cue_key: String = APPROVED.get(id,id)
 	if now-int(recent.get(cue_key,-1000))<gap:return
-	if APPROVED.has(id):
+	if APPROVED.has(id) or id in ["S02", "S03", "S04", "S05", "S06"]:
 		for voice in pool:
 			if voice.playing and voice.stream == streams[id]:
 				if id == "S22":return

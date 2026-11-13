@@ -23,6 +23,7 @@ static func apply_channel(channel: Array, enabled: bool, level: float) -> void:
 static func open(app: Node) -> void:
 	var scroll: ScrollContainer = app.show_modal("게임 설정","",[
 		{"text":"확인","primary":true,"action":app.close_modal}],false,true,false,Vector2(610,465))
+	scroll.name = "SoundSettingsScroll"
 	var list := VBoxContainer.new()
 	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	list.add_theme_constant_override("separation", 6)
@@ -82,8 +83,8 @@ static func open(app: Node) -> void:
 				refresh.call())
 		var controls := HBoxContainer.new()
 		body.add_child(controls)
-		var slider := HSlider.new()
-		slider.custom_minimum_size.y = 40
+		var slider := preload("res://scripts/sound_volume_slider.gd").new()
+		slider.custom_minimum_size.y = 48
 		slider.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		slider.max_value = 100
 		slider.step = 1

@@ -498,11 +498,11 @@ func title_screen() -> void:
 	var logo_width:=minf(w*(.62 if w<h else .31),h*.61)
 	var logo:=picture(stage,preload("res://assets/ui/title-hanbando/hanbando-upheaval-logo-v1.png"),Rect2((w-logo_width)*.5,safe.y+h*.022,logo_width,logo_width*.5))
 	logo.name="HanbandoTitleLogo"
-	var surface := button(stage,"",start_or_continue)
+	var surface := button(stage,"",start_or_continue,false,"","")
 	surface.custom_minimum_size=Vector2.ZERO
 	surface.size=Vector2(w,h)
 	for state in ["normal","hover","pressed","focus"]:surface.add_theme_stylebox_override(state,StyleBoxEmpty.new())
-	var start:=button(stage,"화면을 터치하여 시작",start_or_continue)
+	var start:=button(stage,"화면을 터치하여 시작",func():start_or_continue(true),false,"","")
 	title_prompt=start
 	title_prompt_time=0
 	style_start_prompt(start)
@@ -677,9 +677,10 @@ func advance_title_loading() -> void:
 		refresh_title_start_prompt()
 		if intro_probe:print("ROX_INTRO_TIMING title_ready ms=",(Time.get_ticks_usec()-title_loader_started_at)/1000.0)
 
-func start_or_continue()->void:
+func start_or_continue(with_click := false)->void:
 	if title_input_blocked() and not test_mode:return
 	if modal or screen!="title" or not application_active or is_instance_valid(intro_cloud):return
+	if with_click:audio.cue("ui")
 	get_node("/root/PatchBootstrap/Overlay").leave_title()
 	cover_intro(prepare_intro)
 	for control in [title_prompt,stage.get_node_or_null("HanbandoTitleLogo")]:
@@ -1138,7 +1139,7 @@ func play_hud(spread:=false) -> void:
 	picture(return_village_button,return_icon,Rect2(0,0,48,48))
 	return_village_button.z_index=36
 	return_village_button.hide()
-	debug_shortcut=button(stage,"",toggle_performance_debug)
+	debug_shortcut=button(stage,"",toggle_performance_debug,false,"","debug_click")
 	debug_shortcut.name="PerformanceDebugShortcut"
 	debug_shortcut.custom_minimum_size=Vector2.ZERO
 	debug_shortcut.size=Vector2(48,48)
@@ -1762,13 +1763,7 @@ func quest_details() -> void:
 func pause_game() -> void:
 	cancel_task()
 	if is_instance_valid(world):model.save_position(world.player.position)
-	show_modal("설정","진행은 기기에 자동 저장됩니다.",[
-		{"text":"계속하기","primary":true,"action":close_modal},
-		{"text":"시작 화면","action":func(): close_modal(); show_screen("title")},
-		{"text":"사운드 설정","action":show_sound_settings},
-		{"text":"안내","action":show_about},
-		{"text":"알림 설정","action":show_notification_settings},
-		{"text":"개발 설정","action":show_development_settings}])
+	preload("res://scripts/game_settings_menu.gd").open(self)
 	enable_settings_backdrop()
 
 func show_development_settings()->void:
@@ -1872,7 +1867,7 @@ func show_sound_settings() -> void:
 	enable_settings_backdrop()
 
 func set_audio_preference(key: String, value: Variant) -> bool:
-	var previous: Variant = settings.get_value("app", key, null)
+	var previous: Variant = settings.get_value("app", key) if settings.has_section_key("app", key) else null
 	settings.set_value("app", key, value)
 	if settings.save(prefs_path) != OK:
 		if previous == null:settings.erase_section_key("app", key)
@@ -2086,7 +2081,7 @@ func go_back() -> void:
 		show_modal("여정을 나갈까요?","앱을 종료합니다.",[{"text":"돌아가기","action":close_modal},{"text":"종료","action":func(): get_tree().quit()}],false,false,false,Vector2.ZERO,true)
 
 func _input(event: InputEvent) -> void:
-	if title_input_blocked() and not get_node("/root/PatchBootstrap/Overlay").popup.visible and (event is InputEventScreenTouch or event is InputEventScreenDrag or event is InputEventMouseButton or event.is_action("ui_accept") or event.is_action("ui_cancel")):
+	if not modal and title_input_blocked() and not get_node("/root/PatchBootstrap/Overlay").popup.visible and (event is InputEventScreenTouch or event is InputEventScreenDrag or event is InputEventMouseButton or event.is_action("ui_accept") or event.is_action("ui_cancel")):
 		get_viewport().set_input_as_handled()
 
 func _unhandled_input(event: InputEvent) -> void:

@@ -87,10 +87,10 @@ static func populate(app:Node,scroll:ScrollContainer,settings:Array[Dictionary])
 				var actual:bool=setting.read.call() if setting.has("read") else enabled
 				toggle.set_pressed_no_signal(actual)
 				toggle.text="ON" if actual else "OFF"
-				app.audio.cue("ui"))
+				app.audio.cue("debug_click"))
 			row.add_child(toggle)
 		else:
-			var action:DemoButton=app.button(row,setting.button,setting.action)
+			var action:DemoButton=app.button(row,setting.button,setting.action,false,"","debug_click")
 			action.name=setting.id+"Button"
 			action.custom_minimum_size=Vector2(104,44)
 			action.focus_mode=Control.FOCUS_ALL
