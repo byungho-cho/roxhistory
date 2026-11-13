@@ -9,6 +9,7 @@ const CLEARING := preload("res://assets/ui/hunting-formation/clearing-dirt.png")
 const ALLY_CELL := preload("res://assets/ui/hunting-formation/ally-cell.svg")
 const ENEMY_CELL := preload("res://assets/ui/hunting-formation/enemy-cell.svg")
 const APPROVED_DEER := preload("res://assets/ui/hunting-combat/png/common/deer-approved.png")
+const IMPACT_SECONDS := RULES.POSE_SECONDS * .5
 const PORTRAITS := preload("res://assets/ui/hunting-formation/portraits.png")
 # Final 1920×1080 placement centers expressed in the 960×540 game canvas.
 const ALLY_CELLS := [Vector2(396.5,377.5),Vector2(422.75,321.75),Vector2(475.25,358.75),
@@ -79,7 +80,7 @@ var combat: Control
 var combat_controls: Control
 var placement_grid: Control
 var portrait_frames: Array[Panel] = []
-var assigned_cells: Array[int] = [3,0,5]
+var assigned_cells: Array[int] = [3,5]
 var selected_hunter := 0
 var drag_pointer := -2
 var drag_start := Vector2.ZERO
@@ -121,6 +122,7 @@ var pose := ""
 var exit_button: DemoButton
 
 func _ready() -> void:
+	rules.enable_motion_trial()
 	add_child(hunt_audio)
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	ground = app.picture(self,CLEARING,Rect2())
@@ -140,11 +142,10 @@ func _ready() -> void:
 	var actors := Node2D.new()
 	actors.y_sort_enabled = true
 	battlefield.add_child(actors)
-	for model in ["meshy01/hero","residents/sturdy_male","residents/female"]:
+	for model in [HybridCharacter.MESHY_HUNT_MODEL, "res://assets/characters/residents/sturdy_male.glb"]:
 		var hunter := HybridCharacter.new()
-		hunter.model_path = "res://assets/characters/"+model+".glb"
+		hunter.model_path = model
 		hunter.render_size_factor = .5
-		hunter.use_procedural_hunt_gait = model == "residents/female"
 		actors.add_child(hunter)
 		hunter.set_enabled(true)
 		hunter.use_training_spear()
@@ -263,7 +264,7 @@ func crop(texture: Texture2D, rect: Rect2) -> AtlasTexture:
 
 func hunter_portrait(index: int) -> Texture2D:
 	const REGIONS := [Rect2(15,0,675,710),Rect2(725,0,690,710),Rect2(1495,10,610,700)]
-	return crop(PORTRAITS,REGIONS[index])
+	return crop(PORTRAITS,REGIONS[2 if index == 0 else 1])
 
 func build_preparation() -> void:
 	preparation = layer()
@@ -278,7 +279,7 @@ func build_preparation() -> void:
 	var roster := plaque(roster_edge,Rect2(6,0,152,330),Color(0.20,0.17,0.13,.92),Color("a07d50"))
 	var ink := Color("49321e")
 	caption(roster,"출전 편성",Rect2(11,16,130,25),17,Color("eed9b4"))
-	caption(roster,"%d / 3"%hunters.size(),Rect2(31,42,90,21),15,Color("eed9b4"))
+	caption(roster,"%d / 2"%hunters.size(),Rect2(31,42,90,21),15,Color("eed9b4"))
 	for index in hunters.size():
 		var card := make_button(roster,"",Rect2(28,67+85*index,95,77),select_hunter.bind(index))
 		clear_button_art(card)
@@ -329,7 +330,7 @@ func build_power_comparison() -> void:
 	match_details = MATCH.layer(power_header,Vector2.ZERO)
 	MATCH.backdrop(match_details)
 
-	prep_ally_portrait = MATCH.picture(power_header,preload("res://assets/ui/hunting-match/png/power/hunter-head.png"),Rect2(MATCH_SEQUENCE.ALLY,Vector2(51.2,51.2)))
+	prep_ally_portrait = MATCH.picture(power_header,hunter_portrait(0),Rect2(MATCH_SEQUENCE.ALLY,Vector2(51.2,51.2)))
 	match_deer = MATCH.picture(power_header,APPROVED_DEER,Rect2(MATCH_SEQUENCE.DEER,Vector2(48,63)))
 	match_deer.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	match_vs = MATCH.versus(power_header,Vector2(240,49),57.4)
@@ -353,7 +354,7 @@ func select_hunter(index: int) -> void:
 	for i in portrait_frames.size():
 		style_portrait(portrait_frames[i],i==index)
 	if prep_ally_portrait:
-		prep_ally_portrait.texture = preload("res://assets/ui/hunting-match/png/power/hunter-head.png") if index==0 else hunter_portrait(index)
+		prep_ally_portrait.texture = hunter_portrait(index)
 	if duel_ally_portrait:
 		duel_ally_portrait.texture = hunter_portrait(index)
 
@@ -553,9 +554,9 @@ func caption(parent: Control, value: String, rect: Rect2, font_size: int, color 
 func hp_bar(parent: Control, rect: Rect2, ally: bool, duel := false) -> TextureProgressBar:
 	var bar := TextureProgressBar.new()
 	bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	bar.max_value = RULES.MAX_HP
+	bar.max_value = RULES.MAX_HP if ally else rules.deer_max_hp
 	bar.step = 0.0
-	bar.value = RULES.MAX_HP
+	bar.value = bar.max_value
 	bar.nine_patch_stretch = true
 	if duel:
 		var track := plaque(parent,rect,Color("523621"),Color("f5bf4f"))
@@ -873,9 +874,8 @@ func _process(delta: float) -> void:
 	if transition_elapsed>=0:
 		advance_transition(delta)
 	elif running and not result_shown:
-		var move := rules.advance(elapsed)
-		if not move.is_empty():play_pose(move)
-		if impact_pending and pose_clock>=.26:
+		if impact_pending and pose_clock >= IMPACT_SECONDS:
+			rules.resolve_attack()
 			impact_pending = false
 			if pose=="counter":
 				hunt_audio.cue("S21",2)
@@ -883,6 +883,8 @@ func _process(delta: float) -> void:
 				basic_recoil = BASIC_RECOIL_TIME
 				hunt_audio.cue("S18" if pose=="strike" else ("S20" if pose=="team" else "S16"),3)
 				if pose!="team":hunt_audio.cue("S22",1)
+		var move := rules.advance(elapsed)
+		if not move.is_empty():play_pose(move)
 	if running:
 		for id in ready_flashes:ready_flashes[id] = maxf(0.0,ready_flashes[id]-elapsed)
 		update_combat_ui(elapsed)
@@ -949,9 +951,9 @@ func update_camera(delta: float) -> void:
 		target += .12*sin(approach*PI*.5)
 	if pose in ["strike","team"] and pose_clock < RULES.POSE_SECONDS:
 		var accent := sin(pose_clock/RULES.POSE_SECONDS*PI)
-		var center: Vector2 = hunters[0].position
+		var center: Vector2 = hunters[rules.attacker].position
 		if pose=="team":
-			for index in range(1,hunters.size()):center += hunters[index].position
+			center += hunters[1 - rules.attacker].position
 			center /= hunters.size()
 		focus = focus.lerp(center,.45*accent)
 		target += .12*accent
@@ -973,29 +975,30 @@ func update_actors(delta: float) -> void:
 		deer.camera.position.y = lerpf(7.0,6.65,approach)
 		deer.camera.look_at(Vector3(0,1,0))
 		deer.update_geometry()
-	var beat := sin(clampf(pose_clock/.52,0,1)*PI)
+	var beat := sin(clampf(pose_clock/RULES.POSE_SECONDS,0,1)*PI)
 	var basic_attack := pose in ["thrust","auto_thrust"]
 	for i in hunters.size():
 		var hunter := hunters[i]
-		var attack := running and pose_clock<RULES.POSE_SECONDS and pose in ["thrust","auto_thrust","strike","team"] and (i==0 or pose=="team")
-		var dodge := running and pose=="counter" and i==0
+		var attack := running and pose_clock<RULES.POSE_SECONDS and pose in ["thrust","auto_thrust","strike","team"] and i == rules.attacker
+		var dodge := running and pose=="counter" and pose_clock<RULES.POSE_SECONDS and i == rules.attacker
 		var placed: Vector2 = ALLY_CELLS[assigned_cells[i]]
 		var battle_target := HUNTER_BATTLE_CENTER+(placed-FORMATION_CENTER)*.62
 		var base := placed.lerp(battle_target,approach)
 		hunter.scale = Vector2.ONE*lerpf(.60,.56,approach)
 		var lunge := 42 if basic_attack else 24
+		var assisting := running and pose == "team" and pose_clock < RULES.POSE_SECONDS and not attack
 		var attack_direction := base.direction_to(DEER_SLOT)
 		var previous_position := hunter.position
-		hunter.position = base + attack_direction*(lunge if attack else -18 if dodge else 0)*beat
+		hunter.position = base + attack_direction*(lunge if attack else 10 if assisting else -18 if dodge else 0)*beat
 		var heading := Vector2(1,.55).lerp(Vector2(1,.28),approach)
 		var approaching := transition_elapsed >= 0.0 and approach > 0.0 and approach < 1.0
-		var female := hunter.use_procedural_hunt_gait
+		var female := hunter.meshy_hunt_rig
 		var phase := pose_clock * 12.0
 		if female:
 			if approaching:
 				var travel := previous_position.distance_to(hunter.position)
 				female_approach_phase = fposmod(female_approach_phase + travel / (hunter.stride_world_length() * hunter.scale.x) * TAU, TAU)
-			phase = female_approach_phase
+			phase = female_approach_phase if not dodge else pose_clock * 12.0
 		hunter.animate(delta, heading, phase, dodge or approaching, "" if female or not attack else "hunt", pose_clock, false)
 		if female or (not attack and not dodge):
 			hunter.blend_bone("spine",Vector3(.21,0,-.09),.65)
@@ -1011,6 +1014,9 @@ func update_actors(delta: float) -> void:
 			hunter.blend_bone("spine",Vector3(.10+beat*.12,0,-.08),.9)
 			hunter.blend_bone("armR",Vector3(-.88-beat*.38,0,-.15),1)
 			hunter.blend_bone("forearmR",Vector3(-.95+beat*.75,0,0),1)
+		if assisting:
+			hunter.blend_bone("spine", Vector3(.30, .08, -.09), beat)
+			hunter.blend_bone("armL", Vector3(-.75, 0.0, .18), beat)
 		hunter.tool_3d.visible = true
 		hunter.viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
 		hunter_markers[i].position = hunter.position+Vector2(0,-63)

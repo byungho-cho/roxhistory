@@ -14,7 +14,12 @@ const SKILLS := {
 
 var charge := 0.0
 var hunter_hp := MAX_HP
+var deer_max_hp := MAX_HP
 var deer_hp := MAX_HP
+var pending_damage := 0
+var pending_counter := false
+var next_attacker := 0
+var attacker := 0
 var outcome := ""
 var exchange_clock := 0.0
 var hunter_turn := true
@@ -25,6 +30,27 @@ var orb_filled := false
 var auto_enabled := false
 var reserved_skill := ""
 var rng := RandomNumberGenerator.new()
+
+func enable_motion_trial() -> void:
+	deer_max_hp = MAX_HP * 10
+	deer_hp = deer_max_hp
+
+func queue_attack(damage: int) -> void:
+	attacker = next_attacker
+	next_attacker = 1 - next_attacker
+	pending_damage = damage
+
+func resolve_attack() -> void:
+	var damage := pending_damage
+	pending_damage = 0
+	if damage > 0:
+		damage_deer(damage)
+	if pending_counter:
+		pending_counter = false
+		hunter_hp = maxi(0, hunter_hp - 2)
+		if hunter_hp == 0:
+			outcome = "loss"
+			set_auto(false)
 
 func orbs() -> int:
 	return mini(MAX_ORBS,floori(charge+0.000001))
@@ -37,7 +63,7 @@ func next_auto_skill() -> String:
 	return "strike" if rng.randi_range(0, 1) == 0 else "team"
 
 func can_use(skill: String) -> bool:
-	if not SKILLS.has(skill) or not outcome.is_empty() or action_lock > 0:
+	if not SKILLS.has(skill) or not outcome.is_empty() or action_lock > 0 or pending_damage > 0 or pending_counter:
 		return false
 	if skill == "thrust":
 		return basic_lock <= 0
@@ -52,7 +78,7 @@ func use_skill(skill: String) -> bool:
 	else:
 		charge = maxf(0.0,charge-SKILLS[skill].cost)
 		orb_lock = 1.0
-	damage_deer(SKILLS[skill].damage)
+	queue_attack(SKILLS[skill].damage)
 	return true
 
 func damage_deer(amount: int) -> void:
@@ -77,16 +103,13 @@ func advance(delta: float) -> String:
 		if auto_enabled:
 			reserved_skill = next_auto_skill()
 		return queued
-	if exchange_clock < AUTO_INTERVAL or action_lock > 0:
+	if exchange_clock < AUTO_INTERVAL or action_lock > 0 or pending_damage > 0 or pending_counter:
 		return ""
 	exchange_clock = 0.0
 	action_lock = POSE_SECONDS
 	hunter_turn = not hunter_turn
 	if not hunter_turn:
-		damage_deer(1)
+		queue_attack(1)
 		return "auto_thrust"
-	hunter_hp = maxi(0, hunter_hp - 2)
-	if hunter_hp == 0:
-		outcome = "loss"
-		set_auto(false)
+	pending_counter = true
 	return "counter"
