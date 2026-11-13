@@ -1,4 +1,4 @@
-param([string]$Source,[string]$Output)
+﻿param([string]$Source,[string]$Output)
 Add-Type -AssemblyName System.Drawing
 $sourceAtlas=[Drawing.Bitmap]::new($Source)
 $atlas=[Drawing.Bitmap]::new(384,4080)
@@ -13,9 +13,11 @@ for($y=0;$y -lt $atlas.Height;$y++){
     $atlas.SetPixel($x,$y,$p)
   }
 }
-$sourceAtlas.Dispose()
+$bodyAtlas=$atlas.Clone()
 $art=[Drawing.Graphics]::FromImage($atlas)
 $art.SmoothingMode=[Drawing.Drawing2D.SmoothingMode]::AntiAlias
+$art.InterpolationMode=[Drawing.Drawing2D.InterpolationMode]::NearestNeighbor
+$art.PixelOffsetMode=[Drawing.Drawing2D.PixelOffsetMode]::Half
 function Color($hex){[Drawing.ColorTranslator]::FromHtml($hex)}
 function Pen($hex,$width){[Drawing.Pen]::new((Color $hex),$width)}
 function Brush($hex){[Drawing.SolidBrush]::new((Color $hex))}
@@ -31,6 +33,8 @@ $log=Brush '#775133'
 $logEnd=Brush '#c19558'
 $stone=Brush '#88867d'
 $grain=Brush '#dfaa36'
+$strap=Pen '#8b6338' 3.4
+$strapLight=Pen '#e5bf79' 1.2
 $hand=Brush '#aa7856'
 function Point($x,$y){[Drawing.PointF]::new($x,$y)}
 $hands=@(
@@ -63,9 +67,13 @@ for($dir=0;$dir -lt 4;$dir++){
       if($dir -ne 2){$art.FillEllipse($hand,[single]($x-2.6),[single]($y-2.4),[single]5.2,[single]4.8)}
       continue
     }
-    $offset=@(-17,5,0,-5)[$dir]
-    $x=48+$offset
-    $y=55+@(0,1,2,1,0,1)[($row-16)%6]
+    # Front and profiles occlude the basket with the original torso. The back view draws it in full.
+    $frame=($row-16)%6
+    $x=@(48,64,48,32)[$dir]
+    $y=49+@(0,1,2,1,0,1)[$frame]
+    $art.TranslateTransform([single]$x,[single]$y)
+    $art.ScaleTransform(1.34,1.36)
+    $art.TranslateTransform([single](-$x),[single](-$y))
     if($row -lt 22){
       for($i=0;$i -lt 3;$i++){
         $top=$y+$i*6-7
@@ -83,8 +91,26 @@ for($dir=0;$dir -lt 4;$dir++){
       $art.DrawArc($basketWeave,[single]($x-12),[single]($y-8),[single]24,[single]10,[single]0,[single]180)
       $art.DrawArc($basketWeave,[single]($x-10),[single]$y,[single]20,[single]10,[single]0,[single]180)
     }
+    $art.ResetTransform()
+    $art.TranslateTransform([single](96*$dir),[single](120*$row))
+    if($dir -ne 2){
+      $tile=[Drawing.Rectangle]::new(96*$dir,120*$row,96,120)
+      $art.DrawImage($bodyAtlas,[Drawing.Rectangle]::new(0,0,96,120),$tile,[Drawing.GraphicsUnit]::Pixel)
+    }
+    $straps=switch($dir){
+      0 { ,@(41,44,44,63); ,@(55,44,52,63) }
+      1 { ,@(49,43,43,61) }
+      2 { ,@(40,42,36,51); ,@(56,42,60,51) }
+      3 { ,@(47,43,53,61) }
+    }
+    foreach($line in $straps){
+      $art.DrawLine($strap,[single]$line[0],[single]$line[1],[single]$line[2],[single]$line[3])
+      $art.DrawLine($strapLight,[single]($line[0]+0.6),[single]$line[1],[single]($line[2]+0.6),[single]$line[3])
+    }
   }
 }
 $art.Dispose()
+$bodyAtlas.Dispose()
+$sourceAtlas.Dispose()
 $atlas.Save($Output,[Drawing.Imaging.ImageFormat]::Png)
 $atlas.Dispose()

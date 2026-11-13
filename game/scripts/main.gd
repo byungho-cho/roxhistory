@@ -2029,7 +2029,7 @@ func open_hunt() -> void:
 	audio.cue("action_click")
 	toast("사냥터 준비 중…")
 	var paths := ["res://assets/characters/meshy01/hero.glb","res://assets/characters/residents/sturdy_male.glb",
-		"res://assets/characters/residents/female.glb",WorldAnimal.MODELS.deer]
+		"res://assets/characters/residents/female-meshy6k-hunt.glb",WorldAnimal.MODELS.deer]
 	var pending: Array[String] = []
 	var warmed: Array[Resource] = []
 	for path: String in paths:

@@ -202,10 +202,13 @@ func animate(delta: float, movement: Vector2, phase: float, walking: bool, actio
 		action_blend = blend_before
 	work_block.visible = action == "build"
 	var walking_weight:=walk_blend
-	walk_blend=0
-	apply_pose(phase,strike)
-	walk_blend=walking_weight
-	apply_walk_clip(phase,walking_weight*(1.0-action_blend))
+	if meshy_hunt_rig:
+		apply_pose(phase,strike)
+	else:
+		walk_blend=0
+		apply_pose(phase,strike)
+		walk_blend=walking_weight
+		apply_walk_clip(phase,walking_weight*(1.0-action_blend))
 	ambient_action=""
 	if action=="farm_care":apply_farm_care(action_time)
 	elif action=="guard":
@@ -257,6 +260,7 @@ func apply_training_pose(seconds:float)->void:
 func use_training_spear()->void:
 	for child in tool_3d.get_children():child.queue_free()
 	tool_3d.name="TrainingSpear"
+	if meshy_hunt_rig:tool_3d.scale = Vector3.ONE / MESHY_HUNT_SCALE
 	cone(tool_3d,Vector3(0,0,.48),.018,.022,1.15,material("775039")).rotation.x=PI/2
 	cone(tool_3d,Vector3(0,0,1.13),0,.075,.23,material("b0b3a2")).rotation.x=PI/2
 
@@ -313,21 +317,30 @@ func stride_world_length() -> float:
 	# Stylized isometric gait: don't speed up the cadence with camera foreshortening.
 	return 104.0
 
-var female_hunt_palette := false
+var meshy_hunt_rig := false
+const MESHY_HUNT_SCALE := 1.58
+const MESHY_HUNT_MODEL := "res://assets/characters/residents/female-meshy6k-hunt.glb"
+const MESHY_BONE_NAMES := {"pelvis":"hips", "upper_arm":"arm"}
+const MESHY_OUTFIT := preload("res://shaders/meshy_hunt_outfit.gdshader")
 
 func build_villager() -> void:
-	var imported=load(model_path).instantiate()
+	var imported: Node3D = load(model_path).instantiate()
+	meshy_hunt_rig = model_path == MESHY_HUNT_MODEL
+	if meshy_hunt_rig:imported.scale = Vector3.ONE * MESHY_HUNT_SCALE
 	pivot.add_child(imported)
 	if OS.is_debug_build() and "--test-ui" in OS.get_cmdline_user_args() and "--profile-no-hero" in OS.get_cmdline_user_args():imported.visible=false
 	rig=imported.find_children("*","Skeleton3D",true,false)[0]
 	for i in rig.get_bone_count():
-		var label:=rig.get_bone_name(i)
+		var label := String(rig.get_bone_name(i))
+		if meshy_hunt_rig:
+			var base := label.get_slice(".", 0)
+			label = String(MESHY_BONE_NAMES.get(base, base)) + (label.get_slice(".", 1) if "." in label else "")
 		bones[label]=i;rests[label]=rig.get_bone_rest(i).origin
 		var local_rest:=rig.get_bone_rest(i).basis.orthonormalized()
 		var global_rest:=rig.get_bone_global_rest(i).basis.orthonormalized()
 		rotation_left.append((local_rest*global_rest.inverse()).get_rotation_quaternion());rotation_right.append(global_rest.get_rotation_quaternion())
 		if label=="handR":
-			var attach:=BoneAttachment3D.new();attach.bone_name=label;rig.add_child(attach);attachments[label]=attach
+			var attach:=BoneAttachment3D.new();attach.bone_name=rig.get_bone_name(i);rig.add_child(attach);attachments[label]=attach
 	for mesh in imported.find_children("*","MeshInstance3D",true,false):
 		mesh_count+=mesh.mesh.get_surface_count()
 		if mesh.skin:skinned_limbs.append(mesh)
@@ -335,12 +348,15 @@ func build_villager() -> void:
 			var source_material: StandardMaterial3D = mesh.get_active_material(surface)
 			var mat: StandardMaterial3D = source_material.duplicate()
 			mat.roughness=.92;mat.metallic_specular=.12;mat.normal_scale=.22
-			if female_hunt_palette:
+			if meshy_hunt_rig:
 				match source_material.resource_name:
-					"Warm brown hair": mat.albedo_color = Color("3b3437")
-					"Muted moss hide": mat.albedo_color = Color("e44d28")
-					"Warm pale hide": mat.albedo_color = Color("2daba6")
-					"Material_0": mat.albedo_color = Color("fff4e9")
+					"hair": mat.albedo_color = Color("27232b")
+					"skin": mat.albedo_color = Color("e7a478")
+					"hide":
+						var outfit := ShaderMaterial.new()
+						outfit.shader = MESHY_OUTFIT
+						mesh.set_surface_override_material(surface, outfit)
+						continue
 			mesh.set_surface_override_material(surface,mat)
 	tool_3d=Node3D.new();tool_3d.name="StoneAxe";attachments.handR.add_child(tool_3d)
 	cone(tool_3d,Vector3(0,0,.19),.025,.03,.52,material("775039")).rotation.x=PI/2

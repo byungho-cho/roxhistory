@@ -139,10 +139,9 @@ func _ready() -> void:
 	var actors := Node2D.new()
 	actors.y_sort_enabled = true
 	battlefield.add_child(actors)
-	for model in ["meshy01/hero","residents/sturdy_male","residents/female"]:
+	for model in ["meshy01/hero","residents/sturdy_male","residents/female-meshy6k-hunt"]:
 		var hunter := HybridCharacter.new()
 		hunter.model_path = "res://assets/characters/"+model+".glb"
-		hunter.female_hunt_palette = model == "residents/female"
 		hunter.render_size_factor = .5
 		actors.add_child(hunter)
 		hunter.set_enabled(true)

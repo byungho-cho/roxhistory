@@ -8,7 +8,7 @@ var direction_index:=0
 var variant:="sturdy_male"
 
 static func atlas_path(kind:String)->String:
-	if kind == "female":return ASSET_ROOT+"female-meshy6k-work-atlas.png"
+	if kind == "female":return ASSET_ROOT+"female-meshy6k-backpack-atlas.png"
 	return ASSET_ROOT+kind.replace("_","-")+"-trial-atlas.png"
 
 func _ready()->void:
