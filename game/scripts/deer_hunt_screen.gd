@@ -113,6 +113,7 @@ var running := false
 var result_shown := false
 var result_timer := 0.0
 var pose_clock := 1.0
+var female_approach_phase := 0.0
 const BASIC_RECOIL_TIME := 0.19
 var basic_recoil := 0.0
 var actor_delta := 0.0
@@ -976,7 +977,7 @@ func update_actors(delta: float) -> void:
 	var basic_attack := pose in ["thrust","auto_thrust"]
 	for i in hunters.size():
 		var hunter := hunters[i]
-		var attack := running and pose_clock<.52 and pose!="counter" and (i==0 or pose=="team")
+		var attack := running and pose_clock<RULES.POSE_SECONDS and pose in ["thrust","auto_thrust","strike","team"] and (i==0 or pose=="team")
 		var dodge := running and pose=="counter" and i==0
 		var placed: Vector2 = ALLY_CELLS[assigned_cells[i]]
 		var battle_target := HUNTER_BATTLE_CENTER+(placed-FORMATION_CENTER)*.62
@@ -984,17 +985,32 @@ func update_actors(delta: float) -> void:
 		hunter.scale = Vector2.ONE*lerpf(.60,.56,approach)
 		var lunge := 42 if basic_attack else 24
 		var attack_direction := base.direction_to(DEER_SLOT)
+		var previous_position := hunter.position
 		hunter.position = base + attack_direction*(lunge if attack else -18 if dodge else 0)*beat
 		var heading := Vector2(1,.55).lerp(Vector2(1,.28),approach)
-		hunter.animate(delta,heading,pose_clock*12,(dodge or (transition_elapsed>=0 and approach>0.0 and approach<1.0)),"" if not attack else "hunt",pose_clock,false)
-		if attack:
-			hunter.blend_bone("spine",Vector3(.10+beat*.12,0,-.08),.9)
-			hunter.blend_bone("armR",Vector3(-.88-beat*.38,0,-.15),1)
-			hunter.blend_bone("forearmR",Vector3(-.95+beat*.75,0,0),1)
-		if not attack and not dodge:
+		var approaching := transition_elapsed >= 0.0 and approach > 0.0 and approach < 1.0
+		var female := hunter.use_procedural_hunt_gait
+		var phase := pose_clock * 12.0
+		if female:
+			if approaching:
+				var travel := previous_position.distance_to(hunter.position)
+				female_approach_phase = fposmod(female_approach_phase + travel / (hunter.stride_world_length() * hunter.scale.x) * TAU, TAU)
+			phase = female_approach_phase
+		hunter.animate(delta, heading, phase, dodge or approaching, "" if female or not attack else "hunt", pose_clock, false)
+		if female or (not attack and not dodge):
 			hunter.blend_bone("spine",Vector3(.21,0,-.09),.65)
 			hunter.blend_bone("armR",Vector3(-.48,0,-.2),.65)
 			hunter.blend_bone("forearmR",Vector3(-.63,0,0),.65)
+		if attack and female:
+			# Keep the spear attached to the right hand throughout the thrust.
+			hunter.blend_bone("spine", Vector3(.34, -.21, -.09), beat)
+			hunter.blend_bone("armR", Vector3(-1.39, 0.0, -.2), beat)
+			hunter.blend_bone("forearmR", Vector3(-.14, 0.0, 0.0), beat)
+			hunter.blend_bone("armL", Vector3(-.43*beat, 0.0, .25*beat), beat)
+		elif attack:
+			hunter.blend_bone("spine",Vector3(.10+beat*.12,0,-.08),.9)
+			hunter.blend_bone("armR",Vector3(-.88-beat*.38,0,-.15),1)
+			hunter.blend_bone("forearmR",Vector3(-.95+beat*.75,0,0),1)
 		hunter.tool_3d.visible = true
 		hunter.viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
 		hunter_markers[i].position = hunter.position+Vector2(0,-63)
