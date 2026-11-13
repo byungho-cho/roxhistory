@@ -758,7 +758,7 @@ func intro_screen() -> void:
 	intro_player.expand = true
 	intro_player.loop = true
 	intro_playback_failed = false
-	intro_player.volume_db = 0.0 if settings.get_value("app","sound",true) else -80.0
+	intro_player.bus = &"SFX"
 	intro_player.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	stage.add_child(intro_player)
 	stage.resized.connect(fit_intro_video)
@@ -1761,12 +1761,28 @@ func quest_details() -> void:
 func pause_game() -> void:
 	cancel_task()
 	if is_instance_valid(world):model.save_position(world.player.position)
-	show_modal("설정","암사동 · 첫 보금자리\n진행은 기기에 자동 저장됩니다.",[
+	var scroll := show_modal("설정","",[
 		{"text":"계속하기","primary":true,"action":close_modal},
 		{"text":"시작 화면","action":func(): close_modal(); show_screen("title")},
-		{"text":"안내·소리","action":show_about},
+		{"text":"안내","action":show_about},
 		{"text":"알림 설정","action":show_notification_settings},
 		{"text":"개발 설정","action":show_development_settings}])
+	var list := VBoxContainer.new()
+	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	list.add_theme_constant_override("separation", 10)
+	scroll.add_child(list)
+	var note := label(list, "진행은 기기에 자동 저장됩니다.", 18)
+	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	for key: String in ["bgm", "sfx"]:
+		var row := HBoxContainer.new()
+		list.add_child(row)
+		var caption := label(row, "BGM" if key == "bgm" else "효과음", 21)
+		caption.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		var toggle := button(row, audio_setting_label(key), func(): pass, false, "", "")
+		toggle.custom_minimum_size = Vector2(100, 48)
+		toggle.pressed.connect(func(): toggle_audio_setting(key, toggle))
+	if not settings.get_value("app", "sound", true):
+		label(list, "전체 소리가 꺼져 있습니다.", 17)
 	enable_settings_backdrop()
 
 func show_development_settings()->void:
@@ -1865,14 +1881,22 @@ func confirm_development_reset()->void:
 		{"text":"완전 초기화","action":full_reset}],false,true,false,Vector2.ZERO,true)
 	enable_settings_backdrop()
 
+func audio_setting_label(key: String) -> String:
+	return "ON" if settings.get_value("app", key, true) else "OFF"
+
+func toggle_audio_setting(key: String, toggle: DemoButton) -> void:
+	var previous: bool = settings.get_value("app", key, true)
+	settings.set_value("app", key, not previous)
+	if settings.save(prefs_path) != OK:
+		settings.set_value("app", key, previous)
+		show_error("소리 설정을 저장하지 못했습니다.")
+		return
+	sync_audio()
+	toggle.text = audio_setting_label(key)
+
 func show_about() -> void:
 	var c := DemoConfig.get_data()
-	var sound: bool = settings.get_value("app","sound",true)
 	show_modal("RoxHistory · v"+str(ProjectSettings.get_setting("application/config/version")),c.history.fact+"\n\n"+c.history.fiction+"\n\n지역 선택 음악과 자연음, 채집·건설 효과음을 제공합니다. 곡식은 농장에서 생산합니다. 구리 화폐 수입 규칙은 준비 중입니다.",[
-		{"text":"소리 끄기" if sound else "소리 켜기","action":func():
-			settings.set_value("app","sound",not sound)
-			if settings.save(prefs_path) != OK: show_error("소리 설정을 저장하지 못했습니다.")
-			else: sync_audio(); show_about()},
 		{"text":"돌아가기","primary":true,"action":close_modal}])
 	enable_settings_backdrop()
 
@@ -1982,6 +2006,12 @@ func retire_modal(closing: Control) -> void:
 		closing.queue_free()
 
 func sync_audio() -> void:
+	var sound: bool = settings.get_value("app", "sound", true)
+	var bgm: bool = settings.get_value("app", "bgm", true)
+	var sfx: bool = settings.get_value("app", "sfx", true)
+	AudioServer.set_bus_mute(AudioServer.get_bus_index("BGM"), not (sound and bgm))
+	AudioServer.set_bus_mute(AudioServer.get_bus_index("SFX"), not (sound and sfx))
+	AudioServer.set_bus_mute(AudioServer.get_bus_index("Environment"), not (sound and sfx))
 	sync_intro_music()
 	if not is_instance_valid(audio):return
 	var hunt_music := ""
@@ -1989,7 +2019,7 @@ func sync_audio() -> void:
 	if screen == "hunt" and is_instance_valid(hunt):
 		hunt_music = "hunt_battle" if hunt.battle_music_started else "hunt_preparation"
 		hunt_popup = is_instance_valid(hunt.exit_popup)
-	audio.configure(settings.get_value("app","sound",true), application_active, screen == "play",
+	audio.configure(sound, application_active, screen == "play",
 		modal or hunt_popup, screen == "region", screen == "title", hunt_music)
 
 func toast(message: String, seconds: float = 3.0) -> void:
