@@ -8,6 +8,9 @@ var layout:Control
 var panel_group:Control
 var character:TextureRect
 var age:=0.0
+var revealed := 0.0
+var next_hint: TextureRect
+const DEFAULT_CHARS_PER_SECOND := 34.0
 var pages:Array[Dictionary]=[]
 var completions:Array[Callable]=[]
 var presses:Dictionary={}
@@ -34,8 +37,8 @@ func _ready()->void:
 	panel_group=Control.new();panel_group.name="PanelGroup";panel_group.size=DESIGN_SIZE;panel_group.mouse_filter=Control.MOUSE_FILTER_IGNORE;layout.add_child(panel_group)
 	var panel:=picture(panel_group,preload("res://assets/ui/village-guidance/guide-panel.svg"),Rect2(142,430,992,204))
 	panel.name="CreamPanel"
-	var advance_hint:=picture(panel_group,preload("res://assets/ui/village-guidance/guide-next.svg"),Rect2(1075,572,32,32))
-	advance_hint.name="GuideAdvanceHint"
+	next_hint=picture(panel_group,preload("res://assets/ui/village-guidance/guide-next.svg"),Rect2(1075,572,32,32))
+	next_hint.name="GuideAdvanceHint"
 	text_scroll=ScrollContainer.new();text_scroll.name="GuideText";text_scroll.position=Vector2(TEXT_X,475);text_scroll.size=Vector2(TEXT_WIDTH,TEXT_MAX_HEIGHT);text_scroll.horizontal_scroll_mode=ScrollContainer.SCROLL_MODE_DISABLED;panel_group.add_child(text_scroll)
 	text_column=VBoxContainer.new();text_column.name="MessageContent";text_column.size_flags_horizontal=Control.SIZE_EXPAND_FILL;text_column.add_theme_constant_override("separation",12);text_scroll.add_child(text_column)
 	for item in [[heading,32],[message,27]]:
@@ -46,6 +49,7 @@ func _ready()->void:
 	speaker.position=Vector2(472,223);speaker.size=Vector2(94,38)
 	speaker.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
 	speaker.vertical_alignment=VERTICAL_ALIGNMENT_CENTER
+	begin_reveal()
 	panel_group.modulate.a=0;character.modulate.a=0
 	update_layout()
 func update_layout()->void:
@@ -80,9 +84,23 @@ func remaining_pages()->Array[Dictionary]:
 	remaining.append_array(pages)
 	return remaining
 
+func begin_reveal() -> void:
+	revealed = 0
+	text_labels[1].visible_characters_behavior = TextServer.VC_CHARS_AFTER_SHAPING
+	text_labels[1].visible_characters = 0
+	next_hint.hide()
+
+func finish_reveal() -> void:
+	revealed = message.length()
+	text_labels[1].visible_characters = -1
+	next_hint.show()
+
 func advance()->void:
 	presses.clear()
 	scroll_pointer=-2
+	if revealed < message.length():
+		finish_reveal()
+		return
 	if not pages.is_empty():
 		var next:Dictionary=pages.pop_front()
 		heading=next.title
@@ -90,6 +108,7 @@ func advance()->void:
 		text_labels[0].text=heading
 		text_labels[1].text=message
 		text_scroll.scroll_vertical=0
+		begin_reveal()
 		return
 	var actions:=completions.duplicate()
 	app.close_modal()
@@ -119,6 +138,7 @@ func handle_pointer(event:InputEvent)->bool:
 		# Allow the text container to handle mouse-wheel scrolling.
 		return false
 	if down:
+		if not presses.is_empty():return true
 		presses[pointer]={"start":event.position,"dragged":false}
 		if scroll_pointer==-2 and text_scroll.get_global_rect().has_point(event.position):
 			scroll_pointer=pointer
@@ -135,4 +155,13 @@ func _process(delta:float)->void:
 	panel_group.modulate.a=smoothstep(0,.22,age)
 	character.modulate.a=smoothstep(.22,.48,age)
 	character.position.x=CHARACTER_RECT.position.x-24*(1-smoothstep(.22,.55,age))+sin(maxf(0,age-.55)*TAU*.35)*2
-	character.rotation=0
+	character.rotation=sin(age*1.08)*.0025
+	if revealed < message.length():
+		var speed := float(ProjectSettings.get_setting("roxhistory/tutorial/characters_per_second", DEFAULT_CHARS_PER_SECOND))
+		revealed += maxf(1, speed) * delta
+		if revealed >= message.length():finish_reveal()
+		else:text_labels[1].visible_characters = int(revealed)
+	else:
+		next_hint.show()
+		next_hint.position.y = 572 + sin(age*4)*3
+		next_hint.modulate.a = .85 + .15*sin(age*4)

@@ -51,21 +51,110 @@ func action(parent:Control,text:String,callback:Callable)->DemoButton:
 	var image:=TextureRect.new();image.name="AssignmentActionSkin";image.texture=crop;image.expand_mode=TextureRect.EXPAND_IGNORE_SIZE;image.mouse_filter=Control.MOUSE_FILTER_IGNORE;image.show_behind_parent=true;button.add_child(image);image.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	button.custom_minimum_size=Vector2(80,44)
 	return button
+func open_slots(job: String, jobs: ResidentJobs) -> Array[String]:
+	var slots: Array[String] = []
+	if job in ["wood","stone"]:
+		# Gatherers have no job cap other than the village population.
+		for id in ResidentAdmission.ids(app.model.state):
+			if jobs.entry(id).job != job:slots.append("")
+		return slots
+	var kind := "farm" if job == "farmer" else "outpost"
+	var buildings: Array = app.model.facilities() if kind == "farm" else app.model.outposts()
+	for building in buildings:
+		if str(building.get("kind","outpost")) != kind:continue
+		var key := kind + ":" + str(building.uid)
+		if jobs.assigned_to(key).is_empty():slots.append(key)
+	return slots
+
+func waiting(jobs: ResidentJobs) -> Array[String]:
+	var ids: Array[String] = []
+	for id in ResidentAdmission.ids(app.model.state):
+		if jobs.entry(id).job == "idle":ids.append(id)
+	return ids
+
 func show_summary(_page:int=0)->void:
 	if app.screen!="play" or not app.application_active or app.world_map_open:return
-	var jobs:=ResidentJobs.new(app.model);var working:=0
-	for id in ResidentAdmission.ids(app.model.state):
-		if jobs.entry(id).job!="idle":working+=1
-	var list:=content("전체 주민 배분","일하는 주민 %d · 미배정 %d\n촌장과 별도 건설자는 일반 주민에서 제외합니다."%[working,app.model.resident_count()-working])
-	for index in app.model.resident_count():
-		var id:=id_at(index);var item:=jobs.entry(id);var row:=card(list)
-		art(row,icon("idle"),Vector2(50,50))
-		var words:=VBoxContainer.new();words.size_flags_horizontal=Control.SIZE_EXPAND_FILL;row.add_child(words)
-		app.label(words,display_name(id)+" · "+job_name(item.job),20);app.label(words,status(id),15)
-		art(row,icon(item.job),Vector2(42,42))
-		var selected:int=index;action(row,"변경",func():show_assignment(selected))
-	if app.model.resident_count()==0:app.label(list,"방문객을 맞이하고 주민 움집을 마련해 주세요.",18)
-	app.label(list,"주민을 선택해 일을 변경합니다.",16)
+	var jobs := ResidentJobs.new(app.model)
+	var idle := waiting(jobs)
+	var list := content("전체 주민 배분","배정 %d명  ·  미배정 %d명"%[app.model.resident_count()-idle.size(),idle.size()])
+	for job: String in ["wood","stone","farmer","guard"]:
+		var heading := card(list)
+		art(heading,icon(job),Vector2(42,42))
+		var title: Label = app.label(heading,job_name(job),20)
+		title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		action(heading,"자동 배치",auto_assign.bind(job))
+		var slots := GridContainer.new()
+		slots.columns = 4 if app.w>=640 else 3
+		slots.add_theme_constant_override("h_separation",6)
+		slots.add_theme_constant_override("v_separation",6)
+		list.add_child(slots)
+		for id in ResidentAdmission.ids(app.model.state):
+			if jobs.entry(id).job != job:continue
+			var portrait := action(slots,"",show_assignment.bind(ResidentAdmission.ids(app.model.state).find(id)))
+			art(portrait,icon("idle"),Vector2(28,28)).position=Vector2(4,7)
+			var caption: Label = app.label(portrait,display_name(id),14)
+			caption.position=Vector2(32,10)
+		for target in open_slots(job,jobs):
+			action(slots,"+",show_waiting.bind(job,target))
+		var locked := unlock_hint(job)
+		if not locked.is_empty():
+			var slot := action(slots,"잠김",func(): app.toast(locked))
+			slot.modulate=Color(.74,.70,.64)
+			app.label(list,locked,14)
+
+func unlock_hint(job: String) -> String:
+	if job == "farmer":
+		var level: int = app.model.chief_level()
+		if level < 1:return "촌장집 Lv.1과 주민 움집을 갖추고 농장을 지어 주세요."
+		if app.model.built_count() == 0:return "주민 움집을 지으면 농장을 지을 수 있어요."
+		var farms: int = app.model.pending_construction_count("farm")
+		for building in app.model.facilities():
+			if building.kind == "farm":farms += 1
+		if farms < mini(3,level):return "농장을 완공하면 자리가 열려요."
+		if level < 3:return "촌장집 Lv.%d에서 농장 한도가 늘어요." % (level+1)
+	if job == "guard":
+		var level := int(BuildingRules.REQUIRED_HQ["outpost"])
+		if app.model.chief_level() < level:return "촌장집 Lv.%d에서 초소를 지을 수 있어요." % level
+		if app.model.outposts().size() < 3:return "초소를 완공하면 자리가 열려요."
+	return ""
+
+func show_waiting(job: String, target: String) -> void:
+	var jobs := ResidentJobs.new(app.model)
+	if not open_slots(job,jobs).has(target):app.toast("열린 작업 자리가 없어요.");return
+	var ids := waiting(jobs)
+	var list := content("일 선택",job_name(job)+" · 미배정 주민 선택")
+	if ids.is_empty():app.label(list,"미배정 주민이 없어요.",18)
+	for id in ids:
+		var row := card(list)
+		art(row,icon("idle"),Vector2(40,40))
+		var name_label: Label = app.label(row,display_name(id),18)
+		name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		action(row,"배정",assign_waiting.bind(job,target,id))
+	action(list,"돌아가기",show_summary)
+
+func assign_waiting(job: String, target: String, id: String) -> void:
+	var jobs := ResidentJobs.new(app.model)
+	if not waiting(jobs).has(id) or not open_slots(job,jobs).has(target):
+		show_summary()
+		app.toast("주민이나 작업 자리 상태가 바뀌었어요.")
+		return
+	if jobs.assign(id,job,target):
+		show_summary()
+		app.toast("%s · %s"%[display_name(id),job_name(job)])
+
+func auto_assign(job: String) -> void:
+	var jobs := ResidentJobs.new(app.model)
+	var assigned := 0
+	var ids := waiting(jobs)
+	var slots := open_slots(job,jobs)
+	if slots.is_empty():app.toast("열린 작업 자리가 없어요.");return
+	if ids.is_empty():app.toast("미배정 주민이 없어요.");return
+	for i in mini(ids.size(),slots.size()):
+		if not waiting(jobs).has(ids[i]) or not open_slots(job,jobs).has(slots[i]):break
+		if not jobs.assign(ids[i],job,slots[i]):break
+		assigned += 1
+	show_summary()
+	app.toast("%s %d명을 배정했어요."%[job_name(job),assigned])
 func show_assignment(index:int,selected_job:String="",selected_building:String="")->void:
 	var id:=id_at(index)
 	if id.is_empty():show_summary();return

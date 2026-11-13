@@ -14,6 +14,7 @@ var retry_in := 0.0
 var press_at := Vector2.INF
 var pointer := -2
 var age := 0.0
+var reminder := 0.0
 var construction_focus := Vector2.INF
 
 func _init(owner: Node) -> void:
@@ -26,6 +27,8 @@ func active() -> bool:
 
 func _process(delta: float) -> void:
 	age += delta
+	reminder = maxf(0, reminder-delta)
+	if not active() or app.modal or not app.task.is_empty() or not app.navigation.action.is_empty():reminder = 0
 	queue_redraw()
 	if not active() or not app.application_active: return
 	var current := FirstQuests.current(app.model.state)
@@ -72,6 +75,7 @@ func _process(delta: float) -> void:
 	rejected.clear()
 
 func reject_target() -> void:
+	reminder = 0
 	if not target_id.is_empty(): rejected.append(target_id)
 	target_id = ""
 	started_travel = false
@@ -105,22 +109,28 @@ func tap(at: Vector2) -> void:
 		for node in app.model.nodes():
 			if node.id != target_id or not app.world.resource_hit(node,world_at): continue
 			var point := DemoConfig.point(node.position)
+			reminder = 0
 			if app.world.player.position.distance_to(point) <= float(DemoConfig.get_data().interact_radius):
 				app.gather_action(node.id)
 			else:
 				started_travel = app.navigation.start("gather",node.id,app.world.gather_stand(point,node.kind))
 				if not started_travel: reject_target()
 			return
+		reminder = .7
 		return
 	if app.model.pending_construction_count("chief") > 0: return
+	reminder = 0
 	if not app.choosing_plot:
-		if app.build_button.get_global_rect().has_point(at): app.construction_menu()
+		if app.build_button.get_global_rect().has_point(at):app.construction_menu()
+		else:reminder = .7
 	elif app.build_preview.active():
-		if app.build_preview.cost_display.confirm_button.get_global_rect().has_point(at): app.confirm_build_preview()
-		elif app.build_preview.cost_display.cancel_button.get_global_rect().has_point(at): app.cancel_build_preview()
+		if app.build_preview.cost_display.confirm_button.get_global_rect().has_point(at):app.confirm_build_preview()
+		elif app.build_preview.cost_display.cancel_button.get_global_rect().has_point(at):app.cancel_build_preview()
+		else:reminder = .7
 	elif plot.is_finite() and world_at.distance_to(plot) < 65:
 		if app.world.placement_requirement("chief",plot).is_empty():app.build_preview.select_position(plot,"chief")
 		else:choose_plot()
+	else:reminder = .7
 
 func choose_plot() -> bool:
 	var center := DemoConfig.CHIEF_POSITION
@@ -154,6 +164,10 @@ func _draw() -> void:
 		elif app.build_preview.active() and app.build_preview.cost_display.visible: at = app.build_preview.cost_display.confirm_button.get_global_rect().get_center()
 		elif plot.is_finite(): at = transform_to_screen*plot
 	if not at.is_finite() or not get_viewport_rect().has_point(at): return
+	if reminder > 0.0:
+		var fraction := reminder / .7
+		draw_arc(at, lerpf(22, 72, fraction), 0, TAU, 48, Color(1,.86,.35,minf(1.0,fraction*3)), 3, true)
+		return
 	var phase := fposmod(age,1.1)/1.1
 	draw_arc(at, 26+phase*12, 0, TAU, 40, Color(1,.84,.3,1-phase*.55), 3, true)
 	var lift:=1.0-smoothstep(.05,.37,phase)+smoothstep(.55,.92,phase)
