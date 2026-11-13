@@ -25,12 +25,14 @@ static func open(app: Node) -> void:
 		var row: DemoButton = app.button(list, "", item[2])
 		row.custom_minimum_size = Vector2(0, 57)
 		row.set_meta("semantic_text", item[0])
-		var style := StyleBoxFlat.new()
-		style.bg_color = Color("805b2e12")
-		style.border_color = Color("95653231")
-		style.set_border_width_all(1)
-		style.set_corner_radius_all(7)
-		row.add_theme_stylebox_override("normal", style)
+		for state in ["normal", "hover", "pressed", "disabled", "focus"]:
+			var style := StyleBoxFlat.new()
+			style.bg_color = Color({"normal":"efe0ba", "hover":"f8df9a", "pressed":"e4c17d", "disabled":"e9ddc4", "focus":"f8df9a"}[state])
+			style.border_color = Color("ab7939") if state in ["hover", "pressed", "focus"] else Color("d5bd8b")
+			style.set_border_width_all(1)
+			style.set_corner_radius_all(7)
+			row.add_theme_stylebox_override(state, style)
+		row.set_meta("integrated_art", true)
 		var text := VBoxContainer.new()
 		row.add_child(text)
 		text.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -43,15 +45,14 @@ static func open(app: Node) -> void:
 		arrow.set_anchors_and_offsets_preset(Control.PRESET_CENTER_RIGHT)
 		arrow.position.x -= 20
 		arrow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		row.enable_art_feedback()
 	var footer := HBoxContainer.new()
 	column.add_child(footer)
 	var info := VBoxContainer.new()
 	info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	footer.add_child(info)
-	var note: Label = app.label(info, "게임 진행은 이 기기에 자동 저장됩니다.", 12, Color("80613f"))
-	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	var version := String(ProjectSettings.get_setting("application/config/version"))
-	app.label(info, "버전 " + version.get_slice(".", version.get_slice_count(".") - 1), 11, Color("80613f"))
+	app.label(info, version, 11, Color("80613f"))
 	var home: DemoButton = app.button(footer, "시작 화면", func(): app.close_modal(); app.show_screen("title"), true)
 	home.custom_minimum_size = Vector2(136, 48)
 	for state in ["normal","hover","pressed","focus"]:

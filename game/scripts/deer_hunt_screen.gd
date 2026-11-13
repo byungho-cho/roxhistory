@@ -139,10 +139,11 @@ func _ready() -> void:
 	var actors := Node2D.new()
 	actors.y_sort_enabled = true
 	battlefield.add_child(actors)
-	for model in ["meshy01/hero","residents/sturdy_male","residents/female-meshy6k-hunt"]:
+	for model in ["meshy01/hero","residents/sturdy_male","residents/female"]:
 		var hunter := HybridCharacter.new()
 		hunter.model_path = "res://assets/characters/"+model+".glb"
 		hunter.render_size_factor = .5
+		hunter.use_procedural_hunt_gait = model == "residents/female"
 		actors.add_child(hunter)
 		hunter.set_enabled(true)
 		hunter.use_training_spear()
@@ -859,9 +860,12 @@ func _process(delta: float) -> void:
 		var before := arrival_elapsed
 		advance_arrival(delta)
 		var hits := [1.98] if arrival_variant==1 else [1.42,2.04]
-		for threshold in [.28,1.34]+hits:
+		var vs_start := .83 if arrival_variant == 1 else 2.08
+		var cues := [.28, vs_start] + hits
+		cues.sort()
+		for threshold in cues:
 			if before<threshold and arrival_elapsed>=threshold:
-				hunt_audio.cue("S09" if threshold==.28 else ("S10" if threshold==1.34 else "S11"),2)
+				hunt_audio.cue("S09" if threshold==.28 else ("S10" if threshold==vs_start else "S11"),2)
 	var elapsed := delta*speed
 	pose_clock += elapsed
 	basic_recoil = maxf(0.0,basic_recoil-elapsed)
@@ -1029,6 +1033,7 @@ func draw_stage() -> void:
 
 func show_result() -> void:
 	result_shown = true
+	if rules.outcome == "win":hunt_audio.cue("monster_death",4)
 	hunt_audio.cue("S26" if rules.outcome=="win" else "S27",4)
 	rules.set_auto(false)
 	update_toggles()

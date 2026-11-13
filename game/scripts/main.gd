@@ -1702,10 +1702,10 @@ func confirm_demolition(key:String)->void:
 	if model.demolish(key):
 		close_modal()
 		if is_instance_valid(ghost):
-			var effect:=DemolitionEffect.new(ghost)
+			var effect:=DemolitionEffect.new(ghost, self)
 			world.add_child(effect);effect.position=at
 			effect.add_child(ghost);ghost.global_transform=ghost_transform
-		world.feedback.sound_cue.emit("demolish")
+		else:audio.cue("demolish")
 		toast("나무 %d개 · 돌 %d개 반환"%[quote.wood,quote.stone],2)
 	elif is_instance_valid(ghost):ghost.free()
 
@@ -2024,7 +2024,7 @@ func open_hunt() -> void:
 	audio.cue("action_click")
 	toast("사냥터 준비 중…")
 	var paths := ["res://assets/characters/meshy01/hero.glb","res://assets/characters/residents/sturdy_male.glb",
-		"res://assets/characters/residents/female-meshy6k-hunt.glb",WorldAnimal.MODELS.deer]
+		"res://assets/characters/residents/female.glb",WorldAnimal.MODELS.deer]
 	var pending: Array[String] = []
 	var warmed: Array[Resource] = []
 	for path: String in paths:
@@ -2153,17 +2153,68 @@ func enable_settings_backdrop()->void:
 				close_modal())
 
 func show_notification_settings()->void:
-	var scroll:=show_modal("알림 설정","",[],false,true)
-	var list:=VBoxContainer.new();list.size_flags_horizontal=Control.SIZE_EXPAND_FILL;list.add_theme_constant_override("separation",14);scroll.add_child(list)
-	var titles:={"construction":"건축 완료","upgrade":"업그레이드 완료","arrival":"새 주민 도착"}
+	var scroll := show_modal("알림 설정", "", [{"text":"확인","primary":true,"action":close_modal}], false, true, false, Vector2(610,400))
+	var header: HBoxContainer = scroll.get_parent().get_node("ModalHeader")
+	var original := header.get_node("ModalClose")
+	header.remove_child(original)
+	original.queue_free()
+	var settings_menu := preload("res://scripts/game_settings_menu.gd")
+	settings_menu.icon_button(self, header, settings_menu.CLOSE, "NotificationClose", close_modal)
+	var confirm := overlay.find_child("ModalActions", true, false).get_child(0) as DemoButton
+	confirm.size_flags_horizontal = Control.SIZE_SHRINK_END
+	confirm.custom_minimum_size = Vector2(116, 48)
+	confirm.get_parent().alignment = BoxContainer.ALIGNMENT_END
+	var list := VBoxContainer.new()
+	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	list.add_theme_constant_override("separation", 9)
+	scroll.add_child(list)
+	var titles := {"construction":"건축 완료", "upgrade":"업그레이드 완료", "arrival":"새 주민 도착"}
 	for event in VillageNotifications.EVENTS:
-		var row:=HBoxContainer.new();list.add_child(row)
-		var text:=label(row,titles[event],21);text.size_flags_horizontal=Control.SIZE_EXPAND_FILL
-		var setting:Variant=VillageNotifications.setting(model.state,event)
-		var target:String=event
-		var toggle:=button(row,"ON" if setting else "OFF",func():
-			if VillageNotifications.set_enabled(model,target,not setting):
-				if not setting and village_alerts:village_alerts.request_permission()
-				show_notification_settings())
-		toggle.custom_minimum_size=Vector2(100,48)
-	var note:=label(list,"Android 알림은 기기의 알림 권한과 무음 설정을 따릅니다.",17);note.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
+		var panel := PanelContainer.new()
+		var style := StyleBoxFlat.new()
+		style.bg_color = Color("805b2e12")
+		style.set_corner_radius_all(7)
+		style.content_margin_left = 14
+		style.content_margin_right = 14
+		panel.add_theme_stylebox_override("panel", style)
+		list.add_child(panel)
+		var row := HBoxContainer.new()
+		panel.add_child(row)
+		var text := label(row, titles[event], 17)
+		text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		var toggle := button(row, "", func():pass)
+		toggle.custom_minimum_size = Vector2(88, 54)
+		var track := Panel.new()
+		track.position = Vector2(0, 12)
+		track.size = Vector2(88, 30)
+		track.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		toggle.add_child(track)
+		for state in ["normal","hover","pressed","disabled","focus"]:
+			toggle.add_theme_stylebox_override(state, StyleBoxEmpty.new())
+		var dot := Panel.new()
+		dot.size = Vector2(23, 23)
+		dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		track.add_child(dot)
+		var status := label(track, "", 13, Color("fff1d1"))
+		status.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var target: String = event
+		var refresh := func():
+			var enabled: bool = VillageNotifications.setting(model.state, target)
+			var track_style := StyleBoxFlat.new()
+			track_style.bg_color = Color("674920") if enabled else Color("615a4b")
+			track_style.set_corner_radius_all(15)
+			track.add_theme_stylebox_override("panel", track_style)
+			var dot_style := StyleBoxFlat.new()
+			dot_style.bg_color = Color("f8d77e") if enabled else Color("e4d6b4")
+			dot_style.set_corner_radius_all(12)
+			dot.add_theme_stylebox_override("panel", dot_style)
+			dot.position = Vector2(61 if enabled else 4, 3)
+			status.position = Vector2(8 if enabled else 52, 4)
+			status.text = "켜짐" if enabled else "꺼짐"
+			toggle.set_meta("semantic_text", titles[target] + " " + status.text)
+		refresh.call()
+		toggle.pressed.connect(func():
+			var enabled: bool = VillageNotifications.setting(model.state, target)
+			if VillageNotifications.set_enabled(model, target, not enabled):
+				if not enabled and village_alerts:village_alerts.request_permission()
+				refresh.call())

@@ -202,7 +202,7 @@ func animate(delta: float, movement: Vector2, phase: float, walking: bool, actio
 		action_blend = blend_before
 	work_block.visible = action == "build"
 	var walking_weight:=walk_blend
-	if meshy_hunt_rig:
+	if meshy_hunt_rig or use_procedural_hunt_gait:
 		apply_pose(phase,strike)
 	else:
 		walk_blend=0
@@ -318,6 +318,7 @@ func stride_world_length() -> float:
 	return 104.0
 
 var meshy_hunt_rig := false
+var use_procedural_hunt_gait := false
 const MESHY_HUNT_SCALE := 1.58
 const MESHY_HUNT_MODEL := "res://assets/characters/residents/female-meshy6k-hunt.glb"
 const MESHY_BONE_NAMES := {"pelvis":"hips", "upper_arm":"arm"}

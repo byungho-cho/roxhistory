@@ -16,7 +16,7 @@ const LEVELS := {
 	"S25":-20.0,"S26":-10.0,"S27":-12.0,
 }
 
-const COMBAT_CUES := ["S12","S13","S14","S15","S16","S17","S18","S19","S20","S21","S22","S23","S24","S25","S26","S27"]
+const COMBAT_CUES := ["monster_death","S12","S13","S14","S15","S16","S17","S18","S19","S20","S21","S22","S23","S24","S25","S26","S27"]
 
 var streams := {}
 var pool: Array[AudioStreamPlayer] = []
@@ -33,6 +33,11 @@ func _ready() -> void:
 		streams[id] = preload("res://assets/audio/d0001-approved/quest-click.wav")
 	streams["S07"] = preload("res://assets/audio/d0001-approved/popup-open.mp3")
 	streams["S08"] = preload("res://assets/audio/d0001-approved/popup-close.mp3")
+	streams["S09"] = preload("res://assets/audio/d0006-approved/actor-entry-70.mp3")
+	streams["S10"] = preload("res://assets/audio/d0006-approved/vs-entry.mp3")
+	streams["S15"] = preload("res://assets/audio/d0006-approved/spear-flight.mp3")
+	streams["S18"] = preload("res://assets/audio/d0006-approved/heavy-hit.mp3")
+	streams["monster_death"] = preload("res://assets/audio/d0006-approved/monster-death.mp3")
 	for index in 6:
 		var player := AudioStreamPlayer.new()
 		add_child(player)
@@ -80,5 +85,5 @@ func cue(id: String, priority := 1) -> void:
 	player.stop()
 	player.bus = &"Combat" if id in COMBAT_CUES else &"SFX"
 	player.stream = streams[id]
-	player.volume_db = LEVELS[id]
+	player.volume_db = 0.0 if id == "S09" else float(LEVELS.get(id, -12.0))
 	player.play()

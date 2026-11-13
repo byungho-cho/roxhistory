@@ -8,21 +8,15 @@ var direction_index:=0
 var variant:="sturdy_male"
 
 static func atlas_path(kind:String)->String:
-	if kind == "female":return ASSET_ROOT+"female-meshy6k-backpack-atlas.png"
 	return ASSET_ROOT+kind.replace("_","-")+"-trial-atlas.png"
 
 func _ready()->void:
 	texture=load(atlas_path(variant))
-	if variant == "female":
-		var palette := ShaderMaterial.new()
-		palette.shader = preload("res://shaders/female_resident_palette.gdshader")
-		material = palette
 	centered=false
 	region_enabled=true
 	region_filter_clip_enabled=true
 	texture_filter=CanvasItem.TEXTURE_FILTER_LINEAR
 	scale=Vector2.ONE*(.46/1.5)*4.0*(1.08 if variant=="female" else 1.16)
-	if variant == "female":scale.x *= 1.07
 	position=-Vector2(48,107)*scale
 	region_rect=Rect2(Vector2.ZERO,FRAME)
 

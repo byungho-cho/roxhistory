@@ -56,7 +56,8 @@ func _ready() -> void:
 	for key in ["wood","stone","build","demolish"]:
 		streams["recorded_"+key]=load("res://assets/audio/recorded-actions-v001/"+key+"-hit.wav")
 	streams["recorded_stone"] = preload("res://assets/audio/village-sfx-v02/stone-gather-v02.wav")
-	streams["recorded_build"] = preload("res://assets/audio/village-sfx-v02/construction-work-v02.wav")
+	streams["recorded_demolish"] = preload("res://assets/audio/d0006-approved/demolition-b.mp3")
+	streams["recorded_build"] = preload("res://assets/audio/d0006-approved/construction-a.mp3")
 	streams["wind"] = preload("res://assets/audio/village-sfx-v02/village-wind-b02.wav")
 	streams["hunt_impact"] = streams["stone_0"]
 	recorded_work=AudioStreamPlayer.new();recorded_work.name="RecordedActionVoice";recorded_work.bus=&"SFX";add_child(recorded_work)

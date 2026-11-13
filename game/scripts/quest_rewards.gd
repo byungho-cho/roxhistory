@@ -41,7 +41,7 @@ static func art_button(app:Node,parent:Control,name:String,rect:Rect2,action:Cal
 	button.custom_minimum_size=Vector2.ZERO
 	button.position=rect.position
 	button.size=rect.size
-	for style in ["normal","hover","pressed","focus"]:
+	for style in ["normal","hover","pressed","disabled","focus"]:
 		button.add_theme_stylebox_override(style,StyleBoxEmpty.new())
 	return button
 
@@ -125,7 +125,7 @@ static func open(app:Node)->void:
 		if app.model.claim_all_quest_rewards():
 			app.audio.cue("reward")
 			fill_cards(app,cards))
-	sliced_art(claim_all,part(PARTS,CLAIM),Rect2(0,0,370,56),38)
+	sliced_art(claim_all,preload("res://assets/ui/hunting-combat/png/popup/continue-button-background.png"),Rect2(0,0,370,56),24)
 	caption(app,claim_all,"모두 받기",Rect2(0,0,370,56),32,INK)
 	fill_cards(app,cards)
 
