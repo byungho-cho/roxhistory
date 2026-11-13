@@ -86,6 +86,7 @@ var drag_start := Vector2.ZERO
 var drag_cell := -1
 var dragging := false
 var hunt_audio = HUNT_AUDIO.new()
+var battle_music_started := false
 var impact_pending := false
 var last_step := -1
 var approach := 0.0
@@ -480,6 +481,7 @@ func request_exit() -> void:
 	if result_shown:return
 	hunt_audio.cue("S07")
 	exit_popup = layer()
+	app.sync_audio()
 	exit_popup.mouse_filter = Control.MOUSE_FILTER_STOP
 	exit_shade = ColorRect.new()
 	exit_shade.color = Color(0,0,0,.6)
@@ -791,7 +793,8 @@ func start_combat() -> void:
 	touch_points.clear()
 	pan = Vector2.ZERO
 	hunt_audio.cue("S12",2)
-	hunt_audio.battle = true
+	battle_music_started = true
+	app.sync_audio()
 	transition_elapsed = 0.0
 	preparation.mouse_behavior_recursive = Control.MOUSE_BEHAVIOR_DISABLED
 	combat.show()
@@ -847,7 +850,7 @@ func play_pose(id: String) -> void:
 		"team":hunt_audio.cue("S19",2)
 
 func _process(delta: float) -> void:
-	hunt_audio.update(delta,app.application_active and app.settings.get_value("app","sound",true),exit_popup!=null or app.modal)
+	hunt_audio.update(app.application_active and app.settings.get_value("app","sound",true),exit_popup!=null or app.modal)
 	if not app.application_active or exit_popup or app.modal:
 		clear_formation_drag()
 		return

@@ -5,7 +5,14 @@ var enabled := false
 var active := true
 var in_world := false
 var in_region := false
-var menu_music := false
+const SCENE_MUSIC := {
+	"title": preload("res://assets/audio/d0002-bgm/RoxHistory_Title_BGM_edit_candidate_v01.ogg"),
+	"hunt_preparation": preload("res://assets/audio/d0002-bgm/RoxHistory_Hunt_Preparation_BGM_edit_candidate_v01.ogg"),
+	"hunt_battle": preload("res://assets/audio/d0002-bgm/RoxHistory_Hunt_Battle_BGM_edit_candidate_v01.ogg"),
+}
+const SCENE_MUSIC_DB := {"title": -10.0, "hunt_preparation": -8.0, "hunt_battle": -10.0}
+var scene_music_players: Dictionary[String, AudioStreamPlayer] = {}
+var scene_music := ""
 var ducked := false
 var voices: Array[AudioStreamPlayer] = []
 var recorded_work:AudioStreamPlayer
@@ -61,6 +68,14 @@ func _ready() -> void:
 	wind = ambience("wind",-35,&"Environment")
 	bgm = ambience("a303_bgm",-60,&"BGM")
 	play_bgm = ambience("play_bgm",-60,&"BGM")
+	for key: String in SCENE_MUSIC:
+		var stream: AudioStreamOggVorbis = SCENE_MUSIC[key].duplicate()
+		stream.loop = true
+		var player := AudioStreamPlayer.new()
+		player.stream = stream
+		player.bus = &"BGM"
+		add_child(player)
+		scene_music_players[key] = player
 
 func ambience(key: String, volume: float, bus: StringName) -> AudioStreamPlayer:
 	var player := AudioStreamPlayer.new()
@@ -82,12 +97,13 @@ func ambience(key: String, volume: float, bus: StringName) -> AudioStreamPlayer:
 	add_child(player)
 	return player
 
-func configure(sound: bool, foreground: bool, playing: bool, popup: bool, region: bool = false, title: bool = false) -> void:
+func configure(sound: bool, foreground: bool, playing: bool, popup: bool, region: bool = false, title: bool = false, hunt_music: String = "") -> void:
 	var was_nature := in_region or in_world
 	if (in_world and not playing) or (in_region and not region): stop_effects()
 	var was_audible := enabled and active
 	enabled = sound; active = foreground; in_world = playing; ducked = popup; in_region = region
-	menu_music = region or title
+	scene_music = "title" if title else hunt_music
+	sync_scene_music()
 	if popup or not playing:stop_work()
 	if not was_nature and (in_region or in_world): bird_wait = nature_random.randf_range(9,14)
 	if enabled and active and not was_audible: last_interface_ms = -1000
@@ -96,9 +112,9 @@ func configure(sound: bool, foreground: bool, playing: bool, popup: bool, region
 		if bgm and bgm.playing:
 			bgm.stream_paused = true
 			bgm.volume_db = -60
-		if bgm and not menu_music: bgm.stop()
+		if bgm and not in_region: bgm.stop()
 	elif bgm:
-		if menu_music:
+		if in_region:
 			if bgm.stream_paused: bgm.stream_paused = false
 			elif not bgm.playing:
 				bgm.volume_db = -60
@@ -186,16 +202,44 @@ func cue(key: String) -> void:
 	if events.size()>96: events.pop_front()
 	if key in ["ui","select","bird"]: trace_status(key)
 
+func sync_scene_music() -> void:
+	for key: String in scene_music_players:
+		var player := scene_music_players[key]
+		if not enabled or not active:
+			if key != scene_music:
+				player.stop()
+			elif player.playing:
+				player.stream_paused = true
+			player.volume_db = -60.0
+		elif key == scene_music:
+			if player.stream_paused:
+				player.stream_paused = false
+			elif not player.playing:
+				player.volume_db = -60.0
+				player.play()
+		elif player.stream_paused:
+			player.stop()
+
+func fade_scene_music(delta: float) -> void:
+	for key: String in scene_music_players:
+		var player := scene_music_players[key]
+		if not player.playing or player.stream_paused:continue
+		var selected := key == scene_music
+		var target := float(SCENE_MUSIC_DB[key]) - (6.0 if ducked else 0.0) if selected else -60.0
+		player.volume_db = move_toward(player.volume_db, target, delta * 100.0)
+		if not selected and player.volume_db <= -60.0:player.stop()
+
 func _process(delta: float) -> void:
 	if not enabled or not active: return
+	fade_scene_music(delta)
 	if play_bgm and play_bgm.playing and not play_bgm.stream_paused:
 		var target := PLAY_MUSIC_DB+(-3.0 if ducked else 0.0) if in_world else -60.0
 		play_bgm.volume_db=move_toward(play_bgm.volume_db,target,delta*100)
 		if not in_world and play_bgm.volume_db<=-59.9: play_bgm.stop()
 	if bgm and bgm.playing and not bgm.stream_paused:
-		var target := REGION_MUSIC_DB+(-3.0 if ducked else 0.0) if menu_music else -60.0
+		var target := REGION_MUSIC_DB+(-3.0 if ducked else 0.0) if in_region else -60.0
 		bgm.volume_db = move_toward(bgm.volume_db,target,delta*100)
-		if not menu_music and bgm.volume_db <= -59.9: bgm.stop()
+		if not in_region and bgm.volume_db <= -59.9: bgm.stop()
 	if river and river.playing:
 		var duck := -8.0 if ducked else 0.0
 		var water_level := REGION_WATER_DB if in_region else lerpf(-36.0206,-26.0206,river_proximity)

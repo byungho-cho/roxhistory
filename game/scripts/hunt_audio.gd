@@ -19,12 +19,9 @@ const LEVELS := {
 var streams := {}
 var pool: Array[AudioStreamPlayer] = []
 var priorities: Array[int] = []
-var music: Array[AudioStreamPlayer] = []
 var recent := {}
 var enabled := false
 var paused := false
-var battle := false
-var blend := 0.0
 
 func _ready() -> void:
 	for id in LEVELS:
@@ -36,40 +33,21 @@ func _ready() -> void:
 		player.bus = &"SFX"
 		pool.append(player)
 		priorities.append(0)
-	for id in ["B03","B01","B02"]:
-		var player := AudioStreamPlayer.new()
-		var stream: AudioStreamWAV = load(ROOT+id+".wav").duplicate()
-		stream.loop_mode = AudioStreamWAV.LOOP_FORWARD
-		stream.loop_begin = 0
-		stream.loop_end = roundi(stream.get_length()*stream.mix_rate)
-		player.stream = stream
-		add_child(player)
-		player.bus = &"BGM"
-		music.append(player)
 
 
 func _exit_tree() -> void:
-	for player in pool + music:
+	for player in pool:
 		player.stop()
 		player.stream = null
 	streams.clear()
 
 
-func update(delta: float, audible: bool, held: bool) -> void:
-	if enabled!=audible:
-		enabled = audible
-		for player in music:
-			if enabled:player.play()
-			else:player.stop()
-	if paused!=held or not enabled:
+func update(audible: bool, held: bool) -> void:
+	enabled = audible
+	if paused != held or not enabled:
 		for player in pool:
-			if not enabled or player.stream!=streams["S07"]:player.stop()
+			if not enabled or player.stream != streams["S07"]:player.stop()
 	paused = held
-	blend = move_toward(blend,1.0 if battle else 0.0,delta/.8)
-	var attenuation := -6.0 if paused else 0.0
-	music[0].volume_db = -8.0+attenuation+linear_to_db(maxf(.0001,cos(blend*PI*.5)))
-	music[1].volume_db = -8.0+attenuation+linear_to_db(maxf(.0001,sin(blend*PI*.5)))
-	music[2].volume_db = -26.0+attenuation
 
 
 func cue(id: String, priority := 1) -> void:

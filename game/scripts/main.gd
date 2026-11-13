@@ -1983,7 +1983,14 @@ func retire_modal(closing: Control) -> void:
 
 func sync_audio() -> void:
 	sync_intro_music()
-	if is_instance_valid(audio): audio.configure(settings.get_value("app","sound",true),application_active,screen == "play",modal,screen == "region",screen == "title")
+	if not is_instance_valid(audio):return
+	var hunt_music := ""
+	var hunt_popup := false
+	if screen == "hunt" and is_instance_valid(hunt):
+		hunt_music = "hunt_battle" if hunt.battle_music_started else "hunt_preparation"
+		hunt_popup = is_instance_valid(hunt.exit_popup)
+	audio.configure(settings.get_value("app","sound",true), application_active, screen == "play",
+		modal or hunt_popup, screen == "region", screen == "title", hunt_music)
 
 func toast(message: String, seconds: float = 3.0) -> void:
 	if is_instance_valid(toast_label): toast_label.text = message

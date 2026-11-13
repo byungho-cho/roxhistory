@@ -83,12 +83,16 @@ func run() -> void:
 	app.settings.set_value("app","sound",true);app.sync_audio();await create_timer(.1).timeout
 	audio.bgm.seek(audio.bgm.stream.get_length()-.12);await create_timer(.35).timeout
 	check(audio.bgm.playing and audio.bgm.get_playback_position()<audio.bgm.stream.get_length()*.5,"Music wraps its real playback boundary without stopping")
-	var title_position:float=audio.bgm.get_playback_position()
 	app.show_screen("title");await create_timer(.65).timeout
-	check(audio.bgm.playing and audio.bgm.get_playback_position()>title_position,"Title preserves the same advancing region BGM player")
+	var title_music: AudioStreamPlayer = audio.scene_music_players["title"]
+	check(not audio.bgm.playing and title_music.playing,"Title uses its own track and releases region music")
+	var title_position := title_music.get_playback_position()
+	app.sync_audio()
+	await create_timer(.1).timeout
+	check(title_music.get_playback_position() > title_position,"Title audio sync preserves position")
 	check(not audio.river.playing and not audio.wind.playing,"Title stops region-only ambience")
 	audio.configure(true,true,false,false,false);await create_timer(.65).timeout
-	check(not audio.bgm.playing and not audio.river.playing and not audio.wind.playing,"Leaving both menu screens fades music out and stops region ambience")
+	check(not audio.bgm.playing and not title_music.playing and not audio.river.playing and not audio.wind.playing,"Leaving both menu screens fades music out and stops region ambience")
 	check(JSON.stringify(app.model.state)==before_save,"Music and decoration never change game progress")
 	app.queue_free();await process_frame;await process_frame
 	var report:={"checks":checks,"failed":failed,"utc":Time.get_datetime_string_from_system(true),"scope":"Engine playback/lifecycle regression; user listening and device checks remain separate"}
