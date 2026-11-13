@@ -142,6 +142,7 @@ func _ready() -> void:
 	for model in ["meshy01/hero","residents/sturdy_male","residents/female"]:
 		var hunter := HybridCharacter.new()
 		hunter.model_path = "res://assets/characters/"+model+".glb"
+		hunter.female_hunt_palette = model == "residents/female"
 		hunter.render_size_factor = .5
 		actors.add_child(hunter)
 		hunter.set_enabled(true)

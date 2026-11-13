@@ -16,6 +16,8 @@ const LEVELS := {
 	"S25":-20.0,"S26":-10.0,"S27":-12.0,
 }
 
+const COMBAT_CUES := ["S12","S13","S14","S15","S16","S17","S18","S19","S20","S21","S22","S23","S24","S25","S26","S27"]
+
 var streams := {}
 var pool: Array[AudioStreamPlayer] = []
 var priorities: Array[int] = []
@@ -30,7 +32,6 @@ func _ready() -> void:
 	for index in 6:
 		var player := AudioStreamPlayer.new()
 		add_child(player)
-		player.bus = &"SFX"
 		pool.append(player)
 		priorities.append(0)
 
@@ -73,6 +74,7 @@ func cue(id: String, priority := 1) -> void:
 	priorities[slot] = priority
 	var player := pool[slot]
 	player.stop()
+	player.bus = &"Combat" if id in COMBAT_CUES else &"SFX"
 	player.stream = streams[id]
 	player.volume_db = LEVELS[id]
 	player.play()

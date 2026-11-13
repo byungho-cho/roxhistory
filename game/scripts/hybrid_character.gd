@@ -313,6 +313,8 @@ func stride_world_length() -> float:
 	# Stylized isometric gait: don't speed up the cadence with camera foreshortening.
 	return 104.0
 
+var female_hunt_palette := false
+
 func build_villager() -> void:
 	var imported=load(model_path).instantiate()
 	pivot.add_child(imported)
@@ -330,8 +332,15 @@ func build_villager() -> void:
 		mesh_count+=mesh.mesh.get_surface_count()
 		if mesh.skin:skinned_limbs.append(mesh)
 		for surface in mesh.mesh.get_surface_count():
-			var mat:StandardMaterial3D=mesh.get_active_material(surface).duplicate()
+			var source_material: StandardMaterial3D = mesh.get_active_material(surface)
+			var mat: StandardMaterial3D = source_material.duplicate()
 			mat.roughness=.92;mat.metallic_specular=.12;mat.normal_scale=.22
+			if female_hunt_palette:
+				match source_material.resource_name:
+					"Warm brown hair": mat.albedo_color = Color("3b3437")
+					"Muted moss hide": mat.albedo_color = Color("e44d28")
+					"Warm pale hide": mat.albedo_color = Color("2daba6")
+					"Material_0": mat.albedo_color = Color("fff4e9")
 			mesh.set_surface_override_material(surface,mat)
 	tool_3d=Node3D.new();tool_3d.name="StoneAxe";attachments.handR.add_child(tool_3d)
 	cone(tool_3d,Vector3(0,0,.19),.025,.03,.52,material("775039")).rotation.x=PI/2

@@ -912,12 +912,8 @@ func continue_to_village() -> void:
 	else:await enter_game(false,true)
 
 func toggle_sound() -> void:
-	settings.set_value("app","sound",not settings.get_value("app","sound",true))
-	if settings.save(prefs_path)!=OK:show_error("소리 설정을 저장하지 못했습니다.")
-	else:
-		sync_audio()
-		update_title_sound()
-		toast("소리 켜짐" if settings.get_value("app","sound",true) else "소리 꺼짐")
+	if set_audio_preference("sound", not settings.get_value("app", "sound", true)):
+		toast("소리 켜짐" if settings.get_value("app", "sound", true) else "소리 꺼짐")
 
 func install_speaker_icon(control: DemoButton) -> void:
 	var icon := AtlasTexture.new()
@@ -928,14 +924,18 @@ func install_speaker_icon(control: DemoButton) -> void:
 
 func update_title_sound() -> void:
 	var enabled: bool = settings.get_value("app","sound",true)
-	var source := preload("res://assets/ui/title-hanbando/speaker-on-v2.png") if enabled else preload("res://assets/ui/title-hanbando/speaker-off-v2.png")
 	for control in [title_sound,intro_sound]:
-		if not is_instance_valid(control):continue
-		var image: TextureRect = control.get_meta("speaker_icon")
-		image.texture.atlas = source
-		control.set_meta("semantic_text","소리 끄기" if enabled else "소리 켜기")
+		if is_instance_valid(control):update_speaker_icon(control, enabled)
 	if is_instance_valid(intro_music_choice):
 		intro_music_choice.text = "음원 %d" % (intro_track_index()+1)
+
+
+func update_speaker_icon(control: DemoButton, enabled: bool) -> void:
+	var source := preload("res://assets/ui/title-hanbando/speaker-on-v2.png") if enabled else preload("res://assets/ui/title-hanbando/speaker-off-v2.png")
+	var icon: TextureRect = control.get_meta("speaker_icon")
+	icon.texture.atlas = source
+	icon.modulate.a = .45 if control.disabled else 1.0
+	control.set_meta("semantic_text","소리 끄기" if enabled else "소리 켜기")
 
 
 func intro_track_index() -> int:
@@ -1244,6 +1244,7 @@ func switch_map_scene()->void:
 		stage.move_child(world_map,0)
 	chrome.clear_effects()
 	world_map_open=not world_map_open
+	sync_audio()
 	audio.cue("map_open" if world_map_open else "map_close")
 	gestures.clear()
 	world_map.activate(world_map_open)
@@ -1761,28 +1762,13 @@ func quest_details() -> void:
 func pause_game() -> void:
 	cancel_task()
 	if is_instance_valid(world):model.save_position(world.player.position)
-	var scroll := show_modal("설정","",[
+	show_modal("설정","진행은 기기에 자동 저장됩니다.",[
 		{"text":"계속하기","primary":true,"action":close_modal},
 		{"text":"시작 화면","action":func(): close_modal(); show_screen("title")},
+		{"text":"사운드 설정","action":show_sound_settings},
 		{"text":"안내","action":show_about},
 		{"text":"알림 설정","action":show_notification_settings},
 		{"text":"개발 설정","action":show_development_settings}])
-	var list := VBoxContainer.new()
-	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	list.add_theme_constant_override("separation", 10)
-	scroll.add_child(list)
-	var note := label(list, "진행은 기기에 자동 저장됩니다.", 18)
-	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	for key: String in ["bgm", "sfx"]:
-		var row := HBoxContainer.new()
-		list.add_child(row)
-		var caption := label(row, "BGM" if key == "bgm" else "효과음", 21)
-		caption.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		var toggle := button(row, audio_setting_label(key), func(): pass, false, "", "")
-		toggle.custom_minimum_size = Vector2(100, 48)
-		toggle.pressed.connect(func(): toggle_audio_setting(key, toggle))
-	if not settings.get_value("app", "sound", true):
-		label(list, "전체 소리가 꺼져 있습니다.", 17)
 	enable_settings_backdrop()
 
 func show_development_settings()->void:
@@ -1881,18 +1867,21 @@ func confirm_development_reset()->void:
 		{"text":"완전 초기화","action":full_reset}],false,true,false,Vector2.ZERO,true)
 	enable_settings_backdrop()
 
-func audio_setting_label(key: String) -> String:
-	return "ON" if settings.get_value("app", key, true) else "OFF"
+func show_sound_settings() -> void:
+	SoundSettings.open(self)
+	enable_settings_backdrop()
 
-func toggle_audio_setting(key: String, toggle: DemoButton) -> void:
-	var previous: bool = settings.get_value("app", key, true)
-	settings.set_value("app", key, not previous)
+func set_audio_preference(key: String, value: Variant) -> bool:
+	var previous: Variant = settings.get_value("app", key, null)
+	settings.set_value("app", key, value)
 	if settings.save(prefs_path) != OK:
-		settings.set_value("app", key, previous)
+		if previous == null:settings.erase_section_key("app", key)
+		else:settings.set_value("app", key, previous)
 		show_error("소리 설정을 저장하지 못했습니다.")
-		return
+		return false
 	sync_audio()
-	toggle.text = audio_setting_label(key)
+	update_title_sound()
+	return true
 
 func show_about() -> void:
 	var c := DemoConfig.get_data()
@@ -2007,11 +1996,7 @@ func retire_modal(closing: Control) -> void:
 
 func sync_audio() -> void:
 	var sound: bool = settings.get_value("app", "sound", true)
-	var bgm: bool = settings.get_value("app", "bgm", true)
-	var sfx: bool = settings.get_value("app", "sfx", true)
-	AudioServer.set_bus_mute(AudioServer.get_bus_index("BGM"), not (sound and bgm))
-	AudioServer.set_bus_mute(AudioServer.get_bus_index("SFX"), not (sound and sfx))
-	AudioServer.set_bus_mute(AudioServer.get_bus_index("Environment"), not (sound and sfx))
+	SoundSettings.apply(settings)
 	sync_intro_music()
 	if not is_instance_valid(audio):return
 	var hunt_music := ""
@@ -2020,7 +2005,7 @@ func sync_audio() -> void:
 		hunt_music = "hunt_battle" if hunt.battle_music_started else "hunt_preparation"
 		hunt_popup = is_instance_valid(hunt.exit_popup)
 	audio.configure(sound, application_active, screen == "play",
-		modal or hunt_popup, screen == "region", screen == "title", hunt_music)
+		modal or hunt_popup, screen == "region", screen == "title", hunt_music, world_map_open)
 
 func toast(message: String, seconds: float = 3.0) -> void:
 	if is_instance_valid(toast_label): toast_label.text = message
