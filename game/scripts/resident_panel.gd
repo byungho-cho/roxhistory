@@ -36,6 +36,14 @@ func art(parent:Control,texture:Texture2D,dimensions:Vector2)->TextureRect:
 func content(title:String,subtitle:String)->VBoxContainer:
 	var scroll:ScrollContainer=app.show_modal(title,"",[],false,true,false,Vector2(560,664))
 	scroll.name="ResidentAssignmentScroll"
+	if title in ["주민 배정","미배정 주민 선택"]:
+		var panel := scroll.get_parent().get_parent() as FigmaPanelContainer
+		var paper := AtlasTexture.new()
+		paper.atlas = preload("res://assets/ui/d0009/parchment-panel-9slice.png")
+		paper.region = Rect2(43,55,1140,1180)
+		paper.filter_clip = true
+		panel.paper = paper
+		panel.queue_redraw()
 	var list:=VBoxContainer.new();list.name="AssignmentContent";list.size_flags_horizontal=Control.SIZE_EXPAND_FILL;list.add_theme_constant_override("separation",14);scroll.add_child(list)
 	var text:Label=app.label(list,subtitle,17);text.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
 	return list
@@ -72,35 +80,76 @@ func waiting(jobs: ResidentJobs) -> Array[String]:
 		if jobs.entry(id).job == "idle":ids.append(id)
 	return ids
 
+func portrait_for(id: String) -> Texture2D:
+	var index := ResidentAdmission.ids(app.model.state).find(id)
+	return preload("res://assets/ui/d0009/resident-female-portrait.png") if index % 2 == 0 else preload("res://assets/ui/d0009/resident-male-portrait.png")
+
+func assignment_icon(job: String) -> Texture2D:
+	match job:
+		"wood": return preload("res://assets/ui/d0009/resource-wood.png")
+		"stone": return preload("res://assets/ui/d0009/resource-stone.png")
+		"farmer": return preload("res://assets/ui/d0009/resource-grain.png")
+	return icon(job)
+
+func assignment_slot(parent: Control, callback: Callable, texture: Texture2D, rect: Rect2, caption := "") -> void:
+	var button: DemoButton = app.button(parent,"",callback)
+	button.custom_minimum_size = Vector2(76,76)
+	var skin := StyleBoxFlat.new()
+	skin.bg_color = Color("e8d4ac")
+	skin.border_color = Color("ba9865")
+	skin.set_border_width_all(1)
+	skin.set_corner_radius_all(5)
+	button.add_theme_stylebox_override("normal",skin)
+	var picture: TextureRect = app.picture(button,texture,rect)
+	picture.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	if not caption.is_empty():
+		var name_label: Label = app.label(button,caption,13)
+		name_label.position = Vector2(0,54)
+		name_label.size = Vector2(76,18)
+		name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+
 func show_summary(_page:int=0)->void:
 	if app.screen!="play" or not app.application_active or app.world_map_open:return
 	var jobs := ResidentJobs.new(app.model)
-	var idle := waiting(jobs)
-	var list := content("전체 주민 배분","배정 %d명  ·  미배정 %d명"%[app.model.resident_count()-idle.size(),idle.size()])
+	var ids := ResidentAdmission.ids(app.model.state)
+	var list := content("주민 배정","%d/%d"%[ids.size()-waiting(jobs).size(),ids.size()])
+	var header: HBoxContainer = list.get_parent().get_parent().get_node("ModalHeader")
+	var heading: Label = header.get_child(0)
+	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	heading.remove_theme_font_override("font")
+	var count: Label = list.get_child(0)
+	count.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	for job: String in ["wood","stone","farmer","guard"]:
-		var heading := card(list)
-		art(heading,icon(job),Vector2(42,42))
-		var title: Label = app.label(heading,job_name(job),20)
-		title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		action(heading,"자동 배치",auto_assign.bind(job))
+		var row := card(list)
+		var identity := Control.new()
+		identity.custom_minimum_size = Vector2(94,84)
+		row.add_child(identity)
+		var resource: TextureRect = app.picture(identity,assignment_icon(job),Rect2(22,0,50,50))
+		resource.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		app.picture(identity,preload("res://assets/ui/d0009/job-name-brush.png"),Rect2(4,35,86,21))
+		var title: Label = app.label(identity,job_name(job),14,Color.WHITE)
+		title.position = Vector2(0,35)
+		title.size = Vector2(94,21)
+		title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		var auto := action(identity,"자동 배치",auto_assign.bind(job))
+		auto.custom_minimum_size = Vector2.ZERO
+		auto.position = Vector2(8,56)
+		auto.size = Vector2(78,28)
+		auto.add_theme_font_size_override("font_size",13)
 		var slots := GridContainer.new()
-		slots.columns = 4 if app.w>=640 else 3
+		slots.columns = 5 if app.w>=640 else 4
 		slots.add_theme_constant_override("h_separation",6)
 		slots.add_theme_constant_override("v_separation",6)
-		list.add_child(slots)
-		for id in ResidentAdmission.ids(app.model.state):
-			if jobs.entry(id).job != job:continue
-			var portrait := action(slots,"",show_assignment.bind(ResidentAdmission.ids(app.model.state).find(id)))
-			art(portrait,icon("idle"),Vector2(28,28)).position=Vector2(4,7)
-			var caption: Label = app.label(portrait,display_name(id),14)
-			caption.position=Vector2(32,10)
+		row.add_child(slots)
+		for index in ids.size():
+			var id: String = ids[index]
+			if jobs.entry(id).job == job:
+				assignment_slot(slots,show_assignment.bind(index),portrait_for(id),Rect2(12,3,52,52),display_name(id))
 		for target in open_slots(job,jobs):
-			action(slots,"+",show_waiting.bind(job,target))
+			assignment_slot(slots,show_waiting.bind(job,target),preload("res://assets/ui/d0009/slot-add.png"),Rect2(28,28,20,20))
 		var locked := unlock_hint(job)
 		if not locked.is_empty():
-			var slot := action(slots,"잠김",func(): app.toast(locked))
-			slot.modulate=Color(.74,.70,.64)
-			app.label(list,locked,14)
+			assignment_slot(slots,func(): app.toast(locked),preload("res://assets/ui/v0158/lock.png"),Rect2(24,20,28,32))
 
 func unlock_hint(job: String) -> String:
 	if job == "farmer":
@@ -122,14 +171,13 @@ func show_waiting(job: String, target: String) -> void:
 	var jobs := ResidentJobs.new(app.model)
 	if not open_slots(job,jobs).has(target):app.toast("열린 작업 자리가 없어요.");return
 	var ids := waiting(jobs)
-	var list := content("일 선택",job_name(job)+" · 미배정 주민 선택")
+	var list := content("미배정 주민 선택",job_name(job))
 	if ids.is_empty():app.label(list,"미배정 주민이 없어요.",18)
+	var slots := GridContainer.new()
+	slots.columns = 5 if app.w>=640 else 4
+	list.add_child(slots)
 	for id in ids:
-		var row := card(list)
-		art(row,icon("idle"),Vector2(40,40))
-		var name_label: Label = app.label(row,display_name(id),18)
-		name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		action(row,"배정",assign_waiting.bind(job,target,id))
+		assignment_slot(slots,assign_waiting.bind(job,target,id),portrait_for(id),Rect2(12,3,52,52),display_name(id))
 	action(list,"돌아가기",show_summary)
 
 func assign_waiting(job: String, target: String, id: String) -> void:

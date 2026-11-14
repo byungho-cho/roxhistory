@@ -3,13 +3,13 @@ extends Control
 const STAGES_PER_CHAPTER := 6
 const CHAPTERS := ["초원", "숲"]
 const TOTAL_STAGES := STAGES_PER_CHAPTER * 2
-const TITLE := preload("res://assets/figma-latest/stone-title-surface.png")
-const FIELD := preload("res://assets/ui/hunting-formation/clearing.png")
+const TITLE := preload("res://assets/ui/d0009/hunt_title_stone_crest.png")
+const FIELD := preload("res://assets/ui/d0009/hunt_grassland_bg.png")
 const LOCK := preload("res://assets/ui/v0158/lock.png")
-const BOSS_ICON := preload("res://assets/ui/hunting-formation/boar-boss.svg")
+const BOSS_ICON := preload("res://assets/ui/d0009/hunt_boss_boar_crest.png")
 var app: Node
 var page: Control
-var rules_overlay: Control
+
 var chapter := 0
 
 func _ready() -> void:
@@ -32,25 +32,28 @@ func draw_page() -> void:
 	add_child(page)
 	var bg: TextureRect = app.picture(page, FIELD, Rect2(Vector2.ZERO, size))
 	bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	bg.modulate = Color(.82, .88, .73)
-	var width := minf(size.x - 2 * app.safe.x, 650)
-	var center := size * .5
-	var plaque := Panel.new()
-	plaque.position = center + Vector2(-140,-154)
-	plaque.size = Vector2(280,72)
-	plaque.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var stone := StyleBoxTexture.new()
-	stone.texture = TITLE
-	stone.modulate_color = Color("777266")
-	stone.set_content_margin_all(8)
-	plaque.add_theme_stylebox_override("panel", stone)
-	page.add_child(plaque)
-	title(page, "사냥터 선택", Rect2(center.x - 140, center.y - 154, 280, 72), 30)
-	action(page, "뒤로", Rect2(app.safe, Vector2(70, 44)), exit_selection)
-	action(page, "규칙", Rect2(size.x - app.safe.x - 72, app.safe.y, 72, 44), open_rules)
-	title(page, "%d장 · %s" % [chapter + 1, CHAPTERS[chapter]], Rect2(center.x - 96, center.y - 68, 192, 40), 22)
-	var prev := action(page, "◀", Rect2(center.x - 146, center.y - 68, 44, 40), change_chapter.bind(-1))
-	var next := action(page, "▶", Rect2(center.x + 102, center.y - 68, 44, 40), change_chapter.bind(1))
+	var width := minf(size.x - 2 * app.safe.x, 525)
+	var center := Vector2(size.x * .5, size.y * .68)
+	var crest := Rect2(size.x * .5 - 125, app.safe.y - 9, 250, 83)
+	app.picture(page, TITLE, crest)
+	title(page, "사냥터 선택", Rect2(crest.position + Vector2(0,37),Vector2(250,42)), 30)
+	var back := action(page, "", Rect2(app.safe, Vector2(46,46)), exit_selection)
+	for state in ["normal","hover","pressed","focus"]:
+		back.add_theme_stylebox_override(state,StyleBoxEmpty.new())
+	app.picture(back,preload("res://assets/ui/d0009/hunt_common_back.png"),Rect2(0,0,46,46))
+	action(page, "규칙", Rect2(size.x - app.safe.x - 84, app.safe.y, 84, 38), open_rules)
+	var chapter_bar := Panel.new()
+	chapter_bar.position = center + Vector2(-132,-95)
+	chapter_bar.size = Vector2(264,44)
+	chapter_bar.add_theme_stylebox_override("panel",DemoArt.button_style(false))
+	page.add_child(chapter_bar)
+	chapter_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	title(page, "%d장 · %s" % [chapter + 1, CHAPTERS[chapter]], Rect2(center.x - 96, center.y - 95, 192, 44), 22)
+	var prev := action(page, "◀", Rect2(center.x - 128, center.y - 95, 44, 44), change_chapter.bind(-1))
+	var next := action(page, "▶", Rect2(center.x + 84, center.y - 95, 44, 44), change_chapter.bind(1))
+	for arrow in [prev,next]:
+		for state in ["normal","hover","pressed","disabled","focus"]:
+			arrow.add_theme_stylebox_override(state,StyleBoxEmpty.new())
 	prev.disabled = chapter == 0
 	next.disabled = chapter + 1 >= CHAPTERS.size()
 	var step := width / STAGES_PER_CHAPTER
@@ -62,26 +65,40 @@ func draw_page() -> void:
 		var caption := "보스" if boss else str(index + 1)
 		if done:
 			caption += " ✓"
-		var rect := Rect2(center.x - width * .5 + step * index + 3, center.y - 12, step - 6, 62)
+		var diameter := minf(step - 6,62)
+		var rect := Rect2(center.x - width * .5 + step * (index + .5) - diameter * .5, center.y - diameter * .5, diameter, diameter)
 		var tile := action(page, caption, rect, choose.bind(stage_id))
-		var fill := Color("9b3028") if boss and not done else Color("575c58") if done or not available else Color("236db3")
+		var fill := Color("9b3028") if boss and not done else Color("575c58") if done else Color("674a30") if not available else Color("236db3")
 		var border := Color("e2ad49") if boss or stage_id == app.hunt_stage else Color("c2d5bc")
 		for state in ["normal", "hover", "pressed", "disabled"]:
 			var style := StyleBoxFlat.new()
 			style.bg_color = fill.lightened(.13) if state == "hover" else fill
 			style.border_color = border
 			style.set_border_width_all(3 if stage_id == app.hunt_stage else 2)
-			style.set_corner_radius_all(8)
+			style.set_corner_radius_all(32)
 			tile.add_theme_stylebox_override(state, style)
 		tile.disabled = not available
 		if boss:
-			tile.icon = BOSS_ICON
-			tile.expand_icon = true
-			tile.add_theme_constant_override("icon_max_width", 24)
+			tile.position -= Vector2(diameter * .35,diameter * .65)
+			tile.size = Vector2.ONE * diameter * 1.7
+			tile.text = ""
+			for state in ["normal","hover","pressed","disabled","focus"]:
+				tile.add_theme_stylebox_override(state,StyleBoxEmpty.new())
+			var boss_art: TextureRect = app.picture(tile,BOSS_ICON,Rect2(Vector2.ZERO,tile.size))
+			if done:boss_art.modulate = Color(.64,.64,.64)
+			title(tile,caption,Rect2(0,tile.size.y*.51,tile.size.x,26),17)
 		if not available:
-			var lock: TextureRect = app.picture(tile, LOCK, Rect2(rect.size.x - 21, 4, 17, 19))
+			var lock: TextureRect = app.picture(tile, LOCK, Rect2(tile.size.x * .5 - 7, tile.size.y * (.77 if boss else .71), 14, 15))
 			lock.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var prepare := action(page, "사냥 준비", Rect2(center.x - 88, center.y + 88, 176, 52), app.prepare_selected_hunt, true)
+	var prepare := action(page, "사냥 준비", Rect2(center.x - 114, center.y + 60, 228, 54), app.prepare_selected_hunt, true)
+	for state in ["normal","hover","pressed","disabled","focus"]:
+		prepare.add_theme_stylebox_override(state,StyleBoxEmpty.new())
+	for key in ["font_color","font_hover_color","font_pressed_color","font_disabled_color"]:
+		prepare.add_theme_color_override(key,Color("47240e"))
+	var skin := FigmaSlice.new("gold",42)
+	skin.show_behind_parent = true
+	prepare.add_child(skin)
+	skin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	prepare.disabled = app.hunt_stage / STAGES_PER_CHAPTER != chapter
 
 func choose(stage_id: int) -> void:

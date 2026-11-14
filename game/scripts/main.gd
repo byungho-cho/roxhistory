@@ -1931,7 +1931,7 @@ func show_modal(title: String, body: String, actions: Array, compact: bool = fal
 	var header:=HBoxContainer.new();header.name="ModalHeader";header.add_theme_constant_override("separation",10);v.add_child(header)
 	var modal_title:=label(header,title,20 if brief else 28,Color("47240e"));modal_title.add_theme_font_override("font",FigmaArt.TITLE);modal_title.size_flags_horizontal=Control.SIZE_EXPAND_FILL;modal_title.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
 	HudButtons.create(header,false,dismiss,"ModalClose")
-	var scroll:ScrollContainer = DevelopmentSettingsScroll.new() if title in ["개발 설정","전체 주민 배분","일 선택"] or title.ends_with(" · 주민 배정") else ScrollContainer.new()
+	var scroll:ScrollContainer = DevelopmentSettingsScroll.new() if title in ["개발 설정","전체 주민 배분","일 선택","주민 배정","미배정 주민 선택"] or title.ends_with(" · 주민 배정") else ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	v.add_child(scroll)
