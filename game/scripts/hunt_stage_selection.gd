@@ -47,7 +47,7 @@ func draw_page() -> void:
 	var center := size * Vector2(.5,.687)
 	var crest := Rect2(size.x * .5 - 80 * unit,maxf(5 * unit,app.safe.y - 9),160 * unit,56 * unit)
 	app.picture(page, TITLE, crest)
-	title(page, "사냥터 선택", Rect2(crest.position + Vector2(0,22)*unit,Vector2(160,28)*unit), roundi(20*unit))
+	title(page, "사냥터 선택", Rect2(crest.position + Vector2(12,21)*unit,Vector2(136,28)*unit), roundi(17*unit))
 	var back := action(page, "", Rect2(Vector2(maxf(app.safe.x,19*unit),maxf(app.safe.y,10*unit)),Vector2.ONE*maxf(36,28*unit)), exit_selection)
 	for state in ["normal","hover","pressed","focus"]:
 		back.add_theme_stylebox_override(state,StyleBoxEmpty.new())
@@ -123,8 +123,8 @@ func draw_page() -> void:
 		entry_played = true
 		entry_tween = create_tween().set_parallel(true).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 		animate_entry(back,Vector2(-14,0),0.0)
-		animate_entry(rules,Vector2(14,0),0.05)
-		animate_entry(footer,Vector2(0,20),0.10)
+		animate_entry(rules,Vector2(14,0),0.075)
+		animate_entry(footer,Vector2(0,20),0.15)
 
 func button_art(button: DemoButton, texture: Texture2D) -> void:
 	for state in ["normal","hover","pressed","disabled","focus"]:
@@ -144,8 +144,8 @@ func animate_entry(node: Control, offset: Vector2, delay: float) -> void:
 	entry_positions[node] = node.position
 	node.position += offset
 	node.modulate.a = 0.0
-	entry_tween.tween_property(node,"position",entry_positions[node],.22).set_delay(delay)
-	entry_tween.tween_property(node,"modulate:a",1.0,.22).set_delay(delay)
+	entry_tween.tween_property(node,"position",entry_positions[node],.33).set_delay(delay)
+	entry_tween.tween_property(node,"modulate:a",1.0,.33).set_delay(delay)
 
 func finish_entry() -> void:
 	if entry_positions.is_empty(): return
