@@ -59,6 +59,9 @@ func _ready() -> void:
 	background.position=Vector2(-1200,-675)
 	background.scale = Vector2(4800.0/terrain.get_width(),2700.0/terrain.get_height())
 	background.texture_filter=CanvasItem.TEXTURE_FILTER_LINEAR
+	var terrain_edge := ShaderMaterial.new()
+	terrain_edge.shader = preload("res://shaders/village_terrain_edge.gdshader")
+	background.material = terrain_edge
 	background.z_index = -20
 	add_child(background)
 
@@ -588,7 +591,7 @@ func refresh_boundary()->void:
 
 func draw_boundary_fog()->void:
 	var clear:=VillageBounds.rect_for_level(boundary_level)
-	var outer:=VillageBounds.WORLD_RECT.grow(2000)
+	var outer:=VillageBounds.WORLD_RECT.grow(12000)
 	# Draw only the area outside the playable rectangle, without shading clear ground.
 	boundary_fog.draw_rect(Rect2(outer.position,Vector2(outer.size.x,clear.position.y-outer.position.y)),Color.WHITE)
 	boundary_fog.draw_rect(Rect2(Vector2(outer.position.x,clear.end.y),Vector2(outer.size.x,outer.end.y-clear.end.y)),Color.WHITE)
