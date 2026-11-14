@@ -202,9 +202,9 @@ func refresh_assignment_panel() -> void:
 		var identity := Control.new()
 		identity.custom_minimum_size = Vector2(76,76)
 		row.add_child(identity)
-		var resource: TextureRect = app.picture(identity,assignment_icon(job),Rect2(13,7,50,44))
+		var resource: TextureRect = app.picture(identity,assignment_icon(job),Rect2((identity.custom_minimum_size.x-50)*.5,7,50,44))
 		resource.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		app.picture(identity,preload("res://assets/ui/d0009/job-name-brush.png"),Rect2(2,40,72,17))
+		app.picture(identity,preload("res://assets/ui/d0009/job-name-brush.png"),Rect2(2,36,72,25.5))
 		var title: Label = app.label(identity,job_name(job),13,Color.WHITE)
 		title.position = Vector2(0,39)
 		title.size = Vector2(76,18)
@@ -212,7 +212,7 @@ func refresh_assignment_panel() -> void:
 		title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		var auto := textured_action(identity,"자동 배치",auto_assign.bind(job,key),preload("res://assets/ui/d0010/auto-assign-plate.png"))
 		auto.custom_minimum_size = Vector2.ZERO
-		auto.position = Vector2(8,57)
+		auto.position = Vector2(8,55)
 		auto.size = Vector2(60,20)
 		auto.add_theme_font_size_override("font_size",9)
 		for color_key in ["font_color","font_hover_color","font_pressed_color","font_disabled_color"]:
