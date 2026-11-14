@@ -339,7 +339,7 @@ func show_waiting(job: String, target: String, occupant := "") -> void:
 	var replace: DemoButton
 	if not occupant.is_empty():
 		var actions := HBoxContainer.new()
-		actions.alignment = BoxContainer.ALIGNMENT_CENTER
+		actions.alignment = BoxContainer.ALIGNMENT_END
 		actions.add_theme_constant_override("separation",12)
 		list.add_child(actions)
 		replace = action(actions,"교체",func(): select_waiting(job,target,str(selected[0]),occupant))
@@ -359,6 +359,7 @@ func show_waiting(job: String, target: String, occupant := "") -> void:
 		for color_key in ["font_color","font_hover_color","font_pressed_color","font_disabled_color"]:
 			release.add_theme_color_override(color_key,Color("f3f5f6"))
 		release.custom_minimum_size = Vector2(120,38)
+		actions.move_child(release,0)
 	for id in ids:
 		var callback := select_waiting.bind(job,target,id,occupant)
 		if is_instance_valid(replace):
