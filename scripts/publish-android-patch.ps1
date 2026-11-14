@@ -5,32 +5,44 @@ param(
     [Parameter(Mandatory)][string]$OutputDirectory,
     [string]$GodotPath = $env:ROX_GODOT_EXE,
     [string]$JavaHome = $env:JAVA_HOME,
-    [switch]$Publish
+    [switch]$Publish,
+    [switch]$InitializeChannel
 )
 $ErrorActionPreference = 'Stop'
 $repository = 'byungho-cho/roxhistory'
-$tag = 'android-patches-0.2.91'
-$base = '0.2.91'
-$baseCommit = '9c97f052b583c255c4512bc122919c625bef9551'
-$runtime = 'godot-4.5.1-android-pck-2'
-if ((Get-FileHash $ReferencePack).Hash -ne '2A87A1D547551F76C858D2F70030DBA7C0F28C794C0BE3B41FF6CDAC67490644') { throw 'Wrong reference PCK for this runtime.' }
+$bootstrap = Get-Content -Raw (Join-Path $GameRepo 'game/patch_test/bootstrap.gd')
+$base = [regex]::Match($bootstrap,'const BASE_VERSION := "([0-9.]+)"').Groups[1].Value
+$baseCommit = [regex]::Match($bootstrap,'const BASE_COMMIT := "([0-9a-f]{40})"').Groups[1].Value
+$runtime = [regex]::Match($bootstrap,'const RUNTIME := "([^"]+)"').Groups[1].Value
+$tag = "android-patches-$base"
+$referenceHashes = @{
+    '0.2.91' = '2A87A1D547551F76C858D2F70030DBA7C0F28C794C0BE3B41FF6CDAC67490644'
+    '0.2.174' = 'DE8EE37DC8864F201C0B87876BCE599EE694B0C7F3BEED6D2C8CCE459FBD202F'
+}
+if (!$baseCommit -or !$runtime -or (Get-FileHash $ReferencePack).Hash -ne $referenceHashes[$base]) { throw 'Wrong reference PCK for this runtime.' }
 if (& git -C $GameRepo status --porcelain -- game) { throw 'Commit the game resources before building a patch.' }
 $commit = & git -C $GameRepo rev-parse HEAD
 if ($LASTEXITCODE -ne 0) { throw 'Cannot identify source commit.' }
 $project = Get-Content -Raw (Join-Path $GameRepo 'game/project.godot')
 $version = [regex]::Match($project,'(?m)^config/version="([0-9]+\.[0-9]+\.[0-9]+)"').Groups[1].Value
-if (-not $version -or [version]$version -le [version]$base) { throw 'Patch version must be newer than the baseline.' }
+if (-not $version -or ($InitializeChannel -and $version -ne $base) -or (-not $InitializeChannel -and [version]$version -le [version]$base)) { throw 'Patch version must be newer than the baseline.' }
 $directory = (New-Item -ItemType Directory -Path $OutputDirectory -Force).FullName
 $name = "Roxhistory_${base}_to_${version}.pck"
 $pack = Join-Path $directory $name
-& $GodotPath --headless --path (Join-Path $GameRepo 'game') --export-patch Android $pack --patches (Resolve-Path $ReferencePack).Path *> (Join-Path $directory "export-$version.log")
-if ($LASTEXITCODE -ne 0) { throw 'PCK export failed.' }
-$sha = (Get-FileHash $pack).Hash.ToLowerInvariant()
-$size = (Get-Item $pack).Length
 $payloadPath = Join-Path $directory "manifest-$version.json"
-[ordered]@{ base=$base; base_commit=$baseCommit; runtime=$runtime; version=$version; commit=$commit; file=$name; size=$size; sha256=$sha } |
-    ConvertTo-Json -Compress | Set-Content -LiteralPath $payloadPath -Encoding utf8NoBOM -NoNewline
-
+$payload = [ordered]@{ base=$base; base_commit=$baseCommit; runtime=$runtime; version=$version; commit=$commit }
+if ($InitializeChannel) {
+    $payload.patch_available = $false
+} else {
+    & $GodotPath --headless --path (Join-Path $GameRepo 'game') --export-patch Android $pack --patches (Resolve-Path $ReferencePack).Path *> (Join-Path $directory "export-$version.log")
+    if ($LASTEXITCODE -ne 0) { throw 'PCK export failed.' }
+    $sha = (Get-FileHash $pack).Hash.ToLowerInvariant()
+    $size = (Get-Item $pack).Length
+    $payload.file = $name
+    $payload.size = $size
+    $payload.sha256 = $sha
+}
+$payload | ConvertTo-Json -Compress | Set-Content -LiteralPath $payloadPath -Encoding utf8NoBOM -NoNewline
 $settings = Get-Content -Raw (Join-Path (Split-Path $GodotPath) 'editor_data/editor_settings-4.5.tres')
 function Read-Setting([string]$name) {
     $match = [regex]::Match($settings, '(?m)^' + [regex]::Escape($name) + ' = (".*")\r?$')
@@ -70,6 +82,7 @@ if ($LASTEXITCODE -ne 0) {
     if ($LASTEXITCODE -ne 0) { throw 'Could not read patch release.' }
 }
 $release = $remote | ConvertFrom-Json
+if (-not $InitializeChannel) {
 $old = @($release.assets | Where-Object name -eq $name)
 if (-not $old.Count) {
     & gh release upload $tag $pack -R $repository
@@ -80,6 +93,7 @@ if ($LASTEXITCODE -ne 0) { throw 'Could not verify patch release.' }
 $release = $remote | ConvertFrom-Json
 $asset = @($release.assets | Where-Object name -eq $name)
 if ($asset.Count -ne 1 -or $asset[0].digest -ne "sha256:$sha" -or $asset[0].size -ne $size) { throw 'Remote patch hash mismatch.' }
+} elseif ($release.assets | Where-Object name -eq "latest.json") { throw "Channel already initialized." }
 & gh release upload $tag $index --clobber -R $repository
 if ($LASTEXITCODE -ne 0) { throw 'Signed index upload failed.' }
 $remote = & gh release view $tag -R $repository --json assets
