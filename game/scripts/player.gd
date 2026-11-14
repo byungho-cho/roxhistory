@@ -11,7 +11,7 @@ const STRIDE := 104.0
 const MIN_ZOOM := 0.56 # Previous 0.8 minimum reduced by another 30%.
 const MAX_ZOOM := 1.6 # Maximum unchanged during the additional zoom-out review.
 const WORLD_SIZE := VillageBounds.WORLD_SIZE
-const OVERVIEW_PAN_MARGIN := Vector2(500,300)
+const OVERVIEW_PAN_MARGIN := Vector2(2500,1500)
 var direction := Vector2.ZERO
 var phase := 0.0
 var walk_weight := 0.0
@@ -51,7 +51,7 @@ func camera_bounds()->Rect2:
 	# independent camera travel over the cloud fringe without extending collisions.
 	var visible_size:=get_viewport_rect().size/camera.zoom
 	var margin := OVERVIEW_PAN_MARGIN*(1.0-smoothstep(MIN_ZOOM,.88,zoom_factor))
-	var size := WORLD_SIZE.max(visible_size)+margin*2.0
+	var size := WORLD_SIZE+margin.max(visible_size + Vector2.ONE * 32.0)*2.0
 	return Rect2(VillageBounds.WORLD_RECT.get_center()-size*.5,size)
 
 
