@@ -202,11 +202,11 @@ func refresh_assignment_panel() -> void:
 		var identity := Control.new()
 		identity.custom_minimum_size = Vector2(76,76)
 		row.add_child(identity)
-		var resource: TextureRect = app.picture(identity,assignment_icon(job),Rect2((identity.custom_minimum_size.x-50)*.5,7,50,44))
+		var resource: TextureRect = app.picture(identity,assignment_icon(job),Rect2(25,8,42,37))
 		resource.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		app.picture(identity,preload("res://assets/ui/d0009/job-name-brush.png"),Rect2(2,36,72,25.5))
+		app.picture(identity,preload("res://assets/ui/d0009/job-name-brush.png"),Rect2(10,34,72,25.5))
 		var title: Label = app.label(identity,job_name(job),13,Color.WHITE)
-		title.position = Vector2(0,39)
+		title.position = Vector2(8,36)
 		title.size = Vector2(76,18)
 		title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
