@@ -53,7 +53,10 @@ func camera_bounds()->Rect2:
 	# independent camera travel over the cloud fringe without extending collisions.
 	var visible_size:=get_viewport_rect().size/camera.zoom
 	var margin := OVERVIEW_PAN_MARGIN*(1.0-smoothstep(MIN_ZOOM,.88,zoom_factor))
-	var size := WORLD_SIZE+margin.max(visible_size + Vector2.ONE * 32.0)*2.0
+	var half_view := visible_size * .5
+	var travel := WORLD_SIZE * .5 + margin.max(visible_size + Vector2.ONE * 32.0) - half_view
+	travel.x *= .7
+	var size := (travel + half_view) * 2.0
 	return Rect2(VillageBounds.WORLD_RECT.get_center()-size*.5,size)
 
 
