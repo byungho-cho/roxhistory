@@ -4,7 +4,10 @@ extends Control
 var app:Node
 var counter_button:DemoButton
 var bubbles:Dictionary={}
-var waiting_overlay: Control
+var waiting_overlay: ColorRect
+var assignment_list: VBoxContainer
+var assignment_count: Label
+var assignment_building := ""
 const JOB_NAMES:={"idle":"미배정","wood":"나무꾼","stone":"석재꾼","farmer":"농부","guard":"보초"}
 func _init(owner_app:Node)->void:app=owner_app
 func _ready()->void:
@@ -47,9 +50,13 @@ func card(parent:Control)->HBoxContainer:
 func action(parent:Control,text:String,callback:Callable)->DemoButton:
 	var button:DemoButton=app.button(parent,text,callback)
 	for state in ["normal","hover","pressed","disabled","focus"]:button.add_theme_stylebox_override(state,StyleBoxEmpty.new())
-	var source:=preload("res://assets/ui/v0160/quest-selected-bg.png")
-	var crop:=AtlasTexture.new();crop.atlas=source;crop.region=Rect2(0,source.get_height()*.2039/1.4058,source.get_width(),source.get_height()/1.4058);crop.filter_clip=true
-	var image:=TextureRect.new();image.name="AssignmentActionSkin";image.texture=crop;image.expand_mode=TextureRect.EXPAND_IGNORE_SIZE;image.mouse_filter=Control.MOUSE_FILTER_IGNORE;image.show_behind_parent=true;button.add_child(image);image.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	var skin := FigmaSlice.new("gold",42)
+	skin.name = "AssignmentActionSkin"
+	skin.show_behind_parent = true
+	button.add_child(skin)
+	skin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	for color_key in ["font_color","font_hover_color","font_pressed_color","font_disabled_color"]:
+		button.add_theme_color_override(color_key,Color("47240e"))
 	button.custom_minimum_size=Vector2(80,44)
 	return button
 func open_slots(job: String, jobs: ResidentJobs) -> Array[String]:
@@ -82,7 +89,7 @@ func assignment_icon(job: String) -> Texture2D:
 		"farmer": return preload("res://assets/ui/d0009/resource-grain.png")
 	return icon(job)
 
-func assignment_slot(parent: Control, callback: Callable, texture: Texture2D, rect: Rect2, caption := "", locked := false) -> void:
+func assignment_slot(parent: Control, callback: Callable, texture: Texture2D, rect: Rect2, caption := "", locked := false) -> DemoButton:
 	var button: DemoButton = app.button(parent,"",callback)
 	button.custom_minimum_size = Vector2(70,70)
 	var skin := StyleBoxFlat.new()
@@ -99,12 +106,20 @@ func assignment_slot(parent: Control, callback: Callable, texture: Texture2D, re
 		name_label.size = Vector2(70,18)
 		name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 
+	return button
+
 func show_summary(_page:int=0)->void:
 	if app.screen!="play" or not app.application_active or app.world_map_open:return
-	var jobs := ResidentJobs.new(app.model)
+	open_assignment_panel()
+
+func open_assignment_panel(key := "") -> void:
 	close_waiting()
-	var ids := ResidentAdmission.ids(app.model.state)
-	var list := content("주민 배정","%d/%d"%[ids.size()-waiting(jobs).size(),ids.size()])
+	assignment_building = key
+	var heading_text := "주민 배정"
+	if not key.is_empty():
+		heading_text = BuildingWorkflow.building_name(key.get_slice(":",0)) + " · 주민 배정"
+	var list := content(heading_text,"")
+	assignment_list = list
 	var header: HBoxContainer = list.get_parent().get_parent().get_node("ModalHeader")
 	var heading: Label = header.get_child(0)
 	var spacer := Control.new()
@@ -114,6 +129,7 @@ func show_summary(_page:int=0)->void:
 	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	heading.remove_theme_font_override("font")
 	var count: Label = list.get_child(0)
+	assignment_count = count
 	count.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	var content_box := list.get_parent().get_parent() as VBoxContainer
 	list.add_theme_constant_override("separation",6)
@@ -121,7 +137,28 @@ func show_summary(_page:int=0)->void:
 	content_box.add_child(count)
 	content_box.move_child(count,1)
 	content_box.add_theme_constant_override("separation",4)
-	for job: String in ["wood","stone","farmer","guard"]:
+	refresh_assignment_panel()
+
+func refresh_assignment_panel() -> void:
+	if not is_instance_valid(assignment_list) or not is_instance_valid(app.overlay) or not app.overlay.is_ancestor_of(assignment_list):
+		return
+	close_waiting()
+	var list := assignment_list
+	for child in list.get_children():
+		list.remove_child(child)
+		child.queue_free()
+	var jobs := ResidentJobs.new(app.model)
+	var ids := ResidentAdmission.ids(app.model.state)
+	var key := assignment_building
+	var scoped := not key.is_empty()
+	var building: Dictionary = app.model.lookup_building(key) if scoped else {}
+	var scoped_job: String = ResidentJobs.BUILDING_JOBS.get(building.get("kind",""),"")
+	var assigned := jobs.assigned_ids(key) if scoped else []
+	var limit := jobs.gatherer_limit(scoped_job) if scoped_job in ["wood","stone"] else 1
+	assignment_count.text = "%d/%d" % ([assigned.size(),limit] if scoped else [ids.size()-waiting(jobs).size(),ids.size()])
+	var visible_jobs: Array = [scoped_job] if scoped else ["wood","stone","farmer","guard"]
+	for job: String in visible_jobs:
+		if job.is_empty(): continue
 		var row := HBoxContainer.new()
 		row.add_theme_constant_override("separation",12)
 		list.add_child(row)
@@ -135,7 +172,7 @@ func show_summary(_page:int=0)->void:
 		title.position = Vector2(0,31)
 		title.size = Vector2(94,21)
 		title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		var auto := action(identity,"자동 배치",auto_assign.bind(job))
+		var auto := action(identity,"자동 배치",auto_assign.bind(job,key))
 		auto.custom_minimum_size = Vector2.ZERO
 		auto.position = Vector2(8,51)
 		auto.size = Vector2(78,25)
@@ -148,16 +185,50 @@ func show_summary(_page:int=0)->void:
 		var slots := HBoxContainer.new()
 		slots.add_theme_constant_override("separation",10)
 		rail.add_child(slots)
-		for index in ids.size():
-			var id: String = ids[index]
-			if jobs.entry(id).job == job:
-				assignment_slot(slots,show_waiting.bind(job,str(jobs.entry(id).get("building","")),id),portrait_for(id),Rect2(12,3,52,52),display_name(id))
-		for target in open_slots(job,jobs).slice(0,1):
+		for id in ids:
+			var item := jobs.entry(id)
+			if item.job != job or (scoped and not assigned.has(id)): continue
+			var target := str(item.get("building",""))
+			var slot := assignment_slot(slots,show_waiting.bind(job,target,id),portrait_for(id),Rect2(9,3,52,52),display_name(id))
+			var remove := HudButtons.create(slot,false,unassign_resident.bind(id),"UnassignResident")
+			remove.custom_minimum_size = Vector2(24,24)
+			remove.size = Vector2(24,24)
+			remove.position = Vector2(46,0)
+			remove.art_feedback.get_node("Icon").size = remove.size
+		for target in available_slots(job,jobs,key).slice(0,1):
 			assignment_slot(slots,show_waiting.bind(job,target),preload("res://assets/ui/d0009/slot-add.png"),Rect2(25,18,20,20),"주민 추가")
-		var locked := unlock_hint(job)
+		var locked := "" if scoped and job not in ["wood","stone"] else unlock_hint(job)
 		if not locked.is_empty():
-			assignment_slot(slots,func(): app.toast(locked),preload("res://assets/ui/v0158/lock.png"),Rect2(23,14,24,28),"잠김",true)
+			var level := limit+1 if scoped else next_unlock_level(job)
+			var levels := range(level,5) if job in ["wood","stone"] else [level]
+			for required_level: int in levels:
+				var caption := "Lv%d 해제" % required_level if required_level > 0 else "건설 후 해제"
+				var hint := locked if job not in ["wood","stone"] else "%s Lv.%d에서 자리가 열려요." % [BuildingWorkflow.building_name(ResourceStorage.STORE_KINDS[job]),required_level]
+				assignment_slot(slots,func(): app.toast(hint),preload("res://assets/ui/v0158/lock.png"),Rect2(23,14,24,28),caption,true)
 		list.add_child(HSeparator.new())
+
+func next_unlock_level(job: String) -> int:
+	if job in ["wood","stone"]: return ResidentJobs.new(app.model).gatherer_limit(job)+1
+	if job == "guard" and app.model.chief_level() < BuildingRules.REQUIRED_HQ["outpost"]:
+		return BuildingRules.REQUIRED_HQ["outpost"]
+	var level: int = app.model.chief_level()
+	if job == "farmer" and level < 1: return 1
+	if job == "farmer" and app.model.built_count() > 0 and level < 3:
+		var farms: int = app.model.pending_construction_count("farm")
+		for building in app.model.facilities():
+			if building.kind == "farm": farms += 1
+		if farms >= level: return level+1
+	return 0
+
+func available_slots(job: String, jobs: ResidentJobs, key: String) -> Array[String]:
+	var slots := open_slots(job,jobs)
+	if key.is_empty(): return slots
+	var scoped: Array[String] = []
+	if job in ["wood","stone"]:
+		for slot in slots: scoped.append(key)
+	elif slots.has(key):
+		scoped.append(key)
+	return scoped
 
 func unlock_hint(job: String) -> String:
 	if job in ["wood","stone"]:
@@ -188,7 +259,7 @@ func close_waiting() -> void:
 func show_waiting(job: String, target: String, occupant := "") -> void:
 	if not app.application_active or not is_instance_valid(app.overlay):return
 	var jobs := ResidentJobs.new(app.model)
-	if occupant.is_empty() and not open_slots(job,jobs).has(target):
+	if occupant.is_empty() and not available_slots(job,jobs,assignment_building).has(target):
 		app.toast("열린 작업 자리가 없어요.")
 		return
 	close_waiting()
@@ -218,8 +289,6 @@ func show_waiting(job: String, target: String, occupant := "") -> void:
 	rail.add_child(slots)
 	for id in ids:
 		assignment_slot(slots,select_waiting.bind(job,target,id,occupant),portrait_for(id),Rect2(9,3,52,52),display_name(id))
-	if not occupant.is_empty():
-		action(list,"배정 해제",unassign_from_picker.bind(occupant))
 
 func select_waiting(job: String, target: String, id: String, occupant: String) -> void:
 	if occupant.is_empty():
@@ -227,36 +296,36 @@ func select_waiting(job: String, target: String, id: String, occupant: String) -
 		return
 	var jobs := ResidentJobs.new(app.model)
 	if jobs.replace_assignment(occupant,id,job,target):
-		show_summary()
+		refresh_assignment_panel()
 	else:
 		app.toast("주민이나 작업 자리 상태가 바뀌었어요.")
 
-func unassign_from_picker(id: String) -> void:
+func unassign_resident(id: String) -> void:
 	if ResidentJobs.new(app.model).assign(id,"idle"):
-		show_summary()
+		refresh_assignment_panel()
 
 func assign_waiting(job: String, target: String, id: String) -> void:
 	var jobs := ResidentJobs.new(app.model)
-	if not waiting(jobs).has(id) or not open_slots(job,jobs).has(target):
-		show_summary()
+	if not waiting(jobs).has(id) or not available_slots(job,jobs,assignment_building).has(target):
+		refresh_assignment_panel()
 		app.toast("주민이나 작업 자리 상태가 바뀌었어요.")
 		return
 	if jobs.assign(id,job,target):
-		show_summary()
+		refresh_assignment_panel()
 		app.toast("%s · %s"%[display_name(id),job_name(job)])
 
-func auto_assign(job: String) -> void:
+func auto_assign(job: String, key: String) -> void:
 	var jobs := ResidentJobs.new(app.model)
 	var assigned := 0
 	var ids := waiting(jobs)
-	var slots := open_slots(job,jobs)
+	var slots := available_slots(job,jobs,key)
 	if slots.is_empty():app.toast("열린 작업 자리가 없어요.");return
 	if ids.is_empty():app.toast("미배정 주민이 없어요.");return
 	for i in mini(ids.size(),slots.size()):
-		if not waiting(jobs).has(ids[i]) or not open_slots(job,jobs).has(slots[i]):break
+		if not waiting(jobs).has(ids[i]) or not available_slots(job,jobs,key).has(slots[i]):break
 		if not jobs.assign(ids[i],job,slots[i]):break
 		assigned += 1
-	show_summary()
+	refresh_assignment_panel()
 	app.toast("%s %d명을 배정했어요."%[job_name(job),assigned])
 func show_assignment(index:int,selected_job:String="",selected_building:String="")->void:
 	var id:=id_at(index)
@@ -295,24 +364,12 @@ func assign(index:int,job:String,building:String="")->void:
 		return
 	if jobs.assign(id_at(index),job,building):
 		app.close_modal();app.toast("%s · %s"%[display_name(id_at(index)),job_name(job)])
-func show_building(key:String)->void:
-	if key=="chief":show_summary();return
-	var found:Dictionary=app.model.lookup_building(key)
-	if found.is_empty():return
-	var jobs:=ResidentJobs.new(app.model)
-	var assigned:=jobs.assigned_ids(key)
-	var multiple:bool=found.kind in ["stone_store","wood_store"]
-	var job:String=ResidentJobs.BUILDING_JOBS.get(found.kind,"idle")
-	var limit := jobs.gatherer_limit(job) if multiple else 1
-	var list:=content(BuildingWorkflow.building_name(found.kind)+" · 주민 배정",job_name(job)+" %d/%d명"%[assigned.size(),limit])
-	for id in assigned:
-		var target_id:String=id
-		action(list,display_name(id)+" 배정 해제",func():jobs.assign(target_id,"idle");show_building(key))
-	for index in app.model.resident_count():
-		var id:=id_at(index);var item:=jobs.entry(id);var row:=card(list)
-		art(row,icon("idle"),Vector2(48,48));var text:Label=app.label(row,display_name(id)+" · "+job_name(item.job),18);text.size_flags_horizontal=Control.SIZE_EXPAND_FILL
-		var target:int=index;var button:=action(row,"배정",func():assign(target,job,key));button.disabled=id in assigned or assigned.size() >= limit
-	app.label(list,"선택한 주민의 기존 배정은 해제됩니다.",15)
+func show_building(key: String) -> void:
+	if key == "chief":
+		show_summary()
+	elif not app.model.lookup_building(key).is_empty() and ResidentJobs.BUILDING_JOBS.has(key.get_slice(":",0)):
+		open_assignment_panel(key)
+
 func assignment_menu_open(key: String) -> bool:
 	return app.building_menu.visible and app.building_menu.selected_key == key
 
