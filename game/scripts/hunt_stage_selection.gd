@@ -4,7 +4,9 @@ const STAGES_PER_CHAPTER := 6
 const CHAPTERS := ["초원", "숲"]
 const TOTAL_STAGES := STAGES_PER_CHAPTER * 2
 const TITLE := preload("res://assets/ui/d0009/hunt_title_stone_crest.png")
-const FIELD := preload("res://assets/ui/d0009/hunt_grassland_bg.png")
+const FIELD := preload("res://assets/ui/hunt-selection/hunt-meadow-fallback.png")
+const ENTRANCE_VIDEO := "res://assets/ui/hunt-selection/hunt-meadow-entrance.ogv"
+const IDLE_VIDEO := "res://assets/ui/hunt-selection/hunt-meadow-idle-loop.ogv"
 const SKINS := {
 	"rules": preload("res://assets/ui/hunt-selection/rules.svg"),
 	"chapter": preload("res://assets/ui/hunt-selection/chapter.svg"),
@@ -16,6 +18,12 @@ const SKINS := {
 const BOSS_ICON := preload("res://assets/ui/d0009/hunt_boss_boar_crest.png")
 var app: Node
 var page: Control
+var backdrop: TextureRect
+var meadow_video: VideoStreamPlayer
+var meadow_frame: TextureRect
+var starting_video := false
+var last_video_position := 0.0
+var video_stall := 0.0
 
 var chapter := 0
 var entry_played := false
@@ -25,8 +33,68 @@ var entry_positions: Dictionary = {}
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	chapter = app.hunt_stage / STAGES_PER_CHAPTER
+	clip_contents = true
+	backdrop = app.picture(self,FIELD,Rect2(Vector2.ZERO,size))
+	backdrop.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	meadow_frame = app.picture(self,null,Rect2(Vector2.ZERO,size))
+	meadow_frame.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	meadow_video = VideoStreamPlayer.new()
+	meadow_video.expand = true
+	meadow_video.modulate.a = 0.0
+	meadow_video.volume_db = -80
+	meadow_video.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(meadow_video)
+	meadow_video.finished.connect(finish_meadow_entrance)
+	set_process(false)
+	if not OS.get_cmdline_user_args().has("--reduce-motion"):
+		start_meadow(ENTRANCE_VIDEO,false)
 	resized.connect(draw_page)
 	draw_page()
+
+func start_meadow(path: String, repeat: bool) -> void:
+	var stream := load(path) as VideoStream if ResourceLoader.exists(path) else null
+	if not stream:
+		use_static_meadow()
+		return
+	meadow_video.stream = stream
+	meadow_video.loop = repeat
+	meadow_video.modulate.a = 0.0
+	meadow_video.play()
+	starting_video = true
+	last_video_position = 0.0
+	video_stall = 0.0
+	set_process(true)
+
+func finish_meadow_entrance() -> void:
+	var texture := meadow_video.get_video_texture()
+	if texture and texture.get_width() > 0:
+		var frame := texture.get_image()
+		if frame and not frame.is_empty():
+			meadow_frame.texture = ImageTexture.create_from_image(frame)
+	start_meadow(IDLE_VIDEO,true)
+
+func use_static_meadow() -> void:
+	meadow_video.stop()
+	meadow_video.modulate.a = 0.0
+	meadow_frame.texture = null
+	set_process(false)
+
+func _process(delta: float) -> void:
+	var playhead := meadow_video.stream_position
+	if not is_equal_approx(playhead,last_video_position):
+		video_stall = 0.0
+		last_video_position = playhead
+	else:
+		video_stall += delta
+	if starting_video and playhead > .05:
+		meadow_video.modulate.a = 1.0
+		meadow_frame.texture = null
+		starting_video = false
+	if video_stall > 1.5:
+		use_static_meadow()
+
+func _exit_tree() -> void:
+	if is_instance_valid(meadow_video): meadow_video.stop()
 
 func progress() -> int:
 	return int(app.model.state.get("hunt_cleared", 0))
@@ -34,6 +102,11 @@ func progress() -> int:
 func draw_page() -> void:
 	if size.x <= 0 or size.y <= 0:
 		return
+	backdrop.size = size
+	meadow_frame.size = size
+	var cover := Vector2(1280,720)*maxf(size.x/1280.0,size.y/720.0)
+	meadow_video.size = cover
+	meadow_video.position = (size-cover)*.5
 	finish_entry()
 	if is_instance_valid(page):
 		remove_child(page)
@@ -41,8 +114,6 @@ func draw_page() -> void:
 	page = Control.new()
 	page.size = size
 	add_child(page)
-	var bg: TextureRect = app.picture(page, FIELD, Rect2(Vector2.ZERO, size))
-	bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	var unit := minf(size.x / 704.0,size.y / 350.0)
 	var center := size * Vector2(.5,.687)
 	var crest := Rect2(size.x * .5 - 80 * unit,maxf(5 * unit,app.safe.y - 9),160 * unit,56 * unit)

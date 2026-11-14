@@ -349,19 +349,9 @@ func show_waiting(job: String, target: String, occupant := "") -> void:
 		replace = action(actions,"교체",func(): select_waiting(job,target,str(selected[0]),occupant))
 		replace.custom_minimum_size = Vector2(120,38)
 		replace.disabled = true
-		var release := action(actions,"배정 해제",unassign_resident.bind(occupant))
-		release.get_node("AssignmentActionSkin").hide()
-		var metal := ColorRect.new()
-		metal.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		metal.show_behind_parent = true
-		var material := ShaderMaterial.new()
-		material.shader = preload("res://scripts/dark_metal_button.gdshader")
-		material.set_shader_parameter("face",preload("res://assets/ui/d0010/dark-metal-face.png"))
-		metal.material = material
-		release.add_child(metal)
-		metal.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		var release := textured_action(actions,"배정 해제",unassign_resident.bind(occupant),preload("res://assets/ui/d0010/action-unassign-common-silver.png"))
 		for color_key in ["font_color","font_hover_color","font_pressed_color","font_disabled_color"]:
-			release.add_theme_color_override(color_key,Color("f3f5f6"))
+			release.add_theme_color_override(color_key,Color("323238"))
 		release.custom_minimum_size = Vector2(120,38)
 		actions.move_child(release,0)
 	for id in ids:
