@@ -2089,7 +2089,10 @@ func go_back() -> void:
 	elif overlay is CharacterGuide:
 		overlay.advance()
 	elif modal:
-		close_modal()
+		if is_instance_valid(resident_panel) and is_instance_valid(resident_panel.waiting_overlay):
+			resident_panel.close_waiting()
+		else:
+			close_modal()
 	elif screen == "hunt_select":
 		show_screen("play")
 	elif screen == "play":

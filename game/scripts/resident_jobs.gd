@@ -49,6 +49,26 @@ func assign(id:String,job:String,building:String="")->bool:
 	var ok:=_commit(next)
 	if ok:model.release_gather(id)
 	return ok
+func replace_assignment(occupant: String, id: String, job: String, building: String) -> bool:
+	if model.busy or occupant == id or not available(occupant) or not available(id):
+		return false
+	var old := entry(occupant)
+	var incoming := entry(id)
+	if old.job != job or old.get("building","") != building or incoming.job != "idle" or job == "idle":
+		return false
+	var next := model.state.duplicate(true)
+	old.job = "idle"
+	old.building = ""
+	incoming.job = job
+	incoming.building = building
+	next.resident_jobs[occupant] = old
+	next.resident_jobs[id] = incoming
+	if not _commit(next):
+		return false
+	model.release_gather(occupant)
+	model.release_gather(id)
+	return true
+
 func _commit(next:Dictionary)->bool:
 	model.busy=true
 	var ok:=model.commit(next)

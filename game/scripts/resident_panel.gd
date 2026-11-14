@@ -4,6 +4,7 @@ extends Control
 var app:Node
 var counter_button:DemoButton
 var bubbles:Dictionary={}
+var waiting_overlay: Control
 const JOB_NAMES:={"idle":"미배정","wood":"나무꾼","stone":"석재꾼","farmer":"농부","guard":"보초"}
 func _init(owner_app:Node)->void:app=owner_app
 func _ready()->void:
@@ -36,14 +37,6 @@ func art(parent:Control,texture:Texture2D,dimensions:Vector2)->TextureRect:
 func content(title:String,subtitle:String)->VBoxContainer:
 	var scroll:ScrollContainer=app.show_modal(title,"",[],false,true,false,Vector2(560,664))
 	scroll.name="ResidentAssignmentScroll"
-	if title in ["주민 배정","미배정 주민 선택"]:
-		var panel := scroll.get_parent().get_parent() as FigmaPanelContainer
-		var paper := AtlasTexture.new()
-		paper.atlas = preload("res://assets/ui/d0009/parchment-panel-9slice.png")
-		paper.region = Rect2(43,55,1140,1180)
-		paper.filter_clip = true
-		panel.paper = paper
-		panel.queue_redraw()
 	var list:=VBoxContainer.new();list.name="AssignmentContent";list.size_flags_horizontal=Control.SIZE_EXPAND_FILL;list.add_theme_constant_override("separation",14);scroll.add_child(list)
 	var text:Label=app.label(list,subtitle,17);text.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
 	return list
@@ -91,65 +84,82 @@ func assignment_icon(job: String) -> Texture2D:
 		"farmer": return preload("res://assets/ui/d0009/resource-grain.png")
 	return icon(job)
 
-func assignment_slot(parent: Control, callback: Callable, texture: Texture2D, rect: Rect2, caption := "") -> void:
+func assignment_slot(parent: Control, callback: Callable, texture: Texture2D, rect: Rect2, caption := "", locked := false) -> void:
 	var button: DemoButton = app.button(parent,"",callback)
-	button.custom_minimum_size = Vector2(76,76)
+	button.custom_minimum_size = Vector2(70,70)
 	var skin := StyleBoxFlat.new()
-	skin.bg_color = Color("e8d4ac")
+	skin.bg_color = Color("a69a80") if locked else Color("795634") if caption == "주민 추가" else Color("e8d4ac")
 	skin.border_color = Color("ba9865")
 	skin.set_border_width_all(1)
 	skin.set_corner_radius_all(5)
-	button.add_theme_stylebox_override("normal",skin)
+	for state in ["normal","pressed","hover","focus"]:button.add_theme_stylebox_override(state,skin)
 	var picture: TextureRect = app.picture(button,texture,rect)
 	picture.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	if not caption.is_empty():
-		var name_label: Label = app.label(button,caption,13)
-		name_label.position = Vector2(0,54)
-		name_label.size = Vector2(76,18)
+		var name_label: Label = app.label(button,caption,11 if locked or caption == "주민 추가" else 13,Color("fff0cf") if caption == "주민 추가" else Color("49321e"))
+		name_label.position = Vector2(0,50)
+		name_label.size = Vector2(70,18)
 		name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 
 func show_summary(_page:int=0)->void:
 	if app.screen!="play" or not app.application_active or app.world_map_open:return
 	var jobs := ResidentJobs.new(app.model)
+	close_waiting()
 	var ids := ResidentAdmission.ids(app.model.state)
 	var list := content("주민 배정","%d/%d"%[ids.size()-waiting(jobs).size(),ids.size()])
 	var header: HBoxContainer = list.get_parent().get_parent().get_node("ModalHeader")
 	var heading: Label = header.get_child(0)
+	var spacer := Control.new()
+	spacer.custom_minimum_size.x = HudButtons.DIAMETER
+	header.add_child(spacer)
+	header.move_child(spacer,0)
 	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	heading.remove_theme_font_override("font")
 	var count: Label = list.get_child(0)
 	count.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var content_box := list.get_parent().get_parent() as VBoxContainer
+	list.add_theme_constant_override("separation",6)
+	list.remove_child(count)
+	content_box.add_child(count)
+	content_box.move_child(count,1)
+	content_box.add_theme_constant_override("separation",4)
 	for job: String in ["wood","stone","farmer","guard"]:
-		var row := card(list)
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation",12)
+		list.add_child(row)
 		var identity := Control.new()
-		identity.custom_minimum_size = Vector2(94,84)
+		identity.custom_minimum_size = Vector2(94,76)
 		row.add_child(identity)
 		var resource: TextureRect = app.picture(identity,assignment_icon(job),Rect2(22,0,50,50))
 		resource.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		app.picture(identity,preload("res://assets/ui/d0009/job-name-brush.png"),Rect2(4,35,86,21))
+		app.picture(identity,preload("res://assets/ui/d0009/job-name-brush.png"),Rect2(4,32,86,19))
 		var title: Label = app.label(identity,job_name(job),14,Color.WHITE)
-		title.position = Vector2(0,35)
+		title.position = Vector2(0,31)
 		title.size = Vector2(94,21)
 		title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		var auto := action(identity,"자동 배치",auto_assign.bind(job))
 		auto.custom_minimum_size = Vector2.ZERO
-		auto.position = Vector2(8,56)
-		auto.size = Vector2(78,28)
+		auto.position = Vector2(8,51)
+		auto.size = Vector2(78,25)
 		auto.add_theme_font_size_override("font_size",13)
-		var slots := GridContainer.new()
-		slots.columns = 5 if app.w>=640 else 4
-		slots.add_theme_constant_override("h_separation",6)
-		slots.add_theme_constant_override("v_separation",6)
-		row.add_child(slots)
+		var rail := ScrollContainer.new()
+		rail.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		rail.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+		rail.custom_minimum_size.y = 78
+		row.add_child(rail)
+		var slots := HBoxContainer.new()
+		slots.add_theme_constant_override("separation",10)
+		rail.add_child(slots)
 		for index in ids.size():
 			var id: String = ids[index]
 			if jobs.entry(id).job == job:
-				assignment_slot(slots,show_assignment.bind(index),portrait_for(id),Rect2(12,3,52,52),display_name(id))
-		for target in open_slots(job,jobs):
-			assignment_slot(slots,show_waiting.bind(job,target),preload("res://assets/ui/d0009/slot-add.png"),Rect2(28,28,20,20))
+				assignment_slot(slots,show_waiting.bind(job,str(jobs.entry(id).get("building","")),id),portrait_for(id),Rect2(12,3,52,52),display_name(id))
+		for target in open_slots(job,jobs).slice(0,1):
+			assignment_slot(slots,show_waiting.bind(job,target),preload("res://assets/ui/d0009/slot-add.png"),Rect2(25,18,20,20),"주민 추가")
 		var locked := unlock_hint(job)
 		if not locked.is_empty():
-			assignment_slot(slots,func(): app.toast(locked),preload("res://assets/ui/v0158/lock.png"),Rect2(24,20,28,32))
+			assignment_slot(slots,func(): app.toast(locked),preload("res://assets/ui/v0158/lock.png"),Rect2(23,14,24,28),"잠김",true)
+		list.add_child(HSeparator.new())
 
 func unlock_hint(job: String) -> String:
 	if job == "farmer":
@@ -167,18 +177,61 @@ func unlock_hint(job: String) -> String:
 		if app.model.outposts().size() < 3:return "초소를 완공하면 자리가 열려요."
 	return ""
 
-func show_waiting(job: String, target: String) -> void:
+func close_waiting() -> void:
+	if is_instance_valid(waiting_overlay):
+		waiting_overlay.hide()
+		waiting_overlay.queue_free()
+		waiting_overlay = null
+
+func show_waiting(job: String, target: String, occupant := "") -> void:
+	if not app.application_active or not is_instance_valid(app.overlay):return
 	var jobs := ResidentJobs.new(app.model)
-	if not open_slots(job,jobs).has(target):app.toast("열린 작업 자리가 없어요.");return
+	if occupant.is_empty() and not open_slots(job,jobs).has(target):
+		app.toast("열린 작업 자리가 없어요.")
+		return
+	close_waiting()
+	waiting_overlay = ColorRect.new()
+	waiting_overlay.color = Color(0,0,0,.48)
+	waiting_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	app.overlay.add_child(waiting_overlay)
+	waiting_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	var width := minf(520,app.w-2*app.safe.x-22)
+	var height := minf(230,app.h-2*app.safe.y-24)
+	var panel: PanelContainer = app.box(waiting_overlay,Rect2((app.w-width)*.5,(app.h-height)*.5,width,height))
+	var list: VBoxContainer = app.column(panel,8)
+	var header := HBoxContainer.new()
+	list.add_child(header)
+	var title: Label = app.label(header,"%s 배정할 주민"%job_name(job),22)
+	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	HudButtons.create(header,false,close_waiting,"CloseWaiting")
 	var ids := waiting(jobs)
-	var list := content("미배정 주민 선택",job_name(job))
-	if ids.is_empty():app.label(list,"미배정 주민이 없어요.",18)
-	var slots := GridContainer.new()
-	slots.columns = 5 if app.w>=640 else 4
-	list.add_child(slots)
+	app.label(list,"미배정 %d명 · 주민을 누르면 바로 배정합니다."%ids.size(),16)
+	var rail := ScrollContainer.new()
+	rail.custom_minimum_size.y = 80
+	rail.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	list.add_child(rail)
+	var slots := HBoxContainer.new()
+	slots.alignment = BoxContainer.ALIGNMENT_CENTER
+	slots.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	rail.add_child(slots)
 	for id in ids:
-		assignment_slot(slots,assign_waiting.bind(job,target,id),portrait_for(id),Rect2(12,3,52,52),display_name(id))
-	action(list,"돌아가기",show_summary)
+		assignment_slot(slots,select_waiting.bind(job,target,id,occupant),portrait_for(id),Rect2(9,3,52,52),display_name(id))
+	if not occupant.is_empty():
+		action(list,"배정 해제",unassign_from_picker.bind(occupant))
+
+func select_waiting(job: String, target: String, id: String, occupant: String) -> void:
+	if occupant.is_empty():
+		assign_waiting(job,target,id)
+		return
+	var jobs := ResidentJobs.new(app.model)
+	if jobs.replace_assignment(occupant,id,job,target):
+		show_summary()
+	else:
+		app.toast("주민이나 작업 자리 상태가 바뀌었어요.")
+
+func unassign_from_picker(id: String) -> void:
+	if ResidentJobs.new(app.model).assign(id,"idle"):
+		show_summary()
 
 func assign_waiting(job: String, target: String, id: String) -> void:
 	var jobs := ResidentJobs.new(app.model)
