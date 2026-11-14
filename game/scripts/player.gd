@@ -39,6 +39,8 @@ var rest_points := PackedVector2Array()
 var tool: Node2D
 var manual_camera:=false
 var camera_center:=Vector2.ZERO
+var pan_stretch := Vector2.ZERO
+var pan_return: Tween
 var idle_elapsed:=0.0
 
 func can_pan()->bool:
@@ -68,24 +70,44 @@ func return_to_village() -> void:
 	,CONNECT_ONE_SHOT)
 
 
-func pan_camera(screen_delta:Vector2)->void:
+func settle_pan(animated := true) -> void:
+	if pan_return and pan_return.is_valid(): pan_return.kill()
+	if pan_stretch.is_zero_approx(): return
+	if animated:
+		pan_return = create_tween().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+		pan_return.tween_method(apply_pan_stretch,pan_stretch,Vector2.ZERO,.22)
+	else:
+		apply_pan_stretch(Vector2.ZERO)
+
+func apply_pan_stretch(offset: Vector2) -> void:
+	pan_stretch = offset
+	camera.offset = offset
+	camera.force_update_scroll()
+
+func pan_camera(screen_delta:Vector2, elastic := false)->void:
+	if pan_return and pan_return.is_valid(): pan_return.kill()
 	cancel_camera_guide()
 	if tutorial_camera_tween:tutorial_camera_tween.kill()
 	if not manual_camera:camera_center=camera.get_screen_center_position()
 	manual_camera=true
 	var half:=get_viewport_rect().size*.5/camera.zoom
-	camera_center-=screen_delta/camera.zoom
+	var requested := camera_center-screen_delta/camera.zoom
 	var bounds:=camera_bounds()
-	camera_center=camera_center.clamp(bounds.position+half,bounds.end-half)
+	camera_center=requested.clamp(bounds.position+half,bounds.end-half)
+	var limit := 32.0/camera.zoom.x
+	var stretch := (pan_stretch+(requested-camera_center)*.35).limit_length(limit)
+	apply_pan_stretch(stretch if elastic and not requested.is_equal_approx(camera_center) else Vector2.ZERO)
 	camera.position=camera_center-global_position
 	camera.reset_smoothing();camera.force_update_scroll()
 
 func resume_camera()->void:
+	settle_pan(false)
 	cancel_camera_guide()
 	if tutorial_camera_tween:tutorial_camera_tween.kill()
 	manual_camera=false;camera.position=Vector2.ZERO;camera.reset_smoothing()
 
 func hold_tutorial_camera(point:Vector2)->void:
+	settle_pan(false)
 	cancel_camera_guide()
 	if tutorial_camera_tween:tutorial_camera_tween.kill()
 	camera_center=camera.get_screen_center_position()
@@ -177,6 +199,7 @@ func _process(_delta: float) -> void:
 		perf_done = true
 
 func fit_camera() -> void:
+	settle_pan(false)
 	var viewport_size := get_viewport().get_visible_rect().size
 	var reference:=VillageBounds.OVERVIEW_REFERENCE_SIZE
 	var fit := maxf(viewport_size.x/reference.x,viewport_size.y/reference.y)

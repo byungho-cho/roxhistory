@@ -56,6 +56,7 @@ func clear() -> void:
 	if is_instance_valid(app.world):
 		app.world.player.camera.position_smoothing_enabled=true
 		app.world.player.cancel_camera_guide()
+		app.world.player.settle_pan(false)
 func ui_hit(at: Vector2) -> bool:
 	if is_instance_valid(app.build_side) and app.build_side.contains_point(at):return true
 	if app.modal and not app.camera_modal(): return true
@@ -93,6 +94,7 @@ func _input(event: InputEvent) -> void:
 	if not moving_key.is_empty() and handle_building_drag(event):return
 	if event is InputEventMouseButton and not OS.has_feature("android"):
 		if event.button_index==MOUSE_BUTTON_MIDDLE:
+			if not event.pressed and middle_dragging: app.world.player.settle_pan()
 			middle_dragging=event.pressed and not ui_hit(event.position)
 			mouse_last=event.position;hold_at=Vector2.INF
 			get_viewport().set_input_as_handled();return
@@ -106,17 +108,19 @@ func _input(event: InputEvent) -> void:
 			else:
 				hold_at=Vector2.INF
 				if not hold_consumed and not mouse_dragging and mouse_start.is_finite() and mouse_start.distance_to(event.position)<12:app.world_tap(event.position)
-				if mouse_dragging:blocked=false
+				if mouse_dragging:
+					app.world.player.settle_pan()
+					blocked=false
 				mouse_dragging=false
 				mouse_start=Vector2.INF
 	if event is InputEventMouseMotion and middle_dragging:
-		app.world.player.pan_camera(event.position-mouse_last);mouse_last=event.position
+		app.world.player.pan_camera(event.position-mouse_last,true);mouse_last=event.position
 		get_viewport().set_input_as_handled();return
 	if event is InputEventMouseMotion and mouse_start.is_finite() and mouse_can_pan and app.world.player.can_pan():
 		if mouse_start.distance_to(event.position)>12 or mouse_dragging:
 			if not mouse_dragging:mouse_last=mouse_start
 			mouse_dragging=true;blocked=true
-			app.world.player.pan_camera(event.position-mouse_last);get_viewport().set_input_as_handled()
+			app.world.player.pan_camera(event.position-mouse_last,true);get_viewport().set_input_as_handled()
 		mouse_last=event.position
 	if event is InputEventMouseMotion and hold_at.is_finite() and hold_at.distance_to(event.position)>12:hold_at=Vector2.INF
 	if event is InputEventScreenTouch:
@@ -130,6 +134,7 @@ func _input(event: InputEvent) -> void:
 				if touches[key].ui: has_ui=true
 				else: world_fingers.append(key)
 			if not has_ui and world_fingers.size()==2 and (not blocked or panning):
+				app.world.player.settle_pan(false)
 				panning=false
 				pinching=true;blocked=true
 				start_distance=maxf(20,touches[world_fingers[0]].at.distance_to(touches[world_fingers[1]].at))
@@ -148,6 +153,7 @@ func _input(event: InputEvent) -> void:
 				var finger:Dictionary=touches[event.index]
 				if not hold_consumed and not finger.ui and not finger.moved and finger.start.distance_to(event.position)<12:app.world_tap(event.position)
 			touches.erase(event.index)
+			if panning and touches.is_empty(): app.world.player.settle_pan()
 			if pinching and touches.size()<2:
 				pinching=false;app.world.player.camera.position_smoothing_enabled=true
 				if OS.has_feature("android") and app.test_mode: print("PLAY_PINCH_END ",app.world.player.zoom_factor)
@@ -162,7 +168,7 @@ func _input(event: InputEvent) -> void:
 		touches[event.index].at=event.position
 		if not pinching and (not blocked or panning) and touches.size()==1 and not touches[event.index].ui and touches[event.index].pan and touches[event.index].moved and app.world.player.can_pan():
 			if not was_moved:last=touches[event.index].start
-			blocked=true;panning=true;app.world.player.pan_camera(event.position-last)
+			blocked=true;panning=true;app.world.player.pan_camera(event.position-last,true)
 		if pinching and touches.size()==2:
 			var pair:=touches.values()
 			var midpoint: Vector2=(pair[0].at+pair[1].at)*0.5

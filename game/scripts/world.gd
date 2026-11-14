@@ -50,6 +50,15 @@ func _ready() -> void:
 	reward_bubble=StyleBoxFlat.new();reward_bubble.bg_color=Color(.99,.92,.76,.86);reward_bubble.border_color=Color(.55,.39,.22,.85);reward_bubble.set_border_width_all(2);reward_bubble.set_corner_radius_all(12);reward_bubble.shadow_color=Color(0,0,0,.15);reward_bubble.shadow_size=3;reward_bubble.shadow_offset=Vector2(1,3)
 	# Review-only low-resolution single image; no repeated/mirrored terrain.
 	var terrain: Texture2D = preload("res://assets/village-ground-review-v002/ground-only.png")
+	var distant_fog := ColorRect.new()
+	distant_fog.name = "DistantVillageFog"
+	distant_fog.color = Color(.97,.97,.94)
+	distant_fog.position = Vector2(-100000,-100000)
+	distant_fog.size = Vector2(200000,200000)
+	distant_fog.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	distant_fog.z_index = -21
+	distant_fog.visibility_layer = 2
+	add_child(distant_fog)
 	var background := Sprite2D.new()
 	background.name = "Terrain"
 	background.texture = terrain
