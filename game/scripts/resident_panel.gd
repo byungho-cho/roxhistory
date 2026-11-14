@@ -55,9 +55,7 @@ func action(parent:Control,text:String,callback:Callable)->DemoButton:
 func open_slots(job: String, jobs: ResidentJobs) -> Array[String]:
 	var slots: Array[String] = []
 	if job in ["wood","stone"]:
-		# Gatherers have no job cap other than the village population.
-		for id in ResidentAdmission.ids(app.model.state):
-			if jobs.entry(id).job != job:slots.append("")
+		for index in maxi(0,jobs.gatherer_limit(job)-jobs.assigned_count(job)):slots.append("")
 		return slots
 	var kind := "farm" if job == "farmer" else "outpost"
 	var buildings: Array = app.model.facilities() if kind == "farm" else app.model.outposts()
@@ -162,6 +160,10 @@ func show_summary(_page:int=0)->void:
 		list.add_child(HSeparator.new())
 
 func unlock_hint(job: String) -> String:
+	if job in ["wood","stone"]:
+		var store := ResourceStorage.building(app.model,job)
+		if not store.is_empty() and int(store.get("level",1)) < 4:
+			return "%s Lv.%d에서 자리가 하나 더 열려요." % [BuildingWorkflow.building_name(store.kind),int(store.get("level",1))+1]
 	if job == "farmer":
 		var level: int = app.model.chief_level()
 		if level < 1:return "촌장집 Lv.1과 주민 움집을 갖추고 농장을 지어 주세요."
@@ -287,7 +289,11 @@ func show_assignment(index:int,selected_job:String="",selected_building:String="
 	var confirm:=action(list,"배정하기",func():assign(index,selected_job,selected_building));confirm.name="ConfirmResidentAssignment";confirm.disabled=selected_job in ["farmer","guard"] and selected_building.is_empty()
 func assign(index:int,job:String,building:String="")->void:
 	if not app.application_active:return
-	if ResidentJobs.new(app.model).assign(id_at(index),job,building):
+	var jobs := ResidentJobs.new(app.model)
+	if job in ["wood","stone"] and jobs.entry(id_at(index)).job != job and jobs.assigned_count(job) >= jobs.gatherer_limit(job):
+		app.toast("이 직업의 배정 자리가 가득 찼어요.")
+		return
+	if jobs.assign(id_at(index),job,building):
 		app.close_modal();app.toast("%s · %s"%[display_name(id_at(index)),job_name(job)])
 func show_building(key:String)->void:
 	if key=="chief":show_summary();return
@@ -297,14 +303,15 @@ func show_building(key:String)->void:
 	var assigned:=jobs.assigned_ids(key)
 	var multiple:bool=found.kind in ["stone_store","wood_store"]
 	var job:String=ResidentJobs.BUILDING_JOBS.get(found.kind,"idle")
-	var list:=content(BuildingWorkflow.building_name(found.kind)+" · 주민 배정",job_name(job)+" %d명"%assigned.size()+("" if multiple else " / 1명"))
+	var limit := jobs.gatherer_limit(job) if multiple else 1
+	var list:=content(BuildingWorkflow.building_name(found.kind)+" · 주민 배정",job_name(job)+" %d/%d명"%[assigned.size(),limit])
 	for id in assigned:
 		var target_id:String=id
 		action(list,display_name(id)+" 배정 해제",func():jobs.assign(target_id,"idle");show_building(key))
 	for index in app.model.resident_count():
 		var id:=id_at(index);var item:=jobs.entry(id);var row:=card(list)
 		art(row,icon("idle"),Vector2(48,48));var text:Label=app.label(row,display_name(id)+" · "+job_name(item.job),18);text.size_flags_horizontal=Control.SIZE_EXPAND_FILL
-		var target:int=index;var button:=action(row,"배정",func():assign(target,job,key));button.disabled=id in assigned or (not multiple and not assigned.is_empty())
+		var target:int=index;var button:=action(row,"배정",func():assign(target,job,key));button.disabled=id in assigned or assigned.size() >= limit
 	app.label(list,"선택한 주민의 기존 배정은 해제됩니다.",15)
 func assignment_menu_open(key: String) -> bool:
 	return app.building_menu.visible and app.building_menu.selected_key == key

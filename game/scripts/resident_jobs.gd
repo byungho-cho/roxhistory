@@ -32,6 +32,16 @@ func available(id:String)->bool:
 	return not model.state.is_empty() and id in ResidentAdmission.ids(model.state)
 func entry(id:String)->Dictionary:
 	return model.state.get("resident_jobs",{}).get(id,{"job":"idle","cargo":{}}).duplicate(true)
+func assigned_count(job: String) -> int:
+	var count := 0
+	for id in ResidentAdmission.ids(model.state):
+		if entry(id).job == job:count += 1
+	return count
+
+func gatherer_limit(job: String) -> int:
+	var store := ResourceStorage.building(model,job)
+	return model.resident_count() if store.is_empty() else clampi(int(store.get("level",1)),1,4)
+
 func assign(id:String,job:String,building:String="")->bool:
 	if model.busy or not available(id) or not job in JOBS:return false
 	if job in ["farmer","guard"]:
@@ -42,6 +52,7 @@ func assign(id:String,job:String,building:String="")->bool:
 	if job in ["wood","stone"] and not building.is_empty():
 		var found:=model.lookup_building(building)
 		if found.is_empty() or found.kind!=ResourceStorage.STORE_KINDS[job]:return false
+	if job in ["wood","stone"] and entry(id).job != job and assigned_count(job) >= gatherer_limit(job):return false
 	var next:=model.state.duplicate(true)
 	var item:=entry(id);item.job=job;item.building=building if job in ["farmer","guard","wood","stone"] else ""
 	if not next.has("resident_jobs"):next.resident_jobs={}
