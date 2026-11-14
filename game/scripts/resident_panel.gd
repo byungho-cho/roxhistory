@@ -212,7 +212,7 @@ func refresh_assignment_panel() -> void:
 		title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		var auto := textured_action(identity,"자동 배치",auto_assign.bind(job,key),preload("res://assets/ui/d0010/auto-assign-plate.png"))
 		auto.custom_minimum_size = Vector2.ZERO
-		auto.position = Vector2(8,55)
+		auto.position = Vector2(8,53)
 		auto.size = Vector2(60,20)
 		auto.add_theme_font_size_override("font_size",9)
 		for color_key in ["font_color","font_hover_color","font_pressed_color","font_disabled_color"]:
