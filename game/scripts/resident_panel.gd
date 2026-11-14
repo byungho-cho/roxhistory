@@ -153,7 +153,7 @@ func refresh_assignment_panel() -> void:
 	var scoped := not key.is_empty()
 	var building: Dictionary = app.model.lookup_building(key) if scoped else {}
 	var scoped_job: String = ResidentJobs.BUILDING_JOBS.get(building.get("kind",""),"")
-	var assigned := jobs.assigned_ids(key) if scoped else []
+	var assigned := jobs.assigned_ids(key)
 	var limit := jobs.gatherer_limit(scoped_job) if scoped_job in ["wood","stone"] else 1
 	assignment_count.text = "%d/%d" % ([assigned.size(),limit] if scoped else [ids.size()-waiting(jobs).size(),ids.size()])
 	var visible_jobs: Array = [scoped_job] if scoped else ["wood","stone","farmer","guard"]
