@@ -9,6 +9,20 @@ const CLEARING := preload("res://assets/ui/hunting-formation/clearing-dirt.png")
 const ALLY_CELL := preload("res://assets/ui/hunting-formation/ally-cell.svg")
 const ENEMY_CELL := preload("res://assets/ui/hunting-formation/enemy-cell.svg")
 const APPROVED_DEER := preload("res://assets/ui/hunting-combat/png/common/deer-approved.png")
+const COMBAT_PREVIEW := preload("res://scripts/hunt_combat_preview.gd")
+const IMPACT_ART := "res://assets/ui/hunt-impact/"
+const BASIC_HIT := preload(IMPACT_ART+"basic-contact.svg")
+const HEAVY_HIT := preload(IMPACT_ART+"heavy-contact.svg")
+const GROUND_PULSE := preload(IMPACT_ART+"heavy-ground-pulse.svg")
+const ALLY_RING := preload(IMPACT_ART+"team-ally-ellipse.svg")
+const ENEMY_RING := preload(IMPACT_ART+"team-opponent-ellipse.svg")
+var hit_age := 1.0
+var hit_kind := ""
+var hit_point := Vector2.ZERO
+var hit_origin := Vector2.ZERO
+var hit_damage := 0
+var hit_on_hunter := false
+var hit_label: Label
 const IMPACT_SECONDS := RULES.POSE_SECONDS * .5
 const PORTRAITS := preload("res://assets/ui/hunting-formation/portraits.png")
 # Final 1920×1080 placement centers expressed in the 960×540 game canvas.
@@ -135,6 +149,11 @@ func _ready() -> void:
 	battlefield = layer()
 	build_scenery()
 	battlefield.draw.connect(draw_stage)
+	hit_label = app.label(battlefield,"",17,Color("ebf2f0"))
+	hit_label.z_index = 3
+	hit_label.add_theme_color_override("font_outline_color",Color("1a120f"))
+	hit_label.add_theme_constant_override("outline_size",2)
+	hit_label.hide()
 	placement_grid = layer(battlefield)
 	for i in ALLY_CELLS.size():
 		app.picture(placement_grid,ALLY_CELL,Rect2(ALLY_CELLS[i]-CELL_SIZE*.5,CELL_SIZE))
@@ -142,13 +161,13 @@ func _ready() -> void:
 	var actors := Node2D.new()
 	actors.y_sort_enabled = true
 	battlefield.add_child(actors)
-	for model in [HybridCharacter.MESHY_HUNT_MODEL, "res://assets/characters/residents/sturdy_male.glb"]:
-		var hunter := HybridCharacter.new()
-		hunter.model_path = model
+	for index in 2:
+		var hunter: HybridCharacter = HybridCharacter.new() if index == 0 else COMBAT_PREVIEW.new()
+		hunter.model_path = HybridCharacter.MESHY_HUNT_MODEL
 		hunter.render_size_factor = .5
 		actors.add_child(hunter)
 		hunter.set_enabled(true)
-		hunter.use_training_spear()
+		if index == 0: hunter.use_training_spear()
 		hunter.camera.position.y = 7.45
 		hunter.camera.look_at(Vector3(0,1.45,0))
 		hunter.display.position = -hunter.camera.unproject_position(Vector3.ZERO)*hunter.display.scale
@@ -895,11 +914,26 @@ func _process(delta: float) -> void:
 	var elapsed := delta*speed
 	pose_clock += elapsed
 	basic_recoil = maxf(0.0,basic_recoil-elapsed)
+	hit_age += elapsed
+	hit_label.visible = hit_damage > 0 and hit_age < .42
+	if hit_label.visible:
+		hit_label.position = hit_point+Vector2(18,-22-40*hit_age)
+		hit_label.modulate.a = 1.0-smoothstep(.18,.42,hit_age)
 	if transition_elapsed>=0:
 		advance_transition(delta)
 	elif running and not result_shown:
 		if impact_pending and pose_clock >= IMPACT_SECONDS:
+			var before_hp := rules.hunter_hp if pose == "counter" else rules.deer_hp
 			rules.resolve_attack()
+			hit_damage = before_hp - (rules.hunter_hp if pose == "counter" else rules.deer_hp)
+			if hit_damage > 0:
+				hit_age = 0.0
+				hit_kind = pose
+				hit_on_hunter = pose == "counter"
+				var attacker := hunters[rules.attacker]
+				hit_origin = attacker.contact_point() if attacker is COMBAT_PREVIEW else attacker.position + (attacker.tool_contact_world()-attacker.global_position)*attacker.scale
+				hit_point = hit_origin if hit_on_hunter else deer.position+Vector2(-18,-37)
+				hit_label.text = "−%d" % hit_damage
 			impact_pending = false
 			if pose=="counter":
 				hunt_audio.cue("S21",2)
@@ -1012,6 +1046,16 @@ func update_actors(delta: float) -> void:
 		hunter.position = base + attack_direction*(lunge if attack else 10 if assisting else -18 if dodge else 0)*beat
 		var heading := Vector2(1,.55).lerp(Vector2(1,.28),approach)
 		var approaching := transition_elapsed >= 0.0 and approach > 0.0 and approach < 1.0
+		if hunter is COMBAT_PREVIEW:
+			var clip := "Spear_Thrust" if attack or assisting else "Hit_Reaction" if dodge and hit_on_hunter and hit_age < .26 else "Combat_Idle"
+			var progress := clampf(pose_clock/RULES.POSE_SECONDS,0,1) if clip != "Combat_Idle" else fposmod(hunter.clock,1.8)/1.8
+			hunter.clock += delta
+			hunter.show_combat_pose(hunter.position.direction_to(deer.position) if attack or assisting else heading,clip,progress)
+			hunter.viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
+			hunter_markers[i].position = hunter.position+Vector2(0,-63)
+			hunter_markers[i].visible = arrival_finished
+			hunter_field_bars[i].get_parent().visible = approach>=1.0
+			continue
 		var female := hunter.meshy_hunt_rig
 		var phase := pose_clock * 12.0
 		if female:
@@ -1066,11 +1110,28 @@ func draw_stage() -> void:
 		corners.append(corners[0])
 		battlefield.draw_polyline(corners,Color(.32,.78,1),2,true)
 	if not combat_layout:return
-	if basic_recoil>0:
-		var hit := deer.position+Vector2(-24,-39)
-		var fade := basic_recoil/BASIC_RECOIL_TIME
-		for direction in [Vector2(-1,-.5),Vector2(-1,0),Vector2(-1,.5)]:
-			battlefield.draw_line(hit+direction*4,hit+direction*(12+5*(1-fade)),Color(1,.89,.64,fade),2,true)
+	for hunter in hunters:
+		battlefield.draw_texture_rect(ALLY_RING,Rect2(hunter.position-Vector2(21.25,8.5),Vector2(42.5,17)),false)
+	battlefield.draw_texture_rect(ENEMY_RING,Rect2(deer.position-Vector2(26,10.25),Vector2(52,20.5)),false)
+	if hit_on_hunter or hit_damage <= 0: return
+	var duration := .28 if hit_kind == "team" else .24 if hit_kind == "strike" else .16
+	if hit_age >= duration: return
+	var fade := 1.0-hit_age/duration
+	if hit_kind == "team":
+		for hunter in hunters:
+			var from: Vector2 = hunter.contact_point() if hunter is COMBAT_PREVIEW else hunter.position+(hunter.tool_contact_world()-hunter.global_position)*hunter.scale
+			var direction := from.direction_to(hit_point)
+			var tail := hit_point-direction*minf(50,from.distance_to(hit_point))
+			battlefield.draw_line(tail,hit_point,Color(.25,.91,.87,.26*fade),6,true)
+			battlefield.draw_line(tail,hit_point,Color(.7,1,.96,.8*fade),2,true)
+	elif hit_kind == "strike":
+		var pulse_size := Vector2(84,29)*lerpf(.5,1.2,1.0-fade)
+		battlefield.draw_texture_rect(GROUND_PULSE,Rect2(deer.position-pulse_size*.5,pulse_size),false,Color(1,1,1,fade))
+		battlefield.draw_set_transform(hit_point,hit_origin.angle_to_point(hit_point))
+		battlefield.draw_texture_rect(HEAVY_HIT,Rect2(-48.5,-33,103,67.5),false,Color(1,1,1,fade))
+		battlefield.draw_set_transform(Vector2.ZERO)
+	else:
+		battlefield.draw_texture_rect(BASIC_HIT,Rect2(hit_point-Vector2(17,20),Vector2(44.5,34.5)),false,Color(1,1,1,fade))
 
 
 func show_result() -> void:

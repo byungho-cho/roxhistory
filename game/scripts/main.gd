@@ -2036,7 +2036,7 @@ func prepare_selected_hunt() -> void:
 	hunt_preparation_cancelled = false
 	audio.cue("action_click")
 	toast("사냥터 준비 중…")
-	var paths := [HybridCharacter.MESHY_HUNT_MODEL, "res://assets/characters/residents/sturdy_male.glb", WorldAnimal.MODELS.deer]
+	var paths := [HybridCharacter.MESHY_HUNT_MODEL, "res://assets/characters/residents/roxhistory-hunter-male-combat-v2-preview.glb", WorldAnimal.MODELS.deer]
 	var pending: Array[String] = []
 	var warmed: Array[Resource] = []
 	for path: String in paths:

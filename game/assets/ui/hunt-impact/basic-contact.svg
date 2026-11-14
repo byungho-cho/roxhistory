@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="89" height="69" viewBox="0 0 89 69" fill="none"><g id="basic-contact">
+<g id="Vector">
+<path d="M35 34L47 16L35 34ZM39 41L63 36L39 41ZM39 46L51 57L39 46ZM33 32L24 23L33 32Z" fill="black" />
+<path d="M35 34L47 16M39 41L63 36M39 46L51 57M33 32L24 23" stroke="#FFF4C2" stroke-width="4" stroke-linecap="round" />
+</g>
+<path id="Vector_2" d="M34 43C35.6569 43 37 41.6569 37 40C37 38.3431 35.6569 37 34 37C32.3431 37 31 38.3431 31 40C31 41.6569 32.3431 43 34 43Z" fill="#FFFDF0" />
+<path id="Vector_3" opacity="0.65" d="M29 60C30.6569 60 32 58.6569 32 57C32 55.3431 30.6569 54 29 54C27.3431 54 26 55.3431 26 57C26 58.6569 27.3431 60 29 60Z" fill="#BE9356" />
+<path id="Vector_4" opacity="0.7" d="M50 62C51.1046 62 52 61.1046 52 60C52 58.8954 51.1046 58 50 58C48.8954 58 48 58.8954 48 60C48 61.1046 48.8954 62 50 62Z" fill="#C89661" />
+</g>
+</svg>
