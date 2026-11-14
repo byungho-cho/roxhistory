@@ -36,68 +36,82 @@ func draw_page() -> void:
 	add_child(page)
 	var bg: TextureRect = app.picture(page, FIELD, Rect2(Vector2.ZERO, size))
 	bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	var width := minf(size.x - 2 * app.safe.x, 525)
-	var center := Vector2(size.x * .5, size.y * .68)
-	var crest := Rect2(size.x * .5 - 125, app.safe.y - 9, 250, 83)
+	var unit := minf(size.x / 704.0,size.y / 350.0)
+	var center := size * Vector2(.5,.687)
+	var crest := Rect2(size.x * .5 - 80 * unit,maxf(5 * unit,app.safe.y - 9),160 * unit,56 * unit)
 	app.picture(page, TITLE, crest)
-	title(page, "사냥터 선택", Rect2(crest.position + Vector2(0,37),Vector2(250,42)), 30)
-	var back := action(page, "", Rect2(app.safe, Vector2(46,46)), exit_selection)
+	title(page, "사냥터 선택", Rect2(crest.position + Vector2(0,22)*unit,Vector2(160,28)*unit), roundi(20*unit))
+	var back := action(page, "", Rect2(Vector2(maxf(app.safe.x,19*unit),maxf(app.safe.y,10*unit)),Vector2.ONE*maxf(36,28*unit)), exit_selection)
 	for state in ["normal","hover","pressed","focus"]:
 		back.add_theme_stylebox_override(state,StyleBoxEmpty.new())
-	app.picture(back,preload("res://assets/ui/d0009/hunt_common_back.png"),Rect2(0,0,46,46))
-	var rules := action(page, "규칙", Rect2(size.x - app.safe.x - 84, app.safe.y, 84, 38), open_rules)
+	app.picture(back,preload("res://assets/ui/d0009/hunt_common_back.png"),Rect2((back.size-Vector2.ONE*28*unit)*.5,Vector2.ONE*28*unit))
+	var rules := action(page, "규칙", Rect2(size.x - maxf(app.safe.x,16*unit) - 63*unit,maxf(app.safe.y,10*unit),63*unit,maxf(32,26*unit)),open_rules)
+	rules.add_theme_font_size_override("font_size",roundi(13*unit))
 	var footer := Control.new()
 	footer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	page.add_child(footer)
+	var chapter_rect := Rect2(Vector2(center.x, size.y*.531)-Vector2(94,15)*unit,Vector2(188,30)*unit)
 	var chapter_bar := Panel.new()
-	chapter_bar.position = center + Vector2(-132,-95)
-	chapter_bar.size = Vector2(264,44)
-	chapter_bar.add_theme_stylebox_override("panel",DemoArt.button_style(false))
+	chapter_bar.position = chapter_rect.position
+	chapter_bar.size = chapter_rect.size
+	chapter_bar.add_theme_stylebox_override("panel",rim(Color("624425"),Color("d6ad72"),roundi(17*unit)))
 	footer.add_child(chapter_bar)
 	chapter_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	title(footer, "%d장 · %s" % [chapter + 1, CHAPTERS[chapter]], Rect2(center.x - 96, center.y - 95, 192, 44), 22)
-	var prev := action(footer, "◀", Rect2(center.x - 128, center.y - 95, 44, 44), change_chapter.bind(-1))
-	var next := action(footer, "▶", Rect2(center.x + 84, center.y - 95, 44, 44), change_chapter.bind(1))
+	title(footer,"%d장 · %s" % [chapter+1,CHAPTERS[chapter]],chapter_rect,roundi(17*unit))
+	var arrow_size := Vector2(42,34)*unit
+	var prev := action(footer,"◂",Rect2(chapter_rect.position-Vector2(0,2)*unit,arrow_size),change_chapter.bind(-1))
+	var next := action(footer,"▸",Rect2(Vector2(chapter_rect.end.x-arrow_size.x,prev.position.y),arrow_size),change_chapter.bind(1))
 	for arrow in [prev,next]:
 		for state in ["normal","hover","pressed","disabled","focus"]:
 			arrow.add_theme_stylebox_override(state,StyleBoxEmpty.new())
+		arrow.add_theme_color_override("font_color",Color("ffe0ae"))
+		arrow.add_theme_color_override("font_disabled_color",Color("cba87a"))
+		arrow.add_theme_font_size_override("font_size",roundi(21*unit))
 	prev.disabled = chapter == 0
 	next.disabled = chapter + 1 >= CHAPTERS.size()
-	var step := width / STAGES_PER_CHAPTER
 	for index in STAGES_PER_CHAPTER:
 		var stage_id := chapter * STAGES_PER_CHAPTER + index
 		var available := stage_id <= progress()
 		var done := stage_id < progress()
-		var boss := index == STAGES_PER_CHAPTER - 1
-		var caption := "보스" if boss else str(index + 1)
-		if done:
-			caption += " ✓"
-		var diameter := minf(step - 6,62)
-		var rect := Rect2(center.x - width * .5 + step * (index + .5) - diameter * .5, center.y - diameter * .5, diameter, diameter)
-		var tile := action(footer, caption, rect, choose.bind(stage_id))
-		var fill := Color("9b3028") if boss and not done else Color("575c58") if done else Color("674a30") if not available else Color("236db3")
-		var border := Color("e2ad49") if boss or stage_id == app.hunt_stage else Color("c2d5bc")
-		for state in ["normal", "hover", "pressed", "disabled"]:
-			var style := StyleBoxFlat.new()
-			style.bg_color = fill.lightened(.13) if state == "hover" else fill
-			style.border_color = border
-			style.set_border_width_all(3 if stage_id == app.hunt_stage else 2)
-			style.set_corner_radius_all(32)
-			tile.add_theme_stylebox_override(state, style)
-		tile.disabled = not available
+		var boss := index == STAGES_PER_CHAPTER-1
+		var current := stage_id == progress()
+		var selected: bool = stage_id == app.hunt_stage
+		var tile_center := center + Vector2(-167+64*index,0)*unit
+		var diameter := 42*unit
+		var rect := Rect2(tile_center-Vector2.ONE*diameter*.5,Vector2.ONE*diameter)
 		if boss:
-			tile.position -= Vector2(diameter * .35,diameter * .65)
-			tile.size = Vector2.ONE * diameter * 1.7
-			tile.text = ""
-			for state in ["normal","hover","pressed","disabled","focus"]:
-				tile.add_theme_stylebox_override(state,StyleBoxEmpty.new())
-			var boss_art: TextureRect = app.picture(tile,BOSS_ICON,Rect2(Vector2.ZERO,tile.size))
-			if done:boss_art.modulate = Color(.64,.64,.64)
-			title(tile,caption,Rect2(0,tile.size.y*.51,tile.size.x,26),17)
-		if not available:
-			var lock: TextureRect = app.picture(tile, LOCK, Rect2(tile.size.x * .5 - 7, tile.size.y * (.77 if boss else .71), 14, 15))
-			lock.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var prepare := action(footer, "사냥 준비", Rect2(center.x - 114, center.y + 60, 228, 54), app.prepare_selected_hunt, true)
+			rect = Rect2(center+Vector2(111,-91)*unit,Vector2(96,137)*unit)
+		var tile := action(footer,"",rect,choose.bind(stage_id))
+		tile.name = "HuntStage%d" % stage_id
+		tile.disabled = not available
+		for state in ["normal","hover","pressed","disabled","focus"]:
+			tile.add_theme_stylebox_override(state,StyleBoxEmpty.new())
+		if boss:
+			var boss_art: TextureRect = app.picture(tile,BOSS_ICON,Rect2(Vector2.ZERO,rect.size))
+			boss_art.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+			if done: boss_art.modulate = Color(.64,.64,.64)
+			title(tile,"보스",Rect2(Vector2(0,66)*unit,Vector2(96,23)*unit),roundi(16*unit))
+		else:
+			var fill := Color("707269") if done else Color("155ea1") if current else Color("68442c")
+			var border := Color("bebcb0") if done else Color("70d5ff") if current else Color("ad7e53")
+			var radius := ceili(diameter*.5)
+			for state in ["normal","hover","pressed","disabled"]:
+				tile.add_theme_stylebox_override(state,rim(fill.lightened(.12) if state=="hover" else fill,border,radius,2 if selected else 1))
+			var inset := Panel.new()
+			inset.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			inset.add_theme_stylebox_override("panel",rim(Color.TRANSPARENT,border.darkened(.2),radius-3))
+			tile.add_child(inset)
+			inset.position = Vector2.ONE*3*unit
+			inset.size = Vector2.ONE*36*unit
+			title(tile,str(index+1),Rect2(0,2*unit,diameter,(38 if current else 24)*unit),roundi((20 if current else 15)*unit))
+		if done:
+			title(tile,"✓",Rect2(0,(86 if boss else 22)*unit,rect.size.x,17*unit),roundi(13*unit))
+		elif not available:
+			var lock_size := (16 if boss else 11)*unit
+			var lock: TextureRect = app.picture(tile,LOCK,Rect2((rect.size.x-lock_size)*.5,(90 if boss else 25)*unit,lock_size,lock_size*1.1))
+			lock.modulate = Color("f6daad")
+	var prepare := action(footer,"사냥 준비",Rect2(Vector2(center.x,size.y*.864)-Vector2(86,21)*unit,Vector2(172,42)*unit),app.prepare_selected_hunt,true)
+	prepare.add_theme_font_size_override("font_size",roundi(20*unit))
 	for state in ["normal","hover","pressed","disabled","focus"]:
 		prepare.add_theme_stylebox_override(state,StyleBoxEmpty.new())
 	for key in ["font_color","font_hover_color","font_pressed_color","font_disabled_color"]:
@@ -114,6 +128,14 @@ func draw_page() -> void:
 		animate_entry(back,Vector2(-14,0),0.0)
 		animate_entry(rules,Vector2(14,0),0.05)
 		animate_entry(footer,Vector2(0,20),0.10)
+
+func rim(fill: Color, border: Color, radius: int, width := 1) -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = fill
+	style.border_color = border
+	style.set_corner_radius_all(maxi(radius,0))
+	style.set_border_width_all(width)
+	return style
 
 func animate_entry(node: Control, offset: Vector2, delay: float) -> void:
 	entry_positions[node] = node.position
