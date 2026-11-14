@@ -103,8 +103,8 @@ func assignment_slot(parent: Control, callback: Callable, texture: Texture2D, re
 	app.picture(button,backgrounds[state],Rect2(0,0,70,70))
 	var picture: TextureRect = app.picture(button,texture,rect)
 	picture.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	var name_label: Label = app.label(button,caption,13 if state in ["occupied","picker"] else 11,Color("fff0cf") if state == "occupied" else Color("49321e"))
-	name_label.position = Vector2(0,50)
+	var name_label: Label = app.label(button,caption,10 if state == "occupied" else 12 if state == "picker" else 9,Color("fff0cf") if state == "occupied" else Color("49321e"))
+	name_label.position = Vector2(0,52)
 	name_label.size = Vector2(70,18)
 	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	if state == "locked":
@@ -142,6 +142,8 @@ func open_assignment_panel(key := "") -> void:
 	heading.remove_theme_font_override("font")
 	var count: Label = list.get_child(0)
 	assignment_count = count
+	count.add_theme_font_override("font",FigmaArt.BODY)
+	count.add_theme_font_size_override("font_size",14)
 	count.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	var content_box := list.get_parent().get_parent() as VBoxContainer
 	list.add_theme_constant_override("separation",6)
@@ -149,6 +151,10 @@ func open_assignment_panel(key := "") -> void:
 	content_box.add_child(count)
 	content_box.move_child(count,1)
 	content_box.add_theme_constant_override("separation",4)
+	var header_gap := Control.new()
+	header_gap.custom_minimum_size.y = 14
+	content_box.add_child(header_gap)
+	content_box.move_child(header_gap,2)
 	refresh_assignment_panel()
 
 func refresh_assignment_panel() -> void:
@@ -175,27 +181,29 @@ func refresh_assignment_panel() -> void:
 		row.add_theme_constant_override("separation",12)
 		list.add_child(row)
 		var identity := Control.new()
-		identity.custom_minimum_size = Vector2(94,76)
+		identity.custom_minimum_size = Vector2(76,76)
 		row.add_child(identity)
-		var resource: TextureRect = app.picture(identity,assignment_icon(job),Rect2(22,0,50,50))
+		var resource: TextureRect = app.picture(identity,assignment_icon(job),Rect2(13,1,50,50))
 		resource.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		app.picture(identity,preload("res://assets/ui/d0009/job-name-brush.png"),Rect2(4,32,86,19))
+		app.picture(identity,preload("res://assets/ui/d0009/job-name-brush.png"),Rect2(6,33,64,17))
 		var title: Label = app.label(identity,job_name(job),14,Color.WHITE)
 		title.position = Vector2(0,31)
-		title.size = Vector2(94,21)
+		title.size = Vector2(76,21)
 		title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		var auto := textured_action(identity,"자동 배치",auto_assign.bind(job,key),preload("res://assets/ui/d0010/auto-assign-plate.png"))
 		auto.custom_minimum_size = Vector2.ZERO
-		auto.position = Vector2(8,51)
-		auto.size = Vector2(78,25)
-		auto.add_theme_font_size_override("font_size",13)
+		auto.position = Vector2(8,57)
+		auto.size = Vector2(60,20)
+		auto.add_theme_font_size_override("font_size",9)
+		for color_key in ["font_color","font_hover_color","font_pressed_color","font_disabled_color"]:
+			auto.add_theme_color_override(color_key,Color("fff0cf"))
 		var rail := ScrollContainer.new()
 		rail.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		rail.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 		rail.custom_minimum_size.y = 86
 		row.add_child(rail)
 		var slots := HBoxContainer.new()
-		slots.add_theme_constant_override("separation",14)
+		slots.add_theme_constant_override("separation",15)
 		var padding := MarginContainer.new()
 		padding.add_theme_constant_override("margin_top",7)
 		padding.add_theme_constant_override("margin_right",8)
@@ -205,7 +213,7 @@ func refresh_assignment_panel() -> void:
 			var item := jobs.entry(id)
 			if item.job != job or (scoped and not assigned.has(id)): continue
 			var target := str(item.get("building",""))
-			var slot := assignment_slot(slots,show_waiting.bind(job,target,id),portrait_for(id),Rect2(9,3,52,52),display_name(id))
+			var slot := assignment_slot(slots,show_waiting.bind(job,target,id),portrait_for(id),Rect2(3,4,64,66),display_name(id))
 			var holder := Control.new()
 			holder.custom_minimum_size = slot.custom_minimum_size
 			holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -214,9 +222,9 @@ func refresh_assignment_panel() -> void:
 			slot.position = Vector2.ZERO
 			slot.size = holder.custom_minimum_size
 			var remove := HudButtons.create(holder,false,unassign_resident.bind(id),"UnassignResident")
-			remove.custom_minimum_size = Vector2(24,24)
-			remove.size = Vector2(24,24)
-			remove.position = Vector2(58,-6)
+			remove.custom_minimum_size = Vector2(18,18)
+			remove.size = Vector2(18,18)
+			remove.position = Vector2(59,-5)
 			remove.art_feedback.get_node("Icon").size = remove.size
 		for target in available_slots(job,jobs,key):
 			assignment_slot(slots,show_waiting.bind(job,target),preload("res://assets/ui/d0010/slot-silhouette.png"),Rect2(21,13,28,28),"주민 추가","open")
