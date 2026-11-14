@@ -11,6 +11,9 @@ var app: Node
 var page: Control
 
 var chapter := 0
+var entry_played := false
+var entry_tween: Tween
+var entry_positions: Dictionary = {}
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
@@ -24,6 +27,7 @@ func progress() -> int:
 func draw_page() -> void:
 	if size.x <= 0 or size.y <= 0:
 		return
+	finish_entry()
 	if is_instance_valid(page):
 		remove_child(page)
 		page.queue_free()
@@ -41,16 +45,19 @@ func draw_page() -> void:
 	for state in ["normal","hover","pressed","focus"]:
 		back.add_theme_stylebox_override(state,StyleBoxEmpty.new())
 	app.picture(back,preload("res://assets/ui/d0009/hunt_common_back.png"),Rect2(0,0,46,46))
-	action(page, "규칙", Rect2(size.x - app.safe.x - 84, app.safe.y, 84, 38), open_rules)
+	var rules := action(page, "규칙", Rect2(size.x - app.safe.x - 84, app.safe.y, 84, 38), open_rules)
+	var footer := Control.new()
+	footer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	page.add_child(footer)
 	var chapter_bar := Panel.new()
 	chapter_bar.position = center + Vector2(-132,-95)
 	chapter_bar.size = Vector2(264,44)
 	chapter_bar.add_theme_stylebox_override("panel",DemoArt.button_style(false))
-	page.add_child(chapter_bar)
+	footer.add_child(chapter_bar)
 	chapter_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	title(page, "%d장 · %s" % [chapter + 1, CHAPTERS[chapter]], Rect2(center.x - 96, center.y - 95, 192, 44), 22)
-	var prev := action(page, "◀", Rect2(center.x - 128, center.y - 95, 44, 44), change_chapter.bind(-1))
-	var next := action(page, "▶", Rect2(center.x + 84, center.y - 95, 44, 44), change_chapter.bind(1))
+	title(footer, "%d장 · %s" % [chapter + 1, CHAPTERS[chapter]], Rect2(center.x - 96, center.y - 95, 192, 44), 22)
+	var prev := action(footer, "◀", Rect2(center.x - 128, center.y - 95, 44, 44), change_chapter.bind(-1))
+	var next := action(footer, "▶", Rect2(center.x + 84, center.y - 95, 44, 44), change_chapter.bind(1))
 	for arrow in [prev,next]:
 		for state in ["normal","hover","pressed","disabled","focus"]:
 			arrow.add_theme_stylebox_override(state,StyleBoxEmpty.new())
@@ -67,7 +74,7 @@ func draw_page() -> void:
 			caption += " ✓"
 		var diameter := minf(step - 6,62)
 		var rect := Rect2(center.x - width * .5 + step * (index + .5) - diameter * .5, center.y - diameter * .5, diameter, diameter)
-		var tile := action(page, caption, rect, choose.bind(stage_id))
+		var tile := action(footer, caption, rect, choose.bind(stage_id))
 		var fill := Color("9b3028") if boss and not done else Color("575c58") if done else Color("674a30") if not available else Color("236db3")
 		var border := Color("e2ad49") if boss or stage_id == app.hunt_stage else Color("c2d5bc")
 		for state in ["normal", "hover", "pressed", "disabled"]:
@@ -90,7 +97,7 @@ func draw_page() -> void:
 		if not available:
 			var lock: TextureRect = app.picture(tile, LOCK, Rect2(tile.size.x * .5 - 7, tile.size.y * (.77 if boss else .71), 14, 15))
 			lock.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var prepare := action(page, "사냥 준비", Rect2(center.x - 114, center.y + 60, 228, 54), app.prepare_selected_hunt, true)
+	var prepare := action(footer, "사냥 준비", Rect2(center.x - 114, center.y + 60, 228, 54), app.prepare_selected_hunt, true)
 	for state in ["normal","hover","pressed","disabled","focus"]:
 		prepare.add_theme_stylebox_override(state,StyleBoxEmpty.new())
 	for key in ["font_color","font_hover_color","font_pressed_color","font_disabled_color"]:
@@ -100,6 +107,32 @@ func draw_page() -> void:
 	prepare.add_child(skin)
 	skin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	prepare.disabled = app.hunt_stage / STAGES_PER_CHAPTER != chapter
+
+	if not entry_played:
+		entry_played = true
+		entry_tween = create_tween().set_parallel(true).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+		animate_entry(back,Vector2(-14,0),0.0)
+		animate_entry(rules,Vector2(14,0),0.05)
+		animate_entry(footer,Vector2(0,20),0.10)
+
+func animate_entry(node: Control, offset: Vector2, delay: float) -> void:
+	entry_positions[node] = node.position
+	node.position += offset
+	node.modulate.a = 0.0
+	entry_tween.tween_property(node,"position",entry_positions[node],.22).set_delay(delay)
+	entry_tween.tween_property(node,"modulate:a",1.0,.22).set_delay(delay)
+
+func finish_entry() -> void:
+	if entry_positions.is_empty(): return
+	if entry_tween and entry_tween.is_valid(): entry_tween.kill()
+	for node: Control in entry_positions:
+		node.position = entry_positions[node]
+		node.modulate.a = 1.0
+	entry_positions.clear()
+
+func _input(event: InputEvent) -> void:
+	if (event is InputEventMouseButton or event is InputEventScreenTouch) and event.pressed:
+		finish_entry()
 
 func choose(stage_id: int) -> void:
 	if stage_id > progress():

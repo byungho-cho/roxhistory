@@ -80,7 +80,7 @@ func waiting(jobs: ResidentJobs) -> Array[String]:
 
 func portrait_for(id: String) -> Texture2D:
 	var index := ResidentAdmission.ids(app.model.state).find(id)
-	return preload("res://assets/ui/d0009/resident-female-portrait.png") if index % 2 == 0 else preload("res://assets/ui/d0009/resident-male-portrait.png")
+	return preload("res://assets/ui/d0010/resident-female-portrait.png") if index % 2 == 0 else preload("res://assets/ui/d0010/resident-male-portrait.png")
 
 func assignment_icon(job: String) -> Texture2D:
 	match job:
@@ -89,23 +89,35 @@ func assignment_icon(job: String) -> Texture2D:
 		"farmer": return preload("res://assets/ui/d0009/resource-grain.png")
 	return icon(job)
 
-func assignment_slot(parent: Control, callback: Callable, texture: Texture2D, rect: Rect2, caption := "", locked := false) -> DemoButton:
+func assignment_slot(parent: Control, callback: Callable, texture: Texture2D, rect: Rect2, caption: String, state := "occupied") -> DemoButton:
 	var button: DemoButton = app.button(parent,"",callback)
 	button.custom_minimum_size = Vector2(70,70)
-	var skin := StyleBoxFlat.new()
-	skin.bg_color = Color("a69a80") if locked else Color("795634") if caption == "주민 추가" else Color("e8d4ac")
-	skin.border_color = Color("ba9865")
-	skin.set_border_width_all(1)
-	skin.set_corner_radius_all(5)
-	for state in ["normal","pressed","hover","focus"]:button.add_theme_stylebox_override(state,skin)
+	var backgrounds := {
+		"occupied": preload("res://assets/ui/d0010/slot-occupied.png"),
+		"locked": preload("res://assets/ui/d0010/slot-locked.png"),
+		"open": preload("res://assets/ui/d0010/slot-open.png"),
+		"picker": preload("res://assets/ui/d0010/slot-picker-unassigned.png"),
+	}
+	for style in ["normal","pressed","hover","focus","disabled"]:
+		button.add_theme_stylebox_override(style,StyleBoxEmpty.new())
+	app.picture(button,backgrounds[state],Rect2(0,0,70,70))
 	var picture: TextureRect = app.picture(button,texture,rect)
 	picture.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	if not caption.is_empty():
-		var name_label: Label = app.label(button,caption,11 if locked or caption == "주민 추가" else 13,Color("fff0cf") if caption == "주민 추가" else Color("49321e"))
-		name_label.position = Vector2(0,50)
-		name_label.size = Vector2(70,18)
-		name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var name_label: Label = app.label(button,caption,13 if state in ["occupied","picker"] else 11,Color("fff0cf") if state == "occupied" else Color("49321e"))
+	name_label.position = Vector2(0,50)
+	name_label.size = Vector2(70,18)
+	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	if state == "locked":
+		button.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		button.focus_mode = Control.FOCUS_NONE
+	return button
 
+func textured_action(parent: Control, caption: String, callback: Callable, texture: Texture2D) -> DemoButton:
+	var button := action(parent,caption,callback)
+	button.get_node("AssignmentActionSkin").hide()
+	var art_rect: TextureRect = app.picture(button,texture,Rect2())
+	art_rect.show_behind_parent = true
+	art_rect.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	return button
 
 func show_summary(_page:int=0)->void:
@@ -172,7 +184,7 @@ func refresh_assignment_panel() -> void:
 		title.position = Vector2(0,31)
 		title.size = Vector2(94,21)
 		title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		var auto := action(identity,"자동 배치",auto_assign.bind(job,key))
+		var auto := textured_action(identity,"자동 배치",auto_assign.bind(job,key),preload("res://assets/ui/d0010/auto-assign-plate.png"))
 		auto.custom_minimum_size = Vector2.ZERO
 		auto.position = Vector2(8,51)
 		auto.size = Vector2(78,25)
@@ -180,31 +192,41 @@ func refresh_assignment_panel() -> void:
 		var rail := ScrollContainer.new()
 		rail.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		rail.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-		rail.custom_minimum_size.y = 78
+		rail.custom_minimum_size.y = 86
 		row.add_child(rail)
 		var slots := HBoxContainer.new()
-		slots.add_theme_constant_override("separation",10)
-		rail.add_child(slots)
+		slots.add_theme_constant_override("separation",14)
+		var padding := MarginContainer.new()
+		padding.add_theme_constant_override("margin_top",7)
+		padding.add_theme_constant_override("margin_right",8)
+		rail.add_child(padding)
+		padding.add_child(slots)
 		for id in ids:
 			var item := jobs.entry(id)
 			if item.job != job or (scoped and not assigned.has(id)): continue
 			var target := str(item.get("building",""))
 			var slot := assignment_slot(slots,show_waiting.bind(job,target,id),portrait_for(id),Rect2(9,3,52,52),display_name(id))
-			var remove := HudButtons.create(slot,false,unassign_resident.bind(id),"UnassignResident")
+			var holder := Control.new()
+			holder.custom_minimum_size = slot.custom_minimum_size
+			holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			slots.add_child(holder)
+			slot.reparent(holder,false)
+			slot.position = Vector2.ZERO
+			slot.size = holder.custom_minimum_size
+			var remove := HudButtons.create(holder,false,unassign_resident.bind(id),"UnassignResident")
 			remove.custom_minimum_size = Vector2(24,24)
 			remove.size = Vector2(24,24)
-			remove.position = Vector2(46,0)
+			remove.position = Vector2(58,-6)
 			remove.art_feedback.get_node("Icon").size = remove.size
-		for target in available_slots(job,jobs,key).slice(0,1):
-			assignment_slot(slots,show_waiting.bind(job,target),preload("res://assets/ui/d0009/slot-add.png"),Rect2(25,18,20,20),"주민 추가")
+		for target in available_slots(job,jobs,key):
+			assignment_slot(slots,show_waiting.bind(job,target),preload("res://assets/ui/d0010/slot-silhouette.png"),Rect2(21,13,28,28),"주민 추가","open")
 		var locked := "" if scoped and job not in ["wood","stone"] else unlock_hint(job)
 		if not locked.is_empty():
 			var level := limit+1 if scoped else next_unlock_level(job)
 			var levels := range(level,5) if job in ["wood","stone"] else [level]
 			for required_level: int in levels:
 				var caption := "Lv%d 해제" % required_level if required_level > 0 else "건설 후 해제"
-				var hint := locked if job not in ["wood","stone"] else "%s Lv.%d에서 자리가 열려요." % [BuildingWorkflow.building_name(ResourceStorage.STORE_KINDS[job]),required_level]
-				assignment_slot(slots,func(): app.toast(hint),preload("res://assets/ui/v0158/lock.png"),Rect2(23,14,24,28),caption,true)
+				assignment_slot(slots,func(): pass,preload("res://assets/ui/v0158/lock.png"),Rect2(23,14,24,28),caption,"locked")
 		list.add_child(HSeparator.new())
 
 func next_unlock_level(job: String) -> int:
@@ -269,7 +291,7 @@ func show_waiting(job: String, target: String, occupant := "") -> void:
 	app.overlay.add_child(waiting_overlay)
 	waiting_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	var width := minf(520,app.w-2*app.safe.x-22)
-	var height := minf(230,app.h-2*app.safe.y-24)
+	var height := minf(230 if not occupant.is_empty() else 174,app.h-2*app.safe.y-24)
 	var panel: PanelContainer = app.box(waiting_overlay,Rect2((app.w-width)*.5,(app.h-height)*.5,width,height))
 	var list: VBoxContainer = app.column(panel,8)
 	var header := HBoxContainer.new()
@@ -278,7 +300,7 @@ func show_waiting(job: String, target: String, occupant := "") -> void:
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	HudButtons.create(header,false,close_waiting,"CloseWaiting")
 	var ids := waiting(jobs)
-	app.label(list,"미배정 %d명 · 주민을 누르면 바로 배정합니다."%ids.size(),16)
+	app.label(list,"미배정 %d명 · 주민을 누르면 바로 배정합니다."%ids.size() if occupant.is_empty() else "%s · 교체할 주민을 선택하세요."%display_name(occupant),16)
 	var rail := ScrollContainer.new()
 	rail.custom_minimum_size.y = 80
 	rail.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -287,8 +309,30 @@ func show_waiting(job: String, target: String, occupant := "") -> void:
 	slots.alignment = BoxContainer.ALIGNMENT_CENTER
 	slots.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	rail.add_child(slots)
+	var selected := [""]
+	var replace: DemoButton
+	if not occupant.is_empty():
+		var actions := HBoxContainer.new()
+		actions.alignment = BoxContainer.ALIGNMENT_CENTER
+		actions.add_theme_constant_override("separation",12)
+		list.add_child(actions)
+		replace = action(actions,"교체",func(): select_waiting(job,target,str(selected[0]),occupant))
+		replace.custom_minimum_size = Vector2(120,38)
+		replace.disabled = true
+		var release := textured_action(actions,"배정 해제",unassign_resident.bind(occupant),preload("res://assets/ui/d0010/action-unassign-silver.png"))
+		release.custom_minimum_size = Vector2(120,38)
 	for id in ids:
-		assignment_slot(slots,select_waiting.bind(job,target,id,occupant),portrait_for(id),Rect2(9,3,52,52),display_name(id))
+		var callback := select_waiting.bind(job,target,id,occupant)
+		if is_instance_valid(replace):
+			callback = choose_replacement.bind(id,selected,replace,slots)
+		var slot := assignment_slot(slots,callback,portrait_for(id),Rect2(9,3,52,52),display_name(id),"picker")
+		slot.set_meta("resident_id",id)
+
+func choose_replacement(id: String, selected: Array, replace: DemoButton, slots: HBoxContainer) -> void:
+	selected[0] = id
+	replace.disabled = false
+	for slot: DemoButton in slots.get_children():
+		slot.modulate = Color.WHITE if slot.get_meta("resident_id") == id else Color(.84,.84,.84)
 
 func select_waiting(job: String, target: String, id: String, occupant: String) -> void:
 	if occupant.is_empty():
