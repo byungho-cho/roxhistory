@@ -116,10 +116,12 @@ func assignment_slot(parent: Control, callback: Callable, texture: Texture2D, re
 	}
 	for style in ["normal","pressed","hover","focus","disabled"]:
 		button.add_theme_stylebox_override(style,StyleBoxEmpty.new())
-	app.picture(button,backgrounds[state],Rect2(0,0,70,70))
+	var background: TextureRect = app.picture(button,backgrounds[state],Rect2(0,0,70,70))
+	background.name = "SlotBackground"
 	var picture: TextureRect = app.picture(button,texture,rect)
 	picture.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	var name_label: Label = app.label(button,caption,10 if state == "occupied" else 12 if state == "picker" else 9,Color("fff0cf") if state == "occupied" else Color("49321e"))
+	name_label.name = "ResidentCaption"
 	name_label.position = Vector2(0,52)
 	name_label.size = Vector2(70,18)
 	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -371,7 +373,11 @@ func choose_replacement(id: String, selected: Array, replace: DemoButton, slots:
 	selected[0] = id
 	replace.disabled = false
 	for slot: DemoButton in slots.get_children():
-		slot.modulate = Color.WHITE if slot.get_meta("resident_id") == id else Color(.84,.84,.84)
+		var is_selected: bool = slot.get_meta("resident_id") == id
+		var background: TextureRect = slot.get_node("SlotBackground")
+		background.texture = preload("res://assets/ui/d0010/slot-occupied.png") if is_selected else preload("res://assets/ui/d0010/slot-picker-unassigned.png")
+		var caption: Label = slot.get_node("ResidentCaption")
+		caption.add_theme_color_override("font_color",Color("fff0cf") if is_selected else Color("49321e"))
 
 func select_waiting(job: String, target: String, id: String, occupant: String) -> void:
 	if occupant.is_empty():
