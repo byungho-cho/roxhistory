@@ -165,7 +165,10 @@ func render_phase() -> void:
 func check_for_patch() -> void:
 	begin_manifest_check(RELEASE_ROOT+"latest.json")
 
-func begin_manifest_check(url: String) -> bool:
+func begin_manifest_check(_url: String) -> bool:
+	return false
+
+func begin_release_manifest_check(url: String) -> bool:
 	if downloading or restart_pending or phase==Phase.CHECKING:return false
 	check_url = url
 	candidate.clear()

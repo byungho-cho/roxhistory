@@ -21,6 +21,7 @@ var hold_consumed:=false
 var moving_key:=""
 var hold_pointer:=-1
 var move_offset:=Vector2.ZERO
+var review_pointer := -2
 func _process(delta:float)->void:
 	if not hold_at.is_finite():return
 	if app.modal or not app.application_active or pinching or panning or mouse_dragging:hold_at=Vector2.INF;return
@@ -42,6 +43,7 @@ func _process(delta:float)->void:
 		blocked=true;mouse_dragging=false;panning=false
 func _init(owner_app: Node) -> void: app=owner_app
 func clear() -> void:
+	review_pointer = -2
 	if is_instance_valid(app.tutorial):app.tutorial.pointer=-2
 	if is_instance_valid(app.build_side):app.build_side.cancel_pointer()
 	moving_key=""
@@ -80,6 +82,15 @@ func _input(event: InputEvent) -> void:
 		if app.application_active and app.overlay.handle_pointer(event):get_viewport().set_input_as_handled()
 		return
 	if not app.modal and app.application_active and is_instance_valid(app.tutorial) and app.tutorial.active():
+		var review_button: DemoButton = app.stage.get_node_or_null("ResidentReviewToggle")
+		if review_button and (event is InputEventScreenTouch or event is InputEventMouseButton):
+			var pointer: int = event.index if event is InputEventScreenTouch else -1
+			if event.pressed and review_button.get_global_rect().has_point(event.position):
+				review_pointer = pointer
+				return
+			if not event.pressed and review_pointer == pointer:
+				review_pointer = -2
+				return
 		if app.tutorial.handle_pointer(event):get_viewport().set_input_as_handled()
 		return
 	if is_instance_valid(app.build_side) and app.build_side.handle_input(event):

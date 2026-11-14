@@ -40,6 +40,7 @@ var intro_playback_failed := false
 var intro_sound: DemoButton
 var title_sound: DemoButton
 var return_village_button: DemoButton
+var resident_review: Node2D
 const RETURN_VILLAGE_SHOW := 460.0
 const RETURN_VILLAGE_HIDE := 300.0
 var title_prompt: DemoButton
@@ -1103,6 +1104,20 @@ func return_to_village() -> void:
 	world.player.return_to_village()
 
 
+func toggle_resident_review() -> void:
+	var review_button: DemoButton = stage.get_node("ResidentReviewToggle")
+	if not is_instance_valid(resident_review):
+		resident_review = preload("res://scripts/resident_v02_review.gd").new()
+		resident_review.name = "ResidentReview"
+		# Fixed comparison samples in the current camera view.
+		var at := world.get_global_transform_with_canvas().affine_inverse() * Vector2(w*.48,h*.40)
+		resident_review.position = at
+		resident_review.z_index = 12
+		stage.tree_exiting.connect(resident_review.queue_free,CONNECT_ONE_SHOT)
+		world.add_child(resident_review)
+	resident_review.set_comparison(not resident_review.enabled)
+	review_button.text = "캐릭터 테스트 · ON" if resident_review.enabled else "캐릭터 테스트 · OFF"
+
 func play_hud(spread:=false) -> void:
 	var hud_started := Time.get_ticks_usec()
 	performance_hud=PERFORMANCE_HUD.new()
@@ -1146,6 +1161,14 @@ func play_hud(spread:=false) -> void:
 	picture(return_village_button,return_icon,Rect2(0,0,48,48))
 	return_village_button.z_index=36
 	return_village_button.hide()
+	var review_button := button(stage,"캐릭터 테스트 · OFF",toggle_resident_review)
+	review_button.name = "ResidentReviewToggle"
+	review_button.custom_minimum_size = Vector2(142,40)
+	review_button.size = review_button.custom_minimum_size
+	review_button.position = Vector2(w-safe.x-162,h*.5-72)
+	review_button.z_index = 36
+	review_button.add_theme_font_size_override("font_size",14)
+	resident_review = null
 	debug_shortcut=button(stage,"",toggle_performance_debug,false,"","debug_click")
 	debug_shortcut.name="PerformanceDebugShortcut"
 	debug_shortcut.custom_minimum_size=Vector2.ZERO
