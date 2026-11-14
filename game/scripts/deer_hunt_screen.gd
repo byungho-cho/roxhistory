@@ -113,7 +113,7 @@ var skill_buttons: Dictionary = {}
 var ready_flashes: Dictionary = {}
 var running := false
 var result_shown := false
-var result_timer := 0.0
+
 var pose_clock := 1.0
 var female_approach_phase := 0.0
 const BASIC_RECOIL_TIME := 0.19
@@ -478,10 +478,10 @@ func request_exit() -> void:
 	if exit_popup:
 		resume_battle()
 		return
+	if result_shown:return
 	if not running and transition_elapsed < 0:
 		app.close_hunt()
 		return
-	if result_shown:return
 	hunt_audio.cue("S07")
 	exit_popup = layer()
 	app.sync_audio()
@@ -608,6 +608,7 @@ func handle_arrival_skip(event: InputEvent) -> bool:
 
 
 func _input(event: InputEvent) -> void:
+	if result_shown: return
 	if handle_arrival_skip(event):
 		get_viewport().set_input_as_handled()
 		return
@@ -879,6 +880,7 @@ func _process(delta: float) -> void:
 	if not app.application_active or exit_popup or app.modal:
 		clear_formation_drag()
 		return
+	if result_shown: return
 	sound_delay = maxf(0.0,sound_delay-delta)
 	if not arrival_finished:
 		var before := arrival_elapsed
@@ -911,11 +913,7 @@ func _process(delta: float) -> void:
 		for id in ready_flashes:ready_flashes[id] = maxf(0.0,ready_flashes[id]-elapsed)
 		update_combat_ui(elapsed)
 		if not result_shown and not rules.outcome.is_empty() and not impact_pending:show_result()
-	if result_shown:
-		result_timer -= delta
-		if result_timer<=0:
-			app.close_hunt()
-			return
+	if result_shown: return
 	actor_delta += elapsed
 	if actor_delta>=1.0/30.0:
 		update_actors(actor_delta)
@@ -1076,6 +1074,7 @@ func draw_stage() -> void:
 
 
 func show_result() -> void:
+	if result_shown: return
 	result_shown = true
 	if rules.outcome == "win":
 		app.record_hunt_win()
@@ -1083,6 +1082,13 @@ func show_result() -> void:
 	hunt_audio.cue("S26" if rules.outcome=="win" else "S27",4)
 	rules.set_auto(false)
 	update_toggles()
-	result_timer = 1.6
-	var panel := plaque(combat,Rect2(310,208,340,108),Color("503317"),Color("e2b273"))
-	caption(panel,"사냥 성공" if rules.outcome=="win" else "사냥 실패",Rect2(Vector2.ZERO,panel.size),32)
+	running = false
+	canvas.hide()
+	for hunter in hunters: hunter.set_enabled(false)
+	deer.hide()
+	deer.viewport.render_target_update_mode = SubViewport.UPDATE_DISABLED
+	var result := preload("res://scripts/hunt_result.gd").new()
+	result.app = app
+	result.won = rules.outcome == "win"
+	add_child(result)
+	result.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)

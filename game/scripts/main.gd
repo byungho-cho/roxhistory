@@ -2067,6 +2067,11 @@ func record_hunt_win() -> void:
 	if not model.commit(next):
 		toast("사냥 진행을 저장하지 못했습니다.")
 
+func retry_hunt() -> void:
+	if screen != "hunt": return
+	hunt = null
+	show_screen("hunt")
+
 func close_hunt() -> void:
 	if screen!="hunt":return
 	hunt = null
