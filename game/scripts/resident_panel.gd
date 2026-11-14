@@ -118,11 +118,12 @@ func assignment_slot(parent: Control, callback: Callable, texture: Texture2D, re
 		button.add_theme_stylebox_override(style,StyleBoxEmpty.new())
 	var background: TextureRect = app.picture(button,backgrounds[state],Rect2(0,0,70,70))
 	background.name = "SlotBackground"
+	button.clip_contents = state == "occupied"
 	var picture: TextureRect = app.picture(button,texture,rect)
 	picture.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	var name_label: Label = app.label(button,caption,10 if state == "occupied" else 12 if state == "picker" else 9,Color("fff0cf") if state == "occupied" else Color("49321e"))
+	var name_label: Label = app.label(button,caption,11 if state == "occupied" else 12 if state == "picker" else 9,Color("fff0cf") if state == "occupied" else Color("49321e"))
 	name_label.name = "ResidentCaption"
-	name_label.position = Vector2(0,52)
+	name_label.position = Vector2(0,53)
 	name_label.size = Vector2(70,18)
 	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	if state == "locked":
@@ -201,12 +202,12 @@ func refresh_assignment_panel() -> void:
 		var identity := Control.new()
 		identity.custom_minimum_size = Vector2(76,76)
 		row.add_child(identity)
-		var resource: TextureRect = app.picture(identity,assignment_icon(job),Rect2(14,6,48,48))
+		var resource: TextureRect = app.picture(identity,assignment_icon(job),Rect2(13,7,50,44))
 		resource.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		app.picture(identity,preload("res://assets/ui/d0009/job-name-brush.png"),Rect2(9,41,58,13))
-		var title: Label = app.label(identity,job_name(job),12,Color.WHITE)
-		title.position = Vector2(0,37)
-		title.size = Vector2(76,21)
+		app.picture(identity,preload("res://assets/ui/d0009/job-name-brush.png"),Rect2(2,40,72,17))
+		var title: Label = app.label(identity,job_name(job),13,Color.WHITE)
+		title.position = Vector2(0,39)
+		title.size = Vector2(76,18)
 		title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		var auto := textured_action(identity,"자동 배치",auto_assign.bind(job,key),preload("res://assets/ui/d0010/auto-assign-plate.png"))
@@ -233,7 +234,7 @@ func refresh_assignment_panel() -> void:
 			var item := jobs.entry(id)
 			if item.job != job or (scoped and not assigned.has(id)): continue
 			var target := str(item.get("building",""))
-			var slot := assignment_slot(slots,show_waiting.bind(job,target,id),portrait_for(id),Rect2(3,4,64,66),display_name(id))
+			var slot := assignment_slot(slots,show_waiting.bind(job,target,id),portrait_for(id),Rect2(-3,3,76,72),display_name(id))
 			var holder := Control.new()
 			holder.custom_minimum_size = slot.custom_minimum_size
 			holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
