@@ -52,8 +52,8 @@ func style_scroll(bar: ScrollBar, vertical: bool) -> void:
 		skin.content_margin_bottom = skin.content_margin_top
 		bar.add_theme_stylebox_override(style_name,skin)
 
-func content(title:String,subtitle:String)->VBoxContainer:
-	var scroll:ScrollContainer=app.show_modal(title,"",[],false,true,false,Vector2(560,664))
+func content(title:String,subtitle:String,height := 664.0)->VBoxContainer:
+	var scroll:ScrollContainer=app.show_modal(title,"",[],false,true,false,Vector2(560,height))
 	scroll.name="ResidentAssignmentScroll"
 	style_scroll(scroll.get_v_scroll_bar(),true)
 	var list:=VBoxContainer.new();list.name="AssignmentContent";list.size_flags_horizontal=Control.SIZE_EXPAND_FILL;list.add_theme_constant_override("separation",14);scroll.add_child(list)
@@ -146,7 +146,7 @@ func open_assignment_panel(key := "") -> void:
 	var heading_text := "주민 배정"
 	if not key.is_empty():
 		heading_text = BuildingWorkflow.building_name(key.get_slice(":",0)) + " · 주민 배정"
-	var list := content(heading_text,"")
+	var list := content(heading_text,"",664.0 if key.is_empty() else 216.0)
 	assignment_list = list
 	var header: HBoxContainer = list.get_parent().get_parent().get_node("ModalHeader")
 	var heading: Label = header.get_child(0)
@@ -252,7 +252,7 @@ func refresh_assignment_panel() -> void:
 			for required_level: int in levels:
 				var caption := "Lv%d 해제" % required_level if required_level > 0 else "건설 후 해제"
 				assignment_slot(slots,func(): pass,preload("res://assets/ui/v0158/lock.png"),Rect2(23,14,24,28),caption,"locked")
-		list.add_child(HSeparator.new())
+		if not scoped: list.add_child(HSeparator.new())
 
 func next_unlock_level(job: String) -> int:
 	if job in ["wood","stone"]: return ResidentJobs.new(app.model).gatherer_limit(job)+1
