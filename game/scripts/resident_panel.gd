@@ -37,9 +37,25 @@ func icon(job:String)->Texture2D:
 	return preload("res://assets/ui/resident-work-v001/resident.png")
 func art(parent:Control,texture:Texture2D,dimensions:Vector2)->TextureRect:
 	var image:=TextureRect.new();image.texture=texture;image.expand_mode=TextureRect.EXPAND_IGNORE_SIZE;image.stretch_mode=TextureRect.STRETCH_KEEP_ASPECT_CENTERED;image.custom_minimum_size=dimensions;image.mouse_filter=Control.MOUSE_FILTER_IGNORE;parent.add_child(image);return image
+func style_scroll(bar: ScrollBar, vertical: bool) -> void:
+	for style_name: String in ["scroll","scroll_focus","grabber","grabber_highlight","grabber_pressed"]:
+		var track := style_name.begins_with("scroll")
+		var skin := StyleBoxFlat.new()
+		skin.bg_color = Color("59401e33") if track else Color("a87336") if style_name == "grabber" else Color("bd8b49")
+		skin.set_corner_radius_all(4)
+		if not track:
+			skin.border_color = Color("e5bd79")
+			skin.set_border_width_all(1)
+		skin.content_margin_left = 4 if vertical else 8
+		skin.content_margin_right = skin.content_margin_left
+		skin.content_margin_top = 8 if vertical else 4
+		skin.content_margin_bottom = skin.content_margin_top
+		bar.add_theme_stylebox_override(style_name,skin)
+
 func content(title:String,subtitle:String)->VBoxContainer:
 	var scroll:ScrollContainer=app.show_modal(title,"",[],false,true,false,Vector2(560,664))
 	scroll.name="ResidentAssignmentScroll"
+	style_scroll(scroll.get_v_scroll_bar(),true)
 	var list:=VBoxContainer.new();list.name="AssignmentContent";list.size_flags_horizontal=Control.SIZE_EXPAND_FILL;list.add_theme_constant_override("separation",14);scroll.add_child(list)
 	var text:Label=app.label(list,subtitle,17);text.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
 	return list
@@ -200,6 +216,7 @@ func refresh_assignment_panel() -> void:
 		var rail := ScrollContainer.new()
 		rail.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		rail.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+		style_scroll(rail.get_h_scroll_bar(),false)
 		rail.custom_minimum_size.y = 86
 		row.add_child(rail)
 		var slots := HBoxContainer.new()
@@ -312,6 +329,7 @@ func show_waiting(job: String, target: String, occupant := "") -> void:
 	var rail := ScrollContainer.new()
 	rail.custom_minimum_size.y = 80
 	rail.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	style_scroll(rail.get_h_scroll_bar(),false)
 	list.add_child(rail)
 	var slots := HBoxContainer.new()
 	slots.alignment = BoxContainer.ALIGNMENT_CENTER
