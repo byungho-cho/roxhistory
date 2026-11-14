@@ -1,11 +1,11 @@
 # RoxHistory 문서 안내
 
-2026-11-09 KST. 확인한 main은 **0.1.70 / 31e90c55**입니다. 신규 기획 확정과 실제 구현은 구분합니다. 최신 퀘스트·주민·곡식 소비 변경은 아래 현행 기획을 따릅니다.
+2026-11-10 KST. 확인한 main은 [98fd2d8f](https://github.com/byungho-cho/roxhistory/commit/98fd2d8f71f96783e44446d5c9d997b440fc6d07)입니다. 아래 현행 문서는 퀘스트·주민·보상 기획과 현재 소스의 구현·차이를 구분합니다. 이번 작업은 문서 수정과 소스 대조이며 게임 실행·빌드·배포 검증은 하지 않았습니다.
 
 | 문서 | 용도 |
 | --- | --- |
-| [첫 퀘스트·주민·곡식 소비](quest-scenario-current.md) | 최신 사용자 결정, Figma 기획, 구현 전 미정 사항 |
-| [현재 개발 현황](current-status.md) | 구현·승인·미완료·최신 다운로드 기준 |
+| [첫 퀘스트·주민·곡식 소비](quest-scenario-current.md) | 보존할 기획, 현재 구현 근거, 차이·확인 사항 |
+| [현재 개발 현황](current-status.md) | 현재 소스 대조 범위와 이전 배포·검증 기록 |
 | [품질 진행](quality-progress.md) · [JSON](quality-progress.json) | 상태와 증거 연결 |
 | [수정사항 대장](team-lead-change-register.md) | 완료 요청과 새 주민 요청 구분 |
 | [최신 개발 지시 기준](developer-instructions-current.md) | 개발 담당의 잔여 범위 |
