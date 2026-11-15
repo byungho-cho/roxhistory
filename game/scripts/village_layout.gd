@@ -11,6 +11,7 @@ var model:GameState
 var layout_signature:=""
 var move_grid := false
 var fade_relocated_roads := false
+var road_layer: Node2D
 static func project(cell:Vector2)->Vector2:return ORIGIN+AXIS_X*cell.x+AXIS_Y*cell.y
 static func anchor(cell:Vector2)->Vector2:return project(cell)+Vector2(0,24)
 static func unproject(point:Vector2)->Vector2:
@@ -41,7 +42,9 @@ func rebuild_art()->void:
 	var signature:=str([model.chief_level(),chief,model.homes(),model.outposts(),model.facilities(),BrushRoadNetwork.enabled()])
 	if signature==layout_signature:return
 	layout_signature=signature
+	var old_roads := road_segments(road_layer)
 	for child in get_children():remove_child(child);child.queue_free()
+	road_layer=null
 	var positions:Array=[];var levels:Array=[];var own_ground:Array[bool]=[]
 	for i in model.built_count():positions.append(model.home_position(i));levels.append(int(model.homes()[i].get("level",1)));own_ground.append(false)
 	for i in model.outposts().size():positions.append(model.outpost_position(i));levels.append(int(model.outposts()[i].get("level",1)));own_ground.append(false)
@@ -50,10 +53,8 @@ func rebuild_art()->void:
 	# Use actual saved building anchors, including free placement and moves.
 	if model.chief_level()>0 and chief.is_finite():
 		var roads := Node2D.new()
+		road_layer=roads
 		add_child(roads)
-		if fade_relocated_roads:
-			roads.modulate.a=0.0
-			roads.create_tween().tween_property(roads,"modulate:a",1.0,.46).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 		var start:=unproject(chief-Vector2(0,24))
 		var buildings:Array=[{"cell":start,"span":6}]
 		for at in positions:buildings.append({"cell":unproject(at-Vector2(0,24)),"span":4})
@@ -78,21 +79,42 @@ func rebuild_art()->void:
 				var target:=remaining[best_index]
 				if distance>.01:roads.add_child(NaturalRoad.new(NaturalRoad.organic_path(best_from,target)))
 				connected.append(target);remaining.remove_at(best_index)
+		if fade_relocated_roads:
+			var new_roads := road_segments(roads)
+			for key in new_roads:
+				if old_roads.has(key): continue
+				var segment: CanvasItem=new_roads[key]
+				segment.modulate.a=0.0
+				segment.create_tween().tween_property(segment,"modulate:a",1.0,.46).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 		foundation(start,6,model.chief_level())
 	for i in positions.size():
 		if not own_ground[i]:foundation(unproject(positions[i]-Vector2(0,24)),4,levels[i])
 	queue_redraw()
-static func move_foundation_bounds(footprint: PackedVector2Array) -> Rect2:
-	var bounds := Rect2(footprint[0],Vector2.ZERO)
-	for point in footprint: bounds=bounds.expand(point)
-	return bounds
+func road_segments(layer: Node2D) -> Dictionary:
+	var result := {}
+	if not is_instance_valid(layer): return result
+	for child in layer.get_children():
+		if child is NaturalRoad:
+			result[str(child.cells)]=child
+		elif child is OrganicRoadNetwork:
+			for branch: NaturalRoad in child.get_children():
+				result[str(branch.cells)]=branch
+		elif child is BrushRoadNetwork:
+			for tile: Sprite2D in child.get_children():
+				result[[tile.position,tile.texture.resource_path]]=tile
+	return result
 
-static func draw_move_foundation(canvas: CanvasItem, at: Vector2, footprint: PackedVector2Array) -> void:
-	var bounds := move_foundation_bounds(footprint)
-	var texture := AssetCatalog.texture("GROUND-PAD-L1")
-	var alpha: Array=AssetCatalog.entry("GROUND-PAD-L1").alpha_bounds
-	var source := Rect2(alpha[0],alpha[1],alpha[2],alpha[3])
-	canvas.draw_texture_rect_region(texture,Rect2(at+bounds.position,bounds.size),source)
+static func foundation_rect(span: int) -> Rect2:
+	var extent:=Vector2(float(span)*64.0,float(span)*64.0*676.0/1088.0*.81)
+	return Rect2(Vector2(0,span*6-24)-extent*.5,extent)
+
+static func draw_move_foundation(canvas: CanvasItem, at: Vector2, kind: String, level: int) -> void:
+	var bounds:=foundation_rect(6 if kind=="chief" else 4)
+	bounds.position+=at
+	var id:="GROUND-PAD-L%d"%clampi(level,1,4)
+	var alpha: Array=AssetCatalog.entry(id).alpha_bounds
+	var source:=Rect2(alpha[0],alpha[1],alpha[2],alpha[3])
+	canvas.draw_texture_rect_region(AssetCatalog.texture(id),bounds,source)
 
 func foundation(cell:Vector2,span:int,level:int=1)->void:
 	var id:="GROUND-PAD-L%d"%clampi(level,1,4)
@@ -100,7 +122,7 @@ func foundation(cell:Vector2,span:int,level:int=1)->void:
 	var bounds:Array=entry.alpha_bounds
 	var s:=Sprite2D.new();s.texture=AssetCatalog.texture(id)
 	# Preserve the old visible ground extent and centre; source PNG padding stays intact.
-	var visible_size:=Vector2(float(span)*64.0,float(span)*64.0*676.0/1088.0*.81)
+	var visible_size:=foundation_rect(span).size
 	s.scale=visible_size/Vector2(bounds[2],bounds[3])
 	s.offset=s.texture.get_size()*.5-(Vector2(bounds[0],bounds[1])+Vector2(bounds[2],bounds[3])*.5)
 	s.position=project(cell)+Vector2(0,span*6)

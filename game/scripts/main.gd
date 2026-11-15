@@ -1630,10 +1630,11 @@ func finish_building_move()->void:
 	layout.fade_relocated_roads=false
 	if moved:
 		world.evacuate_animals(at,build_preview.kind)
-		var footprint := build_preview.footprint()
+		var kind := build_preview.kind
+		var level := build_preview.moving_level
 		cancel_build_preview()
 		relocating_key=key
-		world.add_child(RelocationEffect.new(self,key,snapshot,at,footprint))
+		world.add_child(RelocationEffect.new(self,key,snapshot,at,kind,level))
 	else:
 		snapshot.free()
 		toast("위치가 변경되었어요. 다시 확인해 주세요")

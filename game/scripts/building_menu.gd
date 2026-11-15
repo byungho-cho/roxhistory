@@ -4,7 +4,6 @@ var app:Node
 var selected_key:=""
 var upgrade_button:DemoButton
 var demolish_button:DemoButton
-var close_button:DemoButton
 var saved_camera_offset:=Vector2.ZERO
 var framing_active:=false
 var state_dirty:=true
@@ -45,24 +44,10 @@ func item(title:String,file:String,at:Vector2,diameter:float,callback:Callable)-
 func _ready()->void:
 	name="BuildingMenu";mouse_filter=Control.MOUSE_FILTER_IGNORE;z_index=26;size=Vector2(185,112)
 	upgrade_button=app.button(self,"",upgrade);upgrade_button.name="Upgrade"
-	IntegratedMenuArt.install(upgrade_button,"upgrade",Vector2(96,96)*.8);upgrade_button.position=Vector2(16,16)
-	# The reference emphasizes the central action with a larger circle and arrow.
-	upgrade_button.custom_minimum_size=Vector2(80,92);upgrade_button.size=Vector2(80,92)
-	var upgrade_art:=upgrade_button.art_feedback
-	upgrade_art.get_node("RoundBackground").position=Vector2(-3,-2)
-	upgrade_art.get_node("RoundBackground").size=Vector2(88,88)
-	upgrade_art.get_node("ActionIcon").position=Vector2(11,11)
-	upgrade_art.get_node("ActionIcon").size=Vector2(60,60)
-	for part in ["LabelBackground","ActionName"]:
-		upgrade_art.get_node(part).position=Vector2(-1,72)
-		upgrade_art.get_node(part).size=Vector2(80,20)
+	IntegratedMenuArt.install(upgrade_button,"upgrade",Vector2(96,96)*.8);upgrade_button.position=Vector2(13,23)
 	demolish_button=app.button(self,"",demolish);demolish_button.name="Demolish"
-	IntegratedMenuArt.install(demolish_button,"demolish",Vector2(96,96)*.8);demolish_button.position=Vector2(102,23)
-	close_button=app.button(self,"",close);close_button.name="Close"
-	IntegratedMenuArt.install(close_button,"close",Vector2(48,48)*.8);close_button.custom_minimum_size=Vector2(44,44);close_button.size=Vector2(44,44)
-	close_button.art_feedback.get_node("IntegratedImage").position=Vector2(2.8,2.8)
-	close_button.position=Vector2(143,-10)
-	for control in [upgrade_button,demolish_button,close_button]: final_positions.append(control.position)
+	IntegratedMenuArt.install(demolish_button,"demolish",Vector2(96,96)*.8);demolish_button.position=Vector2(96,23)
+	for control in [upgrade_button,demolish_button]: final_positions.append(control.position)
 	app.model.changed.connect(func():state_dirty=true)
 	hide()
 func close()->void:
@@ -112,7 +97,7 @@ func show_at(screen_point:Vector2)->bool:
 	return true
 func reset_entrance() -> void:
 	if entrance and entrance.is_valid(): entrance.kill()
-	var buttons := [upgrade_button,demolish_button,close_button]
+	var buttons := [upgrade_button,demolish_button]
 	for i in final_positions.size():
 		buttons[i].position=final_positions[i]
 		buttons[i].modulate.a=1.0
@@ -120,7 +105,7 @@ func reset_entrance() -> void:
 func play_entrance() -> void:
 	reset_entrance()
 	entrance=create_tween().set_parallel(true).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	var buttons := [upgrade_button,demolish_button,close_button]
+	var buttons := [upgrade_button,demolish_button]
 	for i in buttons.size():
 		buttons[i].position.y-=13
 		buttons[i].modulate.a=.15
@@ -145,7 +130,7 @@ func refresh_actions()->void:
 	elif i>=0 and app.model.resident_capacity()-[1,2,3,5][clampi(int(owned.data.get("level",1)),1,4)-1]<app.model.resident_count():demolish_button.hint_text="철거 확인 시 초과 주민이 무작위로 떠나요"
 	elif selected_key!="chief" and (quote.is_empty() or not quote.get("supported",false)):demolish_button.hint_text="이 건물은 지금 철거할 수 없어요"
 	IntegratedMenuArt.refresh(upgrade_button,not upgrade_button.disabled)
-	IntegratedMenuArt.refresh(demolish_button);IntegratedMenuArt.refresh(close_button)
+	IntegratedMenuArt.refresh(demolish_button)
 
 func refresh_position()->void:
 	var sprite:=selected_sprite()

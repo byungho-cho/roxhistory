@@ -7,14 +7,15 @@ var key: String
 var source: Sprite2D
 var destination: Sprite2D
 var target: Vector2
-var outline: PackedVector2Array
+var kind: String
+var level: int
 var destination_position := Vector2.ZERO
 var destination_color := Color.WHITE
 var clock := 0.0
 var landed := false
 
-func _init(owner_app: Node,id: String,old_image: Sprite2D,to: Vector2,footprint: PackedVector2Array) -> void:
-	app=owner_app;key=id;source=old_image;target=to;outline=footprint
+func _init(owner_app: Node,id: String,old_image: Sprite2D,to: Vector2,building_kind: String, building_level: int) -> void:
+	app=owner_app;key=id;source=old_image;target=to;kind=building_kind;level=building_level
 	name="RelocationEffect";visibility_layer=2;z_index=2
 
 func _ready() -> void:
@@ -45,7 +46,7 @@ func _process(delta: float) -> void:
 	if landed: queue_free()
 
 func _draw() -> void:
-	VillageLayout.draw_move_foundation(self,target,outline)
+	VillageLayout.draw_move_foundation(self,target,kind,level)
 
 func _exit_tree() -> void:
 	if is_instance_valid(destination):

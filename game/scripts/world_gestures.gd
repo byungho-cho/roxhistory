@@ -18,6 +18,7 @@ var panning:=false
 var moving_key:=""
 var drag_pointer:=-1
 var move_offset:=Vector2.ZERO
+var last_move_point := Vector2.INF
 var mouse_move_candidate := ""
 func _init(owner_app: Node) -> void: app=owner_app
 func clear() -> void:
@@ -175,6 +176,7 @@ func begin_drag(key: String, point: Vector2, pointer: int) -> bool:
 	var origin: Vector2 = preview.placement_position if preview.move_marker_hit(at) else app.model.building_position(key)
 	if not app.start_building_move(key): return false
 	move_offset = origin-app.world.get_global_transform_with_canvas().affine_inverse()*point
+	last_move_point=Vector2.INF
 	moving_key=key
 	drag_pointer=pointer
 	blocked=true
@@ -194,8 +196,10 @@ func handle_building_drag(event:InputEvent)->bool:
 	elif event is InputEventScreenTouch and not event.pressed and event.index==drag_pointer:
 		point=event.position;release=true
 	if not point.is_finite():return false
-	var world_at:Vector2=app.world.get_global_transform_with_canvas().affine_inverse()*point+move_offset
-	app.build_preview.select_position(world_at,app.build_preview.kind,moving_key)
+	if not release or not point.is_equal_approx(last_move_point):
+		var world_at:Vector2=app.world.get_global_transform_with_canvas().affine_inverse()*point+move_offset
+		app.build_preview.select_position(world_at,app.build_preview.kind,moving_key)
+		last_move_point=point
 	if release:
 		if event is InputEventScreenTouch and event.canceled: app.cancel_build_preview()
 		else: app.finish_building_move()

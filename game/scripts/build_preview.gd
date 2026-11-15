@@ -12,6 +12,7 @@ var confirm_button:DemoButton
 var cost_display:BuildCostDisplay
 var placement_active:=false
 var move_dragging := false
+var moving_level := 1
 func _init(owner_app:Node)->void:app=owner_app
 func _ready()->void:
 	z_index=3 # Both the destination ghost and source move marker overlay buildings.
@@ -28,6 +29,8 @@ func select(id:int)->void:
 func select_position(at:Vector2,building_kind:String="",key:String="")->void:
 	app.toast_time=0 # Position is now selected; retire the previous placement prompt.
 	kind=app.build_kind if building_kind.is_empty() else building_kind
+	if moving_key!=key and not key.is_empty():
+		moving_level=int(app.model.lookup_building(key).get("data",{}).get("level",1))
 	moving_key=key
 	confirm_button=cost_display.confirm_button
 	ghost.visible=key.is_empty()
@@ -56,7 +59,12 @@ func refresh_validity()->void:
 	confirm_button.disabled=not reason.is_empty();confirm_button.hint_text=reason
 	ghost.modulate=Color(1,1,.87,.85 if not moving_key.is_empty() else .52) if reason.is_empty() else Color(1,.45,.35,.48)
 func move_marker_hit(at: Vector2) -> bool:
-	return not moving_key.is_empty() and not move_dragging and Geometry2D.is_point_in_polygon(at-position,footprint())
+	return not moving_key.is_empty() and not move_dragging and Geometry2D.is_point_in_polygon(at-position,move_outline())
+
+func move_outline() -> PackedVector2Array:
+	var bounds:=VillageLayout.foundation_rect(6 if kind=="chief" else 4)
+	var center:=bounds.get_center()
+	return PackedVector2Array([Vector2(center.x,bounds.position.y),Vector2(bounds.end.x,center.y),Vector2(center.x,bounds.end.y),Vector2(bounds.position.x,center.y)])
 
 func footprint() -> PackedVector2Array:
 	return EnvironmentProp.hut_footprint(340 if kind=="chief" else 230)
@@ -99,11 +107,9 @@ func _draw()->void:
 		color.a=.7
 		draw_polyline(outline,color,2,true)
 		return
-	var bounds := VillageLayout.move_foundation_bounds(outline)
-	var center := bounds.get_center()
-	outline=PackedVector2Array([Vector2(center.x,bounds.position.y),Vector2(bounds.end.x,center.y),Vector2(center.x,bounds.end.y),Vector2(bounds.position.x,center.y)])
+	outline=move_outline()
 	if valid:
-		VillageLayout.draw_move_foundation(self,Vector2.ZERO,footprint())
+		VillageLayout.draw_move_foundation(self,Vector2.ZERO,kind,moving_level)
 		color=Color(1,.94,.76,.96)
 	else:
 		draw_colored_polygon(outline,color)
