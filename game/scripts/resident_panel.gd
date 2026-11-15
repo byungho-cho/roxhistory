@@ -8,7 +8,7 @@ var waiting_overlay: ColorRect
 var assignment_list: VBoxContainer
 var assignment_count: Label
 var assignment_building := ""
-const JOB_NAMES:={"idle":"미배정","wood":"나무꾼","stone":"석재꾼","farmer":"농부","guard":"보초"}
+const JOB_NAMES:={"idle":"미배정","wood":"나무꾼","stone":"석공","farmer":"농부","guard":"보초"}
 func _init(owner_app:Node)->void:app=owner_app
 func _ready()->void:
 	name="ResidentPanel";mouse_filter=Control.MOUSE_FILTER_IGNORE;z_index=4;process_priority=30

@@ -47,7 +47,7 @@ func has_upgrade_art(id: String) -> bool:
 static func building_asset_id(kind:String,level:int=1)->String:
 	return "BLD-%s-L%d"%[{"chief":"CHIEF","hut":"HUT","home":"HUT","outpost":"OUTPOST","hearth":"HEARTH","training":"TRAINING","shrine":"SHRINE","farm":"FARM","stone_store":"STONE_STORE","wood_store":"WOOD_STORE"}.get(kind,"HUT"),clampi(level,1,4)]
 static func building_name(kind:String)->String:
-	return {"chief":"촌장집","hut":"주민 움집","home":"주민 움집","outpost":"초소","hearth":"화덕","training":"훈련소","shrine":"신당","farm":"농장","stone_store":"석재소","wood_store":"제재소"}.get(kind,"건물")
+	return {"chief":"촌장집","hut":"주민 움집","home":"주민 움집","outpost":"초소","hearth":"화덕","training":"훈련소","shrine":"신당","farm":"농장","stone_store":"채석장","wood_store":"제재소"}.get(kind,"건물")
 static func cost_text(cost:Dictionary)->String:return "나무 %d개 · 돌 %d개"%[int(cost.get("wood",0)),int(cost.get("stone",0))]
 func build_block_reason(kind:String,check_resources:bool=true)->String:
 	var reason:String=app.model.building_requirement(kind,check_resources)

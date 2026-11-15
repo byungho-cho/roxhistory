@@ -1,7 +1,9 @@
 class_name BuildSideMenu
 extends Control
-# Logical order is left-to-right; opening starts at the right (움집 first).
-const KINDS:=["outpost","shrine","hearth","wood_store","stone_store","training","farm","hut"]
+
+# Left-to-right layout; the newest opening starts at the right.
+const KINDS := ["outpost","shrine","hearth","training","stone_store","wood_store","farm","hut"]
+const FILTERS := {"housing":["hut"],"resources":["stone_store","wood_store","farm"]}
 const MENU_ICONS:={
 	"farm":preload("res://assets/ui/construction-side-v006/menu-farm.png"),
 	"hearth":preload("res://assets/ui/construction-side-v006/menu-hearth.png"),
@@ -9,189 +11,375 @@ const MENU_ICONS:={
 	"shrine":preload("res://assets/ui/construction-side-v006/menu-shrine.png"),
 	"stone_store":preload("res://assets/ui/construction-side-v006/menu-stoneworks.png"),
 }
-const TILE_SIZE:=Vector2(64,77)
-const ART_SCALE:=0.90 # Smaller than the main action, including the approved extra 10%.
-const MAX_VISIBLE:=5
-const GAP:=4.0
-const GUTTER:=24.0
-const BUILD_GAP:=4.0
-const DRAG_THRESHOLD:=10.0
-var app:Node
-var hut:DemoButton
-var outpost_button:DemoButton
-var entries:Dictionary={}
-var clip:Control
-var content:Control
-var left_hint:Control
-var right_hint:Control
-var scroll_offset:=0.0
-var visible_slots:=MAX_VISIBLE
-var pointer:=-2
-var press_at:=Vector2.ZERO
-var last_at:=Vector2.ZERO
-var dragged:=false
-var pressed_kind:=""
-var pressed_arrow:=0
-var needs_refresh:=true
-var transition:Tween
-var slide_offset:=0.0:
+const TILE_SIZE := Vector2(162,188)
+const ART_SCALE := .9
+const BUILD_GAP := 4.0
+const DRAG_THRESHOLD := 10.0
+const PAPER := preload("res://assets/ui/d0022/scroll-open-paper.png")
+const ROLL := preload("res://assets/ui/d0022/scroll-right-roll.png")
+const INK := Color("332211")
+var app: Node
+var entries: Dictionary = {}
+var filters: Dictionary = {}
+var visible_kinds: Array = KINDS
+var selected_filter := ""
+var shade: TextureRect
+var paper_clip: Control
+var paper: TextureRect
+var roller: TextureRect
+var clip: Control
+var content: Control
+var message: Label
+var gray: ShaderMaterial
+var hut: DemoButton
+var outpost_button: DemoButton
+var scroll_offset := 0.0
+var visible_slots := 5
+var pointer := -2
+var press_at := Vector2.ZERO
+var last_at := Vector2.ZERO
+var dragged := false
+var pressed_kind := ""
+var pressed_filter := ""
+var needs_refresh := true
+var transition: Tween
+var notice: Tween
+var layout_view := Vector2.ZERO
+var paper_rect := Rect2()
+var reveal := 1.0:
 	set(value):
-		position.x+=value-slide_offset
-		slide_offset=value
-func _init(owner_app:Node)->void:app=owner_app
-func _ready()->void:
-	name="BuildSideMenu";z_index=30;mouse_filter=Control.MOUSE_FILTER_IGNORE;hide()
-	clip=Control.new();clip.name="VisibleSlots";clip.clip_contents=true;clip.mouse_filter=Control.MOUSE_FILTER_IGNORE;add_child(clip)
-	content=Control.new();content.mouse_filter=Control.MOUSE_FILTER_IGNORE;clip.add_child(content)
+		reveal = value
+		layout_paper()
+
+func _init(owner_app: Node) -> void:
+	app = owner_app
+
+func _ready() -> void:
+	name = "BuildSideMenu"
+	z_index = 44
+	mouse_filter = MOUSE_FILTER_IGNORE
+	hide()
+	var darkness := Gradient.new()
+	darkness.colors = PackedColorArray([Color(0,0,0,.18),Color(0,0,0,.54)])
+	darkness.set_offset(1,.18)
+	var dimmer := GradientTexture2D.new()
+	dimmer.gradient = darkness
+	dimmer.fill_to = Vector2(0,1)
+	shade = app.picture(self,dimmer,Rect2())
+	shade.stretch_mode = TextureRect.STRETCH_SCALE
+	paper_clip = layer(self)
+	paper_clip.clip_contents = true
+	paper = app.picture(paper_clip,IntegratedMenuArt.trimmed(PAPER,Rect2(10,85,2150,552)),Rect2())
+	paper.stretch_mode = TextureRect.STRETCH_SCALE
+	clip = layer(self)
+	clip.clip_contents = true
+	content = layer(clip)
+	var grayscale := Shader.new()
+	grayscale.code = "shader_type canvas_item; void fragment(){ float gray = dot(COLOR.rgb,vec3(0.299,0.587,0.114)); COLOR.rgb=vec3(gray); }"
+	gray = ShaderMaterial.new()
+	gray.shader = grayscale
 	for kind in KINDS:
-		var button:DemoButton=app.button(content,"",func():select_kind(kind));button.name=kind.capitalize()
-		button.custom_minimum_size=TILE_SIZE;button.size=TILE_SIZE;button.mouse_filter=Control.MOUSE_FILTER_IGNORE
-		for state in ["normal","hover","pressed","disabled","focus"]:button.add_theme_stylebox_override(state,StyleBoxEmpty.new())
-		install_side_art(button,kind)
-		button.enable_art_feedback();entries[kind]=button
-	hut=entries.hut;outpost_button=entries.outpost
-	left_hint=make_arrow(false);right_hint=make_arrow(true)
-	visibility_changed.connect(_visibility_changed)
-	app.model.changed.connect(func():needs_refresh=true)
-	refresh()
-func make_arrow(flip:bool)->Control:
-	var target:=Control.new()
-	target.mouse_filter=Control.MOUSE_FILTER_IGNORE
-	add_child(target)
-	var icon:TextureRect=app.picture(target,preload("res://assets/ui/construction-side-v006/chevron.svg"),Rect2((GUTTER-12)*.5,29,12,20))
-	icon.flip_h=flip
-	return target
-func _visibility_changed()->void:
+		add_card(kind)
+	hut = entries.hut
+	outpost_button = entries.outpost
+	roller = app.picture(self,IntegratedMenuArt.trimmed(ROLL,Rect2(65,34,640,1986)),Rect2())
+	for id in FILTERS:
+		var button: DemoButton = app.button(self,"",set_filter.bind(id))
+		button.mouse_filter = MOUSE_FILTER_IGNORE
+		filters[id] = button
+		var icon: Texture2D = BuildingVisuals.texture("hut",1) if id=="housing" else DemoArt.icon("wood")
+		app.picture(button,icon,Rect2(8,8,53,49))
+	message = FigmaArt.text(self,"",Rect2(),16,FigmaArt.BODY,Color("fff3d4"))
+	message.add_theme_color_override("font_outline_color",Color("3e2a17"))
+	message.add_theme_constant_override("outline_size",8)
+	message.hide()
+	visibility_changed.connect(on_visibility)
+	app.model.changed.connect(func(): needs_refresh=true)
+
+func layer(parent: Control) -> Control:
+	var control := Control.new()
+	control.mouse_filter = MOUSE_FILTER_IGNORE
+	parent.add_child(control)
+	return control
+
+func add_card(kind: String) -> void:
+	var card: DemoButton = app.button(content,"",select_kind.bind(kind))
+	card.name = kind.capitalize()
+	card.mouse_filter = MOUSE_FILTER_IGNORE
+	card.set_meta("integrated_art",true)
+	card.custom_minimum_size = TILE_SIZE
+	card.size = TILE_SIZE
+	for state in ["normal","hover","pressed","disabled","focus"]:
+		card.add_theme_stylebox_override(state,StyleBoxEmpty.new())
+	var composition := layer(card)
+	composition.name = "Composition"
+	var divider := ColorRect.new()
+	divider.color = Color(.43,.27,.11,.27)
+	divider.position = Vector2(0,22)
+	divider.size = Vector2(1,156)
+	divider.mouse_filter = MOUSE_FILTER_IGNORE
+	composition.add_child(divider)
+	var art := layer(composition)
+	art.name = "Artwork"
+	var image := BuildingVisuals.texture(kind,1)
+	if not image is AtlasTexture:
+		image = IntegratedMenuArt.trimmed(image,Rect2(image.get_image().get_used_rect()))
+	if not BuildingVisuals.has_own_ground(kind):
+		var cut: Array = AssetCatalog.entry("GROUND-PAD-L1").alpha_bounds
+		var pad := IntegratedMenuArt.trimmed(AssetCatalog.texture("GROUND-PAD-L1"),Rect2(cut[0],cut[1],cut[2],cut[3]))
+		app.picture(art,pad,Rect2(14,50,134,66))
+	app.picture(art,image,Rect2(16,4,130,107 if BuildingVisuals.has_own_ground(kind) else 99))
+	var name_label := FigmaArt.text(composition,"움집" if kind=="hut" else BuildingWorkflow.building_name(kind),Rect2(0,115,162,34),23,FigmaArt.BODY,INK)
+	name_label.name = "MenuLabel"
+	var cost := layer(composition)
+	cost.name = "Cost"
+	var values: Dictionary = app.model.building_cost(kind,1)
+	for i in 2:
+		var resource := ["wood","stone"][i] as String
+		var x := 27.0 + i*69.0
+		app.picture(cost,DemoArt.icon(resource),Rect2(x,156,21,21))
+		FigmaArt.text(cost,str(values.get(resource,0)),Rect2(x+23,154,42,24),14,FigmaArt.BODY,INK,false)
+	var restriction := layer(composition)
+	restriction.name = "Restriction"
+	var lock: TextureRect = app.picture(restriction,IntegratedMenuArt.lock_icon(),Rect2(8,158,15,17))
+	lock.name = "Locked"
+	var caption := FigmaArt.text(restriction,"",Rect2(26,151,130,34),12,FigmaArt.BODY,INK,false)
+	caption.name = "Reason"
+	caption.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	card.enable_art_feedback()
+	entries[kind] = card
+
+func max_scroll() -> float:
+	return maxf(0.0,content.size.x-clip.size.x)
+
+func layout_scroll() -> void:
+	scroll_offset = clampf(scroll_offset,0,max_scroll())
+	content.position.x = clip.size.x-content.size.x if max_scroll()==0.0 else -scroll_offset
+
+func layout_paper() -> void:
+	if not is_instance_valid(paper_clip): return
+	var width := paper_rect.size.x*reveal
+	paper_clip.position = Vector2(paper_rect.end.x-width,paper_rect.position.y)
+	paper_clip.size = Vector2(width,paper_rect.size.y)
+	paper.position = Vector2(width-paper_rect.size.x,0)
+	paper.size = paper_rect.size
+
+func refresh() -> void:
+	needs_refresh = false
+	layout_view = Vector2(app.w,app.h)
+	size = layout_view
+	var scale_factor := clampf(size.y/540.0,.8,1.0)
+	var right: float = size.x-maxf(18.0,app.safe.x)
+	var bottom: float = size.y-maxf(5.0,app.safe.y*.25)
+	var roll_size := Vector2(97,267)*scale_factor
+	roller.position = Vector2(right-roll_size.x,bottom-roll_size.y)
+	roller.size = roll_size
+	var top := bottom-238.0*scale_factor
+	paper_rect = Rect2(Vector2(-22,top),Vector2(right-roll_size.x*.62+22,223.0*scale_factor))
+	layout_paper()
+	shade.size = size
+	clip.position = Vector2(0,top+1.0)
+	clip.size = Vector2(roller.position.x,194.0*scale_factor)
+	visible_slots = maxi(1,ceili(clip.size.x/(TILE_SIZE.x*scale_factor)))
+	content.size = Vector2(TILE_SIZE.x*visible_kinds.size()*scale_factor,clip.size.y)
+	content.scale = Vector2.ONE*scale_factor
+	for kind in KINDS:
+		var card: DemoButton = entries[kind]
+		card.visible = kind in visible_kinds
+		if not card.visible: continue
+		card.position = Vector2(visible_kinds.find(kind)*TILE_SIZE.x,0)
+		var art: Control = card.art_feedback.get_node("Composition/Artwork")
+		var locked: bool = not app.model.building_unlocked(kind)
+		var reason: String = app.building_workflow.build_block_reason(kind,false)
+		# Display the campaign level even when another prerequisite is also unmet.
+		if locked and app.model.chief_level()<int(BuildingRules.REQUIRED_HQ.get(kind,0)):
+			reason = "촌장집 Lv.%d에서 해금"%int(BuildingRules.REQUIRED_HQ[kind])
+		art.material = gray if locked else null
+		for image in art.get_children():
+			image.material = art.material
+		card.art_feedback.get_node("Composition/Cost").visible = reason.is_empty()
+		var restriction: Control = card.art_feedback.get_node("Composition/Restriction")
+		restriction.visible = not reason.is_empty()
+		restriction.get_node("Locked").visible = locked
+		restriction.get_node("Reason").text = reason
+	for i in FILTERS.size():
+		var id: String = FILTERS.keys()[i]
+		var button: DemoButton = filters[id]
+		button.position = roller.position+Vector2(14,59+i*77)*scale_factor
+		button.size = Vector2(69,65)
+		var style := StyleBoxFlat.new()
+		style.bg_color = Color(1,.81,.48,.32) if selected_filter==id else Color(.41,.23,.09,.05)
+		style.border_color = Color("935428") if selected_filter==id else Color(.42,.24,.10,.25)
+		style.set_border_width_all(2 if selected_filter==id else 1)
+		style.set_corner_radius_all(9)
+		for state in ["normal","hover","pressed","focus"]:
+			button.add_theme_stylebox_override(state,style)
+	message.position = Vector2(0,top-45)
+	message.size = Vector2(size.x,40)
+	layout_scroll()
+
+func on_visibility() -> void:
 	cancel_pointer()
 	if visible:
-		refresh();scroll_offset=max_scroll();layout_scroll()
+		selected_filter = ""
+		visible_kinds = KINDS
+		refresh()
+		scroll_offset = max_scroll()
+		layout_scroll()
+		play_open()
 	else:
-		if transition:transition.kill()
-		transition=null
-		slide_offset=0
-		modulate.a=1
+		finish_open()
+		if is_instance_valid(message): message.hide()
 
-func toggle_animated()->void:
-	if transition:return
-	var opening:=not visible
-	if opening:
-		show()
-		slide_offset=-18
-		modulate.a=0
-	transition=create_tween().set_parallel(true).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
-	transition.tween_property(self,"slide_offset",0.0 if opening else -18.0,.22)
-	transition.tween_property(self,"modulate:a",1.0 if opening else 0.0,.18)
-	transition.finished.connect(func():
-		transition=null
-		if not opening:hide())
-static func style_label(label:Label)->void:
-	label.add_theme_color_override("font_outline_color",Color("231b12"));label.add_theme_constant_override("outline_size",4);label.mouse_filter=Control.MOUSE_FILTER_IGNORE
-func max_scroll()->float:return maxf(0,content.size.x-clip.size.x)
-func refresh()->void:
-	needs_refresh=false
-	var available_width:float=app.w-app.safe.x*2-70
-	visible_slots=clampi(int((available_width-GUTTER*2+GAP)/(TILE_SIZE.x+GAP)),1,MAX_VISIBLE)
-	scale=Vector2.ONE
-	clip.position=Vector2(GUTTER,0)
-	clip.size=Vector2(visible_slots*(TILE_SIZE.x+GAP)-GAP,TILE_SIZE.y)
-	content.size=Vector2(KINDS.size()*(TILE_SIZE.x+GAP)-GAP,TILE_SIZE.y)
-	left_hint.size=Vector2(GUTTER,TILE_SIZE.y)
-	right_hint.size=left_hint.size
-	right_hint.position=Vector2(clip.position.x+clip.size.x,0)
-	for i in KINDS.size():
-		var kind:String=KINDS[i];var button:DemoButton=entries[kind]
-		button.position=Vector2(i*(TILE_SIZE.x+GAP),0)
-		button.hint_text=app.building_workflow.build_block_reason(kind,false)
-		button.disabled=not button.hint_text.is_empty()
-		button.tooltip_text=button.hint_text if button.disabled else BuildingWorkflow.building_name(kind)
-		button.art_feedback.get_node("Composition/Locked").visible=button.disabled
-		var artwork:Control=button.art_feedback.get_node("Composition/Artwork")
-		artwork.modulate.a=.62 if button.disabled else 1.0
+func toggle_animated() -> void:
+	visible = not visible
+
+func play_open() -> void:
+	reveal = 0.0
+	transition = create_tween().set_parallel(true)
+	transition.tween_property(self,"reveal",1.0,.23).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	clip.modulate.a = 0.0
+	transition.tween_property(clip,"modulate:a",1.0,.08).set_delay(.17)
+	for i in mini(visible_slots,visible_kinds.size()):
+		var kind: String = visible_kinds[visible_kinds.size()-1-i]
+		var art: Control = entries[kind].art_feedback.get_node("Composition/Artwork")
+		art.position.y = -20
+		art.modulate.a = 0.0
+		transition.tween_property(art,"position:y",0.0,.20).set_delay(.18+i*.04).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+		transition.tween_property(art,"modulate:a",1.0,.15).set_delay(.18+i*.04)
+	transition.finished.connect(func(): transition=null)
+
+func finish_open() -> void:
+	if transition:transition.kill()
+	transition = null
+	reveal = 1.0
+	if not is_instance_valid(clip):return
+	clip.modulate.a = 1.0
+	for card in entries.values():
+		var art: Control = card.art_feedback.get_node("Composition/Artwork")
+		art.position.y = 0.0
+		art.modulate.a = 1.0
+
+func set_filter(id: String) -> void:
+	finish_open()
+	selected_filter = "" if selected_filter==id else id
+	visible_kinds = FILTERS.get(selected_filter,KINDS)
+	message.hide()
+	refresh()
+	scroll_offset = max_scroll()
 	layout_scroll()
-func _draw()->void:
-	if not is_instance_valid(app.build_button):return
-	draw_line(Vector2(size.x+BUILD_GAP*.5,12),Vector2(size.x+BUILD_GAP*.5,size.y-5),Color(.96,.77,.43,.55))
-func layout_scroll()->void:
-	scroll_offset=clampf(scroll_offset,0,max_scroll());content.position.x=-scroll_offset
-	left_hint.visible=scroll_offset>.5
-	if not dragged:
-		right_hint.visible=scroll_offset<max_scroll()-.5
-	size=Vector2(right_hint.position.x+(GUTTER if right_hint.visible else 0.0),TILE_SIZE.y)
-	position=Vector2(app.build_button.global_position.x-size.x-BUILD_GAP+slide_offset,app.build_button.global_position.y)
-	queue_redraw()
-func scroll_by(amount:float)->void:
-	scroll_offset+=amount;layout_scroll()
-func contains_point(at:Vector2)->bool:return is_visible_in_tree() and get_global_rect().has_point(at)
-func kind_at(at:Vector2)->String:
+
+func scroll_by(amount: float) -> void:
+	finish_open()
+	scroll_offset += amount
+	layout_scroll()
+
+func contains_point(at: Vector2) -> bool:
+	return is_visible_in_tree() and get_global_rect().has_point(at)
+
+func kind_at(at: Vector2) -> String:
 	if not clip.get_global_rect().has_point(at):return ""
-	for kind in KINDS:
+	for kind in visible_kinds:
 		if entries[kind].get_global_rect().has_point(at):return kind
 	return ""
-func cancel_pointer()->void:
-	var was_dragged:=dragged
+
+func filter_at(at: Vector2) -> String:
+	for id in filters:
+		if filters[id].get_global_rect().has_point(at):return id
+	return ""
+
+func on_scroll_art(at: Vector2) -> bool:
+	return paper_rect.has_point(at-global_position) or roller.get_global_rect().has_point(at) or clip.get_global_rect().has_point(at)
+
+func cancel_pointer() -> void:
 	for button in entries.values():button.clear()
-	pointer=-2;pressed_kind="";pressed_arrow=0;dragged=false
-	if was_dragged:layout_scroll()
-func begin_pointer(at:Vector2,id:int)->void:
-	pointer=id;press_at=at;last_at=at;dragged=false;pressed_kind=kind_at(at)
-	pressed_arrow=0
-	if left_hint.visible and left_hint.get_global_rect().has_point(at):pressed_arrow=-1
-	elif right_hint.visible and right_hint.get_global_rect().has_point(at):pressed_arrow=1
-	if not pressed_kind.is_empty():
-		# DemoButton uses finger for non-toggle touch/managed press animation.
-		entries[pressed_kind].finger=0 if not entries[pressed_kind].disabled else -1
-func move_pointer(at:Vector2)->void:
+	pointer = -2
+	pressed_kind = ""
+	pressed_filter = ""
+	dragged = false
+
+func begin_pointer(at: Vector2, id: int) -> void:
+	pointer=id
+	press_at=at
+	last_at=at
+	dragged=false
+	pressed_kind=kind_at(at)
+	pressed_filter=filter_at(at)
+	if not pressed_kind.is_empty(): entries[pressed_kind].finger=0
+
+func move_pointer(at: Vector2) -> void:
 	if not dragged and at.distance_to(press_at)>DRAG_THRESHOLD:
 		dragged=true
-		for button in entries.values():button.clear()
-		# Apply the initial travel too, without moving on a jittery tap.
+		if not pressed_kind.is_empty(): entries[pressed_kind].clear()
 		last_at=press_at
-	if dragged:scroll_by(last_at.x-at.x)
+	if dragged and clip.get_global_rect().has_point(press_at):
+		scroll_by(last_at.x-at.x)
 	last_at=at
-func end_pointer(at:Vector2)->void:
-	var kind:=pressed_kind;var arrow:=pressed_arrow
-	var activate:=not dragged and press_at.distance_to(at)<=DRAG_THRESHOLD and contains_point(at)
+
+func end_pointer(at: Vector2, canceled := false) -> void:
+	var kind := pressed_kind
+	var filter := pressed_filter
+	var activate := not canceled and not dragged and press_at.distance_to(at)<=DRAG_THRESHOLD
+	var outside := not on_scroll_art(press_at) and not on_scroll_art(at)
 	cancel_pointer()
 	if not activate:return
-	if arrow!=0:scroll_by(arrow*(TILE_SIZE.x+GAP)*visible_slots)
+	if not filter.is_empty() and filter_at(at)==filter:set_filter(filter)
 	elif not kind.is_empty() and kind_at(at)==kind:select_kind(kind)
-# Routed before world gestures so a menu drag can never become a world tap/pan.
-func handle_input(event:InputEvent)->bool:
+	elif outside:hide()
+
+func handle_input(event: InputEvent) -> bool:
 	if not is_visible_in_tree():return false
-	if transition:
-		if event is InputEventMouse or event is InputEventScreenTouch or event is InputEventScreenDrag:
-			return get_global_rect().grow(18).has_point(event.position)
-		return false
 	if event is InputEventMouseButton:
-		if event.pressed and contains_point(event.position) and event.button_index in [MOUSE_BUTTON_WHEEL_UP,MOUSE_BUTTON_WHEEL_DOWN,MOUSE_BUTTON_WHEEL_LEFT,MOUSE_BUTTON_WHEEL_RIGHT]:
-			scroll_by((TILE_SIZE.x+GAP)*(-1 if event.button_index in [MOUSE_BUTTON_WHEEL_UP,MOUSE_BUTTON_WHEEL_LEFT] else 1));return true
-		if event.button_index==MOUSE_BUTTON_LEFT:
-			if event.pressed and contains_point(event.position):
-				if pointer==-2:begin_pointer(event.position,-1)
-				return true
-			if not event.pressed and pointer==-1:end_pointer(event.position);return true
-	elif event is InputEventMouseMotion and pointer==-1:move_pointer(event.position);return true
-	elif event is InputEventScreenTouch:
-		if event.pressed and contains_point(event.position):
-			if pointer==-2:begin_pointer(event.position,event.index)
-			return true
-		if not event.pressed and pointer==event.index:end_pointer(event.position);return true
-	elif event is InputEventScreenDrag and pointer==event.index:move_pointer(event.position);return true
+		if event.pressed and clip.get_global_rect().has_point(event.position) and event.button_index in [MOUSE_BUTTON_WHEEL_UP,MOUSE_BUTTON_WHEEL_DOWN,MOUSE_BUTTON_WHEEL_LEFT,MOUSE_BUTTON_WHEEL_RIGHT]:
+			scroll_by(TILE_SIZE.x*(-1 if event.button_index in [MOUSE_BUTTON_WHEEL_UP,MOUSE_BUTTON_WHEEL_LEFT] else 1))
+		elif event.button_index==MOUSE_BUTTON_LEFT:
+			if event.pressed and pointer==-2:begin_pointer(event.position,-1)
+			elif not event.pressed and pointer==-1:end_pointer(event.position)
+		return true
+	if event is InputEventMouseMotion:
+		if pointer==-1:move_pointer(event.position)
+		return true
+	if event is InputEventScreenTouch:
+		if event.pressed and pointer==-2:begin_pointer(event.position,event.index)
+		elif not event.pressed and pointer==event.index:end_pointer(event.position,event.canceled)
+		return true
+	if event is InputEventScreenDrag:
+		if pointer==event.index:move_pointer(event.position)
+		return true
 	return false
-func _process(_delta:float)->void:
+
+func _process(_delta:float) -> void:
 	if not visible:return
 	if app.world_map_open or app.modal or not app.application_active:hide();return
-	if needs_refresh:refresh()
-func select_kind(kind:String)->void:
+	if needs_refresh or layout_view!=Vector2(app.w,app.h):
+		var right_offset := max_scroll()-scroll_offset
+		refresh()
+		scroll_offset=max_scroll()-right_offset
+		layout_scroll()
+
+func select_kind(kind:String) -> void:
 	cancel_pointer()
-	var reason:String=app.building_workflow.build_block_reason(kind)
-	if not reason.is_empty():app.toast(reason);return
-	app.cancel_build_preview();app.build_kind=kind
-	hide();app.choosing_plot=true;app.world.show_candidates=false;app.world.queue_redraw()
+	var reason: String = app.building_workflow.build_block_reason(kind)
+	if not reason.is_empty():
+		if not visible:
+			app.toast(reason)
+			return
+		if notice and notice.is_valid():notice.kill()
+		message.text=reason
+		message.show()
+		notice=create_tween()
+		notice.tween_callback(message.hide).set_delay(2.4)
+		return
+	app.cancel_build_preview()
+	app.build_kind=kind
+	hide()
+	app.choosing_plot=true
+	app.world.show_candidates=false
+	app.world.queue_redraw()
 	app.toast("%s을 지을 위치를 눌러 주세요"%BuildingWorkflow.building_name(kind))
+
 func select_hut()->void:select_kind("hut")
 func select_outpost()->void:select_kind("outpost")
-
 # Slots from I10000 1295:229. Clip source atlases without modifying approved images.
 static func image_slot(parent:Control,file:String,at:Vector2,dimensions:Vector2,relative:Rect2=Rect2(0,0,1,1))->void:
 	var clip:=Control.new();clip.position=at;clip.size=dimensions;clip.clip_contents=true;clip.mouse_filter=Control.MOUSE_FILTER_IGNORE;parent.add_child(clip)
@@ -225,6 +413,6 @@ static func install_side_art(button:DemoButton,kind:String)->void:
 		"outpost":image_slot(art,kind,Vector2(15,33),Vector2(150,150))
 		"training":image_slot(art,kind,Vector2(30.18,37.5),Vector2(119.64,137.5),Rect2(-.1084,-.3522,5.2337,1.5178))
 		"hut":image_slot(art,kind,Vector2(16.13,48.7),Vector2(143.75,124.301),Rect2(-.25,-.966,6.3882,2.4626))
-	var label:=Label.new();label.name="MenuLabel";label.text={"hut":"움집","farm":"농장","training":"훈련소","hearth":"화덕","shrine":"신당","outpost":"초소","stone_store":"석재소","wood_store":"제재소"}[kind];label.theme=DemoArt.theme();label.add_theme_font_size_override("font_size",27);label.add_theme_color_override("font_color",Color("fff2cf"));label.position=Vector2(6.666,137);label.size=Vector2(166.667,45);label.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER;label.vertical_alignment=VERTICAL_ALIGNMENT_CENTER;label.mouse_filter=Control.MOUSE_FILTER_IGNORE;composition.add_child(label)
+	var label:=Label.new();label.name="MenuLabel";label.text={"hut":"움집","farm":"농장","training":"훈련소","hearth":"화덕","shrine":"신당","outpost":"초소","stone_store":"채석장","wood_store":"제재소"}[kind];label.theme=DemoArt.theme();label.add_theme_font_size_override("font_size",27);label.add_theme_color_override("font_color",Color("fff2cf"));label.position=Vector2(6.666,137);label.size=Vector2(166.667,45);label.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER;label.vertical_alignment=VERTICAL_ALIGNMENT_CENTER;label.mouse_filter=Control.MOUSE_FILTER_IGNORE;composition.add_child(label)
 	var locked:=TextureRect.new();locked.name="Locked";locked.texture=IntegratedMenuArt.lock_icon();locked.expand_mode=TextureRect.EXPAND_IGNORE_SIZE;locked.stretch_mode=TextureRect.STRETCH_KEEP_ASPECT_CENTERED;locked.position=Vector2(4,137);locked.size=Vector2.ONE*48;locked.modulate.a=.85;locked.mouse_filter=Control.MOUSE_FILTER_IGNORE;composition.add_child(locked)
 	button.enable_art_feedback()

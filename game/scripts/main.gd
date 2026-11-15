@@ -2135,6 +2135,8 @@ func go_back() -> void:
 			close_modal()
 	elif screen == "hunt_select":
 		show_screen("play")
+	elif screen == "play" and is_instance_valid(build_side) and build_side.visible:
+		build_side.hide()
 	elif screen == "play":
 		show_modal("게임을 종료할까요?","진행은 기기에 저장됩니다.",[
 			{"text":"취소","action":close_modal},
