@@ -93,15 +93,21 @@ func _draw()->void:
 	var outline:=footprint()
 	var valid := validity()
 	var color := Color(.55,.85,.3,.16) if valid else Color(1,.2,.1,.16)
-	if valid and not moving_key.is_empty():
-		VillageLayout.draw_move_foundation(self,Vector2.ZERO,outline)
+	if moving_key.is_empty():
+		draw_colored_polygon(outline,color)
+		outline.append(outline[0])
+		color.a=.7
+		draw_polyline(outline,color,2,true)
+		return
+	var bounds := VillageLayout.move_foundation_bounds(outline)
+	var center := bounds.get_center()
+	outline=PackedVector2Array([Vector2(center.x,bounds.position.y),Vector2(bounds.end.x,center.y),Vector2(center.x,bounds.end.y),Vector2(bounds.position.x,center.y)])
+	if valid:
+		VillageLayout.draw_move_foundation(self,Vector2.ZERO,footprint())
 		color=Color(1,.94,.76,.96)
 	else:
 		draw_colored_polygon(outline,color)
 		color.a=.7
-	if moving_key.is_empty():
-		outline.append(outline[0]);draw_polyline(outline,color,2,true)
-		return
 	var width := 1.5/maxf(.25,get_global_transform_with_canvas().get_scale().x)
 	for i in outline.size():
 		var at := outline[i]

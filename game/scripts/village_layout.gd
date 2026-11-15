@@ -10,6 +10,7 @@ const PLAYABLE := VillageBounds.PLAYABLE
 var model:GameState
 var layout_signature:=""
 var move_grid := false
+var fade_relocated_roads := false
 static func project(cell:Vector2)->Vector2:return ORIGIN+AXIS_X*cell.x+AXIS_Y*cell.y
 static func anchor(cell:Vector2)->Vector2:return project(cell)+Vector2(0,24)
 static func unproject(point:Vector2)->Vector2:
@@ -48,6 +49,11 @@ func rebuild_art()->void:
 		positions.append(model.building_position(str(entry.kind)+":"+str(entry.uid)));levels.append(int(entry.get("level",1)));own_ground.append(BuildingVisuals.has_own_ground(str(entry.kind)))
 	# Use actual saved building anchors, including free placement and moves.
 	if model.chief_level()>0 and chief.is_finite():
+		var roads := Node2D.new()
+		add_child(roads)
+		if fade_relocated_roads:
+			roads.modulate.a=0.0
+			roads.create_tween().tween_property(roads,"modulate:a",1.0,.46).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 		var start:=unproject(chief-Vector2(0,24))
 		var buildings:Array=[{"cell":start,"span":6}]
 		for at in positions:buildings.append({"cell":unproject(at-Vector2(0,24)),"span":4})
@@ -55,9 +61,9 @@ func rebuild_art()->void:
 		var grid_review:bool=OS.get_cmdline_user_args().has("--grid-roads")
 		var planned:Dictionary=BrushRoadNetwork.plan(buildings) if use_tiles and grid_review else {"ok":false}
 		if use_tiles and not grid_review:
-			add_child(OrganicRoadNetwork.new(buildings))
+			roads.add_child(OrganicRoadNetwork.new(buildings))
 		elif bool(planned.ok):
-			add_child(BrushRoadNetwork.new(planned.masks))
+			roads.add_child(BrushRoadNetwork.new(planned.masks))
 		else:
 			# Keep the complete legacy network if assets or safe routing are unavailable.
 			# A nearest-connection tree avoids the previous parallel grid of spokes.
@@ -70,15 +76,19 @@ func rebuild_art()->void:
 						var d:=from.distance_squared_to(remaining[i])
 						if d<distance:best_from=from;best_index=i;distance=d
 				var target:=remaining[best_index]
-				if distance>.01:add_child(NaturalRoad.new(NaturalRoad.organic_path(best_from,target)))
+				if distance>.01:roads.add_child(NaturalRoad.new(NaturalRoad.organic_path(best_from,target)))
 				connected.append(target);remaining.remove_at(best_index)
 		foundation(start,6,model.chief_level())
 	for i in positions.size():
 		if not own_ground[i]:foundation(unproject(positions[i]-Vector2(0,24)),4,levels[i])
 	queue_redraw()
-static func draw_move_foundation(canvas: CanvasItem, at: Vector2, footprint: PackedVector2Array) -> void:
+static func move_foundation_bounds(footprint: PackedVector2Array) -> Rect2:
 	var bounds := Rect2(footprint[0],Vector2.ZERO)
 	for point in footprint: bounds=bounds.expand(point)
+	return bounds
+
+static func draw_move_foundation(canvas: CanvasItem, at: Vector2, footprint: PackedVector2Array) -> void:
+	var bounds := move_foundation_bounds(footprint)
 	var texture := AssetCatalog.texture("GROUND-PAD-L1")
 	var alpha: Array=AssetCatalog.entry("GROUND-PAD-L1").alpha_bounds
 	var source := Rect2(alpha[0],alpha[1],alpha[2],alpha[3])

@@ -8,7 +8,7 @@ var label: Label
 func _init(at: Vector2, target_level: int) -> void:
 	position = at
 	level = target_level
-	z_index = 5
+	z_index = 10 if level == 0 else 5
 	visibility_layer = 2
 
 func _ready() -> void:
@@ -29,10 +29,13 @@ func _process(delta: float) -> void:
 
 func _draw() -> void:
 	if level == 0:
-		var alpha := .75*(1.0-smoothstep(0,2.6,age))
+		var alpha := 1.0-smoothstep(.12,2.6,age)
 		for side in [-1,1]:
-			var span := Vector2(94,38)*(1.0+age*.25)
-			draw_texture_rect(DUST,Rect2(Vector2(side*(39+age*30),0)-span*.5,span),false,Color(1,1,1,alpha))
+			var span := Vector2(145,68)*(1.0+age*.2)
+			var center := Vector2(side*(70+age*35),-12-age*9)
+			draw_texture_rect(DUST,Rect2(center-span*.5,span),false,Color(1,1,1,alpha))
+			var burst := span*.84
+			draw_texture_rect(DUST,Rect2(center-Vector2(0,11)-burst*.5,burst),false,Color(1.0,.96,.87,alpha*(1.0-smoothstep(.12,.68,age))))
 		return
 	var alpha := 1.0-smoothstep(.4,1.45,age)
 	draw_set_transform(Vector2.ZERO,0,Vector2(1,.30))

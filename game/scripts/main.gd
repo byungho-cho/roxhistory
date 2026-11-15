@@ -1624,7 +1624,11 @@ func finish_building_move()->void:
 	snapshot.centered=original.centered
 	snapshot.offset=original.offset
 	snapshot.transform=world.global_transform.affine_inverse()*original.global_transform
-	if model.move_building(key,at):
+	var layout: VillageLayout=world.get_node("VillageLayout")
+	layout.fade_relocated_roads=true
+	var moved:=model.move_building(key,at)
+	layout.fade_relocated_roads=false
+	if moved:
 		world.evacuate_animals(at,build_preview.kind)
 		var footprint := build_preview.footprint()
 		cancel_build_preview()

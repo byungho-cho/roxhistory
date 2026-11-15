@@ -1,7 +1,6 @@
 class_name RelocationEffect
 extends Node2D
 
-const GROUND_LEAD := .14
 const DROP_TIME := .21
 var app: Node
 var key: String
@@ -33,9 +32,9 @@ func _process(delta: float) -> void:
 		queue_free()
 		return
 	clock+=delta
-	if clock>=GROUND_LEAD:
+	if clock>0.0:
 		source.hide()
-		var progress := clampf((clock-GROUND_LEAD)/DROP_TIME,0,1)
+		var progress := clampf(clock/DROP_TIME,0,1)
 		destination.self_modulate=destination_color
 		destination.position=destination_position+Vector2(0,-48*(1-progress*progress))
 		if progress>=1.0 and not landed:
