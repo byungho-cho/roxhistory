@@ -4,7 +4,8 @@ extends RefCounted
 const KINDS := ["chief", "hut", "outpost", "hearth", "training", "shrine", "farm", "stone_store", "wood_store"]
 const FACILITY_KINDS := ["hearth", "training", "shrine", "farm", "stone_store", "wood_store"]
 const REQUIRED_HQ := {"chief":0,"hut":1,"hearth":2,"training":2,"shrine":3,"outpost":3,"farm":1,"stone_store":1,"wood_store":1}
-const DURATIONS := [60.0,300.0,600.0,900.0]
+const DURATIONS := [10.0,30.0,120.0,300.0]
+const SHRINE_DURATIONS := [30.0,60.0,300.0,600.0]
 const DEVELOPMENT_DURATION := 5.0
 # Storage buildings use the approved common clocks; saved clocks remain unchanged.
 const STORAGE_TIMING_CONFIRMED:=true
@@ -32,8 +33,9 @@ static func cost(kind:String,target:int)->Dictionary:
 	var amounts:Array=COSTS[kind][target-1]
 	return {"wood":int(amounts[0]),"stone":int(amounts[1])}
 
-static func duration(target:int)->float:
-	return DURATIONS[target-1] if target>=1 and target<=4 else 0.0
+static func duration(target:int,kind := "")->float:
+	if target<1 or target>4:return 0.0
+	return SHRINE_DURATIONS[target-1] if kind=="shrine" else DURATIONS[target-1]
 
 static func valid_number(value:Variant,minimum:float=0.0,maximum:float=MAX_RESOURCE,integer:bool=false)->bool:
 	return (value is int or value is float) and is_finite(float(value)) and value>=minimum and value<=maximum and (not integer or value==int(value))
@@ -55,7 +57,7 @@ static func valid_clock(job:Variant)->bool:
 	return job.finishes_at>job.started_at and valid_cost(job.get("cost"))
 
 static func new_job(kind:String,from_level:int,now:float,fast:bool=false)->Dictionary:
-	var full_duration:=DEVELOPMENT_DURATION if fast else duration(from_level+1)
+	var full_duration:=DEVELOPMENT_DURATION if fast else duration(from_level+1,kind)
 	return {"kind":canonical(kind),"from":from_level,"to":from_level+1,"started_at":now,
 		"finishes_at":now+full_duration,"clock_duration":full_duration,"cost":cost(kind,from_level+1)}
 
@@ -77,7 +79,7 @@ static func set_clock_mode(job:Dictionary,now:float,fast:bool)->void:
 	if float(job.finishes_at)<=now:return
 	var remaining:=maxf(0.0,float(job.finishes_at)-maxf(now,float(job.started_at)))
 	var old_duration:=float(job.get("clock_duration",float(job.finishes_at)-float(job.started_at)))
-	var duration:float=DEVELOPMENT_DURATION if fast else BuildingRules.duration(int(job.get("to",1)))
+	var duration:float=DEVELOPMENT_DURATION if fast else BuildingRules.duration(int(job.get("to",1)),str(job.get("kind","")))
 	var next_remaining:=duration*clampf(remaining/maxf(.001,old_duration),0,1)
 	job.clock_duration=duration
 	job.started_at=now-(duration-next_remaining)

@@ -116,7 +116,7 @@ func _ready() -> void:
 		var amount := FigmaArt.text(item,str(costs.get(resource,0)),Rect2(0,0,0,32),18,FigmaArt.BODY,Color("553820"),false)
 		amount.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		add_shortage_art(icon,resource)
-	var seconds := int(app.model.building_duration(current+1))
+	var seconds := int(app.model.building_duration(current+1,kind))
 	var time := "%d초" % seconds if seconds<60 else "%d분" % (seconds/60)
 	action(Rect2(270,300,192,44),"즉시 업그레이드","3",preload(UPDATE_ART+"diamond-premium-illustrated.png"),preload(FINISH_ART+"popup-button-stone-gray-disabled-192x44.svg"),true)
 	action(Rect2(486,300,166,44),"업그레이드",time,preload(UPDATE_ART+"hourglass-teal-amber-illustrated.png"),preload(FINISH_ART+"popup-button-gold-volume-166x44.svg"),false)
@@ -139,7 +139,8 @@ func add_shortage_art(item: Control, resource: String) -> void:
 	var marker := app.picture(layer,glow,Rect2(-9,-6,70,43)) as TextureRect
 	marker.stretch_mode = TextureRect.STRETCH_SCALE
 	marker.show_behind_parent = true
-	var text := FigmaArt.text(layer,"",Rect2(-16,-19,84,22),13,FigmaArt.BODY,Color("a32a20"))
+	var text := FigmaArt.text(layer,"",Rect2(-16,-19,64,22),13,FigmaArt.BODY,Color("a32a20"))
+	text.pivot_offset = Vector2(32,11)
 	text.add_theme_color_override("font_outline_color",Color("fff0d2"))
 	text.add_theme_constant_override("outline_size",4)
 	item.add_child(layer)
@@ -151,8 +152,12 @@ func add_shortage_art(item: Control, resource: String) -> void:
 func play_shortage() -> bool:
 	var wood := int(costs.get("wood",0))-int(app.model.state.get("wood",0))
 	var stone := int(costs.get("stone",0))-int(app.model.state.get("stone",0))
+	if shortage_motion and shortage_motion.is_valid():shortage_motion.kill()
+	shortage_motion=null
+	for resource in ["wood","stone"]:
+		shortage_glows[resource].modulate.a = 0.0
+		shortage_labels[resource].modulate.a = 0.0
 	if wood<=0 and stone<=0:return false
-	if shortage_motion and shortage_motion.is_running():return true
 	shortage_motion=create_tween().set_parallel()
 	for resource in ["wood","stone"]:
 		var deficit := wood if resource=="wood" else stone
@@ -160,12 +165,16 @@ func play_shortage() -> bool:
 		var glow: TextureRect = shortage_glows[resource]
 		var text: Label = shortage_labels[resource]
 		glow.modulate.a=1.0
-		text.text="%d 부족"%deficit
+		text.text="−%d"%deficit
 		text.position.y=-19.0
+		text.scale=Vector2.ONE*.65
 		text.modulate.a=1.0
 		shortage_motion.tween_property(glow,"modulate:a",0.0,.68)
-		shortage_motion.tween_property(text,"position:y",-38.0,.72)
-		shortage_motion.tween_property(text,"modulate:a",0.0,.48).set_delay(.24)
+		shortage_motion.tween_property(text,"position:y",-42.0,.32).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+		shortage_motion.tween_property(text,"scale",Vector2.ONE*2.0,.32).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		shortage_motion.tween_property(text,"modulate:a",.18,.12).set_delay(4.32)
+		shortage_motion.tween_property(text,"modulate:a",1.0,.09).set_delay(4.44).from(.18)
+		shortage_motion.tween_property(text,"modulate:a",0.0,.18).set_delay(4.53).from(1.0)
 	return true
 
 func request_upgrade() -> void:

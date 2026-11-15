@@ -2,6 +2,7 @@ extends Node2D
 
 const DUST := preload("res://assets/ui/d0019/ground-dust-soft.png")
 const CELEBRATION_TIME := 2.7
+const CAPTION_EXTRA_TIME := 2.0
 const FIREWORK_COLORS := [Color("ff8678"),Color("7ce9d2"),Color("d2a0ff")]
 var age := 0.0
 var level: int
@@ -49,14 +50,14 @@ func _process(delta: float) -> void:
 		scale = Vector2.ONE*clampf(.48/maxf(zoom,.01),1.0,1.8)
 		for i in glyphs.size():
 			var appear := .34 if i<level_glyph_count else .72
-			var leave := 1.53+i*.055
+			var leave := 1.53+i*.055+CAPTION_EXTRA_TIME
 			var fly := clampf((age-leave)/.52,0,1)
 			var glyph := glyphs[i]
 			glyph.position=glyph_origins[i]-Vector2(0,80.0*fly*fly)
 			glyph.scale=Vector2.ONE*lerpf(.66,1.0,smoothstep(appear,appear+.18,age))
 			glyph.rotation=sin(i*2.7)*.35*fly
 			glyph.modulate.a=smoothstep(appear,appear+.12,age)*(1.0-smoothstep(.18,1.0,fly))
-	if age >= (2.6 if level == 0 else CELEBRATION_TIME):
+	if age >= (2.6 if level == 0 else CELEBRATION_TIME+CAPTION_EXTRA_TIME):
 		queue_free()
 	else:
 		queue_redraw()

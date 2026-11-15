@@ -4,6 +4,7 @@ extends RefCounted
 ## Does not change collision, saved positions, plot geometry or occupation.
 const REFERENCE_WIDTH := 320.0
 const FARM_WIDTH := 256.0 * 0.8
+const FARM_DEPTH_SCALE := 0.82
 const WORKSHOP_OFFSET := 17.0
 const TRAINING_HEIGHTS := [180.0, 202.5, 211.5, 229.5]
 const SHRINE_HEIGHTS := [166.0, 184.0, 202.0, 222.0]
@@ -45,7 +46,9 @@ static func display_size(kind: String, level: int = 1, ground_width: float = 230
 		return original*minf(frame.x/original.x,frame.y/original.y)
 	if kind=="farm":
 		var aspect:float=[320.0/420,340.0/440,380.0/480,420.0/520][clampi(level,1,4)-1]
-		return Vector2(FARM_WIDTH,FARM_WIDTH*aspect)*ground_width/230.0
+		# The separate farm body is steeper than the common floor diamond.
+		# Crop overlays share this visual rect and retain their authored UVs.
+		return Vector2(FARM_WIDTH,FARM_WIDTH*aspect*FARM_DEPTH_SCALE)*ground_width/230.0
 	var stage := clampi(level, 1, 4) - 1
 	var scale_factor: float
 	match kind:

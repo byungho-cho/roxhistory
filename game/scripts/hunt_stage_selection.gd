@@ -15,10 +15,10 @@ const BOSS := preload(ART+"08-ui-stage-finalboss-crest.png")
 const FIELD := preload(ART+"02-meadow-background.png")
 const BOAR := preload(ART+"03-boar-entrance-atlas.png")
 const HOLD := preload(ART+"05-boar-settled-pose.png")
-const SWIPE := preload(ART+"07-sfx-parchment-swipe.wav")
-const HOOF := preload(ART+"06-sfx-boar-hoof.wav")
+const ENTRY_AUDIO := preload("res://assets/ui/d0027/boar-entry-sync.wav")
 const ARROW := preload(ART+"08-ui-arrow-gold-worn-right.svg")
-const ENTRY_TIMES := [.42,.88,1.46,1.96,2.26]
+const TOP_ENTRY := 1.96
+const FOOTER_ENTRY := 2.26
 const ENTRY_END := 2.56
 const SKINS := {
 	"active":preload(STAGE_ART+"stage-active-body@2x.png"),
@@ -40,7 +40,8 @@ var hold_at := Vector2(204,217)
 var frame_index := -1
 var chapter := 0
 var elapsed := 0.0
-var next_event := 0
+var entry_presented := false
+var audio_clock_started := false
 var voice := AudioStreamPlayer.new()
 var plaque_art: Texture2D
 var skip_hint: Label
@@ -75,6 +76,7 @@ func _ready() -> void:
 		var origin: Array=metadata.get("hold_pose_source_top_left_xy",[204,217])
 		hold_at=Vector2(origin[0],origin[1])
 	voice.bus=&"SFX"
+	voice.stream=ENTRY_AUDIO
 	voice.volume_db=linear_to_db(.50)
 	add_child(voice)
 	skip_hint=title(self,"스킵",Rect2(),23)
@@ -84,10 +86,17 @@ func _ready() -> void:
 	if reduce_motion():
 		entry_finished=true
 		elapsed=ENTRY_END
-		next_event=ENTRY_TIMES.size()
 		set_process(false)
 	resized.connect(draw_page)
 	draw_page()
+	if not entry_finished:
+		if DisplayServer.get_name()=="headless":
+			entry_presented=true
+		else:
+			RenderingServer.frame_post_draw.connect(mark_entry_presented,CONNECT_ONE_SHOT)
+
+func mark_entry_presented() -> void:
+	entry_presented=true
 
 func reduce_motion() -> bool:
 	if OS.get_cmdline_user_args().has("--reduce-motion") or app.settings.get_value("app","reduce_motion",false):
@@ -100,16 +109,20 @@ func reduce_motion() -> bool:
 	return settings_class!=null and activity!=null and float(settings_class.getFloat(activity.getContentResolver(),"animator_duration_scale",1.0))<=0.0
 
 func _process(delta: float) -> void:
+	if entry_finished or not entry_presented:return
 	if not app.application_active:
 		voice.stream_paused=true
 		return
 	voice.stream_paused=false
-	elapsed+=delta
-	while next_event<ENTRY_TIMES.size() and elapsed>=ENTRY_TIMES[next_event]:
-		voice.stream=HOOF if next_event<3 else SWIPE
-		if not AudioServer.is_bus_mute(AudioServer.get_bus_index("SFX")):
-			voice.play()
-		next_event+=1
+	if not audio_clock_started:
+		audio_clock_started=true
+		if not AudioServer.is_bus_mute(AudioServer.get_bus_index("SFX")):voice.play()
+		return
+	if voice.playing:
+		var audible_position := voice.get_playback_position()+AudioServer.get_time_since_last_mix()-AudioServer.get_output_latency()
+		elapsed=maxf(elapsed,audible_position)
+	else:
+		elapsed+=delta
 	layout_boar()
 	update_groups()
 	if elapsed>=ENTRY_END:finish_entry()
@@ -118,7 +131,6 @@ func finish_entry(skipped := false) -> void:
 	if entry_finished:return
 	entry_finished=true
 	elapsed=ENTRY_END
-	next_event=ENTRY_TIMES.size()
 	if skipped:voice.stop()
 	skip_hint.hide()
 	layout_boar()
@@ -170,8 +182,8 @@ func layout_boar() -> void:
 	shadow.size=Vector2(display_extent.x*.87,30)*cover
 
 func update_groups() -> void:
-	move_group(top_group,1.96,-18.0)
-	move_group(footer,2.26,20.0)
+	move_group(top_group,TOP_ENTRY,-18.0)
+	move_group(footer,FOOTER_ENTRY,20.0)
 
 func move_group(group: Control, start: float, shift: float) -> void:
 	group.visible=elapsed>=start
@@ -262,14 +274,20 @@ func add_stage(slot: int) -> void:
 		var shadow_offset := Vector2(5,1)*STAGE_ART_SCALE
 		app.picture(tile,skin,Rect2(-shadow_offset,skin.get_size()*.5*STAGE_ART_SCALE))
 	var has_caption := boss or midboss
-	var number_y := 10.0 if boss else 3.0
-	title(tile,str(slot+1),Rect2(0,number_y,diameter,24),22 if (selected or current) else 18)
+	if selected and not has_caption:
+		title(tile,str(slot+1),Rect2(Vector2.ZERO,extent),44)
+	else:
+		var number_center_y := (22.0 if boss else 15.0)*1.2
+		title(tile,str(slot+1),Rect2(0,number_center_y-14.0,diameter,28),24 if (selected or current) else 21)
 	if has_caption:
-		title(tile,"최종 보스" if boss else "중간 보스",Rect2(0,diameter*.46,diameter,14),10)
+		title(tile,"최종 보스" if boss else "중간 보스",Rect2(0,diameter*.46*.95,diameter,14),10)
 	if done or not unlocked:
 		var marker: Texture2D=preload(ART+"08-ui-stage-check.svg") if done else preload(ART+"08-ui-padlock-gold.png")
 		var marker_y := diameter*.68 if has_caption else diameter*.60
-		app.picture(tile,marker,Rect2((diameter-13)*.5,marker_y,13,13))
+		var marker_size := 9.0 if selected and not has_caption else 13.0
+		if selected and not has_caption:
+			marker_y = diameter-marker_size-2.0
+		app.picture(tile,marker,Rect2((diameter-marker_size)*.5,marker_y,marker_size,marker_size))
 
 func choose(stage_id: int) -> void:
 	if stage_id<0 or stage_id>=TOTAL_STAGES or stage_id>progress():return

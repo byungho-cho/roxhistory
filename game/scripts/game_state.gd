@@ -527,8 +527,8 @@ func upgrade_requirement(key:String="chief",check_resources:bool=true)->String:
 func building_cost(kind:String,target:int=1)->Dictionary:
 	return BuildingRules.cost(kind,target)
 
-func building_duration(target:int)->float:
-	return BuildingRules.DEVELOPMENT_DURATION if debug_fast_build else BuildingRules.duration(target)
+func building_duration(target:int,kind := "")->float:
+	return BuildingRules.DEVELOPMENT_DURATION if debug_fast_build else BuildingRules.duration(target,kind)
 
 func facilities()->Array:
 	return state.get("facilities",[]).duplicate(true)
