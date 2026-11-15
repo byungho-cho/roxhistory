@@ -1078,7 +1078,13 @@ func enter_game(first_entry:=false,spread_hud:=false) -> void:
 
 func reveal_first_village_hud(hud: Control) -> void:
 	if is_instance_valid(hud):
-		hud.create_tween().tween_property(hud,"modulate:a",1.0,.22)
+		var reveal := hud.create_tween().set_parallel(true).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		reveal.tween_property(hud,"modulate:a",1.0,.22)
+		for group: Array in [[chrome,Vector2(0,-10)],[action_row,Vector2(0,10)],[menu_backdrop,Vector2(0,10)],[resident_panel,Vector2(0,-10)],[debug_shortcut,Vector2(10,0)]]:
+			var control: Control=group[0]
+			var resting := control.position
+			control.position+=Vector2(group[1])
+			reveal.tween_property(control,"position",resting,.20)
 	if get_viewport().get_visible_rect().size != Vector2(w,h):
 		call_deferred("queue_layout")
 
@@ -1570,28 +1576,17 @@ func cancel_build_preview()->void:
 	if choosing_plot and is_instance_valid(world) and task!="build":world.clear_site()
 	choosing_plot=false
 	if is_instance_valid(build_preview):build_preview.clear()
-	if is_instance_valid(world):world.show_candidates=false;world.queue_redraw()
+	if is_instance_valid(world):
+		world.show_candidates=false;world.queue_redraw()
+		var layout := world.get_node_or_null("VillageLayout") as VillageLayout
+		if layout: layout.set_move_grid(false)
 
 func confirm_build_preview()->void:
 	if not is_instance_valid(build_preview) or not build_preview.active() or not application_active or modal:return
 	var reason:String=build_preview.block_reason()
 	if not reason.is_empty():toast(reason);return
 	var at:Vector2=build_preview.placement_position
-	var key:String=build_preview.moving_key
-	if not key.is_empty():
-		if not relocating_key.is_empty():return
-		var original:Sprite2D=world.building_sprite(key)
-		var snapshot:=Sprite2D.new();snapshot.texture=original.texture;snapshot.centered=original.centered;snapshot.offset=original.offset
-		snapshot.transform=original.global_transform
-		var from:=model.building_position(key)
-		build_preview.restore_source()
-		if model.move_building(key,at):
-			world.evacuate_animals(at,build_preview.kind)
-			cancel_build_preview();relocating_key=key
-			world.add_child(RelocationEffect.new(self,key,snapshot,from,at))
-		else:
-			snapshot.free();toast("위치가 변경되었어요. 다시 확인해 주세요")
-		return
+	if not build_preview.moving_key.is_empty():return
 	if not can_build_selected():return
 	if model.begin_construction(build_kind,at):
 		world.evacuate_animals(at,build_kind)
@@ -1599,14 +1594,45 @@ func confirm_build_preview()->void:
 		toast("건설을 시작했어요")
 	else:toast("건설 조건이 변경되었어요. 다시 확인해 주세요")
 
-func start_building_move(key:String)->void:
-	if not relocating_key.is_empty():return
-	if modal or not application_active or world_map_open:return
+func start_building_move(key:String)->bool:
+	if not relocating_key.is_empty() or choosing_plot or modal or not application_active or world_map_open:return false
 	var found:=model.lookup_building(key)
-	if found.is_empty():return
+	if found.is_empty():return false
+	if found.data.has("upgrade"):
+		toast("공사 완료 후 이동할 수 있어요")
+		return false
 	cancel_task();build_side.hide();building_menu.close()
-	build_kind=str(found.get("kind","hut"));choosing_plot=true
-	build_preview.select_position(model.building_position(key),build_kind,key)
+	build_preview.move_dragging=true
+	build_preview.select_position(model.building_position(key),str(found.kind),key)
+	world.get_node("VillageLayout").set_move_grid(true)
+	return true
+
+func finish_building_move()->void:
+	var key := build_preview.moving_key
+	build_preview.move_dragging=false
+	world.get_node("VillageLayout").set_move_grid(false)
+	if key.is_empty() or not build_preview.validity():return
+	var at := build_preview.placement_position
+	var from := model.building_position(key)
+	if at.is_equal_approx(from):
+		cancel_build_preview()
+		return
+	var original: Sprite2D = world.building_sprite(key)
+	if not is_instance_valid(original):return
+	var snapshot:=Sprite2D.new()
+	snapshot.texture=original.texture
+	snapshot.centered=original.centered
+	snapshot.offset=original.offset
+	snapshot.transform=world.global_transform.affine_inverse()*original.global_transform
+	if model.move_building(key,at):
+		world.evacuate_animals(at,build_preview.kind)
+		var footprint := build_preview.footprint()
+		cancel_build_preview()
+		relocating_key=key
+		world.add_child(RelocationEffect.new(self,key,snapshot,at,footprint))
+	else:
+		snapshot.free()
+		toast("위치가 변경되었어요. 다시 확인해 주세요")
 
 func reserve_action(request:Dictionary)->void:
 	if request.get("kind","")=="gather" and not str(request.get("id","")).is_empty():
@@ -1728,6 +1754,7 @@ func world_tap(screen_point:Vector2) -> void:
 	var at:Vector2=world.get_global_transform_with_canvas().affine_inverse()*screen_point
 	if not relocating_key.is_empty() and building_menu.hit_key(at)==relocating_key:return
 	if is_instance_valid(tutorial) and tutorial.active():return
+	if not build_preview.moving_key.is_empty():cancel_build_preview()
 	if choosing_plot:
 		build_preview.select_position(at,build_kind,build_preview.moving_key)
 		return

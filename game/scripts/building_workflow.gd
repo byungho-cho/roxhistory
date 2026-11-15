@@ -71,12 +71,18 @@ func request_upgrade()->void:
 	show_upgrade_confirmation("chief",cost,func():confirm_upgrade(target))
 	confirmation_target=target
 func show_upgrade_confirmation(key:String,cost:Dictionary,callback:Callable)->void:
-	app.close_modal();app.gestures.clear();app.navigation.cancel();app.toast_time=0
-	app.modal=true;app.world.player.presentation_paused=true
-	app.overlay=Control.new();app.overlay.name="CompactUpgradeOverlay";app.overlay.z_index=50
-	app.ui.add_child(app.overlay);app.overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT);app.overlay.mouse_filter=Control.MOUSE_FILTER_IGNORE
-	app.overlay.add_child(UpgradeConfirmation.new(app,key,cost,callback));app.sync_audio()
+	app.navigation.cancel()
+	app.toast_time=0
+	var found: Dictionary=app.model.lookup_building(key)
+	var current: int=app.model.chief_level() if key=="chief" else int(found.get("data",{}).get("level",1))
+	var title := building_name(str(found.get("kind","chief")))+" 업그레이드"
+	var body := "Lv.%d → Lv.%d\n%s" % [current,current+1,upgrade_description(cost,current+1)]
+	app.show_modal(title,body,[{"text":"취소","action":app.close_modal},{"text":"확인","action":callback}],false,true,false,Vector2(480,265))
 	confirmation_overlay=app.overlay
+	var panel: Control=app.overlay.get_child(1)
+	panel.pivot_offset=panel.size*.5
+	panel.scale=Vector2.ONE*.96
+	panel.create_tween().tween_property(panel,"scale",Vector2.ONE,.18).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 func upgrade_description(cost:Dictionary,target:int)->String:
 	return "%s\n공사 시간 %d초\n앱을 닫아도 공사가 진행돼요"%[cost_text(cost),int(app.model.building_duration(target))]
 func confirm_upgrade(target:int)->bool:

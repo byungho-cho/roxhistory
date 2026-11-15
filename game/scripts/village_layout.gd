@@ -9,6 +9,7 @@ const PLOTS := [Vector2(2,-4),Vector2(-5,3),Vector2(2,3),Vector2(9,3),Vector2(2,
 const PLAYABLE := VillageBounds.PLAYABLE
 var model:GameState
 var layout_signature:=""
+var move_grid := false
 static func project(cell:Vector2)->Vector2:return ORIGIN+AXIS_X*cell.x+AXIS_Y*cell.y
 static func anchor(cell:Vector2)->Vector2:return project(cell)+Vector2(0,24)
 static func unproject(point:Vector2)->Vector2:
@@ -21,8 +22,12 @@ static func ground_ok(point:Vector2)->bool:return Geometry2D.is_point_in_polygon
 static func plot_polygon(id:int)->PackedVector2Array:return polygon(PLOTS[id],4)
 func _init(state:GameState)->void:model=state
 func _ready()->void:
-	z_index=-15;model.changed.connect(rebuild_art);rebuild_art()
+	name="VillageLayout";z_index=-15;model.changed.connect(rebuild_art);rebuild_art()
+func set_move_grid(value: bool) -> void:
+	if move_grid == value: return
+	move_grid=value;queue_redraw()
 func _draw()->void:
+	if not move_grid:return
 	# Clipped fine grid: square world cells project to the same 2:1 diamonds.
 	for u in range(-30,31):
 		for v in range(-30,31):
