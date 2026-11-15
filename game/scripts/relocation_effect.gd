@@ -2,6 +2,7 @@ class_name RelocationEffect
 extends Node2D
 
 const DROP_TIME := .21
+const SETTLE_TIME := .16
 var app: Node
 var key: String
 var source: Sprite2D
@@ -10,6 +11,8 @@ var target: Vector2
 var kind: String
 var level: int
 var destination_position := Vector2.ZERO
+var destination_scale := Vector2.ONE
+var destination_foot_y := 0.0
 var destination_color := Color.WHITE
 var clock := 0.0
 var landed := false
@@ -26,6 +29,8 @@ func _ready() -> void:
 		return
 	destination_color=destination.self_modulate
 	destination_position=destination.position
+	destination_scale=destination.scale
+	destination_foot_y=destination.get_rect().end.y * destination_scale.y
 	destination.self_modulate.a=0.0
 
 func _process(delta: float) -> void:
@@ -43,13 +48,31 @@ func _process(delta: float) -> void:
 			app.audio.cue("relocation_landing")
 			var dust := preload("res://scripts/village_upgrade_feedback.gd").new(target,0)
 			app.world.add_child(dust)
-	if landed: queue_free()
+	if landed:
+		var settle := clampf((clock - DROP_TIME) / SETTLE_TIME, 0.0, 1.0)
+		var compression := sin(PI * settle) * (1.0 - settle)
+		destination.scale = destination_scale * Vector2(1.0 + .055 * compression, 1.0 - .12 * compression)
+		destination.position.y = destination_position.y + destination_foot_y * .12 * compression
+		if settle >= 1.0:
+			queue_free()
+	queue_redraw()
 
 func _draw() -> void:
 	VillageLayout.draw_move_foundation(self,target,kind,level)
+	var approach := minf(clock / DROP_TIME, 1.0)
+	var fade := 1.0 - clampf((clock - DROP_TIME) / SETTLE_TIME, 0.0, 1.0)
+	var pad := VillageLayout.foundation_rect(6 if kind == "chief" else 4)
+	var radius := pad.size * lerpf(.33, .23, approach)
+	var center := target + pad.get_center()
+	for layer in range(3):
+		var points := PackedVector2Array()
+		for segment in range(24):
+			points.append(center + Vector2.from_angle(TAU * segment / 24.0) * radius * (1.0 - layer * .18))
+		draw_colored_polygon(points, Color(.16, .10, .05, lerpf(.035, .10, approach) * fade))
 
 func _exit_tree() -> void:
 	if is_instance_valid(destination):
 		destination.self_modulate=destination_color
 		destination.position=destination_position
+		destination.scale=destination_scale
 	if is_instance_valid(app):app.relocating_key=""
