@@ -17,8 +17,8 @@ const BOAR := preload(ART+"03-boar-entrance-atlas.png")
 const HOLD := preload(ART+"05-boar-settled-pose.png")
 const ENTRY_AUDIO := preload("res://assets/ui/d0027/boar-entry-sync.wav")
 const ARROW := preload(ART+"08-ui-arrow-gold-worn-right.svg")
-const TOP_ENTRY := 1.96
-const FOOTER_ENTRY := 2.26
+const TOP_ENTRY := 1.99
+const FOOTER_ENTRY := 2.29
 const ENTRY_END := 2.56
 const SKINS := {
 	"active":preload(STAGE_ART+"stage-active-body@2x.png"),
@@ -42,6 +42,7 @@ var chapter := 0
 var elapsed := 0.0
 var entry_presented := false
 var audio_clock_started := false
+var audio_clock_active := false
 var voice := AudioStreamPlayer.new()
 var plaque_art: Texture2D
 var skip_hint: Label
@@ -116,12 +117,21 @@ func _process(delta: float) -> void:
 	voice.stream_paused=false
 	if not audio_clock_started:
 		audio_clock_started=true
-		if not AudioServer.is_bus_mute(AudioServer.get_bus_index("SFX")):voice.play()
+		audio_clock_active = not AudioServer.is_bus_mute(AudioServer.get_bus_index("SFX"))
+		if audio_clock_active:voice.play()
 		return
 	if voice.playing:
-		var audible_position := voice.get_playback_position()+AudioServer.get_time_since_last_mix()-AudioServer.get_output_latency()
+		var mixed_position := voice.get_playback_position()
+		# Start interpolation only after the driver has mixed this stream.
+		var audible_position := mixed_position
+		if mixed_position>0.0:
+			audible_position += AudioServer.get_time_since_last_mix()-AudioServer.get_output_latency()
 		elapsed=maxf(elapsed,audible_position)
 	else:
+		if audio_clock_active:
+			# The playback cursor resets at EOF while the queued tail still drains.
+			audio_clock_active = false
+			elapsed = maxf(elapsed,ENTRY_AUDIO.get_length()-AudioServer.get_output_latency())
 		elapsed+=delta
 	layout_boar()
 	update_groups()
@@ -222,7 +232,7 @@ func draw_page() -> void:
 	var crest := Rect2(315,12,330,65)
 	app.picture(top_group,plaque_art,crest).stretch_mode=TextureRect.STRETCH_SCALE
 	var chapter_name := "%d장 · %s"%[chapter+1,CHAPTERS[chapter]]
-	var heading := title(top_group,chapter_name,Rect2(315,35.5,330,27),22)
+	var heading := title(top_group,chapter_name,Rect2(315,37.5,330,27),22)
 	var half_text := heading.get_theme_font("font").get_string_size(chapter_name,HORIZONTAL_ALIGNMENT_LEFT,-1,22).x*.5
 	if chapter>0:chapter_arrow(480-half_text-20-12,-1)
 	if chapter+1<CHAPTERS.size():chapter_arrow(480+half_text+20+12,1)
@@ -230,8 +240,12 @@ func draw_page() -> void:
 	app.picture(back,preload(ART+"08-ui-back-button.png"),Rect2(5,5,38,38))
 	var rules := action(top_group,Rect2(854,20,84,33),open_rules)
 	app.picture(rules,preload(ART+"08-ui-rules-body.svg"),Rect2(Vector2.ZERO,rules.size))
-	app.picture(rules,preload(ART+"08-ui-rules-book.svg"),Rect2(9,8,15,16))
-	title(rules,"규칙",Rect2(27,0,49,32),15)
+	var rule_label := title(rules,"규칙",Rect2(0,0,0,33),15)
+	var label_width := rule_label.get_theme_font("font").get_string_size("규칙",HORIZONTAL_ALIGNMENT_LEFT,-1,15).x
+	var group_x := (rules.size.x-15.0-7.0-label_width)*.5
+	app.picture(rules,preload(ART+"08-ui-rules-book.svg"),Rect2(group_x,8.5,15,16))
+	rule_label.position.x = group_x+22.0
+	rule_label.size.x = label_width
 	app.picture(footer,preload(STAGE_ART+"stage-connector@2x.png"),Rect2(132,STAGE_ROW_Y-3,702,6)).stretch_mode=TextureRect.STRETCH_SCALE
 	for slot in 10:
 		add_stage(slot)

@@ -469,9 +469,8 @@ func build_combat() -> void:
 	combat_controls = layer(combat)
 	var tray := plaque(combat_controls,Rect2(366,444,228,93),Color(.21,.16,.10,.72),Color(.56,.43,.26,.65))
 	for index in hunters.size():
-		var card := make_button(tray,"",Rect2(9.5+71.5*index,15,66,66),use_skill.bind(RULES.PARTY_SKILLS[index]),"")
-		clear_button_art(card)
-		card.focus_mode = Control.FOCUS_NONE
+		var card := MATCH.layer(tray,Vector2(9.5+71.5*index,15))
+		card.size = Vector2(66,66)
 		card.name = "CombatCard%d"%index
 		var portrait := MATCH.picture(card,CARD_PORTRAITS[index],Rect2(0,0,66,66))
 		var charge_icons: Array[TextureRect] = []
@@ -494,7 +493,14 @@ func build_combat() -> void:
 		card.add_child(hp)
 		var highlight := plaque(card,Rect2(0,0,66,66),Color(1,.83,.35,0),Color(1,.85,.42,.95))
 		highlight.hide()
-		party_cards.append({"button":card,"portrait":portrait,"charges":charge_icons,"hp":hp,"highlight":highlight})
+		var skill := make_button(tray,"",Rect2(card.position+Vector2(12,-49),Vector2(42,42)),use_skill.bind(RULES.PARTY_SKILLS[index]),"")
+		clear_button_art(skill)
+		skill.focus_mode = Control.FOCUS_NONE
+		skill.pivot_offset = skill.size*.5
+		MATCH.picture(skill,CARD_SKILLS[index],Rect2(Vector2.ZERO,skill.size))
+		skill.hide()
+		party_cards.append({"button":skill,"portrait":portrait,"charges":charge_icons,"hp":hp,
+			"highlight":highlight,"skill_origin":skill.position,"skill_age":0.0})
 	prey_hud = layer(battlefield)
 	prey_hud.hide()
 	build_level(prey_hud,false)
@@ -915,6 +921,8 @@ func advance_transition(delta: float) -> void:
 		fit_layout()
 func use_skill(id: String) -> void:
 	if not running or result_shown or exit_popup or app.modal or not app.application_active:return
+	var index := RULES.PARTY_SKILLS.find(id)
+	if index<0 or rules.orbs(index)<RULES.MAX_ORBS:return
 	if not rules.use_skill(id):
 		hunt_audio.cue("S25")
 		return
@@ -925,18 +933,10 @@ func play_pose(id: String) -> void:
 	pose = id
 	pose_clock = 0.0
 	impact_pending = true
-	var index := RULES.PARTY_SKILLS.find(id)
-	if index>=0:
-		var card: DemoButton = party_cards[index].button
-		var tile := MATCH.picture(card,CARD_SKILLS[index],Rect2(12,-10,42,42))
-		var motion := tile.create_tween().set_parallel()
-		motion.tween_property(tile,"position:y",-60.0,.35).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-		motion.tween_property(tile,"modulate:a",0.0,.15).set_delay(.26)
-		motion.chain().tween_callback(tile.queue_free)
 	match id:
 		"thrust","auto_thrust":hunt_audio.cue("S15",2)
-		"strike":hunt_audio.cue("S17",2)
-		"team":hunt_audio.cue("S19",2)
+		"strike":hunt_audio.cue("S18",2)
+		"team":hunt_audio.cue("S20",2)
 
 func _process(delta: float) -> void:
 	hunt_audio.update(app.application_active and app.settings.get_value("app","sound",true),exit_popup!=null or app.modal)
@@ -974,8 +974,9 @@ func _process(delta: float) -> void:
 				hunt_audio.cue("S21",2)
 			else:
 				basic_recoil = BASIC_RECOIL_TIME
-				hunt_audio.cue("S18" if pose=="strike" else ("S20" if pose=="team" else "S16"),3)
-				if pose!="team":hunt_audio.cue("S22",1)
+				if pose=="auto_thrust":
+					hunt_audio.cue("S16",3)
+					hunt_audio.cue("S22",1)
 		var move := rules.advance(elapsed)
 		if not move.is_empty():play_pose(move)
 	if running:
@@ -1002,13 +1003,37 @@ func update_combat_ui(delta := 0.0) -> void:
 	for i in party_cards.size():
 		var card: Dictionary = party_cards[i]
 		var alive := rules.party_hp[i]>0
-		var ready := running and rules.can_use(RULES.PARTY_SKILLS[i])
-		card.button.disabled = not ready
-		card.highlight.visible = ready
+		var full := running and alive and rules.orbs(i)==RULES.MAX_ORBS
+		update_skill_box(card,full,delta)
+		card.button.disabled = not full or not rules.can_use(RULES.PARTY_SKILLS[i])
+		card.highlight.visible = full
 		card.portrait.modulate = Color.WHITE if alive else Color(.35,.35,.35,.85)
 		card.hp.value = rules.party_hp[i]
 		for slot in RULES.MAX_ORBS:
 			card.charges[slot].texture = CHARGE_FULL if alive and slot<rules.orbs(i) else CHARGE_EMPTY
+
+func update_skill_box(card: Dictionary, full: bool, delta: float) -> void:
+	var button: DemoButton = card.button
+	if not full:
+		if button.visible:button.clear()
+		button.hide()
+		card.skill_age = 0.0
+		return
+	button.show()
+	card.skill_age += delta / speed
+	var age: float = card.skill_age
+	var lift := 0.0
+	var grow := 1.0
+	if age < .60:
+		var spring := exp(-age*7.0)*cos(TAU*4.5*age)
+		lift = spring*16.0
+		grow = 1.0-spring*.28
+	else:
+		var tick := pow(maxf(0.0,sin((age-.60)*TAU/1.8)),12.0)
+		lift = -2.0*tick
+		grow = 1.0+.045*tick
+	button.position = card.skill_origin+Vector2(0,lift)
+	button.scale = Vector2.ONE*grow
 
 func update_camera(delta: float) -> void:
 	var focus := Vector2(480,285).lerp(Vector2(495,305),approach)
