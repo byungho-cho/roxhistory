@@ -61,8 +61,8 @@ func _valid_buildings(s:Dictionary,hq:int)->bool:
 	var occupied_uids:Array=[]
 	for collection in ["homes","outposts","facilities"]:
 		var entries:Variant=s.get(collection,[])
-		var limit:=DemoConfig.MAX_SAVED_RESIDENT_HOMES if collection=="homes" else BuildingRules.MAX_ENTRIES
-		if not entries is Array or entries.size()>limit:return false
+		# The development building limit can produce more than five owned huts.
+		if not entries is Array or entries.size()>BuildingRules.MAX_ENTRIES:return false
 		var ids:Array=[];var legacy_slots:Array=[]
 		for entry in entries:
 			if not entry is Dictionary or not OwnedBuildingUpgrades.valid(entry):return false
