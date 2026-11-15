@@ -32,7 +32,10 @@ const ENEMY_CELLS := [Vector2(686.5,172.5),Vector2(607.75,191.25),Vector2(660.25
 	Vector2(529,210),Vector2(581.5,247),Vector2(634,284)]
 const CELL_SIZE := Vector2(87.74,62.52)
 const NAME_BRUSH := preload("res://assets/ui/brush/resource-slot-brush@2x.png")
-const MATCH_SEQUENCE := preload("res://scripts/hunt_match_sequence.gd")
+const PREP_ART := "res://assets/ui/d0026/"
+const VS_CENTER := Vector2(480,250)
+const VS_CONTACT := .63
+const VS_SETTLED := 1.38
 const TRANSITION_SECONDS := 2.35
 const HUNT_AUDIO := preload("res://scripts/hunt_audio.gd")
 const HUNTER_BATTLE_CENTER := Vector2(521,279)
@@ -43,17 +46,16 @@ var app: Node
 var rules := RULES.new()
 var canvas: Control
 var header: Control
-var match_details: Control
-var match_shade: ColorRect
 var match_impact: TextureRect
 var impact_atlas: AtlasTexture
-var impact_sheets: Array[Texture2D] = []
 var arrival_duration: float
 var arrival_finished := false
 var arrival_skip_pointer := -2
 var match_vs: Dictionary
-var match_deer: TextureRect
-var match_home := Vector2.ZERO
+var header_spears: TextureRect
+var roster_home: Vector2
+var footer_left_home: Vector2
+var footer_right_home: Vector2
 var arrival_elapsed := 0.0
 var hunter_markers: Array[Control] = []
 var hunter_field_bars: Array[TextureProgressBar] = []
@@ -218,29 +220,28 @@ func fit_layout() -> void:
 	var margin := Vector2.ONE*10.0
 	header_left.position = start+margin-Vector2(3,0)
 	header_right.position = Vector2(end.x-DESIGN.x-margin.x+3,start.y+margin.y-3)
-	match_home = Vector2(240,start.y+margin.y)
-	power_header.position = match_home
-	match_shade.position = -canvas.position/fit
-	match_shade.size = size/fit
+	power_header.position = Vector2(480,start.y+margin.y)
 	battle_header.position = Vector2(-45,start.y+margin.y-4)
-	roster_edge.position = Vector2(start.x+margin.x,(start.y+end.y-330)*.5)
-	footer_left.position = Vector2(start.x+margin.x-3,end.y-DESIGN.y-margin.y+2)
-	footer_right.position = end-DESIGN-margin+Vector2(3,3)
+	roster_home = Vector2(start.x+margin.x,(start.y+end.y-330)*.5)
+	footer_left_home = Vector2(start.x+margin.x-3,end.y-DESIGN.y-margin.y+2)
+	footer_right_home = end-DESIGN-margin+Vector2(3,3)
+	roster_edge.position = roster_home
+	footer_left.position = footer_left_home
+	footer_right.position = footer_right_home
 	combat_controls.position = end-DESIGN
 	fit_exit_shade()
 
 
 func build_arrival() -> void:
-	arrival_duration = .48
-	match_shade.hide()
+	arrival_duration = .97
 	var vs_layer := layer()
 	vs_layer.z_index = 4
-	match_vs = MATCH.versus(vs_layer,Vector2(480,250),156)
+	match_vs = MATCH.versus(vs_layer,VS_CENTER,156)
 	match_vs.root.hide()
-	impact_sheets.append(preload("res://assets/ui/hunting-match/effects/impact_soft.png"))
 	impact_atlas = AtlasTexture.new()
+	impact_atlas.atlas = preload(PREP_ART+"impact-soft.png")
 	impact_atlas.filter_clip = true
-	match_impact = MATCH.picture(vs_layer,impact_atlas,Rect2(MATCH_SEQUENCE.CENTER-Vector2(93,93),Vector2(186,186)))
+	match_impact = MATCH.picture(vs_layer,impact_atlas,Rect2(VS_CENTER-Vector2(93,93),Vector2(186,186)))
 	match_impact.hide()
 	preparation.mouse_behavior_recursive = Control.MOUSE_BEHAVIOR_DISABLED
 	header.mouse_behavior_recursive = Control.MOUSE_BEHAVIOR_DISABLED
@@ -251,14 +252,14 @@ func advance_arrival(delta: float) -> void:
 	arrival_elapsed = minf(arrival_duration,arrival_elapsed+delta)
 	for part: Control in [header,power_header,placement_grid]:
 		part.modulate.a = smoothstep(0.0,.20,arrival_elapsed)
-	var roster_progress := smoothstep(.08,.37,arrival_elapsed)
-	roster_edge.modulate.a = roster_progress
-	roster_edge.position.x = header_left.position.x-22*(1.0-roster_progress)
+	var roster_progress := clampf((arrival_elapsed-.13)/.60,0,1)
+	var footer_progress := clampf((arrival_elapsed-.29)/.68,0,1)
+	roster_edge.modulate.a = smoothstep(0,.55,roster_progress)
+	roster_edge.position.x = roster_home.x-22*(1.0-entry_ease(roster_progress))
 	for part: Control in [footer_left,footer_right]:
-		part.modulate.a = smoothstep(.15,.40,arrival_elapsed)
-	footer_left.position.x = header_left.position.x-22*(1.0-footer_left.modulate.a)
-	footer_right.position.x = header_right.position.x+22*(1.0-footer_right.modulate.a)
-	footer_right.get_node("StartBattle").modulate.a = smoothstep(.29,.48,arrival_elapsed)
+		part.modulate.a = smoothstep(0,.55,footer_progress)
+	footer_left.position.y = footer_left_home.y+18*(1.0-entry_ease(footer_progress))
+	footer_right.position.y = footer_right_home.y+18*(1.0-entry_ease(footer_progress))
 	if arrival_elapsed >= arrival_duration:
 		arrival_finished = true
 		preparation.mouse_behavior_recursive = Control.MOUSE_BEHAVIOR_INHERITED
@@ -266,29 +267,32 @@ func advance_arrival(delta: float) -> void:
 		fit_layout()
 		preparation_ready.emit()
 
+func entry_ease(progress: float) -> float:
+	return Tween.interpolate_value(0.0,1.0,progress,1.0,Tween.TRANS_BACK,Tween.EASE_OUT)
+
 func animate_battle_vs(before: float, time: float) -> void:
 	var root: Control = match_vs.root
-	root.visible = time < .95
-	var arrive := smoothstep(0,.34,time)
-	root.modulate.a = arrive*(1.0-smoothstep(.64,.95,time))
+	root.visible = time < VS_SETTLED
+	var arrive := smoothstep(.15,VS_CONTACT,time)
+	var dock := smoothstep(.78,VS_SETTLED,time)
+	root.modulate.a = smoothstep(.15,.38,time)
+	root.position = VS_CENTER.lerp(power_header.position+header_spears.get_rect().get_center(),dock)-root.pivot_offset
+	root.scale = Vector2.ONE*lerpf(156.0/164.0,44.0/164.0,dock)
+	header_spears.visible = not root.visible
 	for i in 2:
 		var spear: TextureRect = match_vs.spears[i]
 		spear.position.x = -18+(1.0-arrive)*(-125 if i==0 else 125)
 	var letters: Control = match_vs.letter_layer
-	letters.modulate.a = smoothstep(.23,.43,time)
-	letters.scale = Vector2.ONE*lerpf(1.28,1.0,smoothstep(.32,.55,time))
-	show_match_impact(0,time-.36)
-	match_impact.modulate.a = 1.0-smoothstep(.42,.75,time)
-	match_shade.show()
-	match_shade.modulate.a = .42*sin(PI*clampf((time-.22)/.38,0,1))
-	if before == 0.0: hunt_audio.cue("S10",2)
-	if before < .36 and time >= .36: hunt_audio.cue("S11",2)
+	letters.modulate.a = smoothstep(.40,VS_CONTACT,time)*(1.0-smoothstep(1.05,VS_SETTLED,time))
+	letters.scale = Vector2.ONE*lerpf(1.18,1.0,smoothstep(VS_CONTACT,.78,time))
+	show_match_impact(time-VS_CONTACT)
+	match_impact.modulate.a = 1.0-smoothstep(.05,.35,time-VS_CONTACT)
+	if before < VS_CONTACT and time >= VS_CONTACT: hunt_audio.cue("S11",2)
 
-func show_match_impact(index: int, elapsed: float) -> void:
-	match_impact.visible = elapsed>=0.0 and elapsed<.42 and impact_sheets[index]!=null
+func show_match_impact(elapsed: float) -> void:
+	match_impact.visible = elapsed>=0.0 and elapsed<.42
 	if match_impact.visible:
 		var frame := floori(elapsed*30.0)
-		impact_atlas.atlas = impact_sheets[index]
 		impact_atlas.region = Rect2((frame%4)*320,floori(frame/4.0)*320,320,320)
 
 
@@ -305,14 +309,10 @@ func hunter_portrait(index: int) -> Texture2D:
 
 func build_preparation() -> void:
 	preparation = layer()
-	match_shade = ColorRect.new()
-	match_shade.color = Color8(8,13,16,107)
-	match_shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	preparation.add_child(match_shade)
 	roster_edge = layer(preparation)
 	footer_left = layer(preparation)
 	footer_right = layer(preparation)
-	power_header = layer(preparation)
+	power_header = MATCH.layer(canvas,Vector2.ZERO)
 	var roster := plaque(roster_edge,Rect2(6,0,152,330),Color(0.20,0.17,0.13,.92),Color("a07d50"))
 	var ink := Color("49321e")
 	caption(roster,"출전 편성",Rect2(11,16,130,25),17,Color("eed9b4"))
@@ -330,14 +330,10 @@ func build_preparation() -> void:
 		var portrait: TextureRect = app.picture(card,hunter_portrait(index),Rect2(5,2,85,72))
 		portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 		app.picture(card,preload("res://assets/ui/hunting-formation/swap.svg"),Rect2(71,53,24,24))
-	var start := artwork_button(footer_right,Rect2(797,487,160,50),"사냥 시작","png/preparation/start-battle-background.png",start_combat,ink)
+	var start := prep_action("사냥 시작",Rect2(797,487,160,50),preload(PREP_ART+"common-gold-default.svg"),start_combat,ink)
 	start.name = "StartBattle"
-	var quick := artwork_button(footer_right,Rect2(629,487,160,50),"빠른 출전","png/preparation/quick-sortie-background.png",func():pass)
+	var quick := prep_action("빠른 출전",Rect2(625,487,160,50),preload(PREP_ART+"common-sapphire-default.svg"),func():pass,Color("fff5df"))
 	quick.disabled = true
-	for control in [start,quick]:
-		var background: TextureRect = control.get_child(0)
-		background.stretch_mode = TextureRect.STRETCH_SCALE
-		control.get_child(1).add_theme_font_size_override("font_size",18)
 	build_preparation_plaque()
 	build_power_comparison()
 
@@ -363,16 +359,24 @@ func build_preparation_plaque() -> void:
 	caption(bag,"가방",Rect2(4,43,48,17),12)
 
 func build_power_comparison() -> void:
-	power_header.pivot_offset = MATCH_SEQUENCE.PIVOT
-	match_details = MATCH.layer(power_header,Vector2.ZERO)
-	MATCH.backdrop(match_details)
+	MATCH.picture(power_header,preload(PREP_ART+"power-comparison-background.svg"),Rect2(-195,2.5,390,82.5))
+	prep_ally_portrait = app.picture(power_header,hunter_portrait(selected_hunter),Rect2(-101,15,52,52))
+	# This encounter's actual opponent is the deer instantiated above.
+	app.picture(power_header,APPROVED_DEER,Rect2(50,8,50,66))
+	header_spears = app.picture(power_header,preload(PREP_ART+"header-crossed-spears.png"),Rect2(-22,26,44,42))
+	# There is no stored rating. Read the real HP and basic damage for a display-only comparison.
+	var ratings := [RULES.MAX_HP*int(RULES.SKILLS.thrust.damage),rules.deer_max_hp*RULES.COUNTER_DAMAGE]
+	for i in ratings.size():
+		var number := caption(power_header,MATCH.format_power(ratings[i]),Rect2(-130+150*i,55,110,25),21,Color("ffd278"))
+		number.add_theme_color_override("font_outline_color",Color("35200e"))
+		number.add_theme_constant_override("outline_size",3)
 
-	prep_ally_portrait = MATCH.picture(power_header,hunter_portrait(0),Rect2(MATCH_SEQUENCE.ALLY,Vector2(51.2,51.2)))
-	match_deer = MATCH.picture(power_header,APPROVED_DEER,Rect2(MATCH_SEQUENCE.DEER,Vector2(48,63)))
-	match_deer.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	# Forest Edge Lv 1 preview values. The battle rules do not use these ratings.
-	MATCH.power(match_details,Vector2(159.8,65),12300)
-	MATCH.power(match_details,Vector2(321,65),8000,true)
+func prep_action(label: String, rect: Rect2, texture: Texture2D, action: Callable, ink: Color) -> DemoButton:
+	var button := make_button(footer_right,"",rect,action)
+	clear_button_art(button)
+	MATCH.picture(button,texture,Rect2(0,9,160,32))
+	caption(button,label,Rect2(Vector2.ZERO,rect.size),18,ink)
+	return button
 
 
 func clear_button_art(control: DemoButton) -> void:
@@ -403,7 +407,7 @@ func build_duel_header() -> void:
 	exit_button = make_button(header_left,"",Rect2(3,4,48,48),request_exit)
 	exit_button.name = "ExitHunt"
 	clear_button_art(exit_button)
-	app.picture(exit_button,FigmaArt.texture("back"),Rect2(0,0,48,48))
+	app.picture(exit_button,preload(PREP_ART+"back-arrow-alpha.svg"),Rect2(0,0,48,48))
 	battle_header = layer(header)
 	battle_header.hide()
 	ally_hud = layer(battle_header)
@@ -640,7 +644,6 @@ func handle_arrival_skip(event: InputEvent) -> bool:
 	if arrival_finished or not app.application_active or app.modal or not event.is_pressed() or event.is_canceled():
 		return false
 	arrival_skip_pointer = pointer
-	if arrival_elapsed < .28: hunt_audio.cue("S09",2)
 	advance_arrival(arrival_duration)
 	return true
 
@@ -856,15 +859,13 @@ func start_combat() -> void:
 	pan_pointer = -2
 	touch_points.clear()
 	pan = Vector2.ZERO
-	hunt_audio.cue("S12",2)
 	battle_music_started = true
 	app.sync_audio()
 	transition_elapsed = 0.0
+	header_spears.hide()
 	preparation.mouse_behavior_recursive = Control.MOUSE_BEHAVIOR_DISABLED
 	combat.show()
 	combat.modulate.a = 0.0
-	battle_header.modulate.a = 0.0
-	battle_header.show()
 	update_toggles()
 
 func advance_transition(delta: float) -> void:
@@ -876,13 +877,16 @@ func advance_transition(delta: float) -> void:
 	var step := floori(transition_elapsed*4.0)
 	if step!=last_step and approach>0.0 and approach<1.0:
 		last_step = step
-		hunt_audio.cue("S13",0)
-		hunt_audio.cue("S14",0)
-	var fade := 1.0-smoothstep(0.0,.38,progress)
+		if transition_elapsed > VS_CONTACT+.28:
+			hunt_audio.cue("S13",0)
+			hunt_audio.cue("S14",0)
+	var fade := 1.0-smoothstep(0.0,.50,transition_elapsed)
 	placement_grid.modulate.a = fade
 	preparation.modulate.a = fade
-	combat.modulate.a = smoothstep(.45,1.0,progress)
-	battle_header.modulate.a = smoothstep(.64,.95,transition_elapsed)
+	roster_edge.position.y = roster_home.y+18*(1.0-fade)
+	footer_left.position.y = footer_left_home.y+18*(1.0-fade)
+	footer_right.position.y = footer_right_home.y+18*(1.0-fade)
+	combat.modulate.a = smoothstep(VS_SETTLED,TRANSITION_SECONDS,transition_elapsed)
 	var header_progress := 1.0-fade
 	location_brush.position = Vector2(3,0).lerp(Vector2(3,3),header_progress)
 	location_brush.size = Vector2(220,56).lerp(Vector2(198,41),header_progress)
@@ -920,9 +924,7 @@ func _process(delta: float) -> void:
 	if result_shown: return
 	sound_delay = maxf(0.0,sound_delay-delta)
 	if not arrival_finished:
-		var before := arrival_elapsed
 		advance_arrival(delta)
-		if before < .28 and arrival_elapsed >= .28: hunt_audio.cue("S09",2)
 	var elapsed := delta*speed
 	pose_clock += elapsed
 	basic_recoil = maxf(0.0,basic_recoil-elapsed)

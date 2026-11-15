@@ -1,6 +1,7 @@
 extends RefCounted
 ## Provisional encounter timing. The shared lock applies only to orb skills.
 const MAX_HP := 100
+const COUNTER_DAMAGE := 2
 const MAX_ORBS := 3
 const ORB_SECONDS := 100.0 / 14.0 / MAX_ORBS
 const BASIC_INTERVAL := 10.0 / 14.0
@@ -47,7 +48,7 @@ func resolve_attack() -> void:
 		damage_deer(damage)
 	if pending_counter:
 		pending_counter = false
-		hunter_hp = maxi(0, hunter_hp - 2)
+		hunter_hp = maxi(0, hunter_hp - COUNTER_DAMAGE)
 		if hunter_hp == 0:
 			outcome = "loss"
 			set_auto(false)

@@ -56,7 +56,8 @@ static func backdrop(parent: Control) -> Control:
 
 static func versus(parent: Control, center: Vector2, span: float) -> Dictionary:
 	var factor := span/164.0
-	var root := layer(parent,center-Vector2.ONE*span*.5)
+	var root := layer(parent,center-Vector2(82,82))
+	root.pivot_offset = Vector2(82,82)
 	var spears: Array[TextureRect] = []
 	for index in 2:
 		var spear := picture(root,SPEAR,Rect2(Vector2.ONE*-18,Vector2.ONE*200))

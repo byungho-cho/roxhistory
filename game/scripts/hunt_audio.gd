@@ -35,6 +35,7 @@ func _ready() -> void:
 	streams["S08"] = preload("res://assets/audio/d0001-approved/popup-close.mp3")
 	streams["S09"] = preload("res://assets/audio/d0006-approved/actor-entry-70.mp3")
 	streams["S10"] = preload("res://assets/audio/d0006-approved/vs-entry.mp3")
+	streams["S11"] = preload("res://assets/ui/d0026/vs-collision.wav")
 	streams["S15"] = preload("res://assets/audio/d0006-approved/spear-flight.mp3")
 	streams["S18"] = preload("res://assets/audio/d0006-approved/heavy-hit.mp3")
 	streams["monster_death"] = preload("res://assets/audio/d0006-approved/monster-death.mp3")
