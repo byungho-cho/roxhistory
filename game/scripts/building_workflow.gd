@@ -148,7 +148,6 @@ func _process(delta:float)->void:
 		if app.model.state.has("chief_upgrade") and app.model.chief_upgrade_remaining()<=0:
 			if app.model.finish_chief_upgrade():
 				show_upgrade_completed("chief",app.model.chief_level())
-				if is_instance_valid(app.world) and app.screen=="play":app.audio.cue("complete")
 		retry_after=.1
 	update_owned_upgrades();update_constructions()
 func show_upgrade_completed(key: String, level: int) -> void:
@@ -156,7 +155,10 @@ func show_upgrade_completed(key: String, level: int) -> void:
 	var at: Vector2=app.model.building_position(key)
 	var screen_point: Vector2=app.world.get_global_transform_with_canvas()*at
 	if not Rect2(0,0,app.w,app.h).has_point(screen_point):return
-	app.world.add_child(preload("res://scripts/village_upgrade_feedback.gd").new(at,level))
+	var fanfare := func():
+		if app.screen=="play" and not app.world_map_open and app.application_active:
+			app.audio.cue("upgrade_fanfare")
+	app.world.add_child(preload("res://scripts/village_upgrade_feedback.gd").new(at,level,fanfare))
 
 func owned_upgrade_reason(key:String,check_resources:bool=true)->String:
 	var found:Dictionary=app.model.lookup_building(key)

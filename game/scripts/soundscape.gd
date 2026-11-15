@@ -48,6 +48,7 @@ func _ready() -> void:
 	for key in APPROVED:
 		streams[key] = load("res://assets/audio/d0004-approved/"+APPROVED[key]+".wav")
 	streams["quest_click"] = preload("res://assets/audio/d0001-approved/quest-click.wav")
+	streams["upgrade_fanfare"] = preload("res://assets/ui/d0027/B-brass-fanfare.mp3")
 	streams["action_click"] = streams["quest_click"]
 	streams["ui"] = streams["quest_click"]
 	streams["popup_open"] = preload("res://assets/audio/d0001-approved/popup-open.mp3")

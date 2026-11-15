@@ -3,6 +3,7 @@ extends Node2D
 const DUST := preload("res://assets/ui/d0019/ground-dust-soft.png")
 const CELEBRATION_TIME := 2.7
 const CAPTION_EXTRA_TIME := 2.0
+const ACHIEVEMENT_APPEAR := .72
 const FIREWORK_COLORS := [Color("ff8678"),Color("7ce9d2"),Color("d2a0ff")]
 var age := 0.0
 var level: int
@@ -10,10 +11,12 @@ var glyphs: Array[Label] = []
 var glyph_origins: Array[Vector2] = []
 var level_glyph_count := 0
 static var glow: GradientTexture2D
+var play_completion: Callable
 
-func _init(at: Vector2, target_level: int) -> void:
+func _init(at: Vector2, target_level: int, on_completion := Callable()) -> void:
 	position = at
 	level = target_level
+	play_completion = on_completion
 	z_index = 10 if level == 0 else 5
 	visibility_layer = 2
 
@@ -46,10 +49,14 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	age += delta
 	if level > 0:
+		if age>=ACHIEVEMENT_APPEAR and play_completion.is_valid():
+			var completion := play_completion
+			play_completion = Callable()
+			completion.call()
 		var zoom := get_global_transform_with_canvas().get_scale().x / scale.x
 		scale = Vector2.ONE*clampf(.48/maxf(zoom,.01),1.0,1.8)
 		for i in glyphs.size():
-			var appear := .34 if i<level_glyph_count else .72
+			var appear := .34 if i<level_glyph_count else ACHIEVEMENT_APPEAR
 			var leave := 1.53+i*.055+CAPTION_EXTRA_TIME
 			var fly := clampf((age-leave)/.52,0,1)
 			var glyph := glyphs[i]
