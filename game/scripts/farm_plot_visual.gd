@@ -9,6 +9,8 @@ var progress_track:=StyleBoxFlat.new()
 var progress_fill:=StyleBoxFlat.new()
 var hud_bounds:=Rect2()
 var hud_visible:=true
+var crop_drop_progress := 1.0
+var relocating := false
 func _init(game:GameState,id:String)->void:model=game;key=id;name="TemporaryCropVisual";visibility_layer=2
 func _ready()->void:
 	progress_track.bg_color=PlayChrome.TRACK_COLOR
@@ -23,6 +25,12 @@ func _ready()->void:
 
 func on_farm_clock_changed(keys:Array[String])->void:
 	if key in keys:queue_redraw()
+
+func set_relocation(active: bool, progress := 1.0) -> void:
+	if relocating == active and is_equal_approx(crop_drop_progress,progress):return
+	relocating = active
+	crop_drop_progress = progress
+	queue_redraw()
 
 func _process(_delta:float)->void:
 	# Redraw at viewport entry/exit even if the growth clock has not ticked.
@@ -49,8 +57,9 @@ func _draw()->void:
 	var dimensions:=Vector2.ONE*rect.size.x*float(layout.crop_canvas_width_fraction)
 	for i in count:
 		var at:=rect.position+Vector2(anchors[i][0],anchors[i][1])*rect.size
-		draw_texture_rect(texture,Rect2(at-Vector2(.5,.915)*dimensions,dimensions),false)
-	if not hud_visible:return
+		at.y -= 34.0*(1.0-crop_drop_progress*crop_drop_progress)
+		draw_texture_rect(texture,Rect2(at-Vector2(.5,.915)*dimensions,dimensions),false,Color(1,1,1,smoothstep(0.0,.6,crop_drop_progress)))
+	if relocating or not hud_visible:return
 	# Keep the bar under the field and clear of both side work positions.
 	var bar:=Rect2(-106,rect.end.y+9,212,30)
 	var ratio:=progress

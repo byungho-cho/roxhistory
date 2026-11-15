@@ -11,10 +11,9 @@ var confirm: Callable
 var art: Control
 var unsupported_notice: Label
 var notice_fade: Tween
-var cost_labels: Dictionary = {}
-var shortage: Label
-var upgrade_button: DemoButton
-var upgrade_skin: TextureRect
+var shortage_glows: Dictionary = {}
+var shortage_labels: Dictionary = {}
+var shortage_motion: Tween
 
 func _init(owner: Node, building_kind: String, level: int, cost: Dictionary, callback: Callable) -> void:
 	app=owner;kind=building_kind;current=level;costs=cost;confirm=callback
@@ -116,31 +115,61 @@ func _ready() -> void:
 		icon.custom_minimum_size = Vector2(32,32)
 		var amount := FigmaArt.text(item,str(costs.get(resource,0)),Rect2(0,0,0,32),18,FigmaArt.BODY,Color("553820"),false)
 		amount.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		cost_labels[resource] = amount
+		add_shortage_art(icon,resource)
 	var seconds := int(app.model.building_duration(current+1))
 	var time := "%d초" % seconds if seconds<60 else "%d분" % (seconds/60)
 	action(Rect2(270,300,192,44),"즉시 업그레이드","3",preload(UPDATE_ART+"diamond-premium-illustrated.png"),preload(FINISH_ART+"popup-button-stone-gray-disabled-192x44.svg"),true)
 	action(Rect2(486,300,166,44),"업그레이드",time,preload(UPDATE_ART+"hourglass-teal-amber-illustrated.png"),preload(FINISH_ART+"popup-button-gold-volume-166x44.svg"),false)
-	shortage = FigmaArt.text(art,"",Rect2(0,297,255,49),15,FigmaArt.BODY,Color("862e21"),false)
-	app.model.changed.connect(refresh_affordability)
-	refresh_affordability()
 	unsupported_notice=FigmaArt.text(art,"미지원",Rect2(251,249,150,27),16,FigmaArt.BODY,Color("fff4d6"))
 	unsupported_notice.add_theme_color_override("font_outline_color",Color("503016"))
 	unsupported_notice.add_theme_constant_override("outline_size",8)
 	unsupported_notice.modulate.a=0.0
+	play_shortage()
 
-func refresh_affordability() -> void:
-	var missing := PackedStringArray()
+func add_shortage_art(item: Control, resource: String) -> void:
+	var colors := Gradient.new()
+	colors.colors = PackedColorArray([Color(1,.14,.10,.6),Color(1,.14,.10,0)])
+	var glow := GradientTexture2D.new()
+	glow.gradient = colors
+	glow.fill = GradientTexture2D.FILL_RADIAL
+	glow.fill_from = Vector2(.5,.5)
+	glow.fill_to = Vector2(1,.5)
+	var layer := Control.new()
+	layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var marker := app.picture(layer,glow,Rect2(-9,-6,70,43)) as TextureRect
+	marker.stretch_mode = TextureRect.STRETCH_SCALE
+	marker.show_behind_parent = true
+	var text := FigmaArt.text(layer,"",Rect2(-16,-19,84,22),13,FigmaArt.BODY,Color("a32a20"))
+	text.add_theme_color_override("font_outline_color",Color("fff0d2"))
+	text.add_theme_constant_override("outline_size",4)
+	item.add_child(layer)
+	shortage_glows[resource] = marker
+	shortage_labels[resource] = text
+	marker.modulate.a = 0.0
+	text.modulate.a = 0.0
+
+func play_shortage() -> bool:
+	var wood := int(costs.get("wood",0))-int(app.model.state.get("wood",0))
+	var stone := int(costs.get("stone",0))-int(app.model.state.get("stone",0))
+	if wood<=0 and stone<=0:return false
+	if shortage_motion and shortage_motion.is_running():return true
+	shortage_motion=create_tween().set_parallel()
 	for resource in ["wood","stone"]:
-		var deficit := int(costs.get(resource,0))-int(app.model.state.get(resource,0))
-		var amount: Label = cost_labels[resource]
-		amount.add_theme_color_override("font_color",Color("862e21") if deficit > 0 else Color("553820"))
-		if deficit > 0:
-			missing.append("%s %d개" % ["나무" if resource == "wood" else "돌",deficit])
-	upgrade_button.disabled = not missing.is_empty()
-	upgrade_skin.self_modulate = Color(.57,.55,.54) if upgrade_button.disabled else Color.WHITE
-	shortage.text = "자원 부족: " + " · ".join(missing) if upgrade_button.disabled else ""
-	upgrade_button.hint_text = shortage.text
+		var deficit := wood if resource=="wood" else stone
+		if deficit<=0:continue
+		var glow: TextureRect = shortage_glows[resource]
+		var text: Label = shortage_labels[resource]
+		glow.modulate.a=1.0
+		text.text="%d 부족"%deficit
+		text.position.y=-19.0
+		text.modulate.a=1.0
+		shortage_motion.tween_property(glow,"modulate:a",0.0,.68)
+		shortage_motion.tween_property(text,"position:y",-38.0,.72)
+		shortage_motion.tween_property(text,"modulate:a",0.0,.48).set_delay(.24)
+	return true
+
+func request_upgrade() -> void:
+	if not play_shortage():confirm.call()
 
 func rule(rect: Rect2, parent: Control = null) -> void:
 	var line := ColorRect.new()
@@ -162,17 +191,14 @@ func fit() -> void:
 	art.position=(size-art.size*factor)*.5
 
 func action(rect: Rect2, title: String, value: String, icon: Texture2D, background: Texture2D, locked: bool) -> void:
-	var button: DemoButton=app.button(art,"",confirm if not locked else show_unsupported)
+	var button: DemoButton=app.button(art,"",request_upgrade if not locked else show_unsupported)
 	button.name="InstantUpgrade" if locked else "ConfirmUpgrade"
 	button.custom_minimum_size=Vector2.ZERO
 	button.position=rect.position
 	button.size=rect.size
 	for state in ["normal","hover","pressed","focus","disabled"]:
 		button.add_theme_stylebox_override(state,StyleBoxEmpty.new())
-	var skin: TextureRect = app.picture(button,background,Rect2(Vector2.ZERO,rect.size))
-	if not locked:
-		upgrade_button = button
-		upgrade_skin = skin
+	app.picture(button,background,Rect2(Vector2.ZERO,rect.size))
 	var icon_x := 20.0 if locked else 15.0
 	app.picture(button,icon,Rect2(icon_x,9,25,25))
 	var ink := Color("141a20") if locked else Color.WHITE

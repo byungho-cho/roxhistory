@@ -90,15 +90,6 @@ func show_upgrade_confirmation(key:String,cost:Dictionary,callback:Callable)->vo
 	scroll.vertical_scroll_mode=ScrollContainer.SCROLL_MODE_DISABLED
 	scroll.add_child(preload("res://scripts/upgrade_popup_content.gd").new(app,str(found.get("kind","chief")),current,cost,callback))
 	confirmation_overlay=app.overlay
-	var panel: Control=app.overlay.get_child(1)
-	panel.pivot_offset=panel.size*.5
-	var resting := panel.position
-	panel.position.y-=7
-	panel.scale=Vector2.ONE*.94
-	var opening := panel.create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	opening.tween_property(panel,"scale",Vector2.ONE*1.03,.13)
-	opening.parallel().tween_property(panel,"position",resting,.19)
-	opening.tween_property(panel,"scale",Vector2.ONE,.07)
 func upgrade_description(cost:Dictionary,target:int)->String:
 	return "%s\n공사 시간 %d초\n앱을 닫아도 공사가 진행돼요"%[cost_text(cost),int(app.model.building_duration(target))]
 func confirm_upgrade(target:int)->bool:

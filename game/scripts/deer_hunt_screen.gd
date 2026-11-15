@@ -527,6 +527,7 @@ func request_exit() -> void:
 	exit_popup.add_child(exit_shade)
 	fit_exit_shade()
 	var panel: TextureRect = app.picture(exit_popup,preload("res://assets/ui/hunting-combat/png/popup/panel.png"),Rect2(261,186.5,438,167))
+	app.animate_popup(panel)
 	caption(panel,"전투를 종료할까요?",Rect2(0,24,438,48),25,Color("49321e"))
 	artwork_button(panel,Rect2(40,85,170,52),"종료","png/popup/exit-button-background.png",app.close_hunt).name = "ExitBattle"
 	artwork_button(panel,Rect2(227,85,170,52),"계속","png/popup/continue-button-background.png",resume_battle,Color("49321e")).name = "ContinueBattle"
@@ -541,6 +542,7 @@ func fit_exit_shade() -> void:
 func resume_battle() -> void:
 	hunt_audio.paused = false
 	hunt_audio.cue("S08")
+	app.stop_popup_openings(exit_popup)
 	exit_popup.hide()
 	exit_popup.queue_free()
 	exit_popup = null

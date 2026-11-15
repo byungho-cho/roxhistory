@@ -18,12 +18,12 @@ func background(parent:Control,key:String,rect:Rect2)->NinePatchRect:
 func line(parent:Node,at:Vector2,extent:Vector2,color:String)->void:
 	var rule:=ColorRect.new();rule.position=at;rule.size=extent;rule.color=Color(color);rule.mouse_filter=Control.MOUSE_FILTER_IGNORE;parent.add_child(rule)
 func open()->void:
-	app.show_modal("","",[],false,true)
+	app.show_modal("","",[],false,true,false,Vector2.ZERO,false,true)
 	app.clear_children(app.overlay)
-	app.overlay.set_meta("restore_stage_visibility",app.stage.visible);app.stage.hide()
 	var shade:=ModalBackdrop.new();shade.dismiss=app.close_modal;shade.color=Color(.063,.055,.043,.24);shade.size=Vector2(app.w,app.h);app.overlay.add_child(shade)
 	var layer:=Control.new();layer.name="QuestScreen";layer.size=Vector2(1280,720);layer.mouse_filter=Control.MOUSE_FILTER_IGNORE
 	var factor:float=minf(app.w/1280.0,app.h/720.0);layer.scale=Vector2.ONE*factor;layer.position=(Vector2(app.w,app.h)-layer.size*factor)*.5;app.overlay.add_child(layer)
+	app.animate_popup(layer)
 	var back:DemoButton=app.button(layer,"",app.close_modal);back.name="QuestBack";back.custom_minimum_size=Vector2.ZERO;back.position=Vector2(32,26);back.size=Vector2(48,48)
 	for state in ["normal","hover","pressed","focus"]:back.add_theme_stylebox_override(state,StyleBoxEmpty.new())
 	app.picture(back,crop(ICONS,4.129,2.7978,.0161,.2951),Rect2(0,0,48,48))

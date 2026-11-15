@@ -7,6 +7,7 @@ const DROP_HEIGHT := 104.0
 const SETTLE_TIME := .16
 const LANDING_CUE_DELAY := .08
 const ROAD_PAUSE := .12
+const CROP_DROP_TIME := .18
 var app: Node
 var key: String
 var source: Sprite2D
@@ -23,15 +24,18 @@ var clock := 0.0
 var landed := false
 var played_landing_cue := false
 var ground_art := Node2D.new()
+var farm_visual: FarmPlotVisual
+var crop_drop := false
 
 static func drop_delay(building_kind: String) -> float:
 	return .14 if building_kind == "farm" else 0.0
 
-static func road_delay(building_kind: String) -> float:
-	return maxf(FOUNDATION_FADE_TIME, drop_delay(building_kind) + DROP_TIME + SETTLE_TIME) + ROAD_PAUSE
+static func road_delay(building_kind: String, with_crops := false) -> float:
+	return maxf(FOUNDATION_FADE_TIME, drop_delay(building_kind) + DROP_TIME + SETTLE_TIME + (CROP_DROP_TIME if with_crops else 0.0)) + ROAD_PAUSE
 
-func _init(owner_app: Node,id: String,old_image: Sprite2D,to: Vector2,building_kind: String, building_level: int) -> void:
+func _init(owner_app: Node,id: String,old_image: Sprite2D,to: Vector2,building_kind: String, building_level: int, with_crops := false) -> void:
 	app=owner_app;key=id;source=old_image;target=to;kind=building_kind;level=building_level
+	crop_drop = with_crops
 	name="RelocationEffect";visibility_layer=2;z_index=2
 	ground_art.z_as_relative = false
 	ground_art.z_index = -14
@@ -50,6 +54,10 @@ func _ready() -> void:
 	destination_scale=destination.scale
 	destination_foot_y=destination.get_rect().end.y * destination_scale.y
 	destination.self_modulate.a=0.0
+	if kind == "farm":
+		farm_visual = destination.get_parent().get_node_or_null("TemporaryCropVisual") as FarmPlotVisual
+		if farm_visual:
+			farm_visual.set_relocation(true,0.0)
 	foundation = app.world.get_node("VillageLayout").foundation_at(target)
 	if is_instance_valid(foundation):
 		foundation.self_modulate.a = foundation_opacity()
@@ -79,7 +87,10 @@ func _process(delta: float) -> void:
 		var compression := sin(PI * settle) * (1.0 - settle)
 		destination.scale = destination_scale * Vector2(1.0 + .055 * compression, 1.0 - .12 * compression)
 		destination.position.y = destination_position.y + destination_foot_y * .12 * compression
-		if settle >= 1.0:
+		var crops_progress := clampf((contact_age-SETTLE_TIME)/CROP_DROP_TIME,0,1) if crop_drop else 1.0
+		if is_instance_valid(farm_visual) and crop_drop:
+			farm_visual.set_relocation(true,crops_progress)
+		if settle >= 1.0 and crops_progress >= 1.0:
 			queue_free()
 	ground_art.queue_redraw()
 
@@ -102,6 +113,8 @@ func foundation_opacity() -> float:
 	return lerpf(.42 if kind=="farm" else .30, 1.0, smoothstep(0.0, FOUNDATION_FADE_TIME, clock))
 
 func _exit_tree() -> void:
+	if is_instance_valid(farm_visual):
+		farm_visual.set_relocation(false)
 	if is_instance_valid(foundation):
 		foundation.self_modulate.a = 1.0
 	if is_instance_valid(destination):

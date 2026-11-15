@@ -92,7 +92,7 @@ static func entry_art(app:Node,button:DemoButton,icon:Texture2D,title:String,vis
 	caption(app,button,title,Rect2(0,55,64,22),14,CREAM)
 
 static func open(app:Node)->void:
-	app.show_modal("","",[],false,true)
+	app.show_modal("","",[],false,true,false,Vector2.ZERO,false,true)
 	app.clear_children(app.overlay)
 	var shade:=ModalBackdrop.new()
 	shade.color=Color(0,0,0,.38)
@@ -107,6 +107,7 @@ static func open(app:Node)->void:
 	panel.scale=Vector2.ONE*factor
 	panel.position=(Vector2(app.w,app.h)-panel.size*factor)*.5
 	app.overlay.add_child(panel)
+	app.animate_popup(panel)
 	app.picture(panel,PANEL,Rect2(Vector2.ZERO,panel.size)).stretch_mode=TextureRect.STRETCH_SCALE
 	caption(app,panel,"퀘스트 보상",Rect2(295,25,410,82),60,CREAM)
 	var close_size:=maxf(92,48/factor)

@@ -1172,7 +1172,7 @@ func play_hud(spread:=false) -> void:
 		if caption=="가방":b.name="InventoryButton"
 		var action_style:=StyleBoxFlat.new();action_style.bg_color=Color.TRANSPARENT;action_style.set_content_margin_all(2)
 		for state in ["normal","hover","pressed","disabled"]:b.add_theme_stylebox_override(state,action_style)
-		var visual:=ActionVisual.new(b,b.icon);b.icon=null;b.add_child(visual)
+		var visual:=ActionVisual.new(b,b.icon);visual.name="ActionVisual";b.icon=null;b.add_child(visual)
 		for color_name in ["font_color","font_hover_color","font_pressed_color","font_disabled_color","font_focus_color"]:b.add_theme_color_override(color_name,Color.TRANSPARENT)
 		if caption=="채집":
 			gather_button=b
@@ -1303,7 +1303,6 @@ func update_construction_row()->void:
 	if build_side.visible:build_side.refresh()
 
 func toggle_menu()->void:
-	if menu_animating:return
 	if is_instance_valid(build_side):build_side.hide()
 	if is_instance_valid(gestures):gestures.clear()
 	menu_expanded=not menu_expanded
@@ -1323,19 +1322,32 @@ func apply_menu_state(animated:bool=false)->void:
 		menu_tween.finished.connect(func():menu_animating=false)
 	for i in 5:
 		var child:Control=action_row.get_child(i)
+		var visual: Control = child.get_node("ActionVisual")
 		var auxiliary:bool=child.get_meta("auxiliary_action",false)
 		var construction_open:=is_instance_valid(build_side) and build_side.visible
 		var shown:=menu_expanded and (not auxiliary or not construction_open)
 		var target:=Vector2(stride*i if menu_expanded else stride*4,0)
 		child.size=Vector2(button_width,77)
+		child.position=target
+		visual.pivot_offset=child.size*.5
 		child.mouse_filter=Control.MOUSE_FILTER_STOP if shown else Control.MOUSE_FILTER_IGNORE
-		if shown:child.show()
-		if animated:
-			menu_tween.tween_property(child,"position",target,.22)
-			menu_tween.tween_property(child,"modulate:a",1.0 if shown else 0.0,.18)
-			if not shown:menu_tween.tween_callback(child.hide).set_delay(.22)
+		if animated and shown:
+			child.show()
+			child.modulate.a=0.0
+			child.mouse_filter=Control.MOUSE_FILTER_IGNORE
+			visual.scale=Vector2.ONE*.56
+			var delay := (4-i)*.041
+			menu_tween.tween_property(child,"modulate:a",1.0,.11).set_delay(delay)
+			menu_tween.tween_property(child,"mouse_filter",Control.MOUSE_FILTER_STOP,0.0).set_delay(delay+.055)
+			menu_tween.tween_property(visual,"scale",Vector2.ONE*1.06,.10).set_delay(delay)
+			menu_tween.tween_property(visual,"scale",Vector2.ONE,.055).from(Vector2.ONE*1.06).set_delay(delay+.10)
 		else:
-			child.position=target;child.modulate.a=1.0 if shown else 0.0;child.visible=shown
+			visual.scale=Vector2.ONE
+			child.modulate.a=1.0 if shown else 0.0
+			child.visible=shown
+	if animated and not menu_expanded:
+		menu_tween.kill()
+		menu_animating=false
 	menu_toggle.text=""
 	menu_toggle.icon=null
 	menu_toggle.get_node("ToggleVisual").expanded=menu_expanded
@@ -1544,7 +1556,7 @@ func gather_action(selected_id:String="") -> bool:
 	return true
 
 func construction_menu()->void:
-	if menu_animating or build_side.transition:return
+	if build_side.transition:return
 	if modal or gestures.blocked or first_construction_locked():return
 	if is_instance_valid(building_menu):building_menu.close()
 	cancel_build_preview()
@@ -1625,7 +1637,8 @@ func finish_building_move()->void:
 	snapshot.offset=original.offset
 	snapshot.transform=world.global_transform.affine_inverse()*original.global_transform
 	var layout: VillageLayout=world.get_node("VillageLayout")
-	layout.relocated_road_delay=RelocationEffect.road_delay(build_preview.kind)
+	var with_crops: bool = build_preview.kind=="farm" and FarmProduction.entry(model,key).phase!="prepare"
+	layout.relocated_road_delay=RelocationEffect.road_delay(build_preview.kind,with_crops)
 	var moved:=model.move_building(key,at)
 	layout.relocated_road_delay=0.0
 	if moved:
@@ -1634,7 +1647,7 @@ func finish_building_move()->void:
 		var level := build_preview.moving_level
 		cancel_build_preview()
 		relocating_key=key
-		world.add_child(RelocationEffect.new(self,key,snapshot,at,kind,level))
+		world.add_child(RelocationEffect.new(self,key,snapshot,at,kind,level,with_crops))
 	else:
 		snapshot.free()
 		toast("위치가 변경되었어요. 다시 확인해 주세요")
@@ -1926,7 +1939,7 @@ func show_about() -> void:
 		{"text":"돌아가기","primary":true,"action":close_modal}])
 	enable_settings_backdrop()
 
-func show_modal(title: String, body: String, actions: Array, compact: bool = false, preserve_work:bool=false, brief:bool=false, panel_size:Vector2=Vector2.ZERO,confirmation:bool=false) -> ScrollContainer:
+func show_modal(title: String, body: String, actions: Array, compact: bool = false, preserve_work:bool=false, brief:bool=false, panel_size:Vector2=Vector2.ZERO,confirmation:bool=false,custom_panel:=false) -> ScrollContainer:
 	if is_instance_valid(region_selection):region_selection.cancel_input()
 	if gestures: gestures.clear()
 	if is_instance_valid(joystick): joystick.clear()
@@ -1945,7 +1958,9 @@ func show_modal(title: String, body: String, actions: Array, compact: bool = fal
 	overlay.set_meta("fade_modal",true)
 	overlay.modulate.a = 0.0
 	ui.add_child(overlay)
-	overlay.create_tween().tween_property(overlay,"modulate:a",1.0,.15)
+	var fade_in := overlay.create_tween()
+	fade_in.tween_property(overlay,"modulate:a",1.0,.15)
+	overlay.set_meta("modal_fade_in",fade_in)
 	overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	overlay.mouse_filter = Control.MOUSE_FILTER_STOP
 	var dismiss:Callable=actions[0].action if confirmation and actions.size()>1 else close_modal
@@ -1962,6 +1977,7 @@ func show_modal(title: String, body: String, actions: Array, compact: bool = fal
 		height=minf(panel_size.y,h-safe.y*2)
 	var at := Vector2(w-safe.x-width,safe.y) if compact and not brief else Vector2((w-width)/2,(h-height)/2)
 	var p := box(overlay,Rect2(at,Vector2(width,height)))
+	if not custom_panel:animate_popup(p)
 	var v := column(p,8 if brief else 12)
 	var header:=HBoxContainer.new();header.name="ModalHeader";header.add_theme_constant_override("separation",10);v.add_child(header)
 	var modal_title:=label(header,title,20 if brief else 28,Color("47240e"));modal_title.add_theme_font_override("font",FigmaArt.TITLE);modal_title.size_flags_horizontal=Control.SIZE_EXPAND_FILL;modal_title.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
@@ -1989,6 +2005,23 @@ func show_modal(title: String, body: String, actions: Array, compact: bool = fal
 		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		b.add_theme_font_size_override("font_size",17)
 	return scroll
+
+func animate_popup(panel: Control, center := Vector2.INF) -> void:
+	var final_scale := panel.scale
+	var pivot := center if center.is_finite() else panel.size*.5
+	panel.position += (pivot-panel.pivot_offset)*(final_scale-Vector2.ONE)
+	panel.pivot_offset=pivot
+	panel.scale=final_scale*.94
+	var opening := panel.create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	opening.tween_property(panel,"scale",final_scale*1.03,.13)
+	opening.tween_property(panel,"scale",final_scale,.07)
+	panel.set_meta("popup_opening",opening)
+
+func stop_popup_openings(root: Control) -> void:
+	for panel in root.find_children("*","Control",true,false):
+		if panel.has_meta("popup_opening"):
+			var opening: Tween = panel.get_meta("popup_opening")
+			if opening.is_valid():opening.kill()
 
 func show_character_guide(title:String,body:String,after:Callable=Callable())->void:
 	if overlay is CharacterGuide:
@@ -2020,7 +2053,10 @@ func close_modal() -> void:
 	sync_audio()
 
 func retire_modal(closing: Control) -> void:
+	stop_popup_openings(closing)
 	if closing.has_meta("fade_modal"):
+		var fade_in: Tween = closing.get_meta("modal_fade_in")
+		if fade_in.is_valid():fade_in.kill()
 		closing.mouse_behavior_recursive = Control.MOUSE_BEHAVIOR_DISABLED
 		closing.process_mode = Node.PROCESS_MODE_DISABLED
 		closing.z_index = 49

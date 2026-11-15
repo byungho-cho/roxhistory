@@ -52,6 +52,7 @@ func _ready()->void:
 	begin_reveal()
 	panel_group.modulate.a=0;character.modulate.a=0
 	update_layout()
+	app.animate_popup(panel_group,PANEL_RECT.get_center())
 func update_layout()->void:
 	# Width-fit the design's transparent frame instead of inset fitting the whole
 	# 675px preview: its visible character starts at 202px, so wider phones can use
