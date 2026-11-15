@@ -582,6 +582,8 @@ func evacuate_animals(at:Vector2,kind:String)->void:
 func refresh_boundary()->void:
 	if boundary_level==model.chief_level() and boundary_debug==model.debug_show_boundary:return
 	boundary_level=model.chief_level();boundary_debug=model.debug_show_boundary
+	if is_instance_valid(player) and is_instance_valid(player.camera):
+		player.fit_camera_limits()
 	if boundary_pulse!=null:boundary_pulse.kill()
 	for child in boundary_root.get_children():
 		boundary_root.remove_child(child);child.queue_free()

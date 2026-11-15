@@ -11,7 +11,8 @@ const STRIDE := 104.0
 const MIN_ZOOM := 0.56 # Previous 0.8 minimum reduced by another 30%.
 const MAX_ZOOM := 1.6 # Maximum unchanged during the additional zoom-out review.
 const WORLD_SIZE := VillageBounds.WORLD_SIZE
-const OVERVIEW_PAN_MARGIN := Vector2(2500,1500)
+const MIN_OPEN_VIEW_FRACTION := Vector2(.55,.44)
+const PAN_STRETCH_PIXELS := 32.0
 var direction := Vector2.ZERO
 var phase := 0.0
 var walk_weight := 0.0
@@ -49,15 +50,17 @@ func can_pan()->bool:
 	return visible_world.x<bounds.size.x-1 or visible_world.y<bounds.size.y-1
 
 func camera_bounds()->Rect2:
-	# At minimum zoom the viewport can exceed the playable world. Reserve
-	# independent camera travel over the cloud fringe without extending collisions.
+	var opened: Rect2 = get_parent().playable_rect() if get_parent().has_method("playable_rect") else VillageBounds.WORLD_RECT
 	var visible_size:=get_viewport_rect().size/camera.zoom
-	var margin := OVERVIEW_PAN_MARGIN*(1.0-smoothstep(MIN_ZOOM,.88,zoom_factor))
-	var half_view := visible_size * .5
-	var travel := WORLD_SIZE * .5 + margin.max(visible_size + Vector2.ONE * 32.0) - half_view
-	travel.x *= .7
-	var size := (travel + half_view) * 2.0
-	return Rect2(VillageBounds.WORLD_RECT.get_center()-size*.5,size)
+	# Keep the approved fraction visible per axis, including diagonal pulls.
+	var overlap := (visible_size * MIN_OPEN_VIEW_FRACTION).min(opened.size)
+	var fringe := visible_size - overlap
+	return Rect2(opened.position-fringe,opened.size+fringe*2.0)
+
+func limit_camera_offset(offset: Vector2, center: Vector2) -> Vector2:
+	var bounds := camera_bounds()
+	var half := get_viewport_rect().size*.5/camera.zoom
+	return (center+offset).clamp(bounds.position+half,bounds.end-half)-center
 
 
 func village_camera_distance() -> float:
@@ -83,8 +86,8 @@ func settle_pan(animated := true) -> void:
 		apply_pan_stretch(Vector2.ZERO)
 
 func apply_pan_stretch(offset: Vector2) -> void:
-	pan_stretch = offset
-	camera.offset = offset
+	pan_stretch = limit_camera_offset(offset,camera_center)
+	camera.offset = pan_stretch
 	camera.force_update_scroll()
 
 func pan_camera(screen_delta:Vector2, elastic := false)->void:
@@ -96,11 +99,12 @@ func pan_camera(screen_delta:Vector2, elastic := false)->void:
 	var half:=get_viewport_rect().size*.5/camera.zoom
 	var requested := camera_center-screen_delta/camera.zoom
 	var bounds:=camera_bounds()
-	camera_center=requested.clamp(bounds.position+half,bounds.end-half)
-	var limit := 32.0/camera.zoom.x
+	var limit := PAN_STRETCH_PIXELS/camera.zoom.x
+	var reserve := ((bounds.size*.5-half).max(Vector2.ZERO)).min(Vector2.ONE*limit) if elastic else Vector2.ZERO
+	camera_center=requested.clamp(bounds.position+half+reserve,bounds.end-half-reserve)
 	var stretch := (pan_stretch+(requested-camera_center)*.35).limit_length(limit)
-	apply_pan_stretch(stretch if elastic and not requested.is_equal_approx(camera_center) else Vector2.ZERO)
 	camera.position=camera_center-global_position
+	apply_pan_stretch(stretch if elastic and not requested.is_equal_approx(camera_center) else Vector2.ZERO)
 	camera.reset_smoothing();camera.force_update_scroll()
 
 func resume_camera()->void:
@@ -207,15 +211,19 @@ func fit_camera() -> void:
 	var reference:=VillageBounds.OVERVIEW_REFERENCE_SIZE
 	var fit := maxf(viewport_size.x/reference.x,viewport_size.y/reference.y)
 	camera.zoom = Vector2.ONE*fit*zoom_factor
-	var bounds:=camera_bounds()
-	camera.limit_left=roundi(bounds.position.x);camera.limit_top=roundi(bounds.position.y)
-	camera.limit_right=roundi(bounds.end.x);camera.limit_bottom=roundi(bounds.end.y)
-	if manual_camera:
-		var half := viewport_size*.5/camera.zoom
-		camera_center = camera_center.clamp(bounds.position+half,bounds.end-half)
-		camera.position = camera_center-global_position
+	fit_camera_limits()
 	if is_instance_valid(hybrid):hybrid.set_render_zoom(zoom_factor)
 	camera.reset_smoothing()
+
+func fit_camera_limits() -> void:
+	var bounds:=camera_bounds()
+	camera.limit_left=ceili(bounds.position.x);camera.limit_top=ceili(bounds.position.y)
+	camera.limit_right=floori(bounds.end.x);camera.limit_bottom=floori(bounds.end.y)
+	if manual_camera:
+		var half := get_viewport_rect().size*.5/camera.zoom
+		camera_center = camera_center.clamp(bounds.position+half,bounds.end-half)
+		camera.position = camera_center-global_position
+		apply_pan_stretch(pan_stretch)
 
 func zoom_at(midpoint: Vector2, factor: float, world_anchor: Vector2=Vector2.INF) -> void:
 	var anchor := get_viewport().get_canvas_transform().affine_inverse()*midpoint if not world_anchor.is_finite() else world_anchor

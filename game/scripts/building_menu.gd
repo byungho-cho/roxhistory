@@ -12,7 +12,8 @@ var final_positions: Array[Vector2] = []
 var layout_bounds:=Rect2()
 var layout_bottom:=-1.0
 static var textures:Dictionary={}
-const ANCHOR_Y:=-35.0 # Approved menu raised another 20 logical UI pixels to overlap the building.
+const ACTION_BUTTON_SIZE := Vector2(96,96)*.8
+const ANCHOR_Y := -35.0 + ACTION_BUTTON_SIZE.y*.5
 const ROOT:="res://assets/ui/building-menu-v001/"
 func _init(owner_app:Node)->void:app=owner_app
 static func art(file:String)->Texture2D:
@@ -44,20 +45,25 @@ func item(title:String,file:String,at:Vector2,diameter:float,callback:Callable)-
 func _ready()->void:
 	name="BuildingMenu";mouse_filter=Control.MOUSE_FILTER_IGNORE;z_index=26;size=Vector2(185,112)
 	upgrade_button=app.button(self,"",upgrade);upgrade_button.name="Upgrade"
-	IntegratedMenuArt.install(upgrade_button,"upgrade",Vector2(96,96)*.8);upgrade_button.position=Vector2(13,23)
+	IntegratedMenuArt.install(upgrade_button,"upgrade",ACTION_BUTTON_SIZE);upgrade_button.position=Vector2(13,23)
 	demolish_button=app.button(self,"",demolish);demolish_button.name="Demolish"
-	IntegratedMenuArt.install(demolish_button,"demolish",Vector2(96,96)*.8);demolish_button.position=Vector2(96,23)
+	IntegratedMenuArt.install(demolish_button,"demolish",ACTION_BUTTON_SIZE);demolish_button.position=Vector2(96,23)
 	for control in [upgrade_button,demolish_button]: final_positions.append(control.position)
 	app.model.changed.connect(func():state_dirty=true)
 	hide()
 func close()->void:
 	reset_entrance()
 	selected_key="";hide()
-	if framing_active and is_instance_valid(app.world):
-		app.world.player.camera.offset=saved_camera_offset;app.world.player.camera.force_update_scroll()
+	restore_framing()
 	framing_active=false
 func _exit_tree()->void:
-	if framing_active and is_instance_valid(app.world):app.world.player.camera.offset=saved_camera_offset
+	restore_framing()
+func restore_framing()->void:
+	if framing_active and is_instance_valid(app.world):
+		var player: DemoPlayer = app.world.player
+		var center := player.camera.get_screen_center_position()-player.camera.offset
+		player.camera.offset=player.limit_camera_offset(saved_camera_offset,center)
+		player.camera.force_update_scroll()
 func selected_sprite()->Sprite2D:
 	return app.world.building_sprite(selected_key)
 func index()->int:
@@ -149,11 +155,13 @@ func refresh_position()->void:
 	var desired:=Vector2(clampf(anchor.x,left,maxf(left,right)),clampf(anchor.y,top,maxf(top,bottom-size.y-ANCHOR_Y)))
 	var shift:=desired-anchor
 	if framing_active and shift.length()>.5:
-		app.world.player.camera.offset-=shift/app.world.player.camera.zoom
-		app.world.player.camera.force_update_scroll()
+		var player: DemoPlayer = app.world.player
+		var center := player.camera.get_screen_center_position()-player.camera.offset
+		player.camera.offset=player.limit_camera_offset(player.camera.offset-shift/player.camera.zoom,center)
+		player.camera.force_update_scroll()
 		bounds=sprite.get_global_transform_with_canvas()*BuildingVisuals.visible_rect(sprite)
 		anchor=app.world.get_global_transform_with_canvas() * ground_point
-	position=anchor+Vector2(-size.x*.5,ANCHOR_Y)
+	position=(anchor+Vector2(-size.x*.5,ANCHOR_Y)).clamp(app.safe,Vector2(app.w-app.safe.x-size.x,maxf(app.safe.y,bottom-size.y)))
 	layout_bounds=bounds
 	layout_bottom=bottom
 

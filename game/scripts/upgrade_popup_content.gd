@@ -1,7 +1,7 @@
 extends Control
 
-const ROOT := "res://assets/ui/d0019/"
 const UPDATE_ART := "res://assets/ui/d0020/"
+const FINISH_ART := "res://assets/ui/d0021/"
 const DESIGN_SIZE := Vector2(652,346)
 var app: Node
 var kind: String
@@ -60,7 +60,7 @@ func _ready() -> void:
 			cropped=atlas
 		app.picture(art,cropped,Rect2(24,70,236,160))
 	FigmaArt.text(art,"Lv. %d" % current,Rect2(308,24,73,38),27,FigmaArt.BODY,Color("796654"),false)
-	app.picture(art,preload(ROOT+"arrow-right-warm.svg"),Rect2(395,35,29,19))
+	app.picture(art,preload(FINISH_ART+"upgrade-level-arrow-gold-right.svg"),Rect2(392,28,36,36))
 	FigmaArt.text(art,str(current+1),Rect2(445,24,48,40),31,FigmaArt.BODY,Color("47240e"),false)
 	var detail := ""
 	match kind:
@@ -114,8 +114,8 @@ func _ready() -> void:
 		amount.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	var seconds := int(app.model.building_duration(current+1))
 	var time := "%d초" % seconds if seconds<60 else "%d분" % (seconds/60)
-	action(Rect2(270,300,192,44),"즉시 업그레이드","3",preload(UPDATE_ART+"diamond-premium-illustrated.png"),preload(UPDATE_ART+"popup-button-sapphire-disabled-192x44.svg"),true)
-	action(Rect2(486,300,166,44),"업그레이드",time,preload(UPDATE_ART+"hourglass-teal-amber-illustrated.png"),preload(UPDATE_ART+"popup-button-gold-normal-166x44.svg"),false)
+	action(Rect2(270,300,192,44),"즉시 업그레이드","3",preload(UPDATE_ART+"diamond-premium-illustrated.png"),preload(FINISH_ART+"popup-button-stone-gray-disabled-192x44.svg"),true)
+	action(Rect2(486,300,166,44),"업그레이드",time,preload(UPDATE_ART+"hourglass-teal-amber-illustrated.png"),preload(FINISH_ART+"popup-button-gold-volume-166x44.svg"),false)
 	unsupported_notice=FigmaArt.text(art,"미지원",Rect2(251,249,150,27),16,FigmaArt.BODY,Color("fff4d6"))
 	unsupported_notice.add_theme_color_override("font_outline_color",Color("503016"))
 	unsupported_notice.add_theme_constant_override("outline_size",8)
