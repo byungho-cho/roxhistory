@@ -1325,7 +1325,7 @@ func apply_menu_state(animated:bool=false)->void:
 		var child:Control=action_row.get_child(i)
 		var auxiliary:bool=child.get_meta("auxiliary_action",false)
 		var construction_open:=is_instance_valid(build_side) and build_side.visible
-		var shown:=not auxiliary or (menu_expanded and not construction_open)
+		var shown:=menu_expanded and (not auxiliary or not construction_open)
 		var target:=Vector2(stride*i if menu_expanded else stride*4,0)
 		child.size=Vector2(button_width,77)
 		child.mouse_filter=Control.MOUSE_FILTER_STOP if shown else Control.MOUSE_FILTER_IGNORE
@@ -1965,7 +1965,7 @@ func show_modal(title: String, body: String, actions: Array, compact: bool = fal
 	var v := column(p,8 if brief else 12)
 	var header:=HBoxContainer.new();header.name="ModalHeader";header.add_theme_constant_override("separation",10);v.add_child(header)
 	var modal_title:=label(header,title,20 if brief else 28,Color("47240e"));modal_title.add_theme_font_override("font",FigmaArt.TITLE);modal_title.size_flags_horizontal=Control.SIZE_EXPAND_FILL;modal_title.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
-	HudButtons.create(header,false,dismiss,"ModalClose")
+	HudButtons.create_modal_close(header,dismiss,"ModalClose")
 	var scroll:ScrollContainer = DevelopmentSettingsScroll.new() if title in ["개발 설정","전체 주민 배분","일 선택","주민 배정","미배정 주민 선택"] or title.ends_with(" · 주민 배정") else ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -2224,7 +2224,7 @@ func show_notification_settings()->void:
 	header.remove_child(original)
 	original.queue_free()
 	var settings_menu := preload("res://scripts/game_settings_menu.gd")
-	settings_menu.icon_button(self, header, settings_menu.CLOSE, "NotificationClose", close_modal)
+	settings_menu.icon_button(self, header, HudButtons.MODAL_CLOSE, "NotificationClose", close_modal)
 	var confirm := overlay.find_child("ModalActions", true, false).get_child(0) as DemoButton
 	confirm.size_flags_horizontal = Control.SIZE_SHRINK_END
 	confirm.custom_minimum_size = Vector2(116, 48)

@@ -4,7 +4,7 @@ extends RefCounted
 const KINDS := ["chief", "hut", "outpost", "hearth", "training", "shrine", "farm", "stone_store", "wood_store"]
 const FACILITY_KINDS := ["hearth", "training", "shrine", "farm", "stone_store", "wood_store"]
 const REQUIRED_HQ := {"chief":0,"hut":1,"hearth":2,"training":2,"shrine":3,"outpost":3,"farm":1,"stone_store":1,"wood_store":1}
-const DURATIONS := [60.0,600.0,1800.0,10800.0]
+const DURATIONS := [60.0,300.0,600.0,900.0]
 const DEVELOPMENT_DURATION := 5.0
 # Storage buildings use the approved common clocks; saved clocks remain unchanged.
 const STORAGE_TIMING_CONFIRMED:=true

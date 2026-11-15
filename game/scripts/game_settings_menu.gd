@@ -1,7 +1,6 @@
 extends RefCounted
 
 const BUG := preload("res://assets/ui/settings-v141/development.svg")
-const CLOSE := preload("res://assets/ui/settings-v141/close.svg")
 
 static func open(app: Node) -> void:
 	var scroll: ScrollContainer = app.show_modal("게임 설정", "", [], false, true, false, Vector2(610, 400))
@@ -12,7 +11,7 @@ static func open(app: Node) -> void:
 	old_close.queue_free()
 	if OS.is_debug_build() or app.test_mode or ProjectSettings.get_setting("roxhistory/development/settings_entry", false):
 		icon_button(app, header, BUG, "DevelopmentSettings", app.show_development_settings, "debug_click")
-	icon_button(app, header, CLOSE, "SettingsClose", app.close_modal)
+	icon_button(app, header, HudButtons.MODAL_CLOSE, "SettingsClose", app.close_modal)
 	var list := VBoxContainer.new()
 	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	list.add_theme_constant_override("separation", 6)
@@ -27,8 +26,8 @@ static func open(app: Node) -> void:
 		row.set_meta("semantic_text", item[0])
 		for state in ["normal", "hover", "pressed", "disabled", "focus"]:
 			var style := StyleBoxFlat.new()
-			style.bg_color = Color({"normal":"efe0ba", "hover":"f8df9a", "pressed":"e4c17d", "disabled":"e9ddc4", "focus":"f8df9a"}[state])
-			style.border_color = Color("ab7939") if state in ["hover", "pressed", "focus"] else Color("d5bd8b")
+			style.bg_color = Color({"normal":"efe0ba", "hover":"efe0ba", "pressed":"e4c17d", "disabled":"e9ddc4", "focus":"f8df9a"}[state])
+			style.border_color = Color("ab7939") if state in ["pressed", "focus"] else Color("d5bd8b")
 			style.set_border_width_all(1)
 			style.set_corner_radius_all(7)
 			row.add_theme_stylebox_override(state, style)

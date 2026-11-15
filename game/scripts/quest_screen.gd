@@ -28,7 +28,7 @@ func open()->void:
 	for state in ["normal","hover","pressed","focus"]:back.add_theme_stylebox_override(state,StyleBoxEmpty.new())
 	app.picture(back,crop(ICONS,4.129,2.7978,.0161,.2951),Rect2(0,0,48,48))
 	text(layer,"여정의 기록",Vector2(100,30),30,Color("fff0cf"))
-	var close:=HudButtons.create(layer,false,app.close_modal,"QuestClose");close.position=Vector2(1198,26)
+	var close:=HudButtons.create_modal_close(layer,app.close_modal,"QuestClose");close.position=Vector2(1198,26)
 	var panel:=Panel.new();panel.name="QuestPanel";panel.position=Vector2(38,102);panel.size=Vector2(1204,548);panel.mouse_filter=Control.MOUSE_FILTER_STOP;panel.add_theme_stylebox_override("panel",StyleBoxEmpty.new());layer.add_child(panel)
 	var panel_image:TextureRect=app.picture(panel,preload("res://assets/ui/v0158/quest-panel-bg.png"),Rect2(Vector2.ZERO,panel.size));panel_image.stretch_mode=TextureRect.STRETCH_SCALE
 	# All following coordinates use the Figma canvas, keeping one shared origin.

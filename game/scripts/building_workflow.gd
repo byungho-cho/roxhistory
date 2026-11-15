@@ -76,7 +76,17 @@ func show_upgrade_confirmation(key:String,cost:Dictionary,callback:Callable)->vo
 	var found: Dictionary=app.model.lookup_building(key)
 	var current: int=app.model.chief_level() if key=="chief" else int(found.get("data",{}).get("level",1))
 	var title := building_name(str(found.get("kind","chief")))+" 업그레이드"
-	var scroll: ScrollContainer=app.show_modal(title,"",[],false,true,false,Vector2(562,346))
+	var scroll: ScrollContainer=app.show_modal(title,"",[],false,true,false,Vector2(724,440))
+	var header: HBoxContainer = scroll.get_parent().get_node("ModalHeader")
+	var title_label := header.get_child(0) as Label
+	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title_label.add_theme_font_override("font",FigmaArt.BODY)
+	title_label.add_theme_font_size_override("font_size",30)
+	var balance := Control.new()
+	balance.custom_minimum_size.x = header.get_node("ModalClose").custom_minimum_size.x
+	balance.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	header.add_child(balance)
+	header.move_child(balance,0)
 	scroll.vertical_scroll_mode=ScrollContainer.SCROLL_MODE_DISABLED
 	scroll.add_child(preload("res://scripts/upgrade_popup_content.gd").new(app,str(found.get("kind","chief")),current,cost,callback))
 	confirmation_overlay=app.overlay

@@ -327,7 +327,7 @@ func show_waiting(job: String, target: String, occupant := "") -> void:
 	list.add_child(header)
 	var title: Label = app.label(header,"%s 배정할 주민"%job_name(job),22)
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	HudButtons.create(header,false,close_waiting,"CloseWaiting")
+	HudButtons.create_modal_close(header,close_waiting,"CloseWaiting")
 	var ids := waiting(jobs)
 	app.label(list,"미배정 %d명 · 주민을 누르면 바로 배정합니다."%ids.size() if occupant.is_empty() else "%s · 교체할 주민을 선택하세요."%display_name(occupant),16)
 	var rail := ScrollContainer.new()

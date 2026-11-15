@@ -137,7 +137,9 @@ func refresh_position()->void:
 	if sprite==null:close();return
 	var bounds:Rect2=sprite.get_global_transform_with_canvas()*BuildingVisuals.visible_rect(sprite)
 	if not bounds.intersects(Rect2(0,0,app.w,app.h).grow(4)):close();return
-	var anchor:=Vector2(bounds.get_center().x,bounds.end.y)
+	var plot := VillageLayout.foundation_rect(6 if selected_key=="chief" else 4)
+	var ground_point: Vector2 = app.model.building_position(selected_key) + plot.get_center()
+	var anchor: Vector2 = app.world.get_global_transform_with_canvas() * ground_point
 	var bottom:float=app.h-app.safe.y
 	if is_instance_valid(app.action_row) and app.action_row.is_visible_in_tree():bottom=minf(bottom,app.action_row.global_position.y-8)
 	if bounds.is_equal_approx(layout_bounds) and is_equal_approx(bottom,layout_bottom):return
@@ -150,7 +152,7 @@ func refresh_position()->void:
 		app.world.player.camera.offset-=shift/app.world.player.camera.zoom
 		app.world.player.camera.force_update_scroll()
 		bounds=sprite.get_global_transform_with_canvas()*BuildingVisuals.visible_rect(sprite)
-		anchor=Vector2(bounds.get_center().x,bounds.end.y)
+		anchor=app.world.get_global_transform_with_canvas() * ground_point
 	position=anchor+Vector2(-size.x*.5,ANCHOR_Y)
 	layout_bounds=bounds
 	layout_bottom=bottom

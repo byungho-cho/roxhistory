@@ -5,10 +5,21 @@ var app:Node
 var building_key:="chief"
 var construction_uid:=""
 var scaffold:Sprite2D
+var planned_building: Sprite2D
 func _init(owner_app:Node)->void:app=owner_app
 func _ready()->void:
 	name=("ConstructionEffects_"+construction_uid.replace(":","_")) if not construction_uid.is_empty() else ("ChiefUpgradeEffects" if building_key=="chief" else "OwnedUpgradeEffects_"+building_key.replace(":","_"))
 	visibility_layer=2;z_index=4
+	if not construction_uid.is_empty():
+		var job := job_data()
+		if not job.is_empty():
+			var kind := str(job.kind)
+			planned_building = Sprite2D.new()
+			planned_building.visibility_layer = 2
+			planned_building.z_index = -1
+			BuildingVisuals.apply(planned_building,kind,1,340 if kind=="chief" else 230)
+			planned_building.position += job_position()
+			add_child(planned_building)
 	if not construction_uid.is_empty() or building_key!="chief":
 		scaffold=Sprite2D.new();scaffold.texture=preload("res://assets/effects/construction-scaffold.png");scaffold.texture_filter=CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS;scaffold.visibility_layer=2
 		scaffold.scale=Vector2.ONE*250/scaffold.texture.get_width();add_child(scaffold)

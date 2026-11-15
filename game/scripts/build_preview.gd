@@ -33,18 +33,16 @@ func select_position(at:Vector2,building_kind:String="",key:String="")->void:
 		moving_level=int(app.model.lookup_building(key).get("data",{}).get("level",1))
 	moving_key=key
 	confirm_button=cost_display.confirm_button
-	ghost.visible=key.is_empty()
-	if not key.is_empty():
-		placement_position=at;position=at;placement_active=true;show()
-		cost_display.hide();queue_redraw()
-		return
-	var level:=1
-	var texture:=BuildingWorkflow.approved_texture(BuildingWorkflow.building_asset_id(kind,level))
-	if texture==null:return
-	ghost.set_hut_style(1);ghost.sprite.material=null
-	BuildingVisuals.apply(ghost.sprite,kind,level,340 if kind=="chief" else 230)
-	ghost.sprite.position.y-=ghost.depth_visual.position.y
-	site_id=-1;placement_position=at;position=at;age=0;placement_active=true;show();refresh_validity();queue_redraw()
+	ghost.show()
+	var level:=1 if key.is_empty() else moving_level
+	if ghost.sprite.get_meta("building_visual_kind","") != kind or ghost.sprite.get_meta("building_visual_level",0) != level:
+		if BuildingVisuals.texture(kind,level)==null:return
+		ghost.sprite.material=null
+		BuildingVisuals.apply(ghost.sprite,kind,level,340 if kind=="chief" else 230)
+		ghost.sprite.position.y-=ghost.depth_visual.position.y
+	if key.is_empty():age=0
+	site_id=-1;placement_position=at;position=at;placement_active=true;show();refresh_validity();queue_redraw()
+	if not key.is_empty():cost_display.hide()
 func active()->bool:return placement_active
 func block_reason()->String:
 	if not placement_active:return "위치를 먼저 선택해 주세요"
@@ -57,7 +55,7 @@ func validity()->bool:return block_reason().is_empty()
 func refresh_validity()->void:
 	var reason:=block_reason()
 	confirm_button.disabled=not reason.is_empty();confirm_button.hint_text=reason
-	ghost.modulate=Color(1,1,.87,.85 if not moving_key.is_empty() else .52) if reason.is_empty() else Color(1,.45,.35,.48)
+	ghost.modulate=Color(1,1,.87,.74+.08*sin(age*TAU/2.4) if not moving_key.is_empty() else .52) if reason.is_empty() else Color(1,.45,.35,.48)
 func move_marker_hit(at: Vector2) -> bool:
 	return not moving_key.is_empty() and not move_dragging and Geometry2D.is_point_in_polygon(at-position,move_outline())
 
@@ -71,9 +69,13 @@ func clear()->void:
 	site_id=-1;placement_active=false;moving_key="";hide()
 	if is_instance_valid(cost_display):cost_display.hide()
 func _process(delta:float)->void:
-	if not placement_active or not moving_key.is_empty():return
+	if not placement_active:return
 	if not app.application_active or app.modal or app.world_map_open:cost_display.hide();return
 	age+=delta;ghost.position.y=-4-3*sin(age*TAU/2.4)
+	if not moving_key.is_empty():
+		if not move_dragging:refresh_validity()
+		else:ghost.modulate.a=.68+.08*sin(age*TAU/2.4)
+		return
 	refresh_validity()
 	update_overlay_layout();queue_redraw()
 func update_overlay_layout()->void:
@@ -99,7 +101,7 @@ func _draw()->void:
 	var valid := validity()
 	var color := Color(.55,.85,.3,.16) if valid else Color(1,.2,.1,.16)
 	if valid:
-		VillageLayout.draw_move_foundation(self,Vector2.ZERO,kind,1 if moving_key.is_empty() else moving_level)
+		if moving_key.is_empty():VillageLayout.draw_move_foundation(self,Vector2.ZERO,kind,1)
 		color=Color(1,.94,.76,.96)
 	else:
 		draw_colored_polygon(outline,color)

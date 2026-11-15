@@ -11,6 +11,7 @@ const HEARTH_HEIGHTS := [114.57, 139.37, 182.4, 184.3]
 const OUTPOST_GROUND_SPANS := [800.0, 780.0, 790.0, 830.0]
 # Ground footprint centers in the original textures, excluding flags and transparent margins.
 const CHIEF_GROUND_ANCHORS := [Vector2(0.50, 0.73), Vector2(0.49, 0.73), Vector2(0.47, 0.73), Vector2(0.47, 0.74)]
+static var workshop_textures: Dictionary = {}
 
 static func asset_id(kind: String, level: int = 1) -> String:
 	var category := "HUT" if kind in ["chief", "hut", "home"] else kind.to_upper()
@@ -19,7 +20,17 @@ static func asset_id(kind: String, level: int = 1) -> String:
 static func texture(kind: String, level: int = 1) -> Texture2D:
 	if kind=="chief":return load("res://assets/chief-retouch/l%d.png"%clampi(level,1,4))
 	if kind=="farm":return load("res://assets/farm/v003/farm-empty-l%d.png"%clampi(level,1,4))
-	if kind in ["stone_store","wood_store"]:return load("res://assets/buildings/storage-v001/%s-l%d.png"%[kind,clampi(level,1,4)])
+	if kind in ["stone_store","wood_store"]:
+		var stem := "sawmill" if kind=="wood_store" else "quarry"
+		var path := "res://assets/buildings/d0020/%s-l%d.png" % [stem,clampi(level,1,4)]
+		if not workshop_textures.has(path):
+			var source := load(path) as Texture2D
+			var cropped := AtlasTexture.new()
+			cropped.atlas = source
+			cropped.region = Rect2(source.get_image().get_used_rect())
+			cropped.filter_clip = true
+			workshop_textures[path] = cropped
+		return workshop_textures[path]
 	var id := asset_id(kind, level)
 	if not AssetCatalog.entry(id).get("approved", false): return null
 	return AssetCatalog.texture(id)
@@ -66,6 +77,8 @@ static func display_rect(kind: String, level: int = 1, ground_width: float = 230
 		"hearth":
 			# A low firepit stays centered over its separate common square foundation.
 			center.y = -ground_width * 0.03
+		"stone_store", "wood_store":
+			center.y = 18.0 * ground_width / 230.0 - dimensions.y * 0.5
 		"outpost":
 			center.y = -ground_width * 0.3 + 3.0
 	if kind=="farm":
@@ -89,10 +102,12 @@ static func apply(sprite: Sprite2D, kind: String, level: int = 1, ground_width: 
 	sprite.set_meta("building_visual_alignment", "bottom" if kind in ["training", "shrine"] else "center")
 
 static func has_own_ground(kind:String)->bool:
-	return kind in ["farm","stone_store","wood_store","hearth","shrine"]
+	return kind == "farm"
 static var visible_regions:Dictionary={}
 static func visible_rect(sprite:Sprite2D)->Rect2:
 	var texture:=sprite.texture
+	if texture is AtlasTexture and str(texture.atlas.resource_path).begins_with("res://assets/buildings/d0020/"):
+		return sprite.get_rect()
 	var id:=texture.get_instance_id()
 	if not visible_regions.has(id):
 		var image:=texture.get_image()

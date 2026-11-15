@@ -32,7 +32,7 @@ func run()->void:
 		for target in range(1,5):
 			var cost:=model.building_cost(kind,target)
 			check(cost=={"wood":expected[kind][target-1][0],"stone":expected[kind][target-1][1]},"Exact cost %sL%d"%[kind,target])
-	for target in range(1,5):check(model.chief_upgrade_duration(target)==[60.0,600.0,1800.0,10800.0][target-1],"Exact L%d duration"%target)
+	for target in range(1,5):check(model.chief_upgrade_duration(target)==[60.0,300.0,600.0,900.0][target-1],"Exact L%d duration"%target)
 	check(model.begin_construction("chief",DemoConfig.CHIEF_POSITION,now),"Start durable HQ")
 	check(model.chief_level()==0 and model.state.wood==99979 and model.state.stone==99979,"HQ deduction precedes completion")
 	check(not model.begin_construction("chief",Vector2(200,500),now),"Duplicate HQ rejected")

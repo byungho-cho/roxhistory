@@ -1,6 +1,15 @@
 class_name HudButtons
 extends RefCounted
 const DIAMETER:=44.0
+const MODAL_CLOSE := preload("res://assets/ui/d0020/popup-close-charcoal.svg")
+
+static func create_modal_close(parent:Node, callback:Callable, id:String)->DemoButton:
+	var button := create(parent,false,callback,id)
+	var image := button.find_child("Icon",true,false) as TextureRect
+	image.texture = MODAL_CLOSE
+	image.position = Vector2(6,5)
+	image.size = Vector2(32,34)
+	return button
 static func world_scale(zoom:float)->float:return clampf(zoom*.85,.34,.68)
 static func create(parent:Node,positive:bool,callback:Callable,id:String)->DemoButton:
 	var button:=DemoButton.new();button.name=id;button.focus_mode=Control.FOCUS_NONE

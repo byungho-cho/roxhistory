@@ -42,7 +42,7 @@ const ACTION_CUES := ["ui","debug_click","quest_click","action_click","popup_ope
 
 func _ready() -> void:
 	nature_random.randomize()
-	streams["relocation_landing"] = preload("res://assets/ui/d0019/building-placement-impact.wav")
+	streams["relocation_landing"] = preload("res://assets/ui/d0020/building-placement-impact-v2.wav")
 	for key in ["select","a303_bgm","wood_0","wood_1","stone_0","stone_1","build_0","build_1","gain"]:
 		streams[key] = load("res://assets/audio/"+key+".wav")
 	for key in APPROVED:
