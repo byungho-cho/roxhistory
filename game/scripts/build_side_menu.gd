@@ -3,7 +3,17 @@ extends Control
 
 # Left-to-right layout; the newest opening starts at the right.
 const KINDS := ["outpost","shrine","hearth","training","stone_store","wood_store","farm","hut"]
-const FILTERS := {"housing":["hut"],"resources":["stone_store","wood_store","farm"]}
+const FILTERS := ["open","locked"]
+const CARD_ART := {
+	"hut":[preload("res://assets/ui/d0025/hut-normal-body.png"),Rect2(67.34,56.03,81.31,69.89)],
+	"farm":[preload("res://assets/ui/d0025/farm-normal-body.png"),Rect2(58.61,70.78,98.78,59.14)],
+	"wood_store":[preload("res://assets/ui/d0025/sawmill-normal-body.png"),Rect2(59.29,65.98,107.48,70.06)],
+	"stone_store":[preload("res://assets/ui/d0025/quarry-normal-body.png"),Rect2(56.26,61.70,103.49,69.22)],
+	"training":[preload("res://assets/ui/d0025/training-normal-body.png"),Rect2(77.76,45.30,60.48,69.22)],
+	"hearth":[preload("res://assets/ui/d0025/hearth-normal-body.png"),Rect2(70,77,75,50)],
+	"shrine":[preload("res://assets/ui/d0025/shrine-normal-body.png"),Rect2(77.09,51.03,61.82,69.40)],
+	"outpost":[preload("res://assets/ui/d0025/outpost-normal-body.png"),Rect2(58.61,53,98.78,73.92)],
+}
 const MENU_ICONS:={
 	"farm":preload("res://assets/ui/construction-side-v006/menu-farm.png"),
 	"hearth":preload("res://assets/ui/construction-side-v006/menu-hearth.png"),
@@ -88,8 +98,11 @@ func _ready() -> void:
 		var button: DemoButton = app.button(self,"",set_filter.bind(id))
 		button.mouse_filter = MOUSE_FILTER_IGNORE
 		filters[id] = button
-		var icon: Texture2D = BuildingVisuals.texture("hut",1) if id=="housing" else DemoArt.icon("wood")
-		app.picture(button,icon,Rect2(8,8,53,49))
+		var selected: TextureRect = app.picture(button,preload("res://assets/ui/d0025/filter-selected-sapphire-source.svg"),Rect2(0,0,69,65))
+		selected.name = "SelectedSkin"
+		selected.stretch_mode = TextureRect.STRETCH_SCALE
+		var icon: Texture2D = preload("res://assets/ui/d0025/filter-open-gold.svg") if id=="open" else preload("res://assets/ui/d0025/filter-locked-neutral.png")
+		app.picture(button,icon,Rect2(12,10,45,45))
 	message = FigmaArt.text(self,"",Rect2(),16,FigmaArt.BODY,Color("fff3d4"))
 	message.add_theme_color_override("font_outline_color",Color("3e2a17"))
 	message.add_theme_constant_override("outline_size",8)
@@ -122,14 +135,14 @@ func add_card(kind: String) -> void:
 	composition.add_child(divider)
 	var art := layer(composition)
 	art.name = "Artwork"
-	var image := BuildingVisuals.texture(kind,1)
-	if not image is AtlasTexture:
-		image = IntegratedMenuArt.trimmed(image,Rect2(image.get_image().get_used_rect()))
-	if not BuildingVisuals.has_own_ground(kind):
-		var cut: Array = AssetCatalog.entry("GROUND-PAD-L1").alpha_bounds
-		var pad := IntegratedMenuArt.trimmed(AssetCatalog.texture("GROUND-PAD-L1"),Rect2(cut[0],cut[1],cut[2],cut[3]))
-		app.picture(art,pad,Rect2(14,50,134,66))
-	app.picture(art,image,Rect2(16,4,130,107 if BuildingVisuals.has_own_ground(kind) else 99))
+	var cut: Array = AssetCatalog.entry("GROUND-PAD-L1").alpha_bounds
+	var pad := IntegratedMenuArt.trimmed(AssetCatalog.texture("GROUND-PAD-L1"),Rect2(cut[0],cut[1],cut[2],cut[3]))
+	app.picture(art,pad,Rect2(14,50,134,66))
+	var source: Array = CARD_ART[kind]
+	var authored: Rect2 = source[1]
+	# The exported body is already resized in the 216×160 design composition.
+	var body_rect := Rect2(authored.position*.75+Vector2(0,3.95),authored.size*.75)
+	app.picture(art,source[0],body_rect).stretch_mode = TextureRect.STRETCH_SCALE
 	var name_label := FigmaArt.text(composition,"움집" if kind=="hut" else BuildingWorkflow.building_name(kind),Rect2(0,115,162,34),23,FigmaArt.BODY,INK)
 	name_label.name = "MenuLabel"
 	var cost := layer(composition)
@@ -182,6 +195,13 @@ func refresh() -> void:
 	clip.position = Vector2(0,top+1.0)
 	clip.size = Vector2(roller.position.x,194.0*scale_factor)
 	visible_slots = maxi(1,ceili(clip.size.x/(TILE_SIZE.x*scale_factor)))
+	var locked_by_kind := {}
+	visible_kinds = []
+	for kind in KINDS:
+		var locked: bool = not app.model.building_availability_requirement(kind).is_empty()
+		locked_by_kind[kind] = locked
+		if selected_filter.is_empty() or locked==(selected_filter=="locked"):
+			visible_kinds.append(kind)
 	var end_padding := OUTPOST_END_PADDING if "outpost" in visible_kinds else 0.0
 	content.size = Vector2((end_padding+TILE_SIZE.x*visible_kinds.size())*scale_factor,clip.size.y)
 	content.scale = Vector2.ONE*scale_factor
@@ -191,7 +211,7 @@ func refresh() -> void:
 		if not card.visible: continue
 		card.position = Vector2(end_padding+visible_kinds.find(kind)*TILE_SIZE.x,0)
 		var art: Control = card.art_feedback.get_node("Composition/Artwork")
-		var locked: bool = not app.model.building_unlocked(kind)
+		var locked: bool = locked_by_kind[kind]
 		var reason: String = app.building_workflow.build_block_reason(kind,false)
 		# Display the campaign level even when another prerequisite is also unmet.
 		if locked and app.model.chief_level()<int(BuildingRules.REQUIRED_HQ.get(kind,0)):
@@ -205,14 +225,15 @@ func refresh() -> void:
 		restriction.get_node("Locked").visible = locked
 		restriction.get_node("Reason").text = reason
 	for i in FILTERS.size():
-		var id: String = FILTERS.keys()[i]
+		var id: String = FILTERS[i]
 		var button: DemoButton = filters[id]
 		button.position = roller.position+Vector2(14,59+i*77)*scale_factor
 		button.size = Vector2(69,65)
 		var style := StyleBoxFlat.new()
-		style.bg_color = Color(1,.81,.48,.32) if selected_filter==id else Color(.41,.23,.09,.05)
-		style.border_color = Color("935428") if selected_filter==id else Color(.42,.24,.10,.25)
-		style.set_border_width_all(2 if selected_filter==id else 1)
+		button.get_node("SelectedSkin").visible = selected_filter==id
+		style.bg_color = Color(.41,.23,.09,.05)
+		style.border_color = Color(.42,.24,.10,.25)
+		style.set_border_width_all(1)
 		style.set_corner_radius_all(9)
 		for state in ["normal","hover","pressed","focus"]:
 			button.add_theme_stylebox_override(state,style)
@@ -265,7 +286,6 @@ func finish_open() -> void:
 func set_filter(id: String) -> void:
 	finish_open()
 	selected_filter = "" if selected_filter==id else id
-	visible_kinds = FILTERS.get(selected_filter,KINDS)
 	message.hide()
 	refresh()
 	scroll_offset = max_scroll()

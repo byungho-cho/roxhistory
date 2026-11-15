@@ -17,6 +17,7 @@ const SWIPE := preload(ART+"07-sfx-parchment-swipe.wav")
 const HOOF := preload(ART+"06-sfx-boar-hoof.wav")
 const ARROW := preload(ART+"08-ui-arrow-gold-worn-right.svg")
 const ENTRY_TIMES := [.42,.88,1.46,1.96,2.26]
+const ENTRY_END := 2.56
 const SKINS := {
 	"active":preload(ART+"08-ui-stage-active-body.svg"),
 	"complete":preload(ART+"08-ui-stage-complete-body.svg"),
@@ -41,6 +42,10 @@ var next_event := 0
 var voice := AudioStreamPlayer.new()
 var plaque_art: Texture2D
 var boss_art: Texture2D
+var skip_hint: Label
+var skip_mouse := false
+var skip_touch := -1
+var entry_finished := false
 
 func _ready() -> void:
 	mouse_filter=Control.MOUSE_FILTER_STOP
@@ -72,8 +77,13 @@ func _ready() -> void:
 	voice.bus=&"SFX"
 	voice.volume_db=linear_to_db(.50)
 	add_child(voice)
+	skip_hint=title(self,"스킵",Rect2(),23)
+	skip_hint.horizontal_alignment=HORIZONTAL_ALIGNMENT_RIGHT
+	skip_hint.add_theme_color_override("font_outline_color",Color("432e1c"))
+	skip_hint.add_theme_constant_override("outline_size",4)
 	if reduce_motion():
-		elapsed=2.56
+		entry_finished=true
+		elapsed=ENTRY_END
 		next_event=ENTRY_TIMES.size()
 		set_process(false)
 	resized.connect(draw_page)
@@ -102,7 +112,37 @@ func _process(delta: float) -> void:
 		next_event+=1
 	layout_boar()
 	update_groups()
-	if elapsed>=2.56:set_process(false)
+	if elapsed>=ENTRY_END:finish_entry()
+
+func finish_entry(skipped := false) -> void:
+	if entry_finished:return
+	entry_finished=true
+	elapsed=ENTRY_END
+	next_event=ENTRY_TIMES.size()
+	if skipped:voice.stop()
+	skip_hint.hide()
+	layout_boar()
+	update_groups()
+	set_process(false)
+
+func _input(event: InputEvent) -> void:
+	if not is_visible_in_tree() or not app.application_active:return
+	if event is InputEventMouseButton and event.button_index==MOUSE_BUTTON_LEFT:
+		if event.pressed and not entry_finished and get_global_rect().has_point(event.position):
+			skip_mouse=true
+			finish_entry(true)
+			get_viewport().set_input_as_handled()
+		elif not event.pressed and skip_mouse:
+			skip_mouse=false
+			get_viewport().set_input_as_handled()
+	elif event is InputEventScreenTouch:
+		if event.pressed and not entry_finished and get_global_rect().has_point(event.position):
+			skip_touch=event.index
+			finish_entry(true)
+			get_viewport().set_input_as_handled()
+		elif not event.pressed and event.index==skip_touch:
+			skip_touch=-1
+			get_viewport().set_input_as_handled()
 
 func layout_boar() -> void:
 	var cover := maxf(size.x/MEADOW.x,size.y/MEADOW.y)
@@ -158,6 +198,11 @@ func draw_page() -> void:
 		page.queue_free()
 	page=layer(self)
 	var unit := minf(1.0,minf(size.x/DESIGN.x,size.y/DESIGN.y))
+	skip_hint.visible=not entry_finished
+	skip_hint.position=Vector2(size.x-maxf(20.0,app.safe.x)-104*unit,size.y-maxf(20.0,app.safe.y)-42*unit)
+	skip_hint.size=Vector2(104,42)*unit
+	skip_hint.add_theme_font_size_override("font_size",roundi(23*unit))
+	move_child(skip_hint,-1)
 	page.scale=Vector2.ONE*unit
 	page.position=(size-DESIGN*unit)*.5
 	top_group=layer(page)

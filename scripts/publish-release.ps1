@@ -1,8 +1,8 @@
 [CmdletBinding()]
-param([string]$Repository = 'byungho-cho/roxhistory', [string]$ReleaseNotesPath, [switch]$AndroidOnly)
+param([string]$Repository = 'byungho-cho/roxhistory', [string]$ReleaseNotesPath, [string]$OutputDirectory, [switch]$AndroidOnly)
 $ErrorActionPreference = 'Stop'
 $repo = Split-Path $PSScriptRoot -Parent
-$output = Join-Path $repo 'build'
+$output = if ($OutputDirectory) { $OutputDirectory } else { Join-Path $repo 'build' }
 $manifest = Get-Content -Raw (Join-Path $output 'release-manifest.json') | ConvertFrom-Json
 $version = $manifest.version
 if ($version -notmatch '^\d+\.\d+\.\d+$') { throw 'Invalid release version.' }

@@ -454,7 +454,10 @@ func building_unlocked(kind:String)->bool:
 		if built_count()==0 or farms==0:return false
 	return not state.is_empty() and BuildingRules.REQUIRED_HQ.has(kind) and chief_level()>=int(BuildingRules.REQUIRED_HQ[kind]) and (kind!="farm" or built_count()>0)
 
-func building_requirement(kind:String,check_resources:bool=true)->String:
+func building_availability_requirement(kind:String)->String:
+	return structural_building_requirement(kind,false)
+
+func structural_building_requirement(kind:String,include_job_limits:bool)->String:
 	kind=BuildingRules.canonical(kind)
 	if state.is_empty():return "게임을 먼저 시작해 주세요"
 	if not BuildingRules.REQUIRED_HQ.has(kind):return "아직 지원하지 않는 건물이에요"
@@ -482,8 +485,9 @@ func building_requirement(kind:String,check_resources:bool=true)->String:
 		for entry in facilities():
 			if str(entry.kind)==kind:count+=1
 		if count>=1:return "%s은 1개만 지을 수 있어요" % BuildingWorkflow.building_name(kind)
-	if not builder_available():return "건설자 1명이 작업 중이에요"
-	if construction_jobs().size()>=BuildingRules.MAX_ENTRIES:return "건설 중인 건물이 너무 많아요"
+	if include_job_limits:
+		if not builder_available():return "건설자 1명이 작업 중이에요"
+		if construction_jobs().size()>=BuildingRules.MAX_ENTRIES:return "건설 중인 건물이 너무 많아요"
 	if kind=="outpost" and not debug_unlimited_buildings and outposts().size()+pending_construction_count(kind)>=3:return "초소는 최대 3개예요"
 	if kind=="farm" and not debug_unlimited_buildings:
 		var farms:=pending_construction_count(kind)
@@ -495,6 +499,12 @@ func building_requirement(kind:String,check_resources:bool=true)->String:
 		for job in construction_jobs():
 			if str(job.kind) in BuildingRules.FACILITY_KINDS:pending_facilities+=1
 		if facilities().size()+pending_facilities>=BuildingRules.MAX_ENTRIES:return "시설 한도에 도달했어요"
+	return ""
+
+func building_requirement(kind:String,check_resources:bool=true)->String:
+	kind=BuildingRules.canonical(kind)
+	var reason:=structural_building_requirement(kind,true)
+	if not reason.is_empty():return reason
 	if not check_resources:return ""
 	var cost:=building_cost(kind,1)
 	if state.wood<cost.wood or state.stone<cost.stone:return "나무 %d개와 돌 %d개가 필요해요" % [cost.wood,cost.stone]
