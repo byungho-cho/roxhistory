@@ -76,13 +76,19 @@ func show_upgrade_confirmation(key:String,cost:Dictionary,callback:Callable)->vo
 	var found: Dictionary=app.model.lookup_building(key)
 	var current: int=app.model.chief_level() if key=="chief" else int(found.get("data",{}).get("level",1))
 	var title := building_name(str(found.get("kind","chief")))+" 업그레이드"
-	var body := "Lv.%d → Lv.%d\n%s" % [current,current+1,upgrade_description(cost,current+1)]
-	app.show_modal(title,body,[{"text":"취소","action":app.close_modal},{"text":"확인","action":callback}],false,true,false,Vector2(480,265))
+	var scroll: ScrollContainer=app.show_modal(title,"",[],false,true,false,Vector2(562,346))
+	scroll.vertical_scroll_mode=ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.add_child(preload("res://scripts/upgrade_popup_content.gd").new(app,str(found.get("kind","chief")),current,cost,callback))
 	confirmation_overlay=app.overlay
 	var panel: Control=app.overlay.get_child(1)
 	panel.pivot_offset=panel.size*.5
-	panel.scale=Vector2.ONE*.96
-	panel.create_tween().tween_property(panel,"scale",Vector2.ONE,.18).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	var resting := panel.position
+	panel.position.y-=7
+	panel.scale=Vector2.ONE*.94
+	var opening := panel.create_tween().set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	opening.tween_property(panel,"scale",Vector2.ONE*1.03,.13)
+	opening.parallel().tween_property(panel,"position",resting,.19)
+	opening.tween_property(panel,"scale",Vector2.ONE,.07)
 func upgrade_description(cost:Dictionary,target:int)->String:
 	return "%s\n공사 시간 %d초\n앱을 닫아도 공사가 진행돼요"%[cost_text(cost),int(app.model.building_duration(target))]
 func confirm_upgrade(target:int)->bool:
@@ -129,11 +135,28 @@ func _process(delta:float)->void:
 		if app.model.finish_constructions():
 			for job in jobs:
 				if construction_job(str(job.uid)).is_empty() and is_instance_valid(app.world) and app.screen=="play":app.world.feedback.built(DemoConfig.point(job.position))
-		OwnedBuildingUpgrades.finish(app.model)
+		var pending: Dictionary={}
+		for key in OwnedBuildingUpgrades.keys(app.model):
+			var found: Dictionary=app.model.lookup_building(key)
+			if found.data.has("upgrade"): pending[key]=int(found.data.upgrade.to)
+		if OwnedBuildingUpgrades.finish(app.model):
+			for key in pending:
+				var current: Dictionary=app.model.lookup_building(key)
+				if int(current.get("data",{}).get("level",0))==pending[key]:
+					show_upgrade_completed(key,pending[key])
 		if app.model.state.has("chief_upgrade") and app.model.chief_upgrade_remaining()<=0:
-			if app.model.finish_chief_upgrade() and is_instance_valid(app.world) and app.screen=="play":app.world.feedback.built(app.model.building_position("chief"))
+			if app.model.finish_chief_upgrade():
+				show_upgrade_completed("chief",app.model.chief_level())
+				if is_instance_valid(app.world) and app.screen=="play":app.audio.cue("complete")
 		retry_after=.1
 	update_owned_upgrades();update_constructions()
+func show_upgrade_completed(key: String, level: int) -> void:
+	if not is_instance_valid(app.world) or app.screen!="play" or app.world_map_open or not app.application_active:return
+	var at: Vector2=app.model.building_position(key)
+	var screen_point: Vector2=app.world.get_global_transform_with_canvas()*at
+	if not Rect2(0,0,app.w,app.h).has_point(screen_point):return
+	app.world.add_child(preload("res://scripts/village_upgrade_feedback.gd").new(at,level))
+
 func owned_upgrade_reason(key:String,check_resources:bool=true)->String:
 	var found:Dictionary=app.model.lookup_building(key)
 	if found.is_empty():return "건물을 찾을 수 없어요"

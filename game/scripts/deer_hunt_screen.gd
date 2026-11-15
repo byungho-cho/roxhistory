@@ -48,7 +48,6 @@ var match_shade: ColorRect
 var match_impact: TextureRect
 var impact_atlas: AtlasTexture
 var impact_sheets: Array[Texture2D] = []
-var arrival_variant: int
 var arrival_duration: float
 var arrival_finished := false
 var arrival_skip_pointer := -2
@@ -113,7 +112,6 @@ var prep_ally_portrait: TextureRect
 var battle_header: Control
 var location_brush: TextureRect
 var location_caption: Label
-var versus: Control
 
 var deer_health_text: Label
 var hunter_health_text: Label
@@ -221,7 +219,7 @@ func fit_layout() -> void:
 	header_left.position = start+margin-Vector2(3,0)
 	header_right.position = Vector2(end.x-DESIGN.x-margin.x+3,start.y+margin.y-3)
 	match_home = Vector2(240,start.y+margin.y)
-	if arrival_finished:power_header.position = match_home
+	power_header.position = match_home
 	match_shade.position = -canvas.position/fit
 	match_shade.size = size/fit
 	battle_header.position = Vector2(-45,start.y+margin.y-4)
@@ -233,38 +231,58 @@ func fit_layout() -> void:
 
 
 func build_arrival() -> void:
-	var forced := 0
-	for arg in OS.get_cmdline_user_args():
-		if arg.begins_with("--hunt-match="):
-			forced = arg.get_slice("=",1).to_int()
-	var by_ground: Dictionary = ProjectSettings.get_setting("roxhistory/hunt/match_variants_by_ground",{})
-	arrival_variant = MATCH_SEQUENCE.choose("forest_edge",forced,by_ground)
-	arrival_duration = 5.55 if arrival_variant==1 else 6.30
-	for effect in (["soft"] if arrival_variant==1 else ["medium","strong"]):
-		impact_sheets.append(load("res://assets/ui/hunting-match/effects/impact_%s.png" % effect) as Texture2D)
+	arrival_duration = .48
+	match_shade.hide()
+	var vs_layer := layer()
+	vs_layer.z_index = 4
+	match_vs = MATCH.versus(vs_layer,Vector2(480,250),156)
+	match_vs.root.hide()
+	impact_sheets.append(preload("res://assets/ui/hunting-match/effects/impact_soft.png"))
 	impact_atlas = AtlasTexture.new()
 	impact_atlas.filter_clip = true
-	match_impact = MATCH.picture(preparation,impact_atlas,Rect2(MATCH_SEQUENCE.CENTER-Vector2(120,120.25),Vector2(240,240)))
-	match_impact.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
-	match_impact.texture_repeat = CanvasItem.TEXTURE_REPEAT_DISABLED
+	match_impact = MATCH.picture(vs_layer,impact_atlas,Rect2(MATCH_SEQUENCE.CENTER-Vector2(93,93),Vector2(186,186)))
+	match_impact.hide()
 	preparation.mouse_behavior_recursive = Control.MOUSE_BEHAVIOR_DISABLED
 	header.mouse_behavior_recursive = Control.MOUSE_BEHAVIOR_DISABLED
 	advance_arrival(0.0)
 
 func advance_arrival(delta: float) -> void:
-	if arrival_finished:
-		return
+	if arrival_finished: return
 	arrival_elapsed = minf(arrival_duration,arrival_elapsed+delta)
-	MATCH_SEQUENCE.render(self)
-	if arrival_elapsed>=arrival_duration:
+	for part: Control in [header,power_header,placement_grid]:
+		part.modulate.a = smoothstep(0.0,.20,arrival_elapsed)
+	var roster_progress := smoothstep(.08,.37,arrival_elapsed)
+	roster_edge.modulate.a = roster_progress
+	roster_edge.position.x = header_left.position.x-22*(1.0-roster_progress)
+	for part: Control in [footer_left,footer_right]:
+		part.modulate.a = smoothstep(.15,.40,arrival_elapsed)
+	footer_left.position.x = header_left.position.x-22*(1.0-footer_left.modulate.a)
+	footer_right.position.x = header_right.position.x+22*(1.0-footer_right.modulate.a)
+	footer_right.get_node("StartBattle").modulate.a = smoothstep(.29,.48,arrival_elapsed)
+	if arrival_elapsed >= arrival_duration:
 		arrival_finished = true
-		match_shade.hide()
-		impact_atlas.atlas = null
-		impact_sheets.clear()
 		preparation.mouse_behavior_recursive = Control.MOUSE_BEHAVIOR_INHERITED
 		header.mouse_behavior_recursive = Control.MOUSE_BEHAVIOR_INHERITED
+		fit_layout()
 		preparation_ready.emit()
 
+func animate_battle_vs(before: float, time: float) -> void:
+	var root: Control = match_vs.root
+	root.visible = time < .95
+	var arrive := smoothstep(0,.34,time)
+	root.modulate.a = arrive*(1.0-smoothstep(.64,.95,time))
+	for i in 2:
+		var spear: TextureRect = match_vs.spears[i]
+		spear.position.x = -18+(1.0-arrive)*(-125 if i==0 else 125)
+	var letters: Control = match_vs.letter_layer
+	letters.modulate.a = smoothstep(.23,.43,time)
+	letters.scale = Vector2.ONE*lerpf(1.28,1.0,smoothstep(.32,.55,time))
+	show_match_impact(0,time-.36)
+	match_impact.modulate.a = 1.0-smoothstep(.42,.75,time)
+	match_shade.show()
+	match_shade.modulate.a = .42*sin(PI*clampf((time-.22)/.38,0,1))
+	if before == 0.0: hunt_audio.cue("S10",2)
+	if before < .36 and time >= .36: hunt_audio.cue("S11",2)
 
 func show_match_impact(index: int, elapsed: float) -> void:
 	match_impact.visible = elapsed>=0.0 and elapsed<.42 and impact_sheets[index]!=null
@@ -352,7 +370,6 @@ func build_power_comparison() -> void:
 	prep_ally_portrait = MATCH.picture(power_header,hunter_portrait(0),Rect2(MATCH_SEQUENCE.ALLY,Vector2(51.2,51.2)))
 	match_deer = MATCH.picture(power_header,APPROVED_DEER,Rect2(MATCH_SEQUENCE.DEER,Vector2(48,63)))
 	match_deer.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	match_vs = MATCH.versus(power_header,Vector2(240,49),57.4)
 	# Forest Edge Lv 1 preview values. The battle rules do not use these ratings.
 	MATCH.power(match_details,Vector2(159.8,65),12300)
 	MATCH.power(match_details,Vector2(321,65),8000,true)
@@ -407,7 +424,6 @@ func build_duel_header() -> void:
 		var brush: TextureRect = app.picture(badge[0],NAME_BRUSH,Rect2(badge[1]-28,57,56,16))
 		brush.modulate.a = .8
 		caption(brush,"Lv 1",Rect2(0,0,56,16),11)
-	versus = MATCH.versus(battle_header,Vector2(525,48),36).root
 	auto_button = toggle_control(header_right,Rect2(857,3,48,48),"AUTO","auto",toggle_auto)
 	speed_button = toggle_control(header_right,Rect2(909,3,48,48),"X2","speed-2x",toggle_speed)
 	update_toggles()
@@ -622,6 +638,7 @@ func handle_arrival_skip(event: InputEvent) -> bool:
 	if arrival_finished or not app.application_active or app.modal or not event.is_pressed() or event.is_canceled():
 		return false
 	arrival_skip_pointer = pointer
+	if arrival_elapsed < .28: hunt_audio.cue("S09",2)
 	advance_arrival(arrival_duration)
 	return true
 
@@ -849,7 +866,9 @@ func start_combat() -> void:
 	update_toggles()
 
 func advance_transition(delta: float) -> void:
+	var before := transition_elapsed
 	transition_elapsed += delta
+	animate_battle_vs(before,transition_elapsed)
 	var progress := clampf(transition_elapsed/TRANSITION_SECONDS,0,1)
 	approach = smoothstep(.06,.98,progress)
 	var step := floori(transition_elapsed*4.0)
@@ -861,16 +880,13 @@ func advance_transition(delta: float) -> void:
 	placement_grid.modulate.a = fade
 	preparation.modulate.a = fade
 	combat.modulate.a = smoothstep(.45,1.0,progress)
-	battle_header.modulate.a = 1.0-fade
+	battle_header.modulate.a = smoothstep(.64,.95,transition_elapsed)
 	var header_progress := 1.0-fade
 	location_brush.position = Vector2(3,0).lerp(Vector2(3,3),header_progress)
 	location_brush.size = Vector2(220,56).lerp(Vector2(198,41),header_progress)
 	location_caption.position = Vector2(44,0).lerp(Vector2(21,0),header_progress)
 	location_caption.size = Vector2(163,56).lerp(Vector2(160,41),header_progress)
 	exit_button.position = Vector2(3,4).lerp(Vector2(3,3),header_progress)
-	var matching := sin(progress*PI)*22.0
-	ally_hud.position.x = -matching
-	enemy_hud.position.x = matching
 	if progress>=1.0:
 		transition_elapsed = -1.0
 		preparation.hide()
@@ -904,13 +920,7 @@ func _process(delta: float) -> void:
 	if not arrival_finished:
 		var before := arrival_elapsed
 		advance_arrival(delta)
-		var hits := [1.98] if arrival_variant==1 else [1.42,2.04]
-		var vs_start := .83 if arrival_variant == 1 else 2.08
-		var cues := [.28, vs_start] + hits
-		cues.sort()
-		for threshold in cues:
-			if before<threshold and arrival_elapsed>=threshold:
-				hunt_audio.cue("S09" if threshold==.28 else ("S10" if threshold==vs_start else "S11"),2)
+		if before < .28 and arrival_elapsed >= .28: hunt_audio.cue("S09",2)
 	var elapsed := delta*speed
 	pose_clock += elapsed
 	basic_recoil = maxf(0.0,basic_recoil-elapsed)

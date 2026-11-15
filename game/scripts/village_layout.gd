@@ -76,6 +76,14 @@ func rebuild_art()->void:
 	for i in positions.size():
 		if not own_ground[i]:foundation(unproject(positions[i]-Vector2(0,24)),4,levels[i])
 	queue_redraw()
+static func draw_move_foundation(canvas: CanvasItem, at: Vector2, footprint: PackedVector2Array) -> void:
+	var bounds := Rect2(footprint[0],Vector2.ZERO)
+	for point in footprint: bounds=bounds.expand(point)
+	var texture := AssetCatalog.texture("GROUND-PAD-L1")
+	var alpha: Array=AssetCatalog.entry("GROUND-PAD-L1").alpha_bounds
+	var source := Rect2(alpha[0],alpha[1],alpha[2],alpha[3])
+	canvas.draw_texture_rect_region(texture,Rect2(at+bounds.position,bounds.size),source)
+
 func foundation(cell:Vector2,span:int,level:int=1)->void:
 	var id:="GROUND-PAD-L%d"%clampi(level,1,4)
 	var entry:=AssetCatalog.entry(id)

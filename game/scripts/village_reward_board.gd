@@ -44,6 +44,7 @@ func refresh_reward()->void:
 		tween.kill()
 		marker.rotation=0
 	marker.visible=pending
+	if not pending: hide()
 
 func wiggle()->void:
 	if tween:tween.kill()
@@ -53,7 +54,7 @@ func wiggle()->void:
 		tween.tween_property(marker,"rotation",angle,.075)
 
 func _process(delta:float)->void:
-	if app.model.chief_level()<=0 or app.world_map_open or app.map_transition_active or app.tutorial.active():
+	if not marker.visible or app.model.chief_level()<=0 or app.world_map_open or app.map_transition_active or app.tutorial.active():
 		hide()
 		return
 	var input_filter := Control.MOUSE_FILTER_IGNORE if app.choosing_plot or app.modal else Control.MOUSE_FILTER_STOP

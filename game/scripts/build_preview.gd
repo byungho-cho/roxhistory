@@ -91,9 +91,14 @@ func update_overlay_layout()->void:
 func _draw()->void:
 	if not placement_active:return
 	var outline:=footprint()
-	var color:=Color(.55,.85,.3,.16) if validity() else Color(1,.2,.1,.16)
-	draw_colored_polygon(outline,color)
-	color.a=.7
+	var valid := validity()
+	var color := Color(.55,.85,.3,.16) if valid else Color(1,.2,.1,.16)
+	if valid and not moving_key.is_empty():
+		VillageLayout.draw_move_foundation(self,Vector2.ZERO,outline)
+		color=Color(1,.94,.76,.96)
+	else:
+		draw_colored_polygon(outline,color)
+		color.a=.7
 	if moving_key.is_empty():
 		outline.append(outline[0]);draw_polyline(outline,color,2,true)
 		return

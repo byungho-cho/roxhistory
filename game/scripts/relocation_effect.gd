@@ -1,7 +1,7 @@
 class_name RelocationEffect
 extends Node2D
 
-const GROUND_LEAD := .08
+const GROUND_LEAD := .14
 const DROP_TIME := .21
 var app: Node
 var key: String
@@ -37,18 +37,16 @@ func _process(delta: float) -> void:
 		source.hide()
 		var progress := clampf((clock-GROUND_LEAD)/DROP_TIME,0,1)
 		destination.self_modulate=destination_color
-		destination.position=destination_position+Vector2(0,-72*(1-progress*progress))
+		destination.position=destination_position+Vector2(0,-48*(1-progress*progress))
 		if progress>=1.0 and not landed:
 			landed=true
-			app.audio.cue("complete")
-			for side in [-1,1]:
-				app.world.feedback.burst(target+Vector2(side*44,0),Color("c3a675"),6,.33)
+			app.audio.cue("relocation_landing")
+			var dust := preload("res://scripts/village_upgrade_feedback.gd").new(target,0)
+			app.world.add_child(dust)
 	if landed: queue_free()
 
 func _draw() -> void:
-	var ground := outline.duplicate()
-	for i in ground.size(): ground[i]+=target
-	draw_colored_polygon(ground,Color(.66,.48,.27,.42))
+	VillageLayout.draw_move_foundation(self,target,outline)
 
 func _exit_tree() -> void:
 	if is_instance_valid(destination):
