@@ -12,6 +12,7 @@ var layout_signature:=""
 var move_grid := false
 var fade_relocated_roads := false
 var road_layer: Node2D
+var completed_plot_count := 0
 static func project(cell:Vector2)->Vector2:return ORIGIN+AXIS_X*cell.x+AXIS_Y*cell.y
 static func anchor(cell:Vector2)->Vector2:return project(cell)+Vector2(0,24)
 static func unproject(point:Vector2)->Vector2:
@@ -42,6 +43,7 @@ func rebuild_art()->void:
 	var signature:=str([model.chief_level(),chief,model.homes(),model.outposts(),model.facilities(),BrushRoadNetwork.enabled()])
 	if signature==layout_signature:return
 	layout_signature=signature
+	var had_roads := is_instance_valid(road_layer)
 	var old_roads := road_segments(road_layer)
 	for child in get_children():remove_child(child);child.queue_free()
 	road_layer=null
@@ -50,6 +52,8 @@ func rebuild_art()->void:
 	for i in model.outposts().size():positions.append(model.outpost_position(i));levels.append(int(model.outposts()[i].get("level",1)));own_ground.append(false)
 	for entry in model.facilities():
 		positions.append(model.building_position(str(entry.kind)+":"+str(entry.uid)));levels.append(int(entry.get("level",1)));own_ground.append(BuildingVisuals.has_own_ground(str(entry.kind)))
+	var added_plot := positions.size() > completed_plot_count
+	completed_plot_count = positions.size()
 	# Use actual saved building anchors, including free placement and moves.
 	if model.chief_level()>0 and chief.is_finite():
 		var roads := Node2D.new()
@@ -79,7 +83,7 @@ func rebuild_art()->void:
 				var target:=remaining[best_index]
 				if distance>.01:roads.add_child(NaturalRoad.new(NaturalRoad.organic_path(best_from,target)))
 				connected.append(target);remaining.remove_at(best_index)
-		if fade_relocated_roads:
+		if fade_relocated_roads or (added_plot and had_roads):
 			var new_roads := road_segments(roads)
 			for key in new_roads:
 				if old_roads.has(key): continue
@@ -108,13 +112,20 @@ static func foundation_rect(span: int) -> Rect2:
 	var extent:=Vector2(float(span)*64.0,float(span)*64.0*676.0/1088.0*.81)
 	return Rect2(Vector2(0,span*6-24)-extent*.5,extent)
 
-static func draw_move_foundation(canvas: CanvasItem, at: Vector2, kind: String, level: int) -> void:
+static func draw_move_foundation(canvas: CanvasItem, at: Vector2, kind: String, level: int, opacity: float = 1.0) -> void:
 	var bounds:=foundation_rect(6 if kind=="chief" else 4)
 	bounds.position+=at
 	var id:="GROUND-PAD-L%d"%clampi(level,1,4)
 	var alpha: Array=AssetCatalog.entry(id).alpha_bounds
 	var source:=Rect2(alpha[0],alpha[1],alpha[2],alpha[3])
-	canvas.draw_texture_rect_region(AssetCatalog.texture(id),bounds,source)
+	canvas.draw_texture_rect_region(AssetCatalog.texture(id),bounds,source,Color(1,1,1,opacity))
+
+func foundation_at(at: Vector2) -> Sprite2D:
+	var cell := unproject(at - Vector2(0,24))
+	for child in get_children():
+		if child.has_meta("foundation_cell") and cell.is_equal_approx(child.get_meta("foundation_cell")):
+			return child as Sprite2D
+	return null
 
 func foundation(cell:Vector2,span:int,level:int=1)->void:
 	var id:="GROUND-PAD-L%d"%clampi(level,1,4)

@@ -1,12 +1,14 @@
 class_name RelocationEffect
 extends Node2D
 
-const DROP_TIME := .21
+const DROP_TIME := .34
+const DROP_HEIGHT := 104.0
 const SETTLE_TIME := .16
 var app: Node
 var key: String
 var source: Sprite2D
 var destination: Sprite2D
+var foundation: Sprite2D
 var target: Vector2
 var kind: String
 var level: int
@@ -32,6 +34,9 @@ func _ready() -> void:
 	destination_scale=destination.scale
 	destination_foot_y=destination.get_rect().end.y * destination_scale.y
 	destination.self_modulate.a=0.0
+	foundation = app.world.get_node("VillageLayout").foundation_at(target)
+	if is_instance_valid(foundation):
+		foundation.self_modulate.a = .30
 
 func _process(delta: float) -> void:
 	if not is_instance_valid(destination):
@@ -42,7 +47,9 @@ func _process(delta: float) -> void:
 		source.hide()
 		var progress := clampf(clock/DROP_TIME,0,1)
 		destination.self_modulate=destination_color
-		destination.position=destination_position+Vector2(0,-48*(1-progress*progress))
+		destination.position=destination_position+Vector2(0,-DROP_HEIGHT*(1-progress*progress))
+		if is_instance_valid(foundation):
+			foundation.self_modulate.a = foundation_opacity()
 		if progress>=1.0 and not landed:
 			landed=true
 			app.audio.cue("relocation_landing")
@@ -58,7 +65,8 @@ func _process(delta: float) -> void:
 	queue_redraw()
 
 func _draw() -> void:
-	VillageLayout.draw_move_foundation(self,target,kind,level)
+	if not is_instance_valid(foundation):
+		VillageLayout.draw_move_foundation(self,target,kind,level,foundation_opacity())
 	var approach := minf(clock / DROP_TIME, 1.0)
 	var fade := 1.0 - clampf((clock - DROP_TIME) / SETTLE_TIME, 0.0, 1.0)
 	var pad := VillageLayout.foundation_rect(6 if kind == "chief" else 4)
@@ -70,7 +78,12 @@ func _draw() -> void:
 			points.append(center + Vector2.from_angle(TAU * segment / 24.0) * radius * (1.0 - layer * .18))
 		draw_colored_polygon(points, Color(.16, .10, .05, lerpf(.035, .10, approach) * fade))
 
+func foundation_opacity() -> float:
+	return lerpf(.30, 1.0, smoothstep(0.0, DROP_TIME * .88, clock))
+
 func _exit_tree() -> void:
+	if is_instance_valid(foundation):
+		foundation.self_modulate.a = 1.0
 	if is_instance_valid(destination):
 		destination.self_modulate=destination_color
 		destination.position=destination_position

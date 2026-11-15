@@ -1730,6 +1730,7 @@ func confirm_demolition(key:String)->void:
 	if not application_active or not modal or demolition_key!=key:return
 	var quote:=model.demolition_quote(key)
 	if quote.is_empty():close_modal();return
+	var level := int(model.lookup_building(key).data.get("level",1))
 	var at:=model.building_position(key)
 	var prior:Sprite2D=world.building_sprite(key)
 	var ghost:Sprite2D
@@ -1740,9 +1741,11 @@ func confirm_demolition(key:String)->void:
 	if model.demolish(key):
 		close_modal()
 		if is_instance_valid(ghost):
-			var effect:=DemolitionEffect.new(ghost, self)
-			world.add_child(effect);effect.position=at
-			effect.add_child(ghost);ghost.global_transform=ghost_transform
+			var effect:=DemolitionEffect.new(ghost, self, quote.kind, level)
+			effect.position=at
+			world.add_child(effect)
+			ghost.global_transform=ghost_transform
+			effect.rest_position=ghost.position
 		else:audio.cue("demolish")
 		toast("나무 %d개 · 돌 %d개 반환"%[quote.wood,quote.stone],2)
 	elif is_instance_valid(ghost):ghost.free()

@@ -66,9 +66,6 @@ func move_outline() -> PackedVector2Array:
 	var center:=bounds.get_center()
 	return PackedVector2Array([Vector2(center.x,bounds.position.y),Vector2(bounds.end.x,center.y),Vector2(center.x,bounds.end.y),Vector2(bounds.position.x,center.y)])
 
-func footprint() -> PackedVector2Array:
-	return EnvironmentProp.hut_footprint(340 if kind=="chief" else 230)
-
 func clear()->void:
 	move_dragging=false
 	site_id=-1;placement_active=false;moving_key="";hide()
@@ -98,18 +95,11 @@ func update_overlay_layout()->void:
 
 func _draw()->void:
 	if not placement_active:return
-	var outline:=footprint()
+	var outline:=move_outline()
 	var valid := validity()
 	var color := Color(.55,.85,.3,.16) if valid else Color(1,.2,.1,.16)
-	if moving_key.is_empty():
-		draw_colored_polygon(outline,color)
-		outline.append(outline[0])
-		color.a=.7
-		draw_polyline(outline,color,2,true)
-		return
-	outline=move_outline()
 	if valid:
-		VillageLayout.draw_move_foundation(self,Vector2.ZERO,kind,moving_level)
+		VillageLayout.draw_move_foundation(self,Vector2.ZERO,kind,1 if moving_key.is_empty() else moving_level)
 		color=Color(1,.94,.76,.96)
 	else:
 		draw_colored_polygon(outline,color)
