@@ -4,6 +4,8 @@ extends Control
 # Left-to-right layout; the newest opening starts at the right.
 const KINDS := ["outpost","shrine","hearth","training","stone_store","wood_store","farm","hut"]
 const FILTERS := ["open","locked"]
+const FILTER_SIZE := Vector2(58,58)
+const FILTER_ICON_SIZE := Vector2(45,45) * 0.7
 const CARD_ART := {
 	"hut":[preload("res://assets/ui/d0025/hut-normal-body.png"),Rect2(67.34,56.03,81.31,69.89)],
 	"farm":[preload("res://assets/ui/d0025/farm-normal-body.png"),Rect2(58.61,70.78,98.78,59.14)],
@@ -96,13 +98,11 @@ func _ready() -> void:
 	roller = app.picture(self,IntegratedMenuArt.trimmed(ROLL,Rect2(65,34,640,1986)),Rect2())
 	for id in FILTERS:
 		var button: DemoButton = app.button(self,"",set_filter.bind(id))
+		button.custom_minimum_size = FILTER_SIZE
 		button.mouse_filter = MOUSE_FILTER_IGNORE
 		filters[id] = button
-		var selected: TextureRect = app.picture(button,preload("res://assets/ui/d0025/filter-selected-sapphire-source.svg"),Rect2(0,0,69,65))
-		selected.name = "SelectedSkin"
-		selected.stretch_mode = TextureRect.STRETCH_SCALE
 		var icon: Texture2D = preload("res://assets/ui/d0025/filter-open-gold.svg") if id=="open" else preload("res://assets/ui/d0025/filter-locked-neutral.png")
-		app.picture(button,icon,Rect2(12,10,45,45))
+		app.picture(button,icon,Rect2((FILTER_SIZE-FILTER_ICON_SIZE)*.5,FILTER_ICON_SIZE))
 	message = FigmaArt.text(self,"",Rect2(),16,FigmaArt.BODY,Color("fff3d4"))
 	message.add_theme_color_override("font_outline_color",Color("3e2a17"))
 	message.add_theme_constant_override("outline_size",8)
@@ -227,12 +227,13 @@ func refresh() -> void:
 	for i in FILTERS.size():
 		var id: String = FILTERS[i]
 		var button: DemoButton = filters[id]
-		button.position = roller.position+Vector2(14,59+i*77)*scale_factor
-		button.size = Vector2(69,65)
+		button.position = roller.position+Vector2((97-FILTER_SIZE.x)*.5,62+i*77)*scale_factor
+		button.scale = Vector2.ONE*scale_factor
+		button.size = FILTER_SIZE
 		var style := StyleBoxFlat.new()
-		button.get_node("SelectedSkin").visible = selected_filter==id
-		style.bg_color = Color(.41,.23,.09,.05)
-		style.border_color = Color(.42,.24,.10,.25)
+		var selected := selected_filter==id
+		style.bg_color = Color("183c79") if selected else Color(.41,.23,.09,.05)
+		style.border_color = Color("5678ad") if selected else Color(.42,.24,.10,.25)
 		style.set_border_width_all(1)
 		style.set_corner_radius_all(9)
 		for state in ["normal","hover","pressed","focus"]:

@@ -47,11 +47,11 @@ func rebuild_art()->void:
 	var old_roads := road_segments(road_layer)
 	for child in get_children():remove_child(child);child.queue_free()
 	road_layer=null
-	var positions:Array=[];var levels:Array=[];var own_ground:Array[bool]=[]
-	for i in model.built_count():positions.append(model.home_position(i));levels.append(int(model.homes()[i].get("level",1)));own_ground.append(false)
-	for i in model.outposts().size():positions.append(model.outpost_position(i));levels.append(int(model.outposts()[i].get("level",1)));own_ground.append(false)
+	var positions:Array=[];var levels:Array=[]
+	for i in model.built_count():positions.append(model.home_position(i));levels.append(int(model.homes()[i].get("level",1)))
+	for i in model.outposts().size():positions.append(model.outpost_position(i));levels.append(int(model.outposts()[i].get("level",1)))
 	for entry in model.facilities():
-		positions.append(model.building_position(str(entry.kind)+":"+str(entry.uid)));levels.append(int(entry.get("level",1)));own_ground.append(BuildingVisuals.has_own_ground(str(entry.kind)))
+		positions.append(model.building_position(str(entry.kind)+":"+str(entry.uid)));levels.append(int(entry.get("level",1)))
 	var added_plot := positions.size() > completed_plot_count
 	completed_plot_count = positions.size()
 	# Use actual saved building anchors, including free placement and moves.
@@ -92,7 +92,7 @@ func rebuild_art()->void:
 				segment.create_tween().tween_property(segment,"modulate:a",1.0,.46).set_delay(relocated_road_delay).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 		foundation(start,6,model.chief_level())
 	for i in positions.size():
-		if not own_ground[i]:foundation(unproject(positions[i]-Vector2(0,24)),4,levels[i])
+		foundation(unproject(positions[i]-Vector2(0,24)),4,levels[i])
 	queue_redraw()
 func road_segments(layer: Node2D) -> Dictionary:
 	var result := {}

@@ -4,9 +4,11 @@ const STAGES_PER_CHAPTER := 6
 const CHAPTERS := ["초원","숲"]
 const TOTAL_STAGES := STAGES_PER_CHAPTER*2
 const ART := "res://assets/ui/d0024/"
+const STAGE_ART := "res://assets/ui/d0025/"
 const DESIGN := Vector2(960,540)
 const MEADOW := Vector2(1280,720)
 const STAGE_ROW_Y := 385.0
+const STAGE_ART_SCALE := 0.56
 const BOAR_DISPLAY_SCALE := .86
 const TITLE := preload(ART+"08-ui-title-plaque-660.png")
 const BOSS := preload(ART+"08-ui-stage-finalboss-crest.png")
@@ -19,10 +21,10 @@ const ARROW := preload(ART+"08-ui-arrow-gold-worn-right.svg")
 const ENTRY_TIMES := [.42,.88,1.46,1.96,2.26]
 const ENTRY_END := 2.56
 const SKINS := {
-	"active":preload(ART+"08-ui-stage-active-body.svg"),
-	"complete":preload(ART+"08-ui-stage-complete-body.svg"),
-	"locked":preload(ART+"08-ui-stage-locked-body.svg"),
-	"midboss":preload(ART+"08-ui-stage-midboss-body.svg"),
+	"active":preload(STAGE_ART+"stage-active-body@2x.png"),
+	"complete":preload(STAGE_ART+"stage-complete-body@2x.png"),
+	"locked":preload(STAGE_ART+"stage-locked-body@2x.png"),
+	"midboss":preload(STAGE_ART+"stage-midboss-body@2x.png"),
 }
 var app: Node
 var page: Control
@@ -41,7 +43,6 @@ var elapsed := 0.0
 var next_event := 0
 var voice := AudioStreamPlayer.new()
 var plaque_art: Texture2D
-var boss_art: Texture2D
 var skip_hint: Label
 var skip_mouse := false
 var skip_touch := -1
@@ -52,7 +53,6 @@ func _ready() -> void:
 	clip_contents=true
 	chapter=int(app.hunt_stage)/STAGES_PER_CHAPTER
 	plaque_art=IntegratedMenuArt.trimmed(TITLE,Rect2(TITLE.get_image().get_used_rect()))
-	boss_art=IntegratedMenuArt.trimmed(BOSS,Rect2(BOSS.get_image().get_used_rect()))
 	backdrop=app.picture(self,FIELD,Rect2())
 	backdrop.stretch_mode=TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	var gradient := Gradient.new()
@@ -210,7 +210,7 @@ func draw_page() -> void:
 	var crest := Rect2(315,12,330,65)
 	app.picture(top_group,plaque_art,crest).stretch_mode=TextureRect.STRETCH_SCALE
 	var chapter_name := "%d장 · %s"%[chapter+1,CHAPTERS[chapter]]
-	var heading := title(top_group,chapter_name,Rect2(315,42,330,27),22)
+	var heading := title(top_group,chapter_name,Rect2(315,35.5,330,27),22)
 	var half_text := heading.get_theme_font("font").get_string_size(chapter_name,HORIZONTAL_ALIGNMENT_LEFT,-1,22).x*.5
 	if chapter>0:chapter_arrow(480-half_text-20-12,-1)
 	if chapter+1<CHAPTERS.size():chapter_arrow(480+half_text+20+12,1)
@@ -220,7 +220,7 @@ func draw_page() -> void:
 	app.picture(rules,preload(ART+"08-ui-rules-body.svg"),Rect2(Vector2.ZERO,rules.size))
 	app.picture(rules,preload(ART+"08-ui-rules-book.svg"),Rect2(9,8,15,16))
 	title(rules,"규칙",Rect2(27,0,49,32),15)
-	app.picture(footer,preload(ART+"08-ui-stage-connector.svg"),Rect2(125,STAGE_ROW_Y-4,710,8)).stretch_mode=TextureRect.STRETCH_SCALE
+	app.picture(footer,preload(STAGE_ART+"stage-connector@2x.png"),Rect2(132,STAGE_ROW_Y-3,702,6)).stretch_mode=TextureRect.STRETCH_SCALE
 	for slot in 10:
 		add_stage(slot)
 	var prepare := action(footer,Rect2(625,456,238,50),app.prepare_selected_hunt)
@@ -231,12 +231,13 @@ func draw_page() -> void:
 	update_groups()
 
 func chapter_arrow(x: float, direction: int) -> void:
-	var arrow := action(top_group,Rect2(x-21,36,42,42),change_chapter.bind(direction))
+	var arrow := action(top_group,Rect2(x-21,29.5,42,42),change_chapter.bind(direction))
 	var picture: TextureRect=app.picture(arrow,ARROW,Rect2(9,9,24,24))
 	picture.flip_h=direction<0
 
 func add_stage(slot: int) -> void:
 	var boss := slot==9
+	var midboss := slot==4
 	var real := slot<5 or boss
 	var stage_id := chapter*STAGES_PER_CHAPTER+(STAGES_PER_CHAPTER-1 if boss else slot)
 	var unlocked := real and stage_id<=progress()
@@ -244,22 +245,31 @@ func add_stage(slot: int) -> void:
 	var selected: bool=real and stage_id==app.hunt_stage
 	var current := real and stage_id==progress()
 	var center := Vector2(132+78*slot,STAGE_ROW_Y)
-	var extent := Vector2(69,104)*1.3 if boss else Vector2.ONE*(66 if slot==4 else 55)
+	var diameter := 78.0 if boss else (116.0 if midboss else 96.0)*STAGE_ART_SCALE
+	var extent := Vector2.ONE*diameter
 	var rect := Rect2(center-extent*.5,extent)
 	var tile := action(footer,rect,choose.bind(stage_id) if real else Callable())
 	tile.name="HuntStage%d"%stage_id if real else "UnavailableSlot%d"%(slot+1)
 	tile.disabled=not unlocked
 	tile.hint_text="준비 중인 스테이지" if not real else "앞 사냥터를 완료하면 열립니다."
-	var skin: Texture2D = boss_art if boss else SKINS.active if (selected or current) else SKINS.complete if done else SKINS.midboss if slot==4 else SKINS.locked
-	var body: TextureRect = app.picture(tile,skin,Rect2(Vector2.ZERO,rect.size))
-	if boss:body.stretch_mode=TextureRect.STRETCH_SCALE
-	var y := extent.y*.45 if boss else 3.0
-	title(tile,str(slot+1),Rect2(0,y,rect.size.x,27 if boss else 30),22 if (selected or current) else 18)
-	if boss:title(tile,"최종 보스",Rect2(0,extent.y*.64,rect.size.x,15),12)
+	if boss:
+		# Anchor the red plate at the row center, leaving the boar above it.
+		var plate_center := Vector2(94,120)
+		var art_scale := diameter/116.0
+		app.picture(tile,BOSS,Rect2(extent*.5-plate_center*art_scale,BOSS.get_size()*art_scale))
+	else:
+		var skin: Texture2D = SKINS.midboss if midboss else SKINS.complete if done and not selected else SKINS.active if (selected or current) else SKINS.locked
+		var shadow_offset := Vector2(5,1)*STAGE_ART_SCALE
+		app.picture(tile,skin,Rect2(-shadow_offset,skin.get_size()*.5*STAGE_ART_SCALE))
+	var has_caption := boss or midboss
+	var number_y := 10.0 if boss else 3.0
+	title(tile,str(slot+1),Rect2(0,number_y,diameter,24),22 if (selected or current) else 18)
+	if has_caption:
+		title(tile,"최종 보스" if boss else "중간 보스",Rect2(0,diameter*.46,diameter,14),10)
 	if done or not unlocked:
 		var marker: Texture2D=preload(ART+"08-ui-stage-check.svg") if done else preload(ART+"08-ui-padlock-gold.png")
-		var marker_y := extent.y*.77 if boss else extent.y-(23.0 if done else 27.0)
-		app.picture(tile,marker,Rect2((extent.x-18)*.5,marker_y,18,17))
+		var marker_y := diameter*.68 if has_caption else diameter*.60
+		app.picture(tile,marker,Rect2((diameter-13)*.5,marker_y,13,13))
 
 func choose(stage_id: int) -> void:
 	if stage_id<0 or stage_id>=TOTAL_STAGES or stage_id>progress():return

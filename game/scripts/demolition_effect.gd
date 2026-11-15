@@ -70,8 +70,7 @@ func _process(delta: float) -> void:
 		queue_free()
 
 func draw_foundation() -> void:
-	if not BuildingVisuals.has_own_ground(kind):
-		VillageLayout.draw_move_foundation(ground,Vector2.ZERO,kind,level)
+	VillageLayout.draw_move_foundation(ground,Vector2.ZERO,kind,level)
 
 func draw_impact() -> void:
 	var contact := Vector2(side * 11,-37)

@@ -3,8 +3,7 @@ extends RefCounted
 ## One presentation transform for completed structures and placement previews.
 ## Does not change collision, saved positions, plot geometry or occupation.
 const REFERENCE_WIDTH := 320.0
-const FARM_WIDTH := 256.0
-const FARM_PREVIOUS_WIDTH := 184.0
+const FARM_WIDTH := 256.0 * 0.8
 const WORKSHOP_OFFSET := 17.0
 const TRAINING_HEIGHTS := [180.0, 202.5, 211.5, 229.5]
 const SHRINE_HEIGHTS := [166.0, 184.0, 202.0, 222.0]
@@ -20,7 +19,7 @@ static func asset_id(kind: String, level: int = 1) -> String:
 
 static func texture(kind: String, level: int = 1) -> Texture2D:
 	if kind=="chief":return load("res://assets/chief-retouch/l%d.png"%clampi(level,1,4))
-	if kind=="farm":return load("res://assets/farm/v003/farm-empty-l%d.png"%clampi(level,1,4))
+	if kind=="farm":return load("res://assets/farm/d0025/farm-world-empty-l%d.png"%clampi(level,1,4))
 	if kind in ["stone_store","wood_store"]:
 		var stem := "sawmill" if kind=="wood_store" else "quarry"
 		var path := "res://assets/buildings/d0020/%s-l%d.png" % [stem,clampi(level,1,4)]
@@ -79,13 +78,11 @@ static func display_rect(kind: String, level: int = 1, ground_width: float = 230
 			# A low firepit stays centered over its separate common square foundation.
 			center.y = -ground_width * 0.03
 		"stone_store", "wood_store":
-			center.y = (18.0 + WORKSHOP_OFFSET) * ground_width / 230.0 - dimensions.y * 0.5
+			center.y = (18.0 + WORKSHOP_OFFSET) * ground_width / 230.0 - dimensions.y * 0.4
+		"farm":
+			center.y = -8.0 * ground_width / 230.0
 		"outpost":
 			center.y = -ground_width * 0.3 + 3.0
-	if kind=="farm":
-		# Keep the artwork ground anchor at its previous world position.
-		var previous_height:=dimensions.y*FARM_PREVIOUS_WIDTH/FARM_WIDTH
-		center.y+=previous_height*.7-dimensions.y*.4-8.0*ground_width/230.0
 	return Rect2(center - dimensions * 0.5, dimensions)
 
 static func apply(sprite: Sprite2D, kind: String, level: int = 1, ground_width: float = 230.0) -> void:
@@ -102,8 +99,6 @@ static func apply(sprite: Sprite2D, kind: String, level: int = 1, ground_width: 
 	sprite.set_meta("building_visual_level", clampi(level, 1, 4))
 	sprite.set_meta("building_visual_alignment", "bottom" if kind in ["training", "shrine"] else "center")
 
-static func has_own_ground(kind:String)->bool:
-	return kind == "farm"
 static var visible_regions:Dictionary={}
 static func visible_rect(sprite:Sprite2D)->Rect2:
 	var texture:=sprite.texture
