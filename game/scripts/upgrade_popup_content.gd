@@ -36,19 +36,19 @@ func _ready() -> void:
 	texture.fill_to=Vector2(1,.5)
 	app.picture(art,texture,Rect2(46,195,191,34)).stretch_mode=TextureRect.STRETCH_SCALE
 	var sparkle := Gradient.new()
-	sparkle.colors=PackedColorArray([Color(1,.75,.22,.63),Color(1,.75,.22,0)])
+	sparkle.colors=PackedColorArray([Color(1,.95,.64,.76),Color(1,.77,.30,0)])
+	sparkle.add_point(.45,Color(1,.77,.30,.34))
 	var ray := GradientTexture2D.new()
 	ray.gradient=sparkle
 	ray.fill=GradientTexture2D.FILL_RADIAL
 	ray.fill_from=Vector2(.5,.5)
 	ray.fill_to=Vector2(1,.5)
-	var glow_art: TextureRect=app.picture(art,ray,Rect2(67,132,148,80))
+	var glow_art: TextureRect=app.picture(art,ray,Rect2(27,55,230,175))
 	glow_art.stretch_mode=TextureRect.STRETCH_SCALE
-	glow_art.modulate.a=0
+	glow_art.modulate.a=.52
 	var fade := create_tween()
-	fade.tween_property(glow_art,"modulate:a",1.0,.24).set_delay(.15)
-	fade.tween_property(glow_art,"position:y",33.0,.66)
-	fade.parallel().tween_property(glow_art,"modulate:a",0.0,.66)
+	fade.tween_property(glow_art,"modulate:a",1.0,.24)
+	fade.tween_property(glow_art,"modulate:a",.56,.66)
 	var image := BuildingWorkflow.approved_texture(BuildingWorkflow.building_asset_id(kind,current+1))
 	if image:
 		var cropped: Texture2D = image
@@ -65,40 +65,53 @@ func _ready() -> void:
 	var detail := ""
 	match kind:
 		"chief":
-			if not app.model.debug_unlimited_buildings and current < DemoConfig.MAX_RESIDENT_HOMES:
+			if current < DemoConfig.MAX_RESIDENT_HOMES:
 				detail = "건설 가능 움집"
 		"hut":
 			var limits := [1,2,3,5]
 			detail = "주민 수용  %d → %d" % [limits[current-1],limits[current]]
 		"wood_store","stone_store":
 			detail = "저장 한도  %d → %d\n주민 배정  %d → %d" % [ResourceStorage.LIMITS[current-1],ResourceStorage.LIMITS[current],current,current+1]
-	var y := 82.0
-	if not detail.is_empty():
-		FigmaArt.text(art,"업그레이드 효과",Rect2(308,y,242,21),17,FigmaArt.BODY,Color("553820"),false)
-		var group := ColorRect.new()
-		group.color=Color(.54,.37,.20,.12)
-		group.position=Vector2(304,y+40)
-		group.size=Vector2(348,58)
-		group.mouse_filter=Control.MOUSE_FILTER_IGNORE
-		art.add_child(group)
-		FigmaArt.text(group,detail,Rect2(14,0,320,58),17,FigmaArt.BODY,Color("553820"),false)
-		if kind=="chief":
-			var capacity := FigmaArt.text(group,"%d채 → %d채"%[current,current+1],Rect2(230,0,104,58),17,FigmaArt.BODY,Color("553820"),false)
-			capacity.horizontal_alignment=HORIZONTAL_ALIGNMENT_RIGHT
-		y+=99.0
-	if kind == "chief":
-		var unlocks: Array[String] = []
+	var unlocks: Array[String] = []
+	if kind=="chief":
 		for building: String in BuildingRules.REQUIRED_HQ:
 			if BuildingRules.REQUIRED_HQ[building]==current+1: unlocks.append(building)
+	if not detail.is_empty() or not unlocks.is_empty():
+		FigmaArt.text(art,"업그레이드 효과",Rect2(308,82,242,21),17,FigmaArt.BODY,Color("553820"),false)
+		var group := ColorRect.new()
+		group.color=Color(.54,.37,.20,.12)
+		group.position=Vector2(304,122)
+		group.size=Vector2(348,(58.0 if not detail.is_empty() else 0.0)+(81.0 if not unlocks.is_empty() else 0.0))
+		group.mouse_filter=Control.MOUSE_FILTER_IGNORE
+		art.add_child(group)
+		if not detail.is_empty():
+			FigmaArt.text(group,detail,Rect2(14,0,320,58),17,FigmaArt.BODY,Color("553820"),false)
+		if kind=="chief" and not detail.is_empty():
+			var capacity := FigmaArt.text(group,"%d채 → %d채"%[current,current+1],Rect2(230,0,104,58),17,FigmaArt.BODY,Color("553820"),false)
+			capacity.horizontal_alignment=HORIZONTAL_ALIGNMENT_RIGHT
 		if not unlocks.is_empty():
-			FigmaArt.text(art,"신규 건설",Rect2(318,y,244,19),17,FigmaArt.BODY,Color("553820"),false)
+			var y := 8.0
+			if not detail.is_empty():
+				rule(Rect2(14,58,320,1),group)
+				y += 58.0
+			FigmaArt.text(group,"신규 건설",Rect2(14,y,244,19),17,FigmaArt.BODY,Color("553820"),false)
 			for i in unlocks.size():
-				app.picture(art,BuildingVisuals.texture(unlocks[i],1),Rect2(318+i*47,y+22,40,38))
-	for i in 2:
-		var resource := ["wood","stone"][i] as String
-		var x := 76.0+i*76
-		app.picture(art,DemoArt.icon(resource),Rect2(x,238,32,32))
-		FigmaArt.text(art,str(costs.get(resource,0)),Rect2(x+34,238,41,32),18,FigmaArt.BODY,Color("553820"),false)
+				app.picture(group,BuildingVisuals.texture(unlocks[i],1),Rect2(14+i*47,y+29,40,38))
+	var cost_row := HBoxContainer.new()
+	cost_row.position = Vector2(0,238)
+	cost_row.size = Vector2(284,32)
+	cost_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	cost_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	cost_row.add_theme_constant_override("separation",18)
+	art.add_child(cost_row)
+	for resource in ["wood","stone"]:
+		var item := HBoxContainer.new()
+		item.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		cost_row.add_child(item)
+		var icon: TextureRect = app.picture(item,DemoArt.icon(resource),Rect2(0,0,32,32))
+		icon.custom_minimum_size = Vector2(32,32)
+		var amount := FigmaArt.text(item,str(costs.get(resource,0)),Rect2(0,0,0,32),18,FigmaArt.BODY,Color("553820"),false)
+		amount.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	var seconds := int(app.model.building_duration(current+1))
 	var time := "%d초" % seconds if seconds<60 else "%d분" % (seconds/60)
 	action(Rect2(270,300,192,44),"즉시 업그레이드","3",preload(UPDATE_ART+"diamond-premium-illustrated.png"),preload(UPDATE_ART+"popup-button-sapphire-disabled-192x44.svg"),true)
@@ -108,13 +121,13 @@ func _ready() -> void:
 	unsupported_notice.add_theme_constant_override("outline_size",8)
 	unsupported_notice.modulate.a=0.0
 
-func rule(rect: Rect2) -> void:
+func rule(rect: Rect2, parent: Control = null) -> void:
 	var line := ColorRect.new()
 	line.position=rect.position
 	line.size=rect.size
 	line.color=Color(.55,.38,.23,.38)
 	line.mouse_filter=Control.MOUSE_FILTER_IGNORE
-	art.add_child(line)
+	(parent if parent else art).add_child(line)
 
 func show_unsupported() -> void:
 	if notice_fade and notice_fade.is_valid():notice_fade.kill()

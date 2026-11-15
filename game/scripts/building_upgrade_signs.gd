@@ -72,7 +72,7 @@ func _process(_delta:float)->void:
 			continue
 		var bounds:=sprite.get_global_transform_with_canvas()*BuildingVisuals.visible_rect(sprite)
 		var ground_offset:=132.0 if key=="chief" else 85.0
-		if key.begins_with("wood_store:") or key.begins_with("stone_store:"):ground_offset=46.0
+		if key.begins_with("wood_store:") or key.begins_with("stone_store:"):ground_offset=46.0+BuildingVisuals.WORKSHOP_OFFSET
 		var south:Vector2=app.world.get_global_transform_with_canvas()*(app.model.building_position(key)+Vector2(0,ground_offset))
 		var world_art:Node2D=marker.get_meta("world_art")
 		var art:TextureRect=world_art.get_child(0)

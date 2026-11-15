@@ -1625,9 +1625,9 @@ func finish_building_move()->void:
 	snapshot.offset=original.offset
 	snapshot.transform=world.global_transform.affine_inverse()*original.global_transform
 	var layout: VillageLayout=world.get_node("VillageLayout")
-	layout.fade_relocated_roads=true
+	layout.relocated_road_delay=RelocationEffect.road_delay(build_preview.kind)
 	var moved:=model.move_building(key,at)
-	layout.fade_relocated_roads=false
+	layout.relocated_road_delay=0.0
 	if moved:
 		world.evacuate_animals(at,build_preview.kind)
 		var kind := build_preview.kind

@@ -5,6 +5,7 @@ extends RefCounted
 const REFERENCE_WIDTH := 320.0
 const FARM_WIDTH := 256.0
 const FARM_PREVIOUS_WIDTH := 184.0
+const WORKSHOP_OFFSET := 7.0
 const TRAINING_HEIGHTS := [180.0, 202.5, 211.5, 229.5]
 const SHRINE_HEIGHTS := [166.0, 184.0, 202.0, 222.0]
 const HEARTH_HEIGHTS := [114.57, 139.37, 182.4, 184.3]
@@ -78,13 +79,13 @@ static func display_rect(kind: String, level: int = 1, ground_width: float = 230
 			# A low firepit stays centered over its separate common square foundation.
 			center.y = -ground_width * 0.03
 		"stone_store", "wood_store":
-			center.y = 18.0 * ground_width / 230.0 - dimensions.y * 0.5
+			center.y = (18.0 + WORKSHOP_OFFSET) * ground_width / 230.0 - dimensions.y * 0.5
 		"outpost":
 			center.y = -ground_width * 0.3 + 3.0
 	if kind=="farm":
 		# Keep the artwork ground anchor at its previous world position.
 		var previous_height:=dimensions.y*FARM_PREVIOUS_WIDTH/FARM_WIDTH
-		center.y+=previous_height*.7-dimensions.y*.4
+		center.y+=previous_height*.7-dimensions.y*.4-8.0*ground_width/230.0
 	return Rect2(center - dimensions * 0.5, dimensions)
 
 static func apply(sprite: Sprite2D, kind: String, level: int = 1, ground_width: float = 230.0) -> void:

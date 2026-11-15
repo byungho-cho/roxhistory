@@ -10,7 +10,7 @@ const PLAYABLE := VillageBounds.PLAYABLE
 var model:GameState
 var layout_signature:=""
 var move_grid := false
-var fade_relocated_roads := false
+var relocated_road_delay := 0.0
 var road_layer: Node2D
 var completed_plot_count := 0
 static func project(cell:Vector2)->Vector2:return ORIGIN+AXIS_X*cell.x+AXIS_Y*cell.y
@@ -83,13 +83,13 @@ func rebuild_art()->void:
 				var target:=remaining[best_index]
 				if distance>.01:roads.add_child(NaturalRoad.new(NaturalRoad.organic_path(best_from,target)))
 				connected.append(target);remaining.remove_at(best_index)
-		if fade_relocated_roads or (added_plot and had_roads):
+		if relocated_road_delay > 0.0 or (added_plot and had_roads):
 			var new_roads := road_segments(roads)
 			for key in new_roads:
 				if old_roads.has(key): continue
 				var segment: CanvasItem=new_roads[key]
 				segment.modulate.a=0.0
-				segment.create_tween().tween_property(segment,"modulate:a",1.0,.46).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+				segment.create_tween().tween_property(segment,"modulate:a",1.0,.46).set_delay(relocated_road_delay).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 		foundation(start,6,model.chief_level())
 	for i in positions.size():
 		if not own_ground[i]:foundation(unproject(positions[i]-Vector2(0,24)),4,levels[i])
