@@ -12,6 +12,7 @@ const MENU_ICONS:={
 	"stone_store":preload("res://assets/ui/construction-side-v006/menu-stoneworks.png"),
 }
 const TILE_SIZE := Vector2(162,188)
+const OUTPOST_END_PADDING := 90.0
 const ART_SCALE := .9
 const BUILD_GAP := 4.0
 const DRAG_THRESHOLD := 10.0
@@ -181,13 +182,14 @@ func refresh() -> void:
 	clip.position = Vector2(0,top+1.0)
 	clip.size = Vector2(roller.position.x,194.0*scale_factor)
 	visible_slots = maxi(1,ceili(clip.size.x/(TILE_SIZE.x*scale_factor)))
-	content.size = Vector2(TILE_SIZE.x*visible_kinds.size()*scale_factor,clip.size.y)
+	var end_padding := OUTPOST_END_PADDING if "outpost" in visible_kinds else 0.0
+	content.size = Vector2((end_padding+TILE_SIZE.x*visible_kinds.size())*scale_factor,clip.size.y)
 	content.scale = Vector2.ONE*scale_factor
 	for kind in KINDS:
 		var card: DemoButton = entries[kind]
 		card.visible = kind in visible_kinds
 		if not card.visible: continue
-		card.position = Vector2(visible_kinds.find(kind)*TILE_SIZE.x,0)
+		card.position = Vector2(end_padding+visible_kinds.find(kind)*TILE_SIZE.x,0)
 		var art: Control = card.art_feedback.get_node("Composition/Artwork")
 		var locked: bool = not app.model.building_unlocked(kind)
 		var reason: String = app.building_workflow.build_block_reason(kind,false)

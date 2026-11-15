@@ -6,6 +6,8 @@ const TOTAL_STAGES := STAGES_PER_CHAPTER*2
 const ART := "res://assets/ui/d0024/"
 const DESIGN := Vector2(960,540)
 const MEADOW := Vector2(1280,720)
+const STAGE_ROW_Y := 385.0
+const BOAR_DISPLAY_SCALE := .86
 const TITLE := preload(ART+"08-ui-title-plaque-660.png")
 const BOSS := preload(ART+"08-ui-stage-finalboss-crest.png")
 const FIELD := preload(ART+"02-meadow-background.png")
@@ -120,10 +122,12 @@ func layout_boar() -> void:
 	else:
 		boar.texture=HOLD
 	frame_index=index
-	boar.position=offset+origin*cover
-	boar.size=extent*cover
-	shadow.position=offset+(origin+Vector2(extent.x*.08,extent.y-15))*cover
-	shadow.size=Vector2(extent.x*.87,30)*cover
+	var display_extent := extent*BOAR_DISPLAY_SCALE
+	var display_origin := origin+Vector2((extent.x-display_extent.x)*.5,extent.y-display_extent.y-13)
+	boar.position=offset+display_origin*cover
+	boar.size=display_extent*cover
+	shadow.position=offset+(display_origin+Vector2(display_extent.x*.08,display_extent.y-15))*cover
+	shadow.size=Vector2(display_extent.x*.87,30)*cover
 
 func update_groups() -> void:
 	move_group(top_group,1.96,-18.0)
@@ -171,7 +175,7 @@ func draw_page() -> void:
 	app.picture(rules,preload(ART+"08-ui-rules-body.svg"),Rect2(Vector2.ZERO,rules.size))
 	app.picture(rules,preload(ART+"08-ui-rules-book.svg"),Rect2(9,8,15,16))
 	title(rules,"규칙",Rect2(27,0,49,32),15)
-	app.picture(footer,preload(ART+"08-ui-stage-connector.svg"),Rect2(125,394,710,12)).stretch_mode=TextureRect.STRETCH_SCALE
+	app.picture(footer,preload(ART+"08-ui-stage-connector.svg"),Rect2(125,STAGE_ROW_Y-4,710,8)).stretch_mode=TextureRect.STRETCH_SCALE
 	for slot in 10:
 		add_stage(slot)
 	var prepare := action(footer,Rect2(625,456,238,50),app.prepare_selected_hunt)
@@ -194,21 +198,23 @@ func add_stage(slot: int) -> void:
 	var done := real and stage_id<progress()
 	var selected: bool=real and stage_id==app.hunt_stage
 	var current := real and stage_id==progress()
-	var center := Vector2(132+78*slot,400)
-	var extent := Vector2(69,104) if boss else Vector2.ONE*(66 if slot==4 else 55)
+	var center := Vector2(132+78*slot,STAGE_ROW_Y)
+	var extent := Vector2(69,104)*1.3 if boss else Vector2.ONE*(66 if slot==4 else 55)
 	var rect := Rect2(center-extent*.5,extent)
 	var tile := action(footer,rect,choose.bind(stage_id) if real else Callable())
 	tile.name="HuntStage%d"%stage_id if real else "UnavailableSlot%d"%(slot+1)
 	tile.disabled=not unlocked
 	tile.hint_text="준비 중인 스테이지" if not real else "앞 사냥터를 완료하면 열립니다."
 	var skin: Texture2D = boss_art if boss else SKINS.active if (selected or current) else SKINS.complete if done else SKINS.midboss if slot==4 else SKINS.locked
-	app.picture(tile,skin,Rect2(Vector2.ZERO,rect.size))
-	var y := 44.0 if boss else 3.0
+	var body: TextureRect = app.picture(tile,skin,Rect2(Vector2.ZERO,rect.size))
+	if boss:body.stretch_mode=TextureRect.STRETCH_SCALE
+	var y := extent.y*.45 if boss else 3.0
 	title(tile,str(slot+1),Rect2(0,y,rect.size.x,27 if boss else 30),22 if (selected or current) else 18)
-	if boss:title(tile,"최종 보스",Rect2(0,64,rect.size.x,15),10)
+	if boss:title(tile,"최종 보스",Rect2(0,extent.y*.64,rect.size.x,15),12)
 	if done or not unlocked:
 		var marker: Texture2D=preload(ART+"08-ui-stage-check.svg") if done else preload(ART+"08-ui-padlock-gold.png")
-		app.picture(tile,marker,Rect2((extent.x-18)*.5,81 if boss else extent.y-23,18,17))
+		var marker_y := extent.y*.77 if boss else extent.y-(23.0 if done else 27.0)
+		app.picture(tile,marker,Rect2((extent.x-18)*.5,marker_y,18,17))
 
 func choose(stage_id: int) -> void:
 	if stage_id<0 or stage_id>=TOTAL_STAGES or stage_id>progress():return
