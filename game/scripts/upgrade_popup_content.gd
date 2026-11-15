@@ -11,6 +11,10 @@ var confirm: Callable
 var art: Control
 var unsupported_notice: Label
 var notice_fade: Tween
+var cost_labels: Dictionary = {}
+var shortage: Label
+var upgrade_button: DemoButton
+var upgrade_skin: TextureRect
 
 func _init(owner: Node, building_kind: String, level: int, cost: Dictionary, callback: Callable) -> void:
 	app=owner;kind=building_kind;current=level;costs=cost;confirm=callback
@@ -112,14 +116,31 @@ func _ready() -> void:
 		icon.custom_minimum_size = Vector2(32,32)
 		var amount := FigmaArt.text(item,str(costs.get(resource,0)),Rect2(0,0,0,32),18,FigmaArt.BODY,Color("553820"),false)
 		amount.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		cost_labels[resource] = amount
 	var seconds := int(app.model.building_duration(current+1))
 	var time := "%d초" % seconds if seconds<60 else "%d분" % (seconds/60)
 	action(Rect2(270,300,192,44),"즉시 업그레이드","3",preload(UPDATE_ART+"diamond-premium-illustrated.png"),preload(FINISH_ART+"popup-button-stone-gray-disabled-192x44.svg"),true)
 	action(Rect2(486,300,166,44),"업그레이드",time,preload(UPDATE_ART+"hourglass-teal-amber-illustrated.png"),preload(FINISH_ART+"popup-button-gold-volume-166x44.svg"),false)
+	shortage = FigmaArt.text(art,"",Rect2(0,297,255,49),15,FigmaArt.BODY,Color("862e21"),false)
+	app.model.changed.connect(refresh_affordability)
+	refresh_affordability()
 	unsupported_notice=FigmaArt.text(art,"미지원",Rect2(251,249,150,27),16,FigmaArt.BODY,Color("fff4d6"))
 	unsupported_notice.add_theme_color_override("font_outline_color",Color("503016"))
 	unsupported_notice.add_theme_constant_override("outline_size",8)
 	unsupported_notice.modulate.a=0.0
+
+func refresh_affordability() -> void:
+	var missing := PackedStringArray()
+	for resource in ["wood","stone"]:
+		var deficit := int(costs.get(resource,0))-int(app.model.state.get(resource,0))
+		var amount: Label = cost_labels[resource]
+		amount.add_theme_color_override("font_color",Color("862e21") if deficit > 0 else Color("553820"))
+		if deficit > 0:
+			missing.append("%s %d개" % ["나무" if resource == "wood" else "돌",deficit])
+	upgrade_button.disabled = not missing.is_empty()
+	upgrade_skin.self_modulate = Color(.57,.55,.54) if upgrade_button.disabled else Color.WHITE
+	shortage.text = "자원 부족: " + " · ".join(missing) if upgrade_button.disabled else ""
+	upgrade_button.hint_text = shortage.text
 
 func rule(rect: Rect2, parent: Control = null) -> void:
 	var line := ColorRect.new()
@@ -148,9 +169,12 @@ func action(rect: Rect2, title: String, value: String, icon: Texture2D, backgrou
 	button.size=rect.size
 	for state in ["normal","hover","pressed","focus","disabled"]:
 		button.add_theme_stylebox_override(state,StyleBoxEmpty.new())
-	app.picture(button,background,Rect2(Vector2.ZERO,rect.size))
+	var skin: TextureRect = app.picture(button,background,Rect2(Vector2.ZERO,rect.size))
+	if not locked:
+		upgrade_button = button
+		upgrade_skin = skin
 	var icon_x := 20.0 if locked else 15.0
 	app.picture(button,icon,Rect2(icon_x,9,25,25))
 	var ink := Color("141a20") if locked else Color.WHITE
-	FigmaArt.text(button,value,Rect2(icon_x+23,0,34,42),14,FigmaArt.BODY,ink,false)
-	FigmaArt.text(button,title,Rect2(68,0,rect.size.x-76,42),15,FigmaArt.BODY,ink,false)
+	FigmaArt.text(button,value,Rect2(icon_x+30,0,34,42),14,FigmaArt.BODY,ink,false)
+	FigmaArt.text(button,title,Rect2(78,0,rect.size.x-86,42),15,FigmaArt.BODY,ink,false)
