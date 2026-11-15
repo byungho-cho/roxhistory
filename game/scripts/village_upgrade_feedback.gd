@@ -1,11 +1,13 @@
 extends Node2D
 
 const DUST := preload("res://assets/ui/d0019/ground-dust-soft.png")
-const CELEBRATION_TIME := 2.05
-const FIREWORK_COLORS := [Color("ffce52"),Color("ff816e"),Color("7ce9d2"),Color("fff0a9")]
+const CELEBRATION_TIME := 2.7
+const FIREWORK_COLORS := [Color("ff8678"),Color("7ce9d2"),Color("d2a0ff")]
 var age := 0.0
 var level: int
-var label: Label
+var glyphs: Array[Label] = []
+var glyph_origins: Array[Vector2] = []
+var level_glyph_count := 0
 static var glow: GradientTexture2D
 
 func _init(at: Vector2, target_level: int) -> void:
@@ -23,22 +25,37 @@ func _ready() -> void:
 		glow.fill = GradientTexture2D.FILL_RADIAL
 		glow.fill_from = Vector2(.5,.5)
 		glow.fill_to = Vector2(1,.5)
-	label = FigmaArt.text(self,"Lv. %d 달성!" % level,Rect2(-90,-174,180,36),24,FigmaArt.BODY,Color("ffe29d"))
-	label.add_theme_constant_override("outline_size",4)
-	label.add_theme_color_override("font_outline_color",Color("503016"))
-	label.pivot_offset = label.size*.5
-	label.scale = Vector2.ONE*.48
-	label.modulate.a = 0.0
+	var prefix := "Lv. %d " % level
+	var caption := prefix+"달성!"
+	level_glyph_count=prefix.length()
+	var cursor := -FigmaArt.BODY.get_string_size(caption,HORIZONTAL_ALIGNMENT_LEFT,-1,37).x*.5
+	for i in caption.length():
+		var character := caption.substr(i,1)
+		var width := FigmaArt.BODY.get_string_size(character,HORIZONTAL_ALIGNMENT_LEFT,-1,37).x
+		var ink: Color = Color("ffdb76") if character.is_valid_int() else FIREWORK_COLORS[i%FIREWORK_COLORS.size()]
+		var glyph := FigmaArt.text(self,character,Rect2(cursor,-190,width,50),37,FigmaArt.BODY,ink)
+		glyph.add_theme_constant_override("outline_size",7)
+		glyph.add_theme_color_override("font_outline_color",Color("4a2921"))
+		glyph.pivot_offset=glyph.size*.5
+		glyph.modulate.a=0.0
+		glyphs.append(glyph)
+		glyph_origins.append(glyph.position)
+		cursor+=width
 
 func _process(delta: float) -> void:
 	age += delta
 	if level > 0:
 		var zoom := get_global_transform_with_canvas().get_scale().x / scale.x
 		scale = Vector2.ONE*clampf(.48/maxf(zoom,.01),1.0,1.8)
-		label.position.y = -174-age*16
-		var entrance := 1.0-pow(1.0-clampf(age/.30,0,1),3)
-		label.scale = Vector2.ONE*(lerpf(.48,1.08,entrance)+.34*smoothstep(.76,1.94,age))
-		label.modulate.a = smoothstep(0,.13,age)*(1.0-smoothstep(1.05,1.94,age))
+		for i in glyphs.size():
+			var appear := .34 if i<level_glyph_count else .72
+			var leave := 1.53+i*.055
+			var fly := clampf((age-leave)/.52,0,1)
+			var glyph := glyphs[i]
+			glyph.position=glyph_origins[i]-Vector2(0,80.0*fly*fly)
+			glyph.scale=Vector2.ONE*lerpf(.66,1.0,smoothstep(appear,appear+.18,age))
+			glyph.rotation=sin(i*2.7)*.35*fly
+			glyph.modulate.a=smoothstep(appear,appear+.12,age)*(1.0-smoothstep(.18,1.0,fly))
 	if age >= (2.6 if level == 0 else CELEBRATION_TIME):
 		queue_free()
 	else:
@@ -54,39 +71,27 @@ func _draw() -> void:
 			var burst := span*.84
 			draw_texture_rect(DUST,Rect2(center-Vector2(0,11)-burst*.5,burst),false,Color(1.0,.96,.87,alpha*(1.0-smoothstep(.12,.68,age))))
 		return
-	var alpha := 1.0-smoothstep(.4,1.45,age)
-	var flash := (1.0-smoothstep(.11,.85,age))*smoothstep(0.0,.09,age)
-	draw_texture_rect(glow,Rect2(-128,-178,256,206),false,Color(1,1,1,flash))
-	for i in 7:
-		var x := (i-3)*23.0
-		var height := (90.0+sin(i*2.4)*38.0)*smoothstep(0.0,.30,age)
-		var tip := Vector2(x*1.28,-35-height)
-		var base := Vector2(x,-14)
-		draw_colored_polygon(PackedVector2Array([base+Vector2(-6,0),base+Vector2(6,0),tip]),Color(1,.81,.36,flash*.40))
-	draw_set_transform(Vector2.ZERO,0,Vector2(1,.30))
-	draw_circle(Vector2.ZERO,62,Color(1,.73,.25,alpha*.24))
+	var alpha := 1.0-smoothstep(.30,1.16,age)
+	draw_texture_rect(glow,Rect2(-104,-61,208,108),false,Color(1,1,1,alpha))
+	for i in 2:
+		var wave := clampf((age-i*.13)/.78,0,1)
+		var radius := lerpf(34,152,wave)
+		draw_set_transform(Vector2(0,3),0,Vector2(1,.43))
+		draw_arc(Vector2.ZERO,radius,0,TAU,36,Color(1,.92,.57,(1-wave)*alpha),2.8,true)
 	draw_set_transform(Vector2.ZERO)
 	for i in 15:
-		var at := Vector2(sin(i*2.4)*(34+age*43),-24-age*(42+i*6))
+		var at := Vector2(sin(i*2.4)*(34+age*43),-24-age*(24+i*3))
 		var size := 2.0+2.0*absf(sin(i*2.4+age*11.0))
 		var color := Color(1,.89,.53,.90*alpha)
 		draw_line(at-Vector2(size,0),at+Vector2(size,0),color,1.4,true)
 		draw_line(at-Vector2(0,size*1.45),at+Vector2(0,size*1.45),color,1.4,true)
-	draw_firework(Vector2(-26,-18),Vector2(-112,-137),.03,0)
-	draw_firework(Vector2(26,-18),Vector2(113,-151),.19,2)
-	draw_firework(Vector2(0,-25),Vector2(0,-229),.47,1)
+	draw_firework(Vector2(-115,-133),.72,0)
+	draw_firework(Vector2(119,-148),.95,1)
+	draw_firework(Vector2(37,-224),1.14,2)
 
-func draw_firework(start: Vector2, center: Vector2, delay: float, palette_offset: int) -> void:
-	const ASCENT := .24
-	var elapsed := age-delay
-	if elapsed < 0.0 or elapsed > ASCENT+.86: return
-	if elapsed < ASCENT:
-		var progress := elapsed/ASCENT
-		var tip := start.lerp(center,progress)
-		draw_line(start.lerp(center,maxf(0.0,progress-.23)),tip,Color(1,.78,.34,.83),2.0,true)
-		draw_circle(tip,3.0,Color("fff7ca"))
-		return
-	var time := elapsed-ASCENT
+func draw_firework(center: Vector2, delay: float, palette_offset: int) -> void:
+	var time := age-delay
+	if time<0.0 or time>.86:return
 	var fade := 1.0-smoothstep(.16,.86,time)
 	var reach := 1.0-exp(-time*4.5)
 	if time < .16:
@@ -95,7 +100,7 @@ func draw_firework(start: Vector2, center: Vector2, delay: float, palette_offset
 		var direction := Vector2.from_angle(i*TAU/19.0+palette_offset*.15)
 		var distance := (39.0+float((i*7)%8)*6.0)*reach
 		var tip := center+direction*distance+Vector2(0,47.0*time*time)
-		var color: Color = FIREWORK_COLORS[(i+palette_offset)%FIREWORK_COLORS.size()]
+		var color: Color = FIREWORK_COLORS[palette_offset].lerp(Color("fff5c6"),float(i%4)*.18)
 		color.a = fade
 		draw_line(tip-direction*minf(distance,5.0+8.0*fade),tip,color,2.0,true)
 		draw_circle(tip,1.5+fade,color)

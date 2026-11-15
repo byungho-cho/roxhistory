@@ -217,6 +217,11 @@ func relayout() -> void:
 	if screen in ["hunt","intro"]:
 		rebuilding = false
 		return
+	if screen=="hunt_select":
+		update_window_layout()
+		refresh_viewport_metrics()
+		rebuilding=false
+		return
 	var guide_pages:Array[Dictionary]=[]
 	var guide_actions:Array[Callable]=[]
 	if overlay is CharacterGuide:
@@ -238,6 +243,21 @@ func clear_children(node: Node) -> void:
 		node.remove_child(child)
 		child.queue_free()
 
+func update_window_layout() -> void:
+	var layout_size:=Vector2i(540,960) if get_window().size.x<get_window().size.y else Vector2i(960,540)
+	if get_window().content_scale_size!=layout_size:get_window().content_scale_size=layout_size
+
+func refresh_viewport_metrics() -> void:
+	w = get_viewport().get_visible_rect().size.x
+	h = get_viewport().get_visible_rect().size.y
+	safe = Vector2(24,18)
+	if OS.has_feature("android"):
+		var area := DisplayServer.get_display_safe_area()
+		var physical := DisplayServer.screen_get_size()
+		if physical.x > 0 and physical.y > 0:
+			safe.x = maxf(24,maxf(area.position.x,physical.x-area.end.x)*w/physical.x)
+			safe.y = maxf(18,maxf(area.position.y,physical.y-area.end.y)*h/physical.y)
+
 func show_screen(next: String,spread_hud:=false) -> void:
 	if screen=="title" and next!="title":
 		get_node("/root/PatchBootstrap/Overlay").leave_title()
@@ -251,8 +271,7 @@ func show_screen(next: String,spread_hud:=false) -> void:
 	map_transition_active=false
 	world_map_open=false
 	cancel_build_preview()
-	var layout_size:=Vector2i(540,960) if get_window().size.x<get_window().size.y else Vector2i(960,540)
-	if get_window().content_scale_size!=layout_size:get_window().content_scale_size=layout_size
+	update_window_layout()
 	var previous := screen
 	region_snapshot=region_selection.snapshot() if next=="region" and screen=="region" and is_instance_valid(region_selection) else {}
 	if is_instance_valid(joystick):
@@ -261,15 +280,7 @@ func show_screen(next: String,spread_hud:=false) -> void:
 	overlay = null
 	modal = false
 	screen = next
-	w = get_viewport().get_visible_rect().size.x
-	h = get_viewport().get_visible_rect().size.y
-	safe = Vector2(24,18)
-	if OS.has_feature("android"):
-		var area := DisplayServer.get_display_safe_area()
-		var physical := DisplayServer.screen_get_size()
-		if physical.x > 0 and physical.y > 0:
-			safe.x = maxf(24,maxf(area.position.x,physical.x-area.end.x)*w/physical.x)
-			safe.y = maxf(18,maxf(area.position.y,physical.y-area.end.y)*h/physical.y)
+	refresh_viewport_metrics()
 	stage = Control.new()
 	stage.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	ui.add_child(stage)
@@ -289,6 +300,7 @@ func show_screen(next: String,spread_hud:=false) -> void:
 		"play": await play_hud(spread_hud)
 		"hunt_select":
 			var selection := HUNT_SELECTION.new()
+			selection.name="HuntStageSelection"
 			selection.app = self
 			stage.add_child(selection)
 			selection.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -1363,15 +1375,14 @@ func apply_menu_state(animated:bool=false)->void:
 	menu_backdrop.hide()
 
 func inventory_summary() -> void:
-	var body:="나무 %d개 · 돌 %d개\n곡식 %d개 · 구리 %d개 (수입 규칙 미정)"%[model.state.wood,model.state.stone,model.state.get("grain",model.state.tokens),model.state.get("copper",0)]
-	body+="\n저장 한도 · 목재 %d / 석재 %d / 곡식 %d"%[ResourceStorage.capacity(model,"wood"),ResourceStorage.capacity(model,"stone"),ResourceStorage.capacity(model,"grain")]
-	var stock:=0
-	for cycle in model.state.get("farm_cycles",{}).values():stock+=int(cycle.stock)
-	if stock>0:body+="\n농장 보관 곡식 %d개"%stock
-	var held:={"wood":0,"stone":0,"grain":0}
-	for cargo in model.state.get("held_cargo",[]):held[cargo.kind]+=int(cargo.amount)
-	if not model.state.get("held_cargo",[]).is_empty():body+="\n별도 보관: 목재 %d · 석재 %d · 곡식 %d (처리 규칙 대기)"%[held.wood,held.stone,held.grain]
-	show_modal("가진 재료",body,[{"text":"돌아가기","action":close_modal}],false,true)
+	show_modal("","",[],false,true,false,Vector2.ZERO,false,true)
+	var backdrop: Control=overlay.get_child(0)
+	var placeholder: Control=overlay.get_child(1)
+	overlay.remove_child(placeholder)
+	placeholder.queue_free()
+	backdrop.modulate.a=.72
+	overlay.add_child(preload("res://scripts/bag_popup.gd").new(self))
+
 
 func update_hud() -> void:
 	if screen!="play" or not is_instance_valid(objective) or model.state.is_empty():return
