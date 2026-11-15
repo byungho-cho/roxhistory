@@ -2,6 +2,7 @@ class_name RelocationEffect
 extends Node2D
 
 const DROP_TIME := .34
+const FOUNDATION_FADE_TIME := .39
 const DROP_HEIGHT := 104.0
 const SETTLE_TIME := .16
 var app: Node
@@ -79,7 +80,7 @@ func _draw() -> void:
 		draw_colored_polygon(points, Color(.16, .10, .05, lerpf(.035, .10, approach) * fade))
 
 func foundation_opacity() -> float:
-	return lerpf(.30, 1.0, smoothstep(0.0, DROP_TIME * .88, clock))
+	return lerpf(.30, 1.0, smoothstep(0.0, FOUNDATION_FADE_TIME, clock))
 
 func _exit_tree() -> void:
 	if is_instance_valid(foundation):
