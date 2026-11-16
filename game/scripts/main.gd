@@ -206,12 +206,16 @@ func _ready() -> void:
 	show_screen("title")
 
 func queue_layout() -> void:
+	if is_instance_valid(parry_lab): return
 	if rebuilding or screen in ["hunt","intro"] or title_reveal or intro_leaving or village_entry_active():
 		return
 	rebuilding = true
 	call_deferred("relayout")
 
 func relayout() -> void:
+	if is_instance_valid(parry_lab):
+		rebuilding = false
+		return
 	if screen in ["hunt","intro"]:
 		rebuilding = false
 		return
