@@ -6,8 +6,9 @@ const FLAME_DURATION := 2.9
 const SMOKE_START := FLAME_START + FLAME_DURATION + 1.0
 const SMOKE_DURATION := 1.2
 const CYCLE := SMOKE_START + SMOKE_DURATION + 4.983
-const CHIMNEY_PUFFS := 7
+const CHIMNEY_PUFFS := 19
 const EYE_PUFFS := 3
+const FLAME_LAYERS := 4
 const ATLAS := preload("res://assets/ui/d0030/chief-vfx-atlas.png")
 const RIGS := {
 	3: [preload("res://assets/ui/d0030/chief-l3-base.png"), preload("res://assets/ui/d0030/chief-l3-flag-cloth.png"),
@@ -35,7 +36,7 @@ func _ready() -> void:
 	flag.material = flag_material
 	z_index = 1
 	add_child(flag)
-	for index in CHIMNEY_PUFFS + EYE_PUFFS * 2:
+	for index in CHIMNEY_PUFFS + maxi(EYE_PUFFS, FLAME_LAYERS) * 2:
 		var particle := Sprite2D.new()
 		particle.texture = ATLAS
 		particle.region_enabled = true
@@ -74,14 +75,14 @@ func update_particles() -> void:
 	var origin := -flag.texture.get_size() * 0.5
 	var outlet: Vector2 = origin + rig[4]
 	for index in CHIMNEY_PUFFS:
-		var emission := clock / 3.1 + float(index) / CHIMNEY_PUFFS
+		var emission := clock / 8.6 + float(index) / CHIMNEY_PUFFS
 		var age := fposmod(emission, 1.0)
 		var phase := sin(floorf(emission) * 3.14 + float(index) * 2.4)
-		var drift := Vector2(230 * age * age + phase * 58 * age, -402 * age)
-		var alpha := smoothstep(0.0, 0.14, age) * (1.0 - smoothstep(0.35, 1.0, age))
+		var drift := Vector2(520 * age * age + phase * 106 * age, -1206 * age)
+		var alpha := smoothstep(0.0, 0.055, age) * (1.0 - smoothstep(0.44, 1.0, age))
 		var spread := smoothstep(0.0, 1.0, age)
-		var extent := Vector2(93,117).lerp(Vector2(440,330), spread) * (1.0 + phase * 0.11)
-		draw_puff(0, outlet + drift, extent, alpha * 0.78, phase * 0.52 * age)
+		var extent := Vector2(115,134).lerp(Vector2(550,420), spread) * (1.0 + phase * 0.15)
+		draw_puff(0, outlet + drift, extent, alpha * 0.72, phase * 0.58 * age)
 
 	var beat := fposmod(clock, CYCLE)
 	flame_material.set_shader_parameter("clock", beat)
@@ -92,11 +93,21 @@ func update_particles() -> void:
 			var elapsed := beat - FLAME_START
 			var strength := smoothstep(0.0, 0.22, elapsed) * (1.0 - smoothstep(0.9, FLAME_DURATION, elapsed))
 			var flicker := 0.5 + 0.5 * sin(elapsed * 15.0 + index * 1.8)
-			var angle := lean + 0.12 + sin(elapsed * 5.0) * 0.055
+			var outward := deg_to_rad(-10.0 if index == 0 else 10.0)
+			var angle := lean + outward + 0.12 + sin(elapsed * 5.0) * 0.055
 			draw_puff(3, eye, Vector2(124,109), strength * 0.60)
-			var height := 310.0 * strength * lerpf(0.79, 1.0, flicker)
-			draw_puff(2, eye + Vector2(sin(angle), -cos(angle)) * height * 0.46,
-				Vector2(112.0 * strength, height), strength, angle)
+			var flare := smoothstep(0.0, 0.32, elapsed) * (1.0 - smoothstep(0.65, 2.3, elapsed))
+			var height := 260.0 * strength * lerpf(0.77, 1.0, flicker)
+			for tongue in 3:
+				var branch := float(tongue - 1)
+				var ripple := 0.5 + 0.5 * sin(elapsed * 12.0 + branch * 2.4 + index)
+				var tongue_angle := angle + branch * (0.15 + flare * 0.20) + (ripple - 0.5) * 0.08
+				tongue_angle = minf(tongue_angle, 0.035) if index == 0 else maxf(tongue_angle, -0.035)
+				var tongue_height := height * (1.0 if tongue == 1 else lerpf(0.43, 0.72, ripple))
+				var base := eye + Vector2(branch * 16.0 * flare, 0.0)
+				var center := base + Vector2(sin(tongue_angle), -cos(tongue_angle)) * tongue_height * 0.46
+				var width := (147.0 if tongue == 1 else 115.0) * strength * (1.0 + flare * 0.33)
+				draw_puff(2, center, Vector2(width, tongue_height), strength * (1.0 if tongue == 1 else 0.79), tongue_angle)
 		elif beat >= SMOKE_START and beat < SMOKE_START + SMOKE_DURATION:
 			for puff in EYE_PUFFS:
 				var delay := puff * 0.17 + index * 0.055
