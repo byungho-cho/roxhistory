@@ -33,10 +33,16 @@ var reward_markers:Node2D
 var reward_roof_bounds:=Rect2()
 var boundary_level:=-1
 var boundary_fog:Node2D
+var terrain_sprite: Sprite2D
 const FOG_OPACITIES := [Vector2.ZERO,Vector2(.12,.65),Vector2(.20,.75),Vector2(.25,.80),Vector2(.30,.85)]
 
 func set_boundary_fog_experiment(preset: int) -> void:
-	boundary_fog.material.set_shader_parameter("experiment_opacity", FOG_OPACITIES[clampi(preset,1,5)-1])
+	var opacity: Vector2 = FOG_OPACITIES[clampi(preset,1,5)-1]
+	var terrain_bounds := terrain_sprite.transform * terrain_sprite.get_rect()
+	boundary_fog.material.set_shader_parameter("terrain_bounds",
+		Vector4(terrain_bounds.position.x,terrain_bounds.position.y,terrain_bounds.end.x,terrain_bounds.end.y))
+	boundary_fog.material.set_shader_parameter("experiment_opacity", opacity)
+	terrain_sprite.material.set_shader_parameter("show_original_edge", opacity.y > 0.0)
 var boundary_debug:=false
 var boundary_root:Node2D
 var boundary_pulse:Tween
@@ -64,6 +70,7 @@ func _ready() -> void:
 	distant_fog.visibility_layer = 2
 	add_child(distant_fog)
 	var background := Sprite2D.new()
+	terrain_sprite = background
 	background.name = "Terrain"
 	background.texture = terrain
 	background.centered = false
@@ -111,7 +118,6 @@ func _ready() -> void:
 	boundary_fog.visibility_layer=2
 	var fog_material:=ShaderMaterial.new()
 	fog_material.shader=preload("res://shaders/village_boundary_fog.gdshader")
-	fog_material.set_shader_parameter("terrain_bounds", Vector4(-1200,-675,3600,2025))
 	boundary_fog.material=fog_material
 	boundary_fog.draw.connect(draw_boundary_fog)
 	add_child(boundary_fog)

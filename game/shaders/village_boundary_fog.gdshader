@@ -32,9 +32,9 @@ void fragment() {
 	if (experiment_opacity.y > 0.0) {
 		float opacity = mix(experiment_opacity.x, experiment_opacity.y, smoothstep(50.0, 780.0, distance));
 		opacity *= smoothstep(0.0, 50.0, distance);
-		vec2 inner = min(world_position - terrain_bounds.xy, terrain_bounds.zw - world_position);
-		float cover = 1.0 - smoothstep(0.0, 135.0, min(inner.x, inner.y));
 		vec3 mist = mix(vec3(0.64, 0.70, 0.65), vec3(0.76, 0.80, 0.74), bank * 0.7 + detail * 0.3);
-		COLOR = vec4(mix(mist, vec3(0.97, 0.97, 0.94), cover), mix(opacity, 1.0, cover));
+		bool outside_terrain = any(lessThan(world_position, terrain_bounds.xy))
+			|| any(greaterThanEqual(world_position, terrain_bounds.zw));
+		COLOR = outside_terrain ? vec4(0.97, 0.97, 0.94, 1.0) : vec4(mist, opacity);
 	}
 }
