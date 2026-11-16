@@ -3,6 +3,10 @@ extends Control
 const ART := "res://assets/ui/d0024/"
 const DESIGN := Vector2(1024,680)
 const INK := Color("192c2c")
+const COLUMNS := 8
+const SLOT_SIZE := 106
+const SLOT_GAP := 10
+const ITEMS := [["wood","목재"],["stone","석재"],["grain","곡식"]]
 var app: Node
 var amounts: Dictionary = {}
 
@@ -33,20 +37,29 @@ func _ready() -> void:
 	frame.border_color=Color(.34,.24,.15,.55)
 	frame.set_border_width_all(2)
 	frame.set_corner_radius_all(10)
-	var resources := ["wood","stone","grain"]
-	for i in 18:
+	var scroll := ScrollContainer.new()
+	scroll.position=Vector2(51,133)
+	scroll.size=Vector2(922,515)
+	scroll.horizontal_scroll_mode=ScrollContainer.SCROLL_MODE_DISABLED
+	add_child(scroll)
+	var grid := GridContainer.new()
+	grid.columns=COLUMNS
+	grid.add_theme_constant_override("h_separation",SLOT_GAP)
+	grid.add_theme_constant_override("v_separation",SLOT_GAP)
+	scroll.add_child(grid)
+	for i in maxi(COLUMNS*3,ceili(float(ITEMS.size())/COLUMNS)*COLUMNS):
 		var slot := Panel.new()
 		slot.name="BagSlot%d"%(i+1)
-		slot.position=Vector2(51+152*(i%6),133+152*(i/6))
-		slot.size=Vector2.ONE*139
+		slot.custom_minimum_size=Vector2.ONE*SLOT_SIZE
 		slot.mouse_filter=Control.MOUSE_FILTER_IGNORE
 		slot.add_theme_stylebox_override("panel",frame)
-		add_child(slot)
-		if i>=resources.size():continue
-		var resource: String=resources[i]
-		var icon := AssetCatalog.texture("UI-SEED") if resource=="grain" else DemoArt.icon(resource)
-		app.picture(slot,icon,Rect2(23,12,92,92))
-		var amount := FigmaArt.text(slot,"",Rect2(10,104,119,30),23,FigmaArt.BODY,INK,false)
+		grid.add_child(slot)
+		if i>=ITEMS.size():continue
+		var resource: String=ITEMS[i][0]
+		var icon := PlayChrome.CORN_ICON if resource=="grain" else DemoArt.icon(resource)
+		app.picture(slot,icon,Rect2(16,16,74,74))
+		FigmaArt.text(slot,ITEMS[i][1],Rect2(7,1,91,22),17,FigmaArt.BODY,INK,false)
+		var amount := FigmaArt.text(slot,"",Rect2(7,86,93,19),17,FigmaArt.BODY,INK,false)
 		amount.horizontal_alignment=HORIZONTAL_ALIGNMENT_RIGHT
 		amounts[resource]=amount
 	app.model.changed.connect(update_amounts)

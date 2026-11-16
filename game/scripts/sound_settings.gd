@@ -16,7 +16,8 @@ static func apply(prefs: ConfigFile) -> void:
 static func apply_channel(channel: Array, enabled: bool, level: float) -> void:
 	for bus in channel[3]:
 		var index := AudioServer.get_bus_index(bus)
-		AudioServer.set_bus_volume_db(index, (-0.91515 if bus == &"BGM" else 0.0) + linear_to_db(maxf(level / 100, .0001)))
+		var profile_gain := .45 if bus == &"BGM" else 1.0
+		AudioServer.set_bus_volume_db(index, linear_to_db(maxf(level / 100, .0001)*profile_gain))
 		AudioServer.set_bus_mute(index, not enabled or level == 0)
 
 

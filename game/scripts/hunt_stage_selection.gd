@@ -7,6 +7,15 @@ const ART := "res://assets/ui/d0024/"
 const STAGE_ART := "res://assets/ui/d0025/"
 const DESIGN := Vector2(960,540)
 const MEADOW := Vector2(1280,720)
+const MEADOW_IDLE := preload("res://assets/ui/hunt-selection/hunt-meadow-idle-loop.ogv")
+const CAMP_MASK := """
+shader_type canvas_item;
+void fragment() {
+	float edge = 1.0 - smoothstep(0.169, 0.189, UV.x);
+	float vertical = smoothstep(0.18, 0.23, UV.y) * (1.0 - smoothstep(0.56, 0.61, UV.y));
+	COLOR.a *= edge * vertical;
+}
+"""
 const STAGE_ROW_Y := 385.0
 const STAGE_ART_SCALE := 0.56
 const BOAR_DISPLAY_SCALE := .86
@@ -20,6 +29,7 @@ const ARROW := preload(ART+"08-ui-arrow-gold-worn-right.svg")
 const TOP_ENTRY := 1.99
 const FOOTER_ENTRY := 2.29
 const ENTRY_END := 2.56
+const ENTRY_AUDIO_LEAD := .30
 const SKINS := {
 	"active":preload(STAGE_ART+"stage-active-body@2x.png"),
 	"complete":preload(STAGE_ART+"stage-complete-body@2x.png"),
@@ -31,6 +41,8 @@ var page: Control
 var top_group: Control
 var footer: Control
 var backdrop: TextureRect
+var camp_idle: VideoStreamPlayer
+var static_motion := false
 var boar: TextureRect
 var shadow: TextureRect
 var boar_frame := AtlasTexture.new()
@@ -84,7 +96,8 @@ func _ready() -> void:
 	skip_hint.horizontal_alignment=HORIZONTAL_ALIGNMENT_RIGHT
 	skip_hint.add_theme_color_override("font_outline_color",Color("432e1c"))
 	skip_hint.add_theme_constant_override("outline_size",4)
-	if reduce_motion():
+	static_motion=reduce_motion()
+	if static_motion:
 		entry_finished=true
 		elapsed=ENTRY_END
 		set_process(false)
@@ -110,7 +123,10 @@ func reduce_motion() -> bool:
 	return settings_class!=null and activity!=null and float(settings_class.getFloat(activity.getContentResolver(),"animator_duration_scale",1.0))<=0.0
 
 func _process(delta: float) -> void:
-	if entry_finished or not entry_presented:return
+	if entry_finished:
+		if is_instance_valid(camp_idle):camp_idle.paused = not app.application_active
+		return
+	if not entry_presented:return
 	if not app.application_active:
 		voice.stream_paused=true
 		return
@@ -126,12 +142,12 @@ func _process(delta: float) -> void:
 		var audible_position := mixed_position
 		if mixed_position>0.0:
 			audible_position += AudioServer.get_time_since_last_mix()-AudioServer.get_output_latency()
-		elapsed=maxf(elapsed,audible_position)
+		elapsed=maxf(elapsed,audible_position-ENTRY_AUDIO_LEAD)
 	else:
 		if audio_clock_active:
 			# The playback cursor resets at EOF while the queued tail still drains.
 			audio_clock_active = false
-			elapsed = maxf(elapsed,ENTRY_AUDIO.get_length()-AudioServer.get_output_latency())
+			elapsed = maxf(elapsed,ENTRY_AUDIO.get_length()-AudioServer.get_output_latency()-ENTRY_AUDIO_LEAD)
 		elapsed+=delta
 	layout_boar()
 	update_groups()
@@ -145,7 +161,43 @@ func finish_entry(skipped := false) -> void:
 	skip_hint.hide()
 	layout_boar()
 	update_groups()
-	set_process(false)
+	sync_camp_idle()
+
+func sync_camp_idle() -> void:
+	if not entry_finished:return
+	var allow_idle := chapter==0 and not static_motion and DisplayServer.get_name()!="headless"
+	if not allow_idle:
+		if is_instance_valid(camp_idle):
+			camp_idle.stop()
+			camp_idle.hide()
+		set_process(false)
+		return
+	if not is_instance_valid(camp_idle):
+		camp_idle = VideoStreamPlayer.new()
+		camp_idle.name = "CampfireAndSmoke"
+		camp_idle.stream = MEADOW_IDLE
+		camp_idle.expand = true
+		camp_idle.loop = true
+		camp_idle.volume_db = -80.0
+		camp_idle.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var shader := Shader.new()
+		shader.code = CAMP_MASK
+		var mask := ShaderMaterial.new()
+		mask.shader = shader
+		camp_idle.material = mask
+		add_child(camp_idle)
+		move_child(camp_idle,backdrop.get_index()+1)
+	camp_idle.show()
+	fit_camp_idle()
+	if not camp_idle.is_playing():camp_idle.play()
+	camp_idle.paused=not app.application_active
+	set_process(true)
+
+func fit_camp_idle() -> void:
+	if not is_instance_valid(camp_idle):return
+	var cover := maxf(size.x/MEADOW.x,size.y/MEADOW.y)
+	camp_idle.size=MEADOW*cover
+	camp_idle.position=(size-camp_idle.size)*.5
 
 func _input(event: InputEvent) -> void:
 	if not is_visible_in_tree() or not app.application_active:return
@@ -214,6 +266,7 @@ func layer(parent: Control) -> Control:
 func draw_page() -> void:
 	if size.x<=0 or size.y<=0:return
 	backdrop.size=size
+	fit_camp_idle()
 	layout_boar()
 	if is_instance_valid(page):
 		remove_child(page)
@@ -311,13 +364,66 @@ func choose(stage_id: int) -> void:
 func change_chapter(direction: int) -> void:
 	chapter=clampi(chapter+direction,0,CHAPTERS.size()-1)
 	draw_page()
+	sync_camp_idle()
 
 func exit_selection() -> void:
 	app.show_screen("play")
 
 func open_rules() -> void:
 	if app.modal:return
-	app.show_modal("사냥 규칙","스테이지를 선택한 뒤 사냥 준비를 누르세요.\n완료한 사냥터는 다시 도전할 수 있습니다.\n현재 장의 일반 사냥터 다섯 곳을 완료하면 최종 보스가 열립니다.",[{"text":"닫기","action":app.close_modal}],false,true,false,Vector2(490,330))
+	var scroll: ScrollContainer = app.show_modal("사냥 규칙","",[],false,true,false,Vector2(735,429))
+	var padding := StyleBoxEmpty.new()
+	padding.set_content_margin_all(28)
+	scroll.get_parent().get_parent().add_theme_stylebox_override("panel",padding)
+	var separator := HSeparator.new()
+	var line := StyleBoxLine.new()
+	line.color = Color(.58,.33,.15,.18)
+	separator.add_theme_stylebox_override("separator",line)
+	scroll.get_parent().add_child(separator)
+	scroll.get_parent().move_child(separator,scroll.get_index())
+	var rules := VBoxContainer.new()
+	rules.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	rules.add_theme_constant_override("separation",13)
+	scroll.add_child(rules)
+	var statements := [
+		"[color=#733d18][b]스테이지[/b][/color]를 선택한 뒤 [color=#733d18][b]사냥 준비[/b][/color]를 누르세요.",
+		"완료한 사냥터는 [color=#733d18][b]다시 도전[/b][/color]할 수 있습니다.",
+		"현재 장의 [color=#a32918][b]일반 사냥터 다섯 곳[/b][/color]을 완료하면 [color=#a32918][b]최종 보스[/b][/color]가 열립니다."
+	]
+	for i in statements.size():
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation",12)
+		rules.add_child(row)
+		var badge := PanelContainer.new()
+		badge.custom_minimum_size = Vector2(31,25)
+		badge.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+		var badge_style := StyleBoxFlat.new()
+		badge_style.bg_color=Color(.71,.47,.20,.17)
+		badge_style.border_color=Color(.71,.47,.20,.35)
+		badge_style.set_border_width_all(1)
+		badge_style.set_corner_radius_all(4)
+		badge.add_theme_stylebox_override("panel",badge_style)
+		row.add_child(badge)
+		var number := Label.new()
+		number.text="%02d"%(i+1)
+		number.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
+		number.add_theme_font_override("font",FigmaArt.BODY)
+		number.add_theme_font_size_override("font_size",15)
+		number.add_theme_color_override("font_color",Color("683b19"))
+		badge.add_child(number)
+		var sentence := RichTextLabel.new()
+		sentence.bbcode_enabled = true
+		sentence.fit_content = true
+		sentence.scroll_active = false
+		sentence.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		sentence.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		sentence.add_theme_font_override("normal_font",FigmaArt.BODY)
+		sentence.add_theme_font_override("bold_font",FigmaArt.TITLE)
+		sentence.add_theme_font_size_override("normal_font_size",20)
+		sentence.add_theme_font_size_override("bold_font_size",20)
+		sentence.add_theme_color_override("default_color",Color("472916"))
+		sentence.text = statements[i]
+		row.add_child(sentence)
 
 func title(parent: Control, value: String, rect: Rect2, font_size: int, color := Color("fff1cd")) -> Label:
 	return FigmaArt.text(parent,value,rect,font_size,FigmaArt.BODY,color)

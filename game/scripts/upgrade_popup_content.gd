@@ -17,6 +17,8 @@ var shortage_motion: Tween
 const SHORTAGE_SCALE := 2.6
 const SHORTAGE_BOTTOM_GAP := 7.0
 const SHORTAGE_FONT_BOTTOM_BEARING := 15.0
+const COST_INK := Color("553820")
+const SHORTAGE_INK := Color("a32a20")
 
 func _init(owner: Node, building_kind: String, level: int, cost: Dictionary, callback: Callable) -> void:
 	app=owner;kind=building_kind;current=level;costs=cost;confirm=callback
@@ -127,45 +129,56 @@ func _ready() -> void:
 	unsupported_notice.add_theme_color_override("font_outline_color",Color("503016"))
 	unsupported_notice.add_theme_constant_override("outline_size",8)
 	unsupported_notice.modulate.a=0.0
-	play_shortage()
+	refresh_cost_ink()
+	app.model.changed.connect(refresh_cost_ink)
 
 func add_shortage_art(item: Control, icon: Control, amount: Control, resource: String) -> void:
 	var layer := Control.new()
 	layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	# A non-container overlay avoids reflow and is independent of the pulsing controls.
-	var text := FigmaArt.text(layer,"",Rect2(-16,-19,64,22),13,FigmaArt.BODY,Color("a32a20"))
+	var text := FigmaArt.text(layer,"",Rect2(-32,-19,64,22),13,FigmaArt.BODY,SHORTAGE_INK)
 	text.pivot_offset = Vector2(32,11)
 	text.add_theme_color_override("font_outline_color",Color("fff0d2"))
 	text.add_theme_constant_override("outline_size",4)
 	art.add_child(layer)
 	var align := func():
-		layer.position = art.get_global_transform().affine_inverse()*(item.get_global_transform()*icon.position)
-	icon.item_rect_changed.connect(align)
+		var anchor := amount.position + Vector2(amount.size.x*.5,0)
+		layer.position = art.get_global_transform().affine_inverse()*(item.get_global_transform()*anchor)
+	amount.item_rect_changed.connect(align)
 	item.item_rect_changed.connect(align)
 	align.call_deferred()
 	shortage_items[resource] = [icon,amount]
 	shortage_labels[resource] = text
 	text.modulate.a = 0.0
 
-func pulse_shortage(progress: float, item: Array) -> void:
-	var envelope := minf(1.0,smoothstep(0.0,.07,progress)*(1.0-smoothstep(.91,1.0,progress)))
-	var bump := pow(sin(PI*progress*6.0),2.0)*envelope*.09
+func pulse_shortage(seconds: float, item: Array) -> void:
+	var phase := fposmod(seconds,1.56)
+	var first := smoothstep(0.0,.18,phase)*(1.0-smoothstep(.18,.44,phase))
+	var second := smoothstep(.36,.55,phase)*(1.0-smoothstep(.55,.91,phase))
+	var bump := maxf(first,second*.68)*.09*(1.0-smoothstep(4.2,4.71,seconds))
 	for control: Control in item:
 		control.pivot_offset = control.size*.5
 		control.scale = Vector2.ONE*(1.0+bump)
 
+func resource_deficit(resource: String) -> int:
+	return int(costs.get(resource,0))-int(app.model.state.get(resource,0))
+
+func refresh_cost_ink() -> void:
+	for resource: String in shortage_items:
+		var amount: Label = shortage_items[resource][1]
+		amount.add_theme_color_override("font_color",SHORTAGE_INK if resource_deficit(resource)>0 else COST_INK)
+
 func play_shortage() -> bool:
-	var wood := int(costs.get("wood",0))-int(app.model.state.get("wood",0))
-	var stone := int(costs.get("stone",0))-int(app.model.state.get("stone",0))
+	refresh_cost_ink()
 	if shortage_motion and shortage_motion.is_valid():shortage_motion.kill()
 	shortage_motion=null
 	for resource in ["wood","stone"]:
 		pulse_shortage(0.0,shortage_items[resource])
 		shortage_labels[resource].modulate.a = 0.0
-	if wood<=0 and stone<=0:return false
+	if resource_deficit("wood")<=0 and resource_deficit("stone")<=0:return false
 	shortage_motion=create_tween().set_parallel()
 	for resource in ["wood","stone"]:
-		var deficit := wood if resource=="wood" else stone
+		var deficit := resource_deficit(resource)
 		if deficit<=0:continue
 		var text: Label = shortage_labels[resource]
 		text.text="−%d"%deficit
@@ -173,7 +186,7 @@ func play_shortage() -> bool:
 		text.scale=Vector2.ONE*.65
 		text.modulate.a=1.0
 		var final_y := SHORTAGE_FONT_BOTTOM_BEARING-SHORTAGE_BOTTOM_GAP-text.size.y*.5*(1.0+SHORTAGE_SCALE)
-		shortage_motion.tween_method(pulse_shortage.bind(shortage_items[resource]),0.0,1.0,4.71)
+		shortage_motion.tween_method(pulse_shortage.bind(shortage_items[resource]),0.0,4.71,4.71)
 		shortage_motion.tween_property(text,"position:y",final_y,.32).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 		shortage_motion.tween_property(text,"scale",Vector2.ONE*SHORTAGE_SCALE,.32).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 		shortage_motion.tween_property(text,"modulate:a",.18,.12).set_delay(4.32)
