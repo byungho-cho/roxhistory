@@ -1,81 +1,167 @@
 extends Control
 
-const ART := "res://assets/ui/d0024/"
-const DESIGN := Vector2(1024,680)
-const INK := Color("192c2c")
+const DESIGN := Vector2(1600,900)
 const COLUMNS := 8
-const SLOT_SIZE := 106
-const SLOT_GAP := 10
+const DEFAULT_CAPACITY := 64
+const SLOT_SIZE := Vector2(115,125)
+const SLOT_GAP := Vector2(13,14)
+const INK := Color("f8f6db")
+const ERA_ART := {"stone_age":preload("res://assets/ui/d0030/bag-background-stone-age.png")}
 const ITEMS := [["wood","목재"],["stone","석재"],["grain","곡식"]]
 var app: Node
+var layout: Control
+var viewport: Control
+var grid: GridContainer
+var thumb: Panel
+var count: Label
 var amounts: Dictionary = {}
+var offset := 0.0
+var max_offset := 0.0
+var pointer := -2
+var drag_origin := Vector2.ZERO
+var drag_offset := 0.0
+var dragging := false
+var capacity := DEFAULT_CAPACITY
 
 func _init(owner: Node) -> void:
 	app=owner
 
 func _ready() -> void:
 	name="BagPanel"
-	size=DESIGN
+	capacity = maxi(ITEMS.size(), int(ProjectSettings.get_setting("roxhistory/inventory/capacity", DEFAULT_CAPACITY)))
 	mouse_filter=Control.MOUSE_FILTER_STOP
-	var factor: float=minf((app.w-app.safe.x*2)/DESIGN.x,(app.h-app.safe.y*2)/DESIGN.y)
-	scale=Vector2.ONE*factor
-	position=(Vector2(app.w,app.h)-DESIGN*factor)*.5
-	var paper := FigmaSlice.new("paper",28)
-	add_child(paper)
-	paper.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	header_button("BagBack",Vector2(43,30),preload(ART+"09-bag-back-charcoal.svg"))
-	header_button("BagClose",Vector2(915,30),preload(ART+"09-bag-close-charcoal.svg"))
-	FigmaArt.text(self,"가방",Rect2(115,31,170,64),34,FigmaArt.BODY,INK,false)
-	var rule := ColorRect.new()
-	rule.color=Color("526360")
-	rule.position=Vector2(51,110)
-	rule.size=Vector2(922,2)
-	rule.mouse_filter=Control.MOUSE_FILTER_IGNORE
-	add_child(rule)
-	var frame := StyleBoxFlat.new()
-	frame.bg_color=Color(.51,.39,.26,.31)
-	frame.border_color=Color(.34,.24,.15,.55)
-	frame.set_border_width_all(2)
-	frame.set_corner_radius_all(10)
-	var scroll := ScrollContainer.new()
-	scroll.position=Vector2(51,133)
-	scroll.size=Vector2(922,515)
-	scroll.horizontal_scroll_mode=ScrollContainer.SCROLL_MODE_DISABLED
-	add_child(scroll)
-	var grid := GridContainer.new()
+	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	var scenery: TextureRect = app.picture(self,ERA_ART["stone_age"],Rect2())
+	scenery.stretch_mode=TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	scenery.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	shade(Color("132b20"),[0.0,.59,.73,.91,1.0],[.74,.56,.19,0.0,0.0])
+	shade(Color("10190f"),[0.0,.55,.84,1.0],[0.0,0.0,.10,.10])
+	layout=Control.new()
+	layout.size=DESIGN
+	layout.mouse_filter=Control.MOUSE_FILTER_IGNORE
+	add_child(layout)
+	var back: DemoButton=app.button(layout,"",app.close_modal)
+	back.name="BagBack"
+	back.custom_minimum_size=Vector2.ZERO
+	back.position=Vector2(68,52)
+	back.size=Vector2.ONE*56
+	for state in ["normal","hover","pressed","focus","disabled"]:
+		back.add_theme_stylebox_override(state,StyleBoxEmpty.new())
+	app.picture(back,preload("res://assets/ui/d0030/bag-back-gold@4x.png"),Rect2(0,6.835,48.96,42.33))
+	FigmaArt.text(layout,"가방",Rect2(148,50,250,60),50,FigmaArt.TITLE,INK,false)
+	count=FigmaArt.text(layout,"",Rect2(983,89,96,28),23,FigmaArt.NOTO,Color("f0e6be"))
+	count.horizontal_alignment=HORIZONTAL_ALIGNMENT_RIGHT
+	panel(layout,Rect2(68,126,1018,1),style(Color(.91,.85,.64,.36)))
+	panel(layout,Rect2(68,733,1018,1),style(Color(.91,.85,.64,.22)))
+	viewport=Control.new()
+	viewport.clip_contents=true
+	viewport.position=Vector2(68,160)
+	viewport.size=Vector2(1011,542)
+	viewport.mouse_filter=Control.MOUSE_FILTER_IGNORE
+	layout.add_child(viewport)
+	grid=GridContainer.new()
+	grid.mouse_filter=Control.MOUSE_FILTER_IGNORE
 	grid.columns=COLUMNS
-	grid.add_theme_constant_override("h_separation",SLOT_GAP)
-	grid.add_theme_constant_override("v_separation",SLOT_GAP)
-	scroll.add_child(grid)
-	for i in maxi(COLUMNS*3,ceili(float(ITEMS.size())/COLUMNS)*COLUMNS):
-		var slot := Panel.new()
+	grid.add_theme_constant_override("h_separation",int(SLOT_GAP.x))
+	grid.add_theme_constant_override("v_separation",int(SLOT_GAP.y))
+	viewport.add_child(grid)
+	var empty := style(Color(.14,.20,.16,.68),Color(.61,.66,.52,.60),10)
+	var occupied := style(Color(.26,.31,.23,.94),Color(.84,.83,.63,.82),10)
+	for i in capacity:
+		var slot := panel(grid,Rect2(Vector2.ZERO,SLOT_SIZE),occupied if i<ITEMS.size() else empty)
 		slot.name="BagSlot%d"%(i+1)
-		slot.custom_minimum_size=Vector2.ONE*SLOT_SIZE
-		slot.mouse_filter=Control.MOUSE_FILTER_IGNORE
-		slot.add_theme_stylebox_override("panel",frame)
-		grid.add_child(slot)
+		slot.custom_minimum_size=SLOT_SIZE
 		if i>=ITEMS.size():continue
-		var resource: String=ITEMS[i][0]
-		var icon := PlayChrome.CORN_ICON if resource=="grain" else DemoArt.icon(resource)
-		app.picture(slot,icon,Rect2(16,16,74,74))
-		FigmaArt.text(slot,ITEMS[i][1],Rect2(7,1,91,22),17,FigmaArt.BODY,INK,false)
-		var amount := FigmaArt.text(slot,"",Rect2(7,86,93,19),17,FigmaArt.BODY,INK,false)
+		var key: String=ITEMS[i][0]
+		var icon := PlayChrome.CORN_ICON if key=="grain" else DemoArt.icon(key)
+		app.picture(slot,icon,Rect2(10.3,15,94.4,94.4))
+		FigmaArt.text(slot,ITEMS[i][1],Rect2(8,0,99,25),18,FigmaArt.NOTO,INK,false)
+		var amount := FigmaArt.text(slot,"",Rect2(6,98,101,22),19,FigmaArt.NOTO,INK,false)
 		amount.horizontal_alignment=HORIZONTAL_ALIGNMENT_RIGHT
-		amounts[resource]=amount
+		amounts[key]=amount
+	var rows := ceili(float(capacity)/COLUMNS)
+	var content_height := rows*SLOT_SIZE.y+(rows-1)*SLOT_GAP.y
+	max_offset = maxf(0,content_height-viewport.size.y)
+	if max_offset>0:
+		panel(layout,Rect2(1102,168,3,526),style(Color(.06,.10,.07,.66),Color(.84,.82,.63,.25),2))
+		thumb=panel(layout,Rect2(1100.5,168,6,526*viewport.size.y/content_height),style(Color(.90,.85,.60,.79),Color.TRANSPARENT,3))
+	resized.connect(fit)
 	app.model.changed.connect(update_amounts)
 	update_amounts()
-	app.animate_popup(self)
+	fit()
 
-func header_button(id: String, at: Vector2, icon: Texture2D) -> void:
-	var button: DemoButton=app.button(self,"",app.close_modal)
-	button.name=id
-	button.custom_minimum_size=Vector2.ZERO
-	button.position=at
-	button.size=Vector2.ONE*64
-	for state in ["normal","hover","pressed","focus"]:
-		button.add_theme_stylebox_override(state,StyleBoxEmpty.new())
-	app.picture(button,icon,Rect2(0,0,64,64))
+func style(fill: Color, rim := Color.TRANSPARENT, radius := 0) -> StyleBoxFlat:
+	var result := StyleBoxFlat.new()
+	result.bg_color=fill
+	result.border_color=rim
+	result.set_border_width_all(1 if rim.a>0 else 0)
+	result.set_corner_radius_all(radius)
+	return result
+
+func panel(parent: Control, rect: Rect2, skin: StyleBoxFlat) -> Panel:
+	var result := Panel.new()
+	result.mouse_filter=Control.MOUSE_FILTER_IGNORE
+	result.position=rect.position
+	result.size=rect.size
+	result.add_theme_stylebox_override("panel",skin)
+	parent.add_child(result)
+	return result
+
+func shade(tint: Color, stops: Array, opacity: Array) -> void:
+	var gradient := Gradient.new()
+	var colors := PackedColorArray()
+	for alpha in opacity:colors.append(Color(tint.r,tint.g,tint.b,alpha))
+	gradient.offsets=PackedFloat32Array(stops)
+	gradient.colors=colors
+	var texture := GradientTexture2D.new()
+	texture.gradient=gradient
+	texture.fill_to=Vector2(1,0)
+	var layer: TextureRect=app.picture(self,texture,Rect2())
+	layer.stretch_mode=TextureRect.STRETCH_SCALE
+	layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+
+func fit() -> void:
+	var region := size-Vector2(app.safe)*2.0
+	var factor := maxf(.1,minf(region.x/DESIGN.x,region.y/DESIGN.y))
+	layout.scale=Vector2.ONE*factor
+	layout.position=(size-DESIGN*factor)*.5
 
 func update_amounts() -> void:
 	for resource in amounts:
 		amounts[resource].text=str(int(app.model.state.get(resource,app.model.state.get("tokens",0) if resource=="grain" else 0)))
+	count.text="%d/%d"%[amounts.size(),capacity]
+
+func scroll_to(next: float) -> void:
+	offset=clampf(next,0,max_offset)
+	grid.position.y=-offset
+	if is_instance_valid(thumb):
+		thumb.position.y=168+(526-thumb.size.y)*offset/max_offset
+
+func _input(event: InputEvent) -> void:
+	if not is_visible_in_tree() or not app.modal or not is_instance_valid(app.overlay) or not app.overlay.is_ancestor_of(self):return
+	var touch := event is InputEventScreenTouch
+	var mouse := event is InputEventMouseButton
+	var move := event is InputEventScreenDrag or event is InputEventMouseMotion
+	if not touch and not mouse and not move:return
+	var at: Vector2=event.position
+	if mouse and event.button_index in [MOUSE_BUTTON_WHEEL_UP,MOUSE_BUTTON_WHEEL_DOWN]:
+		if event.pressed and viewport.get_global_rect().has_point(at):
+			scroll_to(offset+65.0*(-1 if event.button_index==MOUSE_BUTTON_WHEEL_UP else 1))
+			get_viewport().set_input_as_handled()
+		return
+	if mouse and event.button_index!=MOUSE_BUTTON_LEFT:return
+	var id: int=event.index if touch or event is InputEventScreenDrag else -1
+	if move:
+		if pointer!=id:return
+		dragging=dragging or absf(at.y-drag_origin.y)>6.0
+		if dragging:scroll_to(drag_offset-(at.y-drag_origin.y)/layout.scale.y)
+	elif event.pressed:
+		if pointer!=-2 or not viewport.get_global_rect().has_point(at):return
+		pointer=id
+		drag_origin=at
+		drag_offset=offset
+		dragging=false
+	elif pointer==id:
+		pointer=-2
+	else:return
+	get_viewport().set_input_as_handled()

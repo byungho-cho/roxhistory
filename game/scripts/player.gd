@@ -36,6 +36,7 @@ var zoom_factor := 1.0
 var guide_tween: Tween
 var tutorial_camera_tween: Tween
 var guide_generation := 0
+var fog_preview_running := false
 var rest_points := PackedVector2Array()
 var tool: Node2D
 var manual_camera:=false
@@ -238,8 +239,21 @@ func zoom_at(midpoint: Vector2, factor: float, world_anchor: Vector2=Vector2.INF
 	camera.reset_smoothing();camera.force_update_scroll()
 
 func cancel_camera_guide() -> void:
+	fog_preview_running = false
 	guide_generation+=1
 	if guide_tween: guide_tween.kill()
+
+func preview_fog_boundary(point: Vector2) -> void:
+	settle_pan(false)
+	cancel_camera_guide()
+	if tutorial_camera_tween: tutorial_camera_tween.kill()
+	camera_center = camera.get_screen_center_position()
+	manual_camera = true
+	var target := camera_center + limit_camera_offset(point - camera_center, camera_center)
+	fog_preview_running = true
+	guide_tween = create_tween()
+	guide_tween.tween_property(self, "camera_center", target, 0.55).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	guide_tween.finished.connect(func(): fog_preview_running = false)
 
 func guide_to(point: Vector2) -> void:
 	cancel_camera_guide()

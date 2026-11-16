@@ -33,6 +33,9 @@ var reward_markers:Node2D
 var reward_roof_bounds:=Rect2()
 var boundary_level:=-1
 var boundary_fog:Node2D
+
+func set_boundary_fog_experiment(enabled: bool) -> void:
+	boundary_fog.material.set_shader_parameter("experiment_enabled", enabled)
 var boundary_debug:=false
 var boundary_root:Node2D
 var boundary_pulse:Tween
@@ -620,6 +623,17 @@ func refresh_chief()->void:
 		chief.position=model.building_position("chief")
 		BuildingVisuals.apply(chief.sprite,"chief",model.chief_level(),340)
 		chief.sprite.position.y-=chief.depth_visual.position.y
+	var level := model.chief_level()
+	var idle_fx = chief.sprite.get_node_or_null("ChiefIdleVfx")
+	if level in [3, 4]:
+		if idle_fx == null:
+			idle_fx = preload("res://scripts/chief_idle_vfx.gd").new()
+			idle_fx.name = "ChiefIdleVfx"
+			chief.sprite.add_child(idle_fx)
+		idle_fx.apply_level(chief.sprite, level)
+	elif idle_fx != null:
+		chief.sprite.remove_child(idle_fx)
+		idle_fx.queue_free()
 	var body:=chief.get_node("Footprint") as StaticBody2D
 	body.collision_layer=1 if exists else 0
 	body.collision_mask=1 if exists else 0

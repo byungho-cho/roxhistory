@@ -153,6 +153,8 @@ func toggle_quest()->void:
 
 var popup_sound_revision := 0
 var quest_reward_count:Label
+var fog_experiment_enabled := false
+var fog_experiment_button: Button
 
 func update_quest()->void:
 	if not is_instance_valid(objective):return
@@ -259,6 +261,7 @@ func refresh_viewport_metrics() -> void:
 			safe.y = maxf(18,maxf(area.position.y,physical.y-area.end.y)*h/physical.y)
 
 func show_screen(next: String,spread_hud:=false) -> void:
+	cancel_fog_preview()
 	if screen=="title" and next!="title":
 		get_node("/root/PatchBootstrap/Overlay").leave_title()
 		if title_reveal:
@@ -1237,6 +1240,14 @@ func play_hud(spread:=false) -> void:
 	settings_button.add_theme_constant_override("icon_max_width",36)
 	for state in ["normal","hover","pressed","focus"]:settings_button.add_theme_stylebox_override(state,StyleBoxEmpty.new())
 	quest_reward_count=QuestRewards.install_entry(self)
+	fog_experiment_button = button(stage, fog_experiment_label(), toggle_fog_experiment)
+	fog_experiment_button.name = "FogExperiment"
+	fog_experiment_button.custom_minimum_size = Vector2.ZERO
+	fog_experiment_button.add_theme_font_size_override("font_size", 13)
+	fog_experiment_button.position = Vector2(safe.x + 134, h-safe.y-50) if w>=h else Vector2(safe.x, h-safe.y-114)
+	fog_experiment_button.size = Vector2(109, 37)
+	fog_experiment_button.z_index = 31
+	world.set_boundary_fog_experiment(fog_experiment_enabled)
 	stage.add_child(VillageRewardBoard.new(self))
 	stage.add_child(BuildingUpgradeSigns.new(self))
 	# GUI hit testing visits later siblings first; the menu only blocks through its buttons.
@@ -1247,6 +1258,7 @@ func play_hud(spread:=false) -> void:
 
 func toggle_world_map()->void:
 	if modal or map_transition_active:return
+	cancel_fog_preview()
 	map_transition_active=true;gestures.clear()
 	if is_instance_valid(world_map):world_map.clear_input()
 	world.player.direction=Vector2.ZERO;world.player.presentation_paused=true
@@ -1270,6 +1282,7 @@ func switch_map_scene()->void:
 		stage.move_child(world_map,0)
 	chrome.clear_effects()
 	world_map_open=not world_map_open
+	if is_instance_valid(fog_experiment_button): fog_experiment_button.visible = not world_map_open
 	sync_audio()
 	audio.cue("map_open" if world_map_open else "map_close")
 	gestures.clear()
@@ -1376,6 +1389,7 @@ func apply_menu_state(animated:bool=false)->void:
 
 func inventory_summary() -> void:
 	show_modal("","",[],false,true,false,Vector2.ZERO,false,true)
+	overlay.set_meta("full_screen_bag", true)
 	var backdrop: Control=overlay.get_child(0)
 	var placeholder: Control=overlay.get_child(1)
 	overlay.remove_child(placeholder)
@@ -1383,6 +1397,29 @@ func inventory_summary() -> void:
 	backdrop.modulate.a=.72
 	overlay.add_child(preload("res://scripts/bag_popup.gd").new(self))
 
+func fog_experiment_label() -> String:
+	return "실험실 ON" if fog_experiment_enabled else "실험실 OFF"
+
+func toggle_fog_experiment() -> void:
+	if modal or world_map_open or map_transition_active or village_entry_active():
+		return
+	fog_experiment_enabled = not fog_experiment_enabled
+	fog_experiment_button.text = fog_experiment_label()
+	world.set_boundary_fog_experiment(fog_experiment_enabled)
+	if fog_experiment_enabled:
+		show_modal("실험실 · 마을 경계 안개", "마을 경계 안개가 옅어집니다. 닫고 오른쪽 경계에서 길과 강변을 비교해 보세요.", [], false, true, false, Vector2(460, 190))
+		overlay.set_meta("preview_fog_edge", true)
+	else:
+		cancel_fog_preview()
+
+func preview_fog_edge() -> void:
+	if fog_experiment_enabled and screen == "play" and not world_map_open and not map_transition_active and not modal and application_active and is_instance_valid(world):
+		var boundary := world.playable_rect()
+		world.player.preview_fog_boundary(Vector2(boundary.end.x - 145, boundary.get_center().y))
+
+func cancel_fog_preview() -> void:
+	if is_instance_valid(world) and is_instance_valid(world.player) and world.player.fog_preview_running:
+		world.player.cancel_camera_guide()
 
 func update_hud() -> void:
 	if screen!="play" or not is_instance_valid(objective) or model.state.is_empty():return
@@ -2049,6 +2086,7 @@ func show_character_guide(title:String,body:String,after:Callable=Callable())->v
 	if after.is_valid():overlay.completions.append(after)
 
 func close_modal() -> void:
+	var show_fog_edge := is_instance_valid(overlay) and overlay.has_meta("preview_fog_edge")
 	if is_instance_valid(building_workflow):building_workflow.confirmation_target=-1
 	demolition_key=""
 	if is_instance_valid(overlay):
@@ -2062,6 +2100,7 @@ func close_modal() -> void:
 	if is_instance_valid(joystick): joystick.clear()
 	if is_instance_valid(world): world.player.presentation_paused = not application_active
 	sync_audio()
+	if show_fog_edge: preview_fog_edge()
 
 func retire_modal(closing: Control) -> void:
 	stop_popup_openings(closing)
@@ -2160,6 +2199,9 @@ func close_hunt() -> void:
 	show_screen("hunt_select")
 
 func go_back() -> void:
+	if modal and is_instance_valid(overlay) and overlay.has_meta("full_screen_bag"):
+		close_modal()
+		return
 	if hunt_preparing:
 		hunt_preparation_cancelled = true
 		toast_time = 0.0
