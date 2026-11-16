@@ -141,6 +141,7 @@ func create_feedback(i: int) -> void:
 	count.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	count.theme = DemoArt.theme()
 	count.add_theme_font_size_override("font_size",12)
+	count.add_theme_color_override("font_color",Color("fff1dc"))
 	count.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	count.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	badge.add_child(count)
