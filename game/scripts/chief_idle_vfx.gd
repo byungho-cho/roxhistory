@@ -22,6 +22,7 @@ var flag := Sprite2D.new()
 var flag_material := ShaderMaterial.new()
 var smoke_material := ShaderMaterial.new()
 var chimney_material := ShaderMaterial.new()
+var flame_material := ShaderMaterial.new()
 var puffs: Array[Sprite2D] = []
 var puff_index := 0
 
@@ -29,7 +30,8 @@ func _ready() -> void:
 	flag_material.shader = preload("res://shaders/chief_flag.gdshader")
 	smoke_material.shader = preload("res://shaders/chief_smoke.gdshader")
 	chimney_material.shader = smoke_material.shader
-	chimney_material.set_shader_parameter("white_core", 0.95)
+	chimney_material.set_shader_parameter("white_core", 0.78)
+	flame_material.shader = preload("res://shaders/chief_eye_flame.gdshader")
 	flag.material = flag_material
 	z_index = 1
 	add_child(flag)
@@ -72,25 +74,29 @@ func update_particles() -> void:
 	var origin := -flag.texture.get_size() * 0.5
 	var outlet: Vector2 = origin + rig[4]
 	for index in CHIMNEY_PUFFS:
-		var age := fposmod(clock / 2.9 + float(index) / CHIMNEY_PUFFS, 1.0)
-		var drift := Vector2(285 * age * age + sin(age * TAU + index) * 46 * age, -440 * age)
-		var alpha := smoothstep(0.0, 0.08, age) * (1.0 - smoothstep(0.56, 1.0, age))
-		draw_puff(0, outlet + drift, Vector2(136,120).lerp(Vector2(486,380),age), alpha)
+		var emission := clock / 3.1 + float(index) / CHIMNEY_PUFFS
+		var age := fposmod(emission, 1.0)
+		var phase := sin(floorf(emission) * 3.14 + float(index) * 2.4)
+		var drift := Vector2(230 * age * age + phase * 58 * age, -402 * age)
+		var alpha := smoothstep(0.0, 0.14, age) * (1.0 - smoothstep(0.35, 1.0, age))
+		var spread := smoothstep(0.0, 1.0, age)
+		var extent := Vector2(93,117).lerp(Vector2(440,330), spread) * (1.0 + phase * 0.11)
+		draw_puff(0, outlet + drift, extent, alpha * 0.78, phase * 0.52 * age)
 
 	var beat := fposmod(clock, CYCLE)
+	flame_material.set_shader_parameter("clock", beat)
 	for index in 2:
 		var eye: Vector2 = origin + rig[index + 2]
-		var lean := 0.32 if index == 0 else -0.28
+		var lean := -0.09 if index == 0 else 0.09
 		if beat >= FLAME_START and beat < FLAME_START + FLAME_DURATION:
 			var elapsed := beat - FLAME_START
-			var strength := smoothstep(0.0, 0.18, elapsed) * (1.0 - smoothstep(1.55, FLAME_DURATION, elapsed))
-			strength *= 0.89 + 0.11 * cos(elapsed * 8.4)
-			var flicker := 0.5 + 0.5 * sin(elapsed * 25.0 + index * 1.8)
-			var angle := lean + sin(elapsed * 11.0 + index * 2.5) * 0.09
-			draw_puff(3, eye, Vector2(178,140), strength * 0.78)
-			var height := 413.0 * strength * lerpf(0.88, 1.0, flicker)
-			draw_puff(2, eye + Vector2(sin(angle), -cos(angle)) * height * 0.44,
-				Vector2(161.0 * strength, height), strength, angle)
+			var strength := smoothstep(0.0, 0.22, elapsed) * (1.0 - smoothstep(0.9, FLAME_DURATION, elapsed))
+			var flicker := 0.5 + 0.5 * sin(elapsed * 15.0 + index * 1.8)
+			var angle := lean + 0.12 + sin(elapsed * 5.0) * 0.055
+			draw_puff(3, eye, Vector2(124,109), strength * 0.60)
+			var height := 310.0 * strength * lerpf(0.79, 1.0, flicker)
+			draw_puff(2, eye + Vector2(sin(angle), -cos(angle)) * height * 0.46,
+				Vector2(112.0 * strength, height), strength, angle)
 		elif beat >= SMOKE_START and beat < SMOKE_START + SMOKE_DURATION:
 			for puff in EYE_PUFFS:
 				var delay := puff * 0.17 + index * 0.055
@@ -98,8 +104,8 @@ func update_particles() -> void:
 				if age <= 0.0:
 					continue
 				var alpha := smoothstep(0.0, 0.13, age) * (1.0 - smoothstep(0.57, 1.0, age))
-				draw_puff(1, eye + Vector2(lean * 110, -159) * age,
-					Vector2.ONE * lerpf(56.0, 138.0, age), alpha)
+				var drift := Vector2((lean + 0.12) * 150, -159) * age
+				draw_puff(1, eye + drift, Vector2.ONE * lerpf(56.0, 138.0, age), alpha * 0.85, lean * age)
 	for index in range(puff_index, puffs.size()):
 		puffs[index].hide()
 
@@ -108,6 +114,8 @@ func draw_puff(tile: int, at: Vector2, size: Vector2, alpha: float, rotation_ang
 	puff_index += 1
 	particle.region_rect = Rect2(tile * 128, 0, 128, 128)
 	particle.material = chimney_material if tile == 0 else smoke_material if tile == 1 else null
+	if tile == 2:
+		particle.material = flame_material
 	particle.position = at
 	particle.rotation = rotation_angle
 	particle.scale = size / 128.0
