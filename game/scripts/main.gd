@@ -8,6 +8,7 @@ var stage: Control
 var overlay: Control
 var joystick: DemoJoystick
 var objective: Label
+var quest_hud: QuestHud
 var context: Label
 var gather_button: DemoButton
 var build_button: DemoButton
@@ -134,11 +135,6 @@ var region_snapshot := {}
 var navigation: AutoTravel
 var action_row: Control
 var quest_expanded:=true
-var quest_arrow:TextureRect
-var quest_accent:ColorRect
-var quest_detail:Control
-var quest_wood:Label
-var quest_stone:Label
 var demolition_key:=""
 var relocating_key:=""
 var world_map:VillageWorldMap
@@ -156,31 +152,20 @@ func camera_modal()->bool:
 
 func toggle_quest()->void:
 	quest_expanded=not quest_expanded
-	update_quest()
+	if is_instance_valid(quest_hud):quest_hud.fold()
 	audio.cue("quest_click")
 
 var popup_sound_revision := 0
 var quest_reward_count:Label
 
 func update_quest()->void:
-	if not is_instance_valid(objective):return
-	var current:=FirstQuests.current(model.state)
-	objective.text=FirstQuests.TITLES[current] if current>=0 else "첫 여정 완료"
+	if is_instance_valid(quest_hud):quest_hud.refresh()
 	if is_instance_valid(quest_reward_count):
 		var pending:=FirstQuests.pending(model.state).size()
 		quest_reward_count.text=str(pending)
 		quest_reward_count.get_parent().visible=pending>0
 		quest_reward_count.get_parent().get_parent().visible=not model.state.get("quests_done",[]).is_empty()
-	objective.size=Vector2(168,24)
-	objective.get_parent().size=Vector2(240,84 if quest_expanded else 52)
-	if is_instance_valid(quest_arrow):quest_arrow.rotation=0.0 if quest_expanded else PI
-	if is_instance_valid(quest_accent):quest_accent.size.y=48 if quest_expanded else 18
-	if is_instance_valid(quest_detail):
-		quest_detail.visible=quest_expanded and current in [2,3,5,6]
-		var kind:String={2:"chief",3:"hut",5:"chief",6:"farm"}.get(current,"chief")
-		var cost:=model.building_cost(kind,2 if current==5 else 1)
-		quest_wood.text="%d/%d"%[mini(int(model.state.wood),int(cost.wood)),int(cost.wood)]
-		quest_stone.text="%d/%d"%[mini(int(model.state.stone),int(cost.stone)),int(cost.stone)]
+
 
 func has_pending_rewards()->bool:
 	for i in model.built_count():
@@ -1171,19 +1156,9 @@ func play_hud(spread:=false) -> void:
 	performance_hud.position=Vector2(w-safe.x-193,safe.y+156)
 	performance_hud.visible=PerformanceDiagnostics.hud_enabled(settings)
 	performance_hud.update_sample(performance_diagnostics.latest)
-	var quest_panel:=button(stage,"",toggle_quest,false,"","");quest_panel.name="QuestPanel";quest_panel.z_index=40;quest_panel.custom_minimum_size=Vector2.ZERO
-	quest_panel.position=Vector2(safe.x,safe.y+(112 if w<h else 59));quest_panel.size=Vector2(240,84)
-	for state in ["normal","hover","pressed","focus"]:quest_panel.add_theme_stylebox_override(state,StyleBoxEmpty.new())
-	var quest_bg:=picture(quest_panel,preload("res://assets/ui/v0158/quest-hud-paper.png"),Rect2(0,0,240,84))
-	quest_bg.stretch_mode=TextureRect.STRETCH_SCALE;quest_bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT);quest_bg.modulate.a=.9
-	quest_arrow=picture(quest_panel,preload("res://assets/ui/v0158/quest-hud-fold.png"),Rect2(206,16,24,24));quest_arrow.pivot_offset=Vector2(12,12)
-	picture(quest_panel,DemoArt.facility_icon("chief",1),Rect2(10,16,28,28))
-	objective=label(quest_panel,"",13,Color("49321e"));objective.position=Vector2(40,18.8);objective.size=Vector2(168,24);objective.clip_text=true
-	quest_detail=Control.new();quest_detail.mouse_filter=Control.MOUSE_FILTER_IGNORE;quest_panel.add_child(quest_detail)
-	picture(quest_detail,DemoArt.icon("wood"),Rect2(40,40.4,24,24));picture(quest_detail,DemoArt.icon("stone"),Rect2(136,40.4,24,24))
-	quest_wood=label(quest_detail,"",12,Color("49321e"));quest_wood.position=Vector2(68,40.4);quest_wood.size=Vector2(54,24)
-	quest_stone=label(quest_detail,"",12,Color("49321e"));quest_stone.position=Vector2(164,40.4);quest_stone.size=Vector2(54,24)
-	quest_panel.set_meta("semantic_text","퀘스트 상세 펼침·접힘")
+	quest_hud=QuestHud.new(self)
+	stage.add_child(quest_hud)
+	objective=quest_hud.title
 	joystick=DemoJoystick.new();stage.add_child(joystick);joystick.position=Vector2(safe.x,h-safe.y-140);joystick.hide();joystick.set_process_input(false)
 	var action_width:=64.0 if w/h>2.2 else 60.0
 	var menu_width:=action_width*5+8*4+48
