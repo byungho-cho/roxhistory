@@ -27,6 +27,10 @@ var damage: Label
 var skill_buttons: Array[Button] = []
 var card_buttons: Array[Button] = []
 var result_summary: Label
+var result_buttons: Array[Button] = []
+var exit_button: Button
+var touch_id := -1
+var touch_button: Button
 var bars: Array[ProgressBar] = []
 var enemy_bar: ProgressBar
 var results: Panel
@@ -49,7 +53,7 @@ func _ready() -> void:
 	ground.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	canvas = Art.layer(self,Vector2.ZERO)
 	make_label("실험실 · 우람 받아치기",Rect2(24,16,400,32),22)
-	make_button("실험 종료",Rect2(814,16,122,37),end_round)
+	exit_button = make_button("실험 종료",Rect2(814,16,122,37),end_round)
 	status = make_label("",Rect2(245,73,470,33),21)
 	stars = make_label("✦  ✧  ✦",Rect2(576,164,90,25),21)
 	stars.modulate = Color("ffe29b")
@@ -186,9 +190,34 @@ func build_results() -> void:
 	results.add_child(report_box)
 	copied = make_label("",Rect2(24,272,666,23),14)
 	copied.reparent(results,false)
-	make_button("테스트 결과 복사",Rect2(24,297,206,34),copy_report).reparent(results,false)
-	make_button("재도전",Rect2(401,297,138,34),restart).reparent(results,false)
-	make_button("마을로",Rect2(552,297,138,34),func(): exited.emit()).reparent(results,false)
+	result_buttons.append(make_button("테스트 결과 복사",Rect2(24,297,206,34),copy_report))
+	result_buttons.append(make_button("재도전",Rect2(401,297,138,34),restart))
+	result_buttons.append(make_button("마을로",Rect2(552,297,138,34),func(): exited.emit()))
+
+	for button in result_buttons: button.reparent(results,false)
+
+func _input(event: InputEvent) -> void:
+	if event is InputEventScreenTouch:
+		if event.pressed:
+			if touch_id >= 0: return
+			var buttons := result_buttons if showing_result else card_buttons
+			for button in buttons + [exit_button]:
+				if button.is_visible_in_tree() and not button.disabled and button.get_global_rect().has_point(event.position):
+					touch_id = event.index
+					touch_button = button
+					get_viewport().set_input_as_handled()
+					break
+		elif event.index == touch_id:
+			var button := touch_button
+			touch_id = -1
+			touch_button = null
+			get_viewport().set_input_as_handled()
+			if not event.canceled and is_instance_valid(button) and button.is_visible_in_tree() and not button.disabled and button.get_global_rect().has_point(event.position):
+				button.pressed.emit()
+	elif event is InputEventScreenDrag and event.index == touch_id:
+		if is_instance_valid(touch_button) and not touch_button.get_global_rect().has_point(event.position):
+			touch_button = null
+		get_viewport().set_input_as_handled()
 
 func restart() -> void:
 	rounds += 1
