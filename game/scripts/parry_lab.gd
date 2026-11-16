@@ -4,6 +4,7 @@ signal exited
 
 const Trial := preload("res://scripts/parry_trial.gd")
 const Hunt := preload("res://scripts/deer_hunt_screen.gd")
+const LabAudio := preload("res://scripts/hunt_audio.gd")
 const Art := preload("res://scripts/hunt_match_art.gd")
 const SIZE := Vector2(960,540)
 const HOMES := [Vector2(500,306), Vector2(535,272), Vector2(543,326)]
@@ -44,6 +45,12 @@ var normal_at := -1
 var followup_at: Array[int] = [-1,-1]
 var damage_at := -1
 var showing_result := false
+var lab_audio: LabAudio
+var feedback: Control
+var guide_target := -1
+var guide_at := 0
+var warning_played := false
+var impacts: Array[Dictionary] = []
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
@@ -113,6 +120,14 @@ func _ready() -> void:
 		skill_buttons[i].tooltip_text = ["우람 받아치기","한결 찌르기","새봄 협동"][i]
 		make_label(names[i],Rect2(x,501,66,23),14)
 		bars.append(make_hp(Rect2(x+3,527,60,8),Color("76ac55")))
+	lab_audio = LabAudio.new()
+	add_child(lab_audio)
+	lab_audio.streams["boar_warning"] = preload("res://assets/ui/d0024/06-sfx-boar-hoof.wav")
+	feedback = Control.new()
+	feedback.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	feedback.z_index = 4
+	canvas.add_child(feedback)
+	feedback.draw.connect(draw_feedback)
 	build_results()
 	resized.connect(fit)
 	fit()
@@ -225,6 +240,9 @@ func restart() -> void:
 	normal_at = -1
 	followup_at = [-1,-1]
 	damage_at = -1
+	warning_played = false
+	guide_target = -1
+	impacts.clear()
 	trial = Trial.new(Time.get_ticks_msec())
 	showing_result = false
 	results.hide()
@@ -236,22 +254,65 @@ func use_skill(index: int) -> void:
 	var now := Time.get_ticks_msec()
 	var previous_hp := trial.boar_hp
 	var previous_party_hp := trial.party_hp
-	trial.advance(now)
+	advance_trial(now)
 	if index == 0:
 		var had_normal := trial.normal_defense
 		var previous_input := trial.input
 		if trial.party_hp < previous_party_hp:
 			show_damage(now,trial.party_hp-previous_party_hp,true)
 		trial.parry(now)
+		if previous_input < 0 and trial.outcome == "성공": mark_contact("parry",now)
 		if not had_normal and trial.normal_defense: normal_at = now
 		if previous_input < 0 and trial.input >= 0:
 			refresh(now)
 			trial.feedback_ms = Time.get_ticks_msec()-now
 	elif trial.use_followup(index-1,now):
 		followup_at[index-1] = now
+		if index == 2: mark_contact("cooperation",now)
 	if trial.boar_hp < previous_hp:
 		show_damage(now,trial.boar_hp-previous_hp,false)
 	refresh(now)
+
+func advance_trial(now: int) -> void:
+	var previous_hit := trial.hangeul_hit
+	trial.advance(now)
+	if not warning_played and now >= trial.warning:
+		warning_played = true
+		lab_audio.cue("boar_warning")
+	if previous_hit < 0 and trial.hangeul_hit >= 0: mark_contact("spear",now)
+
+func mark_contact(kind: String, now: int) -> void:
+	impacts.append({"kind":kind,"at":boar.position+Vector2(46,48),"start":now})
+	lab_audio.cue({"parry":"S11","spear":"S16","cooperation":"S20"}[kind])
+
+func set_guide(target: int, now: int) -> void:
+	if guide_target == target: return
+	guide_target = target
+	guide_at = now
+
+func draw_feedback() -> void:
+	if showing_result or trial == null: return
+	var now := Time.get_ticks_msec()
+	if guide_target > 0:
+		var rect := Rect2(card_buttons[guide_target].position,card_buttons[guide_target].size).grow(3)
+		feedback.draw_rect(rect,Color("eac47c"),false,1.6,true)
+		var progress := clampf(float(now-guide_at)/370.0,0.0,1.0)
+		if progress < 1.0 and not app.reduced_ui_motion():
+			var corners := [rect.position,Vector2(rect.end.x,rect.position.y),rect.end,Vector2(rect.position.x,rect.end.y)]
+			var edge := floori(progress*4.0)
+			var tail: Vector2 = corners[edge].lerp(corners[(edge+1)%4],fposmod(progress*4.0,1.0))
+			feedback.draw_circle(tail,4.0,Color(1,.86,.49,1.0-progress*.65),true,-1,true)
+	for impact in impacts:
+		var progress := clampf(float(now-int(impact.start))/250.0,0,1)
+		if progress >= 1.0: continue
+		var at: Vector2 = impact.at
+		var texture: Texture2D = Hunt.BASIC_HIT if impact.kind == "spear" else Hunt.HEAVY_HIT if impact.kind == "parry" else Hunt.GROUND_PULSE
+		var extent := Vector2.ONE*lerpf(28.0,55.0,progress)
+		if impact.kind == "spear":
+			var from: Vector2 = actors[1].position+Vector2(14,-21)
+			feedback.draw_line(from.lerp(at,progress*.65),at,Color(1,.9,.62,1.0-progress),2.5,true)
+		if impact.kind == "cooperation": extent *= Vector2(1.0,.59)
+		feedback.draw_texture_rect(texture,Rect2(at-extent*.5,extent),false,Color(1,1,1,1.0-progress))
 
 func show_damage(now: int, amount: int, ally: bool) -> void:
 	damage_at = now
@@ -261,10 +322,12 @@ func show_damage(now: int, amount: int, ally: bool) -> void:
 func _process(_delta: float) -> void:
 	if showing_result or trial == null: return
 	frames += 1
+	lab_audio.update(app.audio.enabled,not app.application_active)
 	var now := Time.get_ticks_msec()
+	impacts=impacts.filter(func(impact):return now-int(impact.start)<250)
 	var previous_hp := trial.party_hp
 	var previous_boar_hp := trial.boar_hp
-	trial.advance(now)
+	advance_trial(now)
 	if trial.boar_hp < previous_boar_hp:
 		show_damage(now,trial.boar_hp-previous_boar_hp,false)
 	if trial.party_hp < previous_hp:
@@ -281,6 +344,8 @@ func refresh(now: int) -> void:
 	var retreat := clampf(float(now-(trial.impact+160))/400.0,0,1) if not success else 0.0
 	var boar_at := BOAR_HOME.lerp(CONTACT,charge).lerp(BOAR_HOME,retreat)
 	boar.position = boar_at-Vector2(47,66)
+	var crouch := smoothstep(0.0,180.0,float(now-trial.warning))*(1.0-smoothstep(0.0,160.0,float(now-charge_start)))
+	boar.scale = Vector2(1.0+crouch*.055,1.0-crouch*.14)
 	boar.rotation = sin(now*.025)*.08 if stun else 0.0
 	enemy_bar.position = boar_at-Vector2(35,74)
 	enemy_bar.value = trial.boar_hp
@@ -316,8 +381,13 @@ func refresh(now: int) -> void:
 		var ready := trial.can_followup(i-1,now)
 		skill_buttons[i].visible = ready
 		card_buttons[i].disabled = not ready
-		card_buttons[i].modulate = Color(1.27,1.18,.83) if ready else Color.WHITE
-		skill_buttons[i].scale = Vector2.ONE*(1.0+.07*sin(now*.021))
+		card_buttons[i].modulate = Color.WHITE
+		skill_buttons[i].scale = Vector2.ONE
+	var target := -1
+	if trial.can_followup(0,now): target = 1
+	elif trial.hangeul_hit >= 0 and trial.can_followup(1,now): target = 2
+	set_guide(target,now)
+	feedback.queue_redraw()
 	damage.visible = damage_at >= 0 and now-damage_at < 480
 	if now < trial.warning:
 		status.text = "일반 방어 · 반격" if defending else "멧돼지의 돌진 예고를 기다리세요"
@@ -335,9 +405,13 @@ func end_round() -> void:
 	reports.append(trial.report(rounds,roundi(frames*1000.0/elapsed),now))
 	if reports.size() > 3: reports.pop_front()
 	showing_result = true
+	guide_target = -1
+	impacts.clear()
+	lab_audio.update(false,false)
+	feedback.queue_redraw()
 	var commit := str(ProjectSettings.get_setting('roxhistory/update/source_commit',''))
 	if commit.is_empty(): commit = "개발 소스"
-	report_box.text = "RoxHistory %s | %s | 우람 받아치기 ON\n검수 판정: 예상 충돌 %d~%dms 전 · 스턴 %dms · 새봄 2초\n기준 5c49dd1\n%s" % [
+	report_box.text = "RoxHistory %s | %s | 우람 받아치기 ON\n검수 판정: 예상 충돌 %d~%dms 전 · 스턴 %dms · 새봄 2초\n기준 e977b2c\n%s" % [
 		ProjectSettings.get_setting("application/config/version"),commit,-Trial.EARLIEST_MS,-Trial.LATEST_MS,Trial.STUN_MS,"\n".join(reports)]
 	result_summary.text = trial.outcome if not trial.outcome.is_empty() else "중간 종료"
 	copied.text = ""

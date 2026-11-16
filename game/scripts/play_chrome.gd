@@ -14,6 +14,7 @@ const PIECE_FLIGHT := .49
 const TRACK_COLOR:=Color("523621")
 const TRACK_RIM:=Color("874f0d")
 const FILL_COLORS:=[Color("ffdb45"),Color("f2b00a"),Color("d48005")]
+const DIAMOND_FILL := [Color("74dfff"),Color("4299c9"),Color("276994")]
 var resource_capacities:Dictionary={}
 var refill_targets:Dictionary={}
 # Original portrait pixels, clipped to the hair/shoulders instead of its baked gold ring.
@@ -251,7 +252,9 @@ func _draw() -> void:
 		var top:=6.0 if key in ["wood","stone"] else 3.0
 		draw_texture_rect(resource_icon(key),Rect2(rect.position+Vector2(0,top),Vector2.ONE*extent),false)
 	var diamond := slot("diamonds")
-	frame(Rect2(diamond.position+Vector2(11,10),Vector2(diamond.size.x-11,20)),Color("253750"),Color("617b9b"))
+	var diamond_track := Rect2(diamond.position+Vector2(11,10),Vector2(diamond.size.x-11,20))
+	frame(diamond_track,Color("3376a6"),Color("a9dfff"))
+	draw_resource_fill(diamond_track.grow(-1),DIAMOND_FILL)
 	draw_texture_rect(DIAMOND_ICON,Rect2(diamond.position+Vector2(0,6),Vector2(27,27)),false)
 	hud_text(font,diamond.position+Vector2(25,24),str(app.test_diamonds),diamond.size.x-28,10,HORIZONTAL_ALIGNMENT_CENTER)
 	var center:=Vector2(app.w-app.safe.x-50,app.safe.y+60)
@@ -284,10 +287,10 @@ static func resource_icon(key:String)->Texture2D:
 	if key=="residents":return RESIDENT_ICON
 	return DemoArt.icon(key)
 
-func draw_resource_fill(rect:Rect2)->void:
+func draw_resource_fill(rect:Rect2, palette := FILL_COLORS)->void:
 	var radius:=minf(rect.size.x,rect.size.y)*.5
 	var points:=PackedVector2Array([rect.get_center()])
-	var colors:=PackedColorArray([FILL_COLORS[1]])
+	var colors:=PackedColorArray([palette[1]])
 	for corner in 4:
 		var pivot:=Vector2(rect.end.x-radius if corner in [0,1] else rect.position.x+radius,
 			rect.end.y-radius if corner in [1,2] else rect.position.y+radius)
@@ -296,7 +299,7 @@ func draw_resource_fill(rect:Rect2)->void:
 			var point:=pivot+Vector2.from_angle(angle)*radius
 			var height:=clampf((point.y-rect.position.y)/rect.size.y,0,1)
 			points.append(point)
-			colors.append(FILL_COLORS[0].lerp(FILL_COLORS[1],height*2) if height<.5 else FILL_COLORS[1].lerp(FILL_COLORS[2],height*2-1))
+			colors.append(palette[0].lerp(palette[1],height*2) if height<.5 else palette[1].lerp(palette[2],height*2-1))
 	for i in range(1,points.size()):
 		var next:=i+1 if i+1<points.size() else 1
 		if not points[i].is_equal_approx(points[next]):

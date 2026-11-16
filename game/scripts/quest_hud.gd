@@ -212,10 +212,9 @@ func claim(index: int) -> void:
 		for id in shown_ids:
 			if id not in matching:continue
 			origins.append(rows[id].get_node("Award").get_global_rect().get_center())
-	else:
-		for entry in mini(3,matching.size()):
-			origins.append(global_position+Vector2(width-18,HEADER*.54))
-	if origins.is_empty():origins.append(global_position+Vector2(width-18,HEADER*.54))
+	while origins.size() < matching.size():
+		var origin := badge.get_global_rect().get_center() if badge.visible else global_position+Vector2(40,HEADER*.54)
+		origins.append(origin+Vector2((origins.size()%3-1)*11,0))
 	busy = true
 	var preview := sample_active()
 	var committed := QuestRewards.take(app,index)

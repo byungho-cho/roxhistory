@@ -14,9 +14,6 @@ var notice_fade: Tween
 var shortage_items: Dictionary = {}
 var shortage_labels: Dictionary = {}
 var shortage_motion: Tween
-const SHORTAGE_SCALE := 2.6
-const SHORTAGE_BOTTOM_GAP := 7.0
-const SHORTAGE_FONT_BOTTOM_BEARING := 15.0
 const COST_INK := Color("553820")
 const SHORTAGE_INK := Color("a32a20")
 
@@ -136,14 +133,15 @@ func add_shortage_art(item: Control, icon: Control, amount: Control, resource: S
 	var layer := Control.new()
 	layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	# A non-container overlay avoids reflow and is independent of the pulsing controls.
-	var text := FigmaArt.text(layer,"",Rect2(-32,-19,64,22),13,FigmaArt.BODY,SHORTAGE_INK)
+	var text := FigmaArt.text(layer,"",Rect2(0,-19,78,22),14,FigmaArt.BODY,SHORTAGE_INK)
 	text.pivot_offset = Vector2(32,11)
 	text.add_theme_color_override("font_outline_color",Color("fff0d2"))
 	text.add_theme_constant_override("outline_size",4)
 	art.add_child(layer)
 	var align := func():
-		var anchor := amount.position + Vector2(amount.size.x*.5,0)
+		var anchor := Vector2.ZERO
 		layer.position = art.get_global_transform().affine_inverse()*(item.get_global_transform()*anchor)
+	text.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	amount.item_rect_changed.connect(align)
 	item.item_rect_changed.connect(align)
 	align.call_deferred()
@@ -152,10 +150,10 @@ func add_shortage_art(item: Control, icon: Control, amount: Control, resource: S
 	text.modulate.a = 0.0
 
 func pulse_shortage(seconds: float, item: Array) -> void:
-	var phase := fposmod(seconds,1.56)
+	var phase := seconds
 	var first := smoothstep(0.0,.18,phase)*(1.0-smoothstep(.18,.44,phase))
 	var second := smoothstep(.36,.55,phase)*(1.0-smoothstep(.55,.91,phase))
-	var bump := maxf(first,second*.68)*.09*(1.0-smoothstep(4.2,4.71,seconds))
+	var bump := maxf(first,second*.68)*.09
 	for control: Control in item:
 		control.pivot_offset = control.size*.5
 		control.scale = Vector2.ONE*(1.0+bump)
@@ -167,31 +165,23 @@ func refresh_cost_ink() -> void:
 	for resource: String in shortage_items:
 		var amount: Label = shortage_items[resource][1]
 		amount.add_theme_color_override("font_color",SHORTAGE_INK if resource_deficit(resource)>0 else COST_INK)
+		if resource_deficit(resource)<=0:
+			shortage_labels[resource].modulate.a = 0.0
+		elif shortage_labels[resource].modulate.a>0.0:
+			shortage_labels[resource].text = "%d 부족"%resource_deficit(resource)
 
 func play_shortage() -> bool:
 	refresh_cost_ink()
-	if shortage_motion and shortage_motion.is_valid():shortage_motion.kill()
-	shortage_motion=null
-	for resource in ["wood","stone"]:
-		pulse_shortage(0.0,shortage_items[resource])
-		shortage_labels[resource].modulate.a = 0.0
-	if resource_deficit("wood")<=0 and resource_deficit("stone")<=0:return false
+	if resource_deficit("wood")<=0 and resource_deficit("stone")<=0: return false
+	if shortage_motion and shortage_motion.is_valid(): return true
 	shortage_motion=create_tween().set_parallel()
 	for resource in ["wood","stone"]:
 		var deficit := resource_deficit(resource)
-		if deficit<=0:continue
+		if deficit<=0: continue
 		var text: Label = shortage_labels[resource]
-		text.text="−%d"%deficit
-		text.position.y=-19.0
-		text.scale=Vector2.ONE*.65
-		text.modulate.a=1.0
-		var final_y := SHORTAGE_FONT_BOTTOM_BEARING-SHORTAGE_BOTTOM_GAP-text.size.y*.5*(1.0+SHORTAGE_SCALE)
-		shortage_motion.tween_method(pulse_shortage.bind(shortage_items[resource]),0.0,4.71,4.71)
-		shortage_motion.tween_property(text,"position:y",final_y,.32).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
-		shortage_motion.tween_property(text,"scale",Vector2.ONE*SHORTAGE_SCALE,.32).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-		shortage_motion.tween_property(text,"modulate:a",.18,.12).set_delay(4.32)
-		shortage_motion.tween_property(text,"modulate:a",1.0,.09).set_delay(4.44).from(.18)
-		shortage_motion.tween_property(text,"modulate:a",0.0,.18).set_delay(4.53).from(1.0)
+		text.text = "%d 부족"%deficit
+		text.modulate.a = 1.0
+		shortage_motion.tween_method(pulse_shortage.bind(shortage_items[resource]),0.0,1.0,1.0)
 	return true
 
 func request_upgrade() -> void:

@@ -21,6 +21,7 @@ var village_alerts: AndroidVillageNotifications
 var performance_diagnostics := PerformanceDiagnostics.new()
 const PERFORMANCE_HUD:=preload("res://scripts/performance_hud.gd")
 var performance_hud:PanelContainer
+const DIRECT_PARRY_REVIEW_VERSION := "0.2.220"
 var parry_lab_enabled := false
 var parry_lab_start: Button
 var parry_lab: Control
@@ -187,11 +188,11 @@ func _ready() -> void:
 	get_tree().auto_accept_quit = false
 	get_tree().quit_on_go_back = false
 	test_mode = "--test-ui" in OS.get_cmdline_user_args()
-	quest_preview_enabled = test_mode
 	if test_mode:
 		prefs_path = "user://tests/preferences.cfg"
 		performance_diagnostics.path = "user://tests/performance-diagnostics.jsonl"
 	settings.load(prefs_path)
+	quest_preview_enabled = bool(settings.get_value("development","quest_hold_preview",test_mode))
 	audio = DemoSoundscape.new()
 	add_child(audio)
 	var save_directory:="user://tests/session" if test_mode else "user://"
@@ -1915,8 +1916,11 @@ func show_parry_lab_options() -> void:
 		actions,true,true)
 	if is_instance_valid(parry_lab_start): parry_lab_start.visible = parry_lab_enabled
 
+func parry_review_direct() -> bool:
+	return str(ProjectSettings.get_setting("application/config/version")) == DIRECT_PARRY_REVIEW_VERSION
+
 func start_parry_lab() -> void:
-	if screen != "play" or modal or not parry_lab_enabled: return
+	if screen != "play" or modal or not (parry_lab_enabled or parry_review_direct()): return
 	if gestures: gestures.clear()
 	if is_instance_valid(joystick): joystick.clear()
 	if is_instance_valid(world):
@@ -1947,18 +1951,28 @@ func exit_parry_lab() -> void:
 	if is_instance_valid(world): world.player.presentation_paused = not application_active
 
 func add_parry_lab_entry(at: Vector2) -> void:
-	var flask := button(stage,"",show_parry_lab_options,false,"","")
+	var flask := button(stage,"",start_parry_lab if parry_review_direct() else show_parry_lab_options,false,"","")
 	flask.custom_minimum_size = Vector2.ZERO
 	flask.position = at
 	flask.size = Vector2(48,48)
 	flask.z_index = 36
 	picture(flask,preload("res://assets/ui/d0031/lab-flask.png"),Rect2(8,8,32,32))
 	flask.tooltip_text = "실험실 · 우람 받아치기"
+	if parry_review_direct(): return
 	parry_lab_start = button(stage,"실험 전투 시작",start_parry_lab)
 	parry_lab_start.position = at+Vector2(-157,4)
 	parry_lab_start.size = Vector2(150,40)
 	parry_lab_start.z_index = 36
 	parry_lab_start.visible = parry_lab_enabled
+
+func set_quest_preview_enabled(enabled: bool) -> void:
+	var previous := quest_preview_enabled
+	settings.set_value("development","quest_hold_preview",enabled)
+	if settings.save(prefs_path) != OK:
+		settings.set_value("development","quest_hold_preview",previous)
+		show_error("퀘스트 샘플 설정을 저장하지 못했습니다.")
+		return
+	quest_preview_enabled = enabled
 
 func debug_shortcut_visible() -> bool:
 	return settings.get_value("development","performance_shortcut",true)
