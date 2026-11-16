@@ -544,8 +544,6 @@ func title_screen() -> void:
 		title_sound.add_theme_stylebox_override(state,StyleBoxEmpty.new())
 	install_speaker_icon(title_sound)
 	update_title_sound()
-	if ProjectSettings.get_setting('roxhistory/lab/qa_build',false):
-		add_parry_lab_entry(Vector2(w-safe.x-52,h-safe.y-113))
 	var patch_status:=Label.new()
 	patch_status.position=Vector2(safe.x,h-safe.y-37)
 	patch_status.add_theme_color_override("font_color",Color("fff0d0"))
@@ -602,9 +600,6 @@ func style_start_prompt(start: DemoButton) -> void:
 	start.add_theme_color_override("font_outline_color",Color("49321e"));start.add_theme_constant_override("outline_size",3)
 
 func check_title_update(manual:=false) -> void:
-	if ProjectSettings.get_setting('roxhistory/lab/qa_build',false):
-		if not title_initial_update_done: finish_title_update_check()
-		return
 	if screen!="title" or not application_active or modal or title_reveal or title_update_in_flight or is_instance_valid(intro_cloud):return
 	if test_mode and not manual:return
 	var updates := get_node("/root/PatchBootstrap/Overlay")
@@ -1202,8 +1197,7 @@ func play_hud(spread:=false) -> void:
 	debug_shortcut.size=Vector2(48,48)
 	debug_shortcut.position=Vector2(w-safe.x-48,action_row.position.y-124)
 	debug_shortcut.z_index=36
-	if ProjectSettings.get_setting('roxhistory/lab/qa_build',false):
-		add_parry_lab_entry(debug_shortcut.position-Vector2(0,57))
+	add_parry_lab_entry(debug_shortcut.position-Vector2(0,57))
 	debug_shortcut_icon=picture(debug_shortcut,preload("res://assets/ui/v0158/debug-bug.svg"),Rect2(9,9,30,30))
 	update_debug_shortcut()
 	for data in [["사냥","spear"],["채집","berries"],["제작","hammer"],["가방","bag"],["건설","hut"]]:
@@ -1908,7 +1902,7 @@ func show_parry_lab_options() -> void:
 	if is_instance_valid(parry_lab_start): parry_lab_start.visible = parry_lab_enabled
 
 func start_parry_lab() -> void:
-	if modal or not parry_lab_enabled: return
+	if screen != "play" or modal or not parry_lab_enabled: return
 	if gestures: gestures.clear()
 	if is_instance_valid(joystick): joystick.clear()
 	if is_instance_valid(world):

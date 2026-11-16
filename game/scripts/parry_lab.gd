@@ -176,7 +176,7 @@ func build_results() -> void:
 	copied.reparent(results,false)
 	make_button("테스트 결과 복사",Rect2(24,297,206,34),copy_report).reparent(results,false)
 	make_button("재도전",Rect2(401,297,138,34),restart).reparent(results,false)
-	make_button("마을로" if app.screen == "play" else "시작 화면",Rect2(552,297,138,34),func(): exited.emit()).reparent(results,false)
+	make_button("마을로",Rect2(552,297,138,34),func(): exited.emit()).reparent(results,false)
 
 func restart() -> void:
 	rounds += 1
@@ -284,7 +284,7 @@ func end_round() -> void:
 	reports.append(trial.report(rounds,roundi(frames*1000.0/elapsed),now))
 	if reports.size() > 3: reports.pop_front()
 	showing_result = true
-	var commit := str(JSON.parse_string(FileAccess.get_file_as_string("res://data/d0036-build.json"))) if FileAccess.file_exists("res://data/d0036-build.json") else ""
+	var commit := str(ProjectSettings.get_setting('roxhistory/update/source_commit',''))
 	if commit.is_empty(): commit = "개발 소스"
 	report_box.text = "RoxHistory %s | %s | 우람 받아치기 ON\n검수 판정: 예상 충돌 %d~%dms 전 · 스턴 %dms\n%s" % [
 		ProjectSettings.get_setting("application/config/version"),commit,-Trial.EARLIEST_MS,-Trial.LATEST_MS,Trial.STUN_MS,"\n".join(reports)]

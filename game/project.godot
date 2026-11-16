@@ -1,7 +1,7 @@
 config_version=5
 
 [application]
-config/name="RoxHistory QA"
+config/name="RoxHistory"
 config/version="0.2.211"
 config/build_date="2026.11.16"
 config/icon="res://assets/app-icon-pioneer.png"
@@ -38,7 +38,3 @@ pointing/emulate_mouse_from_touch=false
 inventory/capacity=64
 
 development/settings_entry=true
-
-[roxhistory]
-
-lab/qa_build=true

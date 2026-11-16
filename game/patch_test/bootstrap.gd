@@ -46,7 +46,6 @@ var cached := {}
 var candidate := {}
 var envelope := PackedByteArray()
 func _init() -> void:
-	if ProjectSettings.get_setting('roxhistory/lab/qa_build',false): return
 	# Autoload _ready runs after the main scene is loaded. Mount before that load.
 	DirAccess.make_dir_recursive_absolute(cache)
 	discard(cache + "incoming.part")
@@ -167,7 +166,6 @@ func check_for_patch() -> void:
 	begin_manifest_check(RELEASE_ROOT+"latest.json")
 
 func begin_manifest_check(url: String) -> bool:
-	if ProjectSettings.get_setting('roxhistory/lab/qa_build',false): return false
 	if downloading or restart_pending or phase==Phase.CHECKING:return false
 	check_url = url
 	candidate.clear()
