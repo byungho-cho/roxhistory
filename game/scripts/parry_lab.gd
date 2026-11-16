@@ -180,7 +180,7 @@ func build_results() -> void:
 	heading.reparent(results,false)
 	report_box = TextEdit.new()
 	report_box.position = Vector2(24,83)
-	report_box.size = Vector2(666,184)
+	report_box.size = Vector2(666,174)
 	report_box.editable = false
 	report_box.add_theme_font_size_override("font_size",9)
 	report_box.add_theme_color_override("font_readonly_color",Color("f2e5cf"))
@@ -188,11 +188,11 @@ func build_results() -> void:
 	result_summary.reparent(results,false)
 	report_box.wrap_mode = TextEdit.LINE_WRAPPING_BOUNDARY
 	results.add_child(report_box)
-	copied = make_label("",Rect2(24,272,666,23),14)
+	copied = make_label("",Rect2(24,258,666,23),14)
 	copied.reparent(results,false)
-	result_buttons.append(make_button("테스트 결과 복사",Rect2(24,297,206,34),copy_report))
-	result_buttons.append(make_button("재도전",Rect2(401,297,138,34),restart))
-	result_buttons.append(make_button("마을로",Rect2(552,297,138,34),func(): exited.emit()))
+	result_buttons.append(make_button("테스트 결과 복사",Rect2(24,284,206,34),copy_report))
+	result_buttons.append(make_button("재도전",Rect2(401,284,138,34),restart))
+	result_buttons.append(make_button("마을로",Rect2(552,284,138,34),func(): exited.emit()))
 
 	for button in result_buttons: button.reparent(results,false)
 
@@ -228,6 +228,7 @@ func restart() -> void:
 	trial = Trial.new(Time.get_ticks_msec())
 	showing_result = false
 	results.hide()
+	status.show()
 	refresh(trial.start)
 
 func use_skill(index: int) -> void:
@@ -340,6 +341,7 @@ func end_round() -> void:
 		ProjectSettings.get_setting("application/config/version"),commit,-Trial.EARLIEST_MS,-Trial.LATEST_MS,Trial.STUN_MS,"\n".join(reports)]
 	result_summary.text = trial.outcome if not trial.outcome.is_empty() else "중간 종료"
 	copied.text = ""
+	status.hide()
 	results.show()
 
 func copy_report() -> void:
