@@ -119,14 +119,18 @@ func nodes()->Array:
 	var catalog:=all_nodes()
 	# Interleave kinds so each HQ tier has both wood and stone sources.
 	var wood:Array=[];var stone:Array=[]
+	var edge:Array=[]
 	for n in catalog:
+		if n.has("edge_level"):
+			if chief_level() >= int(n.edge_level): edge.append(n)
+			continue
 		if n.kind=="wood":wood.append(n)
 		else:stone.append(n)
 	var active:Array=[]
 	while active.size()<resource_node_limit() and (not wood.is_empty() or not stone.is_empty()):
 		if not wood.is_empty():active.append(wood.pop_front())
 		if active.size()<resource_node_limit() and not stone.is_empty():active.append(stone.pop_front())
-	return active
+	return active+edge
 
 func resource_node_limit()->int:
 	return [5,10,10,20][clampi(chief_level(),1,4)-1]
@@ -138,14 +142,22 @@ func prepare_resource_positions(next:Dictionary)->void:
 	state=next
 	var active:=nodes()
 	var bounds:=VillageBounds.rect_for_level(chief_level()).grow(-100)
-	var occupied:Array=[];var missing:Array=[]
+	var occupied:Array=[];var missing:Array=[];var edge_slots:Dictionary={}
 	for n in active:
 		if next.node_positions.has(n.id) and bounds.has_point(DemoConfig.point(next.node_positions[n.id])):
 			occupied.append(DemoConfig.point(next.node_positions[n.id]))
-		else:missing.append(n.id)
+		else:
+			missing.append(n.id)
+			if n.has("edge_level"): edge_slots[n.id]=DemoConfig.point(n.position)
 	var reserved:Array=[]
 	if chief_level()>0:reserved.append(building_position("chief"))
 	for key in OwnedBuildingUpgrades.keys(self):reserved.append(building_position(key))
+	for id in edge_slots:
+		var at: Vector2 = edge_slots[id]
+		if ResourcePlacement.clear(at,chief_level(),occupied,reserved):
+			next.node_positions[id]=[at.x,at.y]
+			occupied.append(at)
+			missing.erase(id)
 	var positions:=ResourcePlacement.generate(int(next.resource_seed),chief_level(),missing.size(),occupied,reserved)
 	for i in mini(missing.size(),positions.size()):next.node_positions[missing[i]]=[positions[i].x,positions[i].y]
 	next.resource_placement_revision=36

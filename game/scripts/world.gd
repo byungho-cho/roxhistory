@@ -37,6 +37,8 @@ var terrain_art: Node2D
 var boundary_debug:=false
 var boundary_root:Node2D
 var boundary_pulse:Tween
+var visual_boundary := Rect2()
+var boundary_resource_hold := -1
 # Water visuals and physics share the shoreline traced on terrain.png.
 const SHORE = [Vector2(0,340),Vector2(170,285),Vector2(280,220),Vector2(370,130),Vector2(280,60)]
 const RIVER_POLYGON = [Vector2(0,155),Vector2(145,120),Vector2(260,70),Vector2(280,60),Vector2(370,130),Vector2(280,220),Vector2(170,285),Vector2(0,340)]
@@ -575,16 +577,16 @@ func evacuate_animals(at:Vector2,kind:String)->void:
 
 func refresh_boundary()->void:
 	if boundary_level==model.chief_level() and boundary_debug==model.debug_show_boundary:return
+	var from_level := boundary_level
 	boundary_level=model.chief_level();boundary_debug=model.debug_show_boundary
 	if is_instance_valid(player) and is_instance_valid(player.camera):
 		player.fit_camera_limits()
-	if boundary_pulse!=null:boundary_pulse.kill()
 	for child in boundary_root.get_children():
 		boundary_root.remove_child(child);child.queue_free()
 	var polygon:=VillageBounds.polygon_for_level(boundary_level)
 	var bounds:=VillageBounds.rect_for_level(boundary_level)
-	boundary_fog.material.set_shader_parameter("boundary",Vector4(bounds.position.x,bounds.position.y,bounds.end.x,bounds.end.y))
-	boundary_fog.queue_redraw()
+	if from_level != boundary_level or visual_boundary.size.is_zero_approx():
+		animate_boundary(bounds,boundary_level,from_level)
 	for i in polygon.size():
 		var boundary:=StaticBody2D.new();boundary.name="VillageBoundary"
 		var edge:=CollisionShape2D.new();var segment:=SegmentShape2D.new()
@@ -593,6 +595,34 @@ func refresh_boundary()->void:
 	var outline:=Line2D.new();outline.name="UnlockedPerimeter";outline.points=polygon;outline.closed=true
 	outline.width=3;outline.default_color=Color("ed514b");outline.z_index=-14
 	outline.visible=boundary_debug;boundary_root.add_child(outline)
+
+func animate_boundary(bounds: Rect2, level: int, from_level: int) -> void:
+	if boundary_pulse and boundary_pulse.is_valid(): boundary_pulse.kill()
+	boundary_resource_hold = from_level if from_level >= 1 and level > from_level else -1
+	if boundary_resource_hold < 0:
+		apply_boundary_visual(bounds,level,-1)
+		return
+	var start := visual_boundary
+	boundary_pulse = create_tween()
+	boundary_pulse.tween_method(func(t: float):
+		var interpolated := Rect2(start.position.lerp(bounds.position,t),start.size.lerp(bounds.size,t))
+		apply_boundary_visual(interpolated,level,from_level)
+		if t >= .72 and boundary_resource_hold >= 1:
+			boundary_resource_hold = -1
+			refresh_resources()
+	,0.0,1.0,1.0).set_trans(Tween.TRANS_SINE)
+	boundary_pulse.tween_callback(func():
+		boundary_resource_hold = -1
+		apply_boundary_visual(bounds,level,-1)
+		refresh_resources()
+	)
+
+func apply_boundary_visual(bounds: Rect2, level: int, from_level: int) -> void:
+	visual_boundary = bounds
+	var material := boundary_fog.material as ShaderMaterial
+	material.set_shader_parameter("boundary",Vector4(bounds.position.x,bounds.position.y,bounds.end.x,bounds.end.y))
+	terrain_art.update_edge_decorations(level,bounds,from_level)
+	boundary_fog.queue_redraw()
 
 func draw_boundary_fog()->void:
 	boundary_fog.draw_rect(terrain_art.world_bounds.grow(12000),Color.WHITE)
@@ -631,6 +661,7 @@ func refresh_resources()->void:
 	var active:Array[String]=[]
 	var reveal_index:=0
 	for n in model.nodes():
+		if boundary_resource_hold >= 1 and int(n.get("edge_level",0)) > boundary_resource_hold: continue
 		active.append(str(n.id))
 		var created:=not art_nodes.has(n.id)
 		if created:add_resource_art(n)

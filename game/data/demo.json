@@ -22,6 +22,9 @@
     1350
   ],
   "nodes": [
+    {"id":"edge_wood_2","kind":"wood","position":[2555,680],"charges":3,"size":"medium","edge_level":2},
+    {"id":"edge_stone_3","kind":"stone","position":[2770,985],"charges":3,"size":"medium","edge_level":3},
+    {"id":"edge_wood_4","kind":"wood","position":[2985,685],"charges":3,"size":"medium","edge_level":4},
     {
       "id": "wood_1",
       "kind": "wood",

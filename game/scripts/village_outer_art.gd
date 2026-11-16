@@ -76,6 +76,67 @@ func add_decorations(world: Node2D) -> void:
 		mist.set_shader_parameter("crown_opacity",0.83)
 		decoration.material = mist
 		layer.add_child(decoration)
+	add_edge_decorations(layer,replacement_areas)
+
+const EDGE_ART := {
+	"pine": preload("res://assets/village-outer-d0035/tree-02-wind-pine.png"),
+	"tors": preload("res://assets/village-outer-d0035/rock-03-twin-tors.png"),
+	"zelkova": preload("res://assets/village-outer-d0037/tree-03-forked-zelkova.png"),
+}
+const EDGE_PROPS := [
+	["EdgePine",0,Vector2(15,770),125,"pine"],
+	["EdgeRock",0,Vector2(2390,920),95,"tors"],
+	["EdgeZelkova",0,Vector2(1520,33),120,"zelkova"],
+	["EastPine",2,Vector2(2555,680),160,"pine"],
+	["EastStone",2,Vector2(2575,1120),94,"tors"],
+	["SouthPine",2,Vector2(1650,1470),125,"pine"],
+	["WestZelkova",3,Vector2(-360,1030),138,"zelkova"],
+	["EastTors",3,Vector2(2770,985),110,"tors"],
+	["EastZelkova",4,Vector2(2985,685),155,"zelkova"],
+	["SouthStone",4,Vector2(1860,1660),100,"tors"],
+]
+var edge_sprites: Array[Sprite2D] = []
+
+func add_edge_decorations(layer: Node2D, areas: Dictionary) -> void:
+	for entry in EDGE_PROPS:
+		var texture: Texture2D = EDGE_ART[entry[4]]
+		if not areas.has(texture):
+			areas[texture] = Rect2(texture.get_image().get_used_rect())
+		var area: Rect2 = areas[texture]
+		var scale_factor := float(entry[3])/area.size.x
+		var anchor := Vector2(area.get_center().x,area.end.y)
+		var sprite := Sprite2D.new()
+		sprite.name = entry[0]
+		sprite.texture = texture
+		sprite.scale = Vector2.ONE*scale_factor
+		sprite.position = entry[2]+(texture.get_size()*.5-anchor)*scale_factor
+		sprite.visibility_layer = 2
+		var mist := ShaderMaterial.new()
+		mist.shader = MIST
+		mist.set_shader_parameter("height_span",Vector2(area.position.y,area.end.y)/texture.get_height())
+		mist.set_shader_parameter("clip_inside",false)
+		mist.set_shader_parameter("crown_opacity",.88 if int(entry[1]) == 0 else .43)
+		sprite.material = mist
+		layer.add_child(sprite)
+		edge_sprites.append(sprite)
+
+func update_edge_decorations(level: int, visual_bounds: Rect2, from_level: int) -> void:
+	for i in edge_sprites.size():
+		var entry: Array = EDGE_PROPS[i]
+		var unlock := int(entry[1])
+		if unlock == 0: continue
+		var sprite := edge_sprites[i]
+		if unlock > level:
+			sprite.show()
+			sprite.modulate.a = 1.0
+		elif from_level >= 1 and unlock > from_level:
+			var at: Vector2 = entry[2]
+			var distance_inside := minf(minf(at.x-visual_bounds.position.x,visual_bounds.end.x-at.x),
+				minf(at.y-visual_bounds.position.y,visual_bounds.end.y-at.y))
+			sprite.modulate.a = 1.0-smoothstep(-35.0,30.0,distance_inside)
+			sprite.visible = sprite.modulate.a > .001
+		else:
+			sprite.hide()
 
 static func rect_from(values: Array) -> Rect2:
 	return Rect2(values[0],values[1],values[2],values[3])
