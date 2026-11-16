@@ -3,6 +3,7 @@ render_mode unshaded;
 
 uniform vec4 boundary;
 uniform vec4 terrain_bounds;
+uniform float reveal_strength = 0.0;
 varying vec2 world_position;
 
 float noise(vec2 p) {
@@ -40,6 +41,10 @@ void fragment() {
 	vec2 art_clearance = min(world_position - terrain_bounds.xy, terrain_bounds.zw - world_position);
 	opacity = mix(1.0, opacity, smoothstep(0.0, 110.0, min(art_clearance.x, art_clearance.y)));
 	float tone = mix(mix(folds, banks, 0.72), wisps, 0.14);
-	vec3 fog = vec3(mix(0.94, 1.0, tone));
+	float swept_wisp = smoothstep(-span * 0.015, span * 0.055, distance)
+		* (1.0 - smoothstep(span * 0.055, span * 0.16, distance));
+	float clearing = reveal_strength * swept_wisp * smoothstep(0.24, 0.85, wisps);
+	opacity *= 1.0 - 0.23 * clearing;
+	vec3 fog = vec3(mix(0.94, 1.0, tone + (1.0 - tone) * clearing));
 	COLOR = vec4(fog, opacity);
 }

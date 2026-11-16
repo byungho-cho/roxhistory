@@ -15,6 +15,6 @@ void fragment() {
 	float thin_mist = veil * (0.67 + 0.12 * wisp);
 	float crossover = smoothstep(0.54, 1.0, coverage);
 	float opacity = mix(thin_mist, 0.99, crossover) * smoothstep(0.0, 0.16, coverage);
-	vec3 tint = mix(vec3(0.59,0.66,0.61),vec3(0.82,0.85,0.76),0.55 + 0.28*wisp);
+	vec3 tint = vec3(mix(0.91,1.0,0.55 + 0.28*wisp));
 	COLOR = vec4(tint, opacity);
 }

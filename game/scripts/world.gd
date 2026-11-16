@@ -606,21 +606,22 @@ func animate_boundary(bounds: Rect2, level: int, from_level: int) -> void:
 	boundary_pulse = create_tween()
 	boundary_pulse.tween_method(func(t: float):
 		var interpolated := Rect2(start.position.lerp(bounds.position,t),start.size.lerp(bounds.size,t))
-		apply_boundary_visual(interpolated,level,from_level)
+		apply_boundary_visual(interpolated,level,from_level,sin(t*PI))
 		if t >= .72 and boundary_resource_hold >= 1:
 			boundary_resource_hold = -1
 			refresh_resources()
-	,0.0,1.0,1.0).set_trans(Tween.TRANS_SINE)
+	,0.0,1.0,1.65).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 	boundary_pulse.tween_callback(func():
 		boundary_resource_hold = -1
 		apply_boundary_visual(bounds,level,-1)
 		refresh_resources()
 	)
 
-func apply_boundary_visual(bounds: Rect2, level: int, from_level: int) -> void:
+func apply_boundary_visual(bounds: Rect2, level: int, from_level: int, reveal_strength := 0.0) -> void:
 	visual_boundary = bounds
 	var material := boundary_fog.material as ShaderMaterial
 	material.set_shader_parameter("boundary",Vector4(bounds.position.x,bounds.position.y,bounds.end.x,bounds.end.y))
+	material.set_shader_parameter("reveal_strength",maxf(0.0,reveal_strength))
 	terrain_art.update_edge_decorations(level,bounds,from_level)
 	boundary_fog.queue_redraw()
 
