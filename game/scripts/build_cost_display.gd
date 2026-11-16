@@ -113,7 +113,7 @@ func flash_shortage() -> void:
 		ring.set_meta("motion",motion)
 
 func stop_ring(ring: Panel) -> void:
-	var motion := ring.get_meta("motion",null) as Tween
+	var motion := ring.get_meta("motion") as Tween if ring.has_meta("motion") else null
 	if motion and motion.is_valid(): motion.kill()
 	ring.hide()
 

@@ -1664,9 +1664,12 @@ func confirm_build_preview()->void:
 	if not reason.is_empty():toast(reason);return
 	var at:Vector2=build_preview.placement_position
 	if not build_preview.moving_key.is_empty():return
-	if not can_build_selected():
+	build_preview.refresh_cost()
+	if build_preview.cost_display.shortage != Vector2i.ZERO:
+		toast("",0)
 		build_preview.cost_display.flash_shortage()
 		return
+	if not can_build_selected(): return
 	if model.begin_construction(build_kind,at):
 		world.evacuate_animals(at,build_kind)
 		cancel_build_preview()
@@ -1749,9 +1752,12 @@ func run_reserved_action()->void:
 func build_action() -> void:
 	if modal or gestures.blocked:return
 	if world.selected_site<0:toast("건설할 위치를 선택해 주세요");return
-	if not can_build_selected():
+	build_preview.refresh_cost()
+	if build_preview.cost_display.shortage != Vector2i.ZERO:
+		toast("",0)
 		build_preview.cost_display.flash_shortage()
 		return
+	if not can_build_selected(): return
 	build_preview.select_position(DemoConfig.BUILD_SITES[world.selected_site],build_kind)
 	confirm_build_preview()
 
