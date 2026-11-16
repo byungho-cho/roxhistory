@@ -114,6 +114,12 @@ var autosave := 0.0
 var settings := ConfigFile.new()
 var prefs_path := "user://preferences.cfg"
 var test_mode := false
+const WINDOWS_IDLE_EXIT_MS := 600000
+const WINDOWS_IDLE_WARNING_MS := 30000
+var windows_unfocused_since := -1
+var windows_idle_layer: CanvasLayer
+var windows_idle_label: Label
+var windows_idle_save_failed := false
 var safe := Vector2(24,18)
 var w := 960.0
 var h := 540.0
@@ -1466,6 +1472,8 @@ func first_construction_locked()->bool:
 	return model.chief_level()==0 and model.pending_construction_count("chief")==0 and FirstQuests.current(model.state) in [0,1]
 
 func _process(delta: float) -> void:
+	if windows_unfocused_since >= 0:
+		update_windows_idle(Time.get_ticks_msec())
 	performance_diagnostics.tick(self,delta)
 	if screen=="intro":
 		if application_active and not intro_leaving and not intro_playback_failed and is_instance_valid(intro_player):
@@ -2078,6 +2086,7 @@ func show_modal(title: String, body: String, actions: Array, compact: bool = fal
 	return scroll
 
 func animate_popup(panel: Control, center := Vector2.INF) -> void:
+	if reduced_ui_motion(): return
 	var final_scale := panel.scale
 	var pivot := center if center.is_finite() else panel.size*.5
 	panel.position += (pivot-panel.pivot_offset)*(final_scale-Vector2.ONE)
@@ -2270,9 +2279,68 @@ func _unhandled_input(event: InputEvent) -> void:
 		if event.physical_keycode == KEY_E: gather_action()
 		elif event.physical_keycode == KEY_B: construction_menu()
 
+func windows_focus_changed(focused: bool, now: int) -> void:
+	if focused:
+		windows_unfocused_since = -1
+		windows_idle_save_failed = false
+		if is_instance_valid(windows_idle_layer): windows_idle_layer.queue_free()
+		windows_idle_layer = null
+		windows_idle_label = null
+		return
+	if windows_unfocused_since >= 0: return
+	windows_unfocused_since = now
+	if is_instance_valid(region_selection): region_selection.cancel_input()
+	if gestures: gestures.clear()
+	if is_instance_valid(joystick): joystick.clear()
+	if is_instance_valid(world):
+		world.player.direction = Vector2.ZERO
+		world.player.settle_pan(false)
+
+func update_windows_idle(now: int) -> void:
+	if windows_unfocused_since < 0 or windows_idle_save_failed: return
+	var remaining := WINDOWS_IDLE_EXIT_MS - (now - windows_unfocused_since)
+	if remaining > WINDOWS_IDLE_WARNING_MS: return
+	if remaining <= 0:
+		if save_and_quit_windows(): return
+		windows_idle_save_failed = true
+		show_windows_idle_notice("진행을 저장하지 못해 자동 종료를 취소했습니다.")
+		return
+	show_windows_idle_notice("다른 창을 사용 중입니다. %d초 뒤 자동 종료됩니다.\n게임 창으로 돌아오면 취소됩니다." % ceili(remaining/1000.0))
+
+func show_windows_idle_notice(message: String) -> void:
+	if not is_instance_valid(windows_idle_layer):
+		windows_idle_layer = CanvasLayer.new()
+		windows_idle_layer.layer = 100
+		add_child(windows_idle_layer)
+		var holder := CenterContainer.new()
+		holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		windows_idle_layer.add_child(holder)
+		holder.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		var panel := PanelContainer.new()
+		panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		panel.add_theme_stylebox_override("panel", QuestRewards.paper_style())
+		holder.add_child(panel)
+		var padding := MarginContainer.new()
+		padding.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		for side in ["top","bottom","left","right"]:
+			padding.add_theme_constant_override("margin_"+side,20)
+		panel.add_child(padding)
+		windows_idle_label = label(padding,"",18,Color("49321e"))
+		windows_idle_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	if windows_idle_label.text != message: windows_idle_label.text = message
+
+func save_and_quit_windows() -> bool:
+	if is_instance_valid(world) and not model.save_position(world.player.position): return false
+	windows_unfocused_since = -1
+	get_tree().quit()
+	return true
+
 func _notification(what: int) -> void:
 	# Synthetic tests issue PAUSED/RESUMED explicitly; desktop focus is external.
 	if test_mode and what in [NOTIFICATION_APPLICATION_FOCUS_OUT,NOTIFICATION_APPLICATION_FOCUS_IN]: return
+	if OS.has_feature("windows") and what in [NOTIFICATION_APPLICATION_FOCUS_OUT,NOTIFICATION_APPLICATION_FOCUS_IN]:
+		windows_focus_changed(what == NOTIFICATION_APPLICATION_FOCUS_IN,Time.get_ticks_msec())
+		return
 	if what == NOTIFICATION_WM_GO_BACK_REQUEST:
 		go_back()
 	elif what == NOTIFICATION_APPLICATION_PAUSED or what == NOTIFICATION_APPLICATION_FOCUS_OUT:

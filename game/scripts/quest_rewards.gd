@@ -98,7 +98,6 @@ static func paper_style() -> StyleBoxFlat:
 
 static func dialog(app:Node, id:String, dimensions:Vector2, factor:float) -> Panel:
 	app.show_modal("","",[],false,true,false,Vector2.ZERO,false,true)
-	app.show_modal_immediately()
 	app.clear_children(app.overlay)
 	var shade := ModalBackdrop.new()
 	shade.color = Color(0,0,0,.38)
@@ -112,16 +111,8 @@ static func dialog(app:Node, id:String, dimensions:Vector2, factor:float) -> Pan
 	panel.position = (Vector2(app.w,app.h) - dimensions * factor) * .5
 	panel.add_theme_stylebox_override("panel",paper_style())
 	app.overlay.add_child(panel)
+	app.animate_popup(panel)
 	return panel
-
-static func reveal_rows(app:Node,list:VBoxContainer,first:int,count:int) -> void:
-	if app.reduced_ui_motion() or first >= list.get_child_count(): return
-	for index in range(first,mini(first+count,list.get_child_count())):
-		var row := list.get_child(index) as Control
-		row.modulate.a = .16
-		# Each tween belongs to its row, so replacing rows cancels the reveal.
-		var reveal := row.create_tween().set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
-		reveal.tween_property(row,"modulate:a",1.0,.13).set_delay(.03*(index-first))
 
 static func rule(parent:Control, rect:Rect2) -> void:
 	var divider := ColorRect.new()
@@ -181,7 +172,6 @@ static func open(app:Node) -> void:
 	badge.rotation_degrees = -8.0
 	caption(app,badge,"",Rect2(0,0,36,36),20,CREAM).name = "Count"
 	fill_cards(app,cards)
-	reveal_rows(app,cards,0,mini(rows,FirstQuests.pending(app.model.state).size()))
 
 static func fill_cards(app:Node, cards:VBoxContainer) -> void:
 	app.clear_children(cards)
