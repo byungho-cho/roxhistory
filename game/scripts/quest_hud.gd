@@ -6,11 +6,14 @@ const INK := Color("374438")
 const PAPER := Color("f0edd3e8")
 const CREAM := Color("fff5dc")
 const HEADER := 40.0
+const CHEVRON_UP := preload("res://assets/ui/d0037/quest-chevron-expanded.png")
+const CHEVRON_DOWN := preload("res://assets/ui/d0037/quest-chevron-collapsed.png")
 
 var app: Node
 var title: Label
 var emblem: TextureRect
-var arrow: Label
+var arrow: TextureRect
+var toggle: DemoButton
 var badge: DemoButton
 var body: Control
 var detail: Control
@@ -61,11 +64,11 @@ func _ready() -> void:
 	title = caption(self,"",Rect2(48,0,width-94,HEADER),16,CREAM)
 	title.z_index=3
 	title.clip_text=true
-	var toggle := QuestRewards.art_button(app,self,"QuestToggle",Rect2(width-50,0,50,HEADER),app.toggle_quest)
+	toggle = QuestRewards.art_button(app,self,"QuestToggle",Rect2(width-50,0,50,HEADER),app.toggle_quest)
 	toggle.z_index=3
 	toggle.set_meta("semantic_text","퀘스트 상세 펼침·접힘")
-	arrow = caption(toggle,"",Rect2(9,0,34,HEADER),23,Color("eee6c2bd"))
-	arrow.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
+	arrow = app.picture(toggle,CHEVRON_UP,Rect2(13,8,24,24))
+	arrow.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	badge = QuestRewards.art_button(app,self,"QuestPendingBadge",Rect2(32,-10,32,25),func(): claim(-1))
 	badge.z_index=4
 	var oval := paint(badge,Rect2(0,1,31,22),Color("a63a2b"),Color("efc68e"),12)
@@ -139,7 +142,6 @@ func draw_body() -> void:
 	stone=null
 	title.text = FirstQuests.TITLES[current] if current>=0 else "첫 여정 완료"
 	emblem.texture = QuestRewards.objective_icon(current) if current>=0 else DemoArt.icon("scroll")
-	arrow.text = "⌃" if app.quest_expanded else "⌄"
 	detail = Control.new()
 	detail.mouse_filter=Control.MOUSE_FILTER_IGNORE
 	body.add_child(detail)
@@ -178,6 +180,7 @@ func draw_body() -> void:
 			y += ROW_HEIGHT
 	body_target = y+4 if y>7 else 0.0
 	detail.get_node("Paper").size.y = body_target
+	update_toggle()
 
 func set_body_height(value: float) -> void:
 	body_height = maxf(0.0,value)
@@ -197,8 +200,12 @@ func animate_height(target: float, spring: bool) -> void:
 	else:
 		motion.tween_method(set_body_height,body_height,target,.23).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN_OUT)
 
+func update_toggle() -> void:
+	toggle.visible = body_target > 0.0
+	arrow.texture = CHEVRON_UP if app.quest_expanded else CHEVRON_DOWN
+
 func fold() -> void:
-	arrow.text = "⌃" if app.quest_expanded else "⌄"
+	update_toggle()
 	animate_height(body_target if app.quest_expanded else 0.0,true)
 
 func claim(index: int) -> void:

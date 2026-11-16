@@ -9,8 +9,15 @@ const DECORATIONS := {
 }
 const MIST := preload("res://shaders/village_outer_prop.gdshader")
 const REPLACEMENTS := {
-	"v3-03": preload("res://assets/village-outer-d0035/tree-02-wind-pine.png"),
+	"v3-01": preload("res://assets/village-outer-d0035/tree-02-wind-pine.png"),
 	"v3-02": preload("res://assets/village-outer-d0035/rock-03-twin-tors.png"),
+	"v3-03": preload("res://assets/village-outer-d0035/tree-02-wind-pine.png"),
+	"v3-04": preload("res://assets/village-outer-d0037/rock-01-granite-spire.png"),
+	"v3-05": preload("res://assets/village-outer-d0037/tree-03-forked-zelkova.png"),
+	"v3-06": preload("res://assets/village-outer-d0035/tree-02-wind-pine.png"),
+	"v3-07": preload("res://assets/village-outer-d0037/rock-02-rounded-granite.png"),
+	"v3-08": preload("res://assets/village-outer-d0035/tree-02-wind-pine.png"),
+	"v3-09": preload("res://assets/village-outer-d0037/tree-01-long-trunk.png"),
 }
 
 var world_bounds: Rect2
@@ -40,43 +47,34 @@ func add_decorations(world: Node2D) -> void:
 	layer.z_index = 15
 	layer.visibility_layer = 2
 	world.add_child(layer)
-	var materials: Dictionary = {}
 	var footprints: Dictionary = {}
 	for asset in DECORATIONS:
-		var texture: Texture2D = DECORATIONS[asset]
-		var visible_area := texture.get_image().get_used_rect()
-		footprints[asset] = Rect2(visible_area)
-		var material := ShaderMaterial.new()
-		material.shader = MIST
-		material.set_shader_parameter("height_span",Vector2(visible_area.position.y,visible_area.end.y)/texture.get_height())
-		material.set_shader_parameter("original_bounds",Vector4(original_bounds.position.x,original_bounds.position.y,original_bounds.end.x,original_bounds.end.y))
-		materials[asset] = material
+		footprints[asset] = Rect2(DECORATIONS[asset].get_image().get_used_rect())
+	var replacement_areas: Dictionary = {}
 	for placement in props:
 		var rect := rect_from(placement.rect_world)
+		var old_scale := rect.size / (DECORATIONS[placement.asset] as Texture2D).get_size()
+		var old_area: Rect2 = footprints[placement.asset]
+		var contact := rect.position + Vector2(old_area.get_center().x,old_area.end.y)*old_scale
+		var old_size := old_area.size*old_scale
+		var replacement: Texture2D = REPLACEMENTS[placement.id]
+		if not replacement_areas.has(replacement):
+			replacement_areas[replacement] = Rect2(replacement.get_image().get_used_rect())
+		var area: Rect2 = replacement_areas[replacement]
+		var factor := minf(old_size.x/area.size.x,old_size.y/area.size.y)
+		var anchor := Vector2(area.get_center().x,area.end.y)
 		var decoration := Sprite2D.new()
 		decoration.name = "FogProp"+String(placement.id).replace("-","_")
-		decoration.texture = DECORATIONS[placement.asset]
-		decoration.position = rect.get_center()
-		decoration.scale = rect.size / decoration.texture.get_size()
+		decoration.texture = replacement
+		decoration.scale = Vector2.ONE*factor
+		decoration.position = contact+(replacement.get_size()*.5-anchor)*factor
 		decoration.visibility_layer = 2
-		decoration.material = materials[placement.asset]
-		if REPLACEMENTS.has(placement.id):
-			var old_area: Rect2 = footprints[placement.asset]
-			var old_anchor := old_area.get_center()
-			old_anchor.y = old_area.end.y
-			var contact := rect.position + old_anchor * decoration.scale
-			var old_size := old_area.size * decoration.scale
-			var replacement: Texture2D = REPLACEMENTS[placement.id]
-			var area := Rect2(replacement.get_image().get_used_rect())
-			var factor := minf(old_size.x/area.size.x,old_size.y/area.size.y)
-			var new_anchor := Vector2(area.get_center().x,area.end.y)
-			decoration.texture = replacement
-			decoration.scale = Vector2.ONE * factor
-			decoration.position = contact + (replacement.get_size()*.5-new_anchor)*factor
-			var mist := decoration.material.duplicate() as ShaderMaterial
-			mist.set_shader_parameter("height_span",Vector2(area.position.y,area.end.y)/replacement.get_height())
-			mist.set_shader_parameter("crown_opacity",0.83)
-			decoration.material = mist
+		var mist := ShaderMaterial.new()
+		mist.shader = MIST
+		mist.set_shader_parameter("original_bounds",Vector4(original_bounds.position.x,original_bounds.position.y,original_bounds.end.x,original_bounds.end.y))
+		mist.set_shader_parameter("height_span",Vector2(area.position.y,area.end.y)/replacement.get_height())
+		mist.set_shader_parameter("crown_opacity",0.83)
+		decoration.material = mist
 		layer.add_child(decoration)
 
 static func rect_from(values: Array) -> Rect2:

@@ -42,7 +42,6 @@ var tool: Node2D
 var manual_camera:=false
 var camera_center:=Vector2.ZERO
 var pan_stretch := Vector2.ZERO
-var pan_pull := Vector2.ZERO
 var pan_return: Tween
 var idle_elapsed:=0.0
 
@@ -79,7 +78,6 @@ func return_to_village() -> void:
 
 
 func settle_pan(animated := true) -> void:
-	pan_pull = Vector2.ZERO
 	if pan_return and pan_return.is_valid(): pan_return.kill()
 	if pan_stretch.is_zero_approx(): return
 	if animated:
@@ -105,23 +103,26 @@ func pan_camera(screen_delta:Vector2, elastic := false)->void:
 	if tutorial_camera_tween:tutorial_camera_tween.kill()
 	if not manual_camera:camera_center=camera.get_screen_center_position()
 	manual_camera=true
-	var half:=get_viewport_rect().size*.5/camera.zoom
-	var requested := camera_center-screen_delta/camera.zoom
-	var bounds:=camera_bounds()
-	var limit := PAN_STRETCH_PIXELS/camera.zoom.x
+	var half := get_viewport_rect().size*.5/camera.zoom
+	var delta := -screen_delta/camera.zoom
+	var bounds := camera_bounds()
+	var limit := PAN_STRETCH_PIXELS*14.0/(15.0*camera.zoom.x)
 	var rest_inset := PAN_REST_INSET_PIXELS/camera.zoom.x
 	var reserve := ((bounds.size*.5-half).max(Vector2.ZERO)).min(Vector2.ONE*rest_inset) if elastic else Vector2.ZERO
-	camera_center=requested.clamp(bounds.position+half+reserve,bounds.end-half-reserve)
-	var excess := requested-camera_center
-	if elastic and not excess.is_zero_approx():
-		pan_pull = Vector2(pan_pull.x+excess.x if absf(excess.x)>.001 else 0.0,
-			pan_pull.y+excess.y if absf(excess.y)>.001 else 0.0).limit_length(limit*14.0)
-	else:
-		pan_pull = Vector2.ZERO
-	var stretch := pan_pull * (limit / (limit + pan_pull.length()))
-	camera.position=camera_center-global_position
+	var stretch := pan_stretch if elastic else Vector2.ZERO
+	# An untouched axis keeps its stretch. Reversal unwinds visible stretch first.
+	for axis in 2:
+		if stretch[axis]*delta[axis] < 0.0:
+			var unwind := signf(delta[axis])*minf(absf(stretch[axis]),absf(delta[axis]))
+			stretch[axis] += unwind
+			delta[axis] -= unwind
+	var requested := camera_center+delta
+	camera_center = requested.clamp(bounds.position+half+reserve,bounds.end-half-reserve)
+	if elastic:
+		stretch = (stretch+(requested-camera_center)*.45).clamp(-Vector2.ONE*limit,Vector2.ONE*limit)
+	camera.position = camera_center-global_position
+	camera.reset_smoothing()
 	apply_pan_stretch(stretch)
-	camera.reset_smoothing();camera.force_update_scroll()
 
 func resume_camera()->void:
 	settle_pan(false)

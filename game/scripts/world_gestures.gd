@@ -91,8 +91,19 @@ func _input(event: InputEvent) -> void:
 				mouse_dragging=false
 				mouse_start=Vector2.INF
 	if event is InputEventMouseMotion and middle_dragging:
+		if (event.button_mask & MOUSE_BUTTON_MASK_MIDDLE) == 0:
+			middle_dragging=false
+			app.world.player.settle_pan()
+			return
 		app.world.player.pan_camera(event.position-mouse_last,true);mouse_last=event.position
 		get_viewport().set_input_as_handled();return
+	if event is InputEventMouseMotion and mouse_start.is_finite() and (event.button_mask & MOUSE_BUTTON_MASK_LEFT) == 0:
+		if mouse_dragging: app.world.player.settle_pan()
+		mouse_dragging=false
+		blocked=false
+		mouse_start=Vector2.INF
+		mouse_move_candidate=""
+		return
 	if event is InputEventMouseMotion and mouse_start.is_finite() and mouse_start.distance_to(event.position)>12 and not mouse_dragging and not mouse_move_candidate.is_empty():
 		if begin_drag(mouse_move_candidate,mouse_start,-1):
 			handle_building_drag(event)

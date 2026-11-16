@@ -738,7 +738,7 @@ func start_or_continue(with_click := false)->void:
 	if modal or screen!="title" or not application_active or is_instance_valid(intro_cloud):return
 	if with_click:audio.cue("ui")
 	get_node("/root/PatchBootstrap/Overlay").leave_title()
-	cover_intro(prepare_intro)
+	cover_intro(prepare_intro,true)
 	for control in [title_prompt,stage.get_node_or_null("HanbandoTitleLogo")]:
 		if is_instance_valid(control):
 			control.create_tween().tween_property(control,"self_modulate:a",0.0,.24)
@@ -749,7 +749,7 @@ func prepare_intro() -> void:
 	intro_preparing = true
 	show_screen("intro")
 
-func cover_intro(covered: Callable) -> void:
+func cover_intro(covered: Callable, thin_mist := false) -> void:
 	if not is_instance_valid(intro_cloud):
 		intro_cloud_layer = CanvasLayer.new()
 		intro_cloud_layer.layer = 90
@@ -757,10 +757,11 @@ func cover_intro(covered: Callable) -> void:
 		intro_cloud = ColorRect.new()
 		intro_cloud.name = "IntroCloudTransition"
 		var clouds := ShaderMaterial.new()
-		clouds.shader = preload("res://shaders/cloud_transition.gdshader")
+		clouds.shader = preload("res://shaders/intro_transition_mist.gdshader") if thin_mist else preload("res://shaders/cloud_transition.gdshader")
 		clouds.set_shader_parameter("coverage",0.0)
-		clouds.set_shader_parameter("textured",true)
-		clouds.set_shader_parameter("cloud_bank",VillageEntry.BANK_A)
+		if not thin_mist:
+			clouds.set_shader_parameter("textured",true)
+			clouds.set_shader_parameter("cloud_bank",VillageEntry.BANK_A)
 		intro_cloud.material = clouds
 		intro_cloud_layer.add_child(intro_cloud)
 		intro_cloud.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -885,7 +886,7 @@ func finish_intro(return_to_title := false) -> void:
 	sync_intro_music()
 	intro_preparing = false
 	if is_instance_valid(intro_player):intro_player.paused = true
-	cover_intro(leave_intro_under_cover.bind(return_to_title))
+	cover_intro(leave_intro_under_cover.bind(return_to_title),not return_to_title)
 
 func leave_intro_under_cover(return_to_title := false) -> void:
 	var covered_at := Time.get_ticks_usec()

@@ -208,17 +208,17 @@ func _draw() -> void:
 	var origin: Vector2=app.safe
 
 	if portrait:draw_texture_rect(portrait,Rect2(origin+Vector2(-5,-3),Vector2(65,59.17)),false)
-	draw_texture_rect(LEVEL_BRUSH,Rect2(origin+Vector2(1,51),Vector2(53,16)),false,Color(1,1,1,.80))
-	hud_text(font,origin+Vector2(1,63),"Lv. —",53,10,HORIZONTAL_ALIGNMENT_CENTER)
+	draw_texture_rect(LEVEL_BRUSH,Rect2(origin+Vector2(1,51),Vector2(53,16)),false)
+	hud_text(font,origin+Vector2(1,63),"Lv. 1",53,10,HORIZONTAL_ALIGNMENT_CENTER)
 	hud_text(font,origin+Vector2(62,20),"새벽",138,17)
 	hud_text(font,origin+Vector2(62,36),"경험치",43,10)
 	hud_text(font,origin+Vector2(62,52),"정착",43,10)
-	frame(Rect2(origin+Vector2(108,28),Vector2(89,8)),Color("1b3042"),Color("658dab"))
-	frame(Rect2(origin+Vector2(108,39),Vector2(116,12)),Color("1e3a30"),Color("4f7964"))
+	frame(Rect2(origin+Vector2(108,27),Vector2(98,9)),Color(0,0,0,.48),Color("658dabcc"))
+	frame(Rect2(origin+Vector2(108,39),Vector2(116,12)),Color(0,0,0,.48),Color("4f7964cc"))
 	var fill:=minf(1,app.model.built_count()/3.0)
 	if fill>0:
-		frame(Rect2(origin+Vector2(109,40),Vector2(114*fill,10)),Color("398a66"),Color("6ead85"))
-		if fill>.08:draw_line(origin+Vector2(112,42),origin+Vector2(106+114*fill,42),Color("b5efb77d"),1.4,true)
+		frame(Rect2(origin+Vector2(109,40),Vector2(114*fill,10)),Color("398a66cc"),Color("6ead85cc"))
+		if fill>.08:draw_line(origin+Vector2(112,42),origin+Vector2(106+114*fill,42),Color("b5efb7cc"),1.4,true)
 	for key in ["wood","stone","tokens","residents"]:
 		var rect:=slot(key);var beat:float=pulse.get(key,0.0)
 		var is_resident:bool=key=="residents"
