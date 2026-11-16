@@ -29,8 +29,8 @@ static func sliced_art(parent:Control,source:Texture2D,rect:Rect2,cap:int)->Nine
 	parent.add_child(art)
 	return art
 
-static func art_button(app:Node,parent:Control,name:String,rect:Rect2,action:Callable)->DemoButton:
-	var button:DemoButton=app.button(parent,"",action)
+static func art_button(app:Node,parent:Control,name:String,rect:Rect2,action:Callable,click_cue := "ui")->DemoButton:
+	var button:DemoButton=app.button(parent,"",action,false,"",click_cue)
 	button.name=name
 	button.custom_minimum_size=Vector2.ZERO
 	button.position=rect.position
@@ -122,8 +122,8 @@ static func rule(parent:Control, rect:Rect2) -> void:
 	divider.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	parent.add_child(divider)
 
-static func gold_button(app:Node,parent:Control,id:String,rect:Rect2,action:Callable) -> DemoButton:
-	var button := art_button(app,parent,id,rect,action)
+static func gold_button(app:Node,parent:Control,id:String,rect:Rect2,action:Callable,click_cue := "ui") -> DemoButton:
+	var button := art_button(app,parent,id,rect,action,click_cue)
 	sliced_art(button,preload("res://assets/ui/d0026/common-gold-default.svg"),Rect2(Vector2.ZERO,rect.size),8)
 	return button
 
@@ -162,9 +162,7 @@ static func open(app:Node) -> void:
 	var hint := caption(app,panel,"아이콘을 눌러 받기",Rect2(61,height-101,300,25),16,INK)
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	var claim_all := gold_button(app,panel,"ClaimAllQuestRewards",Rect2(443,height-94,336,55),func():
-		if app.model.claim_all_quest_rewards():
-			app.audio.cue("reward")
-			fill_cards(app,cards))
+		receive(app,cards,panel.get_node("ClaimAllQuestRewards")),"")
 	caption(app,claim_all,"모두 받기",Rect2(0,0,336,55),25,INK)
 	var badge: TextureRect = app.picture(claim_all,preload("res://assets/ui/d0031/reward-badge.png"),Rect2(304,-13,36,36))
 	badge.name = "PendingBadge"
@@ -172,6 +170,55 @@ static func open(app:Node) -> void:
 	badge.rotation_degrees = -8.0
 	caption(app,badge,"",Rect2(0,0,36,36),20,CREAM).name = "Count"
 	fill_cards(app,cards)
+	reveal_rows(app,cards,mini(rows,FirstQuests.pending(app.model.state).size()))
+
+static func reveal_rows(app: Node, cards: VBoxContainer, count: int) -> void:
+	if app.reduced_ui_motion(): return
+	for index in mini(count,cards.get_child_count()):
+		var row := cards.get_child(index) as Control
+		row.modulate.a = .16
+		row.create_tween().set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT).tween_property(row,"modulate:a",1.0,.13).set_delay(.03*index)
+
+static func receive(app: Node, cards: VBoxContainer, source: DemoButton, index := -1) -> void:
+	var overlay: Control = app.overlay
+	if not is_instance_valid(overlay) or not overlay.is_ancestor_of(source) or source.disabled: return
+	var at := overlay.get_global_transform_with_canvas().affine_inverse()*source.get_global_rect().get_center()
+	var scroll := cards.get_parent() as ScrollContainer
+	var offset := scroll.scroll_vertical
+	var committed: bool = app.model.claim_all_quest_rewards() if index < 0 else app.model.claim_quest_reward(index)
+	if not committed: return
+	app.audio.cue_reward_receipt()
+	fill_cards(app,cards)
+	scroll.set_deferred("scroll_vertical",offset)
+	if not app.reduced_ui_motion(): receipt_effect(app,overlay,at)
+
+static func receipt_effect(app: Node, overlay: Control, at: Vector2) -> void:
+	var effect := Control.new()
+	effect.name = "QuestRewardReceipt"
+	effect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	effect.z_index = 2
+	effect.position = at
+	overlay.add_child(effect)
+	var ring := Panel.new()
+	ring.position = Vector2(-22,-22)
+	ring.size = Vector2(44,44)
+	ring.pivot_offset = ring.size*.5
+	ring.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var outline := StyleBoxFlat.new()
+	outline.bg_color = Color.TRANSPARENT
+	outline.border_color = Color("f5bb55")
+	outline.set_border_width_all(2)
+	outline.set_corner_radius_all(22)
+	ring.add_theme_stylebox_override("panel",outline)
+	effect.add_child(ring)
+	var corn: TextureRect = app.picture(effect,PlayChrome.CORN_ICON,Rect2(-19,-21,38,42))
+	corn.pivot_offset = corn.size*.5
+	var pop := effect.create_tween().set_parallel(true).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	pop.tween_property(ring,"scale",Vector2.ONE*1.85,.34)
+	pop.tween_property(corn,"position:y",-52.0,.34)
+	pop.tween_property(corn,"scale",Vector2.ONE*1.22,.15)
+	pop.tween_property(effect,"modulate:a",0.0,.22).set_delay(.14)
+	pop.chain().tween_callback(effect.queue_free)
 
 static func fill_cards(app:Node, cards:VBoxContainer) -> void:
 	app.clear_children(cards)
@@ -193,9 +240,7 @@ static func fill_cards(app:Node, cards:VBoxContainer) -> void:
 		var title := caption(app,card,FirstQuests.TITLES[index],Rect2(120,0,470,77),26,INK)
 		title.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 		var claim := art_button(app,card,"ClaimQuest%d"%index,Rect2(608,6,112,67),func():
-			if app.model.claim_quest_reward(index):
-				app.audio.cue("reward")
-				fill_cards(app,cards))
+			receive(app,cards,card.get_node("ClaimQuest%d"%index),index),"")
 		claim.set_meta("semantic_text",FirstQuests.TITLES[index]+" 보상 받기")
 		app.picture(claim,preload("res://assets/ui/d0031/reward-tile.png"),Rect2(0,0,112,67))
 		app.picture(claim,PlayChrome.CORN_ICON,Rect2(33,1,46,49))

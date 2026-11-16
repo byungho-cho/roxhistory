@@ -21,7 +21,11 @@ var wood: Label
 var stone: Label
 var rows: Dictionary = {}
 var shown_ids: Array[int] = []
-var preview_ids: Array[int] = []
+const NO_SAMPLE := -2
+var sample := NO_SAMPLE
+var sample_expanded := false
+var hold_cancelled := false
+var hold_fired := false
 var current := -2
 var width := 0.0
 var body_height := 0.0
@@ -49,7 +53,7 @@ func _ready() -> void:
 	body.clip_contents = true
 	body.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(body)
-	var backdrop := paint(self,Rect2(0,0,width,HEADER),Color.TRANSPARENT,Color("202720aa"),3)
+	var backdrop := paint(self,Rect2(0,0,width,HEADER),Color.TRANSPARENT,Color("817a67a0"),3)
 	backdrop.z_index=2
 	var gradient := Gradient.new()
 	gradient.offsets = PackedFloat32Array([0,.19,.53,1])
@@ -69,7 +73,7 @@ func _ready() -> void:
 	toggle.set_meta("semantic_text","퀘스트 상세 펼침·접힘")
 	arrow = app.picture(toggle,CHEVRON_UP,Rect2(13,8,24,24))
 	arrow.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	badge = QuestRewards.art_button(app,self,"QuestPendingBadge",Rect2(32,-10,32,25),func(): claim(-1))
+	badge = QuestRewards.art_button(app,self,"QuestPendingBadge",Rect2(32,-10,32,25),func(): claim(-1),"")
 	badge.z_index=4
 	var oval := paint(badge,Rect2(0,1,31,22),Color("a63a2b"),Color("efc68e"),12)
 	oval.name="Tint"
@@ -99,7 +103,8 @@ func paint(parent: Control,rect: Rect2,fill: Color,rim: Color,radius: int) -> Pa
 	return panel
 
 func pending() -> Array[int]:
-	return preview_ids.duplicate() if not preview_ids.is_empty() else FirstQuests.pending(app.model.state)
+	if sample_active(): return []
+	return FirstQuests.pending(app.model.state)
 
 func update_badge() -> void:
 	var count := pending().size()
@@ -108,7 +113,7 @@ func update_badge() -> void:
 	badge.set_meta("semantic_text","미수령 보상 %d건 모두 받기"%count)
 
 func refresh(immediate := false) -> void:
-	var active := FirstQuests.current(app.model.state)
+	var active := sample if sample_active() else FirstQuests.current(app.model.state)
 	var ids := pending()
 	update_badge()
 	if busy: return
@@ -120,16 +125,20 @@ func refresh(immediate := false) -> void:
 		shown_ids = visible_ids
 		draw_body()
 		update_amounts()
-		if not immediate and app.quest_expanded and old_height > body_target:
+		if not immediate and expanded() and old_height > body_target:
 			animate_height(body_target,false)
 		else:
 			if motion and motion.is_valid():motion.kill()
-			set_body_height(body_target if app.quest_expanded else 0.0)
+			set_body_height(body_target if expanded() else 0.0)
 	else:
 		update_amounts()
 
 func update_amounts() -> void:
 	if not is_instance_valid(wood):return
+	if sample_active():
+		wood.text = "20/20"
+		stone.text = "10/10"
+		return
 	var kind: String = {2:"chief",3:"hut",5:"chief",6:"farm"}.get(current,"chief")
 	var cost: Dictionary = app.model.building_cost(kind,2 if current==5 else 1)
 	wood.text = "%d/%d"%[mini(int(app.model.state.wood),int(cost.wood)),int(cost.wood)]
@@ -141,26 +150,30 @@ func draw_body() -> void:
 	wood=null
 	stone=null
 	title.text = FirstQuests.TITLES[current] if current>=0 else "첫 여정 완료"
+	if sample_active(): title.text = "테스트 · "+title.text
 	emblem.texture = QuestRewards.objective_icon(current) if current>=0 else DemoArt.icon("scroll")
 	detail = Control.new()
 	detail.mouse_filter=Control.MOUSE_FILTER_IGNORE
 	body.add_child(detail)
-	paint(detail,Rect2(0,0,width-10,1),PAPER,Color("30372c90"),8).name="Paper"
+	paint(detail,Rect2(0,0,width-10,1),PAPER,Color("a49d86"),8).name="Paper"
 	var y := 7.0
 	if current >= 0:
 		var description := caption(detail,FirstQuests.OBJECTIVES[current],Rect2(10,y,width-30,32),12)
 		description.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
 		y += 35
 	if current in [2,3,5,6]:
-		app.picture(detail,DemoArt.icon("wood"),Rect2(12,y,24,23))
+		app.picture(detail,DemoArt.icon("wood"),Rect2(10,y,24,23))
 		wood=caption(detail,"",Rect2(41,y,70,23),13)
 		app.picture(detail,DemoArt.icon("stone"),Rect2(width*.48,y,24,23))
 		stone=caption(detail,"",Rect2(width*.48+29,y,65,23),13)
 		y += 27
 	if current >= 0 and current+1 < FirstQuests.IDS.size():
-		var next := paint(detail,Rect2(8,y,width-26,30),Color("f8f4e5b8"),Color("aab49a"),5)
-		caption(next,"다음 임무  ·  "+FirstQuests.TITLES[current+1],Rect2(7,0,width-42,30),12)
-		y += 35
+		var next := paint(detail,Rect2(10,y+5,width-30,36),Color("e5e1c8"),Color.TRANSPARENT,5)
+		next.name = "NextQuestPreview"
+		var preview := caption(next,"다음 임무  ·  "+FirstQuests.TITLES[current+1],Rect2(6,0,next.size.x-12,36),12)
+		preview.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		preview.clip_text = true
+		y += 46
 	if not shown_ids.is_empty():
 		caption(detail,"최근 미수령 보상",Rect2(10,y,width-35,22),12)
 		y += 23
@@ -171,7 +184,7 @@ func draw_body() -> void:
 			app.picture(row,QuestRewards.objective_icon(index),Rect2(5,4,28,28))
 			var row_title := caption(row,FirstQuests.TITLES[index],Rect2(38,0,width-130,ROW_HEIGHT-3),12)
 			row_title.clip_text=true
-			var award := QuestRewards.art_button(app,row,"Award",Rect2(row.size.x-59,0,59,row.size.y),claim.bind(index))
+			var award := QuestRewards.art_button(app,row,"Award",Rect2(row.size.x-59,0,59,row.size.y),claim.bind(index),"")
 			award.set_meta("semantic_text",FirstQuests.TITLES[index]+" 보상 받기")
 			app.picture(award,PlayChrome.CORN_ICON,Rect2(17,1,30,29))
 			paint(award,Rect2(18,22,30,12),Color("45301ab3"),Color.TRANSPARENT,4)
@@ -202,21 +215,21 @@ func animate_height(target: float, spring: bool) -> void:
 
 func update_toggle() -> void:
 	toggle.visible = body_target > 0.0
-	arrow.texture = CHEVRON_UP if app.quest_expanded else CHEVRON_DOWN
+	arrow.texture = CHEVRON_UP if expanded() else CHEVRON_DOWN
 
 func fold() -> void:
 	update_toggle()
-	animate_height(body_target if app.quest_expanded else 0.0,true)
+	animate_height(body_target if expanded() else 0.0,true)
 
 func claim(index: int) -> void:
-	if busy or app.modal or app.world_map_open or not app.application_active or not is_instance_valid(app.chrome):
+	if sample_active() or busy or app.modal or app.world_map_open or not app.application_active or not is_instance_valid(app.chrome):
 		return
 	var ids := pending()
 	if ids.is_empty() or (index>=0 and index not in ids):return
 	var matching: Array[int] = [index]
 	if index<0:matching = ids
 	var origins := PackedVector2Array()
-	var expanded: bool = app.quest_expanded
+	var expanded: bool = expanded()
 	if expanded:
 		for id in shown_ids:
 			if id not in matching:continue
@@ -226,17 +239,13 @@ func claim(index: int) -> void:
 			origins.append(global_position+Vector2(width-18,HEADER*.54))
 	if origins.is_empty():origins.append(global_position+Vector2(width-18,HEADER*.54))
 	busy = true
-	var preview := not preview_ids.is_empty()
-	if preview:
-		for id in matching:preview_ids.erase(id)
-	else:
-		var committed: bool = app.model.claim_all_quest_rewards() if index<0 else app.model.claim_quest_reward(index)
-		if not committed:
-			busy=false
-			return
+	var committed: bool = app.model.claim_all_quest_rewards() if index<0 else app.model.claim_quest_reward(index)
+	if not committed:
+		busy=false
+		return
 	update_badge()
-	app.audio.cue("reward")
-	app.chrome.quest_reward_effect(origins,matching.size()*FirstQuests.MANUAL_AMOUNT,preview)
+	app.audio.cue_reward_receipt()
+	app.chrome.quest_reward_effect(origins,matching.size()*FirstQuests.MANUAL_AMOUNT,false)
 	var instant: bool = app.reduced_ui_motion()
 	for id in matching:
 		if not rows.has(id):continue
@@ -259,7 +268,7 @@ func finish_claim() -> void:
 	for index in rows:
 		former[index] = rows[index].position.y
 	refresh()
-	if not app.quest_expanded or app.reduced_ui_motion():return
+	if not expanded() or app.reduced_ui_motion():return
 	for index in rows:
 		if not former.has(index):continue
 		var row: Panel = rows[index]
@@ -269,14 +278,16 @@ func finish_claim() -> void:
 		row.create_tween().tween_property(row,"position:y",final_y,.23).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
 func _process(delta: float) -> void:
-	if not is_visible_in_tree() or app.modal or not app.application_active:
-		hold_id=-2
-		return
-	if hold_id!=-2:
-		hold_elapsed+=delta
-		if hold_elapsed>=.65:
-			hold_id=-2
-			seed_preview(randi_range(1,5))
+	if not app.quest_preview_enabled or not is_visible_in_tree() or app.world_map_open:
+		hold_cancelled = true
+		hide_sample()
+	if app.modal or not app.application_active:
+		hold_cancelled = true
+	if hold_id != -2 and not hold_cancelled and not hold_fired:
+		hold_elapsed += delta
+		if hold_elapsed >= .65:
+			hold_fired = true
+			show_sample()
 	if not badge.visible:
 		wiggle_time=0.0
 		return
@@ -288,21 +299,52 @@ func _process(delta: float) -> void:
 			for angle in [-10.0,7.0,-4.0,0.0]:
 				wiggle.tween_property(badge,"rotation_degrees",angle,.10)
 
-func seed_preview(count: int) -> void:
-	if not app.test_mode or current!=6 or busy: return
-	preview_ids.clear()
-	for offset in clampi(count,1,5):preview_ids.append(3+offset)
-	refresh()
+func sample_active() -> bool:
+	return sample != NO_SAMPLE
+
+func expanded() -> bool:
+	return sample_expanded if sample_active() else bool(app.quest_expanded)
+
+func show_sample() -> void:
+	var choices := [3,0,7,-1]
+	choices.erase(sample)
+	sample = choices.pick_random()
+	sample_expanded = true
+	current = NO_SAMPLE
+	refresh(true)
+
+func hide_sample() -> void:
+	if not sample_active(): return
+	sample = NO_SAMPLE
+	current = NO_SAMPLE
+	refresh(true)
 
 func _input(event: InputEvent) -> void:
-	if not app.test_mode or current!=6 or not is_visible_in_tree() or app.modal or busy:return
 	if event is InputEventScreenTouch or event is InputEventMouseButton:
-		if event is InputEventMouseButton and event.button_index != MOUSE_BUTTON_LEFT:return
+		if event is InputEventMouseButton and event.button_index != MOUSE_BUTTON_LEFT: return
 		var id: int = event.index if event is InputEventScreenTouch else -1
-		if not event.pressed and id==hold_id:hold_id=-2
-		elif event.pressed and hold_id==-2 and title.get_global_rect().has_point(event.position):
-			hold_id=id
-			hold_at=event.position
-			hold_elapsed=0.0
-	elif (event is InputEventScreenDrag and event.index==hold_id) or (event is InputEventMouseMotion and hold_id==-1):
-		if hold_at.distance_to(event.position)>10.0:hold_id=-2
+		if not event.pressed and id == hold_id:
+			hold_id = -2
+			if not hold_cancelled and not hold_fired and toggle.visible and toggle.get_global_rect().has_point(event.position):
+				if sample_active():
+					sample_expanded = not sample_expanded
+					fold()
+					app.audio.cue("quest_click")
+				else: app.toggle_quest()
+			get_viewport().set_input_as_handled()
+		elif event.pressed and hold_id == -2 and app.quest_preview_enabled and not busy and not app.modal and not app.world_map_open and app.application_active and is_visible_in_tree():
+			var header := Rect2(global_position,Vector2(width,HEADER))
+			if not header.has_point(event.position) or (badge.visible and badge.get_global_rect().has_point(event.position)): return
+			hold_id = id
+			hold_at = event.position
+			hold_elapsed = 0.0
+			hold_fired = false
+			hold_cancelled = false
+			get_viewport().set_input_as_handled()
+		elif event.pressed and hold_id != -2:
+			hold_cancelled = true
+	elif (event is InputEventScreenDrag and event.index == hold_id) or (event is InputEventMouseMotion and hold_id == -1):
+		if hold_at.distance_to(event.position)>10.0: hold_cancelled = true
+		if event is InputEventMouseMotion and (event.button_mask & MOUSE_BUTTON_MASK_LEFT) == 0:
+			hold_id = -2
+		get_viewport().set_input_as_handled()

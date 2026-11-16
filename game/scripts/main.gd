@@ -140,6 +140,7 @@ var region_snapshot := {}
 var navigation: AutoTravel
 var action_row: Control
 var quest_expanded:=true
+var quest_preview_enabled := false
 var demolition_key:=""
 var relocating_key:=""
 var world_map:VillageWorldMap
@@ -184,6 +185,7 @@ func _ready() -> void:
 	get_tree().auto_accept_quit = false
 	get_tree().quit_on_go_back = false
 	test_mode = "--test-ui" in OS.get_cmdline_user_args()
+	quest_preview_enabled = test_mode
 	if test_mode:
 		prefs_path = "user://tests/preferences.cfg"
 		performance_diagnostics.path = "user://tests/performance-diagnostics.jsonl"

@@ -5,6 +5,9 @@ extends RefCounted
 static func entries(app:Node)->Array[Dictionary]:
 	var logs:=PerformanceDiagnostics.log_summary()
 	return [
+		{"id":"QuestPreview","title":"퀘스트 바 롱프레스 샘플","kind":"toggle",
+			"value":app.quest_preview_enabled,"read":func():return app.quest_preview_enabled,
+			"changed":func(enabled:bool):app.quest_preview_enabled=enabled},
 		{"id":"PerformanceShortcut","title":"마을에 디버그 버튼 표시","kind":"toggle",
 			"value":app.debug_shortcut_visible(),"read":app.debug_shortcut_visible,
 			"changed":app.set_debug_shortcut_visible},

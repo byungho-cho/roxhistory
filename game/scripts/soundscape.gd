@@ -153,6 +153,11 @@ func stop_work() -> void:
 func interface_time_ms() -> int:
 	return Time.get_ticks_msec()
 
+func cue_reward_receipt() -> void:
+	for voice in voices:
+		if voice.playing and voice.stream == streams.get("popup_open"): voice.stop()
+	cue("reward")
+
 func cue(key: String) -> void:
 	if not enabled or not active: return
 	if key in ["wood","stone","build","demolish"]:
