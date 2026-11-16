@@ -19,7 +19,7 @@ func _ready()->void:
 	ghost=EnvironmentProp.new();ghost.configure("hut",230,Vector2.ZERO);ghost.set_hut_style(1);add_child(ghost)
 	ghost.modulate=Color(1,1,.87,.52)
 	cost_display=BuildCostDisplay.new();app.stage.add_child(cost_display);cost_display.z_index=9;cost_display.hide()
-	cost_display.confirm_button.pressed.connect(app.confirm_build_preview);cost_display.confirm_button.unavailable.connect(app.toast)
+	cost_display.confirm_button.pressed.connect(app.confirm_build_preview);cost_display.confirm_button.unavailable.connect(func(reason: String): app.toast(reason); cost_display.flash_shortage())
 	cost_display.cancel_button.pressed.connect(app.cancel_build_preview)
 	hide()
 func select(id:int)->void:
@@ -67,7 +67,9 @@ func move_outline() -> PackedVector2Array:
 func clear()->void:
 	move_dragging=false
 	site_id=-1;placement_active=false;moving_key="";hide()
-	if is_instance_valid(cost_display):cost_display.hide()
+	if is_instance_valid(cost_display):
+		cost_display.clear_shortage()
+		cost_display.hide()
 func _process(delta:float)->void:
 	if not placement_active:return
 	if not app.application_active or app.modal or app.world_map_open:cost_display.hide();return
@@ -93,7 +95,7 @@ func update_overlay_layout()->void:
 	var x:=bounds.get_center().x-extent.x*.5
 	var safe_x:=clampf(x,viewport.position.x,maxf(viewport.position.x,viewport.end.x-extent.x))
 	cost_display.position=Vector2(move_toward(x,safe_x,60),y)
-	cost_display.visible=moving_key.is_empty();cost_display.update_cost(app.model.building_cost(kind,1))
+	cost_display.visible=moving_key.is_empty();cost_display.update_cost(app.model.building_cost(kind,1),{"wood":app.model.state.wood,"stone":app.model.state.stone})
 
 func _draw()->void:
 	if not placement_active:return

@@ -1,7 +1,7 @@
 class_name VillageRewardBoard
 extends DemoButton
 ## The board and animated reward bubble use independent artwork.
-const EAST_CORNER:=Vector2(212,36)
+const EAST_CORNER:=Vector2(187,37)
 const WORLD_ART:=preload("res://scripts/world_hud_art.gd")
 var art:Node2D
 var app:Node
@@ -12,7 +12,7 @@ var tween:Tween
 func _init(owner:Node)->void:
 	app=owner
 	name="VillageRewardBoard"
-	size=Vector2(118,120)
+	size=Vector2(88.5,90)
 	z_index=20
 	focus_mode=Control.FOCUS_NONE
 	tooltip_text="마을 보상"
@@ -22,17 +22,22 @@ func _ready()->void:
 		add_theme_stylebox_override(state,StyleBoxEmpty.new())
 	art=WORLD_ART.new()
 	art.bind(self,app.world)
-	app.picture(art,preload("res://assets/ui/village-guidance/noticeboard.png"),Rect2(Vector2.ZERO,size))
-	marker=app.picture(art,preload("res://assets/ui/village-guidance/noticeboard-alert.png"),Rect2(33.5,-15,51,51))
+	var source := preload("res://assets/ui/village-guidance/noticeboard.png")
+	var board := AtlasTexture.new()
+	board.atlas = source
+	board.region = Rect2(source.get_image().get_used_rect())
+	board.filter_clip = true
+	app.picture(art,board,Rect2(Vector2.ZERO,size))
+	marker=app.picture(art,preload("res://assets/ui/village-guidance/noticeboard-alert.png"),Rect2(25,-11,38,38))
 	marker.name="RewardExclamation"
-	marker.pivot_offset=Vector2(25.5,43.5)
+	marker.pivot_offset=Vector2(19,33)
 	marker.hide()
 	pressed.connect(open_rewards)
 	app.model.changed.connect(refresh_reward)
 	refresh_reward()
 
 func open_rewards()->void:
-	if not app.choosing_plot and not app.modal and not app.world_map_open and not app.map_transition_active:
+	if not FirstQuests.pending(app.model.state).is_empty() and not app.choosing_plot and not app.modal and not app.world_map_open and not app.map_transition_active:
 		QuestRewards.open(app)
 
 func refresh_reward()->void:

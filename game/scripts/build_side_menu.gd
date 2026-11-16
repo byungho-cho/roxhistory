@@ -382,7 +382,7 @@ func _process(_delta:float) -> void:
 
 func select_kind(kind:String) -> void:
 	cancel_pointer()
-	var reason: String = app.building_workflow.build_block_reason(kind)
+	var reason: String = app.building_workflow.build_block_reason(kind,false)
 	if not reason.is_empty():
 		if not visible:
 			app.toast(reason)

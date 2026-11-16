@@ -1,17 +1,16 @@
 class_name PlayChrome
 extends Control
 var app: Node
-var flights: Array[Dictionary]=[]
 var pulse := {"wood":0.0,"stone":0.0,"tokens":0.0}
 var styles: Dictionary={}
 var portrait: Texture2D
 const RESIDENT_ICON=preload("res://assets/ui/resource-bars/resident.png")
+const DIAMOND_ICON := preload("res://assets/ui/d0020/diamond-premium-illustrated.png")
 const CORN_ICON=preload("res://assets/ui/resource-bars/corn.png")
 const LEVEL_BRUSH := preload("res://assets/ui/d0009/job-name-brush.png")
-const QUEST_POP_SPACING := .12
-const QUEST_PAUSE := .48
-const QUEST_FLIGHT := .64
-const QUEST_FLIGHT_SPACING := .09
+const PIECE_SPACING := .043
+const PIECE_PAUSE := .16
+const PIECE_FLIGHT := .49
 const TRACK_COLOR:=Color("523621")
 const TRACK_RIM:=Color("874f0d")
 const FILL_COLORS:=[Color("ffdb45"),Color("f2b00a"),Color("d48005")]
@@ -37,7 +36,7 @@ func _ready() -> void:
 	quest_fx.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	quest_fx.draw.connect(draw_quest_flights)
 	add_child(quest_fx)
-	for key in ["wood","stone","tokens"]:
+	for key in ["wood","stone","tokens","diamonds"]:
 		var target:=DemoButton.new()
 		target.name=key.capitalize()+"RefillTarget"
 		target.flat=true
@@ -58,9 +57,23 @@ func _ready() -> void:
 func create_minimap()->void:
 	minimap=LiveMinimap.new(app);add_child(minimap)
 func slot(kind: String) -> Rect2:
-	var i:int=["wood","stone","tokens","residents"].find(kind)
-	if app.w<app.h:return Rect2(Vector2(app.safe.x+i*86,app.safe.y+75),Vector2(82,36))
-	return Rect2(Vector2(app.w-app.safe.x-520+i*100,app.safe.y+1),Vector2(96,36))
+	var index := ["wood","stone","tokens","diamonds"].find(kind)
+	if app.w<app.h:
+		var spacing := clampf((app.w-app.safe.x*2-8)/4.0,54.0,86.0)
+		var x: float = app.safe.x+index*spacing
+		return Rect2(x+(8 if index == 3 else 0),app.safe.y+75,spacing-(13 if index == 3 else 4),36)
+	var left: float = app.w-app.safe.x-520
+	if index == 3: return Rect2(left+319,app.safe.y+1,67,36)
+	return Rect2(left+index*100,app.safe.y+1,96,36)
+
+func gps_rect() -> Rect2:
+	var bounds := Rect2(app.w-app.safe.x-64,app.safe.y+90,56,56)
+	if OS.has_feature("android") and app.w<app.h:
+		for key in ["wood","stone","tokens","diamonds"]:
+			var resource := slot(key)
+			if resource.intersects(bounds):
+				bounds.position.y = maxf(bounds.position.y,resource.end.y+7)
+	return bounds
 func layout_refill_targets()->void:
 	for key in refill_targets:
 		var target:DemoButton=refill_targets[key]
@@ -71,16 +84,18 @@ func layout_refill_targets()->void:
 
 func refill_resource(key:String)->void:
 	if app.modal or app.world_map_open or app.map_transition_active or not app.application_active:return
+	if key == "diamonds":
+		if not app.model.debug_resource_refill: return
+		app.test_diamonds += 100
+		queue_redraw()
+		return
 	if app.model.debug_fill_resource("grain" if key=="tokens" else key):
 		var count:Dictionary=resource_counts[key]
 		count.shown=count.target
 		count.elapsed=COUNT_DURATION
 		queue_redraw()
 
-func gained(kind:String,at:Vector2,delay:float=0.0) -> void:
-	flights.append({"kind":kind,"world":at,"age":-delay})
 func clear_effects() -> void:
-	flights.clear()
 	quest_flights.clear()
 	held_quest_grain=0
 	quest_fx.queue_redraw()
@@ -89,7 +104,7 @@ func sync_resource_counts(immediate:bool=false)->void:
 	layout_refill_targets()
 	for kind in ["wood","stone","grain"]:
 		resource_capacities[kind]=ResourceStorage.capacity(app.model,kind)
-	for key in ["wood","stone","tokens"]:
+	for key in ["wood","stone","tokens","diamonds"]:
 		var target:=float(app.model.state.get("grain",app.model.state.get("tokens",0)) if key=="tokens" else app.model.state.get(key,0))
 		if key=="tokens":target=maxf(0.0,target-held_quest_grain)
 		if immediate or not resource_counts.has(key):
@@ -116,71 +131,75 @@ func _process(delta: float) -> void:
 		var p: Vector2=app.world.player.position
 		moving_map=p!=last_map_position
 		last_map_position=p
-	var active := moving_map or not flights.is_empty() or counting or quest_active
+	var active := moving_map or counting or quest_active
 	for key in pulse: active=active or pulse[key]>0
 	if not active:return
 	for key in pulse: pulse[key]=maxf(0,pulse[key]-delta*2.5)
-	for f in flights:
-		f.age+=delta
-		if f.age>=0.85:
-			pulse[f.kind]=1.0
-	flights=flights.filter(func(f): return f.age<0.85)
 	queue_redraw()
 
 func displayed_amount(key: String) -> int:
 	return roundi(resource_counts[key].shown)
 
+func gained(kind: String, at: Vector2) -> void:
+	resource_burst(kind,PackedVector2Array([at]), true,0)
+
 func quest_reward_effect(origins: PackedVector2Array,total: int,preview: bool) -> void:
+	resource_burst("tokens",origins,false,0 if preview else total)
+
+func resource_burst(kind: String, origins: PackedVector2Array, world_space: bool, delayed_credit: int) -> void:
+	if origins.is_empty(): return
 	if app.reduced_ui_motion():
-		pulse.tokens=1.0
+		pulse[kind]=1.0
 		queue_redraw()
 		return
-	if not preview:
-		held_quest_grain+=total
+	if delayed_credit > 0:
+		held_quest_grain+=delayed_credit
 		sync_resource_counts()
-	quest_flights.append({"origins":origins,"total":total,"preview":preview,"age":0.0})
+	quest_flights.append({"kind":kind,"origins":origins,"world_space":world_space,"total":delayed_credit,"age":0.0})
 	quest_fx.queue_redraw()
 
-func quest_flight_start(count: int,index: int) -> float:
-	return (count-1)*QUEST_POP_SPACING + QUEST_PAUSE + index*QUEST_FLIGHT_SPACING
+func burst_lifetime(count: int) -> float:
+	return (count-1)*.10 + 7*PIECE_SPACING + PIECE_PAUSE + PIECE_FLIGHT
 
 func advance_quest_flights(delta: float) -> bool:
-	var active := not quest_flights.is_empty()
+	if quest_flights.is_empty(): return false
 	for batch in quest_flights:
 		var previous: float = batch.age
 		batch.age+=delta
-		var count: int = batch.origins.size()
-		for index in count:
-			var arrival := quest_flight_start(count,index)+QUEST_FLIGHT
-			if previous<arrival and batch.age>=arrival:pulse.tokens=1.0
-		var end := quest_flight_start(count,count-1)+QUEST_FLIGHT
-		if previous<end and batch.age>=end and not batch.preview:
-			held_quest_grain-=int(batch.total)
-			sync_resource_counts()
-	if not quest_flights.is_empty():
-		quest_flights=quest_flights.filter(func(batch):return batch.age<quest_flight_start(batch.origins.size(),batch.origins.size()-1)+QUEST_FLIGHT)
-		quest_fx.queue_redraw()
-	return active
+		var end := burst_lifetime(batch.origins.size())
+		if previous<end and batch.age>=end:
+			pulse[batch.kind]=1.0
+			if int(batch.total)>0:
+				held_quest_grain-=int(batch.total)
+				sync_resource_counts()
+	quest_flights=quest_flights.filter(func(batch):return batch.age<burst_lifetime(batch.origins.size()))
+	quest_fx.queue_redraw()
+	return true
 
 func draw_quest_flights() -> void:
-	var goal := slot("tokens").position+Vector2(16,19)
 	for batch in quest_flights:
-		var count: int = batch.origins.size()
-		for index in count:
-			var age: float = batch.age-index*QUEST_POP_SPACING
-			if age<0.0:continue
+		var texture := resource_icon(batch.kind)
+		var goal := slot(batch.kind).position+Vector2(16,19)
+		for index in batch.origins.size():
 			var start: Vector2 = batch.origins[index]
-			var t := (float(batch.age)-quest_flight_start(count,index))/QUEST_FLIGHT
-			if t>=1.0:continue
-			var pop := smoothstep(0.0,.115,age)
-			if age<.22:
-				quest_fx.draw_arc(start,lerpf(6.0,23.0,age/.22),0.0,TAU,24,Color(1.0,.86,.48,.56*(1.0-age/.22)),1.3,true)
-			for piece in 6:
-				var start_piece := start+Vector2.from_angle(.3+piece*.93)*(7.0+piece%3*3.0)*pop
-				var q := smoothstep(0.0,1.0,maxf(t,0.0))
-				var at := start_piece.lerp(goal,q)+Vector2(0,-sin(q*PI)*(29.0+piece*2.0))
-				var extent := Vector2.ONE*lerpf(16.0*pop,4.0,q)
-				quest_fx.draw_texture_rect(CORN_ICON,Rect2(at-extent*.5,extent),false,Color(1,1,1,lerpf(pop,.40,q)))
+			if batch.world_space:
+				start = app.world.get_global_transform_with_canvas()*start
+			for piece in 8:
+				var age: float = batch.age-index*.10-piece*PIECE_SPACING
+				if age < 0.0 or age >= PIECE_PAUSE+PIECE_FLIGHT: continue
+				var kick := smoothstep(0.0,.11,age)
+				var angle := float(piece)*2.39996
+				var spread := Vector2(cos(angle)*(13.0+piece*1.9),sin(angle)*14.0-9.0)
+				var from := start+spread*kick
+				var arrival := clampf((age-PIECE_PAUSE)/PIECE_FLIGHT,0.0,1.0)
+				var q := arrival*arrival
+				var arc := -sin(q*PI)*(19.0+piece*3.0)
+				var at := from.lerp(goal,q)+Vector2(0,arc)
+				var extent := lerpf(17.0+piece%3*2.0,5.0,q)
+				quest_fx.draw_set_transform(at,angle*.24*(1.0-q)+age*2.0)
+				quest_fx.draw_texture_rect(texture,Rect2(Vector2.ONE*(-extent*.5),Vector2.ONE*extent),false,Color(1,1,1,lerpf(kick,1.0,.4)))
+	quest_fx.draw_set_transform(Vector2.ZERO)
+
 func frame(rect: Rect2, fill: Color, border: Color) -> void:
 	var key:=fill.to_html()+border.to_html()
 	if not styles.has(key):
@@ -208,12 +227,11 @@ func _draw() -> void:
 	if fill>0:
 		frame(Rect2(origin+Vector2(109,40),Vector2(114*fill,10)),Color("398a66cc"),Color("6ead85cc"))
 		if fill>.08:draw_line(origin+Vector2(112,42),origin+Vector2(106+114*fill,42),Color("b5efb7cc"),1.4,true)
-	for key in ["wood","stone","tokens","residents"]:
+	for key in ["wood","stone","tokens"]:
 		var rect:=slot(key);var beat:float=pulse.get(key,0.0)
-		var is_resident:bool=key=="residents"
 		var kind:String="grain" if key=="tokens" else key
-		var amount:int=app.model.resident_count() if is_resident else displayed_amount(key)
-		var capacity:int=app.model.resident_capacity() if is_resident else resource_capacities[kind]
+		var amount:int=displayed_amount(key)
+		var capacity:int=resource_capacities[kind]
 		var track:=Rect2(rect.position+Vector2(15,10),Vector2(rect.size.x-15,20))
 		frame(track,TRACK_COLOR,TRACK_RIM)
 		var fraction:=clampf(float(amount)/maxi(1,capacity),0,1)
@@ -232,6 +250,10 @@ func _draw() -> void:
 		var extent:=32.0+beat*4
 		var top:=6.0 if key in ["wood","stone"] else 3.0
 		draw_texture_rect(resource_icon(key),Rect2(rect.position+Vector2(0,top),Vector2.ONE*extent),false)
+	var diamond := slot("diamonds")
+	frame(Rect2(diamond.position+Vector2(11,10),Vector2(diamond.size.x-11,20)),Color("253750"),Color("617b9b"))
+	draw_texture_rect(DIAMOND_ICON,Rect2(diamond.position+Vector2(0,6),Vector2(27,27)),false)
+	hud_text(font,diamond.position+Vector2(25,24),str(app.test_diamonds),diamond.size.x-28,10,HORIZONTAL_ALIGNMENT_CENTER)
 	var center:=Vector2(app.w-app.safe.x-50,app.safe.y+60)
 	draw_circle(center+Vector2(1,3),53,Color(.15,.10,.04,.20))
 	draw_circle(center,51,Color("49321e"))
@@ -247,18 +269,6 @@ func _draw() -> void:
 	draw_location_marker(dot, (dot-center).angle()-PI*.5 if dot.distance_to(center)>34 else 0.0)
 	draw_string(font,center+Vector2(-5,-33),"N",HORIZONTAL_ALIGNMENT_LEFT,20,12,Color("fff2cf"))
 	draw_set_transform(Vector2.ZERO)
-	for f in flights:
-		if f.age<0:continue
-		var from: Vector2=app.world.get_global_transform_with_canvas()*f.world
-		var to:=slot(f.kind).get_center()
-		var t: float=clampf(f.age/0.85,0,1)
-		var q:=smoothstep(0.12,1.0,t)
-		var control: Vector2=from.lerp(to,0.45)+Vector2(0,-100)
-		var at: Vector2=from*(1-q)*(1-q)+control*2*q*(1-q)+to*q*q-Vector2(0,sin(t*PI)*20)
-		var extent:=lerpf(40,30,q)
-		draw_circle(at,extent*0.65,Color(1,.85,.4,.15))
-		draw_texture_rect(resource_icon(f.kind),Rect2(at-Vector2.ONE*extent/2,Vector2.ONE*extent),false)
-
 func hud_text(font: Font,at: Vector2,value: String,width: int,point: int,align := HORIZONTAL_ALIGNMENT_LEFT) -> void:
 	draw_string_outline(font,at,value,align,width,point,3,Color("253121d0"))
 	draw_string(font,at,value,align,width,point,Color("fff1d4"))

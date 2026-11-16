@@ -3,6 +3,7 @@ extends Control
 ## Assignment state is shared by chief management and building entry bubbles.
 var app:Node
 var counter_button:DemoButton
+var resident_count_label: Label
 var bubbles:Dictionary={}
 var waiting_overlay: ColorRect
 var assignment_list: VBoxContainer
@@ -14,9 +15,23 @@ func _ready()->void:
 	name="ResidentPanel";mouse_filter=Control.MOUSE_FILTER_IGNORE;z_index=4;process_priority=30
 	counter_button=app.button(self,"",show_summary);counter_button.name="ResidentCounter";counter_button.z_index=28
 	counter_button.custom_minimum_size=Vector2.ZERO
-	var bounds:Rect2=app.chrome.slot("residents")
-	counter_button.position=bounds.position-Vector2(0,4);counter_button.size=Vector2(bounds.size.x,44)
-	for state in ["normal","hover","pressed","disabled","focus"]:counter_button.add_theme_stylebox_override(state,StyleBoxEmpty.new())
+	counter_button.position = Vector2(minf(app.safe.x+230,app.w-app.safe.x-90),app.safe.y+15)
+	counter_button.size = Vector2(90,38)
+	for state in ["normal","hover","pressed","disabled","focus"]: counter_button.add_theme_stylebox_override(state,StyleBoxEmpty.new())
+	app.picture(counter_button,PlayChrome.RESIDENT_ICON,Rect2(1,1,32,32))
+	resident_count_label = QuestRewards.caption(app,counter_button,"",Rect2(31,0,57,38),13,Color("fff7d1"))
+	resident_count_label.add_theme_color_override("font_outline_color",Color("302715"))
+	resident_count_label.add_theme_constant_override("outline_size",4)
+	app.model.changed.connect(refresh_counter)
+	refresh_counter()
+
+func refresh_counter() -> void:
+	var count: int = app.model.resident_count()
+	var capacity: int = app.model.resident_capacity()
+	resident_count_label.text = "%d / %d"%[count,capacity]
+	resident_count_label.add_theme_color_override("font_color",Color("ffc35c") if capacity > 0 and count >= capacity else Color("fff7d1"))
+	counter_button.set_meta("semantic_text","주민 현황 %d/%d"%[count,capacity])
+
 func job_name(job:String)->String:return JOB_NAMES.get(job,"미배정")
 func id_at(index:int)->String:
 	var ids:=ResidentAdmission.ids(app.model.state)

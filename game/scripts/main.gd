@@ -142,6 +142,7 @@ var navigation: AutoTravel
 var action_row: Control
 var quest_expanded:=true
 var quest_preview_enabled := false
+var test_diamonds := 0
 var demolition_key:=""
 var relocating_key:=""
 var world_map:VillageWorldMap
@@ -1253,7 +1254,7 @@ func play_hud(spread:=false) -> void:
 	stage.add_child(ConstructionProgress.new(self))
 	stage.add_child(ConstructionProgress.new(self,false,true))
 	family=FamilyArrival.new(self);stage.add_child(family)
-	var map_hit:=button(stage,"",recenter_map);map_hit.name="RecenterCamera";map_hit.custom_minimum_size=Vector2.ZERO;map_hit.position=Vector2(w-safe.x-100,safe.y+10);map_hit.size=Vector2(100,100)
+	var map_hit:=button(stage,"",recenter_map);map_hit.name="RecenterCamera";map_hit.custom_minimum_size=Vector2.ZERO;map_hit.position=Vector2(w-safe.x-100,safe.y+10);map_hit.size=Vector2(100,65 if OS.has_feature("android") and w<h else 100)
 	map_hit.hint_text="현재 위치로 지도 맞추기"
 	for state in ["normal","hover","pressed"]:map_hit.add_theme_stylebox_override(state,StyleBoxEmpty.new())
 	intro_probe_step("hud_before_map",hud_started)
@@ -1261,7 +1262,7 @@ func play_hud(spread:=false) -> void:
 	world_map = null
 	if spread:await get_tree().process_frame
 	intro_probe_step("hud_map",map_started)
-	map_toggle=button(stage,"",toggle_world_map,false,"","");map_toggle.icon=AssetCatalog.texture("UI-MAP");map_toggle.expand_icon=true;map_toggle.add_theme_constant_override("icon_max_width",48);map_toggle.custom_minimum_size=Vector2.ZERO;map_toggle.position=Vector2(w-safe.x-64,safe.y+90);map_toggle.size=Vector2(56,56);map_toggle.z_index=31
+	map_toggle=button(stage,"",toggle_world_map,false,"","");map_toggle.icon=AssetCatalog.texture("UI-MAP");map_toggle.expand_icon=true;map_toggle.add_theme_constant_override("icon_max_width",48);map_toggle.custom_minimum_size=Vector2.ZERO;map_toggle.position=chrome.gps_rect().position;map_toggle.size=chrome.gps_rect().size;map_toggle.z_index=31
 	for state in ["normal","hover","pressed","focus"]:map_toggle.add_theme_stylebox_override(state,StyleBoxEmpty.new())
 	var settings_button:=button(stage,"",pause_game);settings_button.name="SettingsButton";settings_button.z_index=31
 	settings_button.icon=load("res://assets/ui/review-v037/settings-figma.png");settings_button.expand_icon=true
@@ -1454,8 +1455,7 @@ func claim_intro_reward(index:int)->void:
 	audio.cue("reward")
 	if model.state.get("guided_intro",false):world.player.release_tutorial_camera()
 	var kind:String=FirstQuests.INTRO_KINDS[index] if index!=2 else "tokens"
-	for i in 5:
-		chrome.gained(kind,world.player.position+Vector2((i-2)*10,-52),i*.055)
+	chrome.gained(kind,world.player.position+Vector2(0,-52))
 
 func first_construction_locked()->bool:
 	return model.chief_level()==0 and model.pending_construction_count("chief")==0 and FirstQuests.current(model.state) in [0,1]
@@ -1664,7 +1664,9 @@ func confirm_build_preview()->void:
 	if not reason.is_empty():toast(reason);return
 	var at:Vector2=build_preview.placement_position
 	if not build_preview.moving_key.is_empty():return
-	if not can_build_selected():return
+	if not can_build_selected():
+		build_preview.cost_display.flash_shortage()
+		return
 	if model.begin_construction(build_kind,at):
 		world.evacuate_animals(at,build_kind)
 		cancel_build_preview()
@@ -1747,7 +1749,9 @@ func run_reserved_action()->void:
 func build_action() -> void:
 	if modal or gestures.blocked:return
 	if world.selected_site<0:toast("건설할 위치를 선택해 주세요");return
-	if not can_build_selected():return
+	if not can_build_selected():
+		build_preview.cost_display.flash_shortage()
+		return
 	build_preview.select_position(DemoConfig.BUILD_SITES[world.selected_site],build_kind)
 	confirm_build_preview()
 
@@ -1758,7 +1762,7 @@ func finish_task() -> void:
 	if kind=="gather":
 		if model.gather(target,world.player.position):
 			world.feedback.gathered(target)
-			var resource_kind:String="wood" if target.begins_with("wood") else "stone"
+			var resource_kind: String = world.resource_labels[target].kind
 			chrome.gained(resource_kind,world.art_nodes[target].position+Vector2(0,-70))
 			toast("",0)
 	elif kind=="family":family.finish()
@@ -1831,7 +1835,7 @@ func confirm_demolition(key:String)->void:
 func claim_home(index:int) -> void:
 	if model.claim_reward(index):
 		world.feedback.rewarded()
-		for i in 6:chrome.gained("tokens",world.reward_marker_rect(index).get_center()+Vector2((i-3)*8,0),i*.055)
+		chrome.gained("tokens",world.reward_marker_rect(index).get_center())
 
 func world_tap(screen_point:Vector2) -> void:
 	if menu_animating and action_row.get_global_rect().has_point(screen_point):return
