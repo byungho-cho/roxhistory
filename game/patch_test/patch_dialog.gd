@@ -183,13 +183,13 @@ func render(title: String, description: String, note: String, current: String, n
 		var info: Variant = controller.get("apk_candidate" if apk else "candidate")
 		if info is Dictionary:
 			notes_version = str(info.get("version",""))
-	notes_button.visible = not notes_version.is_empty()
+	notes_button.visible = not PATCH_NOTES.rows(notes_version).is_empty()
 	var both := not secondary.is_empty() and not primary.is_empty()
 	set_action(close_button,secondary_art,secondary,64 if both else (500-single_width)*.5,180 if both else single_width)
 	set_action(update_button,primary_art,primary,256 if both else (500-single_width)*.5,180 if both else single_width)
 
 func show_notes() -> void:
-	if notes_version.is_empty() or is_instance_valid(notes_panel):
+	if PATCH_NOTES.rows(notes_version).is_empty() or is_instance_valid(notes_panel):
 		return
 	notes_panel = Panel.new()
 	notes_panel.name = "UpdateNotesPanel"
@@ -205,7 +205,8 @@ func show_notes() -> void:
 	title.position = Vector2(24,20)
 	title.size = Vector2(396,40)
 	notes_panel.add_child(title)
-	HudButtons.create_modal_close(notes_panel,close_notes,"UpdateNotesClose").position = Vector2(444,15)
+	var close := HudButtons.create_modal_close(notes_panel,close_notes,"UpdateNotesClose")
+	close.position = Vector2(466,37)-close.size*.5
 	var lines := make_label(15,500,INK)
 	lines.text = PATCH_NOTES.body(notes_version)
 	lines.position = Vector2(25,75)

@@ -34,11 +34,6 @@ var reward_roof_bounds:=Rect2()
 var boundary_level:=-1
 var boundary_fog:Node2D
 var terrain_art: Node2D
-const FOG_OPACITIES := [Vector2.ZERO,Vector2(.12,.65),Vector2(.20,.75),Vector2(.25,.80),Vector2(.30,.85)]
-
-func set_boundary_fog_experiment(preset: int) -> void:
-	var opacity: Vector2 = FOG_OPACITIES[clampi(preset,1,5)-1]
-	boundary_fog.material.set_shader_parameter("experiment_opacity", opacity)
 var boundary_debug:=false
 var boundary_root:Node2D
 var boundary_pulse:Tween
@@ -600,16 +595,13 @@ func refresh_boundary()->void:
 	outline.visible=boundary_debug;boundary_root.add_child(outline)
 
 func draw_boundary_fog()->void:
-	var clear:=VillageBounds.rect_for_level(boundary_level)
-	var outer:=VillageBounds.WORLD_RECT.grow(12000)
-	# Draw only the area outside the playable rectangle, without shading clear ground.
-	boundary_fog.draw_rect(Rect2(outer.position,Vector2(outer.size.x,clear.position.y-outer.position.y)),Color.WHITE)
-	boundary_fog.draw_rect(Rect2(Vector2(outer.position.x,clear.end.y),Vector2(outer.size.x,outer.end.y-clear.end.y)),Color.WHITE)
-	boundary_fog.draw_rect(Rect2(Vector2(outer.position.x,clear.position.y),Vector2(clear.position.x-outer.position.x,clear.size.y)),Color.WHITE)
-	boundary_fog.draw_rect(Rect2(Vector2(clear.end.x,clear.position.y),Vector2(outer.end.x-clear.end.x,clear.size.y)),Color.WHITE)
+	boundary_fog.draw_rect(terrain_art.world_bounds.grow(12000),Color.WHITE)
 
 func playable_rect()->Rect2:
 	return VillageBounds.rect_for_level(model.chief_level())
+
+func village_art_bounds() -> Rect2:
+	return terrain_art.world_bounds
 
 func refresh_chief()->void:
 	var chief:=get_node("ExistingHut") as EnvironmentProp

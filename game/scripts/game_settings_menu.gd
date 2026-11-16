@@ -1,7 +1,6 @@
 extends RefCounted
 
 const BUG := preload("res://assets/ui/settings-v141/development.svg")
-const PATCH_NOTES := preload("res://patch_test/patch_notes.gd")
 
 static func open(app: Node) -> void:
 	var scroll: ScrollContainer = app.show_modal("게임 설정", "", [], false, true, false, Vector2(610, 400))
@@ -49,17 +48,16 @@ static func open(app: Node) -> void:
 	var footer := HBoxContainer.new()
 	column.add_child(footer)
 	var version := String(ProjectSettings.get_setting("application/config/version"))
-	var notes: DemoButton = app.button(footer, version, func():
-		app.show_modal("이번 업데이트  "+version,PATCH_NOTES.body(version),[],false,true,false,Vector2(610,325)))
+	var notes: DemoButton = app.button(footer, version, app.show_version_notes.bind(version))
 	notes.name = "RunningVersionNotes"
 	notes.custom_minimum_size = Vector2(112,48)
 	notes.alignment = HORIZONTAL_ALIGNMENT_LEFT
 	notes.add_theme_font_override("font", FigmaArt.NOTO)
-	notes.add_theme_font_size_override("font_size",14)
+	notes.add_theme_font_size_override("font_size",16)
 	for state in ["normal","hover","pressed","focus"]:
 		notes.add_theme_stylebox_override(state,StyleBoxEmpty.new())
 	for state in ["font_color","font_hover_color","font_pressed_color","font_focus_color"]:
-		notes.add_theme_color_override(state,Color("604323"))
+		notes.add_theme_color_override(state,Color("41280e"))
 	var spacer := Control.new()
 	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -77,7 +75,8 @@ static func open(app: Node) -> void:
 static func icon_button(app: Node, header: Control, texture: Texture2D, id: String, action: Callable, cue := "ui") -> void:
 	var control: DemoButton = app.button(header, "", action, false, "", cue)
 	control.name = id
-	control.custom_minimum_size = Vector2(48, 48)
+	var diameter := HudButtons.CLOSE_TARGET if texture == HudButtons.MODAL_CLOSE else 48.0
+	control.custom_minimum_size = Vector2.ONE*diameter
 	for state in ["normal","hover","pressed","focus"]:
 		control.add_theme_stylebox_override(state, StyleBoxEmpty.new())
-	app.picture(control, texture, Rect2(8, 8, 32, 32))
+	app.picture(control, texture, Rect2(Vector2.ONE*(diameter-32.0)*.5,Vector2.ONE*32))

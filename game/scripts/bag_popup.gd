@@ -5,11 +5,15 @@ const COLUMNS := 8
 const DEFAULT_CAPACITY := 64
 const SLOT_SIZE := Vector2(115,125)
 const SLOT_GAP := Vector2(13,14)
+const LIST_TOP := 113.0
+const RAIL_TOP := LIST_TOP + 8.0
+const RAIL_HEIGHT := 665.0
 const INK := Color("f8f6db")
 const ERA_ART := {"stone_age":preload("res://assets/ui/d0031/bag.png")}
 const ITEMS := [["wood","목재"],["stone","석재"],["grain","곡식"]]
 var app: Node
 var layout: Control
+var close_layer: Control
 var viewport: Control
 var grid: GridContainer
 var thumb: Panel
@@ -44,20 +48,20 @@ func _ready() -> void:
 	var back: DemoButton=app.button(layout,"",app.close_modal)
 	back.name="BagBack"
 	back.custom_minimum_size=Vector2.ZERO
-	back.position=Vector2(68,52)
-	back.size=Vector2.ONE*56
+	back.position=Vector2(55,14)
+	back.size=Vector2(78,65)
 	for state in ["normal","hover","pressed","focus","disabled"]:
 		back.add_theme_stylebox_override(state,StyleBoxEmpty.new())
-	app.picture(back,preload("res://assets/ui/d0030/bag-back-gold@4x.png"),Rect2(0,6.835,48.96,42.33))
-	FigmaArt.text(layout,"가방",Rect2(148,50,250,60),50,FigmaArt.TITLE,INK,false)
-	count=FigmaArt.text(layout,"",Rect2(983,89,96,28),23,FigmaArt.NOTO,Color("f0e6be"))
+	app.picture(back,preload("res://assets/ui/d0030/bag-back-gold@4x.png"),Rect2(13,12,48.96,42.33))
+	FigmaArt.text(layout,"가방",Rect2(173,22,250,60),50,FigmaArt.TITLE,INK,false)
+	count=FigmaArt.text(layout,"",Rect2(983,59,96,28),23,FigmaArt.NOTO,Color("f0e6be"))
 	count.horizontal_alignment=HORIZONTAL_ALIGNMENT_RIGHT
-	panel(layout,Rect2(68,126,1018,1),style(Color(.91,.85,.64,.36)))
-	panel(layout,Rect2(68,733,1018,1),style(Color(.91,.85,.64,.22)))
+	panel(layout,Rect2(68,97,1018,1),style(Color(.91,.85,.64,.36)))
+	panel(layout,Rect2(68,805,1018,1),style(Color(.91,.85,.64,.22)))
 	viewport=Control.new()
 	viewport.clip_contents=true
-	viewport.position=Vector2(68,160)
-	viewport.size=Vector2(1011,542)
+	viewport.position=Vector2(68,LIST_TOP)
+	viewport.size=Vector2(1011,SLOT_SIZE.y*5+SLOT_GAP.y*4)
 	viewport.mouse_filter=Control.MOUSE_FILTER_IGNORE
 	layout.add_child(viewport)
 	grid=GridContainer.new()
@@ -84,21 +88,27 @@ func _ready() -> void:
 	var content_height := rows*SLOT_SIZE.y+(rows-1)*SLOT_GAP.y
 	max_offset = maxf(0,content_height-viewport.size.y)
 	if max_offset>0:
-		panel(layout,Rect2(1102,168,3,526),style(Color(.06,.10,.07,.66),Color(.84,.82,.63,.25),2))
-		thumb=panel(layout,Rect2(1100.5,168,6,526*viewport.size.y/content_height),style(Color(.90,.85,.60,.79),Color.TRANSPARENT,3))
+		panel(layout,Rect2(1102,RAIL_TOP,3,RAIL_HEIGHT),style(Color(.06,.10,.07,.66),Color(.84,.82,.63,.25),2))
+		thumb=panel(layout,Rect2(1100.5,RAIL_TOP,6,RAIL_HEIGHT*viewport.size.y/content_height),style(Color(.90,.85,.60,.79),Color.TRANSPARENT,3))
+	close_layer = Control.new()
+	close_layer.size = DESIGN
+	close_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(close_layer)
+	var close := QuestRewards.gold_button(app,close_layer,"BagClose",Rect2(1358,822,171,55),app.close_modal)
+	QuestRewards.caption(app,close,"닫기",Rect2(0,0,171,55),24,QuestRewards.INK)
 	resized.connect(fit)
 	app.model.changed.connect(update_amounts)
 	update_amounts()
 	fit()
 	if not app.reduced_ui_motion():
-		scenery.modulate.a = 0.0
 		layout.modulate.a = 0.0
-		entrance_offset = 7.0
+		close_layer.modulate.a = 0.0
+		entrance_offset = 82.0
 		fit()
 		var entrance := create_tween().set_parallel(true).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
-		entrance.tween_property(scenery,"modulate:a",1.0,.14)
-		entrance.tween_property(layout,"modulate:a",1.0,.20).set_delay(.09)
-		entrance.tween_method(set_entrance_offset,7.0,0.0,.20).set_delay(.09)
+		entrance.tween_property(layout,"modulate:a",1.0,.22).set_delay(.10)
+		entrance.tween_property(close_layer,"modulate:a",1.0,.22).set_delay(.10)
+		entrance.tween_method(set_entrance_offset,82.0,0.0,.28).set_delay(.10)
 
 func set_entrance_offset(pixels: float) -> void:
 	entrance_offset = pixels
@@ -137,8 +147,11 @@ func shade(tint: Color, stops: Array, opacity: Array) -> void:
 func fit() -> void:
 	var region := size-Vector2(app.safe)*2.0
 	var factor := maxf(.1,minf(region.x/DESIGN.x,region.y/DESIGN.y))
+	var at := (size-DESIGN*factor)*.5
 	layout.scale=Vector2.ONE*factor
-	layout.position=(size-DESIGN*factor)*.5 + Vector2(0,entrance_offset*factor)
+	layout.position=at - Vector2(entrance_offset*factor,0)
+	close_layer.scale = layout.scale
+	close_layer.position = at + Vector2(entrance_offset*factor,0)
 
 func update_amounts() -> void:
 	for resource in amounts:
@@ -149,7 +162,7 @@ func scroll_to(next: float) -> void:
 	offset=clampf(next,0,max_offset)
 	grid.position.y=-offset
 	if is_instance_valid(thumb):
-		thumb.position.y=168+(526-thumb.size.y)*offset/max_offset
+		thumb.position.y=RAIL_TOP+(RAIL_HEIGHT-thumb.size.y)*offset/max_offset
 
 func _input(event: InputEvent) -> void:
 	if not is_visible_in_tree() or not app.modal or not is_instance_valid(app.overlay) or not app.overlay.is_ancestor_of(self):return

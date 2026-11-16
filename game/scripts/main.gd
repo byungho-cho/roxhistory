@@ -74,6 +74,8 @@ var title_cloud_seen := false
 var title_reveal: Tween
 var title_loader_first_frame := false
 var title_initial_update_done := false
+var mounted_notes_checked := false
+const PATCH_NOTES := preload("res://patch_test/patch_notes.gd")
 var title_update_in_flight := false
 const TITLE_UPDATE_TIMEOUT := 4.0
 const PATCH_DOWNLOAD_TIMEOUT := 30.0
@@ -153,11 +155,6 @@ func toggle_quest()->void:
 
 var popup_sound_revision := 0
 var quest_reward_count:Label
-var fog_experiment_preset := 1
-var fog_experiment_explained := false
-var fog_controls: Panel
-var fog_choices: Array[Button] = []
-var fog_experiment_button: Button
 
 func update_quest()->void:
 	if not is_instance_valid(objective):return
@@ -264,7 +261,8 @@ func refresh_viewport_metrics() -> void:
 			safe.y = maxf(18,maxf(area.position.y,physical.y-area.end.y)*h/physical.y)
 
 func show_screen(next: String,spread_hud:=false) -> void:
-	cancel_fog_preview()
+	if is_instance_valid(world) and is_instance_valid(world.player):
+		world.player.settle_pan(false)
 	if screen=="title" and next!="title":
 		get_node("/root/PatchBootstrap/Overlay").leave_title()
 		if title_reveal:
@@ -637,7 +635,40 @@ func finish_title_update_check() -> void:
 
 func refresh_title_start_prompt() -> void:
 	if screen!="title" or not is_instance_valid(title_prompt):return
-	title_prompt.visible = not title_input_blocked()
+	title_prompt.visible = not modal and not title_input_blocked()
+
+func show_version_notes(version: String) -> void:
+	show_modal("이번 업데이트  "+version,PATCH_NOTES.body(version),[],false,true,true,Vector2(610,325))
+
+func show_mounted_patch_notes() -> void:
+	if mounted_notes_checked or modal or not application_active:
+		return
+	mounted_notes_checked = true
+	var updates := get_node("/root/PatchBootstrap/Overlay")
+	var installed: Dictionary = updates.cached
+	var version := str(ProjectSettings.get_setting("application/config/version"))
+	var commit := str(ProjectSettings.get_setting("roxhistory/update/source_commit",""))
+	if installed.is_empty() or installed.get("version") != version or installed.get("commit") != commit:
+		return
+	if updates.version_number(version) <= updates.version_number(updates.embedded_version) or PATCH_NOTES.rows(version).is_empty():
+		return
+	var receipt_path := prefs_path.get_basename()+"-patch-notes.cfg"
+	var receipt := ConfigFile.new()
+	receipt.load(receipt_path)
+	var highest := str(receipt.get_value("displayed","highest","0.0.0"))
+	if receipt.has_section_key("versions",version) or updates.version_number(version)<=updates.version_number(highest):
+		return
+	show_version_notes(version)
+	show_modal_immediately()
+	var note_overlay := overlay
+	RenderingServer.frame_post_draw.connect(func():
+		if not is_instance_valid(note_overlay) or overlay != note_overlay or not note_overlay.is_visible_in_tree():
+			mounted_notes_checked = false
+			return
+		receipt.set_value("versions",version,true)
+		receipt.set_value("displayed","highest",version)
+		if receipt.save(receipt_path) != OK: push_warning("Unable to save patch note receipt.")
+	,CONNECT_ONE_SHOT)
 
 func install_title_loader(start: Button) -> void:
 	title_loading = ProgressBar.new()
@@ -1243,17 +1274,6 @@ func play_hud(spread:=false) -> void:
 	settings_button.add_theme_constant_override("icon_max_width",36)
 	for state in ["normal","hover","pressed","focus"]:settings_button.add_theme_stylebox_override(state,StyleBoxEmpty.new())
 	quest_reward_count=QuestRewards.install_entry(self)
-	fog_experiment_button = button(stage, "", toggle_fog_experiment)
-	fog_experiment_button.name = "FogExperiment"
-	fog_experiment_button.custom_minimum_size = Vector2.ZERO
-	fog_experiment_button.size = debug_shortcut.size
-	fog_experiment_button.position = debug_shortcut.position - Vector2(0, debug_shortcut.size.y + 8)
-	fog_experiment_button.z_index = debug_shortcut.z_index
-	picture(fog_experiment_button, preload("res://assets/ui/d0031/lab-flask.png"), Rect2(9,9,30,30))
-	update_fog_experiment_button()
-	if return_village_button.get_rect().grow(8).intersects(fog_experiment_button.get_rect()):
-		return_village_button.position.y = fog_experiment_button.position.y - return_village_button.size.y - 8
-	world.set_boundary_fog_experiment(fog_experiment_preset)
 	stage.add_child(VillageRewardBoard.new(self))
 	stage.add_child(BuildingUpgradeSigns.new(self))
 	# GUI hit testing visits later siblings first; the menu only blocks through its buttons.
@@ -1264,7 +1284,7 @@ func play_hud(spread:=false) -> void:
 
 func toggle_world_map()->void:
 	if modal or map_transition_active:return
-	cancel_fog_preview()
+	world.player.settle_pan(false)
 	map_transition_active=true;gestures.clear()
 	if is_instance_valid(world_map):world_map.clear_input()
 	world.player.direction=Vector2.ZERO;world.player.presentation_paused=true
@@ -1288,8 +1308,6 @@ func switch_map_scene()->void:
 		stage.move_child(world_map,0)
 	chrome.clear_effects()
 	world_map_open=not world_map_open
-	if is_instance_valid(fog_experiment_button): fog_experiment_button.visible = not world_map_open
-	if world_map_open and is_instance_valid(fog_controls): fog_controls.hide()
 	sync_audio()
 	audio.cue("map_open" if world_map_open else "map_close")
 	gestures.clear()
@@ -1420,80 +1438,6 @@ func show_modal_immediately() -> void:
 	if tween.is_valid(): tween.kill()
 	overlay.modulate.a = 1.0
 
-func update_fog_experiment_button() -> void:
-	var enabled := fog_experiment_preset > 1
-	var state_label := "실험실 · 경계 안개 " + ("ON · %d단계" % fog_experiment_preset if enabled else "OFF")
-	fog_experiment_button.tooltip_text = state_label
-	fog_experiment_button.set_meta("semantic_text", state_label)
-	var face := StyleBoxFlat.new()
-	face.bg_color = Color("287735") if enabled else Color("151512")
-	face.border_color = Color("dfbc70")
-	face.set_border_width_all(2)
-	face.set_corner_radius_all(24)
-	for state in ["normal", "hover", "pressed", "focus", "disabled"]:
-		fog_experiment_button.add_theme_stylebox_override(state, face)
-
-func toggle_fog_experiment() -> void:
-	if modal or world_map_open or map_transition_active or village_entry_active():
-		return
-	if not fog_experiment_explained:
-		fog_experiment_explained = true
-		show_modal("실험실 · 마을 경계 안개", "오른쪽 경계에서 다섯 단계를 비교해 보세요. 1단계는 기존 안개입니다.", [], false, true, false, Vector2(460, 190))
-		overlay.set_meta("preview_fog_edge", true)
-	else:
-		open_fog_controls()
-
-func open_fog_controls() -> void:
-	if is_instance_valid(fog_controls):
-		fog_controls.visible = not fog_controls.visible
-		return
-	fog_controls = Panel.new()
-	fog_controls.position = safe + Vector2(12,158)
-	fog_controls.size = Vector2(252,277)
-	fog_controls.add_theme_stylebox_override("panel", QuestRewards.paper_style())
-	stage.add_child(fog_controls)
-	fog_controls.name = "FogPresetPanel"
-	fog_controls.z_index = 38
-	fog_choices.clear()
-	var heading := label(fog_controls,"마을 경계 안개",18,Color("49321e"))
-	heading.position = Vector2(15,13)
-	HudButtons.create_modal_close(fog_controls, func(): fog_controls.hide(), "FogPresetClose").position = Vector2(204,2)
-	var titles := ["1 · 기존 흰 구름 (OFF)","2 · 가벼운 안개","3 · 회녹색 안개","4 · 짙은 안개","5 · 가장 짙게"]
-	for index in titles.size():
-		var option := button(fog_controls,titles[index],set_fog_preset.bind(index+1))
-		option.name = "FogPreset%d" % (index+1)
-		option.custom_minimum_size = Vector2.ZERO
-		option.position = Vector2(14,49+index*43)
-		option.size = Vector2(224,38)
-		option.add_theme_font_size_override("font_size",15)
-		fog_choices.append(option)
-	update_fog_choices()
-
-func set_fog_preset(preset: int) -> void:
-	fog_experiment_preset = preset
-	world.set_boundary_fog_experiment(preset)
-	update_fog_experiment_button()
-	update_fog_choices()
-	cancel_fog_preview()
-
-func update_fog_choices() -> void:
-	for index in fog_choices.size():
-		var style := StyleBoxFlat.new()
-		style.bg_color = Color("3c633c") if index+1 == fog_experiment_preset else Color("513d2b")
-		style.set_corner_radius_all(6)
-		for state in ["normal","hover","pressed","focus"]:
-			fog_choices[index].add_theme_stylebox_override(state,style)
-
-func preview_fog_edge() -> void:
-	if screen == "play" and not world_map_open and not map_transition_active and not modal and application_active and is_instance_valid(world):
-		var boundary := world.playable_rect()
-		world.player.preview_fog_boundary(Vector2(boundary.end.x - 145, boundary.get_center().y))
-		open_fog_controls()
-
-func cancel_fog_preview() -> void:
-	if is_instance_valid(world) and is_instance_valid(world.player) and world.player.fog_preview_running:
-		world.player.cancel_camera_guide()
-
 func update_hud() -> void:
 	if screen!="play" or not is_instance_valid(objective) or model.state.is_empty():return
 	update_quest()
@@ -1542,6 +1486,8 @@ func _process(delta: float) -> void:
 	if screen=="title" and application_active and is_instance_valid(title_prompt):
 		advance_title_loading()
 		if not title_initial_update_done or Time.get_ticks_msec()-title_update_at>=60000:check_title_update()
+		if not test_mode and not title_input_blocked() and not title_update_in_flight:
+			show_mounted_patch_notes()
 		refresh_title_start_prompt()
 		title_prompt_time=fposmod(title_prompt_time+delta,3.0)
 		title_prompt.modulate.a=.87+.13*cos(title_prompt_time*TAU/3.0)
@@ -2069,6 +2015,7 @@ func show_modal(title: String, body: String, actions: Array, compact: bool = fal
 	if is_instance_valid(joystick): joystick.clear()
 	if not preserve_work:cancel_task()
 	if is_instance_valid(world):
+		world.player.settle_pan(false)
 		world.player.direction = Vector2.ZERO
 		world.player.presentation_paused = true
 	if is_instance_valid(overlay):
@@ -2162,7 +2109,6 @@ func show_character_guide(title:String,body:String,after:Callable=Callable())->v
 	if after.is_valid():overlay.completions.append(after)
 
 func close_modal() -> void:
-	var show_fog_edge := is_instance_valid(overlay) and overlay.has_meta("preview_fog_edge")
 	if is_instance_valid(building_workflow):building_workflow.confirmation_target=-1
 	demolition_key=""
 	if is_instance_valid(overlay):
@@ -2176,7 +2122,6 @@ func close_modal() -> void:
 	if is_instance_valid(joystick): joystick.clear()
 	if is_instance_valid(world): world.player.presentation_paused = not application_active
 	sync_audio()
-	if show_fog_edge: preview_fog_edge()
 
 func retire_modal(closing: Control) -> void:
 	stop_popup_openings(closing)

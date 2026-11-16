@@ -153,7 +153,8 @@ static func open(app:Node) -> void:
 	var panel := dialog(app,"QuestRewardPanel",Vector2(870,height),factor)
 	var heading := caption(app,panel,"퀘스트 보상",Rect2(61,23,590,58),40,INK)
 	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	HudButtons.create_modal_close(panel,app.close_modal,"QuestRewardClose").position = Vector2(786,15)
+	var close := HudButtons.create_modal_close(panel,app.close_modal,"QuestRewardClose",1.5,56.0)
+	close.position = Vector2(808,37)-close.size*.5
 	rule(panel,Rect2(60,91,730,1.5))
 	var scroll := DevelopmentSettingsScroll.new()
 	scroll.name = "QuestRewardList"

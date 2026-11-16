@@ -2,7 +2,6 @@ shader_type canvas_item;
 render_mode unshaded;
 
 uniform vec4 boundary;
-uniform vec2 experiment_opacity = vec2(0.0);
 uniform vec4 terrain_bounds;
 varying vec2 world_position;
 
@@ -14,31 +13,36 @@ float noise(vec2 p) {
 	return mix(mix(values.x, values.y, blend.x), mix(values.z, values.w, blend.x), blend.y);
 }
 
+float fog_opacity(float distance_ratio) {
+	if (distance_ratio <= 0.17) return mix(0.30, 0.47, distance_ratio / 0.17);
+	if (distance_ratio <= 0.34) return mix(0.47, 0.63, (distance_ratio - 0.17) / 0.17);
+	if (distance_ratio <= 0.53) return mix(0.63, 0.70, (distance_ratio - 0.34) / 0.19);
+	if (distance_ratio <= 0.72) return mix(0.70, 0.79, (distance_ratio - 0.53) / 0.19);
+	if (distance_ratio <= 0.90) return mix(0.79, 0.91, (distance_ratio - 0.72) / 0.18);
+	return mix(0.91, 0.95, clamp((distance_ratio - 0.90) / 0.10, 0.0, 1.0));
+}
+
 void vertex() {
 	world_position = VERTEX;
 }
 
 void fragment() {
-	vec2 outside = max(max(boundary.xy - world_position, world_position - boundary.zw), vec2(0.0));
-	float distance = length(outside);
-	float bank = noise(world_position / 300.0 + vec2(sin(TIME * .035),cos(TIME * .028)) * .35);
-	float detail = noise(world_position / 115.0);
-	float drift = (bank - 0.5) * 155.0 + (detail - 0.5) * 65.0;
-	float edge = smoothstep(0.0, 80.0, distance);
-	float density = smoothstep(15.0, 460.0, distance + drift) * edge;
-	vec3 cloud = mix(vec3(0.62, 0.73, 0.79), vec3(0.99, 0.96, 0.87), bank * 0.65 + detail * 0.35);
-	float opaque_bank = smoothstep(430.0, 780.0, distance);
-	bool outside_terrain = any(lessThan(world_position, terrain_bounds.xy))
-		|| any(greaterThanEqual(world_position, terrain_bounds.zw));
-	if (outside_terrain) {
-		COLOR = vec4(0.97, 0.97, 0.94, 1.0);
-	} else if (experiment_opacity.y > 0.0) {
-		float opacity = mix(experiment_opacity.x, experiment_opacity.y, smoothstep(50.0, 780.0, distance));
-		opacity *= smoothstep(0.0, 50.0, distance);
-		vec3 mist = mix(vec3(0.64, 0.70, 0.65), vec3(0.76, 0.80, 0.74), bank * 0.7 + detail * 0.3);
-		COLOR = vec4(mist, opacity);
-	} else {
-		// Preserve the original white-cloud profile over the expanded ground.
-		COLOR = vec4(mix(cloud, vec3(0.97, 0.97, 0.94), opaque_bank), min(mix(density * 0.94, 1.0, opaque_bank), 0.94));
-	}
+	vec2 lower = max(boundary.xy - world_position, vec2(0.0));
+	vec2 upper = max(world_position - boundary.zw, vec2(0.0));
+	vec2 progress = lower / (boundary.xy - terrain_bounds.xy) + upper / (terrain_bounds.zw - boundary.zw);
+	float ratio = max(progress.x, progress.y);
+	vec2 center = (boundary.xy + boundary.zw) * 0.5;
+	vec2 half_extent = (boundary.zw - boundary.xy) * 0.5;
+	float corner_radius = 70.0;
+	vec2 box = abs(world_position - center) - (half_extent - vec2(corner_radius));
+	float edge_distance = length(max(box, vec2(0.0))) + min(max(box.x, box.y), 0.0) - corner_radius;
+	float opacity = fog_opacity(ratio) * smoothstep(0.0, 112.0, edge_distance);
+
+	vec2 wind = vec2(8.0, 2.7) * TIME;
+	float brush = noise((world_position - wind) / vec2(1050.0, 415.0));
+	float slow_layer = noise((world_position - wind * 0.55) / vec2(1780.0, 910.0));
+	float tone = mix(brush, slow_layer, 0.54);
+	vec3 fog = mix(vec3(0.63, 0.69, 0.62), vec3(0.75, 0.79, 0.71), tone);
+	bool outside_art = any(lessThan(world_position, terrain_bounds.xy)) || any(greaterThanEqual(world_position, terrain_bounds.zw));
+	COLOR = vec4(fog, outside_art ? 1.0 : opacity);
 }

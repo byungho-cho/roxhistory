@@ -12,7 +12,8 @@ const MIN_ZOOM := 0.56 # Previous 0.8 minimum reduced by another 30%.
 const MAX_ZOOM := 1.6 # Maximum unchanged during the additional zoom-out review.
 const WORLD_SIZE := VillageBounds.WORLD_SIZE
 const MIN_OPEN_VIEW_FRACTION := Vector2(.55,.44)
-const PAN_STRETCH_PIXELS := 32.0
+const PAN_REST_INSET_PIXELS := 32.0
+const PAN_STRETCH_PIXELS := 52.0
 var direction := Vector2.ZERO
 var phase := 0.0
 var walk_weight := 0.0
@@ -36,12 +37,12 @@ var zoom_factor := 1.0
 var guide_tween: Tween
 var tutorial_camera_tween: Tween
 var guide_generation := 0
-var fog_preview_running := false
 var rest_points := PackedVector2Array()
 var tool: Node2D
 var manual_camera:=false
 var camera_center:=Vector2.ZERO
 var pan_stretch := Vector2.ZERO
+var pan_pull := Vector2.ZERO
 var pan_return: Tween
 var idle_elapsed:=0.0
 
@@ -78,16 +79,23 @@ func return_to_village() -> void:
 
 
 func settle_pan(animated := true) -> void:
+	pan_pull = Vector2.ZERO
 	if pan_return and pan_return.is_valid(): pan_return.kill()
 	if pan_stretch.is_zero_approx(): return
 	if animated:
 		pan_return = create_tween().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
-		pan_return.tween_method(apply_pan_stretch,pan_stretch,Vector2.ZERO,.22)
+		pan_return.tween_method(apply_pan_stretch,pan_stretch,Vector2.ZERO,.25)
 	else:
 		apply_pan_stretch(Vector2.ZERO)
 
 func apply_pan_stretch(offset: Vector2) -> void:
-	pan_stretch = limit_camera_offset(offset,camera_center)
+	pan_stretch = offset
+	if not offset.is_zero_approx() and get_parent().has_method("village_art_bounds"):
+		var ground: Rect2 = get_parent().village_art_bounds()
+		var half := get_viewport_rect().size * .5 / camera.zoom
+		var low := (ground.position + half - camera_center).min(Vector2.ZERO)
+		var high := (ground.end - half - camera_center).max(Vector2.ZERO)
+		pan_stretch = offset.clamp(low,high)
 	camera.offset = pan_stretch
 	camera.force_update_scroll()
 
@@ -101,11 +109,18 @@ func pan_camera(screen_delta:Vector2, elastic := false)->void:
 	var requested := camera_center-screen_delta/camera.zoom
 	var bounds:=camera_bounds()
 	var limit := PAN_STRETCH_PIXELS/camera.zoom.x
-	var reserve := ((bounds.size*.5-half).max(Vector2.ZERO)).min(Vector2.ONE*limit) if elastic else Vector2.ZERO
+	var rest_inset := PAN_REST_INSET_PIXELS/camera.zoom.x
+	var reserve := ((bounds.size*.5-half).max(Vector2.ZERO)).min(Vector2.ONE*rest_inset) if elastic else Vector2.ZERO
 	camera_center=requested.clamp(bounds.position+half+reserve,bounds.end-half-reserve)
-	var stretch := (pan_stretch+(requested-camera_center)*.35).limit_length(limit)
+	var excess := requested-camera_center
+	if elastic and not excess.is_zero_approx():
+		pan_pull = Vector2(pan_pull.x+excess.x if absf(excess.x)>.001 else 0.0,
+			pan_pull.y+excess.y if absf(excess.y)>.001 else 0.0).limit_length(limit*14.0)
+	else:
+		pan_pull = Vector2.ZERO
+	var stretch := pan_pull * (limit / (limit + pan_pull.length()))
 	camera.position=camera_center-global_position
-	apply_pan_stretch(stretch if elastic and not requested.is_equal_approx(camera_center) else Vector2.ZERO)
+	apply_pan_stretch(stretch)
 	camera.reset_smoothing();camera.force_update_scroll()
 
 func resume_camera()->void:
@@ -228,6 +243,7 @@ func fit_camera_limits() -> void:
 
 func zoom_at(midpoint: Vector2, factor: float, world_anchor: Vector2=Vector2.INF) -> void:
 	var anchor := get_viewport().get_canvas_transform().affine_inverse()*midpoint if not world_anchor.is_finite() else world_anchor
+	settle_pan(false)
 	zoom_factor=clampf(factor,MIN_ZOOM,MAX_ZOOM)
 	fit_camera()
 	var half := get_viewport_rect().size*0.5/camera.zoom
@@ -239,21 +255,8 @@ func zoom_at(midpoint: Vector2, factor: float, world_anchor: Vector2=Vector2.INF
 	camera.reset_smoothing();camera.force_update_scroll()
 
 func cancel_camera_guide() -> void:
-	fog_preview_running = false
 	guide_generation+=1
 	if guide_tween: guide_tween.kill()
-
-func preview_fog_boundary(point: Vector2) -> void:
-	settle_pan(false)
-	cancel_camera_guide()
-	if tutorial_camera_tween: tutorial_camera_tween.kill()
-	camera_center = camera.get_screen_center_position()
-	manual_camera = true
-	var target := camera_center + limit_camera_offset(point - camera_center, camera_center)
-	fog_preview_running = true
-	guide_tween = create_tween()
-	guide_tween.tween_property(self, "camera_center", target, 0.55).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-	guide_tween.finished.connect(func(): fog_preview_running = false)
 
 func guide_to(point: Vector2) -> void:
 	cancel_camera_guide()

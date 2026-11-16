@@ -18,7 +18,8 @@ func open() -> void:
 	panel = QuestRewards.dialog(app,"QuestScreen",dimensions,factor)
 	var heading := text(panel,"여정의 기록",Rect2(32,28,157,51),28)
 	heading.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	HudButtons.create_modal_close(panel,app.close_modal,"QuestClose").position = Vector2(1098,14)
+	var close := HudButtons.create_modal_close(panel,app.close_modal,"QuestClose",1.5,56.0)
+	close.position = Vector2(1120,36)-close.size*.5
 	for index in 2:
 		var tab := QuestRewards.art_button(app,panel,"QuestTab%d"%index,Rect2(192+index*116,28,116,51),func():
 			select_tab(index))
