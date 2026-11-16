@@ -2,8 +2,7 @@ shader_type canvas_item;
 render_mode unshaded;
 
 uniform vec2 height_span;
-uniform vec4 original_bounds;
-uniform bool clip_inside = true;
+uniform vec4 open_boundary;
 uniform float crown_opacity = 0.99;
 varying vec2 world_position;
 
@@ -17,8 +16,6 @@ void fragment() {
 	float veil = smoothstep(0.39, 0.92, height + wisp);
 	COLOR.rgb = mix(COLOR.rgb, vec3(0.75, 0.79, 0.72), veil * 0.46);
 	COLOR.a *= (1.0 - veil) * crown_opacity;
-	if (clip_inside && all(greaterThanEqual(world_position, original_bounds.xy))
-		&& all(lessThan(world_position, original_bounds.zw))) {
-		COLOR.a = 0.0;
-	}
+	vec2 outside = max(open_boundary.xy - world_position, world_position - open_boundary.zw);
+	COLOR.a *= smoothstep(0.0, 65.0, max(outside.x, outside.y));
 }

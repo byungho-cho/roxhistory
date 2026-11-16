@@ -23,7 +23,6 @@ const REPLACEMENTS := {
 var world_bounds: Rect2
 var regions: Array
 var props: Array
-var original_bounds: Rect2
 
 func _init() -> void:
 	name = "Terrain"
@@ -31,7 +30,6 @@ func _init() -> void:
 	texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	var spec: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/d0033-village-outer.json"))
 	world_bounds = rect_from(spec.ground.world_rect)
-	original_bounds = rect_from(spec.ground.native_center.dst_world_rect)
 	regions = spec.ground.registration.regions
 	props = spec.props.layout
 
@@ -71,11 +69,11 @@ func add_decorations(world: Node2D) -> void:
 		decoration.visibility_layer = 2
 		var mist := ShaderMaterial.new()
 		mist.shader = MIST
-		mist.set_shader_parameter("original_bounds",Vector4(original_bounds.position.x,original_bounds.position.y,original_bounds.end.x,original_bounds.end.y))
 		mist.set_shader_parameter("height_span",Vector2(area.position.y,area.end.y)/replacement.get_height())
 		mist.set_shader_parameter("crown_opacity",0.83)
 		decoration.material = mist
 		layer.add_child(decoration)
+		fog_sprites.append(decoration)
 	add_edge_decorations(layer,replacement_areas)
 
 const EDGE_ART := {
@@ -84,9 +82,9 @@ const EDGE_ART := {
 	"zelkova": preload("res://assets/village-outer-d0037/tree-03-forked-zelkova.png"),
 }
 const EDGE_PROPS := [
-	["EdgePine",0,Vector2(15,770),125,"pine"],
-	["EdgeRock",0,Vector2(2390,920),95,"tors"],
-	["EdgeZelkova",0,Vector2(1520,33),120,"zelkova"],
+	["EdgePine",2,Vector2(-155,770),125,"pine"],
+	["EdgeRock",2,Vector2(2510,920),95,"tors"],
+	["EdgeZelkova",2,Vector2(1520,-115),120,"zelkova"],
 	["EastPine",2,Vector2(2555,680),160,"pine"],
 	["EastStone",2,Vector2(2575,1120),94,"tors"],
 	["SouthPine",2,Vector2(1650,1470),125,"pine"],
@@ -96,6 +94,7 @@ const EDGE_PROPS := [
 	["SouthStone",4,Vector2(1860,1660),100,"tors"],
 ]
 var edge_sprites: Array[Sprite2D] = []
+var fog_sprites: Array[Sprite2D] = []
 
 func add_edge_decorations(layer: Node2D, areas: Dictionary) -> void:
 	for entry in EDGE_PROPS:
@@ -114,17 +113,19 @@ func add_edge_decorations(layer: Node2D, areas: Dictionary) -> void:
 		var mist := ShaderMaterial.new()
 		mist.shader = MIST
 		mist.set_shader_parameter("height_span",Vector2(area.position.y,area.end.y)/texture.get_height())
-		mist.set_shader_parameter("clip_inside",false)
-		mist.set_shader_parameter("crown_opacity",.88 if int(entry[1]) == 0 else .43)
+		mist.set_shader_parameter("crown_opacity",.56)
 		sprite.material = mist
 		layer.add_child(sprite)
 		edge_sprites.append(sprite)
+		fog_sprites.append(sprite)
 
 func update_edge_decorations(level: int, visual_bounds: Rect2, from_level: int) -> void:
+	var clip := Vector4(visual_bounds.position.x,visual_bounds.position.y,visual_bounds.end.x,visual_bounds.end.y)
+	for sprite in fog_sprites:
+		(sprite.material as ShaderMaterial).set_shader_parameter("open_boundary",clip)
 	for i in edge_sprites.size():
 		var entry: Array = EDGE_PROPS[i]
 		var unlock := int(entry[1])
-		if unlock == 0: continue
 		var sprite := edge_sprites[i]
 		if unlock > level:
 			sprite.show()
