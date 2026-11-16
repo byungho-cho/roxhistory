@@ -208,12 +208,14 @@ func _draw() -> void:
 	var origin: Vector2=app.safe
 
 	if portrait:draw_texture_rect(portrait,Rect2(origin+Vector2(-5,-3),Vector2(65,59.17)),false)
-	draw_texture_rect(LEVEL_BRUSH,Rect2(origin+Vector2(1,51),Vector2(53,16)),false)
+	draw_texture_rect(LEVEL_BRUSH,Rect2(origin+Vector2(1,51),Vector2(53,16)),false,Color(1,1,1,.80))
 	hud_text(font,origin+Vector2(1,63),"Lv. 1",53,10,HORIZONTAL_ALIGNMENT_CENTER)
 	hud_text(font,origin+Vector2(62,20),"새벽",138,17)
 	hud_text(font,origin+Vector2(62,36),"경험치",43,10)
 	hud_text(font,origin+Vector2(62,52),"정착",43,10)
 	frame(Rect2(origin+Vector2(108,27),Vector2(98,9)),Color(0,0,0,.48),Color("658dabcc"))
+	# Display-only example from the approved HUD reference. No XP state is read.
+	frame(Rect2(origin+Vector2(109,28),Vector2(40,7)),Color("3c91c7cc"),Color("83c6efcc"))
 	frame(Rect2(origin+Vector2(108,39),Vector2(116,12)),Color(0,0,0,.48),Color("4f7964cc"))
 	var fill:=minf(1,app.model.built_count()/3.0)
 	if fill>0:
