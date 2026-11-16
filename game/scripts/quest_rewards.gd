@@ -143,6 +143,7 @@ static func open(app:Node) -> void:
 	var height := 229.0 + rows*77.0
 	var panel := dialog(app,"QuestRewardPanel",Vector2(870,height),factor)
 	var heading := caption(app,panel,"퀘스트 보상",Rect2(61,23,590,58),40,INK)
+	heading.name = "QuestRewardHeading"
 	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	var close := HudButtons.create_modal_close(panel,app.close_modal,"QuestRewardClose",1.5,56.0)
 	close.position = Vector2(808,37)-close.size*.5
@@ -170,7 +171,7 @@ static func open(app:Node) -> void:
 	badge.rotation_degrees = -8.0
 	caption(app,badge,"",Rect2(0,0,36,36),20,CREAM).name = "Count"
 	fill_cards(app,cards)
-	reveal_rows(app,cards,mini(rows,FirstQuests.pending(app.model.state).size()))
+	reveal_rows(app,cards,mini(rows,pending(app).size()))
 
 static func reveal_rows(app: Node, cards: VBoxContainer, count: int) -> void:
 	if app.reduced_ui_motion(): return
@@ -179,60 +180,56 @@ static func reveal_rows(app: Node, cards: VBoxContainer, count: int) -> void:
 		row.modulate.a = .16
 		row.create_tween().set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT).tween_property(row,"modulate:a",1.0,.13).set_delay(.03*index)
 
+static func in_sample(app: Node) -> bool:
+	return is_instance_valid(app.quest_hud) and app.quest_hud.sample_active()
+
+static func pending(app: Node) -> Array[int]:
+	if in_sample(app): return app.quest_hud.pending()
+	return FirstQuests.pending(app.model.state)
+
+static func take(app: Node, index: int) -> bool:
+	var ids := pending(app)
+	if ids.is_empty() or (index >= 0 and not index in ids): return false
+	if not in_sample(app):
+		return app.model.claim_all_quest_rewards() if index < 0 else app.model.claim_quest_reward(index)
+	if index < 0: app.quest_hud.sample_ids.clear()
+	else: app.quest_hud.sample_ids.erase(index)
+	app.quest_hud.refresh()
+	return true
+
 static func receive(app: Node, cards: VBoxContainer, source: DemoButton, index := -1) -> void:
 	var overlay: Control = app.overlay
 	if not is_instance_valid(overlay) or not overlay.is_ancestor_of(source) or source.disabled: return
-	var at := overlay.get_global_transform_with_canvas().affine_inverse()*source.get_global_rect().get_center()
+	var preview := in_sample(app)
+	if preview != bool(source.get_meta("sample_context",false)):
+		fill_cards(app,cards)
+		return
+	var qty := pending(app).size() if index < 0 else 1
+	var at := source.get_global_rect().get_center()
 	var scroll := cards.get_parent() as ScrollContainer
 	var offset := scroll.scroll_vertical
-	var committed: bool = app.model.claim_all_quest_rewards() if index < 0 else app.model.claim_quest_reward(index)
-	if not committed: return
+	if not take(app,index): return
 	app.audio.cue_reward_receipt()
+	app.chrome.quest_reward_effect(PackedVector2Array([at]),qty*FirstQuests.MANUAL_AMOUNT,preview)
 	fill_cards(app,cards)
 	scroll.set_deferred("scroll_vertical",offset)
-	if not app.reduced_ui_motion(): receipt_effect(app,overlay,at)
-
-static func receipt_effect(app: Node, overlay: Control, at: Vector2) -> void:
-	var effect := Control.new()
-	effect.name = "QuestRewardReceipt"
-	effect.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	effect.z_index = 2
-	effect.position = at
-	overlay.add_child(effect)
-	var ring := Panel.new()
-	ring.position = Vector2(-22,-22)
-	ring.size = Vector2(44,44)
-	ring.pivot_offset = ring.size*.5
-	ring.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var outline := StyleBoxFlat.new()
-	outline.bg_color = Color.TRANSPARENT
-	outline.border_color = Color("f5bb55")
-	outline.set_border_width_all(2)
-	outline.set_corner_radius_all(22)
-	ring.add_theme_stylebox_override("panel",outline)
-	effect.add_child(ring)
-	var corn: TextureRect = app.picture(effect,PlayChrome.CORN_ICON,Rect2(-19,-21,38,42))
-	corn.pivot_offset = corn.size*.5
-	var pop := effect.create_tween().set_parallel(true).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	pop.tween_property(ring,"scale",Vector2.ONE*1.85,.34)
-	pop.tween_property(corn,"position:y",-52.0,.34)
-	pop.tween_property(corn,"scale",Vector2.ONE*1.22,.15)
-	pop.tween_property(effect,"modulate:a",0.0,.22).set_delay(.14)
-	pop.chain().tween_callback(effect.queue_free)
 
 static func fill_cards(app:Node, cards:VBoxContainer) -> void:
 	app.clear_children(cards)
-	var pending := FirstQuests.pending(app.model.state)
+	var pending_ids := pending(app)
 	var all_button: Button = app.overlay.find_child("ClaimAllQuestRewards",true,false)
-	all_button.disabled = pending.is_empty()
+	all_button.set_meta("sample_context",in_sample(app))
+	var panel_heading := app.overlay.find_child("QuestRewardHeading",true,false) as Label
+	panel_heading.text = "퀘스트 보상 · 테스트" if in_sample(app) else "퀘스트 보상"
+	all_button.disabled = pending_ids.is_empty()
 	all_button.modulate.a = .55 if all_button.disabled else 1.0
 	var badge: TextureRect = all_button.get_node("PendingBadge")
-	badge.visible = not pending.is_empty()
-	badge.get_node("Count").text = str(pending.size())
-	if pending.is_empty():
+	badge.visible = not pending_ids.is_empty()
+	badge.get_node("Count").text = str(pending_ids.size())
+	if pending_ids.is_empty():
 		var empty := caption(app,cards,"받을 보상이 없어요",Rect2(0,0,736,77),28,INK)
 		empty.custom_minimum_size = Vector2(0,77)
-	for index in pending:
+	for index in pending_ids:
 		var card := Control.new()
 		card.custom_minimum_size = Vector2(736,77)
 		cards.add_child(card)
@@ -241,6 +238,7 @@ static func fill_cards(app:Node, cards:VBoxContainer) -> void:
 		title.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 		var claim := art_button(app,card,"ClaimQuest%d"%index,Rect2(608,6,112,67),func():
 			receive(app,cards,card.get_node("ClaimQuest%d"%index),index),"")
+		claim.set_meta("sample_context",in_sample(app))
 		claim.set_meta("semantic_text",FirstQuests.TITLES[index]+" 보상 받기")
 		app.picture(claim,preload("res://assets/ui/d0031/reward-tile.png"),Rect2(0,0,112,67))
 		app.picture(claim,PlayChrome.CORN_ICON,Rect2(33,1,46,49))

@@ -9,8 +9,8 @@ const RESIDENT_ICON=preload("res://assets/ui/resource-bars/resident.png")
 const CORN_ICON=preload("res://assets/ui/resource-bars/corn.png")
 const LEVEL_BRUSH := preload("res://assets/ui/d0009/job-name-brush.png")
 const QUEST_POP_SPACING := .12
-const QUEST_PAUSE := .25
-const QUEST_FLIGHT := .32
+const QUEST_PAUSE := .48
+const QUEST_FLIGHT := .64
 const QUEST_FLIGHT_SPACING := .09
 const TRACK_COLOR:=Color("523621")
 const TRACK_RIM:=Color("874f0d")
@@ -24,8 +24,6 @@ var resource_counts:Dictionary={}
 var quest_flights: Array[Dictionary] = []
 var quest_fx: Control
 var held_quest_grain := 0
-var preview_grain := 0
-var preview_time := 0.0
 var last_map_position := Vector2.INF
 var minimap:LiveMinimap
 # Optional future marker artwork; keep its placement independent of map projection.
@@ -34,7 +32,8 @@ func _init(owner_app: Node) -> void: app=owner_app
 func _ready() -> void:
 	quest_fx = Control.new()
 	quest_fx.name = "QuestRewardFlights"
-	quest_fx.z_index = 20
+	quest_fx.z_as_relative = false
+	quest_fx.z_index = 80
 	quest_fx.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	quest_fx.draw.connect(draw_quest_flights)
 	add_child(quest_fx)
@@ -84,8 +83,6 @@ func clear_effects() -> void:
 	flights.clear()
 	quest_flights.clear()
 	held_quest_grain=0
-	preview_grain=0
-	preview_time=0.0
 	quest_fx.queue_redraw()
 	sync_resource_counts(true)
 func sync_resource_counts(immediate:bool=false)->void:
@@ -131,13 +128,10 @@ func _process(delta: float) -> void:
 	queue_redraw()
 
 func displayed_amount(key: String) -> int:
-	return roundi(resource_counts[key].shown) + (preview_grain if key=="tokens" else 0)
+	return roundi(resource_counts[key].shown)
 
 func quest_reward_effect(origins: PackedVector2Array,total: int,preview: bool) -> void:
 	if app.reduced_ui_motion():
-		if preview:
-			preview_grain=total
-			preview_time=1.05
 		pulse.tokens=1.0
 		queue_redraw()
 		return
@@ -151,10 +145,7 @@ func quest_flight_start(count: int,index: int) -> float:
 	return (count-1)*QUEST_POP_SPACING + QUEST_PAUSE + index*QUEST_FLIGHT_SPACING
 
 func advance_quest_flights(delta: float) -> bool:
-	var active := not quest_flights.is_empty() or preview_time>0.0
-	if preview_time>0.0:
-		preview_time=maxf(0.0,preview_time-delta)
-		if preview_time==0.0:preview_grain=0
+	var active := not quest_flights.is_empty()
 	for batch in quest_flights:
 		var previous: float = batch.age
 		batch.age+=delta
@@ -163,13 +154,9 @@ func advance_quest_flights(delta: float) -> bool:
 			var arrival := quest_flight_start(count,index)+QUEST_FLIGHT
 			if previous<arrival and batch.age>=arrival:pulse.tokens=1.0
 		var end := quest_flight_start(count,count-1)+QUEST_FLIGHT
-		if previous<end and batch.age>=end:
-			if batch.preview:
-				preview_grain=batch.total
-				preview_time=1.05
-			else:
-				held_quest_grain-=int(batch.total)
-				sync_resource_counts()
+		if previous<end and batch.age>=end and not batch.preview:
+			held_quest_grain-=int(batch.total)
+			sync_resource_counts()
 	if not quest_flights.is_empty():
 		quest_flights=quest_flights.filter(func(batch):return batch.age<quest_flight_start(batch.origins.size(),batch.origins.size()-1)+QUEST_FLIGHT)
 		quest_fx.queue_redraw()

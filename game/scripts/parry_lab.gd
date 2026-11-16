@@ -25,6 +25,8 @@ var status: Label
 var stars: Label
 var damage: Label
 var skill_buttons: Array[Button] = []
+var card_buttons: Array[Button] = []
+var result_summary: Label
 var bars: Array[ProgressBar] = []
 var enemy_bar: ProgressBar
 var results: Panel
@@ -93,7 +95,13 @@ func _ready() -> void:
 	var names := ["우람","한결","새봄"]
 	for i in 3:
 		var x := 375.5+71.5*i
-		Art.picture(canvas,Hunt.CARD_PORTRAITS[[1,0,2][i]],Rect2(x,459,66,66))
+		var card := make_button("",Rect2(x,459,66,66),use_skill.bind(i))
+		card.name = "SkillCard%d"%i
+		for style in ["normal","hover","pressed","disabled","focus"]:
+			card.add_theme_stylebox_override(style,StyleBoxEmpty.new())
+		Art.picture(card,Hunt.CARD_PORTRAITS[[1,0,2][i]],Rect2(0,0,66,66))
+		card.enable_art_feedback()
+		card_buttons.append(card)
 		for orb in 3:
 			Art.picture(canvas,Hunt.CHARGE_FULL,Rect2(x+6+19*orb,450,16,6))
 		skill_buttons.append(make_button("",Rect2(x+12,410,42,42),use_skill.bind(i)))
@@ -129,7 +137,7 @@ func make_label(value: String, rect: Rect2, px: int) -> Label:
 	return item
 
 func make_button(value: String, rect: Rect2, action: Callable) -> Button:
-	var item := Button.new()
+	var item := DemoButton.new()
 	item.text = value
 	item.position = rect.position
 	item.size = rect.size
@@ -167,9 +175,13 @@ func build_results() -> void:
 	var heading := make_label("우람 받아치기 · 테스트 결과",Rect2(15,12,684,32),22)
 	heading.reparent(results,false)
 	report_box = TextEdit.new()
-	report_box.position = Vector2(24,56)
-	report_box.size = Vector2(666,212)
+	report_box.position = Vector2(24,83)
+	report_box.size = Vector2(666,184)
 	report_box.editable = false
+	report_box.add_theme_font_size_override("font_size",9)
+	report_box.add_theme_color_override("font_readonly_color",Color("f2e5cf"))
+	result_summary = make_label("",Rect2(24,44,666,34),18)
+	result_summary.reparent(results,false)
 	report_box.wrap_mode = TextEdit.LINE_WRAPPING_BOUNDARY
 	results.add_child(report_box)
 	copied = make_label("",Rect2(24,272,666,23),14)
@@ -194,10 +206,10 @@ func use_skill(index: int) -> void:
 	var now := Time.get_ticks_msec()
 	var previous_hp := trial.boar_hp
 	var previous_party_hp := trial.party_hp
+	trial.advance(now)
 	if index == 0:
 		var had_normal := trial.normal_defense
 		var previous_input := trial.input
-		trial.advance(now)
 		if trial.party_hp < previous_party_hp:
 			show_damage(now,trial.party_hp-previous_party_hp,true)
 		trial.parry(now)
@@ -221,7 +233,10 @@ func _process(_delta: float) -> void:
 	frames += 1
 	var now := Time.get_ticks_msec()
 	var previous_hp := trial.party_hp
+	var previous_boar_hp := trial.boar_hp
 	trial.advance(now)
+	if trial.boar_hp < previous_boar_hp:
+		show_damage(now,trial.boar_hp-previous_boar_hp,false)
 	if trial.party_hp < previous_hp:
 		show_damage(now,trial.party_hp-previous_hp,true)
 	refresh(now)
@@ -264,8 +279,14 @@ func refresh(now: int) -> void:
 		bars[i].value = trial.party_hp if i == 1 else 100
 	bars[0].value = 100
 	skill_buttons[0].disabled = trial.input >= 0 or not trial.outcome.is_empty() or (now < trial.warning and trial.normal_defense)
+	card_buttons[0].disabled = skill_buttons[0].disabled
+	card_buttons[0].modulate = Color(1.35,1.23,.78) if trial.parry_window(now) else Color.WHITE
+	skill_buttons[0].modulate = card_buttons[0].modulate
 	for i in [1,2]:
-		skill_buttons[i].visible = stun and not trial.followups[i-1]
+		var ready := trial.can_followup(i-1,now)
+		skill_buttons[i].visible = ready
+		card_buttons[i].disabled = not ready
+		card_buttons[i].modulate = Color(1.27,1.18,.83) if ready else Color.WHITE
 		skill_buttons[i].scale = Vector2.ONE*(1.0+.07*sin(now*.021))
 	damage.visible = damage_at >= 0 and now-damage_at < 480
 	if now < trial.warning:
@@ -286,8 +307,9 @@ func end_round() -> void:
 	showing_result = true
 	var commit := str(ProjectSettings.get_setting('roxhistory/update/source_commit',''))
 	if commit.is_empty(): commit = "개발 소스"
-	report_box.text = "RoxHistory %s | %s | 우람 받아치기 ON\n검수 판정: 예상 충돌 %d~%dms 전 · 스턴 %dms\n%s" % [
+	report_box.text = "RoxHistory %s | %s | 우람 받아치기 ON\n검수 판정: 예상 충돌 %d~%dms 전 · 스턴 %dms · 새봄 2초\n기준 5c49dd1\n%s" % [
 		ProjectSettings.get_setting("application/config/version"),commit,-Trial.EARLIEST_MS,-Trial.LATEST_MS,Trial.STUN_MS,"\n".join(reports)]
+	result_summary.text = trial.outcome if not trial.outcome.is_empty() else "중간 종료"
 	copied.text = ""
 	results.show()
 
