@@ -1,0 +1,301 @@
+extends Control
+
+signal exited
+
+const Trial := preload("res://scripts/parry_trial.gd")
+const Hunt := preload("res://scripts/deer_hunt_screen.gd")
+const Art := preload("res://scripts/hunt_match_art.gd")
+const SIZE := Vector2(960,540)
+const HOMES := [Vector2(500,306), Vector2(535,272), Vector2(543,326)]
+const BOAR_HOME := Vector2(665,236)
+const CONTACT := Vector2(557,270)
+const BRACE := Vector2(541,278)
+const SKILLS := [
+	preload("res://assets/ui/d0036/uram-parry.png"),
+	preload("res://assets/ui/d0027/skill-stab-A.png"),
+	preload("res://assets/ui/d0027/skill-cooperation-A.png")
+]
+
+var app: Node
+var canvas: Control
+var actors: Array[HybridCharacter] = []
+var boar: TextureRect
+var shield: Polygon2D
+var status: Label
+var stars: Label
+var damage: Label
+var skill_buttons: Array[Button] = []
+var bars: Array[ProgressBar] = []
+var enemy_bar: ProgressBar
+var results: Panel
+var report_box: TextEdit
+var copied: Label
+var trial: Trial
+var reports: Array[String] = []
+var rounds := 0
+var frames := 0
+var normal_at := -1
+var followup_at: Array[int] = [-1,-1]
+var damage_at := -1
+var showing_result := false
+
+func _ready() -> void:
+	mouse_filter = Control.MOUSE_FILTER_STOP
+	set_anchors_and_offsets_preset(PRESET_FULL_RECT)
+	var ground := Art.picture(self,Hunt.CLEARING,Rect2())
+	ground.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
+	ground.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	canvas = Art.layer(self,Vector2.ZERO)
+	make_label("실험실 · 우람 받아치기",Rect2(24,16,400,32),22)
+	make_button("실험 종료",Rect2(814,16,122,37),end_round)
+	status = make_label("",Rect2(245,73,470,33),21)
+	stars = make_label("✦  ✧  ✦",Rect2(576,164,90,25),21)
+	stars.modulate = Color("ffe29b")
+	var field := Node2D.new()
+	field.y_sort_enabled = true
+	canvas.add_child(field)
+	for i in 3:
+		var hunter: HybridCharacter = Hunt.COMBAT_PREVIEW.new() if i == 0 else HybridCharacter.new()
+		if i == 2: hunter.model_path = HybridCharacter.MESHY_HUNT_MODEL
+		hunter.render_size_factor = .5
+		field.add_child(hunter)
+		hunter.camera.position.y = 7.05
+		hunter.camera.look_at(Vector3(0,1.45,0))
+		hunter.display.position = -hunter.camera.unproject_position(Vector3.ZERO)*hunter.display.scale
+		hunter.scale = Vector2.ONE*.56
+		hunter.position = HOMES[i]
+		if i != 0: hunter.use_training_spear()
+		hunter.set_enabled(true)
+		actors.append(hunter)
+	var uram := actors[0] as Hunt.COMBAT_PREVIEW
+	uram.spear.hide()
+	shield = Polygon2D.new()
+	shield.polygon = PackedVector2Array([Vector2(-21,-20),Vector2(0,-29),Vector2(21,-20),Vector2(16,10),Vector2(0,24),Vector2(-16,10)])
+	shield.color = Color("835934")
+	uram.add_child(shield)
+	var rim := Line2D.new()
+	rim.points = shield.polygon
+	rim.closed = true
+	rim.width = 4
+	rim.default_color = Color("d2a156")
+	shield.add_child(rim)
+	boar = Art.picture(canvas,preload("res://assets/ui/d0024/05-boar-settled-pose.png"),Rect2(0,0,94,70))
+	boar.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	boar.pivot_offset = Vector2(47,66)
+	enemy_bar = make_hp(Rect2(0,0,70,8),Color("c35c46"))
+	damage = make_label("",Rect2(0,0,76,32),20)
+	damage.modulate = Color("ffd494")
+	var tray := Panel.new()
+	tray.position = Vector2(366,444)
+	tray.size = Vector2(228,93)
+	tray.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	canvas.add_child(tray)
+	var names := ["우람","한결","새봄"]
+	for i in 3:
+		var x := 375.5+71.5*i
+		Art.picture(canvas,Hunt.CARD_PORTRAITS[[1,0,2][i]],Rect2(x,459,66,66))
+		for orb in 3:
+			Art.picture(canvas,Hunt.CHARGE_FULL,Rect2(x+6+19*orb,450,16,6))
+		skill_buttons.append(make_button("",Rect2(x+12,410,42,42),use_skill.bind(i)))
+		Art.picture(skill_buttons[i],SKILLS[i],Rect2(2,2,38,38))
+		skill_buttons[i].tooltip_text = ["우람 받아치기","한결 찌르기","새봄 협동"][i]
+		make_label(names[i],Rect2(x,501,66,23),14)
+		bars.append(make_hp(Rect2(x+3,527,60,8),Color("76ac55")))
+	build_results()
+	resized.connect(fit)
+	fit()
+	restart()
+
+func fit() -> void:
+	var region := Rect2(Vector2.ZERO,size)
+	if OS.has_feature("android"):
+		var safe := DisplayServer.get_display_safe_area()
+		var physical := Vector2(DisplayServer.screen_get_size())
+		if safe.has_area() and physical.x > 0 and physical.y > 0:
+			region = Rect2(Vector2(safe.position)*size/physical,Vector2(safe.size)*size/physical)
+	var factor := minf(region.size.x/SIZE.x,region.size.y/SIZE.y)
+	canvas.scale = Vector2.ONE*factor
+	canvas.position = region.position+(region.size-SIZE*factor)*.5
+
+func make_label(value: String, rect: Rect2, px: int) -> Label:
+	var item: Label = app.label(canvas,value,px,Color("fff3d0"))
+	item.position = rect.position
+	item.size = rect.size
+	item.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	item.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	item.add_theme_color_override("font_outline_color",Color("262019"))
+	item.add_theme_constant_override("outline_size",5)
+	item.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return item
+
+func make_button(value: String, rect: Rect2, action: Callable) -> Button:
+	var item := Button.new()
+	item.text = value
+	item.position = rect.position
+	item.size = rect.size
+	item.focus_mode = Control.FOCUS_NONE
+	item.pivot_offset = rect.size*.5
+	item.pressed.connect(action)
+	canvas.add_child(item)
+	return item
+
+func make_hp(rect: Rect2, tint: Color) -> ProgressBar:
+	var item := ProgressBar.new()
+	item.position = rect.position
+	item.size = rect.size
+	item.show_percentage = false
+	item.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var fill := StyleBoxFlat.new()
+	fill.bg_color = tint
+	fill.set_corner_radius_all(3)
+	item.add_theme_stylebox_override("fill",fill)
+	canvas.add_child(item)
+	return item
+
+func build_results() -> void:
+	results = Panel.new()
+	results.position = Vector2(123,98)
+	results.size = Vector2(714,344)
+	results.z_index = 5
+	var background := StyleBoxFlat.new()
+	background.bg_color = Color("30271e")
+	background.border_color = Color("ae8b56")
+	background.set_border_width_all(2)
+	background.set_corner_radius_all(12)
+	results.add_theme_stylebox_override("panel",background)
+	canvas.add_child(results)
+	var heading := make_label("우람 받아치기 · 테스트 결과",Rect2(15,12,684,32),22)
+	heading.reparent(results,false)
+	report_box = TextEdit.new()
+	report_box.position = Vector2(24,56)
+	report_box.size = Vector2(666,212)
+	report_box.editable = false
+	report_box.wrap_mode = TextEdit.LINE_WRAPPING_BOUNDARY
+	results.add_child(report_box)
+	copied = make_label("",Rect2(24,272,666,23),14)
+	copied.reparent(results,false)
+	make_button("테스트 결과 복사",Rect2(24,297,206,34),copy_report).reparent(results,false)
+	make_button("재도전",Rect2(401,297,138,34),restart).reparent(results,false)
+	make_button("마을로",Rect2(552,297,138,34),func(): exited.emit()).reparent(results,false)
+
+func restart() -> void:
+	rounds += 1
+	frames = 0
+	normal_at = -1
+	followup_at = [-1,-1]
+	damage_at = -1
+	trial = Trial.new(Time.get_ticks_msec())
+	showing_result = false
+	results.hide()
+	refresh(trial.start)
+
+func use_skill(index: int) -> void:
+	if showing_result: return
+	var now := Time.get_ticks_msec()
+	var previous_hp := trial.boar_hp
+	var previous_party_hp := trial.party_hp
+	if index == 0:
+		var had_normal := trial.normal_defense
+		var previous_input := trial.input
+		trial.advance(now)
+		if trial.party_hp < previous_party_hp:
+			show_damage(now,trial.party_hp-previous_party_hp,true)
+		trial.parry(now)
+		if not had_normal and trial.normal_defense: normal_at = now
+		if previous_input < 0 and trial.input >= 0:
+			refresh(now)
+			trial.feedback_ms = Time.get_ticks_msec()-now
+	elif trial.use_followup(index-1,now):
+		followup_at[index-1] = now
+	if trial.boar_hp < previous_hp:
+		show_damage(now,trial.boar_hp-previous_hp,false)
+	refresh(now)
+
+func show_damage(now: int, amount: int, ally: bool) -> void:
+	damage_at = now
+	damage.text = str(amount)
+	damage.position = (HOMES[1] if ally else boar.position+Vector2(47,12))-Vector2(38,52)
+
+func _process(_delta: float) -> void:
+	if showing_result or trial == null: return
+	frames += 1
+	var now := Time.get_ticks_msec()
+	var previous_hp := trial.party_hp
+	trial.advance(now)
+	if trial.party_hp < previous_hp:
+		show_damage(now,trial.party_hp-previous_hp,true)
+	refresh(now)
+	if trial.finished(now): end_round()
+
+func refresh(now: int) -> void:
+	var stun := trial.stun_end > now
+	var success := trial.stun_end >= 0
+	var charge_start := trial.impact-Trial.CHARGE_MS
+	var motion_time := mini(now,trial.input) if success else now
+	var charge := clampf(float(motion_time-charge_start)/Trial.CHARGE_MS,0,1)
+	var retreat := clampf(float(now-(trial.impact+160))/400.0,0,1) if not success else 0.0
+	var boar_at := BOAR_HOME.lerp(CONTACT,charge).lerp(BOAR_HOME,retreat)
+	boar.position = boar_at-Vector2(47,66)
+	boar.rotation = sin(now*.025)*.08 if stun else 0.0
+	enemy_bar.position = boar_at-Vector2(35,74)
+	enemy_bar.value = trial.boar_hp
+	stars.visible = stun
+	stars.position = boar_at-Vector2(45,101)+Vector2(sin(now*.012)*9,cos(now*.012)*3)
+	var reacting := trial.input >= 0 and now-trial.input < 480
+	var defending := normal_at >= 0 and now-normal_at < 380
+	var brace_age := clampf(float(now-trial.input)/480.0,0,1) if reacting else 0.0
+	var stepped := smoothstep(.18,.55,brace_age)
+	var recovery := 1.0-smoothstep(.65,1.0,brace_age)
+	var stop := CONTACT.lerp(boar_at,.65)-Vector2(18,-4)
+	var uram := actors[0] as Hunt.COMBAT_PREVIEW
+	uram.position = HOMES[0].lerp(stop-Vector2(19*stepped,0),recovery) if success and reacting else HOMES[0]
+	var clip := "Hit_Reaction" if (reacting and success) or defending else "Combat_Idle"
+	uram.show_combat_pose(Vector2(1,.28),clip,clampf(float(now-normal_at)/380.0,0,1) if defending else brace_age if reacting else fposmod(now*.001,1.8)/1.8)
+	shield.visible = reacting or defending
+	shield.position = Vector2(40-36*sin(minf(brace_age*3.4,1)*PI*.5),-62)
+	shield.rotation = -.22*sin(brace_age*PI)
+	for i in range(1,3):
+		var age: int = now-followup_at[i-1]
+		var attacking := followup_at[i-1] >= 0 and age < 450
+		var movement := Vector2.RIGHT if attacking else Vector2.ZERO
+		var beat := sin(clampf(float(age)/450,0,1)*PI)
+		actors[i].position = HOMES[i]+Vector2(27,-7)*beat if attacking else HOMES[i]
+		actors[i].animate(1.0/60.0,movement,now*.001,false,"hunt" if attacking else "",age*.001,false)
+		bars[i].value = trial.party_hp if i == 1 else 100
+	bars[0].value = 100
+	skill_buttons[0].disabled = trial.input >= 0 or not trial.outcome.is_empty() or (now < trial.warning and trial.normal_defense)
+	for i in [1,2]:
+		skill_buttons[i].visible = stun and not trial.followups[i-1]
+		skill_buttons[i].scale = Vector2.ONE*(1.0+.07*sin(now*.021))
+	damage.visible = damage_at >= 0 and now-damage_at < 480
+	if now < trial.warning:
+		status.text = "일반 방어 · 반격" if defending else "멧돼지의 돌진 예고를 기다리세요"
+	elif trial.outcome.is_empty():
+		status.text = "한결을 향해 돌진!" if now >= charge_start else "멧돼지가 한결을 노립니다"
+	else:
+		status.text = trial.outcome + (" · 스턴" if stun else "")
+
+func end_round() -> void:
+	if showing_result:
+		exited.emit()
+		return
+	var now := Time.get_ticks_msec()
+	var elapsed := maxi(1,now-trial.start)
+	reports.append(trial.report(rounds,roundi(frames*1000.0/elapsed),now))
+	if reports.size() > 3: reports.pop_front()
+	showing_result = true
+	var commit := str(ProjectSettings.get_setting('roxhistory/update/source_commit',''))
+	if commit.is_empty(): commit = "개발 소스"
+	report_box.text = "RoxHistory %s | %s | 우람 받아치기 ON\n검수 판정: 예상 충돌 %d~%dms 전 · 스턴 %dms\n%s" % [
+		ProjectSettings.get_setting("application/config/version"),commit,-Trial.EARLIEST_MS,-Trial.LATEST_MS,Trial.STUN_MS,"\n".join(reports)]
+	copied.text = ""
+	results.show()
+
+func copy_report() -> void:
+	DisplayServer.clipboard_set(report_box.text)
+	if DisplayServer.clipboard_get().replace("\r\n","\n") == report_box.text:
+		copied.text = "복사했습니다."
+	else:
+		report_box.grab_focus()
+		report_box.select_all()
+		copied.text = "복사를 확인할 수 없습니다. 위 텍스트를 직접 복사하세요."
