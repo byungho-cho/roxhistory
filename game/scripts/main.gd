@@ -21,6 +21,11 @@ var village_alerts: AndroidVillageNotifications
 var performance_diagnostics := PerformanceDiagnostics.new()
 const PERFORMANCE_HUD:=preload("res://scripts/performance_hud.gd")
 var performance_hud:PanelContainer
+var parry_lab_enabled := false
+var parry_lab_start: Button
+var parry_lab: Control
+var parry_world_mode: ProcessMode
+var parry_work_mode: ProcessMode
 var debug_shortcut:DemoButton
 var debug_shortcut_icon:TextureRect
 const HUNT_SELECTION := preload("res://scripts/hunt_stage_selection.gd")
@@ -535,6 +540,8 @@ func title_screen() -> void:
 		title_sound.add_theme_stylebox_override(state,StyleBoxEmpty.new())
 	install_speaker_icon(title_sound)
 	update_title_sound()
+	if ProjectSettings.get_setting('roxhistory/lab/qa_build',false):
+		add_parry_lab_entry(Vector2(w-safe.x-52,h-safe.y-113))
 	var patch_status:=Label.new()
 	patch_status.position=Vector2(safe.x,h-safe.y-37)
 	patch_status.add_theme_color_override("font_color",Color("fff0d0"))
@@ -591,6 +598,9 @@ func style_start_prompt(start: DemoButton) -> void:
 	start.add_theme_color_override("font_outline_color",Color("49321e"));start.add_theme_constant_override("outline_size",3)
 
 func check_title_update(manual:=false) -> void:
+	if ProjectSettings.get_setting('roxhistory/lab/qa_build',false):
+		if not title_initial_update_done: finish_title_update_check()
+		return
 	if screen!="title" or not application_active or modal or title_reveal or title_update_in_flight or is_instance_valid(intro_cloud):return
 	if test_mode and not manual:return
 	var updates := get_node("/root/PatchBootstrap/Overlay")
@@ -1188,6 +1198,8 @@ func play_hud(spread:=false) -> void:
 	debug_shortcut.size=Vector2(48,48)
 	debug_shortcut.position=Vector2(w-safe.x-48,action_row.position.y-124)
 	debug_shortcut.z_index=36
+	if ProjectSettings.get_setting('roxhistory/lab/qa_build',false):
+		add_parry_lab_entry(debug_shortcut.position-Vector2(0,57))
 	debug_shortcut_icon=picture(debug_shortcut,preload("res://assets/ui/v0158/debug-bug.svg"),Rect2(9,9,30,30))
 	update_debug_shortcut()
 	for data in [["사냥","spear"],["채집","berries"],["제작","hammer"],["가방","bag"],["건설","hut"]]:
@@ -1447,6 +1459,7 @@ func first_construction_locked()->bool:
 	return model.chief_level()==0 and model.pending_construction_count("chief")==0 and FirstQuests.current(model.state) in [0,1]
 
 func _process(delta: float) -> void:
+	if is_instance_valid(parry_lab): return
 	if windows_unfocused_since >= 0:
 		update_windows_idle(Time.get_ticks_msec())
 	performance_diagnostics.tick(self,delta)
@@ -1878,6 +1891,60 @@ func show_development_settings()->void:
 	DevelopmentSettings.open(self)
 	enable_settings_backdrop()
 
+func show_parry_lab_options() -> void:
+	var state := "ON" if parry_lab_enabled else "OFF"
+	var actions := [{"text":"닫기","action":close_modal}]
+	actions.append({"text":"끄기" if parry_lab_enabled else "켜기","action":func():
+		parry_lab_enabled = not parry_lab_enabled
+		show_parry_lab_options()
+	})
+	show_modal("우람 받아치기 · "+state,
+		"멧돼지가 한결을 향해 돌진할 때 우람의 방패를 누르세요. 받아치기에 성공하면 한결과 새봄의 후속 스킬을 선택할 수 있습니다.",
+		actions,true,true)
+	if is_instance_valid(parry_lab_start): parry_lab_start.visible = parry_lab_enabled
+
+func start_parry_lab() -> void:
+	if modal or not parry_lab_enabled: return
+	if gestures: gestures.clear()
+	if is_instance_valid(joystick): joystick.clear()
+	if is_instance_valid(world):
+		world.player.settle_pan(false)
+		parry_world_mode = world.process_mode
+		world.process_mode = Node.PROCESS_MODE_DISABLED
+	if is_instance_valid(building_workflow):
+		parry_work_mode = building_workflow.process_mode
+		building_workflow.process_mode = Node.PROCESS_MODE_DISABLED
+	parry_lab = preload("res://scripts/parry_lab.gd").new()
+	parry_lab.app = self
+	parry_lab.z_index = 57
+	parry_lab.exited.connect(exit_parry_lab)
+	modal = true
+	stage.hide()
+	ui.add_child(parry_lab)
+
+func exit_parry_lab() -> void:
+	parry_lab.queue_free()
+	parry_lab = null
+	if is_instance_valid(world): world.process_mode = parry_world_mode
+	if is_instance_valid(building_workflow): building_workflow.process_mode = parry_work_mode
+	stage.show()
+	modal = false
+	if is_instance_valid(world): world.player.presentation_paused = not application_active
+
+func add_parry_lab_entry(at: Vector2) -> void:
+	var flask := button(stage,"",show_parry_lab_options,false,"","")
+	flask.custom_minimum_size = Vector2.ZERO
+	flask.position = at
+	flask.size = Vector2(48,48)
+	flask.z_index = 36
+	picture(flask,preload("res://assets/ui/d0031/lab-flask.png"),Rect2(8,8,32,32))
+	flask.tooltip_text = "실험실 · 우람 받아치기"
+	parry_lab_start = button(stage,"실험 전투 시작",start_parry_lab)
+	parry_lab_start.position = at+Vector2(-157,4)
+	parry_lab_start.size = Vector2(150,40)
+	parry_lab_start.z_index = 36
+	parry_lab_start.visible = parry_lab_enabled
+
 func debug_shortcut_visible() -> bool:
 	return settings.get_value("development","performance_shortcut",true)
 
@@ -2204,6 +2271,9 @@ func close_hunt() -> void:
 	show_screen("hunt_select")
 
 func go_back() -> void:
+	if is_instance_valid(parry_lab):
+		parry_lab.end_round()
+		return
 	if modal and is_instance_valid(overlay) and overlay.has_meta("full_screen_bag"):
 		close_modal()
 		return
@@ -2332,11 +2402,11 @@ func _notification(what: int) -> void:
 		sync_audio()
 		if is_instance_valid(world): world.feedback.clear_transients()
 		if is_instance_valid(joystick): joystick.clear()
-		if not overlay is CharacterGuide:cancel_task()
+		if not overlay is CharacterGuide and not is_instance_valid(parry_lab):cancel_task()
 		if is_instance_valid(world) and screen == "play":
 			world.player.direction = Vector2.ZERO
 			world.player.presentation_paused = true
-			if not was_demolition:model.save_position(world.player.position)
+			if not was_demolition and not is_instance_valid(parry_lab):model.save_position(world.player.position)
 	elif what == NOTIFICATION_APPLICATION_RESUMED or what == NOTIFICATION_APPLICATION_FOCUS_IN:
 		application_active = true
 		if title_reveal:title_reveal.play()
@@ -2346,7 +2416,7 @@ func _notification(what: int) -> void:
 		sync_audio()
 		if is_instance_valid(world): world.player.presentation_paused = modal
 	elif what == NOTIFICATION_WM_CLOSE_REQUEST:
-		if is_instance_valid(world): model.save_position(world.player.position)
+		if is_instance_valid(world) and not is_instance_valid(parry_lab): model.save_position(world.player.position)
 		get_tree().quit()
 
 # Available actions use the selected option-3 gold pedestal; unavailable actions
