@@ -10,6 +10,8 @@ const PORTRAIT_REGION:=Rect2(143,52,961,1165)
 const BUBBLE_FRONT:=11.0
 const ORIGINAL_HEIGHT:=44.0
 const BUBBLE_HEIGHT:=ORIGINAL_HEIGHT*1.2
+# The atlas crop includes the tail and transparent padding below the paper.
+const BUBBLE_BODY_CENTER := 44.0 / 105.0
 var progress:ProgressBar
 var talking:=false
 var elapsed:=0.0
@@ -28,7 +30,7 @@ func _ready()->void:
 	background=app.picture(bubble,atlas,Rect2(0,0,270,44));background.stretch_mode=TextureRect.STRETCH_SCALE
 	var icon:=AtlasTexture.new();icon.atlas=PlayChrome.RESIDENT_ICON;icon.region=PORTRAIT_REGION;icon.filter_clip=true
 	portrait=app.picture(bubble,icon,Rect2(-4,-20,44,60));portrait.name="ResidentPortrait"
-	headline=Label.new();headline.theme=DemoArt.theme();headline.position=Vector2(50,0);headline.size=Vector2(210,BUBBLE_HEIGHT);headline.vertical_alignment=VERTICAL_ALIGNMENT_CENTER;headline.add_theme_font_size_override("font_size",14);headline.add_theme_color_override("font_color",Color("49321e"));headline.mouse_filter=Control.MOUSE_FILTER_IGNORE;bubble.add_child(headline)
+	headline=Label.new();headline.theme=DemoArt.theme();headline.position=Vector2(50,BUBBLE_HEIGHT*(BUBBLE_BODY_CENTER-.5));headline.size=Vector2(210,BUBBLE_HEIGHT);headline.vertical_alignment=VERTICAL_ALIGNMENT_CENTER;headline.add_theme_font_size_override("font_size",14);headline.add_theme_color_override("font_color",Color("49321e"));headline.mouse_filter=Control.MOUSE_FILTER_IGNORE;bubble.add_child(headline)
 	progress=ProgressBar.new();progress.show_percentage=false;progress.size=Vector2(250,3);progress.mouse_filter=Control.MOUSE_FILTER_IGNORE;bubble.add_child(progress);progress.position=Vector2(10,BUBBLE_HEIGHT-4);progress.hide()
 func request()->void:
 	if talking or app.modal or app.world_map_open or not app.application_active or not app.model.family_available():return

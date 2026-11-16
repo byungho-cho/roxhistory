@@ -48,16 +48,22 @@ static func open(app: Node) -> void:
 	var footer := HBoxContainer.new()
 	column.add_child(footer)
 	var version := String(ProjectSettings.get_setting("application/config/version"))
-	var notes: DemoButton = app.button(footer, version, app.show_version_notes.bind(version))
+	var notes: DemoButton = app.button(footer, "", app.show_version_notes.bind(version))
 	notes.name = "RunningVersionNotes"
+	notes.set_meta("semantic_text", version)
 	notes.custom_minimum_size = Vector2(112,48)
-	notes.alignment = HORIZONTAL_ALIGNMENT_LEFT
-	notes.add_theme_font_override("font", FigmaArt.NOTO)
-	notes.add_theme_font_size_override("font_size",16)
 	for state in ["normal","hover","pressed","focus"]:
 		notes.add_theme_stylebox_override(state,StyleBoxEmpty.new())
-	for state in ["font_color","font_hover_color","font_pressed_color","font_focus_color"]:
-		notes.add_theme_color_override(state,Color("41280e"))
+	var bold := FontVariation.new()
+	bold.base_font = FigmaArt.NOTO
+	bold.variation_opentype = {TextServerManager.get_primary_interface().name_to_tag("wght"):700.0}
+	var version_label: Label = app.label(notes,version,19,Color("41280e"))
+	version_label.name = "VersionLabel"
+	version_label.add_theme_font_override("font",bold)
+	version_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	version_label.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
+	version_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	version_label.offset_bottom = -1.0
 	var spacer := Control.new()
 	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE

@@ -33,10 +33,13 @@ void fragment() {
 	float ratio = max(progress.x, progress.y);
 	vec2 center = (boundary.xy + boundary.zw) * 0.5;
 	vec2 half_extent = (boundary.zw - boundary.xy) * 0.5;
-	float corner_radius = 70.0;
-	vec2 box = abs(world_position - center) - (half_extent - vec2(corner_radius));
+	// Move only the visual edge inward. Normalize the fade by each axis's inset.
+	vec2 inset = half_extent * 0.20;
+	vec2 inner_extent = (half_extent - inset) / inset;
+	float corner_radius = 1.35;
+	vec2 box = abs(world_position - center) / inset - (inner_extent - vec2(corner_radius));
 	float edge_distance = length(max(box, vec2(0.0))) + min(max(box.x, box.y), 0.0) - corner_radius;
-	float opacity = fog_opacity(ratio) * smoothstep(0.0, 112.0, edge_distance);
+	float opacity = fog_opacity(ratio) * smoothstep(0.0, 1.0, edge_distance);
 
 	vec2 wind = vec2(8.0, 2.7) * TIME;
 	float brush = noise((world_position - wind) / vec2(1050.0, 415.0));
