@@ -1,6 +1,11 @@
 extends Node2D
 
-const CYCLE := 8.733
+const FLAG_CYCLE := 8.733
+const FLAME_START := 0.15
+const FLAME_DURATION := 2.9
+const SMOKE_START := FLAME_START + FLAME_DURATION + 1.0
+const SMOKE_DURATION := 1.2
+const CYCLE := SMOKE_START + SMOKE_DURATION + 4.983
 const CHIMNEY_PUFFS := 7
 const EYE_PUFFS := 3
 const ATLAS := preload("res://assets/ui/d0030/chief-vfx-atlas.png")
@@ -16,12 +21,15 @@ var clock := 0.0
 var flag := Sprite2D.new()
 var flag_material := ShaderMaterial.new()
 var smoke_material := ShaderMaterial.new()
+var chimney_material := ShaderMaterial.new()
 var puffs: Array[Sprite2D] = []
 var puff_index := 0
 
 func _ready() -> void:
 	flag_material.shader = preload("res://shaders/chief_flag.gdshader")
 	smoke_material.shader = preload("res://shaders/chief_smoke.gdshader")
+	chimney_material.shader = smoke_material.shader
+	chimney_material.set_shader_parameter("white_core", 0.95)
 	flag.material = flag_material
 	z_index = 1
 	add_child(flag)
@@ -49,7 +57,7 @@ func _process(delta: float) -> void:
 	if level == 0 or not is_visible_in_tree():
 		return
 	clock += delta
-	var beat := fposmod(clock, CYCLE)
+	var beat := fposmod(clock, FLAG_CYCLE)
 	var wind := 0.42
 	for start in [0.17, 1.60, 4.54, 5.97]:
 		var pulse := clampf((beat - float(start)) / 1.31, 0.0, 1.0)
@@ -65,26 +73,28 @@ func update_particles() -> void:
 	var outlet: Vector2 = origin + rig[4]
 	for index in CHIMNEY_PUFFS:
 		var age := fposmod(clock / 2.9 + float(index) / CHIMNEY_PUFFS, 1.0)
-		var drift := Vector2(220 * age * age + sin(age * TAU + index) * 35 * age, -330 * age)
+		var drift := Vector2(285 * age * age + sin(age * TAU + index) * 46 * age, -440 * age)
 		var alpha := smoothstep(0.0, 0.08, age) * (1.0 - smoothstep(0.56, 1.0, age))
-		draw_puff(0, outlet + drift, Vector2(68,60).lerp(Vector2(243,190),age), alpha)
+		draw_puff(0, outlet + drift, Vector2(136,120).lerp(Vector2(486,380),age), alpha)
 
 	var beat := fposmod(clock, CYCLE)
 	for index in 2:
 		var eye: Vector2 = origin + rig[index + 2]
 		var lean := 0.32 if index == 0 else -0.28
-		if beat >= 0.15 and beat < 1.55:
-			var elapsed := beat - 0.15
-			var strength := smoothstep(0.0, 0.14, elapsed) * (1.0 - smoothstep(0.42, 1.4, elapsed))
-			strength *= 0.90 + 0.10 * sin(clock * 29.0 + index * 2.0)
-			draw_puff(3, eye, Vector2(139,108), strength * 0.78)
-			var height := 172.0 * strength
-			draw_puff(2, eye + Vector2(sin(lean), -cos(lean)) * height * 0.44,
-				Vector2(67, height), strength, lean)
-		elif beat >= 2.55 and beat < 3.75:
+		if beat >= FLAME_START and beat < FLAME_START + FLAME_DURATION:
+			var elapsed := beat - FLAME_START
+			var strength := smoothstep(0.0, 0.18, elapsed) * (1.0 - smoothstep(1.55, FLAME_DURATION, elapsed))
+			strength *= 0.89 + 0.11 * cos(elapsed * 8.4)
+			var flicker := 0.5 + 0.5 * sin(elapsed * 25.0 + index * 1.8)
+			var angle := lean + sin(elapsed * 11.0 + index * 2.5) * 0.09
+			draw_puff(3, eye, Vector2(178,140), strength * 0.78)
+			var height := 413.0 * strength * lerpf(0.88, 1.0, flicker)
+			draw_puff(2, eye + Vector2(sin(angle), -cos(angle)) * height * 0.44,
+				Vector2(161.0 * strength, height), strength, angle)
+		elif beat >= SMOKE_START and beat < SMOKE_START + SMOKE_DURATION:
 			for puff in EYE_PUFFS:
 				var delay := puff * 0.17 + index * 0.055
-				var age := (beat - 2.55 - delay) / (1.2 - delay)
+				var age := (beat - SMOKE_START - delay) / (SMOKE_DURATION - delay)
 				if age <= 0.0:
 					continue
 				var alpha := smoothstep(0.0, 0.13, age) * (1.0 - smoothstep(0.57, 1.0, age))
@@ -97,7 +107,7 @@ func draw_puff(tile: int, at: Vector2, size: Vector2, alpha: float, rotation_ang
 	var particle := puffs[puff_index]
 	puff_index += 1
 	particle.region_rect = Rect2(tile * 128, 0, 128, 128)
-	particle.material = smoke_material if tile < 2 else null
+	particle.material = chimney_material if tile == 0 else smoke_material if tile == 1 else null
 	particle.position = at
 	particle.rotation = rotation_angle
 	particle.scale = size / 128.0
