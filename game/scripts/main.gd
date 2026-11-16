@@ -1074,7 +1074,7 @@ func request_first_village() -> void:
 		toast("현재 데모는 암사동에서 시작할 수 있습니다.");return
 	first_village_loading = true
 	region_selection.cancel_input()
-	cover_intro(start_region_under_cover)
+	cover_intro(start_region_under_cover,true)
 	intro_loading.text = "마을 준비 중…"
 
 func start_region_under_cover() -> void:
