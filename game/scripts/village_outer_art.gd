@@ -74,6 +74,7 @@ func add_decorations(world: Node2D) -> void:
 		decoration.material = mist
 		layer.add_child(decoration)
 		fog_sprites.append(decoration)
+		if str(placement.asset) in ["fog-oak-canopy","fog-twin-canopies"]: register_tree(decoration,contact,area)
 	add_edge_decorations(layer,replacement_areas)
 
 const EDGE_ART := {
@@ -95,6 +96,35 @@ const EDGE_PROPS := [
 ]
 var edge_sprites: Array[Sprite2D] = []
 var fog_sprites: Array[Sprite2D] = []
+
+var tree_styles: Dictionary = {}
+var near_tree: Texture2D
+var near_tree_area: Rect2
+
+func register_tree(sprite: Sprite2D, contact: Vector2, far_area: Rect2) -> void:
+	if near_tree == null:
+		near_tree = AssetCatalog.texture("ENV-TREE")
+		near_tree_area = Rect2(near_tree.get_image().get_used_rect())
+	tree_styles[sprite] = {"contact":contact,"far":sprite.texture,"far_area":far_area,"footprint":far_area.size*sprite.scale}
+
+func update_tree_art(bounds: Rect2) -> void:
+	var near_limit := minf(bounds.size.x,bounds.size.y)*.20
+	for sprite: Sprite2D in tree_styles:
+		var style: Dictionary = tree_styles[sprite]
+		var at: Vector2 = style.contact
+		var outside := maxf(maxf(bounds.position.x-at.x, at.x-bounds.end.x),
+			maxf(bounds.position.y-at.y, at.y-bounds.end.y))
+		var use_near := outside <= near_limit
+		var texture: Texture2D = near_tree if use_near else style.far
+		if sprite.texture == texture: continue
+		var area: Rect2 = near_tree_area if use_near else style.far_area
+		var footprint: Vector2 = style.footprint
+		var factor := minf(footprint.x/area.size.x,footprint.y/area.size.y)
+		var anchor := Vector2(area.get_center().x,area.end.y)
+		sprite.texture = texture
+		sprite.scale = Vector2.ONE*factor
+		sprite.position = at+(texture.get_size()*.5-anchor)*factor
+		(sprite.material as ShaderMaterial).set_shader_parameter("height_span",Vector2(area.position.y,area.end.y)/texture.get_height())
 
 func add_edge_decorations(layer: Node2D, areas: Dictionary) -> void:
 	for entry in EDGE_PROPS:
@@ -118,8 +148,10 @@ func add_edge_decorations(layer: Node2D, areas: Dictionary) -> void:
 		layer.add_child(sprite)
 		edge_sprites.append(sprite)
 		fog_sprites.append(sprite)
+		if entry[4] != "tors": register_tree(sprite,entry[2],area)
 
 func update_edge_decorations(level: int, visual_bounds: Rect2, from_level: int) -> void:
+	update_tree_art(visual_bounds)
 	var clip := Vector4(visual_bounds.position.x,visual_bounds.position.y,visual_bounds.end.x,visual_bounds.end.y)
 	for sprite in fog_sprites:
 		(sprite.material as ShaderMaterial).set_shader_parameter("open_boundary",clip)
