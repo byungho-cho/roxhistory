@@ -1240,13 +1240,16 @@ func play_hud(spread:=false) -> void:
 	settings_button.add_theme_constant_override("icon_max_width",36)
 	for state in ["normal","hover","pressed","focus"]:settings_button.add_theme_stylebox_override(state,StyleBoxEmpty.new())
 	quest_reward_count=QuestRewards.install_entry(self)
-	fog_experiment_button = button(stage, fog_experiment_label(), toggle_fog_experiment)
+	fog_experiment_button = button(stage, "", toggle_fog_experiment)
 	fog_experiment_button.name = "FogExperiment"
 	fog_experiment_button.custom_minimum_size = Vector2.ZERO
-	fog_experiment_button.add_theme_font_size_override("font_size", 13)
-	fog_experiment_button.position = Vector2(safe.x + 134, h-safe.y-50) if w>=h else Vector2(safe.x, h-safe.y-114)
-	fog_experiment_button.size = Vector2(109, 37)
-	fog_experiment_button.z_index = 31
+	fog_experiment_button.size = debug_shortcut.size
+	fog_experiment_button.position = debug_shortcut.position - Vector2(0, debug_shortcut.size.y + 8)
+	fog_experiment_button.z_index = debug_shortcut.z_index
+	picture(fog_experiment_button, preload("res://assets/ui/d0020/hourglass-teal-amber-illustrated.png"), Rect2(9,9,30,30))
+	update_fog_experiment_button()
+	if return_village_button.get_rect().grow(8).intersects(fog_experiment_button.get_rect()):
+		return_village_button.position.y = fog_experiment_button.position.y - return_village_button.size.y - 8
 	world.set_boundary_fog_experiment(fog_experiment_enabled)
 	stage.add_child(VillageRewardBoard.new(self))
 	stage.add_child(BuildingUpgradeSigns.new(self))
@@ -1397,14 +1400,23 @@ func inventory_summary() -> void:
 	backdrop.modulate.a=.72
 	overlay.add_child(preload("res://scripts/bag_popup.gd").new(self))
 
-func fog_experiment_label() -> String:
-	return "실험실 ON" if fog_experiment_enabled else "실험실 OFF"
+func update_fog_experiment_button() -> void:
+	var state_label := "실험실 · 경계 안개 " + ("ON" if fog_experiment_enabled else "OFF")
+	fog_experiment_button.tooltip_text = state_label
+	fog_experiment_button.set_meta("semantic_text", state_label)
+	var face := StyleBoxFlat.new()
+	face.bg_color = Color("287735") if fog_experiment_enabled else Color("151512")
+	face.border_color = Color("dfbc70")
+	face.set_border_width_all(2)
+	face.set_corner_radius_all(24)
+	for state in ["normal", "hover", "pressed", "focus", "disabled"]:
+		fog_experiment_button.add_theme_stylebox_override(state, face)
 
 func toggle_fog_experiment() -> void:
 	if modal or world_map_open or map_transition_active or village_entry_active():
 		return
 	fog_experiment_enabled = not fog_experiment_enabled
-	fog_experiment_button.text = fog_experiment_label()
+	update_fog_experiment_button()
 	world.set_boundary_fog_experiment(fog_experiment_enabled)
 	if fog_experiment_enabled:
 		show_modal("실험실 · 마을 경계 안개", "마을 경계 안개가 옅어집니다. 닫고 오른쪽 경계에서 길과 강변을 비교해 보세요.", [], false, true, false, Vector2(460, 190))
