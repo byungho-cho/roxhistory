@@ -28,13 +28,17 @@ void fragment() {
 	float density = smoothstep(15.0, 460.0, distance + drift) * edge;
 	vec3 cloud = mix(vec3(0.62, 0.73, 0.79), vec3(0.99, 0.96, 0.87), bank * 0.65 + detail * 0.35);
 	float opaque_bank = smoothstep(430.0, 780.0, distance);
-	COLOR = vec4(mix(cloud, vec3(0.97, 0.97, 0.94), opaque_bank), mix(density * 0.94, 1.0, opaque_bank));
-	if (experiment_opacity.y > 0.0) {
+	bool outside_terrain = any(lessThan(world_position, terrain_bounds.xy))
+		|| any(greaterThanEqual(world_position, terrain_bounds.zw));
+	if (outside_terrain) {
+		COLOR = vec4(0.97, 0.97, 0.94, 1.0);
+	} else if (experiment_opacity.y > 0.0) {
 		float opacity = mix(experiment_opacity.x, experiment_opacity.y, smoothstep(50.0, 780.0, distance));
 		opacity *= smoothstep(0.0, 50.0, distance);
 		vec3 mist = mix(vec3(0.64, 0.70, 0.65), vec3(0.76, 0.80, 0.74), bank * 0.7 + detail * 0.3);
-		bool outside_terrain = any(lessThan(world_position, terrain_bounds.xy))
-			|| any(greaterThanEqual(world_position, terrain_bounds.zw));
-		COLOR = outside_terrain ? vec4(0.97, 0.97, 0.94, 1.0) : vec4(mist, opacity);
+		COLOR = vec4(mist, opacity);
+	} else {
+		// Preserve the original white-cloud profile over the expanded ground.
+		COLOR = vec4(mix(cloud, vec3(0.97, 0.97, 0.94), opaque_bank), min(mix(density * 0.94, 1.0, opaque_bank), 0.94));
 	}
 }

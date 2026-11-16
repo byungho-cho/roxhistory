@@ -30,9 +30,9 @@ func open() -> void:
 	body.position.y = 79
 	panel.add_child(body)
 	selected = maxi(0,FirstQuests.current(app.model.state))
-	select_tab(0)
+	select_tab(0,true)
 
-func select_tab(index: int) -> void:
+func select_tab(index: int, initial := false) -> void:
 	for item in tabs.size():
 		var skin := StyleBoxFlat.new()
 		skin.bg_color = Color("fff4db") if item == index else Color("ecdab7")
@@ -50,11 +50,11 @@ func select_tab(index: int) -> void:
 	QuestRewards.rule(body,Rect2(32,0,active_x-32,1))
 	QuestRewards.rule(body,Rect2(active_x+116,0,1100-active_x-116,1))
 	if index == 0:
-		story()
+		story(initial)
 	else:
 		text(body,"등록된 생활 임무가 없어요.",Rect2(35,31,884,48),25)
 
-func story() -> void:
+func story(initial: bool) -> void:
 	QuestRewards.rule(body,Rect2(375,20,1,373))
 	var scroll := DevelopmentSettingsScroll.new()
 	scroll.name = "QuestList"
@@ -85,8 +85,11 @@ func story() -> void:
 		text(row,FirstQuests.TITLES[index],Rect2(72,13,237,31),21)
 		text(row,status(index,current,state),Rect2(72,48,210,24),16,Color("55723d") if index == current else Color("80613f"))
 	render_details(details,current)
-	if selected > 2:
-		scroll.set_deferred("scroll_vertical",maxi(0,(selected-2)*96))
+	var scroll_at := clampi(selected-2,0,FirstQuests.IDS.size()-4)
+	if scroll_at > 0:
+		scroll.set_deferred("scroll_vertical",scroll_at*96)
+	if initial:
+		QuestRewards.reveal_rows(app,rows,scroll_at,4)
 
 func style_row(row: DemoButton, active: bool) -> void:
 	var skin := StyleBoxFlat.new()

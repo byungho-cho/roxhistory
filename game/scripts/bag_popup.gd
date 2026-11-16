@@ -21,6 +21,7 @@ var pointer := -2
 var drag_origin := Vector2.ZERO
 var drag_offset := 0.0
 var dragging := false
+var entrance_offset := 0.0
 var capacity := DEFAULT_CAPACITY
 
 func _init(owner: Node) -> void:
@@ -89,6 +90,19 @@ func _ready() -> void:
 	app.model.changed.connect(update_amounts)
 	update_amounts()
 	fit()
+	if not app.reduced_ui_motion():
+		scenery.modulate.a = 0.0
+		layout.modulate.a = 0.0
+		entrance_offset = 7.0
+		fit()
+		var entrance := create_tween().set_parallel(true).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+		entrance.tween_property(scenery,"modulate:a",1.0,.14)
+		entrance.tween_property(layout,"modulate:a",1.0,.20).set_delay(.09)
+		entrance.tween_method(set_entrance_offset,7.0,0.0,.20).set_delay(.09)
+
+func set_entrance_offset(pixels: float) -> void:
+	entrance_offset = pixels
+	fit()
 
 func style(fill: Color, rim := Color.TRANSPARENT, radius := 0) -> StyleBoxFlat:
 	var result := StyleBoxFlat.new()
@@ -124,7 +138,7 @@ func fit() -> void:
 	var region := size-Vector2(app.safe)*2.0
 	var factor := maxf(.1,minf(region.x/DESIGN.x,region.y/DESIGN.y))
 	layout.scale=Vector2.ONE*factor
-	layout.position=(size-DESIGN*factor)*.5
+	layout.position=(size-DESIGN*factor)*.5 + Vector2(0,entrance_offset*factor)
 
 func update_amounts() -> void:
 	for resource in amounts:

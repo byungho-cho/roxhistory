@@ -1396,6 +1396,7 @@ func apply_menu_state(animated:bool=false)->void:
 
 func inventory_summary() -> void:
 	show_modal("","",[],false,true,false,Vector2.ZERO,false,true)
+	show_modal_immediately()
 	overlay.set_meta("full_screen_bag", true)
 	var backdrop: Control=overlay.get_child(0)
 	var placeholder: Control=overlay.get_child(1)
@@ -1403,6 +1404,21 @@ func inventory_summary() -> void:
 	placeholder.queue_free()
 	backdrop.modulate.a=.72
 	overlay.add_child(preload("res://scripts/bag_popup.gd").new(self))
+
+func reduced_ui_motion() -> bool:
+	if settings.get_value("app","reduce_motion",false) or OS.get_cmdline_user_args().has("--reduce-motion"):
+		return true
+	if not OS.has_feature("android") or not Engine.has_singleton("AndroidRuntime"): return false
+	var wrapper := Engine.get_singleton("JavaClassWrapper")
+	if wrapper == null: return false
+	var platform_settings: Variant = wrapper.wrap("android.provider.Settings$Global")
+	var activity: Variant = Engine.get_singleton("AndroidRuntime").getActivity()
+	return platform_settings != null and activity != null and float(platform_settings.getFloat(activity.getContentResolver(),"animator_duration_scale",1.0)) <= 0.0
+
+func show_modal_immediately() -> void:
+	var tween: Tween = overlay.get_meta("modal_fade_in")
+	if tween.is_valid(): tween.kill()
+	overlay.modulate.a = 1.0
 
 func update_fog_experiment_button() -> void:
 	var enabled := fog_experiment_preset > 1

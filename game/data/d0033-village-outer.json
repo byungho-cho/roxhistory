@@ -1,0 +1,488 @@
+{
+  "schema": "roxhistory.map-expansion.v3",
+  "purpose": "decorative background only, no collision, traversal, map unlock, exploration, resources or camera clamp changes",
+  "ground": {
+    "file": "village-outer-ground.png",
+    "full_image_px": [
+      2854,
+      1784
+    ],
+    "world_rect": [
+      -2896,
+      -1885,
+      8192,
+      5120
+    ],
+    "native_center": {
+      "src_px_rect": [
+        591,
+        421,
+        1672,
+        941
+      ],
+      "dst_world_rect": [
+        -1200,
+        -675,
+        4800,
+        2700
+      ],
+      "rgb_sha256_uncompressed": "9ab85a54af1e2d03b698b408a2604148519f20ab856d147e8006813353c58be8"
+    },
+    "registration": {
+      "pixels_x_knots": [
+        0,
+        591,
+        2263,
+        2854
+      ],
+      "world_x_knots": [
+        -2896,
+        -1200,
+        3600,
+        5296
+      ],
+      "pixels_y_knots": [
+        0,
+        421,
+        1362,
+        1784
+      ],
+      "world_y_knots": [
+        -1885,
+        -675,
+        2025,
+        3235
+      ],
+      "mode": "piecewise_linear_nine_regions_exact_center",
+      "regions": [
+        {
+          "src_px_rect": [
+            0,
+            0,
+            591,
+            421
+          ],
+          "dst_world_rect": [
+            -2896.0,
+            -1885.0,
+            1696.0,
+            1210.0
+          ],
+          "center_original": false
+        },
+        {
+          "src_px_rect": [
+            591,
+            0,
+            1672,
+            421
+          ],
+          "dst_world_rect": [
+            -1200.0,
+            -1885.0,
+            4800.0,
+            1210.0
+          ],
+          "center_original": false
+        },
+        {
+          "src_px_rect": [
+            2263,
+            0,
+            591,
+            421
+          ],
+          "dst_world_rect": [
+            3600.0,
+            -1885.0,
+            1696.0,
+            1210.0
+          ],
+          "center_original": false
+        },
+        {
+          "src_px_rect": [
+            0,
+            421,
+            591,
+            941
+          ],
+          "dst_world_rect": [
+            -2896.0,
+            -675.0,
+            1696.0,
+            2700.0
+          ],
+          "center_original": false
+        },
+        {
+          "src_px_rect": [
+            591,
+            421,
+            1672,
+            941
+          ],
+          "dst_world_rect": [
+            -1200.0,
+            -675.0,
+            4800.0,
+            2700.0
+          ],
+          "center_original": true
+        },
+        {
+          "src_px_rect": [
+            2263,
+            421,
+            591,
+            941
+          ],
+          "dst_world_rect": [
+            3600.0,
+            -675.0,
+            1696.0,
+            2700.0
+          ],
+          "center_original": false
+        },
+        {
+          "src_px_rect": [
+            0,
+            1362,
+            591,
+            422
+          ],
+          "dst_world_rect": [
+            -2896.0,
+            2025.0,
+            1696.0,
+            1210.0
+          ],
+          "center_original": false
+        },
+        {
+          "src_px_rect": [
+            591,
+            1362,
+            1672,
+            422
+          ],
+          "dst_world_rect": [
+            -1200.0,
+            2025.0,
+            4800.0,
+            1210.0
+          ],
+          "center_original": false
+        },
+        {
+          "src_px_rect": [
+            2263,
+            1362,
+            591,
+            422
+          ],
+          "dst_world_rect": [
+            3600.0,
+            2025.0,
+            1696.0,
+            1210.0
+          ],
+          "center_original": false
+        }
+      ]
+    }
+  },
+  "props": {
+    "assets": [
+      {
+        "id": "fog-oak-canopy",
+        "file": "fog-oak-canopy.png",
+        "image_px": [
+          630,
+          623
+        ],
+        "source": "approved v3 concept RGBA quadrant, transparent padding retained for exact scale; no fog baked"
+      },
+      {
+        "id": "fog-twin-canopies",
+        "file": "fog-twin-canopies.png",
+        "image_px": [
+          631,
+          623
+        ],
+        "source": "approved v3 concept RGBA quadrant, transparent padding retained for exact scale; no fog baked"
+      },
+      {
+        "id": "fog-granite-tip",
+        "file": "fog-granite-tip.png",
+        "image_px": [
+          630,
+          624
+        ],
+        "source": "approved v3 concept RGBA quadrant, transparent padding retained for exact scale; no fog baked"
+      },
+      {
+        "id": "fog-granite-cluster",
+        "file": "fog-granite-cluster.png",
+        "image_px": [
+          630,
+          624
+        ],
+        "source": "approved v3 concept RGBA quadrant, transparent padding retained for exact scale; no fog baked"
+      }
+    ],
+    "layout": [
+      {
+        "id": "v3-01",
+        "asset": "fog-oak-canopy",
+        "anchor": "art_center",
+        "anchor_px": [
+          2490,
+          359
+        ],
+        "rect_px": [
+          2400,
+          270,
+          181,
+          179
+        ],
+        "rect_world": [
+          3993.151,
+          -1108.99,
+          519.418,
+          514.331
+        ],
+        "world_center": [
+          4251.425,
+          -853.195
+        ],
+        "noninteractive": true
+      },
+      {
+        "id": "v3-02",
+        "asset": "fog-granite-tip",
+        "anchor": "art_center",
+        "anchor_px": [
+          2324,
+          248
+        ],
+        "rect_px": [
+          2256,
+          180,
+          137,
+          136
+        ],
+        "rect_world": [
+          3579.904,
+          -1367.66,
+          393.158,
+          390.879
+        ],
+        "world_center": [
+          3775.052,
+          -1172.221
+        ],
+        "noninteractive": true
+      },
+      {
+        "id": "v3-03",
+        "asset": "fog-twin-canopies",
+        "anchor": "art_center",
+        "anchor_px": [
+          2197,
+          315
+        ],
+        "rect_px": [
+          2130,
+          249,
+          135,
+          133
+        ],
+        "rect_world": [
+          3218.182,
+          -1169.347,
+          387.558,
+          382.257
+        ],
+        "world_center": [
+          3410.526,
+          -979.656
+        ],
+        "noninteractive": true
+      },
+      {
+        "id": "v3-04",
+        "asset": "fog-granite-tip",
+        "anchor": "art_center",
+        "anchor_px": [
+          2694,
+          502
+        ],
+        "rect_px": [
+          2641,
+          449,
+          107,
+          106
+        ],
+        "rect_world": [
+          4684.751,
+          -594.66,
+          307.059,
+          304.145
+        ],
+        "world_center": [
+          4836.846,
+          -442.588
+        ],
+        "noninteractive": true
+      },
+      {
+        "id": "v3-05",
+        "asset": "fog-oak-canopy",
+        "anchor": "art_center",
+        "anchor_px": [
+          393,
+          458
+        ],
+        "rect_px": [
+          323,
+          389,
+          140,
+          138
+        ],
+        "rect_world": [
+          -1969.083,
+          -766.971,
+          401.76,
+          396.116
+        ],
+        "world_center": [
+          -1768.203,
+          -568.836
+        ],
+        "noninteractive": true
+      },
+      {
+        "id": "v3-06",
+        "asset": "fog-twin-canopies",
+        "anchor": "art_center",
+        "anchor_px": [
+          280,
+          1050
+        ],
+        "rect_px": [
+          212,
+          983,
+          136,
+          134
+        ],
+        "rect_world": [
+          -2287.621,
+          937.54,
+          390.281,
+          384.485
+        ],
+        "world_center": [
+          -2092.481,
+          1129.782
+        ],
+        "noninteractive": true
+      },
+      {
+        "id": "v3-07",
+        "asset": "fog-granite-cluster",
+        "anchor": "art_center",
+        "anchor_px": [
+          575,
+          1419
+        ],
+        "rect_px": [
+          504,
+          1348,
+          143,
+          142
+        ],
+        "rect_world": [
+          -1449.665,
+          1984.83,
+          410.431,
+          407.184
+        ],
+        "world_center": [
+          -1245.915,
+          2188.436
+        ],
+        "noninteractive": true
+      },
+      {
+        "id": "v3-08",
+        "asset": "fog-oak-canopy",
+        "anchor": "art_center",
+        "anchor_px": [
+          2075,
+          1502
+        ],
+        "rect_px": [
+          1999,
+          1427,
+          153,
+          151
+        ],
+        "rect_world": [
+          2842.105,
+          2211.374,
+          439.234,
+          432.962
+        ],
+        "world_center": [
+          3060.287,
+          2426.422
+        ],
+        "noninteractive": true
+      },
+      {
+        "id": "v3-09",
+        "asset": "fog-oak-canopy",
+        "anchor": "art_center",
+        "anchor_px": [
+          876,
+          181
+        ],
+        "rect_px": [
+          817,
+          122,
+          119,
+          118
+        ],
+        "rect_world": [
+          -551.196,
+          -1534.359,
+          341.627,
+          339.145
+        ],
+        "world_center": [
+          -381.818,
+          -1364.786
+        ],
+        "noninteractive": true
+      }
+    ],
+    "count": 9,
+    "per_view_cap": 10
+  },
+  "layers": [
+    "clean ground",
+    "mist behind props",
+    "prop top clear upper facing parts",
+    "localized foreground wisps conceal bottom of prop",
+    "existing scene/UI unchanged"
+  ],
+  "reference": "village-outer-v3-reference.png",
+  "notes": {
+    "placement_space": "world_ground_overlay visual only; see world rects, image-to-world interpolation is same as ground",
+    "fog_rules": "near/upper edge readable; non-white wisp crosses lower third and buries base, no hard alpha cutoff or outline",
+    "runtime_art_baked_fog": false,
+    "clip_props_to_outside_existing_art": true
+  }
+}

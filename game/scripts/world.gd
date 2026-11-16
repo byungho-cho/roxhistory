@@ -33,16 +33,12 @@ var reward_markers:Node2D
 var reward_roof_bounds:=Rect2()
 var boundary_level:=-1
 var boundary_fog:Node2D
-var terrain_sprite: Sprite2D
+var terrain_art: Node2D
 const FOG_OPACITIES := [Vector2.ZERO,Vector2(.12,.65),Vector2(.20,.75),Vector2(.25,.80),Vector2(.30,.85)]
 
 func set_boundary_fog_experiment(preset: int) -> void:
 	var opacity: Vector2 = FOG_OPACITIES[clampi(preset,1,5)-1]
-	var terrain_bounds := terrain_sprite.transform * terrain_sprite.get_rect()
-	boundary_fog.material.set_shader_parameter("terrain_bounds",
-		Vector4(terrain_bounds.position.x,terrain_bounds.position.y,terrain_bounds.end.x,terrain_bounds.end.y))
 	boundary_fog.material.set_shader_parameter("experiment_opacity", opacity)
-	terrain_sprite.material.set_shader_parameter("show_original_edge", opacity.y > 0.0)
 var boundary_debug:=false
 var boundary_root:Node2D
 var boundary_pulse:Tween
@@ -58,7 +54,7 @@ func _ready() -> void:
 	reward_roof_bounds=AssetCatalog.texture("BLD-HUT-L1").get_image().get_used_rect()
 	reward_pouch=AtlasTexture.new();reward_pouch.atlas=preload("res://assets/ui/seed-pouch-reference-v001.png");reward_pouch.region=Rect2(796,211,196,177);reward_pouch.filter_clip=true
 	reward_bubble=StyleBoxFlat.new();reward_bubble.bg_color=Color(.99,.92,.76,.86);reward_bubble.border_color=Color(.55,.39,.22,.85);reward_bubble.set_border_width_all(2);reward_bubble.set_corner_radius_all(12);reward_bubble.shadow_color=Color(0,0,0,.15);reward_bubble.shadow_size=3;reward_bubble.shadow_offset=Vector2(1,3)
-	# Review-only low-resolution single image; no repeated/mirrored terrain.
+	# Keep the registered original source for the water UVs.
 	var terrain: Texture2D = preload("res://assets/village-ground-review-v002/ground-only.png")
 	var distant_fog := ColorRect.new()
 	distant_fog.name = "DistantVillageFog"
@@ -69,21 +65,8 @@ func _ready() -> void:
 	distant_fog.z_index = -21
 	distant_fog.visibility_layer = 2
 	add_child(distant_fog)
-	var background := Sprite2D.new()
-	terrain_sprite = background
-	background.name = "Terrain"
-	background.texture = terrain
-	background.centered = false
-	# Covers the 4286x2411 minimum-zoom overview with edge bleed.
-	# Presentation only: existing object coordinates, movement and saves stay fixed.
-	background.position=Vector2(-1200,-675)
-	background.scale = Vector2(4800.0/terrain.get_width(),2700.0/terrain.get_height())
-	background.texture_filter=CanvasItem.TEXTURE_FILTER_LINEAR
-	var terrain_edge := ShaderMaterial.new()
-	terrain_edge.shader = preload("res://shaders/village_terrain_edge.gdshader")
-	background.material = terrain_edge
-	background.z_index = -20
-	add_child(background)
+	terrain_art = preload("res://scripts/village_outer_art.gd").new()
+	add_child(terrain_art)
 
 	# Small natural silhouettes entirely outside the expanded movement boundary.
 	var mountains:=Node2D.new();mountains.name="NorthernMountains";mountains.z_index=-19;add_child(mountains)
@@ -100,7 +83,8 @@ func _ready() -> void:
 	water.polygon = PackedVector2Array(RIVER_POLYGON)
 	water.texture = terrain
 	var coordinates := PackedVector2Array()
-	for p in water.polygon: coordinates.append(p/background.scale)
+	var original_scale := Vector2(4800,2700)/terrain.get_size()
+	for p in water.polygon: coordinates.append(p/original_scale)
 	water.uv = coordinates
 	water.z_index = -19
 	var water_material := ShaderMaterial.new()
@@ -118,9 +102,13 @@ func _ready() -> void:
 	boundary_fog.visibility_layer=2
 	var fog_material:=ShaderMaterial.new()
 	fog_material.shader=preload("res://shaders/village_boundary_fog.gdshader")
+	var terrain_bounds: Rect2 = terrain_art.world_bounds
+	fog_material.set_shader_parameter("terrain_bounds",
+		Vector4(terrain_bounds.position.x,terrain_bounds.position.y,terrain_bounds.end.x,terrain_bounds.end.y))
 	boundary_fog.material=fog_material
 	boundary_fog.draw.connect(draw_boundary_fog)
 	add_child(boundary_fog)
+	terrain_art.add_decorations(self)
 	refresh_boundary()
 	add_child(VillageLayout.new(model))
 	prop("hut",DemoConfig.CHIEF_POSITION,340,Vector2(220,80),"ExistingHut")
