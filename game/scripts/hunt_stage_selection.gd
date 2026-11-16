@@ -30,6 +30,7 @@ const TOP_ENTRY := 1.99
 const FOOTER_ENTRY := 2.29
 const ENTRY_END := 2.56
 const ENTRY_AUDIO_LEAD := .30
+const IDLE_ART := "res://assets/ui/d0031/"
 const SKINS := {
 	"active":preload(STAGE_ART+"stage-active-body@2x.png"),
 	"complete":preload(STAGE_ART+"stage-complete-body@2x.png"),
@@ -61,6 +62,11 @@ var skip_hint: Label
 var skip_mouse := false
 var skip_touch := -1
 var entry_finished := false
+var idle_elapsed := 0.0
+var idle_frames: Array[AtlasTexture] = []
+var idle_origin := Vector2(207,228)
+var idle_extent := Vector2(281,176)
+var idle_fps := 24.0
 
 func _ready() -> void:
 	mouse_filter=Control.MOUSE_FILTER_STOP
@@ -103,6 +109,9 @@ func _ready() -> void:
 		set_process(false)
 	resized.connect(draw_page)
 	draw_page()
+	if not static_motion:
+		for index in range(1,4):
+			ResourceLoader.load_threaded_request(IDLE_ART+"boar-idle-atlas-%02d.png"%index)
 	if not entry_finished:
 		if DisplayServer.get_name()=="headless":
 			entry_presented=true
@@ -125,6 +134,11 @@ func reduce_motion() -> bool:
 func _process(delta: float) -> void:
 	if entry_finished:
 		if is_instance_valid(camp_idle):camp_idle.paused = not app.application_active
+		if chapter == 0 and not static_motion and app.application_active and is_visible_in_tree():
+			if idle_frames.is_empty() and not load_boar_idle():
+				return
+			idle_elapsed += delta
+			layout_boar()
 		return
 	if not entry_presented:return
 	if not app.application_active:
@@ -221,6 +235,12 @@ func _input(event: InputEvent) -> void:
 func layout_boar() -> void:
 	var cover := maxf(size.x/MEADOW.x,size.y/MEADOW.y)
 	var offset := (size-MEADOW*cover)*.5
+	if entry_finished and chapter == 0 and not idle_frames.is_empty() and not static_motion:
+		boar.texture = idle_frames[int(idle_elapsed * idle_fps) % idle_frames.size()]
+		boar.position = offset + idle_origin * cover
+		boar.size = idle_extent * cover
+		frame_index = -1
+		return
 	var index := mini(hold_index,int(elapsed*24.0))
 	var origin := hold_at
 	var extent := HOLD.get_size()
@@ -242,6 +262,33 @@ func layout_boar() -> void:
 	boar.size=display_extent*cover
 	shadow.position=offset+(display_origin+Vector2(display_extent.x*.08,display_extent.y-15))*cover
 	shadow.size=Vector2(display_extent.x*.87,30)*cover
+
+func load_boar_idle() -> bool:
+	var paths: Array[String] = []
+	for index in range(1,4):
+		var path := IDLE_ART+"boar-idle-atlas-%02d.png"%index
+		if ResourceLoader.load_threaded_get_status(path) != ResourceLoader.THREAD_LOAD_LOADED:
+			return false
+		paths.append(path)
+	var atlas_pages: Array[Texture2D] = []
+	for path in paths:
+		atlas_pages.append(ResourceLoader.load_threaded_get(path))
+	var data: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/d0031-boar-idle.json"))
+	if not data is Dictionary:
+		return false
+	var at: Array = data.source_top_left_xy
+	var cell: Array = data.frame_cell_size_px
+	idle_origin = Vector2(at[0],at[1])
+	idle_extent = Vector2(cell[0],cell[1])
+	idle_fps = float(data.fps)
+	for entry in data.frames:
+		var cut: Array = entry.rect_xywh
+		var frame := AtlasTexture.new()
+		frame.atlas = atlas_pages[int(entry.atlas)]
+		frame.region = Rect2(cut[0],cut[1],cut[2],cut[3])
+		frame.filter_clip = true
+		idle_frames.append(frame)
+	return not idle_frames.is_empty()
 
 func update_groups() -> void:
 	move_group(top_group,TOP_ENTRY,-18.0)

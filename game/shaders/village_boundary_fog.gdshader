@@ -2,7 +2,8 @@ shader_type canvas_item;
 render_mode unshaded;
 
 uniform vec4 boundary;
-uniform bool experiment_enabled = false;
+uniform vec2 experiment_opacity = vec2(0.0);
+uniform vec4 terrain_bounds;
 varying vec2 world_position;
 
 float noise(vec2 p) {
@@ -23,9 +24,17 @@ void fragment() {
 	float bank = noise(world_position / 300.0 + vec2(sin(TIME * .035),cos(TIME * .028)) * .35);
 	float detail = noise(world_position / 115.0);
 	float drift = (bank - 0.5) * 155.0 + (detail - 0.5) * 65.0;
-	float edge = smoothstep(0.0, experiment_enabled ? 120.0 : 80.0, distance);
-	float density = smoothstep(experiment_enabled ? 30.0 : 15.0, experiment_enabled ? 620.0 : 460.0, distance + drift) * edge;
+	float edge = smoothstep(0.0, 80.0, distance);
+	float density = smoothstep(15.0, 460.0, distance + drift) * edge;
 	vec3 cloud = mix(vec3(0.62, 0.73, 0.79), vec3(0.99, 0.96, 0.87), bank * 0.65 + detail * 0.35);
-	float opaque_bank = smoothstep(experiment_enabled ? 620.0 : 430.0, experiment_enabled ? 1050.0 : 780.0, distance);
-	COLOR = vec4(mix(cloud, vec3(0.97, 0.97, 0.94), opaque_bank), mix(density * (experiment_enabled ? 0.80 : 0.94), 1.0, opaque_bank));
+	float opaque_bank = smoothstep(430.0, 780.0, distance);
+	COLOR = vec4(mix(cloud, vec3(0.97, 0.97, 0.94), opaque_bank), mix(density * 0.94, 1.0, opaque_bank));
+	if (experiment_opacity.y > 0.0) {
+		float opacity = mix(experiment_opacity.x, experiment_opacity.y, smoothstep(50.0, 780.0, distance));
+		opacity *= smoothstep(0.0, 50.0, distance);
+		vec2 inner = min(world_position - terrain_bounds.xy, terrain_bounds.zw - world_position);
+		float cover = 1.0 - smoothstep(0.0, 135.0, min(inner.x, inner.y));
+		vec3 mist = mix(vec3(0.64, 0.70, 0.65), vec3(0.76, 0.80, 0.74), bank * 0.7 + detail * 0.3);
+		COLOR = vec4(mix(mist, vec3(0.97, 0.97, 0.94), cover), mix(opacity, 1.0, cover));
+	}
 }

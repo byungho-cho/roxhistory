@@ -153,7 +153,10 @@ func toggle_quest()->void:
 
 var popup_sound_revision := 0
 var quest_reward_count:Label
-var fog_experiment_enabled := false
+var fog_experiment_preset := 1
+var fog_experiment_explained := false
+var fog_controls: Panel
+var fog_choices: Array[Button] = []
 var fog_experiment_button: Button
 
 func update_quest()->void:
@@ -1246,11 +1249,11 @@ func play_hud(spread:=false) -> void:
 	fog_experiment_button.size = debug_shortcut.size
 	fog_experiment_button.position = debug_shortcut.position - Vector2(0, debug_shortcut.size.y + 8)
 	fog_experiment_button.z_index = debug_shortcut.z_index
-	picture(fog_experiment_button, preload("res://assets/ui/d0020/hourglass-teal-amber-illustrated.png"), Rect2(9,9,30,30))
+	picture(fog_experiment_button, preload("res://assets/ui/d0031/lab-flask.png"), Rect2(9,9,30,30))
 	update_fog_experiment_button()
 	if return_village_button.get_rect().grow(8).intersects(fog_experiment_button.get_rect()):
 		return_village_button.position.y = fog_experiment_button.position.y - return_village_button.size.y - 8
-	world.set_boundary_fog_experiment(fog_experiment_enabled)
+	world.set_boundary_fog_experiment(fog_experiment_preset)
 	stage.add_child(VillageRewardBoard.new(self))
 	stage.add_child(BuildingUpgradeSigns.new(self))
 	# GUI hit testing visits later siblings first; the menu only blocks through its buttons.
@@ -1286,6 +1289,7 @@ func switch_map_scene()->void:
 	chrome.clear_effects()
 	world_map_open=not world_map_open
 	if is_instance_valid(fog_experiment_button): fog_experiment_button.visible = not world_map_open
+	if world_map_open and is_instance_valid(fog_controls): fog_controls.hide()
 	sync_audio()
 	audio.cue("map_open" if world_map_open else "map_close")
 	gestures.clear()
@@ -1401,11 +1405,12 @@ func inventory_summary() -> void:
 	overlay.add_child(preload("res://scripts/bag_popup.gd").new(self))
 
 func update_fog_experiment_button() -> void:
-	var state_label := "실험실 · 경계 안개 " + ("ON" if fog_experiment_enabled else "OFF")
+	var enabled := fog_experiment_preset > 1
+	var state_label := "실험실 · 경계 안개 " + ("ON · %d단계" % fog_experiment_preset if enabled else "OFF")
 	fog_experiment_button.tooltip_text = state_label
 	fog_experiment_button.set_meta("semantic_text", state_label)
 	var face := StyleBoxFlat.new()
-	face.bg_color = Color("287735") if fog_experiment_enabled else Color("151512")
+	face.bg_color = Color("287735") if enabled else Color("151512")
 	face.border_color = Color("dfbc70")
 	face.set_border_width_all(2)
 	face.set_corner_radius_all(24)
@@ -1415,19 +1420,59 @@ func update_fog_experiment_button() -> void:
 func toggle_fog_experiment() -> void:
 	if modal or world_map_open or map_transition_active or village_entry_active():
 		return
-	fog_experiment_enabled = not fog_experiment_enabled
-	update_fog_experiment_button()
-	world.set_boundary_fog_experiment(fog_experiment_enabled)
-	if fog_experiment_enabled:
-		show_modal("실험실 · 마을 경계 안개", "마을 경계 안개가 옅어집니다. 닫고 오른쪽 경계에서 길과 강변을 비교해 보세요.", [], false, true, false, Vector2(460, 190))
+	if not fog_experiment_explained:
+		fog_experiment_explained = true
+		show_modal("실험실 · 마을 경계 안개", "오른쪽 경계에서 다섯 단계를 비교해 보세요. 1단계는 기존 안개입니다.", [], false, true, false, Vector2(460, 190))
 		overlay.set_meta("preview_fog_edge", true)
 	else:
-		cancel_fog_preview()
+		open_fog_controls()
+
+func open_fog_controls() -> void:
+	if is_instance_valid(fog_controls):
+		fog_controls.visible = not fog_controls.visible
+		return
+	fog_controls = Panel.new()
+	fog_controls.position = safe + Vector2(12,158)
+	fog_controls.size = Vector2(252,277)
+	fog_controls.add_theme_stylebox_override("panel", QuestRewards.paper_style())
+	stage.add_child(fog_controls)
+	fog_controls.name = "FogPresetPanel"
+	fog_controls.z_index = 38
+	fog_choices.clear()
+	var heading := label(fog_controls,"마을 경계 안개",18,Color("49321e"))
+	heading.position = Vector2(15,13)
+	HudButtons.create_modal_close(fog_controls, func(): fog_controls.hide(), "FogPresetClose").position = Vector2(204,2)
+	var titles := ["1 · 기존 흰 구름 (OFF)","2 · 가벼운 안개","3 · 회녹색 안개","4 · 짙은 안개","5 · 가장 짙게"]
+	for index in titles.size():
+		var option := button(fog_controls,titles[index],set_fog_preset.bind(index+1))
+		option.name = "FogPreset%d" % (index+1)
+		option.custom_minimum_size = Vector2.ZERO
+		option.position = Vector2(14,49+index*43)
+		option.size = Vector2(224,38)
+		option.add_theme_font_size_override("font_size",15)
+		fog_choices.append(option)
+	update_fog_choices()
+
+func set_fog_preset(preset: int) -> void:
+	fog_experiment_preset = preset
+	world.set_boundary_fog_experiment(preset)
+	update_fog_experiment_button()
+	update_fog_choices()
+	cancel_fog_preview()
+
+func update_fog_choices() -> void:
+	for index in fog_choices.size():
+		var style := StyleBoxFlat.new()
+		style.bg_color = Color("3c633c") if index+1 == fog_experiment_preset else Color("513d2b")
+		style.set_corner_radius_all(6)
+		for state in ["normal","hover","pressed","focus"]:
+			fog_choices[index].add_theme_stylebox_override(state,style)
 
 func preview_fog_edge() -> void:
-	if fog_experiment_enabled and screen == "play" and not world_map_open and not map_transition_active and not modal and application_active and is_instance_valid(world):
+	if screen == "play" and not world_map_open and not map_transition_active and not modal and application_active and is_instance_valid(world):
 		var boundary := world.playable_rect()
 		world.player.preview_fog_boundary(Vector2(boundary.end.x - 145, boundary.get_center().y))
+		open_fog_controls()
 
 func cancel_fog_preview() -> void:
 	if is_instance_valid(world) and is_instance_valid(world.player) and world.player.fog_preview_running:
@@ -1868,6 +1913,9 @@ func focus_objective() -> void:
 	if gestures.blocked or modal: return
 	if (model.built_count()>=DemoConfig.MAX_RESIDENT_HOMES):
 		quest_details();return
+	guide_current_quest()
+
+func guide_current_quest() -> void:
 	var point:=world.objectives.focus_point()
 	var screen_point: Vector2=world.get_global_transform_with_canvas()*point
 	if not Rect2(Vector2(80,90),Vector2(w-160,h-190)).has_point(screen_point): world.player.guide_to(point+Vector2(0,-35))

@@ -6,6 +6,7 @@ const PAPER_SIZE := Vector2(500,310)
 const FONT := preload("res://assets/fonts/NotoSansKR.ttf")
 const GOLD := preload("res://assets/ui/hunting-combat/png/popup/continue-button-background.png")
 const METAL := preload("res://assets/ui/hunting-combat/png/popup/exit-button-background.png")
+const PATCH_NOTES := preload("res://patch_test/patch_notes.gd")
 
 var paper: Control
 var heading: Label
@@ -20,6 +21,9 @@ var close_button: Button
 var update_button: Button
 var primary_art: NinePatchRect
 var secondary_art: NinePatchRect
+var notes_button: Button
+var notes_panel: Panel
+var notes_version := ""
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -83,6 +87,17 @@ func _ready() -> void:
 	update_button = make_button()
 	secondary_art = button_art(close_button,METAL)
 	primary_art = button_art(update_button,GOLD)
+	notes_button = make_button()
+	notes_button.name = "UpdateNotesButton"
+	notes_button.position = Vector2(446,16)
+	notes_button.size = Vector2(40,42)
+	var question := make_label(22,700,INK)
+	question.text = "?"
+	notes_button.add_child(question)
+	question.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	notes_button.pressed.connect(show_notes)
+	visibility_changed.connect(func():
+		if not is_visible_in_tree(): close_notes())
 	resized.connect(fit_paper)
 	fit_paper()
 
@@ -161,6 +176,47 @@ func render(title: String, description: String, note: String, current: String, n
 	for child in paper.get_children():
 		if child.is_in_group("patch_version_rule"):child.visible = version_row.visible
 	progress_bar.visible = downloading
+	notes_version = next if not primary.is_empty() else ""
+	if downloading:
+		var controller := get_parent().get_parent()
+		var apk := bool(controller.get("apk_selected"))
+		var info: Variant = controller.get("apk_candidate" if apk else "candidate")
+		if info is Dictionary:
+			notes_version = str(info.get("version",""))
+	notes_button.visible = not notes_version.is_empty()
 	var both := not secondary.is_empty() and not primary.is_empty()
 	set_action(close_button,secondary_art,secondary,64 if both else (500-single_width)*.5,180 if both else single_width)
 	set_action(update_button,primary_art,primary,256 if both else (500-single_width)*.5,180 if both else single_width)
+
+func show_notes() -> void:
+	if notes_version.is_empty() or is_instance_valid(notes_panel):
+		return
+	notes_panel = Panel.new()
+	notes_panel.name = "UpdateNotesPanel"
+	notes_panel.size = PAPER_SIZE
+	notes_panel.add_theme_stylebox_override("panel",StyleBoxEmpty.new())
+	paper.add_child(notes_panel)
+	var background := FigmaSlice.new("paper",32)
+	background.size = PAPER_SIZE
+	notes_panel.add_child(background)
+	var title := make_label(22,900,INK)
+	title.text = "이번 업데이트  " + notes_version
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	title.position = Vector2(24,20)
+	title.size = Vector2(396,40)
+	notes_panel.add_child(title)
+	HudButtons.create_modal_close(notes_panel,close_notes,"UpdateNotesClose").position = Vector2(444,15)
+	var lines := make_label(15,500,INK)
+	lines.text = PATCH_NOTES.body(notes_version)
+	lines.position = Vector2(25,75)
+	lines.size = Vector2(450,208)
+	lines.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	lines.vertical_alignment = VERTICAL_ALIGNMENT_TOP
+	lines.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	notes_panel.add_child(lines)
+
+func close_notes() -> void:
+	if is_instance_valid(notes_panel):
+		notes_panel.hide()
+		notes_panel.queue_free()
+		notes_panel = null

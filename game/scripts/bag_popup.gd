@@ -6,7 +6,7 @@ const DEFAULT_CAPACITY := 64
 const SLOT_SIZE := Vector2(115,125)
 const SLOT_GAP := Vector2(13,14)
 const INK := Color("f8f6db")
-const ERA_ART := {"stone_age":preload("res://assets/ui/d0030/bag-background-stone-age.png")}
+const ERA_ART := {"stone_age":preload("res://assets/ui/d0031/bag.png")}
 const ITEMS := [["wood","목재"],["stone","석재"],["grain","곡식"]]
 var app: Node
 var layout: Control

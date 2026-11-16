@@ -1,6 +1,7 @@
 extends RefCounted
 
 const BUG := preload("res://assets/ui/settings-v141/development.svg")
+const PATCH_NOTES := preload("res://patch_test/patch_notes.gd")
 
 static func open(app: Node) -> void:
 	var scroll: ScrollContainer = app.show_modal("게임 설정", "", [], false, true, false, Vector2(610, 400))
@@ -45,14 +46,12 @@ static func open(app: Node) -> void:
 		arrow.position.x -= 20
 		arrow.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		row.enable_art_feedback()
-	var footer := HBoxContainer.new()
+	var footer := VBoxContainer.new()
+	footer.alignment = BoxContainer.ALIGNMENT_END
+	footer.add_theme_constant_override("separation",2)
 	column.add_child(footer)
-	var info := VBoxContainer.new()
-	info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	footer.add_child(info)
-	var version := String(ProjectSettings.get_setting("application/config/version"))
-	app.label(info, version, 11, Color("80613f"))
 	var home: DemoButton = app.button(footer, "시작 화면", func(): app.close_modal(); app.show_screen("title"), true)
+	home.size_flags_horizontal = Control.SIZE_SHRINK_END
 	home.custom_minimum_size = Vector2(136, 48)
 	for state in ["normal","hover","pressed","focus"]:
 		home.add_theme_stylebox_override(state, StyleBoxEmpty.new())
@@ -60,6 +59,19 @@ static func open(app: Node) -> void:
 	skin.show_behind_parent = true
 	home.add_child(skin)
 	skin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	var version := String(ProjectSettings.get_setting("application/config/version"))
+	var notes := LinkButton.new()
+	notes.name = "RunningVersionNotes"
+	notes.text = version
+	notes.size_flags_horizontal = Control.SIZE_SHRINK_END
+	notes.custom_minimum_size.y = 25
+	notes.add_theme_font_override("font", FigmaArt.NOTO)
+	notes.add_theme_font_size_override("font_size",12)
+	for state in ["font_color", "font_hover_color", "font_pressed_color"]:
+		notes.add_theme_color_override(state,Color("80613f"))
+	notes.pressed.connect(func():
+		app.show_modal("이번 업데이트  "+version,PATCH_NOTES.body(version),[],false,true,false,Vector2(610,325)))
+	footer.add_child(notes)
 
 static func icon_button(app: Node, header: Control, texture: Texture2D, id: String, action: Callable, cue := "ui") -> void:
 	var control: DemoButton = app.button(header, "", action, false, "", cue)
