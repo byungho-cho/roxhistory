@@ -27,8 +27,9 @@ func _ready()->void:
 	board.atlas = source
 	board.region = Rect2(source.get_image().get_used_rect())
 	board.filter_clip = true
+	size = board.region.size * minf(size.x/board.region.size.x,size.y/board.region.size.y)
 	app.picture(art,board,Rect2(Vector2.ZERO,size))
-	marker=app.picture(art,preload("res://assets/ui/village-guidance/noticeboard-alert.png"),Rect2(25,-11,38,38))
+	marker=app.picture(art,preload("res://assets/ui/village-guidance/noticeboard-alert.png"),Rect2((size.x-38)*.5,-11,38,38))
 	marker.name="RewardExclamation"
 	marker.pivot_offset=Vector2(19,33)
 	marker.hide()
