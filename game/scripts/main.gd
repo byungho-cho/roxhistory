@@ -26,6 +26,7 @@ var parry_lab_start: Button
 var parry_lab: Control
 var parry_world_mode: ProcessMode
 var parry_work_mode: ProcessMode
+var parry_stage_mode: ProcessMode
 var debug_shortcut:DemoButton
 var debug_shortcut_icon:TextureRect
 const HUNT_SELECTION := preload("res://scripts/hunt_stage_selection.gd")
@@ -1920,6 +1921,8 @@ func start_parry_lab() -> void:
 	parry_lab.z_index = 57
 	parry_lab.exited.connect(exit_parry_lab)
 	modal = true
+	parry_stage_mode = stage.process_mode
+	stage.process_mode = Node.PROCESS_MODE_DISABLED
 	stage.hide()
 	ui.add_child(parry_lab)
 
@@ -1928,6 +1931,7 @@ func exit_parry_lab() -> void:
 	parry_lab = null
 	if is_instance_valid(world): world.process_mode = parry_world_mode
 	if is_instance_valid(building_workflow): building_workflow.process_mode = parry_work_mode
+	stage.process_mode = parry_stage_mode
 	stage.show()
 	modal = false
 	if is_instance_valid(world): world.player.presentation_paused = not application_active
