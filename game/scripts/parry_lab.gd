@@ -293,7 +293,7 @@ func end_round() -> void:
 
 func copy_report() -> void:
 	DisplayServer.clipboard_set(report_box.text)
-	if DisplayServer.clipboard_get() == report_box.text:
+	if DisplayServer.clipboard_get().replace("\r\n","\n") == report_box.text:
 		copied.text = "복사했습니다."
 	else:
 		report_box.grab_focus()
