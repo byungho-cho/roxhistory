@@ -1535,7 +1535,7 @@ func claim_intro_reward(index:int)->void:
 	chrome.tutorial_reward_effect(kind,world.player.position+Vector2(0,-52))
 
 func first_construction_locked()->bool:
-	return model.chief_level()==0 and model.pending_construction_count("chief")==0 and FirstQuests.current(model.state) in [0,1]
+	return not model.state.get("tutorial_skipped",false) and model.chief_level()==0 and model.pending_construction_count("chief")==0 and FirstQuests.current(model.state) in [0,1]
 
 func _process(delta: float) -> void:
 	if is_instance_valid(parry_lab): return
