@@ -22,7 +22,7 @@ var update_button: Button
 var primary_art: NinePatchRect
 var secondary_art: NinePatchRect
 var notes_button: Button
-var notes_panel: Panel
+var notes_panel: Control
 var notes_version := ""
 
 func _ready() -> void:
@@ -191,30 +191,8 @@ func render(title: String, description: String, note: String, current: String, n
 func show_notes() -> void:
 	if PATCH_NOTES.rows(notes_version).is_empty() or is_instance_valid(notes_panel):
 		return
-	notes_panel = Panel.new()
-	notes_panel.name = "UpdateNotesPanel"
-	notes_panel.size = PAPER_SIZE
-	notes_panel.add_theme_stylebox_override("panel",StyleBoxEmpty.new())
-	paper.add_child(notes_panel)
-	var background := FigmaSlice.new("paper",32)
-	background.size = PAPER_SIZE
-	notes_panel.add_child(background)
-	var title := make_label(22,900,INK)
-	title.text = "이번 업데이트  " + notes_version
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	title.position = Vector2(24,20)
-	title.size = Vector2(396,40)
-	notes_panel.add_child(title)
-	var close := HudButtons.create_modal_close(notes_panel,close_notes,"UpdateNotesClose")
-	close.position = Vector2(466,37)-close.size*.5
-	var lines := make_label(15,500,INK)
-	lines.text = PATCH_NOTES.body(notes_version)
-	lines.position = Vector2(25,75)
-	lines.size = Vector2(450,208)
-	lines.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	lines.vertical_alignment = VERTICAL_ALIGNMENT_TOP
-	lines.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	notes_panel.add_child(lines)
+	notes_panel = preload("res://patch_test/patch_history.gd").new(notes_version,close_notes)
+	get_parent().get_parent().add_child(notes_panel)
 
 func close_notes() -> void:
 	if is_instance_valid(notes_panel):

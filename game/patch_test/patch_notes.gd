@@ -27,17 +27,18 @@ const ENTRIES := {
 	"0.2.225": ["우람 실험실에서 재도전 후에도 한결·새봄 스킬 아이콘을 사용할 수 있습니다.", "결과 창을 넓히고 드래그 스크롤을 추가했습니다. 화면 가장자리의 실험실 버튼을 골드 디자인으로 바꿨습니다."],
 	"0.2.226": ["직전 버전용 차이 패치를 지원합니다.", "퀘스트 바 제목과 본문 이음부를 정리했습니다.", "직접 채집 소재음과 퀘스트 보상 버튼 효과를 조정했습니다."],
 	"0.2.227": ["테스트 퀘스트 목록에서도 보상 수령 효과음을 재생합니다."],
-	"0.2.228": ["길잡이 팝업에 전용 개폐음을 적용했습니다.", "일반 업그레이드 차감음과 부족 배지 흔들림을 추가했습니다.", "펼친 퀘스트 보상 패널이 뒤쪽 마을 조작보다 먼저 입력을 받습니다."]
+	"0.2.228": ["길잡이 팝업에 전용 개폐음을 적용했습니다.", "일반 업그레이드 차감음과 부족 배지 흔들림을 추가했습니다.", "펼친 퀘스트 보상 패널이 뒤쪽 마을 조작보다 먼저 입력을 받습니다."],
+	"0.2.229": ["다이아 즉시 업그레이드 처리와 공사 후 성공 연출을 준비했습니다."],
+	"0.2.230": ["즉시 업그레이드는 기존 재료와 10다이아를 사용합니다.", "업데이트 팝업에서 최근 내역을 최신순으로 최대 20개 볼 수 있습니다."]
 }
 
 static func rows(version: String) -> Array:
 	return ENTRIES.get(version, [])
 
-static func body(version: String) -> String:
-	var notes := rows(version)
-	if notes.is_empty():
-		return "이 버전의 패치 노트가 아직 없습니다."
-	var lines := PackedStringArray()
-	for index in notes.size():
-		lines.append("%02d  %s" % [index+1,notes[index]])
-	return "\n\n".join(lines)
+static func recent_versions(through_version: String) -> Array[String]:
+	var versions: Array[String] = []
+	for version: String in ENTRIES:
+		if version.naturalnocasecmp_to(through_version)<=0:
+			versions.append(version)
+	versions.sort_custom(func(a:String,b:String): return a.naturalnocasecmp_to(b)>0)
+	return versions.slice(0,20)

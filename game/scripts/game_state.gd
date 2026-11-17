@@ -85,8 +85,8 @@ func instant_upgrade(key: String, target: int) -> bool:
 	if busy or not upgrade_requirement(key).is_empty(): return false
 	var found := lookup_building(key)
 	if found.is_empty() or int(found.data.level)+1!=target: return false
-	var price := BuildingRules.instant_diamond_cost(str(found.kind),target)
-	if price<=0 or diamonds()<price: return false
+	var price := BuildingRules.INSTANT_DIAMOND_COST
+	if diamonds()<price: return false
 	var cost := building_cost(str(found.kind),target)
 	var next := state.duplicate(true)
 	next.wood -= cost.wood

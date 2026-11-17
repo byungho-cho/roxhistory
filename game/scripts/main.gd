@@ -241,6 +241,10 @@ func relayout() -> void:
 		refresh_viewport_metrics()
 		rebuilding=false
 		return
+	var history_version: String = overlay.get_meta("update_history_version","") if is_instance_valid(overlay) else ""
+	var history_scroll := 0
+	if not history_version.is_empty():
+		history_scroll = overlay.get_node("UpdateNotesPanel").scroll.scroll_vertical
 	var guide_pages:Array[Dictionary]=[]
 	var guide_actions:Array[Callable]=[]
 	if overlay is CharacterGuide:
@@ -256,6 +260,10 @@ func relayout() -> void:
 		show_character_guide(guide_pages[0].title,guide_pages[0].body,Callable(),false)
 		overlay.pages.assign(guide_pages.slice(1))
 		overlay.completions=guide_actions
+	elif not history_version.is_empty():
+		show_version_notes(history_version)
+		var history = overlay.get_node("UpdateNotesPanel")
+		history.scroll.set_deferred("scroll_vertical",history_scroll)
 
 func clear_children(node: Node) -> void:
 	for child in node.get_children():
@@ -655,7 +663,12 @@ func refresh_title_start_prompt() -> void:
 	title_prompt.visible = not modal and not title_input_blocked()
 
 func show_version_notes(version: String) -> void:
-	show_modal("이번 업데이트  "+version,PATCH_NOTES.body(version),[],false,true,true,Vector2(610,325))
+	var placeholder := show_modal("","",[],false,true,false,Vector2.ZERO,false,true)
+	var panel := placeholder.get_parent().get_parent()
+	overlay.remove_child(panel)
+	panel.queue_free()
+	overlay.set_meta("update_history_version",version)
+	overlay.add_child(preload("res://patch_test/patch_history.gd").new(version,close_modal))
 
 func show_mounted_patch_notes() -> void:
 	if mounted_notes_checked or modal or not application_active:

@@ -7,6 +7,7 @@ const REQUIRED_HQ := {"chief":0,"hut":1,"hearth":2,"training":2,"shrine":3,"outp
 const DURATIONS := [10.0,30.0,120.0,300.0]
 const SHRINE_DURATIONS := [30.0,60.0,300.0,600.0]
 const DEVELOPMENT_DURATION := 5.0
+const INSTANT_DIAMOND_COST := 10
 # Storage buildings use the approved common clocks; saved clocks remain unchanged.
 const STORAGE_TIMING_CONFIRMED:=true
 const COSTS := {
@@ -32,11 +33,6 @@ static func cost(kind:String,target:int)->Dictionary:
 	if not COSTS.has(kind) or target<1 or target>4:return {}
 	var amounts:Array=COSTS[kind][target-1]
 	return {"wood":int(amounts[0]),"stone":int(amounts[1])}
-
-static func instant_diamond_cost(kind: String, target: int) -> int:
-	var prices: Dictionary = ProjectSettings.get_setting("roxhistory/building/instant_diamond_costs",{})
-	var amount: Variant = prices.get("%s:%d"%[canonical(kind),target])
-	return int(amount) if valid_number(amount,1,MAX_RESOURCE,true) else 0
 
 static func duration(target:int,kind := "")->float:
 	if target<1 or target>4:return 0.0
