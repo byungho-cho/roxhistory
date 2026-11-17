@@ -7,6 +7,10 @@ const Hunt := preload("res://scripts/deer_hunt_screen.gd")
 const LabAudio := preload("res://scripts/hunt_audio.gd")
 const Art := preload("res://scripts/hunt_match_art.gd")
 const SIZE := Vector2(960,540)
+const RESULTS_SIZE := Vector2(1000,344)
+const SCREEN_MARGIN := 24.0
+const CONTROL_TARGET := 48.0
+const GOLD_BUTTON := preload("res://assets/ui/d0026/common-gold-default.svg")
 const HOMES := [Vector2(500,306), Vector2(535,272), Vector2(543,326)]
 const BOAR_HOME := Vector2(665,236)
 const CONTACT := Vector2(557,270)
@@ -37,6 +41,9 @@ var results_overlay: ColorRect
 var round_done := false
 var touch_id := -1
 var touch_button: Button
+var report_finger := -1
+var report_drag_origin := 0.0
+var report_scroll_origin := 0.0
 var bars: Array[ProgressBar] = []
 var enemy_bar: ProgressBar
 var results: Panel
@@ -151,26 +158,33 @@ func fit() -> void:
 	var factor := minf(region.size.x/SIZE.x,region.size.y/SIZE.y)
 	canvas.scale = Vector2.ONE*factor
 	canvas.position = region.position+(region.size-SIZE*factor)*.5
-	const TARGET := 48.0
-	const MARGIN := 4.0
-	var left := region.position.x+MARGIN
-	var right := region.end.x-TARGET-MARGIN
-	var top := region.position.y+MARGIN
+	var left := region.position.x+SCREEN_MARGIN
+	var right := region.end.x-CONTROL_TARGET-SCREEN_MARGIN
+	var top := region.position.y+SCREEN_MARGIN
 	exit_button.position = Vector2(left,top)
 	results_button.position = Vector2(right,top)
-	retry_button.position = Vector2(right,region.end.y-TARGET-MARGIN)
-	var title_width := maxf(0,2.0*minf(size.x*.5-left-TARGET,right-size.x*.5))
+	retry_button.position = Vector2(right,region.end.y-CONTROL_TARGET-SCREEN_MARGIN)
+	var title_width := maxf(0,2.0*minf(size.x*.5-left-CONTROL_TARGET,right-size.x*.5))
 	header_title.add_theme_font_size_override("font_size",clampi(int(title_width/10),11,20))
-	header_title.size = Vector2(title_width,TARGET)
+	header_title.size = Vector2(title_width,CONTROL_TARGET)
 	header_title.position = Vector2((size.x-title_width)*.5,top)
-	results.scale = Vector2.ONE*factor
-	results.position = region.get_center()-results.size*factor*.5
+	var popup_factor := minf(factor,(region.size.x-SCREEN_MARGIN*2.0)/RESULTS_SIZE.x)
+	results.scale = Vector2.ONE*popup_factor
+	results.position = region.get_center()-RESULTS_SIZE*popup_factor*.5
 
 func make_icon_button(symbol: String, description: String, action: Callable) -> Button:
-	var item := make_button(symbol,Rect2(0,0,48,48),action)
+	var item := make_button(symbol,Rect2(Vector2.ZERO,Vector2.ONE*CONTROL_TARGET),action)
 	item.reparent(self,false)
 	item.tooltip_text = description
 	item.add_theme_font_size_override("font_size",22)
+	for state in ["normal","hover","pressed","disabled"]:
+		var skin := StyleBoxTexture.new()
+		skin.texture = GOLD_BUTTON
+		for side in [SIDE_LEFT,SIDE_TOP,SIDE_RIGHT,SIDE_BOTTOM]:
+			skin.set_texture_margin(side,7)
+		skin.modulate_color = Color(.76,.69,.55,.7) if state=="disabled" else Color.WHITE
+		item.add_theme_stylebox_override(state,skin)
+		item.add_theme_color_override("font_color" if state=="normal" else "font_"+state+"_color",Color("502c12"))
 	return item
 
 func make_label(value: String, rect: Rect2, px: int) -> Label:
@@ -216,8 +230,7 @@ func build_results() -> void:
 	results_overlay.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
 	results_overlay.hide()
 	results = Panel.new()
-	results.position = Vector2(123,98)
-	results.size = Vector2(714,344)
+	results.size = RESULTS_SIZE
 	results.z_index = 5
 	var background := StyleBoxFlat.new()
 	background.bg_color = Color("30271e")
@@ -226,26 +239,29 @@ func build_results() -> void:
 	background.set_corner_radius_all(12)
 	results.add_theme_stylebox_override("panel",background)
 	results_overlay.add_child(results)
-	var heading := make_label("우람 받아치기 · 테스트 결과",Rect2(15,12,684,32),22)
+	var heading := make_label("우람 받아치기 · 테스트 결과",Rect2(15,12,970,32),22)
 	heading.reparent(results,false)
 	report_box = TextEdit.new()
 	report_box.position = Vector2(24,83)
-	report_box.size = Vector2(666,174)
+	report_box.size = Vector2(952,174)
 	report_box.editable = false
-	report_box.add_theme_font_size_override("font_size",9)
+	report_box.add_theme_font_size_override("font_size",13)
 	report_box.add_theme_color_override("font_readonly_color",Color("f2e5cf"))
-	result_summary = make_label("",Rect2(24,44,666,34),18)
+	result_summary = make_label("",Rect2(24,44,952,34),18)
 	result_summary.reparent(results,false)
 	report_box.wrap_mode = TextEdit.LINE_WRAPPING_BOUNDARY
 	results.add_child(report_box)
-	copied = make_label("",Rect2(24,258,666,23),14)
+	copied = make_label("",Rect2(24,258,952,23),14)
 	copied.reparent(results,false)
 	result_buttons.append(make_button("테스트 결과 복사",Rect2(24,284,206,34),copy_report))
-	result_buttons.append(make_button("닫기",Rect2(552,284,138,34),close_results))
+	result_buttons.append(make_button("닫기",Rect2(838,284,138,34),close_results))
 
 	for button in result_buttons: button.reparent(results,false)
 
 func _input(event: InputEvent) -> void:
+	if showing_result and scroll_report(event):
+		get_viewport().set_input_as_handled()
+		return
 	if event is InputEventScreenTouch:
 		if event.pressed:
 			if touch_id >= 0: return
@@ -268,6 +284,22 @@ func _input(event: InputEvent) -> void:
 			touch_button = null
 		get_viewport().set_input_as_handled()
 
+func scroll_report(event: InputEvent) -> bool:
+	if event is InputEventScreenTouch:
+		if event.pressed and report_finger == -1 and report_box.get_global_rect().has_point(event.position):
+			report_finger = event.index
+			report_drag_origin = event.position.y
+			report_scroll_origin = report_box.get_v_scroll_bar().value
+			return true
+		if not event.pressed and event.index == report_finger:
+			report_finger = -1
+			return true
+	elif event is InputEventScreenDrag and event.index == report_finger:
+		var line_height := report_box.get_line_height()*results.scale.y
+		report_box.get_v_scroll_bar().value = report_scroll_origin+(report_drag_origin-event.position.y)/line_height
+		return true
+	return false
+
 func open_results() -> void:
 	if reports.is_empty(): return
 	copied.text = ""
@@ -275,6 +307,7 @@ func open_results() -> void:
 	results_overlay.show()
 
 func close_results() -> void:
+	report_finger = -1
 	showing_result = false
 	results_overlay.hide()
 
@@ -296,6 +329,7 @@ func restart() -> void:
 	results_button.disabled = reports.is_empty()
 	close_results()
 	status.show()
+	skill_buttons[0].show()
 	refresh(trial.start)
 
 func use_skill(index: int) -> void:
@@ -429,6 +463,7 @@ func refresh(now: int) -> void:
 	skill_buttons[0].modulate = card_buttons[0].modulate
 	for i in [1,2]:
 		var ready := trial.can_followup(i-1,now)
+		skill_buttons[i].disabled = not ready
 		skill_buttons[i].visible = ready
 		card_buttons[i].disabled = not ready
 		card_buttons[i].modulate = Color.WHITE
@@ -456,6 +491,7 @@ func end_round() -> void:
 	retry_button.show()
 	for button in card_buttons + skill_buttons:
 		button.disabled = true
+	for button in skill_buttons: button.hide()
 	guide_target = -1
 	impacts.clear()
 	lab_audio.update(false,false)
