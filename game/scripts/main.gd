@@ -122,11 +122,14 @@ var settings := ConfigFile.new()
 var prefs_path := "user://preferences.cfg"
 var test_mode := false
 const WINDOWS_IDLE_EXIT_MS := 600000
-const WINDOWS_IDLE_WARNING_MS := 30000
+const WINDOWS_IDLE_WARNING_MS := 10000
 var windows_unfocused_since := -1
 var windows_idle_layer: CanvasLayer
 var windows_idle_label: Label
 var windows_idle_save_failed := false
+var windows_idle_focused := true
+var windows_idle_warning_deadline := -1
+var windows_idle_confirm: Button
 var safe := Vector2(24,18)
 var w := 960.0
 var h := 540.0
@@ -1538,9 +1541,9 @@ func first_construction_locked()->bool:
 	return not model.state.get("tutorial_skipped",false) and model.chief_level()==0 and model.pending_construction_count("chief")==0 and FirstQuests.current(model.state) in [0,1]
 
 func _process(delta: float) -> void:
-	if is_instance_valid(parry_lab): return
 	if windows_unfocused_since >= 0:
 		update_windows_idle(Time.get_ticks_msec())
+	if is_instance_valid(parry_lab): return
 	performance_diagnostics.tick(self,delta)
 	if screen=="intro":
 		if application_active and not intro_leaving and not intro_playback_failed and is_instance_valid(intro_player):
@@ -2407,6 +2410,10 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 func _unhandled_input(event: InputEvent) -> void:
+	if is_instance_valid(windows_idle_layer):
+		if event.is_action_pressed("ui_cancel"): reset_windows_idle(Time.get_ticks_msec())
+		get_viewport().set_input_as_handled()
+		return
 	if map_transition_active or (is_instance_valid(intro_cloud) and screen!="intro"):return
 	if event.is_action_pressed("ui_cancel"):
 		go_back()
@@ -2416,12 +2423,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		elif event.physical_keycode == KEY_B: construction_menu()
 
 func windows_focus_changed(focused: bool, now: int) -> void:
+	windows_idle_focused = focused
 	if focused:
-		windows_unfocused_since = -1
-		windows_idle_save_failed = false
-		if is_instance_valid(windows_idle_layer): windows_idle_layer.queue_free()
-		windows_idle_layer = null
-		windows_idle_label = null
+		if windows_idle_warning_deadline < 0: reset_windows_idle(now)
 		return
 	if windows_unfocused_since >= 0: return
 	windows_unfocused_since = now
@@ -2432,37 +2436,65 @@ func windows_focus_changed(focused: bool, now: int) -> void:
 		world.player.direction = Vector2.ZERO
 		world.player.settle_pan(false)
 
+func reset_windows_idle(now: int) -> void:
+	windows_unfocused_since = -1 if windows_idle_focused else now
+	windows_idle_warning_deadline = -1
+	windows_idle_save_failed = false
+	if is_instance_valid(windows_idle_layer): windows_idle_layer.queue_free()
+	windows_idle_layer = null
+	windows_idle_label = null
+	windows_idle_confirm = null
+
 func update_windows_idle(now: int) -> void:
 	if windows_unfocused_since < 0 or windows_idle_save_failed: return
-	var remaining := WINDOWS_IDLE_EXIT_MS - (now - windows_unfocused_since)
-	if remaining > WINDOWS_IDLE_WARNING_MS: return
+	if windows_idle_warning_deadline < 0:
+		if now-windows_unfocused_since < WINDOWS_IDLE_EXIT_MS-WINDOWS_IDLE_WARNING_MS: return
+		windows_idle_warning_deadline = now+WINDOWS_IDLE_WARNING_MS
+		DisplayServer.window_request_attention(get_window().get_window_id())
+		audio.cue("popup_open")
+	var remaining := windows_idle_warning_deadline-now
 	if remaining <= 0:
-		if save_and_quit_windows(): return
-		windows_idle_save_failed = true
-		show_windows_idle_notice("진행을 저장하지 못해 자동 종료를 취소했습니다.")
+		confirm_windows_idle_exit()
 		return
-	show_windows_idle_notice("다른 창을 사용 중입니다. %d초 뒤 자동 종료됩니다.\n게임 창으로 돌아오면 취소됩니다." % ceili(remaining/1000.0))
+	show_windows_idle_notice("%d초 후 게임을 저장하고 닫습니다." % ceili(remaining/1000.0))
+
+func confirm_windows_idle_exit() -> void:
+	if windows_idle_warning_deadline < 0 or windows_idle_save_failed: return
+	if save_and_quit_windows(): return
+	windows_idle_save_failed = true
+	show_windows_idle_notice("진행을 저장하지 못해 자동 종료를 취소했습니다.")
+	windows_idle_confirm.disabled = true
 
 func show_windows_idle_notice(message: String) -> void:
 	if not is_instance_valid(windows_idle_layer):
 		windows_idle_layer = CanvasLayer.new()
-		windows_idle_layer.layer = 100
+		windows_idle_layer.layer = 110
 		add_child(windows_idle_layer)
 		var holder := CenterContainer.new()
-		holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		holder.mouse_filter = Control.MOUSE_FILTER_STOP
 		windows_idle_layer.add_child(holder)
 		holder.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 		var panel := PanelContainer.new()
-		panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		panel.add_theme_stylebox_override("panel", QuestRewards.paper_style())
 		holder.add_child(panel)
 		var padding := MarginContainer.new()
-		padding.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		for side in ["top","bottom","left","right"]:
 			padding.add_theme_constant_override("margin_"+side,20)
 		panel.add_child(padding)
-		windows_idle_label = label(padding,"",18,Color("49321e"))
+		var content := VBoxContainer.new()
+		content.custom_minimum_size.x = 320
+		content.add_theme_constant_override("separation",14)
+		padding.add_child(content)
+		windows_idle_label = label(content,"",18,Color("49321e"))
 		windows_idle_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		var buttons := HBoxContainer.new()
+		buttons.alignment = BoxContainer.ALIGNMENT_CENTER
+		buttons.add_theme_constant_override("separation",12)
+		content.add_child(buttons)
+		var cancel := button(buttons,"취소",func(): reset_windows_idle(Time.get_ticks_msec()),false,"","")
+		cancel.custom_minimum_size = Vector2(110,42)
+		windows_idle_confirm = button(buttons,"확인",confirm_windows_idle_exit,true,"","")
+		windows_idle_confirm.custom_minimum_size = cancel.custom_minimum_size
 	if windows_idle_label.text != message: windows_idle_label.text = message
 
 func save_and_quit_windows() -> bool:
