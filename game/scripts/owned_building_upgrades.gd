@@ -68,7 +68,8 @@ static func cancel(model:GameState,key:String)->bool:
 	var next:=model.state.duplicate(true)
 	if found.collection=="homes":next.homes=model.stable_homes()
 	var entry:Dictionary=next[found.collection][found.index]
-	next.wood+=int(entry.upgrade.cost.wood);next.stone+=int(entry.upgrade.cost.stone)
+	var refund := BuildingRules.cancellation_refund(entry.upgrade.cost)
+	next.wood+=refund.wood;next.stone+=refund.stone
 	if entry.upgrade.has("diamonds_paid"): next.diamonds = model.diamonds()+int(entry.upgrade.diamonds_paid)
 	entry.erase("upgrade")
 	model.busy=true

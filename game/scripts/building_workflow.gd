@@ -136,7 +136,9 @@ func _process(delta:float)->void:
 		var jobs:Array=app.model.construction_jobs().duplicate(true)
 		if app.model.finish_constructions():
 			for job in jobs:
-				if construction_job(str(job.uid)).is_empty() and is_instance_valid(app.world) and app.screen=="play":app.world.feedback.built(DemoConfig.point(job.position))
+				if construction_job(str(job.uid)).is_empty():
+					close_completed_cancellation(str(job.uid),false)
+					if is_instance_valid(app.world) and app.screen=="play":app.world.feedback.built(DemoConfig.point(job.position))
 		var pending: Dictionary={}
 		for key in OwnedBuildingUpgrades.keys(app.model):
 			var found: Dictionary=app.model.lookup_building(key)
@@ -145,9 +147,11 @@ func _process(delta:float)->void:
 			for key in pending:
 				var current: Dictionary=app.model.lookup_building(key)
 				if int(current.get("data",{}).get("level",0))==pending[key]:
+					close_completed_cancellation(key,true)
 					show_upgrade_completed(key,pending[key])
 		if app.model.state.has("chief_upgrade") and app.model.chief_upgrade_remaining()<=0:
 			if app.model.finish_chief_upgrade():
+				close_completed_cancellation("chief",true)
 				show_upgrade_completed("chief",app.model.chief_level())
 		retry_after=.1
 	update_owned_upgrades();update_constructions()
@@ -237,20 +241,88 @@ func request_cancel_upgrade(key:String)->void:request_cancel(key,true)
 func request_cancel(key:String,upgrade:bool)->void:
 	if app.camera_modal():app.close_modal()
 	if app.modal or not app.application_active or app.screen!="play" or app.world_map_open:return
-	var job:Dictionary
-	if upgrade:job=app.model.state.get("chief_upgrade",{}) if key=="chief" else app.model.lookup_building(key).get("data",{}).get("upgrade",{})
-	else:job=construction_job(key)
+	var job := cancellation_job(key,upgrade)
 	if job.is_empty():return
-	cancellation_confirmation=("upgrade:" if upgrade else "build:")+key
-	app.show_modal("공사를 취소할까요?","사용한 재료를 100% 돌려드려요\n반환: "+cost_text(job.get("cost",{})),[{"text":"계속 공사","action":app.close_modal},{"text":"공사 취소","action":func():confirm_cancel(key,upgrade)}],true,true,false,Vector2.ZERO,true)
+	cancellation_confirmation=cancellation_token(key,upgrade)
+	var content: ScrollContainer = app.show_modal("공사를 취소할까요?","",[],false,true,false,Vector2(520,324))
 	cancellation_overlay=app.overlay
+	content.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	var layout := VBoxContainer.new()
+	layout.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	layout.add_theme_constant_override("separation",12)
+	content.add_child(layout)
+	var intro := RichTextLabel.new()
+	intro.bbcode_enabled = true
+	intro.fit_content = true
+	intro.text = "사용한 재료는 [color=#a52b22][b]90%[/b][/color] 돌려드려요"
+	intro.add_theme_color_override("default_color",Color("493220"))
+	layout.add_child(intro)
+	var table := GridContainer.new()
+	table.columns = 3
+	table.add_theme_constant_override("h_separation",16)
+	table.add_theme_constant_override("v_separation",8)
+	layout.add_child(table)
+	for index in 3:
+		var heading: Label = app.label(table,["재료","사용한 재료","돌려받는 재료"][index],15,Color("175789") if index==2 else Color("493220"))
+		heading.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		heading.add_theme_font_override("font",FigmaArt.BODY)
+	var returned := BuildingRules.cancellation_refund(job.cost)
+	for material in ["wood","stone"]:
+		var kind := HBoxContainer.new()
+		table.add_child(kind)
+		var icon: TextureRect = app.picture(kind,DemoArt.icon(material),Rect2(0,0,26,26))
+		icon.custom_minimum_size = Vector2(26,26)
+		app.label(kind,"목재" if material=="wood" else "석재",16,Color("493220"))
+		app.label(table,"%d개"%int(job.cost[material]),16,Color("493220"))
+		var amount: Label = app.label(table,"%d개"%int(returned[material]),16,Color("175789"))
+		amount.add_theme_font_override("font",FigmaArt.BODY)
+	var actions := HBoxContainer.new()
+	actions.add_theme_constant_override("separation",12)
+	layout.add_child(actions)
+	cancel_action(actions,"공사 계속",app.close_modal,false)
+	cancel_action(actions,"공사 취소",confirm_cancel.bind(key,upgrade),true)
+
+func cancel_action(parent: Control, title: String, callback: Callable, ruby: bool) -> void:
+	var control: Button = app.button(parent,title,callback)
+	control.custom_minimum_size.y = 40
+	control.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var skin := StyleBoxFlat.new()
+	skin.bg_color = Color("d93f34") if ruby else Color("c9d6e2")
+	skin.border_color = Color("a12720") if ruby else Color("8295aa")
+	skin.border_width_bottom = 3
+	skin.set_corner_radius_all(6)
+	for state in ["normal","hover","pressed","focus"]:
+		control.add_theme_stylebox_override(state,skin)
+	for tone in ["font_color","font_hover_color","font_pressed_color","font_focus_color"]:
+		control.add_theme_color_override(tone,Color("fff2dc") if ruby else Color("493220"))
+
+func cancellation_job(key: String, upgrade: bool) -> Dictionary:
+	if not upgrade: return construction_job(key)
+	if key=="chief":return app.model.state.get("chief_upgrade",{})
+	return app.model.lookup_building(key).get("data",{}).get("upgrade",{})
+
+func cancellation_token(key: String, upgrade: bool) -> String:
+	return ("upgrade:" if upgrade else "build:")+key
+
+func close_completed_cancellation(key: String, upgrade: bool) -> void:
+	if cancellation_confirmation==cancellation_token(key,upgrade) and is_instance_valid(cancellation_overlay) and app.overlay==cancellation_overlay:
+		cancellation_confirmation=""
+		app.close_modal()
+
 func confirm_cancel(key:String,upgrade:bool)->bool:
-	var token:=("upgrade:" if upgrade else "build:")+key
+	var token:=cancellation_token(key,upgrade)
 	if not app.modal or not app.application_active or cancellation_confirmation!=token or not is_instance_valid(cancellation_overlay) or app.overlay!=cancellation_overlay:return false
+	var job := cancellation_job(key,upgrade)
+	if job.is_empty(): return false
+	if float(job.finishes_at)<=Time.get_unix_time_from_system():
+		retry_after=0.0
+		_process(0.0)
+		return false
 	var success:bool=app.model.cancel_upgrade(key) if upgrade else app.model.cancel_construction(key)
-	cancellation_confirmation="";app.close_modal()
-	if success:app.toast("공사를 취소하고 재료를 전부 돌려드렸어요")
-	else:app.toast("공사가 이미 완료되었거나 변경되었어요")
+	if success:
+		cancellation_confirmation=""
+		app.close_modal()
+		app.toast("공사를 취소하고 사용한 재료의 90%를 돌려드렸어요")
 	return success
 static func apply_outpost_sprite(image:Sprite2D,level:int)->void:
 	var id:=building_asset_id("outpost",level)

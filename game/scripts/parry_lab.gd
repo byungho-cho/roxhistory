@@ -5,6 +5,9 @@ signal exited
 const Trial := preload("res://scripts/parry_trial.gd")
 const Hunt := preload("res://scripts/deer_hunt_screen.gd")
 const LabAudio := preload("res://scripts/hunt_audio.gd")
+const UramRig := preload("res://scripts/uram_lab_rig.gd")
+const MOTIONS := {"idle":"대기","walk":"걷기","run":"달리기","club_attack":"둔기 공격","hit_reaction":"피격","parry":"받아치기","full_motion":"합본"}
+const LOOP_MOTIONS := ["idle","walk","run"]
 const Art := preload("res://scripts/hunt_match_art.gd")
 const SIZE := Vector2(960,540)
 const RESULTS_SIZE := Vector2(1000,344)
@@ -23,6 +26,17 @@ const SKILLS := [
 
 var app: Node
 var canvas: Control
+var field: Node2D
+var rig: UramRig
+var motion_canvas: Control
+var motion_status: Label
+var motion_buttons: Dictionary = {}
+var mode_buttons: Dictionary = {}
+var compare_button: Button
+var mode := ""
+var motion_clip := ""
+var motion_age := 0.0
+var use_rig := true
 var actors: Array[HybridCharacter] = []
 var boar: TextureRect
 var shield: Polygon2D
@@ -76,10 +90,10 @@ func _ready() -> void:
 	exit_button = make_icon_button("×","실험실 나가기",func(): exited.emit())
 	results_button = make_icon_button("▤","테스트 결과 열기",open_results)
 	retry_button = make_icon_button("↻","재도전",retry_round)
-	status = make_label("",Rect2(245,73,470,33),21)
+	status = make_label("",Rect2(245,128,470,33),21)
 	stars = make_label("✦  ✧  ✦",Rect2(576,164,90,25),21)
 	stars.modulate = Color("ffe29b")
-	var field := Node2D.new()
+	field = Node2D.new()
 	field.y_sort_enabled = true
 	canvas.add_child(field)
 	for i in 3:
@@ -143,10 +157,105 @@ func _ready() -> void:
 	feedback.z_index = 4
 	canvas.add_child(feedback)
 	feedback.draw.connect(draw_feedback)
+	build_test_picker()
 	build_results()
 	resized.connect(fit)
 	fit()
-	restart()
+	canvas.hide()
+	motion_canvas.hide()
+	compare_button.hide()
+	retry_button.disabled = true
+	results_button.disabled = true
+	for actor in actors: actor.set_enabled(false)
+
+func build_test_picker() -> void:
+	rig = UramRig.new()
+	rig.render_size_factor = .5
+	field.add_child(rig)
+	rig.camera.position = actors[0].camera.position
+	rig.camera.look_at(Vector3(0,1.45,0))
+	rig.display.position = -rig.camera.unproject_position(Vector3.ZERO)*rig.display.scale
+	rig.pivot.rotation.y = atan2(1,.28)
+	rig.scale = actors[0].scale
+	motion_canvas = Art.layer(self,Vector2.ZERO)
+	motion_status = make_label("동작을 선택해 주세요",Rect2(230,144,500,42),24)
+	motion_status.reparent(motion_canvas,false)
+	var index := 0
+	for key: String in MOTIONS:
+		var control := make_button(MOTIONS[key],Rect2(150+96*index,444,90,42),select_motion.bind(key))
+		control.toggle_mode = true
+		control.reparent(motion_canvas,false)
+		motion_buttons[key] = control
+		index+=1
+	for key in ["parry","motion"]:
+		var title := "받아치기 테스트" if key=="parry" else "모션 테스트"
+		var control := make_button(title,Rect2(0,0,144,42),select_mode.bind(key))
+		control.toggle_mode = true
+		control.reparent(self,false)
+		mode_buttons[key]=control
+	compare_button = make_button("우람 B",Rect2(0,0,100,38),toggle_rig)
+	compare_button.reparent(self,false)
+
+func select_mode(value: String) -> void:
+	for key in mode_buttons: mode_buttons[key].set_pressed_no_signal(key==value)
+	if mode==value: return
+	mode=value
+	trial=null
+	lab_audio.update(false,false)
+	impacts.clear()
+	close_results()
+	motion_clip=""
+	motion_age=0.0
+	for control: Button in motion_buttons.values(): control.set_pressed_no_signal(false)
+	canvas.visible=mode=="parry"
+	motion_canvas.visible=mode=="motion"
+	compare_button.visible=mode=="parry"
+	for actor in actors: actor.set_enabled(mode=="parry")
+	if mode=="parry":
+		if rig.get_parent()!=field: rig.reparent(field,false)
+		sync_rig_choice()
+		restart()
+	else:
+		shield.hide()
+		rig.reparent(motion_canvas,false)
+		rig.position=Vector2(480,352)
+		rig.set_enabled(true)
+		rig.show_pose("idle",0.0)
+		motion_status.text="동작을 선택해 주세요"
+		retry_button.disabled=true
+		results_button.disabled=reports.is_empty()
+
+func toggle_rig() -> void:
+	use_rig=not use_rig
+	sync_rig_choice()
+	if trial!=null: refresh(Time.get_ticks_msec())
+
+func sync_rig_choice() -> void:
+	actors[0].set_enabled(not use_rig)
+	rig.set_enabled(use_rig)
+	compare_button.text="우람 B" if use_rig else "기존 우람"
+	var holder: Node = rig if use_rig else actors[0]
+	if shield.get_parent()!=holder: shield.reparent(holder,false)
+
+func select_motion(key: String) -> void:
+	if mode!="motion": return
+	motion_clip=key
+	motion_age=0.0
+	for item in motion_buttons: motion_buttons[item].set_pressed_no_signal(item==key)
+	motion_status.text=MOTIONS[key]+(" · 반복" if key in LOOP_MOTIONS else " · 1회")
+	retry_button.disabled=false
+	rig.show_pose(key,0.0)
+
+func advance_motion(delta: float) -> void:
+	if motion_clip.is_empty(): return
+	motion_age+=delta
+	var length := rig.clip_length(motion_clip)
+	if motion_clip in LOOP_MOTIONS:
+		rig.show_pose(motion_clip,fposmod(motion_age,length))
+	elif motion_age<length:
+		rig.show_pose(motion_clip,motion_age)
+	else:
+		rig.show_pose("idle",fposmod(motion_age-length,rig.clip_length("idle")))
 
 func fit() -> void:
 	var region := Rect2(Vector2.ZERO,size)
@@ -158,12 +267,17 @@ func fit() -> void:
 	var factor := minf(region.size.x/SIZE.x,region.size.y/SIZE.y)
 	canvas.scale = Vector2.ONE*factor
 	canvas.position = region.position+(region.size-SIZE*factor)*.5
+	motion_canvas.scale = canvas.scale
+	motion_canvas.position = canvas.position
 	var left := region.position.x+SCREEN_MARGIN
 	var right := region.end.x-CONTROL_TARGET-SCREEN_MARGIN
 	var top := region.position.y+SCREEN_MARGIN
 	exit_button.position = Vector2(left,top)
 	results_button.position = Vector2(right,top)
 	retry_button.position = Vector2(right,region.end.y-CONTROL_TARGET-SCREEN_MARGIN)
+	mode_buttons.parry.position=Vector2(region.get_center().x-150,top+50)
+	mode_buttons.motion.position=Vector2(region.get_center().x+6,top+50)
+	compare_button.position=Vector2(left,region.end.y-38-SCREEN_MARGIN)
 	var title_width := maxf(0,2.0*minf(size.x*.5-left-CONTROL_TARGET,right-size.x*.5))
 	header_title.add_theme_font_size_override("font_size",clampi(int(title_width/10),11,20))
 	header_title.size = Vector2(title_width,CONTROL_TARGET)
@@ -265,7 +379,10 @@ func _input(event: InputEvent) -> void:
 	if event is InputEventScreenTouch:
 		if event.pressed:
 			if touch_id >= 0: return
-			var buttons: Array = result_buttons if showing_result else card_buttons + skill_buttons + [exit_button,results_button,retry_button]
+			var buttons: Array = result_buttons if showing_result else [exit_button,results_button,retry_button,compare_button] + mode_buttons.values()
+			if not showing_result:
+				if mode=="parry": buttons.append_array(card_buttons+skill_buttons)
+				elif mode=="motion": buttons.append_array(motion_buttons.values())
 			for button in buttons:
 				if button.is_visible_in_tree() and not button.disabled and button.get_global_rect().has_point(event.position):
 					touch_id = event.index
@@ -312,7 +429,9 @@ func close_results() -> void:
 	results_overlay.hide()
 
 func retry_round() -> void:
-	if round_done and not showing_result: restart()
+	if showing_result: return
+	if mode=="parry": restart()
+	elif mode=="motion" and not motion_clip.is_empty(): select_motion(motion_clip)
 
 func restart() -> void:
 	rounds += 1
@@ -325,7 +444,7 @@ func restart() -> void:
 	impacts.clear()
 	trial = Trial.new(Time.get_ticks_msec())
 	round_done = false
-	retry_button.hide()
+	retry_button.disabled = false
 	results_button.disabled = reports.is_empty()
 	close_results()
 	status.show()
@@ -333,7 +452,7 @@ func restart() -> void:
 	refresh(trial.start)
 
 func use_skill(index: int) -> void:
-	if showing_result or round_done: return
+	if mode!="parry" or trial==null or showing_result or round_done: return
 	var now := Time.get_ticks_msec()
 	var previous_hp := trial.boar_hp
 	var previous_party_hp := trial.party_hp
@@ -402,7 +521,10 @@ func show_damage(now: int, amount: int, ally: bool) -> void:
 	damage.text = str(amount)
 	damage.position = (HOMES[1] if ally else boar.position+Vector2(47,12))-Vector2(38,52)
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
+	if mode=="motion":
+		advance_motion(delta)
+		return
 	if round_done or trial == null: return
 	frames += 1
 	lab_audio.update(app.audio.enabled,not app.application_active)
@@ -448,6 +570,12 @@ func refresh(now: int) -> void:
 	shield.visible = reacting or defending
 	shield.position = Vector2(40-36*sin(minf(brace_age*3.4,1)*PI*.5),-62)
 	shield.rotation = -.22*sin(brace_age*PI)
+	if use_rig:
+		rig.position=uram.position
+		var rig_clip := "parry" if reacting and success else "club_attack" if defending else "hit_reaction" if trial.contact>=0 and now-trial.contact<420 else "idle"
+		var rig_time := brace_age*rig.clip_length("parry") if rig_clip=="parry" else (now-normal_at)*.001 if rig_clip=="club_attack" else (now-trial.contact)*.001 if rig_clip=="hit_reaction" else fposmod(now*.001,rig.clip_length("idle"))
+		rig.show_pose(rig_clip,rig_time)
+		shield.position = rig.projected_shield_hand()
 	for i in range(1,3):
 		var age: int = now-followup_at[i-1]
 		var attacking := followup_at[i-1] >= 0 and age < 450

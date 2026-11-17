@@ -680,7 +680,8 @@ func cancel_construction(uid:String)->bool:
 		if Time.get_unix_time_from_system()>=float(jobs[i].finishes_at):
 			finish_constructions();return false
 		var next:=state.duplicate(true)
-		next.wood+=int(jobs[i].cost.wood);next.stone+=int(jobs[i].cost.stone)
+		var refund := BuildingRules.cancellation_refund(jobs[i].cost)
+		next.wood+=refund.wood;next.stone+=refund.stone
 		jobs.remove_at(i);next.construction_jobs=jobs
 		busy=true
 		var ok:=commit(next)
@@ -732,7 +733,8 @@ func cancel_upgrade(key:String)->bool:
 	if busy or not state.has("chief_upgrade"):return false
 	if chief_upgrade_remaining()<=0:finish_chief_upgrade();return false
 	var next:=state.duplicate(true)
-	next.wood+=int(next.chief_upgrade.cost.wood);next.stone+=int(next.chief_upgrade.cost.stone)
+	var refund := BuildingRules.cancellation_refund(next.chief_upgrade.cost)
+	next.wood+=refund.wood;next.stone+=refund.stone
 	if next.chief_upgrade.has("diamonds_paid"): next.diamonds = diamonds()+int(next.chief_upgrade.diamonds_paid)
 	next.erase("chief_upgrade")
 	busy=true

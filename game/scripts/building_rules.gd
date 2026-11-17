@@ -35,6 +35,9 @@ static func cost(kind:String,target:int)->Dictionary:
 	var amounts:Array=COSTS[kind][target-1]
 	return {"wood":int(amounts[0]),"stone":int(amounts[1])}
 
+static func cancellation_refund(paid: Dictionary) -> Dictionary:
+	return {"wood":floori(float(paid.wood)*9.0/10.0),"stone":floori(float(paid.stone)*9.0/10.0)}
+
 static func duration(target:int,kind := "")->float:
 	if target<1 or target>4:return 0.0
 	return SHRINE_DURATIONS[target-1] if kind=="shrine" else DURATIONS[target-1]

@@ -15,6 +15,15 @@ const PIECE_FLIGHT := .49
 const TRACK_COLOR:=Color("523621")
 const TRACK_RIM:=Color("874f0d")
 const FILL_COLORS:=[Color("ffdb45"),Color("f2b00a"),Color("d48005")]
+const RESOURCE_RAIL := preload("res://assets/ui/d0047/hud-backing-and-empty-rails.png")
+const RESOURCE_RAIL_SIZE := Vector2(552,42)
+const RESOURCE_KEYS := ["tokens","wood","stone","residents","diamonds"]
+const CELL_EDGES := [10,135,265,396,482,542]
+const ICON_POSITIONS := [Vector2(12,5),Vector2(141,3),Vector2(272,3),Vector2(402,6),Vector2(486,8)]
+const GAUGE_STARTS := [26,156,286,401]
+const GAUGE_WIDTHS := [98,95,93,48]
+const NUMBER_ENDS := [121,248,376,450,542]
+const HUD_GOLD := [Color("fbd034"),Color("f1ae0a"),Color("da8a06")]
 const DIAMOND_RIM := Color("a9dfff")
 const DIAMOND_FILL := [Color("74dfff"),Color("4299c9"),Color("276994")]
 var resource_capacities:Dictionary={}
@@ -59,15 +68,61 @@ func _ready() -> void:
 	call_deferred("create_minimap")
 func create_minimap()->void:
 	minimap=LiveMinimap.new(app);add_child(minimap)
+func resource_rail_rect() -> Rect2:
+	var portrait_layout: bool = app.w<app.h
+	var right: float = app.w-app.safe.x-112.0
+	var left: float = app.safe.x+(0.0 if portrait_layout else 244.0)
+	var width := clampf(right-left,160.0,414.0)
+	var top: float = app.safe.y+(69.0 if portrait_layout else -1.0)
+	return Rect2(right-width,top,width,RESOURCE_RAIL_SIZE.y*width/RESOURCE_RAIL_SIZE.x)
+
 func slot(kind: String) -> Rect2:
-	var index := ["wood","stone","tokens","diamonds"].find(kind)
-	if app.w<app.h:
-		var spacing := clampf((app.w-app.safe.x*2-8)/4.0,54.0,86.0)
-		var x: float = app.safe.x+index*spacing
-		return Rect2(x+(8 if index == 3 else 0),app.safe.y+75,spacing-(13 if index == 3 else 4),36)
-	var left: float = app.w-app.safe.x-520
-	if index == 3: return Rect2(left+319,app.safe.y+1,67,36)
-	return Rect2(left+index*100,app.safe.y+1,96,36)
+	var index := RESOURCE_KEYS.find(kind)
+	if index<0: return Rect2()
+	var rect := resource_rail_rect()
+	var scale_factor := rect.size.x/RESOURCE_RAIL_SIZE.x
+	return Rect2(rect.position+Vector2(CELL_EDGES[index]*scale_factor,0),Vector2((CELL_EDGES[index+1]-CELL_EDGES[index])*scale_factor,rect.size.y))
+
+func resource_icon_center(kind: String) -> Vector2:
+	var index := RESOURCE_KEYS.find(kind)
+	var rail := resource_rail_rect()
+	return rail.position+(ICON_POSITIONS[index]+Vector2.ONE*16)*rail.size.x/RESOURCE_RAIL_SIZE.x
+
+static func compact_amount(value: int) -> String:
+	if value<1000: return str(value)
+	var tier := 1000000 if value>=1000000 else 1000
+	var whole := floori(float(value)/tier)
+	var digit := floori(float(value%tier)*10.0/tier)
+	var suffix := "M" if tier==1000000 else "K"
+	return str(whole)+("."+str(digit) if digit>0 else "")+suffix
+
+func draw_resource_rail(font: Font) -> void:
+	var rect := resource_rail_rect()
+	draw_set_transform(rect.position,0.0,Vector2.ONE*rect.size.x/RESOURCE_RAIL_SIZE.x)
+	draw_texture_rect(RESOURCE_RAIL,Rect2(Vector2.ZERO,RESOURCE_RAIL_SIZE),false)
+	for i in RESOURCE_KEYS.size():
+		var key: String = RESOURCE_KEYS[i]
+		var amount: int
+		var quantity: String
+		if key=="diamonds":
+			amount = app.model.diamonds()
+			quantity = compact_amount(amount)
+		else:
+			amount = app.model.resident_count() if key=="residents" else displayed_amount(key)
+			var limit: int = app.model.resident_capacity() if key=="residents" else resource_capacities["grain" if key=="tokens" else key]
+			quantity = compact_amount(amount)+"/"+compact_amount(limit)
+			var fraction := clampf(float(amount)/maxi(1,limit),0,1)
+			if fraction>0.0: draw_resource_fill(Rect2(GAUGE_STARTS[i],21,GAUGE_WIDTHS[i]*fraction,11.5),HUD_GOLD)
+		var extent := 32.0+float(pulse.get(key,0.0))*4.0 if i<3 else 26.0
+		draw_texture_rect(DIAMOND_ICON if i==4 else resource_icon(key),Rect2(ICON_POSITIONS[i],Vector2.ONE*extent),false)
+		var start: float = ICON_POSITIONS[i].x+(26.0 if i<3 else 22.0)
+		var room: float = NUMBER_ENDS[i]-start
+		var point := 16
+		while point>6 and font.get_string_size(quantity,HORIZONTAL_ALIGNMENT_LEFT,-1,point).x>room: point-=1
+		var at := Vector2(start,26)
+		draw_string_outline(font,at,quantity,HORIZONTAL_ALIGNMENT_RIGHT,room,point,3,Color("352b18"))
+		draw_string(font,at,quantity,HORIZONTAL_ALIGNMENT_RIGHT,room,point,Color("fff6de"))
+	draw_set_transform(Vector2.ZERO)
 
 func gps_rect() -> Rect2:
 	var bounds := Rect2(app.w-app.safe.x-64,app.safe.y+90,56,56)
@@ -199,7 +254,7 @@ func advance_quest_flights(delta: float) -> bool:
 func draw_quest_flights() -> void:
 	for batch in quest_flights:
 		var texture := resource_icon(batch.kind)
-		var goal := slot(batch.kind).position+Vector2(16,19)
+		var goal := resource_icon_center(batch.kind)
 		var stagger := burst_stagger(batch)
 		var departure := burst_departure(batch)
 		var flight: float = burst_lifetime(batch)-(batch.origins.size()-1)*stagger-7*PIECE_SPACING-departure
@@ -250,35 +305,7 @@ func _draw() -> void:
 	if fill>0:
 		frame(Rect2(origin+Vector2(109,40),Vector2(114*fill,10)),Color("398a66cc"),Color("6ead85cc"))
 		if fill>.08:draw_line(origin+Vector2(112,42),origin+Vector2(106+114*fill,42),Color("b5efb7cc"),1.4,true)
-	for key in ["wood","stone","tokens"]:
-		var rect:=slot(key);var beat:float=pulse.get(key,0.0)
-		var kind:String="grain" if key=="tokens" else key
-		var amount:int=displayed_amount(key)
-		var capacity:int=resource_capacities[kind]
-		var track:=Rect2(rect.position+Vector2(15,10),Vector2(rect.size.x-15,20))
-		frame(track,TRACK_COLOR,TRACK_RIM)
-		var fraction:=clampf(float(amount)/maxi(1,capacity),0,1)
-		if fraction>0:
-			var inside:=track.grow(-1)
-			inside.size.x*=fraction
-			draw_resource_fill(inside)
-		var label:="%d / %d"%[amount,capacity]
-		var number_start:=rect.position+Vector2(30,24)
-		var number_width:=rect.size.x-32
-		var number_size:=10
-		if font.get_string_size(label,HORIZONTAL_ALIGNMENT_LEFT,-1,number_size).x>number_width:
-			label=str(amount)
-		draw_string_outline(font,number_start,label,HORIZONTAL_ALIGNMENT_CENTER,number_width,number_size,3,TRACK_COLOR)
-		draw_string(font,number_start,label,HORIZONTAL_ALIGNMENT_CENTER,number_width,number_size,Color("fffae5"))
-		var extent:=32.0+beat*4
-		var top:=6.0 if key in ["wood","stone"] else 3.0
-		draw_texture_rect(resource_icon(key),Rect2(rect.position+Vector2(0,top),Vector2.ONE*extent),false)
-	var diamond := slot("diamonds")
-	var diamond_track := Rect2(diamond.position+Vector2(11,10),Vector2(diamond.size.x-11,20))
-	frame(diamond_track,Color("3376a6"),DIAMOND_RIM)
-	draw_resource_fill(diamond_track.grow(-1),DIAMOND_FILL)
-	draw_texture_rect(DIAMOND_ICON,Rect2(diamond.position+Vector2(0,6),Vector2(27,27)),false)
-	hud_text(font,diamond.position+Vector2(25,24),str(app.model.diamonds()),diamond.size.x-28,10,HORIZONTAL_ALIGNMENT_CENTER)
+	draw_resource_rail(font)
 	var center:=Vector2(app.w-app.safe.x-50,app.safe.y+60)
 	draw_circle(center+Vector2(1,3),53,Color(.15,.10,.04,.20))
 	draw_circle(center,51,Color("49321e"))
