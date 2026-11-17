@@ -10,6 +10,7 @@ const CORN_ICON=preload("res://assets/ui/resource-bars/corn.png")
 const LEVEL_BRUSH := preload("res://assets/ui/d0009/job-name-brush.png")
 const PIECE_SPACING := .043
 const PIECE_PAUSE := .16
+const REWARD_DEPARTURE := .48
 const PIECE_FLIGHT := .49
 const TRACK_COLOR:=Color("523621")
 const TRACK_RIM:=Color("874f0d")
@@ -145,14 +146,14 @@ func gained(kind: String, at: Vector2) -> void:
 	resource_burst(kind,PackedVector2Array([at]), true,0)
 
 func tutorial_reward_effect(kind: String, at: Vector2) -> void:
-	app.audio.cue("reward_"+kind)
-	resource_burst("tokens" if kind == "grain" else kind,PackedVector2Array([at]),true,0,true)
+	app.audio.cue("reward")
+	resource_burst("tokens" if kind == "grain" else kind,PackedVector2Array([at]),true,0,true,true)
 
 func quest_reward_effect(origins: PackedVector2Array,total: int,preview: bool) -> void:
-	if total > 0 and not origins.is_empty(): app.audio.cue("reward_grain")
-	resource_burst("tokens",origins,false,0 if preview else total,true)
+	if not preview and total > 0 and not origins.is_empty(): app.audio.cue("reward")
+	resource_burst("tokens",origins,false,0 if preview else total,true,not preview and total > 0)
 
-func resource_burst(kind: String, origins: PackedVector2Array, world_space: bool, delayed_credit: int, reward := false) -> void:
+func resource_burst(kind: String, origins: PackedVector2Array, world_space: bool, delayed_credit: int, reward := false, reward_sound := false) -> void:
 	if origins.is_empty(): return
 	if app.reduced_ui_motion():
 		pulse[kind]=1.0
@@ -161,7 +162,7 @@ func resource_burst(kind: String, origins: PackedVector2Array, world_space: bool
 	if delayed_credit > 0:
 		held_quest_grain+=delayed_credit
 		sync_resource_counts()
-	quest_flights.append({"kind":kind,"origins":origins,"world_space":world_space,"total":delayed_credit,"age":0.0,"reward":reward})
+	quest_flights.append({"kind":kind,"origins":origins,"world_space":world_space,"total":delayed_credit,"age":0.0,"reward":reward,"reward_sound":reward_sound})
 	quest_fx.queue_redraw()
 
 func burst_stagger(batch: Dictionary) -> float:
@@ -176,6 +177,9 @@ func advance_quest_flights(delta: float) -> bool:
 	for batch in quest_flights:
 		var previous: float = batch.age
 		batch.age+=delta
+		if batch.reward_sound and previous < REWARD_DEPARTURE and batch.age >= REWARD_DEPARTURE:
+			var kind: String = "grain" if batch.kind == "tokens" else batch.kind
+			app.audio.cue("reward_"+kind)
 		var end := burst_lifetime(batch)
 		if previous<end and batch.age>=end:
 			pulse[batch.kind]=1.0
@@ -191,19 +195,20 @@ func draw_quest_flights() -> void:
 		var texture := resource_icon(batch.kind)
 		var goal := slot(batch.kind).position+Vector2(16,19)
 		var stagger := burst_stagger(batch)
-		var flight: float = burst_lifetime(batch)-(batch.origins.size()-1)*stagger-7*PIECE_SPACING-PIECE_PAUSE
+		var departure := REWARD_DEPARTURE if batch.reward else PIECE_PAUSE
+		var flight: float = burst_lifetime(batch)-(batch.origins.size()-1)*stagger-7*PIECE_SPACING-departure
 		for index in batch.origins.size():
 			var start: Vector2 = batch.origins[index]
 			if batch.world_space:
 				start = app.world.get_global_transform_with_canvas()*start
 			for piece in 8:
 				var age: float = batch.age-index*stagger-piece*PIECE_SPACING
-				if age < 0.0 or age >= PIECE_PAUSE+flight: continue
+				if age < 0.0 or age >= departure+flight: continue
 				var kick := smoothstep(0.0,.11,age)
 				var angle := float(piece)*2.39996
 				var spread := Vector2(cos(angle)*(13.0+piece*1.9),sin(angle)*14.0-9.0)
 				var from := start+spread*kick
-				var arrival := clampf((age-PIECE_PAUSE)/flight,0.0,1.0)
+				var arrival := clampf((age-departure)/flight,0.0,1.0)
 				var q := arrival*arrival
 				var arc := -sin(q*PI)*(19.0+piece*3.0)
 				var at := from.lerp(goal,q)+Vector2(0,arc)

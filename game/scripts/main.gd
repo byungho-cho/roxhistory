@@ -2293,7 +2293,8 @@ func close_hunt() -> void:
 
 func go_back() -> void:
 	if is_instance_valid(parry_lab):
-		parry_lab.end_round()
+		if parry_lab.showing_result: parry_lab.close_results()
+		else: exit_parry_lab()
 		return
 	if modal and is_instance_valid(overlay) and overlay.has_meta("full_screen_bag"):
 		close_modal()

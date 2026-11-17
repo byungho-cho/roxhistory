@@ -30,6 +30,11 @@ var card_buttons: Array[Button] = []
 var result_summary: Label
 var result_buttons: Array[Button] = []
 var exit_button: Button
+var results_button: Button
+var retry_button: Button
+var header_title: Label
+var results_overlay: ColorRect
+var round_done := false
 var touch_id := -1
 var touch_button: Button
 var bars: Array[ProgressBar] = []
@@ -59,8 +64,11 @@ func _ready() -> void:
 	ground.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
 	ground.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	canvas = Art.layer(self,Vector2.ZERO)
-	make_label("실험실 · 우람 받아치기",Rect2(24,16,400,32),22)
-	exit_button = make_button("실험 종료",Rect2(814,16,122,37),end_round)
+	header_title = make_label("실험실 · 우람 받아치기",Rect2(),20)
+	header_title.reparent(self,false)
+	exit_button = make_icon_button("×","실험실 나가기",func(): exited.emit())
+	results_button = make_icon_button("▤","테스트 결과 열기",open_results)
+	retry_button = make_icon_button("↻","재도전",retry_round)
 	status = make_label("",Rect2(245,73,470,33),21)
 	stars = make_label("✦  ✧  ✦",Rect2(576,164,90,25),21)
 	stars.modulate = Color("ffe29b")
@@ -143,6 +151,27 @@ func fit() -> void:
 	var factor := minf(region.size.x/SIZE.x,region.size.y/SIZE.y)
 	canvas.scale = Vector2.ONE*factor
 	canvas.position = region.position+(region.size-SIZE*factor)*.5
+	const TARGET := 48.0
+	const MARGIN := 4.0
+	var left := region.position.x+MARGIN
+	var right := region.end.x-TARGET-MARGIN
+	var top := region.position.y+MARGIN
+	exit_button.position = Vector2(left,top)
+	results_button.position = Vector2(right,top)
+	retry_button.position = Vector2(right,region.end.y-TARGET-MARGIN)
+	var title_width := maxf(0,2.0*minf(size.x*.5-left-TARGET,right-size.x*.5))
+	header_title.add_theme_font_size_override("font_size",clampi(int(title_width/10),11,20))
+	header_title.size = Vector2(title_width,TARGET)
+	header_title.position = Vector2((size.x-title_width)*.5,top)
+	results.scale = Vector2.ONE*factor
+	results.position = region.get_center()-results.size*factor*.5
+
+func make_icon_button(symbol: String, description: String, action: Callable) -> Button:
+	var item := make_button(symbol,Rect2(0,0,48,48),action)
+	item.reparent(self,false)
+	item.tooltip_text = description
+	item.add_theme_font_size_override("font_size",22)
+	return item
 
 func make_label(value: String, rect: Rect2, px: int) -> Label:
 	var item: Label = app.label(canvas,value,px,Color("fff3d0"))
@@ -180,6 +209,12 @@ func make_hp(rect: Rect2, tint: Color) -> ProgressBar:
 	return item
 
 func build_results() -> void:
+	results_overlay = ColorRect.new()
+	results_overlay.color = Color(0,0,0,.48)
+	results_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(results_overlay)
+	results_overlay.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
+	results_overlay.hide()
 	results = Panel.new()
 	results.position = Vector2(123,98)
 	results.size = Vector2(714,344)
@@ -190,7 +225,7 @@ func build_results() -> void:
 	background.set_border_width_all(2)
 	background.set_corner_radius_all(12)
 	results.add_theme_stylebox_override("panel",background)
-	canvas.add_child(results)
+	results_overlay.add_child(results)
 	var heading := make_label("우람 받아치기 · 테스트 결과",Rect2(15,12,684,32),22)
 	heading.reparent(results,false)
 	report_box = TextEdit.new()
@@ -206,8 +241,7 @@ func build_results() -> void:
 	copied = make_label("",Rect2(24,258,666,23),14)
 	copied.reparent(results,false)
 	result_buttons.append(make_button("테스트 결과 복사",Rect2(24,284,206,34),copy_report))
-	result_buttons.append(make_button("재도전",Rect2(401,284,138,34),restart))
-	result_buttons.append(make_button("마을로",Rect2(552,284,138,34),func(): exited.emit()))
+	result_buttons.append(make_button("닫기",Rect2(552,284,138,34),close_results))
 
 	for button in result_buttons: button.reparent(results,false)
 
@@ -215,8 +249,8 @@ func _input(event: InputEvent) -> void:
 	if event is InputEventScreenTouch:
 		if event.pressed:
 			if touch_id >= 0: return
-			var buttons := result_buttons if showing_result else card_buttons
-			for button in buttons + [exit_button]:
+			var buttons: Array = result_buttons if showing_result else card_buttons + skill_buttons + [exit_button,results_button,retry_button]
+			for button in buttons:
 				if button.is_visible_in_tree() and not button.disabled and button.get_global_rect().has_point(event.position):
 					touch_id = event.index
 					touch_button = button
@@ -234,6 +268,19 @@ func _input(event: InputEvent) -> void:
 			touch_button = null
 		get_viewport().set_input_as_handled()
 
+func open_results() -> void:
+	if reports.is_empty(): return
+	copied.text = ""
+	showing_result = true
+	results_overlay.show()
+
+func close_results() -> void:
+	showing_result = false
+	results_overlay.hide()
+
+func retry_round() -> void:
+	if round_done and not showing_result: restart()
+
 func restart() -> void:
 	rounds += 1
 	frames = 0
@@ -244,13 +291,15 @@ func restart() -> void:
 	guide_target = -1
 	impacts.clear()
 	trial = Trial.new(Time.get_ticks_msec())
-	showing_result = false
-	results.hide()
+	round_done = false
+	retry_button.hide()
+	results_button.disabled = reports.is_empty()
+	close_results()
 	status.show()
 	refresh(trial.start)
 
 func use_skill(index: int) -> void:
-	if showing_result: return
+	if showing_result or round_done: return
 	var now := Time.get_ticks_msec()
 	var previous_hp := trial.boar_hp
 	var previous_party_hp := trial.party_hp
@@ -291,7 +340,7 @@ func set_guide(target: int, now: int) -> void:
 	guide_at = now
 
 func draw_feedback() -> void:
-	if showing_result or trial == null: return
+	if round_done or trial == null: return
 	var now := Time.get_ticks_msec()
 	if guide_target > 0:
 		var rect := Rect2(card_buttons[guide_target].position,card_buttons[guide_target].size).grow(3)
@@ -320,7 +369,7 @@ func show_damage(now: int, amount: int, ally: bool) -> void:
 	damage.position = (HOMES[1] if ally else boar.position+Vector2(47,12))-Vector2(38,52)
 
 func _process(_delta: float) -> void:
-	if showing_result or trial == null: return
+	if round_done or trial == null: return
 	frames += 1
 	lab_audio.update(app.audio.enabled,not app.application_active)
 	var now := Time.get_ticks_msec()
@@ -398,14 +447,15 @@ func refresh(now: int) -> void:
 		status.text = trial.outcome + (" · 스턴" if stun else "")
 
 func end_round() -> void:
-	if showing_result:
-		exited.emit()
-		return
+	if round_done: return
 	var now := Time.get_ticks_msec()
 	var elapsed := maxi(1,now-trial.start)
 	reports.append(trial.report(rounds,roundi(frames*1000.0/elapsed),now))
-	if reports.size() > 3: reports.pop_front()
-	showing_result = true
+	round_done = true
+	results_button.disabled = false
+	retry_button.show()
+	for button in card_buttons + skill_buttons:
+		button.disabled = true
 	guide_target = -1
 	impacts.clear()
 	lab_audio.update(false,false)
@@ -416,8 +466,7 @@ func end_round() -> void:
 		ProjectSettings.get_setting("application/config/version"),commit,-Trial.EARLIEST_MS,-Trial.LATEST_MS,Trial.STUN_MS,"\n".join(reports)]
 	result_summary.text = trial.outcome if not trial.outcome.is_empty() else "중간 종료"
 	copied.text = ""
-	status.hide()
-	results.show()
+	status.text = result_summary.text
 
 func copy_report() -> void:
 	DisplayServer.clipboard_set(report_box.text)

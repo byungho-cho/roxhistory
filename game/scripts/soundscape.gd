@@ -19,7 +19,7 @@ var ducked := false
 var voices: Array[AudioStreamPlayer] = []
 var resource_receipt_voices: Dictionary[String, AudioStreamPlayer] = {}
 
-const RESOURCE_RECEIPT_DB := {"gain":-2.0,"reward_grain":4.0,"reward_stone":-1.0,"reward_wood":0.0}
+const RESOURCE_RECEIPT_DB := {"gain":-2.0,"reward":0.0,"reward_grain":4.0,"reward_stone":-1.0,"reward_wood":0.0}
 var recorded_work:AudioStreamPlayer
 var river: AudioStreamPlayer
 var hearth: AudioStreamPlayer
@@ -55,9 +55,9 @@ func _ready() -> void:
 	streams["action_click"] = streams["quest_click"]
 	streams["ui"] = streams["quest_click"]
 	streams["popup_open"] = preload("res://assets/audio/d0001-approved/popup-open.mp3")
-	streams["reward_grain"] = preload("res://assets/audio/d0042/reward-grain.wav")
-	streams["reward_stone"] = preload("res://assets/audio/d0042/reward-stone.wav")
-	streams["reward_wood"] = preload("res://assets/audio/d0042/reward-wood.wav")
+	streams["reward_grain"] = preload("res://assets/audio/d0043/reward-grain-gather.wav")
+	streams["reward_stone"] = preload("res://assets/audio/d0043/reward-stone-gather.wav")
+	streams["reward_wood"] = preload("res://assets/audio/d0043/reward-wood-gather.wav")
 	streams["bag_open"] = preload("res://assets/ui/d0024/07-sfx-parchment-swipe.wav")
 	streams["bag_close"] = streams["bag_open"]
 	streams["construction_open"] = preload("res://assets/audio/d0004-approved/popup-open.wav")
