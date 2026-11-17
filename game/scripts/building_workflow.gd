@@ -16,8 +16,6 @@ var cancellation_overlay:Control
 var owned_overlay:Control
 var owned_retry:=0.0
 var pending_growth_notice:=""
-var instant_committing := false
-const INSTANT_PRESENTATION := 1.2
 var upgrade_art_available: Dictionary = {}
 func _init(owner_app:Node)->void:app=owner_app
 func _ready()->void:
@@ -105,7 +103,7 @@ func refresh_visual()->void:
 	if not is_instance_valid(app.world):return
 	var level:int=app.model.chief_level()
 	var changed:=last_visual_level>=1 and level>last_visual_level
-	if changed and not instant_committing:
+	if changed:
 		scaffold_fade_left=.35
 		pending_growth_notice="촌장집 %d단계 · 마을 경계가 넓어졌어요"%level
 	last_visual_level=level
@@ -160,27 +158,16 @@ func confirm_instant_upgrade(key: String, target: int) -> bool:
 	if not reason.is_empty():
 		app.toast(reason)
 		return false
-	instant_committing = true
-	var ok: bool = app.model.instant_upgrade(key,target)
-	instant_committing = false
-	if not ok: return false
+	if not app.model.instant_upgrade(key,target): return false
+	app.audio.cue("upgrade_diamond_complete")
 	app.close_modal()
-	var effect := UpgradeConstructionEffect.new(app)
-	effect.building_key = key
-	effect.presentation_duration = INSTANT_PRESENTATION
-	effect.presentation_finished.connect(show_upgrade_completed.bind(key,target,true))
-	app.world.add_child(effect)
 	return true
 
-func show_upgrade_completed(key: String, level: int, instant := false) -> void:
+func show_upgrade_completed(key: String, level: int) -> void:
 	if not is_instance_valid(app.world) or app.screen!="play" or app.world_map_open or not app.application_active:return
 	var at: Vector2=app.model.building_position(key)
 	var screen_point: Vector2=app.world.get_global_transform_with_canvas()*at
 	if not Rect2(0,0,app.w,app.h).has_point(screen_point):return
-	if instant:
-		app.audio.cue("upgrade_diamond_complete")
-		app.world.add_child(preload("res://scripts/village_upgrade_feedback.gd").new(at,level))
-		return
 	var fanfare := func():
 		if app.screen=="play" and not app.world_map_open and app.application_active:
 			app.audio.cue("upgrade_fanfare")

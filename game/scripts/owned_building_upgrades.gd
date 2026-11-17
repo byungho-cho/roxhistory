@@ -69,6 +69,7 @@ static func cancel(model:GameState,key:String)->bool:
 	if found.collection=="homes":next.homes=model.stable_homes()
 	var entry:Dictionary=next[found.collection][found.index]
 	next.wood+=int(entry.upgrade.cost.wood);next.stone+=int(entry.upgrade.cost.stone)
+	if entry.upgrade.has("diamonds_paid"): next.diamonds = model.diamonds()+int(entry.upgrade.diamonds_paid)
 	entry.erase("upgrade")
 	model.busy=true
 	var ok:=model.commit(next)

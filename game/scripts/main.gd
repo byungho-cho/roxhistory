@@ -1133,7 +1133,7 @@ func start_region_under_cover() -> void:
 func start_region() -> void:
 	if is_instance_valid(region_selection) and region_selection.selected!="amsa":
 		toast("현재 데모는 암사동에서 시작할 수 있습니다.");return
-	if model.start_new():
+	if model.start_new(settings.get_value("development","reset_debug_settings",{})):
 		if is_instance_valid(world):
 			remove_child(world)
 			world.queue_free()
@@ -2072,9 +2072,11 @@ func set_performance_diagnostics(enabled:bool)->void:
 	update_debug_shortcut()
 
 func confirm_progress_reset()->void:
-	show_modal("진행을 초기화할까요?","진행과 자원을 지우고 소리 설정은 유지합니다. 삭제한 진행은 되돌릴 수 없습니다.",[
+	show_modal("진행을 초기화할까요?","진행과 자원을 지우고 소리·디버그 설정은 유지합니다. 삭제한 진행은 되돌릴 수 없습니다.",[
 		{"text":"취소","action":show_development_settings},{"text":"초기화","action":reset_progress}],false,true,false,Vector2.ZERO,true)
 func reset_progress()->void:
+	if not model.state.is_empty(): settings.set_value("development","reset_debug_settings",model.reset_debug_settings())
+	if settings.save(prefs_path)!=OK:show_error("디버그 설정을 저장하지 못했습니다.");return
 	if not model.store.erase_progress():show_error(model.store.message);return
 	cancel_task();model.state.clear()
 	if village_alerts:village_alerts.sync()

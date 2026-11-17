@@ -87,17 +87,20 @@ func instant_upgrade(key: String, target: int) -> bool:
 	if found.is_empty() or int(found.data.level)+1!=target: return false
 	var price := BuildingRules.INSTANT_DIAMOND_COST
 	if diamonds()<price: return false
-	var cost := building_cost(str(found.kind),target)
+	var now := Time.get_unix_time_from_system()
+	var job := BuildingRules.new_job(str(found.kind),target-1,now)
+	job.clock_duration = BuildingRules.INSTANT_DURATION
+	job.finishes_at = now+BuildingRules.INSTANT_DURATION
+	job.diamonds_paid = price
 	var next := state.duplicate(true)
-	next.wood -= cost.wood
-	next.stone -= cost.stone
+	next.wood -= job.cost.wood
+	next.stone -= job.cost.stone
 	next.diamonds = diamonds()-price
 	if key=="chief":
-		next.chief_level = target
-		prepare_resource_positions(next)
+		next.chief_upgrade = job
 	else:
 		if found.collection=="homes": next.homes = stable_homes()
-		next[found.collection][found.index].level = target
+		next[found.collection][found.index].upgrade = job
 	busy = true
 	var ok := commit(next)
 	busy = false
@@ -252,15 +255,24 @@ func commit(next: Dictionary, reset: bool = false, farm_clock_keys: Array[String
 		changed.emit()
 	return true
 
-func start_new() -> bool:
+const RESET_DEBUG_KEYS := ["debug_fast_build","debug_resource_refill","debug_unlimited_buildings","debug_unlimited_builders","debug_show_boundary","fast_build_mode"]
+
+func reset_debug_settings() -> Dictionary:
+	var flags := {}
+	for key in RESET_DEBUG_KEYS:
+		if state.has(key): flags[key] = state[key]
+	return flags
+
+func start_new(debug_settings := {}) -> bool:
 	var next:=DemoConfig.fresh()
+	for key in RESET_DEBUG_KEYS:
+		if debug_settings.has(key): next[key] = debug_settings[key]
 	next.guided_intro=true
 	next.notification_run="%s-%s"%[Time.get_unix_time_from_system(),Time.get_ticks_usec()]
 	prepare_resource_positions(next)
 	var ok:=commit(next,true)
 	if ok:
 		gather_claims.clear()
-		debug_unlimited_builders=true
 		construction_busy=false
 		busy=false
 	return ok
@@ -719,6 +731,7 @@ func cancel_upgrade(key:String)->bool:
 	if chief_upgrade_remaining()<=0:finish_chief_upgrade();return false
 	var next:=state.duplicate(true)
 	next.wood+=int(next.chief_upgrade.cost.wood);next.stone+=int(next.chief_upgrade.cost.stone)
+	if next.chief_upgrade.has("diamonds_paid"): next.diamonds = diamonds()+int(next.chief_upgrade.diamonds_paid)
 	next.erase("chief_upgrade")
 	busy=true
 	var ok:=commit(next)

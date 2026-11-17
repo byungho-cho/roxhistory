@@ -1,6 +1,7 @@
 extends Control
 
 const NOTES := preload("res://patch_test/patch_notes.gd")
+const HISTORY_SCROLL := preload("res://patch_test/history_scroll.gd")
 const INK := Color("47240e")
 
 var version: String
@@ -23,18 +24,18 @@ func _ready() -> void:
 	margins = MarginContainer.new()
 	margins.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	for side in ["left","top","right","bottom"]:
-		margins.add_theme_constant_override("margin_"+side,18)
+		margins.add_theme_constant_override("margin_"+side,30 if side in ["left","right"] else 24)
 	add_child(margins)
 	var layout := VBoxContainer.new()
 	layout.add_theme_constant_override("separation",10)
 	margins.add_child(layout)
 	var header := HBoxContainer.new()
 	layout.add_child(header)
-	var title := text_label("업데이트 내역",24,FigmaArt.TITLE)
+	var title := text_label("업데이트 내역",26,FigmaArt.TITLE)
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	header.add_child(title)
 	HudButtons.create_modal_close(header,dismiss,"UpdateNotesClose")
-	scroll = DevelopmentSettingsScroll.new()
+	scroll = HISTORY_SCROLL.new()
 	scroll.name = "UpdateHistoryScroll"
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -43,12 +44,26 @@ func _ready() -> void:
 	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	list.add_theme_constant_override("separation",10)
 	scroll.add_child(list)
+	var bold := FontVariation.new()
+	bold.base_font = FigmaArt.NOTO
+	bold.variation_opentype = {TextServerManager.get_primary_interface().name_to_tag("wght"):700.0}
 	for item in NOTES.recent_versions(version):
-		var heading := text_label(item,19,FigmaArt.BODY)
+		var section := VBoxContainer.new()
+		section.add_theme_constant_override("separation",4)
+		list.add_child(section)
+		var heading := text_label(item,21,FigmaArt.BODY)
 		heading.name = "Version_"+item.replace(".","_")
-		list.add_child(heading)
+		section.add_child(heading)
+		var indent := MarginContainer.new()
+		indent.add_theme_constant_override("margin_left",16)
+		section.add_child(indent)
+		var bullets := VBoxContainer.new()
+		bullets.add_theme_constant_override("separation",3)
+		indent.add_child(bullets)
 		for line: String in NOTES.rows(item):
-			list.add_child(text_label("• "+line,16,FigmaArt.NOTO))
+			var bullet := text_label("• "+line,18,bold)
+			bullet.add_theme_constant_override("line_spacing",1)
+			bullets.add_child(bullet)
 		var rule := ColorRect.new()
 		rule.color = Color(.51,.32,.14,.24)
 		rule.custom_minimum_size.y = 1

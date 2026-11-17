@@ -8,6 +8,7 @@ const DURATIONS := [10.0,30.0,120.0,300.0]
 const SHRINE_DURATIONS := [30.0,60.0,300.0,600.0]
 const DEVELOPMENT_DURATION := 5.0
 const INSTANT_DIAMOND_COST := 10
+const INSTANT_DURATION := 3.0
 # Storage buildings use the approved common clocks; saved clocks remain unchanged.
 const STORAGE_TIMING_CONFIRMED:=true
 const COSTS := {
@@ -54,6 +55,7 @@ static func valid_cost(value:Variant)->bool:
 static func valid_clock(job:Variant)->bool:
 	if not job is Dictionary:return false
 	if not valid_number(job.get("started_at")) or not valid_number(job.get("finishes_at")):return false
+	if job.has("diamonds_paid") and not valid_number(job.diamonds_paid,1,MAX_RESOURCE,true):return false
 	if job.has("clock_duration") and not valid_number(job.clock_duration,0.000001):return false
 	return job.finishes_at>job.started_at and valid_cost(job.get("cost"))
 
@@ -77,6 +79,7 @@ static func progress(job:Dictionary,now:float=-1.0)->float:
 	return clampf(1.0-maxf(0.0,float(job.finishes_at)-now)/maxf(0.000001,full_duration),0.0,1.0)
 
 static func set_clock_mode(job:Dictionary,now:float,fast:bool)->void:
+	if job.has("diamonds_paid"): return
 	if float(job.finishes_at)<=now:return
 	var remaining:=maxf(0.0,float(job.finishes_at)-maxf(now,float(job.started_at)))
 	var old_duration:=float(job.get("clock_duration",float(job.finishes_at)-float(job.started_at)))
