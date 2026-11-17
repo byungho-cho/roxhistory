@@ -15,6 +15,7 @@ const PIECE_FLIGHT := .49
 const TRACK_COLOR:=Color("523621")
 const TRACK_RIM:=Color("874f0d")
 const FILL_COLORS:=[Color("ffdb45"),Color("f2b00a"),Color("d48005")]
+const DIAMOND_RIM := Color("a9dfff")
 const DIAMOND_FILL := [Color("74dfff"),Color("4299c9"),Color("276994")]
 var resource_capacities:Dictionary={}
 var refill_targets:Dictionary={}
@@ -274,7 +275,7 @@ func _draw() -> void:
 		draw_texture_rect(resource_icon(key),Rect2(rect.position+Vector2(0,top),Vector2.ONE*extent),false)
 	var diamond := slot("diamonds")
 	var diamond_track := Rect2(diamond.position+Vector2(11,10),Vector2(diamond.size.x-11,20))
-	frame(diamond_track,Color("3376a6"),Color("a9dfff"))
+	frame(diamond_track,Color("3376a6"),DIAMOND_RIM)
 	draw_resource_fill(diamond_track.grow(-1),DIAMOND_FILL)
 	draw_texture_rect(DIAMOND_ICON,Rect2(diamond.position+Vector2(0,6),Vector2(27,27)),false)
 	hud_text(font,diamond.position+Vector2(25,24),str(app.model.diamonds()),diamond.size.x-28,10,HORIZONTAL_ALIGNMENT_CENTER)

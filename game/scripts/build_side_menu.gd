@@ -96,11 +96,26 @@ func _ready() -> void:
 	hut = entries.hut
 	outpost_button = entries.outpost
 	roller = app.picture(self,IntegratedMenuArt.trimmed(ROLL,Rect2(65,34,640,1986)),Rect2())
+	var filter_gradient := Gradient.new()
+	filter_gradient.offsets = PackedFloat32Array([0.0,.5,1.0])
+	filter_gradient.colors = PackedColorArray(PlayChrome.DIAMOND_FILL)
+	var filter_texture := GradientTexture2D.new()
+	filter_texture.gradient = filter_gradient
+	filter_texture.fill_to = Vector2.DOWN
+	var rounded := ShaderMaterial.new()
+	rounded.shader = preload("res://shaders/progress_round.gdshader")
+	rounded.set_shader_parameter("dimensions",FILTER_SIZE-Vector2(2,2))
+	rounded.set_shader_parameter("corner_radius",8.0)
 	for id in FILTERS:
 		var button: DemoButton = app.button(self,"",set_filter.bind(id))
 		button.custom_minimum_size = FILTER_SIZE
 		button.mouse_filter = MOUSE_FILTER_IGNORE
 		filters[id] = button
+		var highlight: TextureRect = app.picture(button,filter_texture,Rect2(Vector2.ONE,FILTER_SIZE-Vector2(2,2)))
+		highlight.name = "SelectedFill"
+		highlight.stretch_mode = TextureRect.STRETCH_SCALE
+		highlight.material = rounded
+		highlight.hide()
 		var icon: Texture2D = preload("res://assets/ui/d0025/filter-open-gold.svg") if id=="open" else preload("res://assets/ui/d0025/filter-locked-neutral.png")
 		app.picture(button,icon,Rect2((FILTER_SIZE-FILTER_ICON_SIZE)*.5,FILTER_ICON_SIZE))
 	message = FigmaArt.text(self,"",Rect2(),16,FigmaArt.BODY,Color("fff3d4"))
@@ -232,8 +247,9 @@ func refresh() -> void:
 		button.size = FILTER_SIZE
 		var style := StyleBoxFlat.new()
 		var selected := selected_filter==id
-		style.bg_color = Color("183c79") if selected else Color(.41,.23,.09,.05)
-		style.border_color = Color("5678ad") if selected else Color(.42,.24,.10,.25)
+		button.get_node("SelectedFill").visible = selected
+		style.bg_color = Color.TRANSPARENT if selected else Color(.41,.23,.09,.05)
+		style.border_color = PlayChrome.DIAMOND_RIM if selected else Color(.42,.24,.10,.25)
 		style.set_border_width_all(1)
 		style.set_corner_radius_all(9)
 		for state in ["normal","hover","pressed","focus"]:
