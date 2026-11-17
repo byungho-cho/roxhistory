@@ -226,6 +226,7 @@ func refresh_assignment_panel() -> void:
 		title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		var auto := textured_action(identity,"자동 배치",auto_assign.bind(job,key),preload("res://assets/ui/d0010/auto-assign-plate.png"))
+		auto.disabled = job in ["wood","stone"] and jobs.gatherer_limit(job)==0
 		auto.custom_minimum_size = Vector2.ZERO
 		auto.position = Vector2(8,53)
 		auto.size = Vector2(60,20)
@@ -267,14 +268,16 @@ func refresh_assignment_panel() -> void:
 		var locked := "" if scoped and job not in ["wood","stone"] else unlock_hint(job)
 		if not locked.is_empty():
 			var level := limit+1 if scoped else next_unlock_level(job)
-			var levels := range(level,5) if job in ["wood","stone"] else [level]
+			var levels := range(level,5) if level>0 and job in ["wood","stone"] else [level]
 			for required_level: int in levels:
 				var caption := "Lv%d 해제" % required_level if required_level > 0 else "건설 후 해제"
 				assignment_slot(slots,func(): pass,preload("res://assets/ui/v0158/lock.png"),Rect2(23,14,24,28),caption,"locked")
 		if not scoped: list.add_child(HSeparator.new())
 
 func next_unlock_level(job: String) -> int:
-	if job in ["wood","stone"]: return ResidentJobs.new(app.model).gatherer_limit(job)+1
+	if job in ["wood","stone"]:
+		var capacity := ResidentJobs.new(app.model).gatherer_limit(job)
+		return capacity+1 if capacity>0 else 0
 	if job == "guard" and app.model.chief_level() < BuildingRules.REQUIRED_HQ["outpost"]:
 		return BuildingRules.REQUIRED_HQ["outpost"]
 	var level: int = app.model.chief_level()
@@ -299,7 +302,8 @@ func available_slots(job: String, jobs: ResidentJobs, key: String) -> Array[Stri
 func unlock_hint(job: String) -> String:
 	if job in ["wood","stone"]:
 		var store := ResourceStorage.building(app.model,job)
-		if not store.is_empty() and int(store.get("level",1)) < 4:
+		if store.is_empty(): return "건설 후 해제"
+		if int(store.get("level",1)) < 4:
 			return "%s Lv.%d에서 자리가 하나 더 열려요." % [BuildingWorkflow.building_name(store.kind),int(store.get("level",1))+1]
 	if job == "farmer":
 		var level: int = app.model.chief_level()

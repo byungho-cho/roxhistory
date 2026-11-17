@@ -230,6 +230,7 @@ func _init(save_store: SaveStore, defer_completion: bool = false) -> void:
 	migrate_resources()
 	migrate_resource_positions()
 	migrate_economy()
+	ResidentJobs.clear_unavailable_gatherers(state)
 	if not state.is_empty() and not state.has("quests_done"):commit(state.duplicate(true))
 	ensure_respawn_timers()
 	if not defer_completion:finish_loaded_jobs()
@@ -263,11 +264,12 @@ func reset_debug_settings() -> Dictionary:
 		if state.has(key): flags[key] = state[key]
 	return flags
 
-func start_new(debug_settings := {}) -> bool:
+func start_new(debug_settings := {}, skip_tutorial := false) -> bool:
 	var next:=DemoConfig.fresh()
 	for key in RESET_DEBUG_KEYS:
 		if debug_settings.has(key): next[key] = debug_settings[key]
-	next.guided_intro=true
+	next.guided_intro=not skip_tutorial
+	if skip_tutorial: next.tutorial_skipped=true
 	next.notification_run="%s-%s"%[Time.get_unix_time_from_system(),Time.get_ticks_usec()]
 	prepare_resource_positions(next)
 	var ok:=commit(next,true)

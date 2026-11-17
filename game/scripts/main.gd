@@ -76,6 +76,8 @@ var first_village_loading := false
 var title_prompt_time := 0.0
 var title_update_at := -60000
 var title_cloud_seen := false
+var tutorial_choice_made := false
+var skip_tutorial := false
 var title_reveal: Tween
 var title_loader_first_frame := false
 var title_initial_update_done := false
@@ -763,9 +765,36 @@ func advance_title_loading() -> void:
 		refresh_title_start_prompt()
 		if intro_probe:print("ROX_INTRO_TIMING title_ready ms=",(Time.get_ticks_usec()-title_loader_started_at)/1000.0)
 
+func show_tutorial_choice() -> void:
+	if tutorial_choice_made or not model.state.is_empty() or modal or screen!="title": return
+	var placeholder := show_modal("","",[],false,true,false,Vector2.ZERO,false,true)
+	var panel := placeholder.get_parent().get_parent()
+	overlay.remove_child(panel)
+	panel.queue_free()
+	overlay.set_meta("tutorial_choice",true)
+	var center := CenterContainer.new()
+	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	overlay.add_child(center)
+	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	var dialog = preload("res://patch_test/patch_dialog.gd").new()
+	center.add_child(dialog)
+	dialog.render("튜토리얼을 건너뛰시겠습니까?","튜토리얼 진행 여부를 선택해 주세요.","","","",false,"튜토리얼 진행","건너뛰기")
+	dialog.close_button.pressed.connect(choose_tutorial.bind(false))
+	dialog.update_button.pressed.connect(choose_tutorial.bind(true))
+
+func choose_tutorial(skip: bool) -> void:
+	if tutorial_choice_made: return
+	tutorial_choice_made = true
+	skip_tutorial = skip
+	close_modal()
+	start_or_continue()
+
 func start_or_continue(with_click := false)->void:
 	if title_input_blocked() and not test_mode:return
 	if modal or screen!="title" or not application_active or is_instance_valid(intro_cloud):return
+	if model.state.is_empty() and not tutorial_choice_made and not test_mode:
+		show_tutorial_choice()
+		return
 	if with_click:audio.cue("ui")
 	get_node("/root/PatchBootstrap/Overlay").leave_title()
 	cover_intro(prepare_intro,true)
@@ -1101,6 +1130,8 @@ func discard_prepared_intro_world() -> void:
 	title_world_progress = 0.0
 
 func full_reset() -> void:
+	tutorial_choice_made=false
+	skip_tutorial=false
 	if preparing_intro_world:await intro_world_prepared
 	if not model.store.erase_progress():show_error(model.store.message);return
 	settings.clear()
@@ -1133,7 +1164,7 @@ func start_region_under_cover() -> void:
 func start_region() -> void:
 	if is_instance_valid(region_selection) and region_selection.selected!="amsa":
 		toast("현재 데모는 암사동에서 시작할 수 있습니다.");return
-	if model.start_new(settings.get_value("development","reset_debug_settings",{})):
+	if model.start_new(settings.get_value("development","reset_debug_settings",{}),skip_tutorial):
 		if is_instance_valid(world):
 			remove_child(world)
 			world.queue_free()
@@ -1484,6 +1515,7 @@ func update_hud() -> void:
 	update_quest()
 
 func show_pending_quest_guide()->void:
+	if model.state.get("tutorial_skipped",false): return
 	if village_entry_active() or modal or choosing_plot or not task.is_empty() or not application_active:return
 	var current:=FirstQuests.current(model.state)
 	if current<0 or current>FirstQuests.INTRO_KINDS.size():return
@@ -1530,6 +1562,7 @@ func _process(delta: float) -> void:
 		if not title_initial_update_done or Time.get_ticks_msec()-title_update_at>=60000:check_title_update()
 		if not test_mode and not title_input_blocked() and not title_update_in_flight:
 			show_mounted_patch_notes()
+			show_tutorial_choice()
 		refresh_title_start_prompt()
 		title_prompt_time=fposmod(title_prompt_time+delta,3.0)
 		title_prompt.modulate.a=.87+.13*cos(title_prompt_time*TAU/3.0)
@@ -2075,6 +2108,8 @@ func confirm_progress_reset()->void:
 	show_modal("진행을 초기화할까요?","진행과 자원을 지우고 소리·디버그 설정은 유지합니다. 삭제한 진행은 되돌릴 수 없습니다.",[
 		{"text":"취소","action":show_development_settings},{"text":"초기화","action":reset_progress}],false,true,false,Vector2.ZERO,true)
 func reset_progress()->void:
+	tutorial_choice_made=false
+	skip_tutorial=false
 	if not model.state.is_empty(): settings.set_value("development","reset_debug_settings",model.reset_debug_settings())
 	if settings.save(prefs_path)!=OK:show_error("디버그 설정을 저장하지 못했습니다.");return
 	if not model.store.erase_progress():show_error(model.store.message);return

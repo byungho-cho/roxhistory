@@ -40,7 +40,7 @@ func assigned_count(job: String) -> int:
 
 func gatherer_limit(job: String) -> int:
 	var store := ResourceStorage.building(model,job)
-	return model.resident_count() if store.is_empty() else clampi(int(store.get("level",1)),1,4)
+	return 0 if store.is_empty() else clampi(int(store.get("level",1)),1,4)
 
 func assign(id:String,job:String,building:String="")->bool:
 	if model.busy or not available(id) or not job in JOBS:return false
@@ -52,7 +52,7 @@ func assign(id:String,job:String,building:String="")->bool:
 	if job in ["wood","stone"] and not building.is_empty():
 		var found:=model.lookup_building(building)
 		if found.is_empty() or found.kind!=ResourceStorage.STORE_KINDS[job]:return false
-	if job in ["wood","stone"] and entry(id).job != job and assigned_count(job) >= gatherer_limit(job):return false
+	if job in ["wood","stone"] and (gatherer_limit(job)==0 or (entry(id).job != job and assigned_count(job)>=gatherer_limit(job))):return false
 	var next:=model.state.duplicate(true)
 	var item:=entry(id);item.job=job;item.building=building if job in ["farmer","guard","wood","stone"] else ""
 	if not next.has("resident_jobs"):next.resident_jobs={}
@@ -63,6 +63,7 @@ func assign(id:String,job:String,building:String="")->bool:
 func replace_assignment(occupant: String, id: String, job: String, building: String) -> bool:
 	if model.busy or occupant == id or not available(occupant) or not available(id):
 		return false
+	if job in ["wood","stone"] and gatherer_limit(job)==0: return false
 	var old := entry(occupant)
 	var incoming := entry(id)
 	if old.job != job or old.get("building","") != building or incoming.job != "idle" or job == "idle":
@@ -88,7 +89,7 @@ func _commit(next:Dictionary)->bool:
 func harvest(id:String,node_id:String,now:float=-1.0)->bool:
 	if model.busy or not available(id) or model.chief_level()<=0 or not model.gather_available(node_id,id):return false
 	var item:=entry(id)
-	if item.job not in ["wood","stone"] or not item.cargo.is_empty():return false
+	if item.job not in ["wood","stone"] or gatherer_limit(item.job)==0 or not item.cargo.is_empty():return false
 	if now<0:now=Time.get_unix_time_from_system()
 	if not is_finite(now):return false
 	for node in model.nodes():
@@ -124,7 +125,17 @@ func assigned_to(building:String)->String:
 	for id in assigned_ids(building):return id
 	return ""
 
+static func clear_unavailable_gatherers(state: Dictionary) -> void:
+	var kinds := []
+	for building: Dictionary in state.get("facilities",[]):
+		kinds.append(building.kind)
+	for item: Dictionary in state.get("resident_jobs",{}).values():
+		if item.job in ResourceStorage.STORE_KINDS and not ResourceStorage.STORE_KINDS[item.job] in kinds:
+			item.job = "idle"
+			item.building = ""
+
 static func clear_building(next:Dictionary,key:String)->void:
+	clear_unavailable_gatherers(next)
 	for item in next.get("resident_jobs",{}).values():
 		if item.get("building","")==key:
 			if not key.begins_with("wood_store:") and not key.begins_with("stone_store:"):item.job="idle"

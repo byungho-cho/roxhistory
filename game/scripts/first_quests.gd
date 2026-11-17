@@ -44,7 +44,7 @@ static func reconcile(next:Dictionary, legacy:bool)->void:
 		if job.job=="farmer" and not str(job.get("building","")).is_empty():mark(done,"first_farmer");break
 	next.quests_done=done
 	next.quests_claimed=claimed
-	if legacy:
+	if legacy or next.get("tutorial_skipped",false):
 		for i in INTRO_KINDS.size():
 			if IDS[i] in done and IDS[i] not in claimed:grant_intro(next,i)
 
