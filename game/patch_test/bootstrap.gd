@@ -422,26 +422,33 @@ func verified_manifest(bytes:PackedByteArray) -> Dictionary:
 	return data
 
 func select_delta(target: Dictionary) -> Dictionary:
-	var item: Variant = target.get("delta")
-	if not item is Dictionary or cached.is_empty(): return {}
-	if item.get("from_version") != cached.version or item.get("from_commit") != cached.commit or item.get("from_sha256") != cached.sha256:
-		return {}
+	if cached.is_empty(): return {}
 	if ProjectSettings.get_setting("application/config/version") != cached.version or ProjectSettings.get_setting("roxhistory/update/source_commit") != cached.commit:
 		return {}
 	var from_parts: PackedStringArray = cached.version.split(".")
 	var to_parts: PackedStringArray = target.version.split(".")
-	if from_parts[0] != to_parts[0] or from_parts[1] != to_parts[1] or int(to_parts[2]) != int(from_parts[2])+1: return {}
-	if item.get("file") != "Roxhistory_%s_%s_to_%s.rdx"%[BASE_VERSION,cached.version,target.version]: return {}
+	var distance := int(to_parts[2])-int(from_parts[2])
+	if from_parts[0] != to_parts[0] or from_parts[1] != to_parts[1] or distance not in [1,2,3]: return {}
+	var entries: Variant = target.get("deltas",[])
+	if not entries is Array or entries.size()>3: entries = []
+	var options: Array = entries.duplicate()
+	options.append(target.get("delta"))
 	var pattern := RegEx.create_from_string("^[0-9a-f]{64}$")
-	if not item.get("sha256") is String or not pattern.search(item.sha256): return {}
-	if not item.get("size") is float or item.size != floorf(item.size) or item.size < 12 or item.size > target.size*.8: return {}
-	return item.duplicate()
+	for item: Variant in options:
+		if not item is Dictionary: continue
+		if item.get("from_version") != cached.version or item.get("from_commit") != cached.commit or item.get("from_sha256") != cached.sha256:
+			continue
+		if item.get("file") != "Roxhistory_%s_%s_to_%s.rdx"%[BASE_VERSION,cached.version,target.version]: continue
+		if not item.get("sha256") is String or not pattern.search(item.sha256): continue
+		if not item.get("size") is float or item.size != floorf(item.size) or item.size < 12 or item.size > target.size*.8: continue
+		return item.duplicate()
+	return {}
 
 func transfer_size() -> int:
 	return int(candidate.get("size",0) if delta.is_empty() else delta.size)
 
 func transfer_summary() -> String:
-	var kind := "직전 버전용 차이 패치" if not delta.is_empty() else "APK 기준 누적 패치"
+	var kind := "현재 버전용 차이 패치" if not delta.is_empty() else "APK 기준 누적 패치"
 	return "%s · %.2f MB"%[kind,transfer_size()/1000000.0]
 
 func version_number(version:String) -> int:
