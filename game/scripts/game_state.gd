@@ -81,6 +81,31 @@ func upgrade_chief(now:float=-1.0) -> bool:
 	busy=false
 	return ok
 
+func instant_upgrade(key: String, target: int) -> bool:
+	if busy or not upgrade_requirement(key).is_empty(): return false
+	var found := lookup_building(key)
+	if found.is_empty() or int(found.data.level)+1!=target: return false
+	var price := BuildingRules.instant_diamond_cost(str(found.kind),target)
+	if price<=0 or diamonds()<price: return false
+	var cost := building_cost(str(found.kind),target)
+	var next := state.duplicate(true)
+	next.wood -= cost.wood
+	next.stone -= cost.stone
+	next.diamonds = diamonds()-price
+	if key=="chief":
+		next.chief_level = target
+		prepare_resource_positions(next)
+	else:
+		if found.collection=="homes": next.homes = stable_homes()
+		next[found.collection][found.index].level = target
+	busy = true
+	var ok := commit(next)
+	busy = false
+	return ok
+
+func diamonds() -> int:
+	return int(state.get("diamonds",0))
+
 func chief_upgrade_remaining(now:float=-1.0) -> float:
 	if not state.has("chief_upgrade"):return 0.0
 	if now<0:now=Time.get_unix_time_from_system()
@@ -796,7 +821,7 @@ func set_debug_resource_refill(enabled:bool)->bool:
 	return commit(next)
 
 func debug_fill_resource(kind:String)->bool:
-	if busy or not debug_resource_refill or kind not in ["wood","stone","grain"]:return false
+	if busy or not debug_resource_refill or kind not in ["wood","stone","grain","diamonds"]:return false
 	var next:=state.duplicate(true)
 	next[kind]=int(next.get(kind,0))+100
 	busy=true

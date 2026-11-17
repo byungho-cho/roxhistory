@@ -8,6 +8,8 @@ var kind: String
 var current: int
 var costs: Dictionary
 var confirm: Callable
+var instant_confirm: Callable
+var instant_cost: int
 var art: Control
 var unsupported_notice: Label
 var notice_fade: Tween
@@ -18,8 +20,10 @@ var submission_pending := false
 const COST_INK := Color("553820")
 const SHORTAGE_INK := Color("a32a20")
 
-func _init(owner: Node, building_kind: String, level: int, cost: Dictionary, callback: Callable) -> void:
+func _init(owner: Node, building_kind: String, level: int, cost: Dictionary, callback: Callable, instant_callback := Callable()) -> void:
 	app=owner;kind=building_kind;current=level;costs=cost;confirm=callback
+	instant_confirm=instant_callback
+	instant_cost=BuildingRules.instant_diamond_cost(kind,current+1)
 	size_flags_horizontal=Control.SIZE_EXPAND_FILL
 	size_flags_vertical=Control.SIZE_EXPAND_FILL
 
@@ -121,9 +125,9 @@ func _ready() -> void:
 		add_shortage_art(item,amount,resource)
 	var seconds := int(app.model.building_duration(current+1,kind))
 	var time := "%d초" % seconds if seconds<60 else "%d분" % (seconds/60)
-	action(Rect2(270,300,192,44),"즉시 업그레이드","3",preload(UPDATE_ART+"diamond-premium-illustrated.png"),preload(FINISH_ART+"popup-button-stone-gray-disabled-192x44.svg"),true)
+	action(Rect2(270,300,192,44),"즉시 업그레이드",str(instant_cost) if instant_cost>0 else "–",preload(UPDATE_ART+"diamond-premium-illustrated.png"),preload(FINISH_ART+"popup-button-stone-gray-disabled-192x44.svg"),true)
 	action(Rect2(486,300,166,44),"업그레이드",time,preload(UPDATE_ART+"hourglass-teal-amber-illustrated.png"),preload(FINISH_ART+"popup-button-gold-volume-166x44.svg"),false)
-	unsupported_notice=FigmaArt.text(art,"미지원",Rect2(251,249,150,27),16,FigmaArt.BODY,Color("fff4d6"))
+	unsupported_notice=FigmaArt.text(art,"비용 미설정",Rect2(251,249,150,27),16,FigmaArt.BODY,Color("fff4d6"))
 	unsupported_notice.add_theme_color_override("font_outline_color",Color("503016"))
 	unsupported_notice.add_theme_constant_override("outline_size",8)
 	unsupported_notice.modulate.a=0.0
@@ -199,7 +203,22 @@ func rule(rect: Rect2, parent: Control = null) -> void:
 	line.mouse_filter=Control.MOUSE_FILTER_IGNORE
 	(parent if parent else art).add_child(line)
 
-func show_unsupported() -> void:
+func request_instant_upgrade() -> void:
+	if submission_pending or not can_process(): return
+	if instant_cost<=0 or not instant_confirm.is_valid():
+		show_instant_notice("비용 미설정")
+		return
+	if play_shortage(): return
+	if app.model.diamonds()<instant_cost:
+		show_instant_notice("%d 다이아 부족"%(instant_cost-app.model.diamonds()))
+		return
+	submission_pending = true
+	if not instant_confirm.call():
+		submission_pending = false
+		refresh_cost_ink()
+
+func show_instant_notice(message: String) -> void:
+	unsupported_notice.text = message
 	if notice_fade and notice_fade.is_valid():notice_fade.kill()
 	unsupported_notice.modulate.a=1.0
 	notice_fade=create_tween()
@@ -211,16 +230,18 @@ func fit() -> void:
 	art.position=(size-art.size*factor)*.5
 
 func action(rect: Rect2, title: String, value: String, icon: Texture2D, background: Texture2D, locked: bool) -> void:
-	var button: DemoButton=app.button(art,"",request_upgrade if not locked else show_unsupported,false,"","ui" if locked else "")
+	var button: DemoButton=app.button(art,"",request_upgrade if not locked else request_instant_upgrade,false,"","")
 	button.name="InstantUpgrade" if locked else "ConfirmUpgrade"
 	button.custom_minimum_size=Vector2.ZERO
 	button.position=rect.position
 	button.size=rect.size
 	for state in ["normal","hover","pressed","focus","disabled"]:
 		button.add_theme_stylebox_override(state,StyleBoxEmpty.new())
+	if locked and instant_cost>0:
+		background = preload(FINISH_ART+"popup-button-gold-volume-166x44.svg")
 	app.picture(button,background,Rect2(Vector2.ZERO,rect.size))
 	var icon_x := 20.0 if locked else 15.0
 	app.picture(button,icon,Rect2(icon_x,9,25,25))
-	var ink := Color("141a20") if locked else Color.WHITE
+	var ink := Color("141a20") if locked and instant_cost<=0 else Color.WHITE
 	FigmaArt.text(button,value,Rect2(icon_x+30,0,34,42),14,FigmaArt.BODY,ink,false)
 	FigmaArt.text(button,title,Rect2(78,0,rect.size.x-86,42),15,FigmaArt.BODY,ink,false)

@@ -16,6 +16,8 @@ var cancellation_overlay:Control
 var owned_overlay:Control
 var owned_retry:=0.0
 var pending_growth_notice:=""
+var instant_committing := false
+const INSTANT_PRESENTATION := 1.2
 var upgrade_art_available: Dictionary = {}
 func _init(owner_app:Node)->void:app=owner_app
 func _ready()->void:
@@ -88,7 +90,7 @@ func show_upgrade_confirmation(key:String,cost:Dictionary,callback:Callable)->vo
 	header.add_child(balance)
 	header.move_child(balance,0)
 	scroll.vertical_scroll_mode=ScrollContainer.SCROLL_MODE_DISABLED
-	scroll.add_child(preload("res://scripts/upgrade_popup_content.gd").new(app,str(found.get("kind","chief")),current,cost,callback))
+	scroll.add_child(preload("res://scripts/upgrade_popup_content.gd").new(app,str(found.get("kind","chief")),current,cost,callback,confirm_instant_upgrade.bind(key,current+1)))
 	confirmation_overlay=app.overlay
 func upgrade_description(cost:Dictionary,target:int)->String:
 	return "%s\n공사 시간 %d초\n앱을 닫아도 공사가 진행돼요"%[cost_text(cost),int(app.model.building_duration(target))]
@@ -103,7 +105,7 @@ func refresh_visual()->void:
 	if not is_instance_valid(app.world):return
 	var level:int=app.model.chief_level()
 	var changed:=last_visual_level>=1 and level>last_visual_level
-	if changed:
+	if changed and not instant_committing:
 		scaffold_fade_left=.35
 		pending_growth_notice="촌장집 %d단계 · 마을 경계가 넓어졌어요"%level
 	last_visual_level=level
@@ -151,11 +153,34 @@ func _process(delta:float)->void:
 				show_upgrade_completed("chief",app.model.chief_level())
 		retry_after=.1
 	update_owned_upgrades();update_constructions()
-func show_upgrade_completed(key: String, level: int) -> void:
+func confirm_instant_upgrade(key: String, target: int) -> bool:
+	if not app.modal or not app.application_active or not is_instance_valid(confirmation_overlay) or app.overlay!=confirmation_overlay:
+		return false
+	var reason := upgrade_block_reason(target) if key=="chief" else owned_upgrade_reason(key)
+	if not reason.is_empty():
+		app.toast(reason)
+		return false
+	instant_committing = true
+	var ok: bool = app.model.instant_upgrade(key,target)
+	instant_committing = false
+	if not ok: return false
+	app.close_modal()
+	var effect := UpgradeConstructionEffect.new(app)
+	effect.building_key = key
+	effect.presentation_duration = INSTANT_PRESENTATION
+	effect.presentation_finished.connect(show_upgrade_completed.bind(key,target,true))
+	app.world.add_child(effect)
+	return true
+
+func show_upgrade_completed(key: String, level: int, instant := false) -> void:
 	if not is_instance_valid(app.world) or app.screen!="play" or app.world_map_open or not app.application_active:return
 	var at: Vector2=app.model.building_position(key)
 	var screen_point: Vector2=app.world.get_global_transform_with_canvas()*at
 	if not Rect2(0,0,app.w,app.h).has_point(screen_point):return
+	if instant:
+		app.audio.cue("upgrade_diamond_complete")
+		app.world.add_child(preload("res://scripts/village_upgrade_feedback.gd").new(at,level))
+		return
 	var fanfare := func():
 		if app.screen=="play" and not app.world_map_open and app.application_active:
 			app.audio.cue("upgrade_fanfare")

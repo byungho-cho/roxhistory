@@ -140,7 +140,6 @@ var navigation: AutoTravel
 var action_row: Control
 var quest_expanded:=true
 var quest_preview_enabled := false
-var test_diamonds := 0
 var demolition_key:=""
 var relocating_key:=""
 var world_map:VillageWorldMap

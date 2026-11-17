@@ -87,9 +87,7 @@ func layout_refill_targets()->void:
 func refill_resource(key:String)->void:
 	if app.modal or app.world_map_open or app.map_transition_active or not app.application_active:return
 	if key == "diamonds":
-		if not app.model.debug_resource_refill: return
-		app.test_diamonds += 100
-		queue_redraw()
+		if app.model.debug_fill_resource(key): queue_redraw()
 		return
 	if app.model.debug_fill_resource("grain" if key=="tokens" else key):
 		var count:Dictionary=resource_counts[key]
@@ -276,7 +274,7 @@ func _draw() -> void:
 	frame(diamond_track,Color("3376a6"),Color("a9dfff"))
 	draw_resource_fill(diamond_track.grow(-1),DIAMOND_FILL)
 	draw_texture_rect(DIAMOND_ICON,Rect2(diamond.position+Vector2(0,6),Vector2(27,27)),false)
-	hud_text(font,diamond.position+Vector2(25,24),str(app.test_diamonds),diamond.size.x-28,10,HORIZONTAL_ALIGNMENT_CENTER)
+	hud_text(font,diamond.position+Vector2(25,24),str(app.model.diamonds()),diamond.size.x-28,10,HORIZONTAL_ALIGNMENT_CENTER)
 	var center:=Vector2(app.w-app.safe.x-50,app.safe.y+60)
 	draw_circle(center+Vector2(1,3),53,Color(.15,.10,.04,.20))
 	draw_circle(center,51,Color("49321e"))

@@ -33,6 +33,11 @@ static func cost(kind:String,target:int)->Dictionary:
 	var amounts:Array=COSTS[kind][target-1]
 	return {"wood":int(amounts[0]),"stone":int(amounts[1])}
 
+static func instant_diamond_cost(kind: String, target: int) -> int:
+	var prices: Dictionary = ProjectSettings.get_setting("roxhistory/building/instant_diamond_costs",{})
+	var amount: Variant = prices.get("%s:%d"%[canonical(kind),target])
+	return int(amount) if valid_number(amount,1,MAX_RESOURCE,true) else 0
+
 static func duration(target:int,kind := "")->float:
 	if target<1 or target>4:return 0.0
 	return SHRINE_DURATIONS[target-1] if kind=="shrine" else DURATIONS[target-1]

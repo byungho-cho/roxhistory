@@ -20,6 +20,7 @@ func valid(s: Variant) -> bool:
 	for k in ["built","reward_claimed","intro_seen","family_joined","family_unlocked","hq_can_be_absent","debug_fast_build","debug_show_boundary","debug_resource_refill","debug_unlimited_builders","debug_unlimited_buildings"]:
 		if s.has(k) and not s[k] is bool:return false
 	if not s.depleted is Dictionary or (s.reward_claimed and not s.built):return false
+	if s.has("diamonds") and not BuildingRules.valid_number(s.diamonds,0,BuildingRules.MAX_RESOURCE,true):return false
 	if s.has("hut_style") and not BuildingRules.valid_number(s.hut_style,0,2,true):return false
 	var hq:Variant=s.get("chief_level",0 if s.get("hq_can_be_absent",false) else 1)
 	if not BuildingRules.valid_number(hq,0 if s.get("hq_can_be_absent",false) else 1,4,true):return false
