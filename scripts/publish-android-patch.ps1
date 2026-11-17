@@ -6,7 +6,10 @@ param(
     [string]$GodotPath = $env:ROX_GODOT_EXE,
     [string]$JavaHome = $env:JAVA_HOME,
     [switch]$Publish,
-    [switch]$InitializeChannel
+    [switch]$InitializeChannel,
+    [string]$PreviousPack,
+    [string]$PreviousManifest,
+    [string]$PythonPath = 'python'
 )
 $ErrorActionPreference = 'Stop'
 $repository = 'byungho-cho/roxhistory'
@@ -41,6 +44,37 @@ if ($InitializeChannel) {
     $payload.file = $name
     $payload.size = $size
     $payload.sha256 = $sha
+}
+if ($PreviousPack -or $PreviousManifest) {
+    if (!$PreviousPack -or !$PreviousManifest -or $InitializeChannel) { throw 'The predecessor pack and manifest must be supplied together.' }
+    $prior = Get-Content -Raw -LiteralPath $PreviousManifest | ConvertFrom-Json
+    $priorVersion = [version]$prior.version
+    $next = [version]$version
+    if ($prior.base -ne $base -or $prior.base_commit -ne $baseCommit -or $prior.runtime -ne $runtime -or
+        $priorVersion.Major -ne $next.Major -or $priorVersion.Minor -ne $next.Minor -or $priorVersion.Build + 1 -ne $next.Build -or
+        $prior.file -ne "Roxhistory_${base}_to_$($prior.version).pck" -or $prior.commit -notmatch '^[a-f0-9]{40}$' -or
+        (Get-FileHash -LiteralPath $PreviousPack).Hash -ne $prior.sha256 -or (Get-Item -LiteralPath $PreviousPack).Length -ne $prior.size) {
+        throw 'The predecessor does not identify the immediately previous cumulative patch.'
+    }
+    if ($Publish) {
+        $channel = gh release view $tag -R $repository --json assets | ConvertFrom-Json
+        $published = @($channel.assets | Where-Object name -eq $prior.file)
+        if ($published.Count -ne 1 -or $published[0].digest -ne "sha256:$($prior.sha256)" -or $published[0].size -ne $prior.size) {
+            throw 'The predecessor pack does not match the previously published artifact.'
+        }
+    }
+    $deltaName = "Roxhistory_${base}_$($prior.version)_to_${version}.rdx"
+    $deltaPath = Join-Path $directory $deltaName
+    & $PythonPath (Join-Path $PSScriptRoot 'build_pack_delta.py') $PreviousPack $pack $deltaPath
+    if ($LASTEXITCODE -ne 0) { throw 'Difference patch export failed.' }
+    $deltaSize = (Get-Item -LiteralPath $deltaPath).Length
+    if ($deltaSize -le $size * .8) {
+        $payload.delta = [ordered]@{
+            from_version=$prior.version; from_commit=$prior.commit; from_sha256=$prior.sha256
+            file=$deltaName; size=$deltaSize; sha256=(Get-FileHash -LiteralPath $deltaPath).Hash.ToLowerInvariant()
+        }
+        Write-Output "Difference patch $deltaName ($deltaSize bytes)"
+    }
 }
 $payload | ConvertTo-Json -Compress | Set-Content -LiteralPath $payloadPath -Encoding utf8NoBOM -NoNewline
 $settings = Get-Content -Raw (Join-Path (Split-Path $GodotPath) 'editor_data/editor_settings-4.5.tres')
@@ -94,6 +128,17 @@ $release = $remote | ConvertFrom-Json
 $asset = @($release.assets | Where-Object name -eq $name)
 if ($asset.Count -ne 1 -or $asset[0].digest -ne "sha256:$sha" -or $asset[0].size -ne $size) { throw 'Remote patch hash mismatch.' }
 } elseif ($release.assets | Where-Object name -eq "latest.json") { throw "Channel already initialized." }
+if ($payload.delta) {
+    if (-not ($release.assets | Where-Object name -eq $deltaName)) {
+        & gh release upload $tag $deltaPath -R $repository
+        if ($LASTEXITCODE -ne 0) { throw 'Difference patch upload failed.' }
+    }
+    $channel = gh release view $tag -R $repository --json assets | ConvertFrom-Json
+    $remoteDelta = @($channel.assets | Where-Object name -eq $deltaName)
+    if ($remoteDelta.Count -ne 1 -or $remoteDelta[0].digest -ne "sha256:$($payload.delta.sha256)" -or $remoteDelta[0].size -ne $deltaSize) {
+        throw 'Remote difference patch hash mismatch.'
+    }
+}
 & gh release upload $tag $index --clobber -R $repository
 if ($LASTEXITCODE -ne 0) { throw 'Signed index upload failed.' }
 $remote = & gh release view $tag -R $repository --json assets

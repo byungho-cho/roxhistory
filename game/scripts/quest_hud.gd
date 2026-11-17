@@ -47,15 +47,15 @@ func _ready() -> void:
 	position = app.safe+Vector2(0,123 if app.w<app.h else 79)
 	size = Vector2(width,HEADER)
 	body = Control.new()
-	body.position = Vector2(5,HEADER)
+	body.position = Vector2(5,HEADER-5)
 	body.clip_contents = true
 	body.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(body)
-	var backdrop := paint(self,Rect2(0,0,width,HEADER),Color.TRANSPARENT,Color("151a16a1"),3)
+	var backdrop := paint(self,Rect2(0,0,width,HEADER),Color("343b37"),Color("151a16a1"),3)
 	backdrop.z_index=2
 	var gradient := Gradient.new()
 	gradient.offsets = PackedFloat32Array([0,.48,1])
-	gradient.colors = PackedColorArray([Color("84908cdf"),Color("47524ce8"),Color("343b37e8")])
+	gradient.colors = PackedColorArray([Color("84908c"),Color("47524c"),Color("343b37")])
 	var sheen := GradientTexture2D.new()
 	sheen.gradient = gradient
 	sheen.fill_to = Vector2(0,1)
@@ -66,7 +66,7 @@ func _ready() -> void:
 	title = caption(self,"",Rect2(48,0,width-94,HEADER),16,CREAM)
 	title.z_index=3
 	title.clip_text=true
-	toggle = QuestRewards.art_button(app,self,"QuestToggle",Rect2(width-50,0,50,HEADER),app.toggle_quest)
+	toggle = QuestRewards.art_button(app,self,"QuestToggle",Rect2(width-50,0,50,HEADER),app.toggle_quest,"")
 	toggle.z_index=3
 	toggle.set_meta("semantic_text","퀘스트 상세 펼침·접힘")
 	arrow = app.picture(toggle,CHEVRON_UP,Rect2(22,11,19,17))
@@ -136,9 +136,15 @@ func draw_body() -> void:
 	title.text = FirstQuests.TITLES[current] if current>=0 else "첫 여정 완료"
 	emblem.texture = QuestRewards.objective_icon(current) if current>=0 else DemoArt.icon("scroll")
 	detail = Control.new()
+	detail.position.y = 5
 	detail.mouse_filter=Control.MOUSE_FILTER_IGNORE
 	body.add_child(detail)
-	paint(detail,Rect2(0,0,width-10,1),PAPER,Color("a49d86"),8).name="Paper"
+	var paper := paint(detail,Rect2(0,-5,width-10,1),PAPER,Color("a49d86"),8)
+	paper.name = "Paper"
+	var skin := paper.get_theme_stylebox("panel") as StyleBoxFlat
+	skin.corner_radius_top_left = 0
+	skin.corner_radius_top_right = 0
+	skin.border_width_top = 0
 	var y := 7.0
 	if current >= 0:
 		var description := caption(detail,FirstQuests.OBJECTIVES[current],Rect2(10,y,width-30,32),12)
@@ -170,12 +176,12 @@ func draw_body() -> void:
 			amount.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
 			y += ROW_HEIGHT
 	body_target = y+4 if y>7 else 0.0
-	detail.get_node("Paper").size.y = body_target
+	detail.get_node("Paper").size.y = body_target+5
 	update_toggle()
 
 func set_body_height(value: float) -> void:
 	body_height = maxf(0.0,value)
-	body.size = Vector2(width-10,body_height)
+	body.size = Vector2(width-10,body_height+5)
 	size.y = HEADER+body_height
 	body.visible = body_height > .1
 
@@ -212,9 +218,6 @@ func claim(index: int) -> void:
 		for id in shown_ids:
 			if id not in matching:continue
 			origins.append(rows[id].get_node("Award").get_global_rect().get_center())
-	while origins.size() < matching.size():
-		var origin := badge.get_global_rect().get_center() if badge.visible else global_position+Vector2(40,HEADER*.54)
-		origins.append(origin+Vector2((origins.size()%3-1)*11,0))
 	busy = true
 	var preview := sample_active()
 	var committed := QuestRewards.take(app,index)

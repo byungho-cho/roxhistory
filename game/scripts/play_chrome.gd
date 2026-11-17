@@ -142,15 +142,15 @@ func _process(delta: float) -> void:
 func displayed_amount(key: String) -> int:
 	return roundi(resource_counts[key].shown)
 
-func gained(kind: String, at: Vector2) -> void:
-	resource_burst(kind,PackedVector2Array([at]), true,0)
+func gained(kind: String, at: Vector2, gathered := false) -> void:
+	resource_burst(kind,PackedVector2Array([at]),true,0,false,gathered and kind in ["wood","stone"])
 
 func tutorial_reward_effect(kind: String, at: Vector2) -> void:
 	app.audio.cue("reward_confirm")
 	resource_burst("tokens" if kind == "grain" else kind,PackedVector2Array([at]),true,0,true,true)
 
 func quest_reward_effect(origins: PackedVector2Array,total: int,preview: bool) -> void:
-	if not preview and total > 0 and not origins.is_empty(): app.audio.cue("reward_confirm")
+	if not preview and total > 0: app.audio.cue("reward_confirm")
 	resource_burst("tokens",origins,false,0 if preview else total,true,not preview and total > 0)
 
 func resource_burst(kind: String, origins: PackedVector2Array, world_space: bool, delayed_credit: int, reward := false, reward_sound := false) -> void:
@@ -165,6 +165,9 @@ func resource_burst(kind: String, origins: PackedVector2Array, world_space: bool
 	quest_flights.append({"kind":kind,"origins":origins,"world_space":world_space,"total":delayed_credit,"age":0.0,"reward":reward,"reward_sound":reward_sound})
 	quest_fx.queue_redraw()
 
+func burst_departure(batch: Dictionary) -> float:
+	return REWARD_DEPARTURE if batch.reward else PIECE_PAUSE
+
 func burst_stagger(batch: Dictionary) -> float:
 	return minf(.10,.6/maxi(1,batch.origins.size()-1))
 
@@ -177,7 +180,8 @@ func advance_quest_flights(delta: float) -> bool:
 	for batch in quest_flights:
 		var previous: float = batch.age
 		batch.age+=delta
-		if batch.reward_sound and previous < REWARD_DEPARTURE and batch.age >= REWARD_DEPARTURE:
+		var departure := burst_departure(batch)
+		if batch.reward_sound and previous < departure and batch.age >= departure:
 			var kind: String = "grain" if batch.kind == "tokens" else batch.kind
 			app.audio.cue("reward_"+kind)
 		var end := burst_lifetime(batch)
@@ -195,7 +199,7 @@ func draw_quest_flights() -> void:
 		var texture := resource_icon(batch.kind)
 		var goal := slot(batch.kind).position+Vector2(16,19)
 		var stagger := burst_stagger(batch)
-		var departure := REWARD_DEPARTURE if batch.reward else PIECE_PAUSE
+		var departure := burst_departure(batch)
 		var flight: float = burst_lifetime(batch)-(batch.origins.size()-1)*stagger-7*PIECE_SPACING-departure
 		for index in batch.origins.size():
 			var start: Vector2 = batch.origins[index]

@@ -53,7 +53,7 @@ static func install_entry(app:Node)->Label:
 	journal.z_index=35
 	entry_art(app,journal,DemoArt.play_icon("scroll"),"임무",219.0/244.0,1.2)
 	var button:=art_button(app,app.stage,"QuestRewardEntry",Rect2(at+Vector2(67,0),Vector2(64,77)),func():
-		if not app.modal and not app.world_map_open and not app.map_transition_active:open(app))
+		if not app.modal and not app.world_map_open and not app.map_transition_active:open(app),"")
 	button.z_index=35
 	entry_art(app,button,part(ICONS,BAG),"보상",303.0/310.0)
 	var badge:=Panel.new()

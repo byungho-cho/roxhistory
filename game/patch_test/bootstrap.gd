@@ -45,10 +45,16 @@ var embedded_version := str(ProjectSettings.get_setting("application/config/vers
 var cached := {}
 var candidate := {}
 var envelope := PackedByteArray()
-func _init() -> void:
+var delta := {}
+var delta_fallback := false
+
+const DELTA := preload("res://patch_test/pack_delta.gd")
+func _init(mount_on_start := true) -> void:
+	if not mount_on_start: return
 	# Autoload _ready runs after the main scene is loaded. Mount before that load.
 	DirAccess.make_dir_recursive_absolute(cache)
 	discard(cache + "incoming.part")
+	discard(cache + "incoming.full")
 	discard(index + ".part")
 	cached = verified_manifest(FileAccess.get_file_as_bytes(index)) if FileAccess.file_exists(index) else {}
 	if not cached.is_empty() and (version_number(cached.version)<=version_number(embedded_version) or not valid_pack(pack_path(cached),cached)):cached = {}
@@ -120,7 +126,7 @@ func _process(_delta: float) -> void:
 	if apk_bridge and apk_selected:
 		poll_apk()
 	if phase==Phase.DOWNLOADING and not apk_selected:
-		update_download_progress(request.get_downloaded_bytes(), int(candidate.size))
+		update_download_progress(request.get_downloaded_bytes(), transfer_size())
 
 func update_download_progress(received: int, total: int) -> void:
 	var downloaded := clampi(received, 0, total)
@@ -137,12 +143,12 @@ func render_phase() -> void:
 			dialog.render("업데이트 확인 중…","새 버전이 있는지 확인하고 있습니다.","","","",false,"닫기","")
 		Phase.AVAILABLE:
 			dialog.render("앱 업데이트" if apk_selected else "게임 업데이트","새 버전이 준비되었습니다.\n게임 파일을 다운로드할까요?",
-				"다운로드 용량 %.1f MB"%(int(apk_candidate.size if apk_selected else candidate.size)/1000000.0),
+				"다운로드 용량 %.1f MB"%(int(apk_candidate.size)/1000000.0) if apk_selected else transfer_summary(),
 				str(installed_apk.version if apk_selected else ProjectSettings.get_setting("application/config/version",embedded_version))+"   →",apk_candidate.version if apk_selected else candidate.version,false,"나중에","다운로드" if apk_selected else "업데이트 받기")
 		Phase.CURRENT:
 			dialog.render("이미 최신 버전입니다","현재 버전으로 게임을 시작할 수 있습니다.","","","",false,"닫기","")
 		Phase.DOWNLOADING:
-			dialog.render("업데이트 다운로드 중","새 게임 파일을 받고 있습니다.\n잠시만 기다려 주세요.","취소하면 다운로드를 중단합니다.","","",true,"다운로드 취소","")
+			dialog.render("업데이트 다운로드 중","새 게임 파일을 받고 있습니다.\n잠시만 기다려 주세요.",transfer_summary() if not apk_selected else "취소하면 다운로드를 중단합니다.","","",true,"다운로드 취소","")
 		Phase.VERIFYING:
 			dialog.render("파일 확인 중…","내려받은 게임 파일을 확인하고 있습니다.","","","",true,"","")
 		Phase.READY:
@@ -169,6 +175,8 @@ func begin_manifest_check(url: String) -> bool:
 	if downloading or restart_pending or phase==Phase.CHECKING:return false
 	check_url = url
 	candidate.clear()
+	delta.clear()
+	delta_fallback = false
 	apk_selected = false
 	failure_message = ""
 	phase = Phase.CHECKING
@@ -223,23 +231,32 @@ func request_completed(result: int, code: int, _headers: PackedStringArray, body
 			phase = Phase.AVAILABLE if version_number(candidate.version)>version_number(cached.get("version",embedded_version)) else Phase.CURRENT
 		check_status = ""
 		if phase==Phase.AVAILABLE:
+			delta = select_delta(candidate)
 			envelope = body
 			if title_active:show_popup()
 			else:checked_title = false
 		render_phase()
 		return
 	phase = Phase.VERIFYING
-	update_download_progress(int(candidate.size),int(candidate.size))
+	update_download_progress(transfer_size(),transfer_size())
 	render_phase()
 	var generation := verification_generation
 	# Allow a rendered frame before the synchronous file hash.
 	await get_tree().process_frame
 	await get_tree().process_frame
 	if generation!=verification_generation or phase!=Phase.VERIFYING:return
-	if not valid_pack(cache+"incoming.part",candidate):
+	var incoming := cache+"incoming.part"
+	if not delta.is_empty():
+		var reconstructed := cache+"incoming.full"
+		if not valid_pack(incoming,delta) or not DELTA.reconstruct(incoming,pack_path(cached),reconstructed,int(candidate.size)):
+			show_failure("차이 패치를 적용하지 못했습니다.")
+			return
+		discard(incoming)
+		incoming = reconstructed
+	if not valid_pack(incoming,candidate):
 		show_failure("다운로드한 파일의 크기 또는 해시가 일치하지 않습니다.")
 		return
-	if DirAccess.rename_absolute(cache+"incoming.part",pack_path(candidate))!=OK or not save_index():
+	if DirAccess.rename_absolute(incoming,pack_path(candidate))!=OK or not save_index():
 		show_failure("업데이트 파일을 저장하지 못했습니다.")
 		return
 	downloading = false
@@ -284,12 +301,13 @@ func download_patch() -> void:
 	phase = Phase.DOWNLOADING
 	failure_message = ""
 	check_status = ""
-	update_download_progress(0,int(candidate.size))
+	update_download_progress(0,transfer_size())
 	render_phase()
 	request.timeout = 30.0
 	request.download_file = cache+"incoming.part"
-	request.body_size_limit = int(candidate.size)
-	if request.request(RELEASE_ROOT+candidate.file)!=OK:show_failure()
+	request.body_size_limit = transfer_size()
+	var filename: String = candidate.file if delta.is_empty() else delta.file
+	if request.request(RELEASE_ROOT+filename)!=OK:show_failure()
 
 
 func setup_apk_bridge() -> void:
@@ -403,6 +421,29 @@ func verified_manifest(bytes:PackedByteArray) -> Dictionary:
 	if data.get("file") != "Roxhistory_%s_to_%s.pck"%[BASE_VERSION,data.version]:return {}
 	return data
 
+func select_delta(target: Dictionary) -> Dictionary:
+	var item: Variant = target.get("delta")
+	if not item is Dictionary or cached.is_empty(): return {}
+	if item.get("from_version") != cached.version or item.get("from_commit") != cached.commit or item.get("from_sha256") != cached.sha256:
+		return {}
+	if ProjectSettings.get_setting("application/config/version") != cached.version or ProjectSettings.get_setting("roxhistory/update/source_commit") != cached.commit:
+		return {}
+	var from_parts: PackedStringArray = cached.version.split(".")
+	var to_parts: PackedStringArray = target.version.split(".")
+	if from_parts[0] != to_parts[0] or from_parts[1] != to_parts[1] or int(to_parts[2]) != int(from_parts[2])+1: return {}
+	if item.get("file") != "Roxhistory_%s_%s_to_%s.rdx"%[BASE_VERSION,cached.version,target.version]: return {}
+	var pattern := RegEx.create_from_string("^[0-9a-f]{64}$")
+	if not item.get("sha256") is String or not pattern.search(item.sha256): return {}
+	if not item.get("size") is float or item.size != floorf(item.size) or item.size < 12 or item.size > target.size*.8: return {}
+	return item.duplicate()
+
+func transfer_size() -> int:
+	return int(candidate.get("size",0) if delta.is_empty() else delta.size)
+
+func transfer_summary() -> String:
+	var kind := "직전 버전용 차이 패치" if not delta.is_empty() else "APK 기준 누적 패치"
+	return "%s · %.2f MB"%[kind,transfer_size()/1000000.0]
+
 func version_number(version:String) -> int:
 	var parts:=version.split(".")
 	return int(parts[0])*100000000+int(parts[1])*10000+int(parts[2])
@@ -432,6 +473,16 @@ func mount_cached() -> bool:
 	return true
 
 func show_failure(message := "") -> void:
+	discard(cache+"incoming.full")
+	if downloading and not delta.is_empty() and not delta_fallback:
+		delta_fallback = true
+		delta.clear()
+		discard(cache+"incoming.part")
+		downloading = false
+		phase = Phase.AVAILABLE
+		render_phase()
+		call_deferred("retry_cumulative")
+		return
 	var download_failed := downloading
 	phase = Phase.DOWNLOAD_FAILED if download_failed else Phase.CHECK_FAILED
 	downloading = false
@@ -443,6 +494,9 @@ func show_failure(message := "") -> void:
 	check_status = failure_message
 	render_phase()
 
+
+func retry_cumulative() -> void:
+	if phase == Phase.AVAILABLE and delta_fallback: download_patch()
 
 func discard(path: String) -> void:
 	if FileAccess.file_exists(path):

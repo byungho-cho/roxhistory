@@ -179,6 +179,7 @@ func has_pending_rewards()->bool:
 	return false
 
 func _ready() -> void:
+	install_patch_overlay()
 	AudioServer.set_bus_layout(preload("res://default_bus_layout.tres"))
 	if OS.has_feature("android"):Engine.max_fps=60
 	gestures=WorldGestures.new(self);add_child(gestures)
@@ -206,6 +207,21 @@ func _ready() -> void:
 	ui.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	get_viewport().size_changed.connect(queue_layout)
 	show_screen("title")
+
+func install_patch_overlay() -> void:
+	var old := get_node("/root/PatchBootstrap/Overlay")
+	if old.has_method("select_delta"): return
+	var script := ResourceLoader.load("res://patch_test/bootstrap.gd","GDScript",ResourceLoader.CACHE_MODE_IGNORE)
+	if not script or not script.get_script_method_list().any(func(method): return method.name == "select_delta"): return
+	var updated: Control = script.new(false)
+	updated.cached = old.cached
+	updated.embedded_version = old.embedded_version
+	var layer := old.get_parent()
+	layer.remove_child(old)
+	old.queue_free()
+	updated.name = "Overlay"
+	layer.add_child(updated)
+	updated.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 
 func queue_layout() -> void:
 	if is_instance_valid(parry_lab): return
@@ -1783,7 +1799,7 @@ func finish_task() -> void:
 		if model.gather(target,world.player.position):
 			world.feedback.gathered(target)
 			var resource_kind: String = world.resource_labels[target].kind
-			chrome.gained(resource_kind,world.art_nodes[target].position+Vector2(0,-70))
+			chrome.gained(resource_kind,world.art_nodes[target].position+Vector2(0,-70),true)
 			toast("",0)
 	elif kind=="family":family.finish()
 	call_deferred("run_reserved_action")

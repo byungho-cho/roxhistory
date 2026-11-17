@@ -122,7 +122,6 @@ func gathered(id: String) -> void:
 	var at: Vector2 = world.art_nodes[id].position+Vector2(0,-35)
 	burst(at,Color("f4d58b"),5,0.45)
 	remember("credit:"+kind)
-	sound_cue.emit("gain")
 
 func built(at: Vector2 = Vector2.INF) -> void:
 	celebration = 1.5
