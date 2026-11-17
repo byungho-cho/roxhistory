@@ -19,7 +19,7 @@ var ducked := false
 var voices: Array[AudioStreamPlayer] = []
 var resource_receipt_voices: Dictionary[String, AudioStreamPlayer] = {}
 
-const RESOURCE_RECEIPT_DB := {"gain":-2.0,"reward":0.0,"reward_grain":4.0,"reward_stone":-1.0,"reward_wood":0.0}
+const RESOURCE_RECEIPT_DB := {"gain":-2.0,"reward_confirm":0.0,"reward_grain":4.0,"reward_stone":-1.0,"reward_wood":0.0}
 var recorded_work:AudioStreamPlayer
 var river: AudioStreamPlayer
 var hearth: AudioStreamPlayer
@@ -55,6 +55,7 @@ func _ready() -> void:
 	streams["action_click"] = streams["quest_click"]
 	streams["ui"] = streams["quest_click"]
 	streams["popup_open"] = preload("res://assets/audio/d0001-approved/popup-open.mp3")
+	streams["reward_confirm"] = reward_confirmation(streams["reward"])
 	streams["reward_grain"] = preload("res://assets/audio/d0043/reward-grain-gather.wav")
 	streams["reward_stone"] = preload("res://assets/audio/d0043/reward-stone-gather.wav")
 	streams["reward_wood"] = preload("res://assets/audio/d0043/reward-wood-gather.wav")
@@ -97,6 +98,19 @@ func _ready() -> void:
 		player.bus = &"BGM"
 		add_child(player)
 		scene_music_players[key] = player
+
+func reward_confirmation(source: AudioStreamWAV) -> AudioStreamWAV:
+	# The legacy cue has a separate absorption sound after the confirmation.
+	var clip: AudioStreamWAV = source.duplicate()
+	var channels := 2 if source.stereo else 1
+	var sample_count := roundi(source.mix_rate*.50)*channels
+	var fade_samples := roundi(source.mix_rate*.025)*channels
+	var pcm := source.data.slice(0,sample_count*2)
+	for i in range(sample_count-fade_samples,sample_count):
+		var value := pcm.decode_s16(i*2)
+		pcm.encode_s16(i*2,roundi(value*float(sample_count-1-i)/fade_samples))
+	clip.data = pcm
+	return clip
 
 func ambience(key: String, volume: float, bus: StringName) -> AudioStreamPlayer:
 	var player := AudioStreamPlayer.new()

@@ -146,11 +146,11 @@ func gained(kind: String, at: Vector2) -> void:
 	resource_burst(kind,PackedVector2Array([at]), true,0)
 
 func tutorial_reward_effect(kind: String, at: Vector2) -> void:
-	app.audio.cue("reward")
+	app.audio.cue("reward_confirm")
 	resource_burst("tokens" if kind == "grain" else kind,PackedVector2Array([at]),true,0,true,true)
 
 func quest_reward_effect(origins: PackedVector2Array,total: int,preview: bool) -> void:
-	if not preview and total > 0 and not origins.is_empty(): app.audio.cue("reward")
+	if not preview and total > 0 and not origins.is_empty(): app.audio.cue("reward_confirm")
 	resource_burst("tokens",origins,false,0 if preview else total,true,not preview and total > 0)
 
 func resource_burst(kind: String, origins: PackedVector2Array, world_space: bool, delayed_credit: int, reward := false, reward_sound := false) -> void:
