@@ -771,12 +771,13 @@ func show_tutorial_choice() -> void:
 	var panel := placeholder.get_parent().get_parent()
 	overlay.remove_child(panel)
 	panel.queue_free()
-	overlay.set_meta("tutorial_choice",true)
+	overlay.get_node("ModalBackdrop").dismiss = choose_tutorial.bind(false)
 	var center := CenterContainer.new()
 	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	overlay.add_child(center)
 	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	var dialog = preload("res://patch_test/patch_dialog.gd").new()
+	dialog.native_touch_buttons = true
 	center.add_child(dialog)
 	dialog.render("튜토리얼을 건너뛰시겠습니까?","튜토리얼 진행 여부를 선택해 주세요.","","","",false,"튜토리얼 진행","건너뛰기")
 	dialog.close_button.pressed.connect(choose_tutorial.bind(false))

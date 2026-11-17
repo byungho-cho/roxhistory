@@ -8,6 +8,7 @@ const GOLD := preload("res://assets/ui/hunting-combat/png/popup/continue-button-
 const METAL := preload("res://assets/ui/hunting-combat/png/popup/exit-button-background.png")
 const PATCH_NOTES := preload("res://patch_test/patch_notes.gd")
 
+var native_touch_buttons := false
 var paper: Control
 var heading: Label
 var body: Label
@@ -29,7 +30,7 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	paper = Control.new()
 	paper.size = PAPER_SIZE
-	paper.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	paper.mouse_filter = Control.MOUSE_FILTER_STOP if native_touch_buttons else Control.MOUSE_FILTER_IGNORE
 	add_child(paper)
 	var background := FigmaSlice.new("paper",32)
 	background.size = PAPER_SIZE
@@ -135,7 +136,7 @@ func label(rect: Rect2, font_size: int, weight: int) -> Label:
 	return text
 
 func make_button() -> Button:
-	var button := Button.new()
+	var button: Button = DemoButton.new() if native_touch_buttons else Button.new()
 	button.add_theme_color_override("font_color",Color.TRANSPARENT)
 	for state in ["normal","hover","pressed","focus","disabled"]:
 		button.add_theme_stylebox_override(state,StyleBoxEmpty.new())
