@@ -68,7 +68,7 @@ func request_upgrade()->void:
 	var reason:=upgrade_block_reason(target,false)
 	if not reason.is_empty():app.toast(reason);return
 	var cost:Dictionary=app.model.building_cost("chief",target)
-	show_upgrade_confirmation("chief",cost,func():confirm_upgrade(target))
+	show_upgrade_confirmation("chief",cost,func()->bool:return confirm_upgrade(target))
 	confirmation_target=target
 func show_upgrade_confirmation(key:String,cost:Dictionary,callback:Callable)->void:
 	app.navigation.cancel()
@@ -97,6 +97,7 @@ func confirm_upgrade(target:int)->bool:
 	var reason:=upgrade_block_reason(target)
 	if not reason.is_empty():app.toast(reason);return false
 	if not app.model.upgrade_chief():return false
+	app.audio.cue("upgrade_spend")
 	confirmation_target=-1;app.close_modal();refresh_visual();return true
 func refresh_visual()->void:
 	if not is_instance_valid(app.world):return
@@ -177,7 +178,7 @@ func request_owned_upgrade(key:String)->void:
 	var target:=int(found.data.get("level",1))+1
 	owned_confirmation=key
 	var cost:Dictionary=app.model.building_cost(str(found.kind),target)
-	show_upgrade_confirmation(key,cost,func():confirm_owned_upgrade(key,target))
+	show_upgrade_confirmation(key,cost,func()->bool:return confirm_owned_upgrade(key,target))
 	owned_overlay=app.overlay
 func confirm_owned_upgrade(key:String,target:int)->bool:
 	if not app.modal or not app.application_active or owned_confirmation!=key or not is_instance_valid(owned_overlay) or app.overlay!=owned_overlay:return false
@@ -186,6 +187,7 @@ func confirm_owned_upgrade(key:String,target:int)->bool:
 	var reason:=owned_upgrade_reason(key)
 	if not reason.is_empty():app.toast(reason);return false
 	if not OwnedBuildingUpgrades.start(app.model,key):return false
+	app.audio.cue("upgrade_spend")
 	owned_confirmation="";app.close_modal();return true
 func update_owned_upgrades()->void:
 	for key in owned_progress.keys():

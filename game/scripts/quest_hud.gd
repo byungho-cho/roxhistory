@@ -49,7 +49,7 @@ func _ready() -> void:
 	body = Control.new()
 	body.position = Vector2(5,HEADER-5)
 	body.clip_contents = true
-	body.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	body.mouse_filter = Control.MOUSE_FILTER_STOP
 	add_child(body)
 	var backdrop := paint(self,Rect2(0,0,width,HEADER),Color("343b37"),Color("151a16a1"),3)
 	backdrop.z_index=2

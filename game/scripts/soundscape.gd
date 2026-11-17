@@ -55,6 +55,10 @@ func _ready() -> void:
 	streams["action_click"] = streams["quest_click"]
 	streams["ui"] = streams["quest_click"]
 	streams["popup_open"] = preload("res://assets/audio/d0001-approved/popup-open.mp3")
+	streams["guide_open"] = preload("res://assets/audio/d0045/guide-open-A.wav")
+	streams["guide_dismiss"] = preload("res://assets/audio/d0045/guide-dismiss-D.wav")
+	streams["upgrade_insufficient"] = preload("res://assets/audio/d0045/upgrade-insufficient-1A.wav")
+	streams["upgrade_spend"] = preload("res://assets/audio/d0045/upgrade-spend-2A.wav")
 	streams["reward_confirm"] = reward_confirmation(streams["reward"])
 	streams["reward_grain"] = preload("res://assets/audio/d0043/reward-grain-gather.wav")
 	streams["reward_stone"] = preload("res://assets/audio/d0043/reward-stone-gather.wav")

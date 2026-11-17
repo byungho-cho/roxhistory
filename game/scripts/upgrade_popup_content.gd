@@ -14,6 +14,7 @@ var notice_fade: Tween
 var shortage_items: Dictionary = {}
 var shortage_labels: Dictionary = {}
 var shortage_motion: Tween
+var submission_pending := false
 const COST_INK := Color("553820")
 const SHORTAGE_INK := Color("a32a20")
 
@@ -130,45 +131,35 @@ func _ready() -> void:
 	app.model.changed.connect(refresh_cost_ink)
 
 func add_shortage_art(item: Control, amount: Label, resource: String) -> void:
-	var ring := Panel.new()
-	ring.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var outline := StyleBoxFlat.new()
-	outline.bg_color = Color.TRANSPARENT
-	outline.border_color = Color("c74635")
-	outline.set_border_width_all(2)
-	outline.set_corner_radius_all(7)
-	ring.add_theme_stylebox_override("panel",outline)
-	art.add_child(ring)
-	ring.hide()
 	var badge := Label.new()
 	badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	badge.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	badge.add_theme_font_override("font",FigmaArt.BODY)
 	badge.add_theme_font_size_override("font_size",13)
 	badge.add_theme_color_override("font_color",Color("fff2d4"))
 	var fill := StyleBoxFlat.new()
-	fill.bg_color = Color("81271e")
+	fill.bg_color = Color("922c24df")
 	fill.set_corner_radius_all(5)
 	badge.add_theme_stylebox_override("normal",fill)
 	art.add_child(badge)
 	var align := func():
 		var at: Vector2 = art.get_global_transform().affine_inverse()*item.get_global_transform().origin
 		badge.position = at+Vector2(0,-22)
+		badge.set_meta("rest_x",badge.position.x)
 		badge.size = Vector2(item.size.x,18)
-		ring.position = at-Vector2(3,25)
-		ring.size = item.size+Vector2(6,28)
-		ring.pivot_offset = ring.size*.5
 	item.item_rect_changed.connect(align)
 	align.call_deferred()
-	shortage_items[resource] = [amount,ring]
+	shortage_items[resource] = amount
 	shortage_labels[resource] = badge
 
 func resource_deficit(resource: String) -> int:
 	return int(costs.get(resource,0))-int(app.model.state.get(resource,0))
 
 func refresh_cost_ink() -> void:
+	if submission_pending or not can_process(): return
 	for resource: String in shortage_items:
-		var amount: Label = shortage_items[resource][0]
+		var amount: Label = shortage_items[resource]
 		var missing := resource_deficit(resource)
 		var required := int(costs.get(resource,0))
 		amount.text = "%d/%d"%[required-missing,required] if missing>0 else str(required)
@@ -176,26 +167,29 @@ func refresh_cost_ink() -> void:
 		var badge: Label = shortage_labels[resource]
 		badge.text = "%d 부족"%missing if missing>0 else ""
 		badge.visible = missing>0
-		if missing<=0: shortage_items[resource][1].hide()
 
 func play_shortage() -> bool:
 	refresh_cost_ink()
 	if resource_deficit("wood")<=0 and resource_deficit("stone")<=0: return false
+	app.audio.cue("upgrade_insufficient")
+	if app.reduced_ui_motion(): return true
 	if shortage_motion and shortage_motion.is_valid(): shortage_motion.kill()
-	shortage_motion=create_tween().set_parallel()
-	for resource: String in shortage_items:
-		if resource_deficit(resource)<=0: continue
-		var ring: Panel = shortage_items[resource][1]
-		ring.show()
-		ring.scale = Vector2.ONE
-		ring.modulate.a = 1.0
-		var target := Vector2.ONE if app.reduced_ui_motion() else Vector2.ONE*1.13
-		shortage_motion.tween_property(ring,"scale",target,.42).set_ease(Tween.EASE_OUT)
-		shortage_motion.tween_property(ring,"modulate:a",0.0,.42)
+	shortage_motion = create_tween().set_parallel()
+	for resource: String in shortage_labels:
+		var badge: Label = shortage_labels[resource]
+		var rest: float = badge.get_meta("rest_x",badge.position.x)
+		badge.position.x = rest
+		if badge.visible:
+			var shake := func(phase: float): badge.position.x = rest + sin(phase*TAU)*4.0
+			shortage_motion.tween_method(shake,0.0,1.0,.20)
 	return true
 
 func request_upgrade() -> void:
-	if not play_shortage():confirm.call()
+	if submission_pending or not can_process() or play_shortage(): return
+	submission_pending = true
+	if not confirm.call():
+		submission_pending = false
+		refresh_cost_ink()
 
 func rule(rect: Rect2, parent: Control = null) -> void:
 	var line := ColorRect.new()
@@ -217,7 +211,7 @@ func fit() -> void:
 	art.position=(size-art.size*factor)*.5
 
 func action(rect: Rect2, title: String, value: String, icon: Texture2D, background: Texture2D, locked: bool) -> void:
-	var button: DemoButton=app.button(art,"",request_upgrade if not locked else show_unsupported)
+	var button: DemoButton=app.button(art,"",request_upgrade if not locked else show_unsupported,false,"","ui" if locked else "")
 	button.name="InstantUpgrade" if locked else "ConfirmUpgrade"
 	button.custom_minimum_size=Vector2.ZERO
 	button.position=rect.position

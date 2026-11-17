@@ -250,11 +250,11 @@ func relayout() -> void:
 	if gestures: gestures.clear()
 	rebuilding = false
 	if modal:
-		close_modal()
+		close_modal(guide_pages.is_empty())
 	cancel_task()
 	show_screen(screen)
 	if not guide_pages.is_empty():
-		show_character_guide(guide_pages[0].title,guide_pages[0].body)
+		show_character_guide(guide_pages[0].title,guide_pages[0].body,Callable(),false)
 		overlay.pages.assign(guide_pages.slice(1))
 		overlay.completions=guide_actions
 
@@ -1306,6 +1306,7 @@ func play_hud(spread:=false) -> void:
 	stage.add_child(BuildingUpgradeSigns.new(self))
 	# GUI hit testing visits later siblings first; the menu only blocks through its buttons.
 	stage.add_child(building_menu)
+	stage.move_child(quest_hud,-1)
 	world_map_open=false
 	update_hud()
 	intro_probe_step("hud_total",hud_started)
@@ -2182,7 +2183,7 @@ func stop_popup_openings(root: Control) -> void:
 			var opening: Tween = panel.get_meta("popup_opening")
 			if opening.is_valid():opening.kill()
 
-func show_character_guide(title:String,body:String,after:Callable=Callable())->void:
+func show_character_guide(title:String,body:String,after:Callable=Callable(),play_sound:=true)->void:
 	if overlay is CharacterGuide:
 		overlay.enqueue(title,body,after)
 		return
@@ -2195,11 +2196,13 @@ func show_character_guide(title:String,body:String,after:Callable=Callable())->v
 	modal=true;toast_time=0
 	overlay=CharacterGuide.new(self,title,body);overlay.z_index=50;ui.add_child(overlay);sync_audio()
 	if after.is_valid():overlay.completions.append(after)
+	if play_sound: audio.cue("guide_open")
 
-func close_modal() -> void:
+func close_modal(play_guide_sound := true) -> void:
 	if is_instance_valid(building_workflow):building_workflow.confirmation_target=-1
 	demolition_key=""
 	if is_instance_valid(overlay):
+		if overlay is CharacterGuide and play_guide_sound: audio.cue("guide_dismiss")
 		if overlay.has_meta("fade_modal"):
 			popup_sound_revision += 1
 			audio.cue("bag_close" if overlay.has_meta("full_screen_bag") else "popup_close")
