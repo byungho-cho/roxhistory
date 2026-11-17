@@ -248,8 +248,10 @@ func relayout() -> void:
 		return
 	var history_version: String = overlay.get_meta("update_history_version","") if is_instance_valid(overlay) else ""
 	var history_scroll := 0
+	var history_after_update := false
 	if not history_version.is_empty():
 		history_scroll = overlay.get_node("UpdateNotesPanel").scroll.scroll_vertical
+		history_after_update = overlay.get_meta("update_history_after_update",false)
 	var guide_pages:Array[Dictionary]=[]
 	var guide_actions:Array[Callable]=[]
 	if overlay is CharacterGuide:
@@ -266,7 +268,7 @@ func relayout() -> void:
 		overlay.pages.assign(guide_pages.slice(1))
 		overlay.completions=guide_actions
 	elif not history_version.is_empty():
-		show_version_notes(history_version)
+		show_version_notes(history_version,history_after_update)
 		var history = overlay.get_node("UpdateNotesPanel")
 		history.scroll.set_deferred("scroll_vertical",history_scroll)
 
@@ -667,13 +669,14 @@ func refresh_title_start_prompt() -> void:
 	if screen!="title" or not is_instance_valid(title_prompt):return
 	title_prompt.visible = not modal and not title_input_blocked()
 
-func show_version_notes(version: String) -> void:
+func show_version_notes(version: String, after_update := false) -> void:
 	var placeholder := show_modal("","",[],false,true,false,Vector2.ZERO,false,true)
 	var panel := placeholder.get_parent().get_parent()
 	overlay.remove_child(panel)
 	panel.queue_free()
 	overlay.set_meta("update_history_version",version)
-	overlay.add_child(preload("res://patch_test/patch_history.gd").new(version,close_modal))
+	overlay.set_meta("update_history_after_update",after_update)
+	overlay.add_child(preload("res://patch_test/patch_history.gd").new(version,close_modal,.8 if after_update else 1.0))
 
 func show_mounted_patch_notes() -> void:
 	if mounted_notes_checked or modal or not application_active:
@@ -693,7 +696,7 @@ func show_mounted_patch_notes() -> void:
 	var highest := str(receipt.get_value("displayed","highest","0.0.0"))
 	if receipt.has_section_key("versions",version) or updates.version_number(version)<=updates.version_number(highest):
 		return
-	show_version_notes(version)
+	show_version_notes(version,true)
 	show_modal_immediately()
 	var note_overlay := overlay
 	RenderingServer.frame_post_draw.connect(func():

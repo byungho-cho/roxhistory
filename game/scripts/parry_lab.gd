@@ -180,7 +180,7 @@ func build_test_picker() -> void:
 	rig.camera.look_at(Vector3(0,1.45,0))
 	rig.display.position = -rig.camera.unproject_position(Vector3.ZERO)*rig.display.scale
 	rig.pivot.rotation.y = atan2(1,.28)
-	rig.scale = actors[0].scale * 1.35
+	rig.scale = actors[0].scale * (1.35 * 1.5)
 	motion_canvas = Art.layer(self,Vector2.ZERO)
 	motion_status = make_label("동작을 선택해 주세요",Rect2(230,144,500,42),24)
 	motion_status.reparent(motion_canvas,false)

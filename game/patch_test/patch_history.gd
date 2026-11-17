@@ -3,16 +3,19 @@ extends Control
 const NOTES := preload("res://patch_test/patch_notes.gd")
 const HISTORY_SCROLL := preload("res://patch_test/history_scroll.gd")
 const INK := Color("47240e")
+const VERSION_INK := Color("183d65")
 
 var version: String
 var dismiss: Callable
+var fit_ratio: float
 var paper: FigmaSlice
 var margins: MarginContainer
 var scroll: ScrollContainer
 
-func _init(current_version: String, close: Callable) -> void:
+func _init(current_version: String, close: Callable, panel_ratio := 1.0) -> void:
 	version = current_version
 	dismiss = close
+	fit_ratio = panel_ratio
 
 func _ready() -> void:
 	name = "UpdateNotesPanel"
@@ -52,6 +55,7 @@ func _ready() -> void:
 		section.add_theme_constant_override("separation",4)
 		list.add_child(section)
 		var heading := text_label(item,21,FigmaArt.BODY)
+		heading.add_theme_color_override("font_color",VERSION_INK)
 		heading.name = "Version_"+item.replace(".","_")
 		section.add_child(heading)
 		var indent := MarginContainer.new()
@@ -90,6 +94,8 @@ func fit() -> void:
 		if safe.has_area() and physical.x>0 and physical.y>0:
 			room = Rect2(Vector2(safe.position)*size/physical,Vector2(safe.size)*size/physical)
 	room = room.grow(-minf(12.0,minf(room.size.x,room.size.y)*.08))
+	var panel_size := room.size * fit_ratio
+	room = Rect2(room.get_center() - panel_size * .5,panel_size)
 	paper.position = room.position
 	paper.size = room.size
 	margins.position = room.position
