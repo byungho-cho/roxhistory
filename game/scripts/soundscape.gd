@@ -17,6 +17,9 @@ var scene_music_players: Dictionary[String, AudioStreamPlayer] = {}
 var scene_music := ""
 var ducked := false
 var voices: Array[AudioStreamPlayer] = []
+var resource_receipt_voices: Dictionary[String, AudioStreamPlayer] = {}
+
+const RESOURCE_RECEIPT_DB := {"gain":-2.0,"reward_grain":4.0,"reward_stone":-1.0,"reward_wood":0.0}
 var recorded_work:AudioStreamPlayer
 var river: AudioStreamPlayer
 var hearth: AudioStreamPlayer
@@ -74,6 +77,14 @@ func _ready() -> void:
 		var voice := AudioStreamPlayer.new()
 		voice.bus = &"SFX"
 		add_child(voice); voices.append(voice)
+	for key: String in RESOURCE_RECEIPT_DB:
+		var receipt := AudioStreamPlayer.new()
+		receipt.bus = &"SFX"
+		receipt.stream = streams[key]
+		receipt.volume_db = RESOURCE_RECEIPT_DB[key]
+		receipt.max_polyphony = 3
+		add_child(receipt)
+		resource_receipt_voices[key] = receipt
 	river = ambience("river",-30,&"Environment")
 	hearth = ambience("hearth",-60,&"Environment")
 	wind = ambience("wind",-35,&"Environment")
@@ -151,6 +162,7 @@ func trace_status(reason: String) -> void:
 func stop_effects() -> void:
 	if recorded_work:recorded_work.stop()
 	for voice in voices: voice.stop()
+	for receipt in resource_receipt_voices.values(): receipt.stop()
 
 func stop_work() -> void:
 	if recorded_work:recorded_work.stop()
@@ -162,13 +174,18 @@ func interface_time_ms() -> int:
 
 func cue(key: String) -> void:
 	if not enabled or not active: return
+	if resource_receipt_voices.has(key):
+		resource_receipt_voices[key].play()
+		remember_cue(key)
+		return
 	if key in ["wood","stone","build","demolish"]:
 		if not in_world or ducked:return
 		# One work voice: never stack the five-second listening arrangements.
 		recorded_work.stop();recorded_work.stream=streams["recorded_"+key]
-		recorded_work.volume_db=-8;recorded_work.pitch_scale=1.0;recorded_work.play()
-		events.append("recorded_"+key)
-		if events.size()>96:events.pop_front()
+		recorded_work.volume_db = -2.0 if key in ["wood","stone"] else -8.0
+		recorded_work.pitch_scale = 1.0
+		recorded_work.play()
+		remember_cue("recorded_"+key)
 		return
 	if key in ["ui","select","building_select"]:
 		var now := interface_time_ms()
@@ -199,9 +216,12 @@ func cue(key: String) -> void:
 	if key in ["bag_close","construction_close"]: voice.volume_db -= 5.0
 	voice.pitch_scale = nature_random.randf_range(.96,1.02) if key == "bird" else 1.0
 	voice.play()
+	remember_cue(key)
+	if key in ["ui","select","bird"]: trace_status(key)
+
+func remember_cue(key: String) -> void:
 	events.append(key)
 	if events.size()>96: events.pop_front()
-	if key in ["ui","select","bird"]: trace_status(key)
 
 func sync_scene_music() -> void:
 	for key: String in scene_music_players:

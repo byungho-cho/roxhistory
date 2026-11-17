@@ -21,9 +21,6 @@ var village_alerts: AndroidVillageNotifications
 var performance_diagnostics := PerformanceDiagnostics.new()
 const PERFORMANCE_HUD:=preload("res://scripts/performance_hud.gd")
 var performance_hud:PanelContainer
-const DIRECT_PARRY_REVIEW_VERSION := "0.2.220"
-var parry_lab_enabled := false
-var parry_lab_start: Button
 var parry_lab: Control
 var parry_world_mode: ProcessMode
 var parry_work_mode: ProcessMode
@@ -1920,23 +1917,8 @@ func show_development_settings()->void:
 	DevelopmentSettings.open(self)
 	enable_settings_backdrop()
 
-func show_parry_lab_options() -> void:
-	var state := "ON" if parry_lab_enabled else "OFF"
-	var actions := [{"text":"닫기","action":close_modal}]
-	actions.append({"text":"끄기" if parry_lab_enabled else "켜기","action":func():
-		parry_lab_enabled = not parry_lab_enabled
-		show_parry_lab_options()
-	})
-	show_modal("우람 받아치기 · "+state,
-		"멧돼지가 한결을 향해 돌진할 때 우람의 방패를 누르세요. 받아치기에 성공하면 한결과 새봄의 후속 스킬을 선택할 수 있습니다.",
-		actions,true,true)
-	if is_instance_valid(parry_lab_start): parry_lab_start.visible = parry_lab_enabled
-
-func parry_review_direct() -> bool:
-	return str(ProjectSettings.get_setting("application/config/version")) == DIRECT_PARRY_REVIEW_VERSION
-
 func start_parry_lab() -> void:
-	if screen != "play" or modal or not (parry_lab_enabled or parry_review_direct()): return
+	if screen != "play" or modal or not application_active: return
 	if gestures: gestures.clear()
 	if is_instance_valid(joystick): joystick.clear()
 	if is_instance_valid(world):
@@ -1967,19 +1949,13 @@ func exit_parry_lab() -> void:
 	if is_instance_valid(world): world.player.presentation_paused = not application_active
 
 func add_parry_lab_entry(at: Vector2) -> void:
-	var flask := button(stage,"",start_parry_lab if parry_review_direct() else show_parry_lab_options,false,"","")
+	var flask := button(stage,"",start_parry_lab,false,"","")
 	flask.custom_minimum_size = Vector2.ZERO
 	flask.position = at
 	flask.size = Vector2(48,48)
 	flask.z_index = 36
 	picture(flask,preload("res://assets/ui/d0031/lab-flask.png"),Rect2(8,8,32,32))
 	flask.tooltip_text = "실험실 · 우람 받아치기"
-	if parry_review_direct(): return
-	parry_lab_start = button(stage,"실험 전투 시작",start_parry_lab)
-	parry_lab_start.position = at+Vector2(-157,4)
-	parry_lab_start.size = Vector2(150,40)
-	parry_lab_start.z_index = 36
-	parry_lab_start.visible = parry_lab_enabled
 
 func set_quest_preview_enabled(enabled: bool) -> void:
 	var previous := quest_preview_enabled
