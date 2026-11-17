@@ -2,7 +2,7 @@ extends Control
 
 const INK := Color("49321e")
 const MUTED := Color("917957")
-const PAPER_SIZE := Vector2(500,310)
+const PAPER_SIZE := Vector2(500,340)
 const FONT := preload("res://assets/fonts/NotoSansKR.ttf")
 const GOLD := preload("res://assets/ui/hunting-combat/png/popup/continue-button-background.png")
 const METAL := preload("res://assets/ui/hunting-combat/png/popup/exit-button-background.png")
@@ -23,6 +23,7 @@ var update_button: Button
 var primary_art: NinePatchRect
 var secondary_art: NinePatchRect
 var notes_button: Button
+var apk_link_button: Button
 var notes_panel: Control
 var notes_version := ""
 
@@ -97,10 +98,31 @@ func _ready() -> void:
 	notes_button.add_child(question)
 	question.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	notes_button.pressed.connect(show_notes)
+	apk_link_button = make_button()
+	apk_link_button.name = "FullApkLink"
+	apk_link_button.position = Vector2(26,286)
+	apk_link_button.size = Vector2(448,44)
+	var apk_caption := make_label(14,700,Color("183d65"))
+	apk_link_button.add_child(apk_caption)
+	apk_caption.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	var version := str(ProjectSettings.get_setting("application/config/version"))
+	var caption := "전체 APK v%s · 링크 복사" % version
+	apk_caption.text = caption
+	apk_link_button.pressed.connect(func(): apk_caption.text = copy_full_apk_link(version))
 	visibility_changed.connect(func():
-		if not is_visible_in_tree(): close_notes())
+		if not is_visible_in_tree():
+			close_notes()
+			apk_caption.text = caption)
 	resized.connect(fit_paper)
 	fit_paper()
+
+static func full_apk_url(version: String) -> String:
+	return "https://github.com/byungho-cho/roxhistory/releases/download/v%s/Roxhistory_%s.apk" % [version,version]
+
+static func copy_full_apk_link(version: String) -> String:
+	var url := full_apk_url(version)
+	DisplayServer.clipboard_set(url)
+	return "APK 링크 복사 완료" if DisplayServer.clipboard_get() == url else "APK 링크 복사 확인 불가"
 
 func fit_paper() -> void:
 	var available := get_viewport_rect().size

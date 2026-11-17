@@ -214,7 +214,7 @@ func _ready() -> void:
 
 func install_patch_overlay() -> void:
 	var old := get_node("/root/PatchBootstrap/Overlay")
-	if old.has_method("select_delta"): return
+	if old.has_method("select_delta") and old.popup.find_child("FullApkLink",true,false): return
 	var script := ResourceLoader.load("res://patch_test/bootstrap.gd","GDScript",ResourceLoader.CACHE_MODE_IGNORE)
 	if not script or not script.get_script_method_list().any(func(method): return method.name == "select_delta"): return
 	var updated: Control = script.new(false)
