@@ -222,7 +222,6 @@ func claim(index: int) -> void:
 		busy=false
 		return
 	update_badge()
-	app.audio.cue_reward_receipt()
 	app.chrome.quest_reward_effect(origins,matching.size()*FirstQuests.MANUAL_AMOUNT,preview)
 	var instant: bool = app.reduced_ui_motion()
 	for id in matching:

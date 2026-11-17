@@ -38,7 +38,7 @@ const APPROVED := {
 const REGION_MUSIC_DB := -10.0
 const REGION_WATER_DB := -25.0
 const INTERFACE_GAP_MS := 75
-const ACTION_CUES := ["ui","debug_click","quest_click","action_click","popup_open","popup_close","map_open","map_close"]
+const ACTION_CUES := ["ui","debug_click","quest_click","action_click","popup_open","popup_close","map_open","map_close","bag_open","bag_close","construction_open","construction_close"]
 
 func _ready() -> void:
 	nature_random.randomize()
@@ -52,6 +52,13 @@ func _ready() -> void:
 	streams["action_click"] = streams["quest_click"]
 	streams["ui"] = streams["quest_click"]
 	streams["popup_open"] = preload("res://assets/audio/d0001-approved/popup-open.mp3")
+	streams["reward_grain"] = preload("res://assets/audio/d0042/reward-grain.wav")
+	streams["reward_stone"] = preload("res://assets/audio/d0042/reward-stone.wav")
+	streams["reward_wood"] = preload("res://assets/audio/d0042/reward-wood.wav")
+	streams["bag_open"] = preload("res://assets/ui/d0024/07-sfx-parchment-swipe.wav")
+	streams["bag_close"] = streams["bag_open"]
+	streams["construction_open"] = preload("res://assets/audio/d0004-approved/popup-open.wav")
+	streams["construction_close"] = preload("res://assets/ui/d0020/building-placement-impact-v2.wav")
 	streams["popup_close"] = preload("res://assets/audio/d0001-approved/popup-close.mp3")
 	streams["map_open"] = preload("res://assets/audio/d0001-approved/map-open.mp3")
 	streams["map_close"] = preload("res://assets/audio/d0001-approved/map-close.mp3")
@@ -153,11 +160,6 @@ func stop_work() -> void:
 func interface_time_ms() -> int:
 	return Time.get_ticks_msec()
 
-func cue_reward_receipt() -> void:
-	for voice in voices:
-		if voice.playing and voice.stream == streams.get("popup_open"): voice.stop()
-	cue("reward")
-
 func cue(key: String) -> void:
 	if not enabled or not active: return
 	if key in ["wood","stone","build","demolish"]:
@@ -194,6 +196,7 @@ func cue(key: String) -> void:
 	voice.set_meta("work",work)
 	voice.set_meta("action_cue",key in ACTION_CUES)
 	voice.volume_db = -8 if work else (-20 if key == "bird" else -12)
+	if key in ["bag_close","construction_close"]: voice.volume_db -= 5.0
 	voice.pitch_scale = nature_random.randf_range(.96,1.02) if key == "bird" else 1.0
 	voice.play()
 	events.append(key)

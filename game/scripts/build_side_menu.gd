@@ -244,6 +244,9 @@ func refresh() -> void:
 
 func on_visibility() -> void:
 	cancel_pointer()
+	if app.screen == "play" and is_visible_in_tree() == visible:
+		app.popup_sound_revision += 1
+		app.audio.cue("construction_open" if visible else "construction_close")
 	if visible:
 		selected_filter = ""
 		visible_kinds = KINDS

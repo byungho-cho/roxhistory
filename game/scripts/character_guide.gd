@@ -155,8 +155,8 @@ func _process(delta:float)->void:
 	age+=delta;update_layout()
 	panel_group.modulate.a=smoothstep(0,.22,age)
 	character.modulate.a=smoothstep(.22,.48,age)
-	character.position.x=CHARACTER_RECT.position.x-24*(1-smoothstep(.22,.55,age))+sin(maxf(0,age-.55)*TAU*.35)*2
-	character.rotation=sin(age*1.08)*.0025
+	character.position.x=CHARACTER_RECT.position.x-24*(1-smoothstep(.22,.55,age))
+	character.position.y=CHARACTER_RECT.position.y+sin(age*2.2)*3.0
 	if revealed < message.length():
 		var speed := float(ProjectSettings.get_setting("roxhistory/tutorial/characters_per_second", DEFAULT_CHARS_PER_SECOND))
 		revealed += maxf(1, speed) * delta
@@ -164,5 +164,4 @@ func _process(delta:float)->void:
 		else:text_labels[1].visible_characters = int(revealed)
 	else:
 		next_hint.show()
-		next_hint.position.y = 572 + sin(age*4)*3
-		next_hint.modulate.a = .85 + .15*sin(age*4)
+		next_hint.position.x = 1075 + sin(age*3)*3

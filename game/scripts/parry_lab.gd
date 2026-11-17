@@ -99,27 +99,27 @@ func _ready() -> void:
 	damage = make_label("",Rect2(0,0,76,32),20)
 	damage.modulate = Color("ffd494")
 	var tray := Panel.new()
-	tray.position = Vector2(366,444)
-	tray.size = Vector2(228,93)
+	tray.position = Vector2(328,438)
+	tray.size = Vector2(304,100)
 	tray.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.add_child(tray)
 	var names := ["우람","한결","새봄"]
 	for i in 3:
-		var x := 375.5+71.5*i
-		var card := make_button("",Rect2(x,459,66,66),use_skill.bind(i))
+		var x := 344.0+92.0*i
+		var card := make_button("",Rect2(x,445,86,86),use_skill.bind(i))
 		card.name = "SkillCard%d"%i
 		for style in ["normal","hover","pressed","disabled","focus"]:
 			card.add_theme_stylebox_override(style,StyleBoxEmpty.new())
-		Art.picture(card,Hunt.CARD_PORTRAITS[[1,0,2][i]],Rect2(0,0,66,66))
+		Art.picture(card,Hunt.CARD_PORTRAITS[[1,0,2][i]],Rect2(0,0,86,86))
 		card.enable_art_feedback()
 		card_buttons.append(card)
 		for orb in 3:
-			Art.picture(canvas,Hunt.CHARGE_FULL,Rect2(x+6+19*orb,450,16,6))
-		skill_buttons.append(make_button("",Rect2(x+12,410,42,42),use_skill.bind(i)))
-		Art.picture(skill_buttons[i],SKILLS[i],Rect2(2,2,38,38))
+			Art.picture(canvas,Hunt.CHARGE_FULL,Rect2(x+14+21*orb,438,16,5))
+		skill_buttons.append(make_button("",Rect2(x+9,367,68,68),use_skill.bind(i)))
+		Art.picture(skill_buttons[i],SKILLS[i],Rect2(3,3,62,62))
 		skill_buttons[i].tooltip_text = ["우람 받아치기","한결 찌르기","새봄 협동"][i]
-		make_label(names[i],Rect2(x,501,66,23),14)
-		bars.append(make_hp(Rect2(x+3,527,60,8),Color("76ac55")))
+		make_label(names[i],Rect2(x,506,86,23),14)
+		bars.append(make_hp(Rect2(x+6,532,74,7),Color("76ac55")))
 	lab_audio = LabAudio.new()
 	add_child(lab_audio)
 	lab_audio.streams["boar_warning"] = preload("res://assets/ui/d0024/06-sfx-boar-hoof.wav")
@@ -344,8 +344,9 @@ func refresh(now: int) -> void:
 	var retreat := clampf(float(now-(trial.impact+160))/400.0,0,1) if not success else 0.0
 	var boar_at := BOAR_HOME.lerp(CONTACT,charge).lerp(BOAR_HOME,retreat)
 	boar.position = boar_at-Vector2(47,66)
-	var crouch := smoothstep(0.0,180.0,float(now-trial.warning))*(1.0-smoothstep(0.0,160.0,float(now-charge_start)))
+	var crouch := smoothstep(0.0,300.0,float(now-trial.warning))*(1.0-smoothstep(0.0,160.0,float(now-charge_start)))
 	boar.scale = Vector2(1.0+crouch*.055,1.0-crouch*.14)
+	boar.self_modulate = Color(1.0+crouch*.21,1.0-crouch*.10,1.0-crouch*.19)
 	boar.rotation = sin(now*.025)*.08 if stun else 0.0
 	enemy_bar.position = boar_at-Vector2(35,74)
 	enemy_bar.value = trial.boar_hp

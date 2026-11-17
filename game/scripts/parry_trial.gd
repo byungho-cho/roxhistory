@@ -1,6 +1,6 @@
 extends RefCounted
 
-const WARNING_MS := 1150
+const WARNING_MS := 2250
 const CHARGE_MS := 650
 const EARLIEST_MS := -320
 const LATEST_MS := -30
@@ -66,7 +66,7 @@ func parry_window(now: int) -> bool:
 
 func can_followup(index: int, now: int) -> bool:
 	if stun_end < 0 or followups[index]: return false
-	if index == 1 and hangeul_input >= 0: return saebom_until >= 0 and now < saebom_until
+	if index == 1: return saebom_until >= 0 and now < saebom_until
 	return now < stun_end
 
 func use_followup(index: int, now: int) -> bool:

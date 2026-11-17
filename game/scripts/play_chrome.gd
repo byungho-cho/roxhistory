@@ -144,10 +144,15 @@ func displayed_amount(key: String) -> int:
 func gained(kind: String, at: Vector2) -> void:
 	resource_burst(kind,PackedVector2Array([at]), true,0)
 
-func quest_reward_effect(origins: PackedVector2Array,total: int,preview: bool) -> void:
-	resource_burst("tokens",origins,false,0 if preview else total)
+func tutorial_reward_effect(kind: String, at: Vector2) -> void:
+	app.audio.cue("reward_"+kind)
+	resource_burst("tokens" if kind == "grain" else kind,PackedVector2Array([at]),true,0,true)
 
-func resource_burst(kind: String, origins: PackedVector2Array, world_space: bool, delayed_credit: int) -> void:
+func quest_reward_effect(origins: PackedVector2Array,total: int,preview: bool) -> void:
+	if not preview and total > 0: app.audio.cue("reward_grain")
+	resource_burst("tokens",origins,false,0 if preview else total,true)
+
+func resource_burst(kind: String, origins: PackedVector2Array, world_space: bool, delayed_credit: int, reward := false) -> void:
 	if origins.is_empty(): return
 	if app.reduced_ui_motion():
 		pulse[kind]=1.0
@@ -156,24 +161,28 @@ func resource_burst(kind: String, origins: PackedVector2Array, world_space: bool
 	if delayed_credit > 0:
 		held_quest_grain+=delayed_credit
 		sync_resource_counts()
-	quest_flights.append({"kind":kind,"origins":origins,"world_space":world_space,"total":delayed_credit,"age":0.0})
+	quest_flights.append({"kind":kind,"origins":origins,"world_space":world_space,"total":delayed_credit,"age":0.0,"reward":reward})
 	quest_fx.queue_redraw()
 
-func burst_lifetime(count: int) -> float:
-	return (count-1)*.10 + 7*PIECE_SPACING + PIECE_PAUSE + PIECE_FLIGHT
+func burst_stagger(batch: Dictionary) -> float:
+	return minf(.10,.6/maxi(1,batch.origins.size()-1))
+
+func burst_lifetime(batch: Dictionary) -> float:
+	if batch.reward: return 2.0
+	return (batch.origins.size()-1)*burst_stagger(batch) + 7*PIECE_SPACING + PIECE_PAUSE + PIECE_FLIGHT
 
 func advance_quest_flights(delta: float) -> bool:
 	if quest_flights.is_empty(): return false
 	for batch in quest_flights:
 		var previous: float = batch.age
 		batch.age+=delta
-		var end := burst_lifetime(batch.origins.size())
+		var end := burst_lifetime(batch)
 		if previous<end and batch.age>=end:
 			pulse[batch.kind]=1.0
 			if int(batch.total)>0:
 				held_quest_grain-=int(batch.total)
 				sync_resource_counts()
-	quest_flights=quest_flights.filter(func(batch):return batch.age<burst_lifetime(batch.origins.size()))
+	quest_flights=quest_flights.filter(func(batch):return batch.age<burst_lifetime(batch))
 	quest_fx.queue_redraw()
 	return true
 
@@ -181,18 +190,20 @@ func draw_quest_flights() -> void:
 	for batch in quest_flights:
 		var texture := resource_icon(batch.kind)
 		var goal := slot(batch.kind).position+Vector2(16,19)
+		var stagger := burst_stagger(batch)
+		var flight: float = burst_lifetime(batch)-(batch.origins.size()-1)*stagger-7*PIECE_SPACING-PIECE_PAUSE
 		for index in batch.origins.size():
 			var start: Vector2 = batch.origins[index]
 			if batch.world_space:
 				start = app.world.get_global_transform_with_canvas()*start
 			for piece in 8:
-				var age: float = batch.age-index*.10-piece*PIECE_SPACING
-				if age < 0.0 or age >= PIECE_PAUSE+PIECE_FLIGHT: continue
+				var age: float = batch.age-index*stagger-piece*PIECE_SPACING
+				if age < 0.0 or age >= PIECE_PAUSE+flight: continue
 				var kick := smoothstep(0.0,.11,age)
 				var angle := float(piece)*2.39996
 				var spread := Vector2(cos(angle)*(13.0+piece*1.9),sin(angle)*14.0-9.0)
 				var from := start+spread*kick
-				var arrival := clampf((age-PIECE_PAUSE)/PIECE_FLIGHT,0.0,1.0)
+				var arrival := clampf((age-PIECE_PAUSE)/flight,0.0,1.0)
 				var q := arrival*arrival
 				var arc := -sin(q*PI)*(19.0+piece*3.0)
 				var at := from.lerp(goal,q)+Vector2(0,arc)

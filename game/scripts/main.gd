@@ -784,6 +784,23 @@ func cover_intro(covered: Callable, thin_mist := false) -> void:
 		transition_started_at = Time.get_ticks_usec()
 		covered.call())
 
+func show_delayed_village_spinner() -> void:
+	var cloud := intro_cloud
+	var spinner := label(cloud,"◌",23,Color("665846"))
+	spinner.hide()
+	spinner.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	spinner.size = Vector2(28,28)
+	spinner.position = (cloud.size-spinner.size)*.5
+	spinner.pivot_offset = spinner.size*.5
+	spinner.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	spinner.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	var remove_spinner := func(): spinner.queue_free()
+	intro_world_prepared.connect(remove_spinner,CONNECT_ONE_SHOT)
+	await get_tree().create_timer(.45).timeout
+	if not is_instance_valid(spinner) or spinner.is_queued_for_deletion(): return
+	spinner.show()
+	spinner.create_tween().set_loops().tween_property(spinner,"rotation",TAU,1.3).from(0.0)
+
 func fit_intro_cloud() -> void:
 	(intro_cloud.material as ShaderMaterial).set_shader_parameter(
 		"aspect", intro_cloud.size.x / maxf(1.0,intro_cloud.size.y))
@@ -905,14 +922,10 @@ func leave_intro_under_cover(return_to_title := false) -> void:
 		return
 	if not model.state.is_empty() and not is_instance_valid(world):
 		if not is_instance_valid(prepared_intro_world):
-			intro_loading.text = "마을 준비 중…"
-			intro_loading.show()
+			show_delayed_village_spinner()
 			prepare_intro_world()
 			await intro_world_prepared
-		world = prepared_intro_world
-		prepared_intro_world = null
-		world.resume_staged_startup()
-		world.feedback.sound_cue.connect(audio.cue)
+		adopt_prepared_world()
 		await get_tree().physics_frame
 		world.refresh_residents()
 		await get_tree().process_frame
@@ -965,6 +978,12 @@ func prepare_intro_world() -> void:
 	preparing_intro_world = false
 	intro_probe_step("world",world_started)
 	intro_world_prepared.emit()
+
+func adopt_prepared_world() -> void:
+	world = prepared_intro_world
+	prepared_intro_world = null
+	world.resume_staged_startup()
+	world.feedback.sound_cue.connect(audio.cue)
 
 func intro_probe_step(phase: String, started: int) -> void:
 	if intro_probe and (intro_leaving or screen in ["intro","title"]):
@@ -1078,16 +1097,11 @@ func request_first_village() -> void:
 	first_village_loading = true
 	region_selection.cancel_input()
 	cover_intro(start_region_under_cover,true)
-	intro_loading.text = "마을 준비 중…"
 
 func start_region_under_cover() -> void:
-	intro_loading.show()
-	# Present the loading notice before synchronous world creation.
-	await get_tree().process_frame
-	await get_tree().process_frame
 	while not application_active:
 		await get_tree().process_frame
-	start_region()
+	await start_region()
 	await get_tree().process_frame
 	reveal_intro_destination()
 
@@ -1099,7 +1113,11 @@ func start_region() -> void:
 			remove_child(world)
 			world.queue_free()
 			world = null
-		enter_game(true)
+		show_delayed_village_spinner()
+		prepare_intro_world()
+		await intro_world_prepared
+		adopt_prepared_world()
+		await enter_game(true)
 
 func enter_game(first_entry:=false,spread_hud:=false) -> void:
 	if model.state.is_empty():
@@ -1410,7 +1428,7 @@ func apply_menu_state(animated:bool=false)->void:
 	menu_backdrop.hide()
 
 func inventory_summary() -> void:
-	show_modal("","",[],false,true,false,Vector2.ZERO,false,true)
+	show_modal("","",[],false,true,false,Vector2.ZERO,false,true,"bag_open")
 	show_modal_immediately()
 	overlay.set_meta("full_screen_bag", true)
 	var backdrop: Control=overlay.get_child(0)
@@ -1453,10 +1471,9 @@ func show_pending_quest_guide()->void:
 
 func claim_intro_reward(index:int)->void:
 	if not model.claim_quest_reward(index):return
-	audio.cue("reward")
 	if model.state.get("guided_intro",false):world.player.release_tutorial_camera()
-	var kind:String=FirstQuests.INTRO_KINDS[index] if index!=2 else "tokens"
-	chrome.gained(kind,world.player.position+Vector2(0,-52))
+	var kind: String = FirstQuests.INTRO_KINDS[index]
+	chrome.tutorial_reward_effect(kind,world.player.position+Vector2(0,-52))
 
 func first_construction_locked()->bool:
 	return model.chief_level()==0 and model.pending_construction_count("chief")==0 and FirstQuests.current(model.state) in [0,1]
@@ -1634,7 +1651,6 @@ func construction_menu()->void:
 		if choosing_plot:audio.cue("action_click")
 		return
 	build_side.toggle_animated()
-	audio.cue("action_click")
 
 func start_first_chief_placement()->void:
 	if screen!="play" or not is_instance_valid(world) or model.chief_level()>0 or model.pending_construction_count("chief")>0:return
@@ -2088,7 +2104,7 @@ func show_about() -> void:
 		{"text":"돌아가기","primary":true,"action":close_modal}])
 	enable_settings_backdrop()
 
-func show_modal(title: String, body: String, actions: Array, compact: bool = false, preserve_work:bool=false, brief:bool=false, panel_size:Vector2=Vector2.ZERO,confirmation:bool=false,custom_panel:=false) -> ScrollContainer:
+func show_modal(title: String, body: String, actions: Array, compact: bool = false, preserve_work:bool=false, brief:bool=false, panel_size:Vector2=Vector2.ZERO,confirmation:bool=false,custom_panel:=false, opening_cue := "popup_open") -> ScrollContainer:
 	if is_instance_valid(region_selection):region_selection.cancel_input()
 	if gestures: gestures.clear()
 	if is_instance_valid(joystick): joystick.clear()
@@ -2103,7 +2119,7 @@ func show_modal(title: String, body: String, actions: Array, compact: bool = fal
 	modal = true
 	sync_audio()
 	popup_sound_revision += 1
-	audio.cue("popup_open")
+	audio.cue(opening_cue)
 	overlay = Control.new();overlay.z_index=50
 	overlay.set_meta("fade_modal",true)
 	overlay.modulate.a = 0.0
@@ -2194,7 +2210,7 @@ func close_modal() -> void:
 	if is_instance_valid(overlay):
 		if overlay.has_meta("fade_modal"):
 			popup_sound_revision += 1
-			audio.cue("popup_close")
+			audio.cue("bag_close" if overlay.has_meta("full_screen_bag") else "popup_close")
 		if overlay.has_meta("restore_stage_visibility") and is_instance_valid(stage):stage.visible=overlay.get_meta("restore_stage_visibility")
 		retire_modal(overlay)
 	overlay = null

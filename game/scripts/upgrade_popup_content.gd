@@ -117,7 +117,7 @@ func _ready() -> void:
 		icon.custom_minimum_size = Vector2(32,32)
 		var amount := FigmaArt.text(item,str(costs.get(resource,0)),Rect2(0,0,0,32),18,FigmaArt.BODY,Color("553820"),false)
 		amount.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		add_shortage_art(item,icon,amount,resource)
+		add_shortage_art(item,amount,resource)
 	var seconds := int(app.model.building_duration(current+1,kind))
 	var time := "%d초" % seconds if seconds<60 else "%d분" % (seconds/60)
 	action(Rect2(270,300,192,44),"즉시 업그레이드","3",preload(UPDATE_ART+"diamond-premium-illustrated.png"),preload(FINISH_ART+"popup-button-stone-gray-disabled-192x44.svg"),true)
@@ -129,59 +129,69 @@ func _ready() -> void:
 	refresh_cost_ink()
 	app.model.changed.connect(refresh_cost_ink)
 
-func add_shortage_art(item: Control, icon: Control, amount: Control, resource: String) -> void:
-	var layer := Control.new()
-	layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	# A non-container overlay avoids reflow and is independent of the pulsing controls.
-	var text := FigmaArt.text(layer,"",Rect2(0,-19,78,22),14,FigmaArt.BODY,SHORTAGE_INK)
-	text.pivot_offset = Vector2(32,11)
-	text.add_theme_color_override("font_outline_color",Color("fff0d2"))
-	text.add_theme_constant_override("outline_size",4)
-	art.add_child(layer)
+func add_shortage_art(item: Control, amount: Label, resource: String) -> void:
+	var ring := Panel.new()
+	ring.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var outline := StyleBoxFlat.new()
+	outline.bg_color = Color.TRANSPARENT
+	outline.border_color = Color("c74635")
+	outline.set_border_width_all(2)
+	outline.set_corner_radius_all(7)
+	ring.add_theme_stylebox_override("panel",outline)
+	art.add_child(ring)
+	ring.hide()
+	var badge := Label.new()
+	badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	badge.add_theme_font_override("font",FigmaArt.BODY)
+	badge.add_theme_font_size_override("font_size",13)
+	badge.add_theme_color_override("font_color",Color("fff2d4"))
+	var fill := StyleBoxFlat.new()
+	fill.bg_color = Color("81271e")
+	fill.set_corner_radius_all(5)
+	badge.add_theme_stylebox_override("normal",fill)
+	art.add_child(badge)
 	var align := func():
-		var anchor := Vector2.ZERO
-		layer.position = art.get_global_transform().affine_inverse()*(item.get_global_transform()*anchor)
-	text.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	amount.item_rect_changed.connect(align)
+		var at: Vector2 = art.get_global_transform().affine_inverse()*item.get_global_transform().origin
+		badge.position = at+Vector2(0,-22)
+		badge.size = Vector2(item.size.x,18)
+		ring.position = at-Vector2(3,25)
+		ring.size = item.size+Vector2(6,28)
+		ring.pivot_offset = ring.size*.5
 	item.item_rect_changed.connect(align)
 	align.call_deferred()
-	shortage_items[resource] = [icon,amount]
-	shortage_labels[resource] = text
-	text.modulate.a = 0.0
-
-func pulse_shortage(seconds: float, item: Array) -> void:
-	var phase := seconds
-	var first := smoothstep(0.0,.18,phase)*(1.0-smoothstep(.18,.44,phase))
-	var second := smoothstep(.36,.55,phase)*(1.0-smoothstep(.55,.91,phase))
-	var bump := maxf(first,second*.68)*.09
-	for control: Control in item:
-		control.pivot_offset = control.size*.5
-		control.scale = Vector2.ONE*(1.0+bump)
+	shortage_items[resource] = [amount,ring]
+	shortage_labels[resource] = badge
 
 func resource_deficit(resource: String) -> int:
 	return int(costs.get(resource,0))-int(app.model.state.get(resource,0))
 
 func refresh_cost_ink() -> void:
 	for resource: String in shortage_items:
-		var amount: Label = shortage_items[resource][1]
-		amount.add_theme_color_override("font_color",SHORTAGE_INK if resource_deficit(resource)>0 else COST_INK)
-		if resource_deficit(resource)<=0:
-			shortage_labels[resource].modulate.a = 0.0
-		elif shortage_labels[resource].modulate.a>0.0:
-			shortage_labels[resource].text = "%d 부족"%resource_deficit(resource)
+		var amount: Label = shortage_items[resource][0]
+		var missing := resource_deficit(resource)
+		var required := int(costs.get(resource,0))
+		amount.text = "%d/%d"%[required-missing,required] if missing>0 else str(required)
+		amount.add_theme_color_override("font_color",SHORTAGE_INK if missing>0 else COST_INK)
+		var badge: Label = shortage_labels[resource]
+		badge.text = "%d 부족"%missing if missing>0 else ""
+		badge.visible = missing>0
+		if missing<=0: shortage_items[resource][1].hide()
 
 func play_shortage() -> bool:
 	refresh_cost_ink()
 	if resource_deficit("wood")<=0 and resource_deficit("stone")<=0: return false
-	if shortage_motion and shortage_motion.is_valid(): return true
+	if shortage_motion and shortage_motion.is_valid(): shortage_motion.kill()
 	shortage_motion=create_tween().set_parallel()
-	for resource in ["wood","stone"]:
-		var deficit := resource_deficit(resource)
-		if deficit<=0: continue
-		var text: Label = shortage_labels[resource]
-		text.text = "%d 부족"%deficit
-		text.modulate.a = 1.0
-		shortage_motion.tween_method(pulse_shortage.bind(shortage_items[resource]),0.0,1.0,1.0)
+	for resource: String in shortage_items:
+		if resource_deficit(resource)<=0: continue
+		var ring: Panel = shortage_items[resource][1]
+		ring.show()
+		ring.scale = Vector2.ONE
+		ring.modulate.a = 1.0
+		var target := Vector2.ONE if app.reduced_ui_motion() else Vector2.ONE*1.13
+		shortage_motion.tween_property(ring,"scale",target,.42).set_ease(Tween.EASE_OUT)
+		shortage_motion.tween_property(ring,"modulate:a",0.0,.42)
 	return true
 
 func request_upgrade() -> void:

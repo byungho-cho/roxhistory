@@ -217,7 +217,6 @@ static func receive(app: Node, cards: VBoxContainer, source: DemoButton, index :
 				origins.append(reward.get_global_rect().get_center())
 		while origins.size() < qty: origins.append(at+Vector2((origins.size()%3-1)*12,0))
 	if not take(app,index): return
-	app.audio.cue_reward_receipt()
 	app.chrome.quest_reward_effect(origins,qty*FirstQuests.MANUAL_AMOUNT,preview)
 	fill_cards(app,cards)
 	scroll.set_deferred("scroll_vertical",offset)
