@@ -10,10 +10,14 @@ const MOTIONS := {"idle":"대기","walk":"걷기","run":"달리기","club_attack
 const LOOP_MOTIONS := ["idle","walk","run"]
 const Art := preload("res://scripts/hunt_match_art.gd")
 const SIZE := Vector2(960,540)
+const MOTION_ANCHOR := Vector2(480,352)
 const RESULTS_SIZE := Vector2(1000,344)
 const SCREEN_MARGIN := 24.0
 const CONTROL_TARGET := 48.0
 const GOLD_BUTTON := preload("res://assets/ui/d0026/common-gold-default.svg")
+const SAPPHIRE_BUTTON := preload("res://assets/ui/d0026/common-sapphire-default.svg")
+const CLOSE_ICON := preload("res://assets/ui/d0020/popup-close-charcoal.svg")
+const RESULTS_ICON := preload("res://assets/ui/d0024/08-ui-rules-book.svg")
 const HOMES := [Vector2(500,306), Vector2(535,272), Vector2(543,326)]
 const BOAR_HOME := Vector2(665,236)
 const CONTACT := Vector2(557,270)
@@ -87,8 +91,8 @@ func _ready() -> void:
 	canvas = Art.layer(self,Vector2.ZERO)
 	header_title = make_label("실험실 · 우람 받아치기",Rect2(),20)
 	header_title.reparent(self,false)
-	exit_button = make_icon_button("×","실험실 나가기",func(): exited.emit())
-	results_button = make_icon_button("▤","테스트 결과 열기",open_results)
+	exit_button = make_icon_button("","실험실 나가기",func(): exited.emit(),CLOSE_ICON)
+	results_button = make_icon_button("","테스트 결과 열기",open_results,RESULTS_ICON)
 	retry_button = make_icon_button("↻","재도전",retry_round)
 	status = make_label("",Rect2(245,128,470,33),21)
 	stars = make_label("✦  ✧  ✦",Rect2(576,164,90,25),21)
@@ -184,6 +188,7 @@ func build_test_picker() -> void:
 	for key: String in MOTIONS:
 		var control := make_button(MOTIONS[key],Rect2(150+96*index,444,90,42),select_motion.bind(key))
 		control.toggle_mode = true
+		apply_game_button_art(control)
 		control.reparent(motion_canvas,false)
 		motion_buttons[key] = control
 		index+=1
@@ -191,9 +196,11 @@ func build_test_picker() -> void:
 		var title := "받아치기 테스트" if key=="parry" else "모션 테스트"
 		var control := make_button(title,Rect2(0,0,144,42),select_mode.bind(key))
 		control.toggle_mode = true
+		apply_game_button_art(control)
 		control.reparent(self,false)
 		mode_buttons[key]=control
 	compare_button = make_button("우람 B",Rect2(0,0,100,38),toggle_rig)
+	apply_game_button_art(compare_button)
 	compare_button.reparent(self,false)
 
 func select_mode(value: String) -> void:
@@ -213,17 +220,39 @@ func select_mode(value: String) -> void:
 	for actor in actors: actor.set_enabled(mode=="parry")
 	if mode=="parry":
 		if rig.get_parent()!=field: rig.reparent(field,false)
+		fit_rig_view(false)
 		sync_rig_choice()
 		restart()
 	else:
 		shield.hide()
 		rig.reparent(motion_canvas,false)
-		rig.position=Vector2(480,352)
+		motion_canvas.move_child(rig,0)
+		rig.position=MOTION_ANCHOR
+		fit_rig_view(true)
 		rig.set_enabled(true)
 		rig.show_pose("idle",0.0)
 		motion_status.text="동작을 선택해 주세요"
 		retry_button.disabled=true
 		results_button.disabled=reports.is_empty()
+
+func fit_rig_view(full_map: bool) -> void:
+	var battle_size := actors[0].viewport.size
+	var battle_zoom := actors[0].camera.size
+	var battle_display_scale := actors[0].display.scale
+	rig.camera.h_offset = 0.0
+	rig.camera.v_offset = 0.0
+	rig.viewport.size = Vector2i(SIZE) if full_map else battle_size
+	rig.camera.size = battle_zoom
+	rig.display.scale = battle_display_scale
+	if full_map:
+		# Expand the camera coverage while maintaining the character's on-screen size.
+		rig.camera.size *= SIZE.y / (battle_size.y * battle_display_scale.y * rig.scale.y)
+		rig.display.scale = Vector2.ONE / rig.scale
+		var center := rig.camera.unproject_position(Vector3.ZERO)
+		var units_per_pixel := rig.camera.size / SIZE.y
+		rig.camera.h_offset = (center.x - MOTION_ANCHOR.x) * units_per_pixel
+		rig.camera.v_offset = (MOTION_ANCHOR.y - center.y) * units_per_pixel
+	rig.display.position = -rig.camera.unproject_position(Vector3.ZERO) * rig.display.scale
 
 func toggle_rig() -> void:
 	use_rig=not use_rig
@@ -286,20 +315,33 @@ func fit() -> void:
 	results.scale = Vector2.ONE*popup_factor
 	results.position = region.get_center()-RESULTS_SIZE*popup_factor*.5
 
-func make_icon_button(symbol: String, description: String, action: Callable) -> Button:
+func make_icon_button(symbol: String, description: String, action: Callable, icon: Texture2D = null) -> Button:
 	var item := make_button(symbol,Rect2(Vector2.ZERO,Vector2.ONE*CONTROL_TARGET),action)
 	item.reparent(self,false)
 	item.tooltip_text = description
 	item.add_theme_font_size_override("font_size",22)
-	for state in ["normal","hover","pressed","disabled"]:
+	apply_game_button_art(item)
+	if icon:
+		item.icon = icon
+		item.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		item.add_theme_constant_override("icon_max_width",23)
+		var ink := Color("654522") if icon == RESULTS_ICON else Color.WHITE
+		for state in ["normal","hover","pressed","hover_pressed","disabled"]:
+			var property: String = "icon_normal_color" if state=="normal" else "icon_"+state+"_color"
+			item.add_theme_color_override(property,Color(ink,.55) if state=="disabled" else ink)
+	return item
+
+func apply_game_button_art(item: Button) -> void:
+	for state in ["normal","hover","pressed","hover_pressed","disabled"]:
+		var selected: bool = state in ["pressed","hover_pressed"] and item.toggle_mode
 		var skin := StyleBoxTexture.new()
-		skin.texture = GOLD_BUTTON
+		skin.texture = SAPPHIRE_BUTTON if selected else GOLD_BUTTON
 		for side in [SIDE_LEFT,SIDE_TOP,SIDE_RIGHT,SIDE_BOTTOM]:
 			skin.set_texture_margin(side,7)
 		skin.modulate_color = Color(.76,.69,.55,.7) if state=="disabled" else Color.WHITE
 		item.add_theme_stylebox_override(state,skin)
-		item.add_theme_color_override("font_color" if state=="normal" else "font_"+state+"_color",Color("502c12"))
-	return item
+		var ink := Color("fff3d0") if selected else Color("502c12")
+		item.add_theme_color_override("font_color" if state=="normal" else "font_"+state+"_color",ink)
 
 func make_label(value: String, rect: Rect2, px: int) -> Label:
 	var item: Label = app.label(canvas,value,px,Color("fff3d0"))
@@ -370,7 +412,9 @@ func build_results() -> void:
 	result_buttons.append(make_button("테스트 결과 복사",Rect2(24,284,206,34),copy_report))
 	result_buttons.append(make_button("닫기",Rect2(838,284,138,34),close_results))
 
-	for button in result_buttons: button.reparent(results,false)
+	for button in result_buttons:
+		apply_game_button_art(button)
+		button.reparent(results,false)
 
 func _input(event: InputEvent) -> void:
 	if showing_result and scroll_report(event):
