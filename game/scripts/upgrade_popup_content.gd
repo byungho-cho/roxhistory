@@ -247,7 +247,8 @@ func action(rect: Rect2, title: String, value: String, icon: Texture2D, locked: 
 	button.size=rect.size
 	for state in ["normal","hover","pressed","focus","disabled"]:
 		button.add_theme_stylebox_override(state,StyleBoxEmpty.new())
-	app.picture(button,SharedPopupArt.button_texture("stone","blue" if locked else "gold"),Rect2(Vector2.ZERO,rect.size))
+	var face: TextureRect = app.picture(button,SharedPopupArt.button_texture("stone","blue" if locked else "gold"),Rect2(Vector2.ZERO,rect.size))
+	face.stretch_mode=TextureRect.STRETCH_SCALE
 	var icon_x := 12.0 if locked else 15.0
 	app.picture(button,icon,Rect2(icon_x,9,25,25))
 	var ink := Color("fff3df") if locked else Color("472e1d")

@@ -22,9 +22,22 @@ static func apply_channel(channel: Array, enabled: bool, level: float) -> void:
 
 
 static func open(app: Node) -> void:
-	var scroll: ScrollContainer = app.show_modal("게임 설정","",[
+	var scroll: ScrollContainer = app.show_modal("사운드 설정","",[
 		{"text":"확인","primary":true,"action":app.close_modal}],false,true,false,Vector2(610,465))
 	scroll.name = "SoundSettingsScroll"
+	var modal_header: HBoxContainer = scroll.get_parent().get_node("ModalHeader")
+	var back: DemoButton = app.button(modal_header,"",app.show_game_settings)
+	back.name="SoundSettingsBack"
+	back.tooltip_text="뒤로가기"
+	back.custom_minimum_size=Vector2.ONE*48
+	for state in ["normal","hover","pressed","focus"]:
+		back.add_theme_stylebox_override(state,StyleBoxEmpty.new())
+	app.picture(back,preload("res://assets/ui/d0024/08-ui-back-button.png"),Rect2(5,5,38,38))
+	modal_header.move_child(back,0)
+	var close := modal_header.get_node("ModalClose") as Button
+	close.pressed.disconnect(app.close_modal)
+	close.pressed.connect(app.show_game_settings)
+	app.overlay.set_meta("back_action",app.show_game_settings)
 	var list := VBoxContainer.new()
 	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	list.add_theme_constant_override("separation", 6)
@@ -34,13 +47,15 @@ static func open(app: Node) -> void:
 	list.add_child(master_row)
 	add_description(app, master_row, "전체 사운드", "시작 화면의 스피커와 함께 켜고 꺼집니다.")
 	var master_text: Label = app.label(master_row, "", 15, Color("49321e"))
-	var master := speaker(app, master_row)
+	var master := SettingsSwitch.new()
+	master.name="MasterSoundSwitch"
+	master_row.add_child(master)
 	var sliders: Array[HSlider] = []
 	var switches: Array[DemoButton] = []
 	var refresh := func():
 		var master_on: bool = app.settings.get_value("app", "sound", true)
 		master_text.text = "전체 켜짐" if master_on else "전체 꺼짐"
-		app.update_speaker_icon(master, master_on)
+		master.show_state(master_on)
 		for i in CHANNELS.size():
 			var key: String = CHANNELS[i][0]
 			var on: bool = app.settings.get_value("app", key, true)
@@ -89,6 +104,7 @@ static func open(app: Node) -> void:
 		slider.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		slider.max_value = 100
 		slider.step = 1
+		slider.scrollable = false
 		slider.value = clampi(int(app.settings.get_value("app", key + "_volume", 100)), 0, 100)
 		for icon in ["grabber", "grabber_highlight", "grabber_disabled"]:
 			slider.add_theme_icon_override(icon, knob)

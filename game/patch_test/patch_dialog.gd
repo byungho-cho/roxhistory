@@ -171,7 +171,7 @@ func make_button() -> Button:
 func button_art(button: Button, texture: Texture2D) -> NinePatchRect:
 	var art := NinePatchRect.new()
 	art.texture = texture
-	art.position = Vector2(-1.5,0)
+	art.region_rect = Rect2(texture.get_image().get_used_rect())
 	art.scale = Vector2.ONE*.5
 	art.patch_margin_left = 24
 	art.patch_margin_right = 24
@@ -188,7 +188,7 @@ func set_action(button: Button, art: NinePatchRect, value: String, x: float, wid
 	button.position = Vector2(x,PAPER_SIZE.y-SharedPopupArt.FOOTER_BOTTOM-52)
 	button.size = Vector2(width,52)
 	button.tooltip_text = value
-	art.size = Vector2(width*2+6,110)
+	art.size = button.size*2.0
 	button.get_node("Caption").text = value
 
 func render(title: String, description: String, note: String, current: String, next: String, downloading: bool,
@@ -211,9 +211,9 @@ func render(title: String, description: String, note: String, current: String, n
 			notes_version = str(info.get("version",""))
 	notes_button.visible = not PATCH_NOTES.rows(notes_version).is_empty()
 	var both := not secondary.is_empty() and not primary.is_empty()
-	var right := PAPER_SIZE.x-SharedPopupArt.FOOTER_RIGHT
-	set_action(close_button,secondary_art,secondary,right-372 if both else right-single_width,180 if both else single_width)
-	set_action(update_button,primary_art,primary,right-180 if both else right-single_width,180 if both else single_width)
+	var x := (PAPER_SIZE.x-(372.0 if both else single_width))*.5
+	set_action(close_button,secondary_art,secondary,x,180 if both else single_width)
+	set_action(update_button,primary_art,primary,x+192 if both else x,180 if both else single_width)
 
 func show_notes() -> void:
 	if PATCH_NOTES.rows(notes_version).is_empty() or is_instance_valid(notes_panel):

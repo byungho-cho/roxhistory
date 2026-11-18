@@ -64,7 +64,6 @@ func style_scroll(bar: ScrollBar, vertical: bool) -> void:
 func content(title:String,subtitle:String,height := 664.0)->VBoxContainer:
 	var scroll:ScrollContainer=app.show_modal(title,"",[],false,true,false,Vector2(560,height))
 	scroll.name="ResidentAssignmentScroll"
-	style_scroll(scroll.get_v_scroll_bar(),true)
 	var list:=VBoxContainer.new();list.name="AssignmentContent";list.size_flags_horizontal=Control.SIZE_EXPAND_FILL;list.add_theme_constant_override("separation",14);scroll.add_child(list)
 	var text:Label=app.label(list,subtitle,17);text.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
 	return list

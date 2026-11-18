@@ -1979,6 +1979,9 @@ func quest_details() -> void:
 func pause_game() -> void:
 	cancel_task()
 	if is_instance_valid(world):model.save_position(world.player.position)
+	show_game_settings()
+
+func show_game_settings() -> void:
 	preload("res://scripts/game_settings_menu.gd").open(self)
 	enable_settings_backdrop()
 
@@ -2205,6 +2208,7 @@ func show_modal(title: String, body: String, actions: Array, compact: bool = fal
 	var scroll:ScrollContainer = DevelopmentSettingsScroll.new() if title in ["개발 설정","전체 주민 배분","일 선택","주민 배정","미배정 주민 선택"] or title.ends_with(" · 주민 배정") else ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	SharedPopupArt.style_scroll(scroll,finish=="stone")
 	v.add_child(scroll)
 	if not body.is_empty():
 		var text := paragraph(scroll,body,16 if brief else 20)
@@ -2233,7 +2237,7 @@ func show_modal(title: String, body: String, actions: Array, compact: bool = fal
 		var color: String = a.get("color","gold" if a.get("primary",false) or displayed_actions.size()==1 else "silver" if finish=="stone" else "gray")
 		SharedPopupArt.button_style(b,finish,color)
 		b.custom_minimum_size.x = minf(button_width,(width-36-padding.x+18-12*maxi(0,displayed_actions.size()-1))/maxi(1,displayed_actions.size()))
-		if finish=="stone": b.custom_minimum_size.y = 44.0
+		b.custom_minimum_size.y = 44.0 if finish=="stone" or brief else 55.0
 		b.add_theme_font_size_override("font_size",17)
 	return scroll
 
@@ -2408,6 +2412,9 @@ func go_back() -> void:
 	elif modal:
 		if is_instance_valid(resident_panel) and is_instance_valid(resident_panel.waiting_overlay):
 			resident_panel.close_waiting()
+		elif is_instance_valid(overlay) and overlay.has_meta("back_action"):
+			var back: Callable = overlay.get_meta("back_action")
+			back.call()
 		else:
 			close_modal()
 	elif screen == "hunt_select":
@@ -2592,10 +2599,6 @@ func show_notification_settings()->void:
 	original.queue_free()
 	var settings_menu := preload("res://scripts/game_settings_menu.gd")
 	settings_menu.icon_button(self, header, HudButtons.MODAL_CLOSE, "NotificationClose", close_modal)
-	var confirm := overlay.find_child("ModalActions", true, false).get_child(0) as DemoButton
-	confirm.size_flags_horizontal = Control.SIZE_SHRINK_END
-	confirm.custom_minimum_size = Vector2(116, 48)
-	confirm.get_parent().alignment = BoxContainer.ALIGNMENT_END
 	var list := VBoxContainer.new()
 	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	list.add_theme_constant_override("separation", 9)
@@ -2614,38 +2617,17 @@ func show_notification_settings()->void:
 		panel.add_child(row)
 		var text := label(row, titles[event], 17)
 		text.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		var toggle := button(row, "", func():pass)
-		toggle.custom_minimum_size = Vector2(88, 54)
-		var track := Panel.new()
-		track.position = Vector2(0, 12)
-		track.size = Vector2(88, 30)
-		track.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		toggle.add_child(track)
-		for state in ["normal","hover","pressed","disabled","focus"]:
-			toggle.add_theme_stylebox_override(state, StyleBoxEmpty.new())
-		var dot := Panel.new()
-		dot.size = Vector2(23, 23)
-		dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		track.add_child(dot)
-		var status := label(track, "", 13, Color("fff1d1"))
-		status.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var toggle := SettingsSwitch.new()
+		toggle.name = String(event).capitalize()+"NotificationSwitch"
+		row.add_child(toggle)
 		var target: String = event
 		var refresh := func():
 			var enabled: bool = VillageNotifications.setting(model.state, target)
-			var track_style := StyleBoxFlat.new()
-			track_style.bg_color = Color("674920") if enabled else Color("615a4b")
-			track_style.set_corner_radius_all(15)
-			track.add_theme_stylebox_override("panel", track_style)
-			var dot_style := StyleBoxFlat.new()
-			dot_style.bg_color = Color("f8d77e") if enabled else Color("e4d6b4")
-			dot_style.set_corner_radius_all(12)
-			dot.add_theme_stylebox_override("panel", dot_style)
-			dot.position = Vector2(61 if enabled else 4, 3)
-			status.position = Vector2(8 if enabled else 52, 4)
-			status.text = "켜짐" if enabled else "꺼짐"
-			toggle.set_meta("semantic_text", titles[target] + " " + status.text)
+			toggle.show_state(enabled)
+			toggle.set_meta("semantic_text",titles[target]+" "+toggle.text)
 		refresh.call()
 		toggle.pressed.connect(func():
+			audio.cue("ui")
 			var enabled: bool = VillageNotifications.setting(model.state, target)
 			if VillageNotifications.set_enabled(model, target, not enabled):
 				if not enabled and village_alerts:village_alerts.request_permission()

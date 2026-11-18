@@ -156,6 +156,7 @@ static func open(app:Node) -> void:
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
 	panel.add_child(scroll)
+	SharedPopupArt.style_scroll(scroll)
 	var cards := VBoxContainer.new()
 	cards.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	cards.add_theme_constant_override("separation",0)
@@ -166,7 +167,7 @@ static func open(app:Node) -> void:
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	var claim_all := art_button(app,panel,"ClaimAllQuestRewards",Rect2(footer-Vector2(336,55),Vector2(336,55)),func():
 		receive(app,cards,panel.get_node("ClaimAllQuestRewards")),"")
-	SharedPopupArt.button_style(claim_all,"wood","gold")
+	sliced_art(claim_all,SharedPopupArt.button_texture("wood","gold"),Rect2(0,0,336,55),28)
 	caption(app,claim_all,"모두 받기",Rect2(0,0,336,55),25,INK)
 	var badge: TextureRect = app.picture(claim_all,preload("res://assets/ui/d0031/reward-badge.png"),Rect2(304,-13,36,36))
 	badge.name = "PendingBadge"
