@@ -76,6 +76,9 @@ func resource_rail_rect() -> Rect2:
 	var width := clampf(right-left,160.0,RESOURCE_RAIL_SIZE.x)
 	var top: float = app.safe.y+(69.0 if portrait_layout else -1.0)
 	right -= clampf(right-width-left,0.0,app.h*.08)
+	if not portrait_layout:
+		var available := minimap_hit_rect().position.x-2.0-right
+		right += clampf(available,0.0,app.h*(50.0/1546.0))
 	return Rect2(right-width,top,width,RESOURCE_RAIL_SIZE.y*width/RESOURCE_RAIL_SIZE.x)
 
 func slot(kind: String) -> Rect2:

@@ -2,7 +2,7 @@ extends Control
 
 const INK := Color("49321e")
 const MUTED := Color("917957")
-const PAPER_SIZE := Vector2(500,340)
+const PAPER_SIZE := Vector2(500,356)
 const FONT := preload("res://assets/fonts/NotoSansKR.ttf")
 const GOLD := preload("res://assets/ui/d0049/button-wood-gold.png")
 const METAL := preload("res://assets/ui/d0049/button-wood-gray.png")
@@ -103,7 +103,7 @@ func _ready() -> void:
 	notes_button.pressed.connect(show_notes)
 	apk_link_button = make_button()
 	apk_link_button.name = "FullApkLink"
-	apk_link_button.position = Vector2(26,286)
+	apk_link_button.position = Vector2(26,216)
 	apk_link_button.size = Vector2(448,44)
 	var apk_caption := make_label(14,700,Color("183d65"))
 	apk_link_button.add_child(apk_caption)
@@ -185,7 +185,7 @@ func button_art(button: Button, texture: Texture2D) -> NinePatchRect:
 
 func set_action(button: Button, art: NinePatchRect, value: String, x: float, width: float) -> void:
 	button.visible = not value.is_empty()
-	button.position = Vector2(x,232)
+	button.position = Vector2(x,PAPER_SIZE.y-SharedPopupArt.FOOTER_BOTTOM-52)
 	button.size = Vector2(width,52)
 	button.tooltip_text = value
 	art.size = Vector2(width*2+6,110)
@@ -211,8 +211,9 @@ func render(title: String, description: String, note: String, current: String, n
 			notes_version = str(info.get("version",""))
 	notes_button.visible = not PATCH_NOTES.rows(notes_version).is_empty()
 	var both := not secondary.is_empty() and not primary.is_empty()
-	set_action(close_button,secondary_art,secondary,64 if both else (500-single_width)*.5,180 if both else single_width)
-	set_action(update_button,primary_art,primary,256 if both else (500-single_width)*.5,180 if both else single_width)
+	var right := PAPER_SIZE.x-SharedPopupArt.FOOTER_RIGHT
+	set_action(close_button,secondary_art,secondary,right-372 if both else right-single_width,180 if both else single_width)
+	set_action(update_button,primary_art,primary,right-180 if both else right-single_width,180 if both else single_width)
 
 func show_notes() -> void:
 	if PATCH_NOTES.rows(notes_version).is_empty() or is_instance_valid(notes_panel):

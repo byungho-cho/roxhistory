@@ -276,10 +276,14 @@ func request_cancel(key:String,upgrade:bool)->void:
 		app.label(table,"%d개"%int(job.cost[material]),16,Color("493220"))
 		var amount: Label = app.label(table,"%d개"%int(returned[material]),16,Color("175789"))
 		amount.add_theme_font_override("font",FigmaArt.BODY)
-	var actions := HBoxContainer.new()
-	actions.add_theme_constant_override("separation",12)
-	actions.alignment = BoxContainer.ALIGNMENT_END
-	layout.add_child(actions)
+	var actions := app.overlay.find_child("ModalActions",true,false) as HBoxContainer
+	var footer := actions.get_parent() as MarginContainer
+	var panel := content.get_parent().get_parent() as Control
+	var anchor := SharedPopupArt.footer_anchor(panel.size,Vector2(364,44))
+	var padding := panel.size-anchor
+	footer.add_theme_constant_override("margin_right",roundi(padding.x)-18)
+	footer.add_theme_constant_override("margin_bottom",roundi(padding.y)-18)
+	footer.show()
 	cancel_action(actions,"공사 계속",app.close_modal,false)
 	cancel_action(actions,"공사 취소",confirm_cancel.bind(key,upgrade),true)
 

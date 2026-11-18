@@ -142,6 +142,7 @@ static func open(app:Node) -> void:
 	var rows := 5 if room.y >= 614.0 * factor else 4
 	var height := 229.0 + rows*77.0
 	var panel := dialog(app,"QuestRewardPanel",Vector2(870,height),factor)
+	panel.add_theme_stylebox_override("panel",SharedPopupArt.panel_style("wood","m"))
 	var heading := caption(app,panel,"퀘스트 보상",Rect2(61,23,590,58),40,INK)
 	heading.name = "QuestRewardHeading"
 	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
@@ -159,11 +160,13 @@ static func open(app:Node) -> void:
 	cards.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	cards.add_theme_constant_override("separation",0)
 	scroll.add_child(cards)
-	rule(panel,Rect2(60,height-113,750,1.5))
+	var footer := SharedPopupArt.footer_anchor(panel.size,Vector2(336,55))
+	rule(panel,Rect2(60,height-113,footer.x-60,1.5))
 	var hint := caption(app,panel,"아이콘을 눌러 받기",Rect2(61,height-101,300,25),16,INK)
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	var claim_all := gold_button(app,panel,"ClaimAllQuestRewards",Rect2(443,height-94,336,55),func():
+	var claim_all := art_button(app,panel,"ClaimAllQuestRewards",Rect2(footer-Vector2(336,55),Vector2(336,55)),func():
 		receive(app,cards,panel.get_node("ClaimAllQuestRewards")),"")
+	SharedPopupArt.button_style(claim_all,"wood","gold")
 	caption(app,claim_all,"모두 받기",Rect2(0,0,336,55),25,INK)
 	var badge: TextureRect = app.picture(claim_all,preload("res://assets/ui/d0031/reward-badge.png"),Rect2(304,-13,36,36))
 	badge.name = "PendingBadge"

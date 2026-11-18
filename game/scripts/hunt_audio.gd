@@ -17,6 +17,8 @@ const LEVELS := {
 }
 
 const COMBAT_CUES := ["monster_death","S12","S13","S14","S15","S16","S17","S18","S19","S20","S21","S22","S23","S24","S25","S26","S27"]
+const HUNT_GAIN := 1.30
+const HUNT_PRESENTATION_CUES := ["S09","S10","S11","boar_warning","uram_strike","uram_parry","uram_hurt"]
 
 var streams := {}
 var pool: Array[AudioStreamPlayer] = []
@@ -87,4 +89,12 @@ func cue(id: String, priority := 1) -> void:
 	player.bus = &"Combat" if id in COMBAT_CUES else &"SFX"
 	player.stream = streams[id]
 	player.volume_db = linear_to_db(.125) if id == "S09" else float(LEVELS.get(id, -12.0))
+	if id in COMBAT_CUES or id in HUNT_PRESENTATION_CUES:
+		player.volume_db += linear_to_db(HUNT_GAIN)
 	player.play()
+
+func stop_cue(id: String) -> void:
+	recent.erase(APPROVED.get(id,id))
+	for player in pool:
+		if player.stream == streams.get(id):
+			player.stop()

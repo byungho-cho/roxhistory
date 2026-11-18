@@ -2,6 +2,7 @@ class_name QuestScreen
 extends RefCounted
 
 const INK := Color("49321e")
+const JOURNAL := "res://assets/ui/d0050/"
 var app: Node
 var panel: Panel
 var body: Control
@@ -40,13 +41,7 @@ func open() -> void:
 
 func select_tab(index: int) -> void:
 	for item in tabs.size():
-		var skin := StyleBoxFlat.new()
-		skin.bg_color = Color("fff4db") if item == index else Color("ecdab7")
-		skin.border_color = Color("c8ad85")
-		skin.set_border_width_all(1)
-		skin.border_width_bottom = 0
-		skin.corner_radius_top_left = 6
-		skin.corner_radius_top_right = 6
+		var skin := journal_skin("tab-selected" if item==index else "tab-unselected")
 		for state in ["normal","hover","pressed","focus"]:
 			tabs[item].add_theme_stylebox_override(state,skin)
 			var font_color := "font_color" if state == "normal" else "font_%s_color"%state
@@ -68,6 +63,13 @@ func story() -> void:
 	scroll.size = Vector2(332,468)
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	body.add_child(scroll)
+	var rail := scroll.get_v_scroll_bar()
+	var track := journal_skin("scroll-rail",4)
+	track.content_margin_left = 5
+	track.content_margin_right = 5
+	rail.add_theme_stylebox_override("scroll",track)
+	for state in ["grabber","grabber_highlight","grabber_pressed"]:
+		rail.add_theme_stylebox_override(state,journal_skin("scroll-thumb",4))
 	var rows := VBoxContainer.new()
 	rows.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	rows.add_theme_constant_override("separation",12)
@@ -85,6 +87,8 @@ func story() -> void:
 				style_row(row_buttons[row_index],row_index == selected)
 			render_details(details,current))
 		row.custom_minimum_size = Vector2(0,84)
+		# Only the background changes on press. Preserve all content transforms.
+		row.set_process(false)
 		row_buttons.append(row)
 		style_row(row, index == selected)
 		app.picture(row,QuestRewards.objective_icon(index),Rect2(10,14,49,55))
@@ -96,13 +100,19 @@ func story() -> void:
 		scroll.set_deferred("scroll_vertical",scroll_at*96)
 
 func style_row(row: DemoButton, active: bool) -> void:
-	var skin := StyleBoxFlat.new()
-	skin.bg_color = Color("f0dcb5") if active else Color("fff7e4")
-	skin.border_color = Color("b99055") if active else Color("dcc59d")
-	skin.set_corner_radius_all(10)
-	skin.set_border_width_all(1)
+	var skin := journal_skin("list-selected" if active else "list-normal")
+	var pressed := skin.duplicate() as StyleBoxTexture
+	pressed.modulate_color = Color(1,1,1,.82)
 	for style in ["normal","hover","pressed","focus"]:
-		row.add_theme_stylebox_override(style,skin)
+		row.add_theme_stylebox_override(style,pressed if style=="pressed" else skin)
+
+func journal_skin(part: String, cap := 9) -> StyleBoxTexture:
+	var skin := StyleBoxTexture.new()
+	skin.texture = load(JOURNAL+"journal-"+part+".png")
+	for side in [SIDE_LEFT,SIDE_TOP,SIDE_RIGHT,SIDE_BOTTOM]:
+		skin.set_texture_margin(side,cap)
+		skin.set_content_margin(side,0)
+	return skin
 
 func render_details(details: Control, current: int) -> void:
 	app.clear_children(details)
@@ -111,21 +121,19 @@ func render_details(details: Control, current: int) -> void:
 	text(details,FirstQuests.TITLES[selected],Rect2(164,43,550,45),34)
 	text(details,FirstQuests.OBJECTIVES[selected],Rect2(164,93,540,31),20)
 	QuestRewards.rule(details,Rect2(0,143,733,1))
+	var footer := SharedPopupArt.footer_anchor(panel.size,Vector2(720,73))-Vector2(396,99)
 	var status_box := Panel.new()
-	status_box.position = Vector2(0,164)
-	status_box.size = Vector2(733,223)
-	var surface := StyleBoxFlat.new()
-	surface.bg_color = Color("fff7e4")
-	surface.set_corner_radius_all(10)
-	status_box.add_theme_stylebox_override("panel",surface)
+	status_box.position = Vector2(0,footer.y-191)
+	status_box.size = Vector2(footer.x,88)
+	status_box.add_theme_stylebox_override("panel",journal_skin("goal-card"))
 	details.add_child(status_box)
 	var done: bool = FirstQuests.IDS[selected] in app.model.state.get("quests_done",[])
-	text(status_box,"임무 진행",Rect2(18,60,240,29),21)
-	var tally := text(status_box,"%d / 1" % int(done),Rect2(560,60,150,29),20)
+	text(status_box,"임무 진행",Rect2(18,12,240,29),21)
+	var tally := text(status_box,"%d / 1" % int(done),Rect2(footer.x-168,12,150,29),20)
 	tally.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	var progress := ProgressBar.new()
-	progress.position = Vector2(18,110)
-	progress.size = Vector2(692,26)
+	progress.position = Vector2(18,52)
+	progress.size = Vector2(footer.x-36,14)
 	progress.max_value = 1
 	progress.value = int(done)
 	progress.show_percentage = false
@@ -136,22 +144,21 @@ func render_details(details: Control, current: int) -> void:
 		progress.add_theme_stylebox_override(part,track_style)
 	status_box.add_child(progress)
 	var reward := Panel.new()
-	reward.position = Vector2(0,418)
-	reward.size = Vector2(488,73)
-	var reward_style := StyleBoxFlat.new()
-	reward_style.bg_color = Color("eddbb8")
-	reward_style.set_corner_radius_all(10)
-	reward.add_theme_stylebox_override("panel",reward_style)
+	reward.position = Vector2(0,footer.y-73)
+	reward.size = Vector2(474,73)
+	reward.add_theme_stylebox_override("panel",journal_skin("reward-card"))
 	details.add_child(reward)
 	text(reward,"보상",Rect2(17,22,85,32),22)
 	var kind: String = FirstQuests.INTRO_KINDS[selected] if selected < FirstQuests.INTRO_KINDS.size() else "grain"
 	app.picture(reward,PlayChrome.CORN_ICON if kind == "grain" else DemoArt.icon(kind),Rect2(104,9,57,55))
 	var amount := FirstQuests.INTRO_AMOUNT if selected < FirstQuests.INTRO_KINDS.size() else FirstQuests.MANUAL_AMOUNT
 	text(reward,str(amount),Rect2(174,22,110,32),22)
-	var track := QuestRewards.art_button(app,details,"QuestTrack",Rect2(507,418,228,73),func():
+	var track := QuestRewards.art_button(app,details,"QuestTrack",Rect2(footer-Vector2(228,73),Vector2(228,73)),func():
 		app.close_modal()
 		app.guide_current_quest())
-	SharedPopupArt.button_style(track,"wood","gold")
+	var track_skin := journal_skin("track-gold-face")
+	for style in ["normal","hover","pressed","focus","disabled"]:
+		track.add_theme_stylebox_override(style,track_skin)
 	track.disabled = selected != current
 	track.modulate.a = .55 if track.disabled else 1.0
 	app.picture(track,DemoArt.icon("compass"),Rect2(34,20,31,31))

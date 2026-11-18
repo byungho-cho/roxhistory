@@ -16,6 +16,8 @@ var shortage_items: Dictionary = {}
 var shortage_labels: Dictionary = {}
 var shortage_motion: Tween
 var submission_pending := false
+var footer_buttons: Array[DemoButton] = []
+var footer_rule: ColorRect
 const COST_INK := Color("553820")
 const SHORTAGE_INK := Color("a32a20")
 
@@ -34,7 +36,7 @@ func _ready() -> void:
 	fit()
 	rule(Rect2(0,0,652,1))
 	rule(Rect2(284,20,1,239))
-	rule(Rect2(0,277,652,1))
+	footer_rule = rule(Rect2(0,277,652,1))
 	var shade := Gradient.new()
 	shade.colors=PackedColorArray([Color(.29,.20,.13,.25),Color(.29,.20,.13,0)])
 	var texture := GradientTexture2D.new()
@@ -193,13 +195,14 @@ func request_upgrade() -> void:
 		submission_pending = false
 		refresh_cost_ink()
 
-func rule(rect: Rect2, parent: Control = null) -> void:
+func rule(rect: Rect2, parent: Control = null) -> ColorRect:
 	var line := ColorRect.new()
 	line.position=rect.position
 	line.size=rect.size
 	line.color=Color(.55,.38,.23,.38)
 	line.mouse_filter=Control.MOUSE_FILTER_IGNORE
 	(parent if parent else art).add_child(line)
+	return line
 
 func request_instant_upgrade() -> void:
 	if submission_pending or not can_process(): return
@@ -225,10 +228,20 @@ func fit() -> void:
 	var factor := minf(1.0,minf(size.x/DESIGN_SIZE.x,size.y/DESIGN_SIZE.y))
 	art.scale=Vector2.ONE*factor
 	art.position=(size-art.size*factor)*.5
+	if factor<=0.0 or footer_buttons.size()!=2: return
+	var shell := get_parent().get_parent().get_parent() as Control
+	var group_size := Vector2(370,44)*factor
+	var padding := shell.size-SharedPopupArt.footer_anchor(shell.size,group_size)
+	var anchor := (size - padding + Vector2.ONE*18.0 - art.position)/factor
+	for i in footer_buttons.size():
+		footer_buttons[i].position = anchor-Vector2(370-194*i,44)
+	if anchor.y-52.0>263.0:
+		footer_rule.size.x = anchor.x
 
 func action(rect: Rect2, title: String, value: String, icon: Texture2D, locked: bool) -> void:
 	var button: DemoButton=app.button(art,"",request_upgrade if not locked else request_instant_upgrade,false,"","")
 	button.name="InstantUpgrade" if locked else "ConfirmUpgrade"
+	footer_buttons.append(button)
 	button.custom_minimum_size=Vector2.ZERO
 	button.position=rect.position
 	button.size=rect.size

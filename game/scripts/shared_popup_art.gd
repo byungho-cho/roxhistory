@@ -4,6 +4,8 @@ extends RefCounted
 const ASSETS := "res://assets/ui/d0049/"
 const CLOSE := preload(ASSETS+"popup-close-x.png")
 const WOOD_DIVIDER := preload(ASSETS+"popup-divider.png")
+const FOOTER_RIGHT := 50.0
+const FOOTER_BOTTOM := 40.0
 
 static func shell(finish: String, format: String) -> Texture2D:
 	return load(ASSETS+"popup-%s-%s.png" % [finish,format]) as Texture2D
@@ -32,3 +34,8 @@ static func close_icon(button: Button) -> void:
 	icon.texture = CLOSE
 	icon.size = Vector2.ONE*20
 	icon.position = (button.size-icon.size)*.5
+
+static func footer_anchor(panel_size: Vector2, button_group_size: Vector2) -> Vector2:
+	var right := clampf(panel_size.x-button_group_size.x-18.0,18.0,FOOTER_RIGHT)
+	var bottom := clampf(panel_size.y*.16,18.0,FOOTER_BOTTOM)
+	return panel_size-Vector2(right,bottom)

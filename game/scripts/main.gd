@@ -2209,9 +2209,18 @@ func show_modal(title: String, body: String, actions: Array, compact: bool = fal
 	if not body.is_empty():
 		var text := paragraph(scroll,body,16 if brief else 20)
 		text.custom_minimum_size.x = width-60
+	var footer := MarginContainer.new()
+	var button_width := 176.0 if finish=="stone" else 137.0
+	var group_size := Vector2(button_width*displayed_actions.size()+12.0*maxi(0,displayed_actions.size()-1),44.0)
+	var padding := Vector2(width,height)-SharedPopupArt.footer_anchor(Vector2(width,height),group_size)
+	footer.add_theme_constant_override("margin_right",roundi(padding.x)-18)
+	footer.add_theme_constant_override("margin_bottom",roundi(padding.y)-18)
+	footer.visible = not displayed_actions.is_empty()
+	v.add_child(footer)
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation",12)
-	v.add_child(row)
+	row.alignment = BoxContainer.ALIGNMENT_END
+	footer.add_child(row)
 	row.name="ModalActions"
 	for a in displayed_actions:
 		var b := button(row,a.text,a.action,a.get("primary",false))
@@ -2223,11 +2232,8 @@ func show_modal(title: String, body: String, actions: Array, compact: bool = fal
 		b.add_theme_font_override("font",FigmaArt.BODY)
 		var color: String = a.get("color","gold" if a.get("primary",false) or displayed_actions.size()==1 else "silver" if finish=="stone" else "gray")
 		SharedPopupArt.button_style(b,finish,color)
-		if finish=="stone":
-			row.alignment = BoxContainer.ALIGNMENT_END
-			b.custom_minimum_size = Vector2(176,44)
-		else:
-			b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		b.custom_minimum_size.x = minf(button_width,(width-36-padding.x+18-12*maxi(0,displayed_actions.size()-1))/maxi(1,displayed_actions.size()))
+		if finish=="stone": b.custom_minimum_size.y = 44.0
 		b.add_theme_font_size_override("font_size",17)
 	return scroll
 

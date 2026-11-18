@@ -10,6 +10,10 @@ const URAM_STRIKE := preload("res://assets/audio/lab-uram-res009/strike-c.mp3")
 const URAM_HURT := preload("res://assets/audio/lab-uram-res009/hurt-a.mp3")
 const URAM_PARRY := preload("res://assets/audio/lab-uram-res009/parry-c.mp3")
 const HURT_PREVIEW_CUE_S := .10
+const STRIKE_CONTACT_RATIO := .50
+const PARRY_CONTACT_RATIO := .29
+const FULL_STRIKE_CONTACT_S := 236.0/60.0
+const FULL_PARRY_CONTACT_S := 322.0/60.0
 const MOTIONS := {"idle":"대기","walk":"걷기","run":"달리기","club_attack":"둔기 공격","hit_reaction":"피격","parry":"받아치기","full_motion":"합본"}
 const LOOP_MOTIONS := ["idle","walk","run"]
 const Art := preload("res://scripts/hunt_match_art.gd")
@@ -251,6 +255,8 @@ func fit_rig_view(preview: UramRig, full_map: bool) -> void:
 
 func select_motion(key: String) -> void:
 	if mode!="motion": return
+	for cue in ["uram_strike","uram_parry","uram_hurt"]:
+		lab_audio.stop_cue(cue)
 	motion_clip=key
 	motion_age=0.0
 	motion_hurt_played=false
@@ -261,6 +267,7 @@ func select_motion(key: String) -> void:
 
 func advance_motion(delta: float) -> void:
 	if motion_clip.is_empty(): return
+	var before := motion_age
 	motion_age+=delta
 	var length := uram_preview.clip_length(motion_clip)
 	# The live miss hits Hangeol, not Uram. Audition Uram's hurt only in his dedicated pose preview.
@@ -273,6 +280,16 @@ func advance_motion(delta: float) -> void:
 		uram_preview.show_pose(motion_clip,motion_age)
 	else:
 		uram_preview.show_pose("idle",fposmod(motion_age-length,uram_preview.clip_length("idle")))
+	match motion_clip:
+		"club_attack": preview_contact(before,length*STRIKE_CONTACT_RATIO,"uram_strike")
+		"parry": preview_contact(before,length*PARRY_CONTACT_RATIO,"uram_parry")
+		"full_motion":
+			preview_contact(before,FULL_STRIKE_CONTACT_S,"uram_strike")
+			preview_contact(before,FULL_PARRY_CONTACT_S,"uram_parry")
+
+func preview_contact(before: float, at: float, cue: String) -> void:
+	if before < at and motion_age >= at:
+		lab_audio.cue(cue)
 
 func fit() -> void:
 	var region := Rect2(Vector2.ZERO,size)

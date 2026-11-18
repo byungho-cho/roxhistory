@@ -96,7 +96,7 @@ func _ready() -> void:
 		hold_at=Vector2(origin[0],origin[1])
 	voice.bus=&"SFX"
 	voice.stream=ENTRY_AUDIO
-	voice.volume_db=linear_to_db(.50)
+	voice.volume_db=linear_to_db(.50*preload("res://scripts/hunt_audio.gd").HUNT_GAIN)
 	add_child(voice)
 	skip_hint=title(self,"스킵",Rect2(),23)
 	skip_hint.horizontal_alignment=HORIZONTAL_ALIGNMENT_RIGHT
