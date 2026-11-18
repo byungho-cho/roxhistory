@@ -6,6 +6,9 @@ const Trial := preload("res://scripts/parry_trial.gd")
 const Hunt := preload("res://scripts/deer_hunt_screen.gd")
 const LabAudio := preload("res://scripts/hunt_audio.gd")
 const UramRig := preload("res://scripts/uram_lab_rig.gd")
+const Res011Preview := preload("res://scripts/res011_lab_preview.gd")
+const CHARACTERS := {"uram":"우람","hangyeol":"한결","saebom":"새봄"}
+const PREVIEW_NAMES := {"hangyeol":"석창 찌르기","saebom":"돌팔매"}
 const URAM_STRIKE := preload("res://assets/audio/lab-uram-res009/strike-c.mp3")
 const URAM_HURT := preload("res://assets/audio/lab-uram-res009/hurt-a.mp3")
 const URAM_PARRY := preload("res://assets/audio/lab-uram-res009/parry-c.mp3")
@@ -44,8 +47,13 @@ var uram_preview: UramRig
 var motion_hurt_played := false
 var motion_canvas: Control
 var motion_status: Label
+var motion_caption: Label
 var motion_buttons: Dictionary = {}
 var mode_buttons: Dictionary = {}
+var character_buttons: Dictionary = {}
+var selected_character := "uram"
+var model_preview: Res011Preview
+var model_age := 0.0
 var mode := ""
 var motion_clip := ""
 var motion_age := 0.0
@@ -96,12 +104,12 @@ func _ready() -> void:
 	ground.set_anchors_and_offsets_preset(PRESET_FULL_RECT)
 	ground.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	canvas = Art.layer(self,Vector2.ZERO)
-	header_title = make_label("실험실 · 우람 받아치기",Rect2(),20)
+	header_title = make_label("실험실 · 모델 테스트",Rect2(),20)
 	header_title.reparent(self,false)
 	exit_button = make_icon_button("","실험실 나가기",func(): exited.emit(),CLOSE_ICON)
 	results_button = make_icon_button("","테스트 결과 열기",open_results,RESULTS_ICON)
 	retry_button = make_icon_button("↻","재도전",retry_round)
-	status = make_label("",Rect2(245,128,470,33),21)
+	status = make_label("",Rect2(245,154,470,33),21)
 	stars = make_label("✦  ✧  ✦",Rect2(576,164,90,25),21)
 	stars.modulate = Color("ffe29b")
 	field = Node2D.new()
@@ -165,16 +173,17 @@ func _ready() -> void:
 	fit()
 	canvas.hide()
 	motion_canvas.hide()
+	retry_button.hide()
 	retry_button.disabled = true
 	results_button.disabled = true
 	for actor in actors: actor.set_enabled(false)
 
 func build_test_picker() -> void:
 	motion_canvas = Art.layer(self,Vector2.ZERO)
-	motion_status = make_label("동작을 선택해 주세요",Rect2(230,134,500,42),24)
+	motion_status = make_label("동작을 선택해 주세요",Rect2(230,162,500,42),24)
 	motion_status.reparent(motion_canvas,false)
-	var caption := make_label(URAM_PREVIEW_LABEL,Rect2(355,357,250,30),18)
-	caption.reparent(motion_canvas,false)
+	motion_caption = make_label(URAM_PREVIEW_LABEL,Rect2(355,357,250,30),18)
+	motion_caption.reparent(motion_canvas,false)
 	var index := 0
 	for key: String in MOTIONS:
 		var control := make_button(MOTIONS[key],Rect2(150+96*index,444,90,42),select_motion.bind(key))
@@ -184,26 +193,48 @@ func build_test_picker() -> void:
 		motion_buttons[key] = control
 		index+=1
 	for key in ["parry","motion"]:
-		var title := "받아치기 테스트" if key=="parry" else "모션 테스트"
-		var control := make_button(title,Rect2(0,0,144,42),select_mode.bind(key))
+		var title := "전용 스킬 테스트" if key=="parry" else "모션 테스트"
+		var control := make_button(title,Rect2(0,0,166,42),select_mode.bind(key))
 		control.toggle_mode = true
 		apply_game_button_art(control)
 		control.reparent(self,false)
 		mode_buttons[key]=control
+	for key: String in CHARACTERS:
+		var control := make_button(CHARACTERS[key],Rect2(0,0,91,40),select_character.bind(key))
+		control.toggle_mode = true
+		apply_game_button_art(control)
+		control.set_pressed_no_signal(key==selected_character)
+		control.reparent(self,false)
+		character_buttons[key] = control
+
+func select_character(value: String) -> void:
+	if not CHARACTERS.has(value): return
+	for key in character_buttons:
+		character_buttons[key].set_pressed_no_signal(key==value)
+	if selected_character==value: return
+	reset_test()
+	selected_character=value
+	if is_instance_valid(model_preview):
+		model_preview.set_enabled(false)
+		model_preview.queue_free()
+		model_preview=null
+	results_button.disabled = value!="uram" or reports.is_empty()
+
 func select_mode(value: String) -> void:
-	for key in mode_buttons: mode_buttons[key].set_pressed_no_signal(key==value)
-	if mode==value: return
+	if not mode_buttons.has(value): return
+	if mode==value:
+		mode_buttons[value].set_pressed_no_signal(true)
+		return
+	reset_test()
 	mode=value
-	trial=null
-	lab_audio.update(false,false)
-	impacts.clear()
-	close_results()
-	motion_clip=""
-	motion_age=0.0
-	for control: Button in motion_buttons.values(): control.set_pressed_no_signal(false)
+	mode_buttons[value].set_pressed_no_signal(true)
+	if selected_character!="uram":
+		start_model_review()
+		return
 	canvas.visible=mode=="parry"
 	motion_canvas.visible=mode=="motion"
-	actors[0].set_enabled(false)
+	motion_caption.text=URAM_PREVIEW_LABEL
+	for control: Button in motion_buttons.values(): control.show()
 	for i in range(1,actors.size()):
 		actors[i].set_enabled(mode=="parry")
 	place_uram_preview(mode=="motion")
@@ -212,8 +243,46 @@ func select_mode(value: String) -> void:
 	else:
 		uram_preview.show_pose("idle",0.0)
 		motion_status.text="동작을 선택해 주세요"
-		retry_button.disabled=true
 		results_button.disabled=reports.is_empty()
+
+func reset_test() -> void:
+	mode=""
+	trial=null
+	lab_audio.update(false,false)
+	impacts.clear()
+	close_results()
+	motion_clip=""
+	motion_age=0.0
+	model_age=0.0
+	retry_button.hide()
+	retry_button.disabled=true
+	for control: Button in mode_buttons.values(): control.set_pressed_no_signal(false)
+	for control: Button in motion_buttons.values(): control.set_pressed_no_signal(false)
+	canvas.hide()
+	motion_canvas.hide()
+	for actor in actors: actor.set_enabled(false)
+	if is_instance_valid(uram_preview): uram_preview.set_enabled(false)
+	if is_instance_valid(model_preview): model_preview.set_enabled(false)
+
+func start_model_review() -> void:
+	motion_canvas.show()
+	for control: Button in motion_buttons.values(): control.hide()
+	if not is_instance_valid(model_preview):
+		model_preview = Res011Preview.new()
+		model_preview.character = selected_character
+		model_preview.render_size_factor = .75
+		model_preview.position = Vector2(480,325)
+		model_preview.scale = Vector2.ONE*.92
+		motion_canvas.add_child(model_preview)
+		motion_canvas.move_child(model_preview,0)
+	model_preview.set_enabled(true)
+	motion_status.text = PREVIEW_NAMES[selected_character]+" · 1회"
+	motion_caption.text = CHARACTERS[selected_character]
+	model_age=0.0
+	model_preview.sample(0.0)
+	results_button.disabled=true
+	retry_button.disabled=false
+	retry_button.show()
 
 func place_uram_preview(for_motion: bool) -> void:
 	var holder: Node = motion_canvas if for_motion else field
@@ -263,6 +332,7 @@ func select_motion(key: String) -> void:
 	for item in motion_buttons: motion_buttons[item].set_pressed_no_signal(item==key)
 	motion_status.text=MOTIONS[key]+(" · 반복" if key in LOOP_MOTIONS else " · 1회")
 	retry_button.disabled=false
+	retry_button.show()
 	uram_preview.show_pose(key,0.0)
 
 func advance_motion(delta: float) -> void:
@@ -309,8 +379,11 @@ func fit() -> void:
 	exit_button.position = Vector2(left,top)
 	results_button.position = Vector2(right,top)
 	retry_button.position = Vector2(right,region.end.y-CONTROL_TARGET-SCREEN_MARGIN)
-	mode_buttons.parry.position=Vector2(region.get_center().x-150,top+50)
-	mode_buttons.motion.position=Vector2(region.get_center().x+6,top+50)
+	var middle := region.get_center().x
+	for index in character_buttons.size():
+		character_buttons[CHARACTERS.keys()[index]].position=Vector2(middle-146+100*index,top+43)
+	mode_buttons.parry.position=Vector2(middle-172,top+88)
+	mode_buttons.motion.position=Vector2(middle+6,top+88)
 	var title_width := maxf(0,2.0*minf(size.x*.5-left-CONTROL_TARGET,right-size.x*.5))
 	header_title.add_theme_font_size_override("font_size",clampi(int(title_width/10),11,20))
 	header_title.size = Vector2(title_width,CONTROL_TARGET)
@@ -427,7 +500,7 @@ func _input(event: InputEvent) -> void:
 	if event is InputEventScreenTouch:
 		if event.pressed:
 			if touch_id >= 0: return
-			var buttons: Array = result_buttons if showing_result else [exit_button,results_button,retry_button] + mode_buttons.values()
+			var buttons: Array = result_buttons if showing_result else [exit_button,results_button,retry_button] + character_buttons.values() + mode_buttons.values()
 			if not showing_result:
 				if mode=="parry": buttons.append_array(card_buttons+skill_buttons)
 				elif mode=="motion": buttons.append_array(motion_buttons.values())
@@ -478,10 +551,16 @@ func close_results() -> void:
 
 func retry_round() -> void:
 	if showing_result: return
+	if selected_character!="uram":
+		if not mode.is_empty(): start_model_review()
+		return
 	if mode=="parry": restart()
 	elif mode=="motion" and not motion_clip.is_empty(): select_motion(motion_clip)
 
 func restart() -> void:
+	lab_audio.update(false,false)
+	lab_audio.recent.clear()
+	lab_audio.update(app.audio.enabled,not app.application_active)
 	rounds += 1
 	frames = 0
 	normal_at = -1
@@ -493,6 +572,7 @@ func restart() -> void:
 	trial = Trial.new(Time.get_ticks_msec())
 	round_done = false
 	retry_button.disabled = false
+	retry_button.show()
 	results_button.disabled = reports.is_empty()
 	close_results()
 	status.show()
@@ -573,6 +653,11 @@ func show_damage(now: int, amount: int, ally: bool) -> void:
 	damage.position = (HOMES[1] if ally else boar.position+Vector2(47,12))-Vector2(38,52)
 
 func _process(delta: float) -> void:
+	if selected_character!="uram":
+		if is_instance_valid(model_preview) and app.application_active and model_age<model_preview.duration():
+			model_age=minf(model_age+delta,model_preview.duration())
+			model_preview.sample(model_age)
+		return
 	if mode=="motion":
 		lab_audio.update(app.audio.enabled,not app.application_active)
 		advance_motion(delta)
