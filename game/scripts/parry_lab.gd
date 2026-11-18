@@ -19,7 +19,8 @@ const STRIKE_CONTACT_RATIO := .50
 const PARRY_CONTACT_RATIO := .29
 const FULL_STRIKE_CONTACT_S := 236.0/60.0
 const FULL_PARRY_CONTACT_S := 322.0/60.0
-const MOTIONS := {"idle":"대기","walk":"걷기","run":"달리기","club_attack":"둔기 공격","hit_reaction":"피격","parry":"받아치기","full_motion":"합본"}
+const Catalog := preload("res://scripts/lab_motion_catalog.gd")
+const MOTIONS := Catalog.MOTIONS
 const LOOP_MOTIONS := ["idle","walk","run"]
 const Art := preload("res://scripts/hunt_match_art.gd")
 const SIZE := Vector2(960,540)
@@ -61,6 +62,7 @@ var selected_character := "uram"
 var model_preview: Res011Preview
 var model_age := 0.0
 var mode := ""
+var selected_motion_key := "idle"
 var motion_clip := ""
 var motion_age := 0.0
 var actors: Array[HybridCharacter] = []
@@ -197,7 +199,7 @@ func build_test_picker() -> void:
 	comparison_button.hide()
 	var index := 0
 	for key: String in MOTIONS:
-		var control := make_button(MOTIONS[key],Rect2(150+96*index,444,90,42),select_motion.bind(key))
+		var control := make_button(MOTIONS[key],Catalog.button_rect(index),select_motion.bind(key))
 		control.toggle_mode = true
 		apply_game_button_art(control)
 		control.reparent(motion_canvas,false)
@@ -252,7 +254,9 @@ func select_mode(value: String) -> void:
 	canvas.visible=mode=="parry"
 	motion_canvas.visible=mode=="motion"
 	motion_caption.text=URAM_PREVIEW_LABEL
-	for control: Button in motion_buttons.values(): control.show()
+	for key in motion_buttons:
+		motion_buttons[key].show()
+		motion_buttons[key].disabled = not Catalog.CLIPS[selected_character].has(key)
 	comparison_button.visible = mode=="motion"
 	for i in range(1,actors.size()):
 		actors[i].set_enabled(mode=="parry")
@@ -268,7 +272,9 @@ func toggle_appearance_comparison() -> void:
 	if mode!="motion" or selected_character!="uram": return
 	if is_instance_valid(appearance_comparison):
 		close_appearance_comparison()
-		for control: Button in motion_buttons.values(): control.show()
+		for key in motion_buttons:
+			motion_buttons[key].show()
+			motion_buttons[key].disabled = not Catalog.CLIPS[selected_character].has(key)
 		motion_status.show()
 		motion_caption.show()
 		uram_preview.set_enabled(true)
@@ -336,11 +342,12 @@ func open_all_motion() -> void:
 	results_button.disabled = true
 	for key in AllMotion.MOTIONS:
 		var index := all_motion_buttons.size()
-		var control := make_button(AllMotion.MOTIONS[key],Rect2(74+116*index,437,110,42),select_all_motion.bind(key))
+		var control := make_button(AllMotion.MOTIONS[key],Catalog.button_rect(index),select_all_motion.bind(key))
 		control.name = "AllMotion_"+key
 		control.toggle_mode = true
 		apply_game_button_art(control)
 		control.reparent(all_motion,false)
+		control.disabled = not ["uram","hangyeol","saebom"].any(func(c): return Catalog.CLIPS[c].has(key))
 		all_motion_buttons[key] = control
 	fit()
 
@@ -354,7 +361,9 @@ func select_all_motion(key: String) -> void:
 
 func start_model_review() -> void:
 	motion_canvas.show()
-	for control: Button in motion_buttons.values(): control.hide()
+	for key in motion_buttons:
+		motion_buttons[key].show()
+		motion_buttons[key].disabled = not Catalog.CLIPS[selected_character].has(key)
 	if not is_instance_valid(model_preview):
 		model_preview = Res011Preview.new()
 		model_preview.character = selected_character
@@ -367,7 +376,8 @@ func start_model_review() -> void:
 	motion_status.text = PREVIEW_NAMES[selected_character]+" · 1회"
 	motion_caption.text = CHARACTERS[selected_character]
 	model_age=0.0
-	model_preview.sample(0.0)
+	selected_motion_key = "skill" if mode=="parry" else "idle"
+	model_preview.sample_motion(selected_motion_key,0.0)
 	results_button.disabled=true
 	retry_button.disabled=false
 	retry_button.show()
@@ -412,16 +422,24 @@ func fit_rig_view(preview: UramRig, full_map: bool) -> void:
 
 func select_motion(key: String) -> void:
 	if mode!="motion": return
+	if not Catalog.CLIPS[selected_character].has(key): return
+	selected_motion_key=key
+	if selected_character!="uram":
+		model_age=0.0
+		model_preview.sample_motion(key,0.0)
+		for item in motion_buttons: motion_buttons[item].set_pressed_no_signal(item==key)
+		motion_status.text=MOTIONS[key]
+		return
 	for cue in ["uram_strike","uram_parry","uram_hurt"]:
 		lab_audio.stop_cue(cue)
-	motion_clip=key
+	motion_clip=Catalog.CLIPS.uram[key]
 	motion_age=0.0
 	motion_hurt_played=false
 	for item in motion_buttons: motion_buttons[item].set_pressed_no_signal(item==key)
 	motion_status.text=MOTIONS[key]+(" · 반복" if key in LOOP_MOTIONS else " · 1회")
 	retry_button.disabled=false
 	retry_button.show()
-	uram_preview.show_pose(key,0.0)
+	uram_preview.show_pose(motion_clip,0.0)
 
 func advance_motion(delta: float) -> void:
 	if motion_clip.is_empty(): return
@@ -647,10 +665,12 @@ func retry_round() -> void:
 		if not all_motion.selection.is_empty(): select_all_motion(all_motion.selection)
 		return
 	if selected_character!="uram":
-		if not mode.is_empty(): start_model_review()
+		if not mode.is_empty():
+			model_age=0.0
+			model_preview.sample_motion(selected_motion_key,0.0)
 		return
 	if mode=="parry": restart()
-	elif mode=="motion" and not motion_clip.is_empty(): select_motion(motion_clip)
+	elif mode=="motion" and not motion_clip.is_empty(): select_motion(selected_motion_key)
 
 func restart() -> void:
 	lab_audio.update(false,false)
@@ -752,9 +772,9 @@ func _process(delta: float) -> void:
 		if app.application_active: all_motion.advance(delta)
 		return
 	if selected_character!="uram":
-		if is_instance_valid(model_preview) and app.application_active and model_age<model_preview.duration():
-			model_age=minf(model_age+delta,model_preview.duration())
-			model_preview.sample(model_age)
+		if is_instance_valid(model_preview) and app.application_active and (selected_motion_key in LOOP_MOTIONS or model_age<model_preview.duration()):
+			model_age+=delta
+			model_preview.sample(fposmod(model_age,model_preview.duration()) if selected_motion_key in LOOP_MOTIONS else minf(model_age,model_preview.duration()))
 		return
 	if mode=="motion":
 		if is_instance_valid(appearance_comparison): return

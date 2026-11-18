@@ -1,0 +1,43 @@
+{
+  "instruction": "D20261119-0056",
+  "candidate_status": "intermediate, user approval pending",
+  "sources": {
+    "hangyeol-walk-req013.glb": "ba489352e39b631ff77398ee2625c7ac4627876a2a906642eb97211d307c22a3",
+    "hangyeol-spear-guard-recoil.glb": "94cf6e368aa09540493636a2484c3054fca9f49e0af9d6c08cb736d2873e6bce",
+    "run.glb": "b808c3d97271803b040ad2075c87fd0ffda14156010ae477b1f4fe4ff464bcd1",
+    "hangyeol-lab-req031.glb": "f4282d47bb347d3b184372102d70a0d16aa344d1692fa73eda892f13b65956d1",
+    "saebom-req028.glb": "69aa327cd9e918baaa3d0bed0249ce8dd52e003f41075aed259d439aceb460ce"
+  },
+  "clips": {
+    "hangyeol-lab-req031.glb": [
+      "idle",
+      "basic_attack",
+      "hit_reaction",
+      "parry_counter",
+      "stone_spear_thrust",
+      "full_motion",
+      "jump_spear_auto_r03",
+      "run",
+      "walk",
+      "spear_guard"
+    ],
+    "saebom-req028.glb": [
+      "idle",
+      "basic_attack",
+      "hit_reaction",
+      "parry_counter",
+      "sling_cast",
+      "walk",
+      "run",
+      "sling_heavy",
+      "full_motion"
+    ]
+  },
+  "assembly": "RES-029 latest body/run, native walk REQ013 and spear_guard imported by identical skeleton node names and rest transforms. Native channels unchanged; old Han full_motion is not selected. Latest timeline drives explicit clips.",
+  "runtime_scale_all": {
+    "uram": ".92 * 1.30",
+    "hangyeol": ".92 * 1.05",
+    "saebom": ".92 * 1.05"
+  },
+  "gameplay": "D0055 R03 model path/timing preserved; new candidate models lab only."
+}

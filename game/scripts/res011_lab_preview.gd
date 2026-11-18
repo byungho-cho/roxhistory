@@ -1,6 +1,7 @@
 extends HybridCharacter
 
-const ASSETS := "res://assets/characters/d0051/"
+const ASSETS := "res://assets/characters/d0056/"
+const Catalog := preload("res://scripts/lab_motion_catalog.gd")
 const JUMP_MODEL := "res://assets/characters/d0055/hangyeol-auto-r03.glb"
 const JUMP_CLIP := "jump_spear_auto_r03"
 const JUMP_SECONDS := 3.2
@@ -13,6 +14,8 @@ const MOTION_DISPLAY_SCALE := .92
 const MOTION_GROUND_Y := 325.0
 const MOTION_HEADING := atan2(1.0,.28)
 
+var motion_key := "idle"
+var timeline: Dictionary = {}
 var character := "hangyeol"
 var shared_motion_view := false
 var animation: AnimationPlayer
@@ -21,15 +24,14 @@ var cool_fill: DirectionalLight3D
 
 func _ready() -> void:
 	super._ready()
-	if character=="hangyeol":
-		var display_scale := display.scale
-		viewport.size = Vector2i(768,720)
-		camera.size = 7.0
-		display.scale = display_scale
-		display.position = -camera.unproject_position(Vector3.ZERO)*display.scale
+	var display_scale := display.scale
+	viewport.size = Vector2i(768,720)
+	camera.size = 7.0
+	display.scale = display_scale
+	display.position = -camera.unproject_position(Vector3.ZERO)*display.scale
 
 func build_villager() -> void:
-	var packed := load(JUMP_MODEL if character=="hangyeol" else ASSETS+character+"-combat.glb") as PackedScene
+	var packed := load(ASSETS+("hangyeol-lab-req031.glb" if character=="hangyeol" else "saebom-req028.glb")) as PackedScene
 	var model := packed.instantiate() as Node3D
 	pivot.add_child(model)
 	model.scale = Vector3.ONE*1.24
@@ -39,7 +41,8 @@ func build_villager() -> void:
 	camera.look_at(GAME_AIM)
 	animation = model.find_children("*","AnimationPlayer",true,false)[0]
 	animation.callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_MANUAL
-	animation.play(CLIPS[character])
+	timeline = JSON.parse_string(FileAccess.get_file_as_string(ASSETS+"hangyeol-timeline.json"))
+	animation.play("idle")
 	animation.advance(0.0)
 	if character=="saebom" and not shared_motion_view:
 		var lighting := viewport.find_children("*","WorldEnvironment",true,false)[0] as WorldEnvironment
@@ -56,8 +59,31 @@ func set_corrected_light(corrected: bool) -> void:
 	environment.ambient_light_energy = .65 if corrected else .50
 	cool_fill.light_energy = .28 if corrected else 0.0
 
+func motion_supported(key: String) -> bool:
+	return Catalog.CLIPS[character].has(key)
+
+func motion_duration(key: String) -> float:
+	if not motion_supported(key): return 0.0
+	if character=="hangyeol" and key=="full": return float(timeline.seconds)
+	return animation.get_animation(Catalog.CLIPS[character][key]).length
+
 func duration() -> float:
-	return animation.current_animation_length
+	return motion_duration(motion_key)
 
 func sample(seconds: float) -> void:
-	animation.seek(clampf(seconds,0.0,duration()),true)
+	sample_motion(motion_key,seconds)
+
+func sample_motion(key: String, seconds: float) -> void:
+	motion_key = key if motion_supported(key) else "idle"
+	var clip: String = Catalog.CLIPS[character][motion_key]
+	var at := seconds
+	if clip=="playlist":
+		clip="idle"
+		for segment in timeline.segments:
+			if seconds<float(segment.end):
+				clip=segment.clip
+				at=fposmod(maxf(0.0,seconds-float(segment.start)),float(segment.native_length))
+				break
+	if animation.current_animation!=clip:
+		animation.play(clip)
+	animation.seek(clampf(at,0.0,animation.get_animation(clip).length),true)

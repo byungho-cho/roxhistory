@@ -3,15 +3,10 @@ extends Control
 const UramRig := preload("res://scripts/uram_lab_rig.gd")
 const Res011Preview := preload("res://scripts/res011_lab_preview.gd")
 const NAMES := {"uram":"우람","hangyeol":"한결","saebom":"새봄"}
-const MOTIONS := {"idle":"대기","walk":"걷기","run":"달리기","attack":"공격","hit_reaction":"피격","parry":"받아치기","full":"전체 모션"}
-const CLIPS := {
-	"uram":{"idle":"idle","walk":"walk","run":"run","attack":"club_attack","hit_reaction":"hit_reaction","parry":"parry","full":"full_motion"},
-	"hangyeol":{"attack":Res011Preview.JUMP_CLIP},
-	"saebom":{"attack":"sling_cast"},
-}
-# The approved Uram composite starts its club attack at frame 216 (60 fps).
-const COMPOSITE_ATTACK_START := 216.0/60.0
-const REPEATS := ["idle","walk","run"]
+const Catalog := preload("res://scripts/lab_motion_catalog.gd")
+const MOTIONS := Catalog.MOTIONS
+const CLIPS := Catalog.CLIPS
+const REPEATS := Catalog.REPEATS
 
 var previews: Dictionary = {}
 var statuses: Dictionary = {}
@@ -45,6 +40,8 @@ func _ready() -> void:
 			preview.pivot.rotation.y = Res011Preview.MOTION_HEADING
 			preview.display.position = -preview.camera.unproject_position(Vector3.ZERO)*preview.display.scale
 			preview.scale *= 1.3
+		else:
+			preview.scale *= 1.05
 		# Double the vertical extent at unchanged pixel density so R03 can jump
 		# and travel inside its own render target without moving the 2D actor.
 		preview.viewport.size = Vector2i(768,720)
@@ -87,21 +84,20 @@ func render_frame() -> void:
 		sample(character,clip if playing else "",fposmod(elapsed,length) if playing else 0.0)
 
 func clip_for(character: String) -> String:
-	var category := "attack" if selection=="full" and character!="uram" else selection
-	return CLIPS[character].get(category,"")
+	return CLIPS[character].get(selection,"")
 
-func start_for(character: String) -> float:
-	return COMPOSITE_ATTACK_START if selection=="full" and character!="uram" else 0.0
+func start_for(_character: String) -> float:
+	return 0.0
 
 func clip_duration(character: String, clip: String) -> float:
 	var preview: HybridCharacter = previews[character]
 	if preview is UramRig: return preview.clip_length(clip)
-	return (preview as Res011Preview).duration()
+	return preview.motion_duration(selection)
 
 func sample(character: String, clip: String, seconds: float) -> void:
 	var preview: HybridCharacter = previews[character]
 	if preview is UramRig:
 		preview.show_pose("idle" if clip.is_empty() else clip,seconds)
 	else:
-		(preview as Res011Preview).sample(seconds)
+		preview.sample_motion("idle" if clip.is_empty() else selection,seconds)
 	preview.viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
