@@ -10,7 +10,7 @@ const AppearanceComparison := preload("res://scripts/uram_appearance_comparison.
 const Res011Preview := preload("res://scripts/res011_lab_preview.gd")
 const AllMotion := preload("res://scripts/lab_all_motion.gd")
 const CHARACTERS := {"uram":"우람","hangyeol":"한결","saebom":"새봄","all":"모두"}
-const PREVIEW_NAMES := {"hangyeol":"석창 찌르기","saebom":"돌팔매"}
+const PREVIEW_NAMES := {"hangyeol":"점프 찌르기 R03","saebom":"돌팔매"}
 const URAM_STRIKE := preload("res://assets/audio/lab-uram-res009/strike-c.mp3")
 const URAM_HURT := preload("res://assets/audio/lab-uram-res009/hurt-a.mp3")
 const URAM_PARRY := preload("res://assets/audio/lab-uram-res009/parry-c.mp3")
@@ -334,12 +334,6 @@ func open_all_motion() -> void:
 	all_motion.name = "AllMotionComparison"
 	motion_canvas.add_child(all_motion)
 	results_button.disabled = true
-	for step in [-1,1]:
-		var navigation := make_button("‹" if step<0 else "›",Rect2(78 if step<0 else 288,389,42,32),all_motion.scroll_by.bind(step*AllMotion.URAM_STEP))
-		navigation.name = "UramSizePrevious" if step<0 else "UramSizeNext"
-		apply_game_button_art(navigation)
-		navigation.reparent(all_motion,false)
-		all_motion.navigation_buttons.append(navigation)
 	for key in AllMotion.MOTIONS:
 		var index := all_motion_buttons.size()
 		var control := make_button(AllMotion.MOTIONS[key],Rect2(74+116*index,437,110,42),select_all_motion.bind(key))
@@ -602,7 +596,6 @@ func _input(event: InputEvent) -> void:
 					buttons.append(comparison_button)
 					buttons.append_array(motion_buttons.values())
 					buttons.append_array(all_motion_buttons.values())
-					if is_instance_valid(all_motion): buttons.append_array(all_motion.navigation_buttons)
 			for button in buttons:
 				if button.is_visible_in_tree() and not button.disabled and button.get_global_rect().has_point(event.position):
 					touch_id = event.index

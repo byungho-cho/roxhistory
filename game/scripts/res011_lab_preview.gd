@@ -1,7 +1,11 @@
 extends HybridCharacter
 
 const ASSETS := "res://assets/characters/d0051/"
-const CLIPS := {"hangyeol":"stone_spear_thrust","saebom":"sling_cast"}
+const JUMP_MODEL := "res://assets/characters/d0055/hangyeol-auto-r03.glb"
+const JUMP_CLIP := "jump_spear_auto_r03"
+const JUMP_SECONDS := 3.2
+const JUMP_CONTACT_SECONDS := 94.0/60.0
+const CLIPS := {"hangyeol":JUMP_CLIP,"saebom":"sling_cast"}
 const GAME_CAMERA := Vector3(.33,7.05,6.0)
 const GAME_AIM := Vector3(.33,1.45,0.0)
 const MOTION_RENDER_FACTOR := .75
@@ -15,8 +19,17 @@ var animation: AnimationPlayer
 var environment: Environment
 var cool_fill: DirectionalLight3D
 
+func _ready() -> void:
+	super._ready()
+	if character=="hangyeol":
+		var display_scale := display.scale
+		viewport.size = Vector2i(768,720)
+		camera.size = 7.0
+		display.scale = display_scale
+		display.position = -camera.unproject_position(Vector3.ZERO)*display.scale
+
 func build_villager() -> void:
-	var packed := load(ASSETS+character+"-combat.glb") as PackedScene
+	var packed := load(JUMP_MODEL if character=="hangyeol" else ASSETS+character+"-combat.glb") as PackedScene
 	var model := packed.instantiate() as Node3D
 	pivot.add_child(model)
 	model.scale = Vector3.ONE*1.24

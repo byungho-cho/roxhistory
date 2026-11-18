@@ -24,6 +24,8 @@ var hit_damage := 0
 var hit_on_hunter := false
 var hit_label: Label
 const IMPACT_SECONDS := RULES.POSE_SECONDS * .5
+const HangyeolJump := preload("res://scripts/hangyeol_jump_preview.gd")
+const JumpMotion := preload("res://scripts/res011_lab_preview.gd")
 # Final 1920×1080 placement centers expressed in the 960×540 game canvas.
 const ALLY_CELLS := [Vector2(396.5,377.5),Vector2(422.75,321.75),Vector2(475.25,358.75),
 	Vector2(449,266),Vector2(501.5,303),Vector2(554,340)]
@@ -161,7 +163,7 @@ func _ready() -> void:
 	actors.y_sort_enabled = true
 	battlefield.add_child(actors)
 	for index in 3:
-		var hunter: HybridCharacter = COMBAT_PREVIEW.new() if index == 1 else HybridCharacter.new()
+		var hunter: HybridCharacter = COMBAT_PREVIEW.new() if index == 1 else HangyeolJump.new() if index==0 else HybridCharacter.new()
 		if index == 2:hunter.model_path = HybridCharacter.MESHY_HUNT_MODEL
 		hunter.render_size_factor = .5
 		actors.add_child(hunter)
@@ -933,8 +935,10 @@ func play_pose(id: String) -> void:
 	pose = id
 	pose_clock = 0.0
 	impact_pending = true
+	if id=="thrust":
+		rules.action_lock = maxf(rules.action_lock,JumpMotion.JUMP_SECONDS)
 	match id:
-		"thrust","auto_thrust":hunt_audio.cue("S15",2)
+		"auto_thrust":hunt_audio.cue("S15",2)
 		"strike":hunt_audio.cue("S18",2)
 		"team":hunt_audio.cue("S20",2)
 
@@ -957,7 +961,7 @@ func _process(delta: float) -> void:
 	if transition_elapsed>=0:
 		advance_transition(delta)
 	elif running and not result_shown:
-		if impact_pending and pose_clock >= IMPACT_SECONDS:
+		if impact_pending and pose_clock >= (JumpMotion.JUMP_CONTACT_SECONDS if pose=="thrust" else IMPACT_SECONDS):
 			var before_hp := rules.hunter_hp if pose == "counter" else rules.deer_hp
 			rules.resolve_attack()
 			hit_damage = before_hp - (rules.hunter_hp if pose == "counter" else rules.deer_hp)
@@ -966,10 +970,11 @@ func _process(delta: float) -> void:
 				hit_kind = pose
 				hit_on_hunter = pose == "counter"
 				var attacker := hunters[rules.attacker]
-				hit_origin = attacker.contact_point() if attacker is COMBAT_PREVIEW else attacker.position + (attacker.tool_contact_world()-attacker.global_position)*attacker.scale
+				hit_origin = attacker.contact_point() if attacker is COMBAT_PREVIEW or attacker is HangyeolJump else attacker.position + (attacker.tool_contact_world()-attacker.global_position)*attacker.scale
 				hit_point = hit_origin if hit_on_hunter else deer.position+Vector2(-18,-37)
 				hit_label.text = "−%d" % hit_damage
 			impact_pending = false
+			if pose=="thrust": hunt_audio.cue("S15",2)
 			if pose=="counter":
 				hunt_audio.cue("S21",2)
 			else:
@@ -981,7 +986,7 @@ func _process(delta: float) -> void:
 		if not move.is_empty():play_pose(move)
 	if running:
 		update_combat_ui(elapsed)
-		if not result_shown and not rules.outcome.is_empty() and not impact_pending:show_result()
+		if not result_shown and not rules.outcome.is_empty() and not impact_pending and (pose!="thrust" or pose_clock>=JumpMotion.JUMP_SECONDS):show_result()
 	if result_shown: return
 	actor_delta += elapsed
 	if actor_delta>=1.0/30.0:
@@ -1080,6 +1085,15 @@ func update_actors(delta: float) -> void:
 		var assisting := running and pose == "team" and pose_clock < RULES.POSE_SECONDS and not attack and rules.party_hp[i]>0
 		var attack_direction := base.direction_to(DEER_SLOT)
 		var previous_position := hunter.position
+		if hunter is HangyeolJump:
+			if running and pose=="thrust" and pose_clock<JumpMotion.JUMP_SECONDS:
+				hunter.position = base
+				hunter.show_jump(base.direction_to(deer.position),pose_clock)
+				hunter_markers[i].position = base+Vector2(0,-63)
+				hunter_markers[i].visible = arrival_finished
+				hunter_field_bars[i].get_parent().visible = approach>=1.0
+				continue
+			hunter.stop_jump()
 		hunter.position = base + attack_direction*(lunge if attack else 10 if assisting else -18 if dodge else 0)*beat
 		var heading := Vector2(1,.55).lerp(Vector2(1,.28),approach)
 		var approaching := transition_elapsed >= 0.0 and approach > 0.0 and approach < 1.0
