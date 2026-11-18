@@ -6,11 +6,15 @@ const Trial := preload("res://scripts/parry_trial.gd")
 const Hunt := preload("res://scripts/deer_hunt_screen.gd")
 const LabAudio := preload("res://scripts/hunt_audio.gd")
 const UramRig := preload("res://scripts/uram_lab_rig.gd")
+const URAM_STRIKE := preload("res://assets/audio/lab-uram-res009/strike-c.mp3")
+const URAM_HURT := preload("res://assets/audio/lab-uram-res009/hurt-a.mp3")
+const URAM_PARRY := preload("res://assets/audio/lab-uram-res009/parry-c.mp3")
+const HURT_PREVIEW_CUE_S := .10
 const MOTIONS := {"idle":"대기","walk":"걷기","run":"달리기","club_attack":"둔기 공격","hit_reaction":"피격","parry":"받아치기","full_motion":"합본"}
 const LOOP_MOTIONS := ["idle","walk","run"]
 const Art := preload("res://scripts/hunt_match_art.gd")
 const SIZE := Vector2(960,540)
-const COLOR_NAMES := ["1 · 따뜻한 자연색","2 · 짙은 갈색","3 · 선명한 적색"]
+const URAM_PREVIEW_LABEL := "우람 · 자연색 1안 리터치"
 const MOTION_RENDER_SCALE := .75
 const RESULTS_SIZE := Vector2(1000,344)
 const SCREEN_MARGIN := 24.0
@@ -20,8 +24,6 @@ const SAPPHIRE_BUTTON := preload("res://assets/ui/d0026/common-sapphire-default.
 const CLOSE_ICON := preload("res://assets/ui/d0020/popup-close-charcoal.svg")
 const RESULTS_ICON := preload("res://assets/ui/d0024/08-ui-rules-book.svg")
 const HOMES := [Vector2(500,306), Vector2(535,272), Vector2(543,326)]
-# Separate the larger comparison silhouettes without moving the combat actors.
-const COMPARISON_OFFSETS := [Vector2.ZERO,Vector2(-108,-24),Vector2(-128,44)]
 const BOAR_HOME := Vector2(665,236)
 const CONTACT := Vector2(557,270)
 const BRACE := Vector2(541,278)
@@ -34,7 +36,8 @@ const SKILLS := [
 var app: Node
 var canvas: Control
 var field: Node2D
-var rigs: Array[UramRig] = []
+var uram_preview: UramRig
+var motion_hurt_played := false
 var motion_canvas: Control
 var motion_status: Label
 var motion_buttons: Dictionary = {}
@@ -144,6 +147,9 @@ func _ready() -> void:
 	lab_audio = LabAudio.new()
 	add_child(lab_audio)
 	lab_audio.streams["boar_warning"] = preload("res://assets/ui/d0024/06-sfx-boar-hoof.wav")
+	lab_audio.streams["uram_strike"] = URAM_STRIKE
+	lab_audio.streams["uram_hurt"] = URAM_HURT
+	lab_audio.streams["uram_parry"] = URAM_PARRY
 	feedback = Control.new()
 	feedback.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	feedback.z_index = 4
@@ -163,9 +169,8 @@ func build_test_picker() -> void:
 	motion_canvas = Art.layer(self,Vector2.ZERO)
 	motion_status = make_label("동작을 선택해 주세요",Rect2(230,134,500,42),24)
 	motion_status.reparent(motion_canvas,false)
-	for i in COLOR_NAMES.size():
-		var caption := make_label(COLOR_NAMES[i],Rect2(510,190+83*i,210,30),18)
-		caption.reparent(motion_canvas,false)
+	var caption := make_label(URAM_PREVIEW_LABEL,Rect2(355,357,250,30),18)
+	caption.reparent(motion_canvas,false)
 	var index := 0
 	for key: String in MOTIONS:
 		var control := make_button(MOTIONS[key],Rect2(150+96*index,444,90,42),select_motion.bind(key))
@@ -194,35 +199,35 @@ func select_mode(value: String) -> void:
 	for control: Button in motion_buttons.values(): control.set_pressed_no_signal(false)
 	canvas.visible=mode=="parry"
 	motion_canvas.visible=mode=="motion"
-	place_comparison_models(mode=="motion")
+	actors[0].set_enabled(false)
+	for i in range(1,actors.size()):
+		actors[i].set_enabled(mode=="parry")
+	place_uram_preview(mode=="motion")
 	if mode=="parry":
 		restart()
 	else:
-		show_comparison_pose("idle",0.0)
+		uram_preview.show_pose("idle",0.0)
 		motion_status.text="동작을 선택해 주세요"
 		retry_button.disabled=true
 		results_button.disabled=reports.is_empty()
 
-func place_comparison_models(for_motion: bool) -> void:
-	if rigs.is_empty():
-		for i in COLOR_NAMES.size():
-			var preview := UramRig.new()
-			preview.variant = i
-			preview.render_size_factor = .5
-			field.add_child(preview)
-			preview.camera.position = actors[0].camera.position
-			preview.camera.look_at(Vector3(0,1.45,0))
-			preview.pivot.rotation.y = atan2(1,.28)
-			preview.scale = actors[0].scale * (1.35 * 1.5)
-			rigs.append(preview)
-	for i in rigs.size():
-		var preview := rigs[i]
-		var holder: Node = motion_canvas if for_motion else field
-		if preview.get_parent()!=holder: preview.reparent(holder,false)
-		if for_motion: motion_canvas.move_child(preview,0)
-		preview.position = Vector2(457,246+83*i) if for_motion else HOMES[i]+COMPARISON_OFFSETS[i]
-		fit_rig_view(preview,for_motion)
-		preview.set_enabled(true)
+func place_uram_preview(for_motion: bool) -> void:
+	var holder: Node = motion_canvas if for_motion else field
+	if not is_instance_valid(uram_preview):
+		uram_preview = UramRig.new()
+		uram_preview.use_retouch = true
+		uram_preview.render_size_factor = .5
+		holder.add_child(uram_preview)
+		uram_preview.camera.position = actors[0].camera.position
+		uram_preview.camera.look_at(Vector3(0,1.45,0))
+		uram_preview.pivot.rotation.y = atan2(1,.28)
+		uram_preview.scale = actors[0].scale*(1.35*1.5)
+	elif uram_preview.get_parent()!=holder:
+		uram_preview.reparent(holder,false)
+	if for_motion: motion_canvas.move_child(uram_preview,0)
+	uram_preview.position = Vector2(480,285) if for_motion else HOMES[0]
+	fit_rig_view(uram_preview,for_motion)
+	uram_preview.set_enabled(true)
 
 func fit_rig_view(preview: UramRig, full_map: bool) -> void:
 	var battle_size := actors[0].viewport.size
@@ -244,29 +249,30 @@ func fit_rig_view(preview: UramRig, full_map: bool) -> void:
 		preview.camera.v_offset = (anchor.y - center.y) * units_per_pixel
 	preview.display.position = -preview.camera.unproject_position(Vector3.ZERO) * preview.display.scale
 
-func show_comparison_pose(clip: String, seconds: float) -> void:
-	for preview in rigs:
-		preview.show_pose(clip,seconds)
-
 func select_motion(key: String) -> void:
 	if mode!="motion": return
 	motion_clip=key
 	motion_age=0.0
+	motion_hurt_played=false
 	for item in motion_buttons: motion_buttons[item].set_pressed_no_signal(item==key)
 	motion_status.text=MOTIONS[key]+(" · 반복" if key in LOOP_MOTIONS else " · 1회")
 	retry_button.disabled=false
-	show_comparison_pose(key,0.0)
+	uram_preview.show_pose(key,0.0)
 
 func advance_motion(delta: float) -> void:
 	if motion_clip.is_empty(): return
 	motion_age+=delta
-	var length := rigs[0].clip_length(motion_clip)
+	var length := uram_preview.clip_length(motion_clip)
+	# The live miss hits Hangeol, not Uram. Audition Uram's hurt only in his dedicated pose preview.
+	if motion_clip=="hit_reaction" and not motion_hurt_played and motion_age>=HURT_PREVIEW_CUE_S:
+		motion_hurt_played=true
+		lab_audio.cue("uram_hurt")
 	if motion_clip in LOOP_MOTIONS:
-		show_comparison_pose(motion_clip,fposmod(motion_age,length))
+		uram_preview.show_pose(motion_clip,fposmod(motion_age,length))
 	elif motion_age<length:
-		show_comparison_pose(motion_clip,motion_age)
+		uram_preview.show_pose(motion_clip,motion_age)
 	else:
-		show_comparison_pose("idle",fposmod(motion_age-length,rigs[0].clip_length("idle")))
+		uram_preview.show_pose("idle",fposmod(motion_age-length,uram_preview.clip_length("idle")))
 
 func fit() -> void:
 	var region := Rect2(Vector2.ZERO,size)
@@ -484,12 +490,15 @@ func use_skill(index: int) -> void:
 	advance_trial(now)
 	if index == 0:
 		var had_normal := trial.normal_defense
+		var pre_strike_hp := trial.boar_hp
 		var previous_input := trial.input
 		if trial.party_hp < previous_party_hp:
 			show_damage(now,trial.party_hp-previous_party_hp,true)
 		trial.parry(now)
 		if previous_input < 0 and trial.outcome == "성공": mark_contact("parry",now)
-		if not had_normal and trial.normal_defense: normal_at = now
+		if not had_normal and trial.normal_defense:
+			normal_at = now
+			if trial.boar_hp < pre_strike_hp: lab_audio.cue("uram_strike")
 		if previous_input < 0 and trial.input >= 0:
 			refresh(now)
 			trial.feedback_ms = Time.get_ticks_msec()-now
@@ -510,7 +519,7 @@ func advance_trial(now: int) -> void:
 
 func mark_contact(kind: String, now: int) -> void:
 	impacts.append({"kind":kind,"at":boar.position+Vector2(46,48),"start":now})
-	lab_audio.cue({"parry":"S11","spear":"S16","cooperation":"S20"}[kind])
+	lab_audio.cue({"parry":"uram_parry","spear":"S16","cooperation":"S20"}[kind])
 
 func set_guide(target: int, now: int) -> void:
 	if guide_target == target: return
@@ -548,6 +557,7 @@ func show_damage(now: int, amount: int, ally: bool) -> void:
 
 func _process(delta: float) -> void:
 	if mode=="motion":
+		lab_audio.update(app.audio.enabled,not app.application_active)
 		advance_motion(delta)
 		return
 	if round_done or trial == null: return
@@ -590,12 +600,10 @@ func refresh(now: int) -> void:
 	var stop := CONTACT.lerp(boar_at,.65)-Vector2(18,-4)
 	var uram := actors[0] as Hunt.COMBAT_PREVIEW
 	uram.position = HOMES[0].lerp(stop-Vector2(19*stepped,0),recovery) if success and reacting else HOMES[0]
-	var clip := "Hit_Reaction" if (reacting and success) or defending else "Combat_Idle"
-	uram.show_combat_pose(Vector2(1,.28),clip,clampf(float(now-normal_at)/380.0,0,1) if defending else brace_age if reacting else fposmod(now*.001,1.8)/1.8)
-	rigs[0].position = uram.position
-	var rig_clip := "parry" if reacting and success else "club_attack" if defending else "hit_reaction" if trial.contact>=0 and now-trial.contact<420 else "idle"
-	var rig_time := brace_age*rigs[0].clip_length("parry") if rig_clip=="parry" else (now-normal_at)*.001 if rig_clip=="club_attack" else (now-trial.contact)*.001 if rig_clip=="hit_reaction" else fposmod(now*.001,rigs[0].clip_length("idle"))
-	show_comparison_pose(rig_clip,rig_time)
+	uram_preview.position = uram.position
+	var rig_clip := "parry" if reacting and success else "club_attack" if defending else "idle"
+	var rig_time := brace_age*uram_preview.clip_length("parry") if rig_clip=="parry" else (now-normal_at)*.001 if rig_clip=="club_attack" else fposmod(now*.001,uram_preview.clip_length("idle"))
+	uram_preview.show_pose(rig_clip,rig_time)
 	for i in range(1,3):
 		var age: int = now-followup_at[i-1]
 		var attacking := followup_at[i-1] >= 0 and age < 450

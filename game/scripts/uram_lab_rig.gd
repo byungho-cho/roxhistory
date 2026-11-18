@@ -3,6 +3,9 @@ extends HybridCharacter
 const ASSETS := "res://assets/characters/d0048/"
 const CLUB_SIZE := Vector2(1.43,.53)
 var variant := 0
+var use_retouch := false
+var club_tilt := 0.0
+var shield_push := 0.0
 var animator: AnimationPlayer
 var skeleton: Skeleton3D
 var root_bone: int
@@ -17,7 +20,7 @@ var club: MeshInstance3D
 var shield: MeshInstance3D
 
 func build_villager() -> void:
-	var packed := load(ASSETS+"uram-warm.glb") as PackedScene
+	var packed := load(ASSETS+("uram-natural-retouch.glb" if use_retouch else "uram-warm.glb")) as PackedScene
 	var rig := packed.instantiate() as Node3D
 	pivot.add_child(rig)
 	animator = rig.find_children("*","AnimationPlayer",true,false)[0]
@@ -74,12 +77,34 @@ func show_pose(clip: String, seconds: float) -> void:
 	# compensation without changing the clip's bone transforms.
 	pivot.position = -(skeleton.global_basis * Vector3(anchor.x-rest.x,0.0,anchor.z-rest.z))
 	skeleton.force_update_all_bone_transforms()
+	if use_retouch:
+		var phase := clampf(seconds/clip_length(clip),0.0,1.0)
+		var gesture := clip
+		if clip=="full_motion":
+			if seconds >= 216.0/60.0 and seconds <= 256.0/60.0:
+				gesture = "club_attack"
+				phase = (seconds*60.0-216.0)/40.0
+			elif seconds >= 304.0/60.0 and seconds <= 367.0/60.0:
+				gesture = "parry"
+				phase = (seconds*60.0-304.0)/63.0
+		club_tilt = 0.0
+		shield_push = 0.0
+		if gesture=="club_attack":
+			club_tilt = .44*smoothstep(.32,.50,phase)*(1.0-smoothstep(.66,.88,phase))
+		elif gesture=="parry":
+			club_tilt = .49*smoothstep(.63,.75,phase)*(1.0-smoothstep(.82,.95,phase))
+			shield_push = smoothstep(.10,.28,phase)*(1.0-smoothstep(.49,.70,phase))
 	update_equipment()
 
 func update_equipment() -> void:
 	var hand := skeleton.global_transform * skeleton.get_bone_global_pose(hand_bone)
 	var grip := hand * grip_in_hand
 	var axis := (hand * tip_in_hand - grip).normalized()
+	if club_tilt > 0.0:
+		var camera_out := camera.global_basis.z.normalized()
+		var flat := axis-camera_out*axis.dot(camera_out)
+		if flat.length_squared() < .025: flat += camera.global_basis.x*.22
+		axis = axis.lerp(flat.normalized(),club_tilt).normalized()
 	var up := camera.global_basis.z.cross(axis)
 	if up.length_squared() < .001:
 		up = camera.global_basis.y.cross(axis)
@@ -90,10 +115,14 @@ func update_equipment() -> void:
 	var wrist := skeleton.to_global(skeleton.get_bone_global_pose(left_hand_bone).origin)
 	var forward := pivot.global_basis.z.normalized()
 	var toward_camera := camera.global_basis.z.normalized()
-	var normal := (toward_camera * .47 + forward * .53).normalized()
+	var ratio := .47 + shield_push*.30
+	var normal := (toward_camera * ratio + forward * (1.0-ratio)).normalized()
 	var arm := (forearm.origin - wrist).normalized()
 	var right := (Vector3.UP * .72 + arm * .28).cross(normal).normalized()
 	var rise := clampf((wrist.y - forearm.origin.y + .10) / .26,0.0,1.0)
 	var center := forearm * shield_anchor + normal * .14 + forward * .05 + toward_camera * .075
 	center.y -= lerpf(.19,.04,rise)
+	if shield_push > 0.0:
+		var correction := clampf((wrist-center).dot(normal)+.085,0.0,.18)
+		center += (normal*correction+toward_camera*.075)*shield_push
 	shield.global_transform = Transform3D(Basis(right,normal.cross(right),normal),center)

@@ -11,7 +11,8 @@ static func open(app: Node) -> void:
 	old_close.queue_free()
 	if OS.is_debug_build() or app.test_mode or ProjectSettings.get_setting("roxhistory/development/settings_entry", false):
 		icon_button(app, header, BUG, "DevelopmentSettings", app.show_development_settings, "debug_click")
-	icon_button(app, header, HudButtons.MODAL_CLOSE, "SettingsClose", app.close_modal)
+	var close := HudButtons.create_modal_close(header,app.close_modal,"SettingsClose")
+	SharedPopupArt.close_icon(close)
 	var list := VBoxContainer.new()
 	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	list.add_theme_constant_override("separation", 6)
@@ -51,13 +52,13 @@ static func open(app: Node) -> void:
 	var notes: DemoButton = app.button(footer, "", app.show_version_notes.bind(version))
 	notes.name = "RunningVersionNotes"
 	notes.set_meta("semantic_text", version)
-	notes.custom_minimum_size = Vector2(112,48)
+	notes.custom_minimum_size = Vector2(78,48)
 	for state in ["normal","hover","pressed","focus"]:
 		notes.add_theme_stylebox_override(state,StyleBoxEmpty.new())
 	var bold := FontVariation.new()
 	bold.base_font = FigmaArt.NOTO
 	bold.variation_opentype = {TextServerManager.get_primary_interface().name_to_tag("wght"):700.0}
-	var version_label: Label = app.label(notes,version,19,Color("41280e"))
+	var version_label: Label = app.label(notes,version,20,Color("41280e"))
 	version_label.name = "VersionLabel"
 	version_label.add_theme_font_override("font",bold)
 	version_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -86,13 +87,8 @@ static func open(app: Node) -> void:
 	footer.add_child(spacer)
 	var home: DemoButton = app.button(footer, "시작 화면", func(): app.close_modal(); app.show_screen("title"), true)
 	home.size_flags_horizontal = Control.SIZE_SHRINK_END
-	home.custom_minimum_size = Vector2(136, 48)
-	for state in ["normal","hover","pressed","focus"]:
-		home.add_theme_stylebox_override(state, StyleBoxEmpty.new())
-	var skin := FigmaSlice.new("gold", 42)
-	skin.show_behind_parent = true
-	home.add_child(skin)
-	skin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	home.custom_minimum_size = Vector2(137, 48)
+	SharedPopupArt.button_style(home,"wood","gold")
 
 static func icon_button(app: Node, header: Control, texture: Texture2D, id: String, action: Callable, cue := "ui") -> void:
 	var control: DemoButton = app.button(header, "", action, false, "", cue)

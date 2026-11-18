@@ -75,6 +75,7 @@ func resource_rail_rect() -> Rect2:
 	var left: float = app.safe.x+(0.0 if portrait_layout else 244.0)
 	var width := clampf(right-left,160.0,RESOURCE_RAIL_SIZE.x)
 	var top: float = app.safe.y+(69.0 if portrait_layout else -1.0)
+	right -= clampf(right-width-left,0.0,app.h*.08)
 	return Rect2(right-width,top,width,RESOURCE_RAIL_SIZE.y*width/RESOURCE_RAIL_SIZE.x)
 
 func slot(kind: String) -> Rect2:
@@ -131,8 +132,14 @@ func draw_resource_rail(font: Font) -> void:
 		draw_string(font,at,quantity,HORIZONTAL_ALIGNMENT_RIGHT,room,point,Color("fff6de"))
 	draw_set_transform(Vector2.ZERO)
 
+func minimap_center() -> Vector2:
+	return Vector2(app.w-app.safe.x-50,app.safe.y+60+app.h*.04)
+
+func minimap_hit_rect() -> Rect2:
+	return Rect2(minimap_center()-Vector2.ONE*50,Vector2.ONE*100)
+
 func gps_rect() -> Rect2:
-	var bounds := Rect2(app.w-app.safe.x-64,app.safe.y+90,56,56)
+	var bounds := Rect2(minimap_center()+Vector2(-14,30),Vector2(56,56))
 	if OS.has_feature("android") and app.w<app.h:
 		for key in ["wood","stone","tokens","diamonds"]:
 			var resource := slot(key)
@@ -313,7 +320,7 @@ func _draw() -> void:
 		frame(Rect2(origin+Vector2(109,40),Vector2(114*fill,10)),Color("398a66cc"),Color("6ead85cc"))
 		if fill>.08:draw_line(origin+Vector2(112,42),origin+Vector2(106+114*fill,42),Color("b5efb7cc"),1.4,true)
 	draw_resource_rail(font)
-	var center:=Vector2(app.w-app.safe.x-50,app.safe.y+60)
+	var center := minimap_center()
 	draw_circle(center+Vector2(1,3),53,Color(.15,.10,.04,.20))
 	draw_circle(center,51,Color("49321e"))
 	var points:=PackedVector2Array();var uv:=PackedVector2Array()

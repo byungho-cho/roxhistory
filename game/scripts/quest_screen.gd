@@ -16,9 +16,11 @@ func open() -> void:
 	var dimensions := Vector2(1166,629)
 	var factor := minf(room.x/dimensions.x,room.y/dimensions.y)
 	panel = QuestRewards.dialog(app,"QuestScreen",dimensions,factor)
+	panel.add_theme_stylebox_override("panel",SharedPopupArt.panel_style("wood","l"))
 	var heading := text(panel,"여정의 기록",Rect2(32,28,157,51),28)
 	heading.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	var close := HudButtons.create_modal_close(panel,app.close_modal,"QuestClose",1.5,56.0)
+	SharedPopupArt.close_icon(close)
 	close.position = Vector2(1120,36)-close.size*.5
 	var tab_font := FontVariation.new()
 	tab_font.base_font = FigmaArt.NOTO
@@ -146,9 +148,10 @@ func render_details(details: Control, current: int) -> void:
 	app.picture(reward,PlayChrome.CORN_ICON if kind == "grain" else DemoArt.icon(kind),Rect2(104,9,57,55))
 	var amount := FirstQuests.INTRO_AMOUNT if selected < FirstQuests.INTRO_KINDS.size() else FirstQuests.MANUAL_AMOUNT
 	text(reward,str(amount),Rect2(174,22,110,32),22)
-	var track := QuestRewards.gold_button(app,details,"QuestTrack",Rect2(507,418,228,73),func():
+	var track := QuestRewards.art_button(app,details,"QuestTrack",Rect2(507,418,228,73),func():
 		app.close_modal()
 		app.guide_current_quest())
+	SharedPopupArt.button_style(track,"wood","gold")
 	track.disabled = selected != current
 	track.modulate.a = .55 if track.disabled else 1.0
 	app.picture(track,DemoArt.icon("compass"),Rect2(34,20,31,31))

@@ -4,8 +4,8 @@ const INK := Color("49321e")
 const MUTED := Color("917957")
 const PAPER_SIZE := Vector2(500,340)
 const FONT := preload("res://assets/fonts/NotoSansKR.ttf")
-const GOLD := preload("res://assets/ui/hunting-combat/png/popup/continue-button-background.png")
-const METAL := preload("res://assets/ui/hunting-combat/png/popup/exit-button-background.png")
+const GOLD := preload("res://assets/ui/d0049/button-wood-gold.png")
+const METAL := preload("res://assets/ui/d0049/button-wood-gray.png")
 const PATCH_NOTES := preload("res://patch_test/patch_notes.gd")
 
 var native_touch_buttons := false
@@ -33,7 +33,10 @@ func _ready() -> void:
 	paper.size = PAPER_SIZE
 	paper.mouse_filter = Control.MOUSE_FILTER_STOP if native_touch_buttons else Control.MOUSE_FILTER_IGNORE
 	add_child(paper)
-	var background := FigmaSlice.new("paper",32)
+	var background := TextureRect.new()
+	background.texture = SharedPopupArt.shell("wood","s")
+	background.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	background.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	background.size = PAPER_SIZE
 	paper.add_child(background)
 	heading = label(Rect2(26,24,448,42),24,900)
@@ -174,7 +177,7 @@ func button_art(button: Button, texture: Texture2D) -> NinePatchRect:
 	art.patch_margin_right = 24
 	art.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	button.add_child(art)
-	var text := make_label(18,700,INK if texture==GOLD else Color("f3f5f6"))
+	var text := make_label(18,700,INK)
 	text.name = "Caption"
 	button.add_child(text)
 	text.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)

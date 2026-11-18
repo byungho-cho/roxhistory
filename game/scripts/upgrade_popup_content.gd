@@ -123,8 +123,8 @@ func _ready() -> void:
 		add_shortage_art(item,amount,resource)
 	var seconds := int(app.model.building_duration(current+1,kind))
 	var time := "%d초" % seconds if seconds<60 else "%d분" % (seconds/60)
-	action(Rect2(270,300,192,44),"즉시 업그레이드",str(BuildingRules.INSTANT_DIAMOND_COST),preload(UPDATE_ART+"diamond-premium-illustrated.png"),preload(FINISH_ART+"popup-button-gold-volume-166x44.svg"),true)
-	action(Rect2(486,300,166,44),"업그레이드",time,preload(UPDATE_ART+"hourglass-teal-amber-illustrated.png"),preload(FINISH_ART+"popup-button-gold-volume-166x44.svg"),false)
+	action(Rect2(282,300,176,44),"즉시 업그레이드",str(BuildingRules.INSTANT_DIAMOND_COST),preload(UPDATE_ART+"diamond-premium-illustrated.png"),true)
+	action(Rect2(476,300,176,44),"업그레이드",time,preload(UPDATE_ART+"hourglass-teal-amber-illustrated.png"),false)
 	unsupported_notice=FigmaArt.text(art,"",Rect2(251,249,150,27),16,FigmaArt.BODY,Color("fff4d6"))
 	unsupported_notice.add_theme_color_override("font_outline_color",Color("503016"))
 	unsupported_notice.add_theme_constant_override("outline_size",8)
@@ -226,7 +226,7 @@ func fit() -> void:
 	art.scale=Vector2.ONE*factor
 	art.position=(size-art.size*factor)*.5
 
-func action(rect: Rect2, title: String, value: String, icon: Texture2D, background: Texture2D, locked: bool) -> void:
+func action(rect: Rect2, title: String, value: String, icon: Texture2D, locked: bool) -> void:
 	var button: DemoButton=app.button(art,"",request_upgrade if not locked else request_instant_upgrade,false,"","")
 	button.name="InstantUpgrade" if locked else "ConfirmUpgrade"
 	button.custom_minimum_size=Vector2.ZERO
@@ -234,9 +234,9 @@ func action(rect: Rect2, title: String, value: String, icon: Texture2D, backgrou
 	button.size=rect.size
 	for state in ["normal","hover","pressed","focus","disabled"]:
 		button.add_theme_stylebox_override(state,StyleBoxEmpty.new())
-	app.picture(button,background,Rect2(Vector2.ZERO,rect.size))
-	var icon_x := 20.0 if locked else 15.0
+	app.picture(button,SharedPopupArt.button_texture("stone","blue" if locked else "gold"),Rect2(Vector2.ZERO,rect.size))
+	var icon_x := 12.0 if locked else 15.0
 	app.picture(button,icon,Rect2(icon_x,9,25,25))
-	var ink := Color.WHITE
+	var ink := Color("fff3df") if locked else Color("472e1d")
 	FigmaArt.text(button,value,Rect2(icon_x+30,0,34,42),14,FigmaArt.BODY,ink,false)
-	FigmaArt.text(button,title,Rect2(78,0,rect.size.x-86,42),15,FigmaArt.BODY,ink,false)
+	FigmaArt.text(button,title,Rect2(66.0 if locked else 78.0,0,104,42),15,FigmaArt.BODY,ink,false)

@@ -376,7 +376,7 @@ func show_screen(next: String,spread_hud:=false) -> void:
 	if screen == "title" and not model.store.message.is_empty():
 		toast(model.store.message,8)
 
-func box(parent: Node, rect: Rect2, dark: bool = true) -> PanelContainer:
+func box(parent: Node, rect: Rect2, dark: bool = true) -> FigmaPanelContainer:
 	var p := FigmaPanelContainer.new()
 	parent.add_child(p)
 	p.position = rect.position
@@ -1336,7 +1336,7 @@ func play_hud(spread:=false) -> void:
 	stage.add_child(ConstructionProgress.new(self))
 	stage.add_child(ConstructionProgress.new(self,false,true))
 	family=FamilyArrival.new(self);stage.add_child(family)
-	var map_hit:=button(stage,"",recenter_map);map_hit.name="RecenterCamera";map_hit.custom_minimum_size=Vector2.ZERO;map_hit.position=Vector2(w-safe.x-100,safe.y+10);map_hit.size=Vector2(100,65 if OS.has_feature("android") and w<h else 100)
+	var map_hit:=button(stage,"",recenter_map);map_hit.name="RecenterCamera";map_hit.custom_minimum_size=Vector2.ZERO;map_hit.position=chrome.minimap_hit_rect().position;map_hit.size=chrome.minimap_hit_rect().size
 	map_hit.hint_text="현재 위치로 지도 맞추기"
 	for state in ["normal","hover","pressed"]:map_hit.add_theme_stylebox_override(state,StyleBoxEmpty.new())
 	intro_probe_step("hud_before_map",hud_started)
@@ -1894,7 +1894,7 @@ func show_demolition_confirmation(key:String)->void:
 	var quote:=model.demolition_quote(key)
 	if quote.is_empty():toast("현재 철거할 수 없는 건물이에요");return
 	var found:=model.lookup_building(key)
-	show_modal("건물을 철거할까요?","반환: 나무 %d개 · 돌 %d개"%[quote.wood,quote.stone]+("\n수용 인원이 줄어 주민 %d명이 무작위로 떠나며 배정이 해제됩니다. 운반 짐은 즉시 마을 자원에 반환합니다."%int(quote.departures) if int(quote.departures)>0 else ""),[{"text":"취소","action":close_modal},{"text":"철거","action":func():confirm_demolition(key)}],false,true,false,Vector2(480,380),true)
+	show_modal("건물을 철거할까요?","반환: 나무 %d개 · 돌 %d개"%[quote.wood,quote.stone]+("\n수용 인원이 줄어 주민 %d명이 무작위로 떠나며 배정이 해제됩니다. 운반 짐은 즉시 마을 자원에 반환합니다."%int(quote.departures) if int(quote.departures)>0 else ""),[{"text":"취소","action":close_modal},{"text":"철거","action":func():confirm_demolition(key),"color":"red"}],false,true,false,Vector2(480,280),true,false,"popup_open","s")
 	demolition_key=key
 
 func confirm_demolition(key:String)->void:
@@ -2153,7 +2153,7 @@ func show_about() -> void:
 		{"text":"돌아가기","primary":true,"action":close_modal}])
 	enable_settings_backdrop()
 
-func show_modal(title: String, body: String, actions: Array, compact: bool = false, preserve_work:bool=false, brief:bool=false, panel_size:Vector2=Vector2.ZERO,confirmation:bool=false,custom_panel:=false, opening_cue := "popup_open") -> ScrollContainer:
+func show_modal(title: String, body: String, actions: Array, compact: bool = false, preserve_work:bool=false, brief:bool=false, panel_size:Vector2=Vector2.ZERO,confirmation:bool=false,custom_panel:=false, opening_cue := "popup_open", stone_format := "") -> ScrollContainer:
 	if is_instance_valid(region_selection):region_selection.cancel_input()
 	if gestures: gestures.clear()
 	if is_instance_valid(joystick): joystick.clear()
@@ -2192,11 +2192,16 @@ func show_modal(title: String, body: String, actions: Array, compact: bool = fal
 		height=minf(panel_size.y,h-safe.y*2)
 	var at := Vector2(w-safe.x-width,safe.y) if compact and not brief else Vector2((w-width)/2,(h-height)/2)
 	var p := box(overlay,Rect2(at,Vector2(width,height)))
+	var finish := "wood" if stone_format.is_empty() else "stone"
+	if not custom_panel:
+		p.shared_shell = SharedPopupArt.shell(finish,stone_format if finish=="stone" else "s" if height<=320 else "m")
+		p.queue_redraw()
 	if not custom_panel:animate_popup(p)
 	var v := column(p,8 if brief else 12)
 	var header:=HBoxContainer.new();header.name="ModalHeader";header.add_theme_constant_override("separation",10);v.add_child(header)
 	var modal_title:=label(header,title,20 if brief else 28,Color("47240e"));modal_title.add_theme_font_override("font",FigmaArt.TITLE);modal_title.size_flags_horizontal=Control.SIZE_EXPAND_FILL;modal_title.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
-	HudButtons.create_modal_close(header,dismiss,"ModalClose")
+	var close := HudButtons.create_modal_close(header,dismiss,"ModalClose")
+	if not custom_panel and finish=="wood": SharedPopupArt.close_icon(close)
 	var scroll:ScrollContainer = DevelopmentSettingsScroll.new() if title in ["개발 설정","전체 주민 배분","일 선택","주민 배정","미배정 주민 선택"] or title.ends_with(" · 주민 배정") else ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -2216,8 +2221,13 @@ func show_modal(title: String, body: String, actions: Array, compact: bool = fal
 		for state in ["normal","hover","pressed","disabled","focus"]:b.add_theme_stylebox_override(state,StyleBoxEmpty.new())
 		for color_key in ["font_color","font_hover_color","font_pressed_color","font_disabled_color"]:b.add_theme_color_override(color_key,Color("47240e"))
 		b.add_theme_font_override("font",FigmaArt.BODY)
-		var skin:=FigmaSlice.new("gold",42);skin.name="FigmaSkin";skin.show_behind_parent=true;b.add_child(skin);skin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		var color: String = a.get("color","gold" if a.get("primary",false) or displayed_actions.size()==1 else "silver" if finish=="stone" else "gray")
+		SharedPopupArt.button_style(b,finish,color)
+		if finish=="stone":
+			row.alignment = BoxContainer.ALIGNMENT_END
+			b.custom_minimum_size = Vector2(176,44)
+		else:
+			b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		b.add_theme_font_size_override("font_size",17)
 	return scroll
 

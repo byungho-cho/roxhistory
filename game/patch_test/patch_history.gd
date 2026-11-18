@@ -8,7 +8,7 @@ const VERSION_INK := Color("183d65")
 var version: String
 var dismiss: Callable
 var fit_ratio: float
-var paper: FigmaSlice
+var paper: TextureRect
 var margins: MarginContainer
 var scroll: ScrollContainer
 
@@ -21,7 +21,9 @@ func _ready() -> void:
 	name = "UpdateNotesPanel"
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	paper = FigmaSlice.new("paper",32)
+	paper = TextureRect.new()
+	paper.texture = SharedPopupArt.shell("wood","l")
+	paper.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	paper.mouse_filter = Control.MOUSE_FILTER_STOP
 	add_child(paper)
 	margins = MarginContainer.new()
@@ -37,7 +39,13 @@ func _ready() -> void:
 	var title := text_label("업데이트 내역",26,FigmaArt.TITLE)
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	header.add_child(title)
-	HudButtons.create_modal_close(header,dismiss,"UpdateNotesClose")
+	SharedPopupArt.close_icon(HudButtons.create_modal_close(header,dismiss,"UpdateNotesClose"))
+	var divider := TextureRect.new()
+	divider.texture = SharedPopupArt.WOOD_DIVIDER
+	divider.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	divider.custom_minimum_size.y = 4
+	divider.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	layout.add_child(divider)
 	scroll = HISTORY_SCROLL.new()
 	scroll.name = "UpdateHistoryScroll"
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL

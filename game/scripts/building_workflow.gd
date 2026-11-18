@@ -76,7 +76,7 @@ func show_upgrade_confirmation(key:String,cost:Dictionary,callback:Callable)->vo
 	var found: Dictionary=app.model.lookup_building(key)
 	var current: int=app.model.chief_level() if key=="chief" else int(found.get("data",{}).get("level",1))
 	var title := building_name(str(found.get("kind","chief")))+" 업그레이드"
-	var scroll: ScrollContainer=app.show_modal(title,"",[],false,true,false,Vector2(724,440))
+	var scroll: ScrollContainer=app.show_modal(title,"",[],false,true,false,Vector2(724,440),false,false,"popup_open","l")
 	var header: HBoxContainer = scroll.get_parent().get_node("ModalHeader")
 	var title_label := header.get_child(0) as Label
 	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -244,7 +244,7 @@ func request_cancel(key:String,upgrade:bool)->void:
 	var job := cancellation_job(key,upgrade)
 	if job.is_empty():return
 	cancellation_confirmation=cancellation_token(key,upgrade)
-	var content: ScrollContainer = app.show_modal("공사를 취소할까요?","",[],false,true,false,Vector2(520,324))
+	var content: ScrollContainer = app.show_modal("공사를 취소할까요?","",[],false,true,false,Vector2(560,340),false,false,"popup_open","m")
 	cancellation_overlay=app.overlay
 	content.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	var layout := VBoxContainer.new()
@@ -278,23 +278,15 @@ func request_cancel(key:String,upgrade:bool)->void:
 		amount.add_theme_font_override("font",FigmaArt.BODY)
 	var actions := HBoxContainer.new()
 	actions.add_theme_constant_override("separation",12)
+	actions.alignment = BoxContainer.ALIGNMENT_END
 	layout.add_child(actions)
 	cancel_action(actions,"공사 계속",app.close_modal,false)
 	cancel_action(actions,"공사 취소",confirm_cancel.bind(key,upgrade),true)
 
 func cancel_action(parent: Control, title: String, callback: Callable, ruby: bool) -> void:
 	var control: Button = app.button(parent,title,callback)
-	control.custom_minimum_size.y = 40
-	control.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	var skin := StyleBoxFlat.new()
-	skin.bg_color = Color("d93f34") if ruby else Color("c9d6e2")
-	skin.border_color = Color("a12720") if ruby else Color("8295aa")
-	skin.border_width_bottom = 3
-	skin.set_corner_radius_all(6)
-	for state in ["normal","hover","pressed","focus"]:
-		control.add_theme_stylebox_override(state,skin)
-	for tone in ["font_color","font_hover_color","font_pressed_color","font_focus_color"]:
-		control.add_theme_color_override(tone,Color("fff2dc") if ruby else Color("493220"))
+	control.custom_minimum_size = Vector2(176,44)
+	SharedPopupArt.button_style(control,"stone","red" if ruby else "silver")
 
 func cancellation_job(key: String, upgrade: bool) -> Dictionary:
 	if not upgrade: return construction_job(key)
