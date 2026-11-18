@@ -114,13 +114,14 @@ static func dialog(app:Node, id:String, dimensions:Vector2, factor:float) -> Pan
 	app.animate_popup(panel)
 	return panel
 
-static func rule(parent:Control, rect:Rect2) -> void:
+static func rule(parent:Control, rect:Rect2) -> ColorRect:
 	var divider := ColorRect.new()
 	divider.color = Color("c7ac81")
 	divider.position = rect.position
 	divider.size = rect.size
 	divider.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	parent.add_child(divider)
+	return divider
 
 static func gold_button(app:Node,parent:Control,id:String,rect:Rect2,action:Callable,click_cue := "ui") -> DemoButton:
 	var button := art_button(app,parent,id,rect,action,click_cue)
@@ -143,16 +144,17 @@ static func open(app:Node) -> void:
 	var height := 229.0 + rows*77.0
 	var panel := dialog(app,"QuestRewardPanel",Vector2(870,height),factor)
 	panel.add_theme_stylebox_override("panel",SharedPopupArt.panel_style("wood","m"))
-	var heading := caption(app,panel,"퀘스트 보상",Rect2(61,23,590,58),40,INK)
+	var content := SharedPopupArt.content_rect(panel.size)
+	var heading := caption(app,panel,"퀘스트 보상",Rect2(content.position,Vector2(590,58)),40,INK)
 	heading.name = "QuestRewardHeading"
 	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	var close := HudButtons.create_modal_close(panel,app.close_modal,"QuestRewardClose",1.5,56.0)
-	close.position = Vector2(808,37)-close.size*.5
-	rule(panel,Rect2(60,91,730,1.5))
+	close.position = Vector2(content.end.x-close.size.x,content.position.y)
+	rule(panel,Rect2(content.position.x,91,content.size.x,1.5))
 	var scroll := DevelopmentSettingsScroll.new()
 	scroll.name = "QuestRewardList"
-	scroll.position = Vector2(59,105)
-	scroll.size = Vector2(751,rows*77)
+	scroll.position = Vector2(content.position.x,105)
+	scroll.size = Vector2(content.size.x,rows*77)
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
 	panel.add_child(scroll)
@@ -161,15 +163,15 @@ static func open(app:Node) -> void:
 	cards.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	cards.add_theme_constant_override("separation",0)
 	scroll.add_child(cards)
-	var footer := SharedPopupArt.footer_anchor(panel.size,Vector2(336,55))
-	rule(panel,Rect2(60,height-113,footer.x-60,1.5))
-	var hint := caption(app,panel,"아이콘을 눌러 받기",Rect2(61,height-101,300,25),16,INK)
+	var footer := content.end
+	rule(panel,Rect2(content.position.x,height-113,content.size.x,1.5))
+	var hint := caption(app,panel,"아이콘을 눌러 받기",Rect2(content.position.x,height-101,300,25),16,INK)
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	var claim_all := art_button(app,panel,"ClaimAllQuestRewards",Rect2(footer-Vector2(336,55),Vector2(336,55)),func():
 		receive(app,cards,panel.get_node("ClaimAllQuestRewards")),"")
 	sliced_art(claim_all,SharedPopupArt.button_texture("wood","gold"),Rect2(0,0,336,55),28)
 	caption(app,claim_all,"모두 받기",Rect2(0,0,336,55),25,INK)
-	var badge: TextureRect = app.picture(claim_all,preload("res://assets/ui/d0031/reward-badge.png"),Rect2(304,-13,36,36))
+	var badge: TextureRect = app.picture(claim_all,preload("res://assets/ui/d0031/reward-badge.png"),Rect2(300,-13,36,36))
 	badge.name = "PendingBadge"
 	badge.pivot_offset = badge.size * .5
 	badge.rotation_degrees = -8.0
@@ -247,11 +249,17 @@ static func fill_cards(app:Node, cards:VBoxContainer) -> void:
 		app.picture(card,objective_icon(index),Rect2(10,7,68,63))
 		var title := caption(app,card,FirstQuests.TITLES[index],Rect2(120,0,470,77),26,INK)
 		title.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-		var claim := art_button(app,card,"ClaimQuest%d"%index,Rect2(608,6,112,67),func():
+		var claim := art_button(app,card,"ClaimQuest%d"%index,Rect2(0,6,112,67),func():
 			receive(app,cards,card.get_node("ClaimQuest%d"%index),index),"")
+		claim.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
+		claim.offset_left = -128
+		claim.offset_right = -16
+		claim.offset_top = 6
+		claim.offset_bottom = 73
 		claim.set_meta("sample_context",in_sample(app))
 		claim.set_meta("semantic_text",FirstQuests.TITLES[index]+" 보상 받기")
 		app.picture(claim,preload("res://assets/ui/d0031/reward-tile.png"),Rect2(0,0,112,67))
 		app.picture(claim,PlayChrome.CORN_ICON,Rect2(33,1,46,49))
 		caption(app,claim,str(FirstQuests.MANUAL_AMOUNT),Rect2(0,44,112,20),16,CREAM)
-		rule(card,Rect2(0,76,720,1))
+		var divider := rule(card,Rect2(0,76,0,1))
+		divider.anchor_right = 1.0

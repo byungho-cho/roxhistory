@@ -419,9 +419,6 @@ func exit_selection() -> void:
 func open_rules() -> void:
 	if app.modal:return
 	var scroll: ScrollContainer = app.show_modal("사냥 규칙","",[],false,true,false,Vector2(735,429))
-	var padding := StyleBoxEmpty.new()
-	padding.set_content_margin_all(28)
-	scroll.get_parent().get_parent().add_theme_stylebox_override("panel",padding)
 	var separator := HSeparator.new()
 	var line := StyleBoxLine.new()
 	line.color = Color(.58,.33,.15,.18)

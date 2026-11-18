@@ -22,10 +22,11 @@ var text_labels:Array[Label]=[]
 var text_fonts:Array[FontVariation]=[]
 const DESIGN_SIZE:=Vector2(1200,675)
 const PANEL_RECT:=Rect2(149,433,978,190)
+const PANEL_FRAME:=Rect2(142,430,992,204)
 const CHARACTER_RECT:=Rect2(-78,190,676,450.667)
 const TEXT_X:=357.0
-const TEXT_WIDTH:=704.0
-const TEXT_MAX_HEIGHT:=125.0
+var content := PANEL_FRAME.grow(-SharedPopupArt.INSET)
+var text_width := content.end.x-TEXT_X-44.0
 func _init(owner_app:Node,title:String,body:String)->void:
 	app=owner_app;heading=title;message=body
 func picture(parent:Node,texture:Texture2D,rect:Rect2)->TextureRect:
@@ -35,11 +36,11 @@ func _ready()->void:
 	name="CharacterGuide";set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT);mouse_filter=Control.MOUSE_FILTER_STOP
 	layout=Control.new();layout.name="GuideLayout";layout.size=DESIGN_SIZE;layout.clip_contents=true;layout.mouse_filter=Control.MOUSE_FILTER_IGNORE;add_child(layout)
 	panel_group=Control.new();panel_group.name="PanelGroup";panel_group.size=DESIGN_SIZE;panel_group.mouse_filter=Control.MOUSE_FILTER_IGNORE;layout.add_child(panel_group)
-	var panel:=picture(panel_group,preload("res://assets/ui/village-guidance/guide-panel.svg"),Rect2(142,430,992,204))
+	var panel:=picture(panel_group,preload("res://assets/ui/village-guidance/guide-panel.svg"),PANEL_FRAME)
 	panel.name="CreamPanel"
-	next_hint=picture(panel_group,preload("res://assets/ui/village-guidance/guide-next.svg"),Rect2(1075,572,32,32))
+	next_hint=picture(panel_group,preload("res://assets/ui/village-guidance/guide-next.svg"),Rect2(content.end-Vector2.ONE*32,Vector2.ONE*32))
 	next_hint.name="GuideAdvanceHint"
-	text_scroll=ScrollContainer.new();text_scroll.name="GuideText";text_scroll.position=Vector2(TEXT_X,475);text_scroll.size=Vector2(TEXT_WIDTH,TEXT_MAX_HEIGHT);text_scroll.horizontal_scroll_mode=ScrollContainer.SCROLL_MODE_DISABLED;panel_group.add_child(text_scroll)
+	text_scroll=ScrollContainer.new();text_scroll.name="GuideText";text_scroll.position=Vector2(TEXT_X,content.position.y);text_scroll.size=Vector2(text_width,content.size.y);text_scroll.horizontal_scroll_mode=ScrollContainer.SCROLL_MODE_DISABLED;panel_group.add_child(text_scroll)
 	text_column=VBoxContainer.new();text_column.name="MessageContent";text_column.size_flags_horizontal=Control.SIZE_EXPAND_FILL;text_column.add_theme_constant_override("separation",12);text_scroll.add_child(text_column)
 	for item in [[heading,32],[message,27]]:
 		var text:=Label.new();text.theme=DemoArt.theme();text.text=item[0];
@@ -72,10 +73,9 @@ func update_layout()->void:
 		var top:=-int(trim/2);var bottom:=-trim-top
 		if text_fonts[i].spacing_top!=top:text_fonts[i].spacing_top=top
 		if text_fonts[i].spacing_bottom!=bottom:text_fonts[i].spacing_bottom=bottom
-	var height:=minf(TEXT_MAX_HEIGHT,maxf(1,text_column.get_combined_minimum_size().y))
-	var optical_shift:=minf(10,(TEXT_MAX_HEIGHT-height)*.5)
-	text_scroll.size=Vector2(TEXT_WIDTH,height)
-	text_scroll.position=Vector2(TEXT_X,PANEL_RECT.position.y+(PANEL_RECT.size.y-height)*.5-optical_shift)
+	var height:=minf(content.size.y,maxf(1,text_column.get_combined_minimum_size().y))
+	text_scroll.size=Vector2(text_width,height)
+	text_scroll.position=Vector2(TEXT_X,content.position.y)
 func enqueue(title:String,body:String,after:Callable)->void:
 	pages.append({"title":title,"body":body})
 	if after.is_valid():completions.append(after)

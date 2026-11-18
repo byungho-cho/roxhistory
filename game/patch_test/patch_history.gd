@@ -29,7 +29,7 @@ func _ready() -> void:
 	margins = MarginContainer.new()
 	margins.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	for side in ["left","top","right","bottom"]:
-		margins.add_theme_constant_override("margin_"+side,30 if side in ["left","right"] else 24)
+		margins.add_theme_constant_override("margin_"+side,SharedPopupArt.INSET)
 	add_child(margins)
 	var layout := VBoxContainer.new()
 	layout.add_theme_constant_override("separation",10)

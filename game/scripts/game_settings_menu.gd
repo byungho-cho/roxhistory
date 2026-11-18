@@ -47,11 +47,7 @@ static func open(app: Node) -> void:
 		arrow.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		row.enable_art_feedback()
 	var footer := HBoxContainer.new()
-	var footer_padding := MarginContainer.new()
-	footer_padding.add_theme_constant_override("margin_right",32)
-	footer_padding.add_theme_constant_override("margin_bottom",22)
-	column.add_child(footer_padding)
-	footer_padding.add_child(footer)
+	column.add_child(footer)
 	var version := String(ProjectSettings.get_setting("application/config/version"))
 	var notes: DemoButton = app.button(footer, "", app.show_version_notes.bind(version))
 	notes.name = "RunningVersionNotes"

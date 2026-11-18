@@ -246,7 +246,6 @@ func request_cancel(key:String,upgrade:bool)->void:
 	cancellation_confirmation=cancellation_token(key,upgrade)
 	var content: ScrollContainer = app.show_modal("공사를 취소할까요?","",[],false,true,false,Vector2(560,340),false,false,"popup_open","m")
 	cancellation_overlay=app.overlay
-	content.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	var layout := VBoxContainer.new()
 	layout.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	layout.add_theme_constant_override("separation",12)
@@ -277,13 +276,7 @@ func request_cancel(key:String,upgrade:bool)->void:
 		var amount: Label = app.label(table,"%d개"%int(returned[material]),16,Color("175789"))
 		amount.add_theme_font_override("font",FigmaArt.BODY)
 	var actions := app.overlay.find_child("ModalActions",true,false) as HBoxContainer
-	var footer := actions.get_parent() as MarginContainer
-	var panel := content.get_parent().get_parent() as Control
-	var anchor := SharedPopupArt.footer_anchor(panel.size,Vector2(364,44))
-	var padding := panel.size-anchor
-	footer.add_theme_constant_override("margin_right",roundi(padding.x)-18)
-	footer.add_theme_constant_override("margin_bottom",roundi(padding.y)-18)
-	footer.show()
+	actions.get_parent().show()
 	cancel_action(actions,"공사 계속",app.close_modal,false)
 	cancel_action(actions,"공사 취소",confirm_cancel.bind(key,upgrade),true)
 

@@ -9,6 +9,7 @@ const METAL := preload("res://assets/ui/d0049/button-wood-gray.png")
 const PATCH_NOTES := preload("res://patch_test/patch_notes.gd")
 
 var native_touch_buttons := false
+var center_actions := true
 var paper: Control
 var heading: Label
 var body: Label
@@ -39,20 +40,21 @@ func _ready() -> void:
 	background.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	background.size = PAPER_SIZE
 	paper.add_child(background)
-	heading = label(Rect2(26,24,448,42),24,900)
-	body = label(Rect2(26,73,448,48),13,400)
-	hint = label(Rect2(26,188,448,28),11,500)
+	var content := SharedPopupArt.content_rect(PAPER_SIZE)
+	heading = label(Rect2(content.position,Vector2(content.size.x,42)),24,900)
+	body = label(Rect2(content.position.x,73,content.size.x,48),13,400)
+	hint = label(Rect2(content.position.x,188,content.size.x,28),11,500)
 	for y in [133,175]:
 		var line := ColorRect.new()
 		line.color = Color(.54,.39,.20,.20)
-		line.position = Vector2(26,y)
-		line.size = Vector2(448,1)
+		line.position = Vector2(content.position.x,y)
+		line.size = Vector2(content.size.x,1)
 		line.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		line.add_to_group("patch_version_rule")
 		paper.add_child(line)
 	version_row = HBoxContainer.new()
-	version_row.position = Vector2(26,134)
-	version_row.size = Vector2(448,40)
+	version_row.position = Vector2(content.position.x,134)
+	version_row.size = Vector2(content.size.x,40)
 	version_row.alignment = BoxContainer.ALIGNMENT_CENTER
 	version_row.add_theme_constant_override("separation",9)
 	version_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -94,7 +96,7 @@ func _ready() -> void:
 	primary_art = button_art(update_button,GOLD)
 	notes_button = make_button()
 	notes_button.name = "UpdateNotesButton"
-	notes_button.position = Vector2(446,16)
+	notes_button.position = Vector2(content.end.x-40,content.position.y)
 	notes_button.size = Vector2(40,42)
 	var question := make_label(22,700,INK)
 	question.text = "?"
@@ -103,8 +105,8 @@ func _ready() -> void:
 	notes_button.pressed.connect(show_notes)
 	apk_link_button = make_button()
 	apk_link_button.name = "FullApkLink"
-	apk_link_button.position = Vector2(26,216)
-	apk_link_button.size = Vector2(448,44)
+	apk_link_button.position = Vector2(content.position.x,216)
+	apk_link_button.size = Vector2(content.size.x,44)
 	var apk_caption := make_label(14,700,Color("183d65"))
 	apk_link_button.add_child(apk_caption)
 	apk_caption.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -185,7 +187,7 @@ func button_art(button: Button, texture: Texture2D) -> NinePatchRect:
 
 func set_action(button: Button, art: NinePatchRect, value: String, x: float, width: float) -> void:
 	button.visible = not value.is_empty()
-	button.position = Vector2(x,PAPER_SIZE.y-SharedPopupArt.FOOTER_BOTTOM-52)
+	button.position = Vector2(x,PAPER_SIZE.y-SharedPopupArt.INSET-52)
 	button.size = Vector2(width,52)
 	button.tooltip_text = value
 	art.size = button.size*2.0
@@ -211,7 +213,8 @@ func render(title: String, description: String, note: String, current: String, n
 			notes_version = str(info.get("version",""))
 	notes_button.visible = not PATCH_NOTES.rows(notes_version).is_empty()
 	var both := not secondary.is_empty() and not primary.is_empty()
-	var x := (PAPER_SIZE.x-(372.0 if both else single_width))*.5
+	var group_width := 372.0 if both else single_width
+	var x := (PAPER_SIZE.x-group_width)*.5 if center_actions else PAPER_SIZE.x-SharedPopupArt.INSET-group_width
 	set_action(close_button,secondary_art,secondary,x,180 if both else single_width)
 	set_action(update_button,primary_art,primary,x+192 if both else x,180 if both else single_width)
 

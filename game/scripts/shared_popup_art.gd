@@ -4,8 +4,7 @@ extends RefCounted
 const ASSETS := "res://assets/ui/d0049/"
 const CLOSE := preload(ASSETS+"popup-close-x.png")
 const WOOD_DIVIDER := preload(ASSETS+"popup-divider.png")
-const FOOTER_RIGHT := 50.0
-const FOOTER_BOTTOM := 40.0
+const INSET := 30
 const SCROLL_RAIL := preload("res://assets/ui/d0050/journal-scroll-rail.png")
 const SCROLL_THUMB := preload("res://assets/ui/d0050/journal-scroll-thumb.png")
 static var scroll_themes := {}
@@ -47,10 +46,8 @@ static func close_icon(button: Button) -> void:
 	icon.size = Vector2.ONE*20
 	icon.position = (button.size-icon.size)*.5
 
-static func footer_anchor(panel_size: Vector2, button_group_size: Vector2) -> Vector2:
-	var right := clampf(panel_size.x-button_group_size.x-18.0,18.0,FOOTER_RIGHT)
-	var bottom := clampf(panel_size.y*.16,18.0,FOOTER_BOTTOM)
-	return panel_size-Vector2(right,bottom)
+static func content_rect(panel_size: Vector2) -> Rect2:
+	return Rect2(Vector2.ZERO,panel_size).grow(-INSET)
 
 static func style_scroll(scroll: ScrollContainer, stone := false, gap := 8) -> void:
 	var key := Vector2i(int(stone),gap)

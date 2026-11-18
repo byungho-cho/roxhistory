@@ -784,6 +784,7 @@ func show_tutorial_choice() -> void:
 	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	var dialog = preload("res://patch_test/patch_dialog.gd").new()
 	dialog.native_touch_buttons = true
+	dialog.center_actions = false
 	center.add_child(dialog)
 	dialog.render("튜토리얼을 건너뛰시겠습니까?","튜토리얼 진행 여부를 선택해 주세요.","","","",false,"튜토리얼 진행","건너뛰기")
 	dialog.close_button.pressed.connect(choose_tutorial.bind(false))
@@ -2189,7 +2190,7 @@ func show_modal(title: String, body: String, actions: Array, compact: bool = fal
 	overlay.add_child(shade)
 	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	var width := minf(300 if brief else 390 if compact else 680,w-safe.x*2)
-	var height := minf(h-safe.y*2,166 if brief else 290 if compact else 500)
+	var height := minf(h-safe.y*2,220 if brief else 290 if compact else 500)
 	if panel_size!=Vector2.ZERO:
 		width=minf(panel_size.x,w-safe.x*2)
 		height=minf(panel_size.y,h-safe.y*2)
@@ -2211,14 +2212,10 @@ func show_modal(title: String, body: String, actions: Array, compact: bool = fal
 	SharedPopupArt.style_scroll(scroll,finish=="stone")
 	v.add_child(scroll)
 	if not body.is_empty():
-		var text := paragraph(scroll,body,16 if brief else 20)
-		text.custom_minimum_size.x = width-60
+		paragraph(scroll,body,16 if brief else 20)
 	var footer := MarginContainer.new()
 	var button_width := 176.0 if finish=="stone" else 137.0
-	var group_size := Vector2(button_width*displayed_actions.size()+12.0*maxi(0,displayed_actions.size()-1),44.0)
-	var padding := Vector2(width,height)-SharedPopupArt.footer_anchor(Vector2(width,height),group_size)
-	footer.add_theme_constant_override("margin_right",roundi(padding.x)-18)
-	footer.add_theme_constant_override("margin_bottom",roundi(padding.y)-18)
+	var available_width := SharedPopupArt.content_rect(Vector2(width,height)).size.x
 	footer.visible = not displayed_actions.is_empty()
 	v.add_child(footer)
 	var row := HBoxContainer.new()
@@ -2236,7 +2233,7 @@ func show_modal(title: String, body: String, actions: Array, compact: bool = fal
 		b.add_theme_font_override("font",FigmaArt.BODY)
 		var color: String = a.get("color","gold" if a.get("primary",false) or displayed_actions.size()==1 else "silver" if finish=="stone" else "gray")
 		SharedPopupArt.button_style(b,finish,color)
-		b.custom_minimum_size.x = minf(button_width,(width-36-padding.x+18-12*maxi(0,displayed_actions.size()-1))/maxi(1,displayed_actions.size()))
+		b.custom_minimum_size.x = minf(button_width,(available_width-12*maxi(0,displayed_actions.size()-1))/maxi(1,displayed_actions.size()))
 		b.custom_minimum_size.y = 44.0 if finish=="stone" or brief else 55.0
 		b.add_theme_font_size_override("font_size",17)
 	return scroll
@@ -2501,11 +2498,13 @@ func show_windows_idle_notice(message: String) -> void:
 		windows_idle_layer.add_child(holder)
 		holder.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 		var panel := PanelContainer.new()
-		panel.add_theme_stylebox_override("panel", QuestRewards.paper_style())
+		var paper := QuestRewards.paper_style()
+		paper.set_content_margin_all(0)
+		panel.add_theme_stylebox_override("panel",paper)
 		holder.add_child(panel)
 		var padding := MarginContainer.new()
 		for side in ["top","bottom","left","right"]:
-			padding.add_theme_constant_override("margin_"+side,20)
+			padding.add_theme_constant_override("margin_"+side,SharedPopupArt.INSET)
 		panel.add_child(padding)
 		var content := VBoxContainer.new()
 		content.custom_minimum_size.x = 320
@@ -2514,7 +2513,7 @@ func show_windows_idle_notice(message: String) -> void:
 		windows_idle_label = label(content,"",18,Color("49321e"))
 		windows_idle_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		var buttons := HBoxContainer.new()
-		buttons.alignment = BoxContainer.ALIGNMENT_CENTER
+		buttons.alignment = BoxContainer.ALIGNMENT_END
 		buttons.add_theme_constant_override("separation",12)
 		content.add_child(buttons)
 		var cancel := button(buttons,"취소",func(): reset_windows_idle(Time.get_ticks_msec()),false,"","")

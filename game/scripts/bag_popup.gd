@@ -48,19 +48,21 @@ func _ready() -> void:
 	var back: DemoButton=app.button(layout,"",app.close_modal)
 	back.name="BagBack"
 	back.custom_minimum_size=Vector2.ZERO
-	back.position=Vector2(55,14)
+	back.position=Vector2.ONE*SharedPopupArt.INSET
 	back.size=Vector2(78,65)
 	for state in ["normal","hover","pressed","focus","disabled"]:
 		back.add_theme_stylebox_override(state,StyleBoxEmpty.new())
 	app.picture(back,preload("res://assets/ui/d0030/bag-back-gold@4x.png"),Rect2(13,12,48.96,42.33))
-	FigmaArt.text(layout,"가방",Rect2(173,22,250,60),50,FigmaArt.TITLE,INK,false)
+	FigmaArt.text(layout,"가방",Rect2(173,SharedPopupArt.INSET,250,60),50,FigmaArt.TITLE,INK,false)
 	count=FigmaArt.text(layout,"",Rect2(983,59,96,28),23,FigmaArt.NOTO,Color("f0e6be"))
 	count.horizontal_alignment=HORIZONTAL_ALIGNMENT_RIGHT
-	panel(layout,Rect2(68,97,1018,1),style(Color(.91,.85,.64,.36)))
-	panel(layout,Rect2(68,805,1018,1),style(Color(.91,.85,.64,.22)))
+	var left := SharedPopupArt.INSET
+	panel(layout,Rect2(left,97,1018,1),style(Color(.91,.85,.64,.36)))
+	panel(layout,Rect2(left,805,1018,1),style(Color(.91,.85,.64,.22)))
+	count.position.x = left+915
 	viewport=Control.new()
 	viewport.clip_contents=true
-	viewport.position=Vector2(68,LIST_TOP)
+	viewport.position=Vector2(left,LIST_TOP)
 	viewport.size=Vector2(1011,SLOT_SIZE.y*5+SLOT_GAP.y*4)
 	viewport.mouse_filter=Control.MOUSE_FILTER_IGNORE
 	layout.add_child(viewport)
@@ -88,13 +90,14 @@ func _ready() -> void:
 	var content_height := rows*SLOT_SIZE.y+(rows-1)*SLOT_GAP.y
 	max_offset = maxf(0,content_height-viewport.size.y)
 	if max_offset>0:
-		panel(layout,Rect2(1102,RAIL_TOP,3,RAIL_HEIGHT),style(Color(.06,.10,.07,.66),Color(.84,.82,.63,.25),2))
-		thumb=panel(layout,Rect2(1100.5,RAIL_TOP,6,RAIL_HEIGHT*viewport.size.y/content_height),style(Color(.90,.85,.60,.79),Color.TRANSPARENT,3))
+		panel(layout,Rect2(left+1034,RAIL_TOP,3,RAIL_HEIGHT),style(Color(.06,.10,.07,.66),Color(.84,.82,.63,.25),2))
+		thumb=panel(layout,Rect2(left+1032.5,RAIL_TOP,6,RAIL_HEIGHT*viewport.size.y/content_height),style(Color(.90,.85,.60,.79),Color.TRANSPARENT,3))
 	close_layer = Control.new()
 	close_layer.size = DESIGN
 	close_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(close_layer)
-	var close := QuestRewards.gold_button(app,close_layer,"BagClose",Rect2(1358,822,171,55),app.close_modal)
+	var content_end := SharedPopupArt.content_rect(DESIGN).end
+	var close := QuestRewards.gold_button(app,close_layer,"BagClose",Rect2(content_end-Vector2(171,55),Vector2(171,55)),app.close_modal)
 	QuestRewards.caption(app,close,"닫기",Rect2(0,0,171,55),24,QuestRewards.INK)
 	resized.connect(fit)
 	app.model.changed.connect(update_amounts)

@@ -18,23 +18,24 @@ func open() -> void:
 	var factor := minf(room.x/dimensions.x,room.y/dimensions.y)
 	panel = QuestRewards.dialog(app,"QuestScreen",dimensions,factor)
 	panel.add_theme_stylebox_override("panel",SharedPopupArt.panel_style("wood","l"))
-	var heading := text(panel,"여정의 기록",Rect2(32,28,157,51),28)
+	var inset := SharedPopupArt.INSET
+	var heading := text(panel,"여정의 기록",Rect2(inset,inset,157,51),28)
 	heading.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	var close := HudButtons.create_modal_close(panel,app.close_modal,"QuestClose",1.5,56.0)
 	SharedPopupArt.close_icon(close)
-	close.position = Vector2(1120,36)-close.size*.5
+	close.position = Vector2(dimensions.x-inset-close.size.x,inset)
 	var tab_font := FontVariation.new()
 	tab_font.base_font = FigmaArt.NOTO
 	tab_font.variation_opentype = {TextServerManager.get_primary_interface().name_to_tag("wght"):700.0}
 	for index in 2:
-		var tab := QuestRewards.art_button(app,panel,"QuestTab%d"%index,Rect2(192+index*116,28,116,51),func():
+		var tab := QuestRewards.art_button(app,panel,"QuestTab%d"%index,Rect2(192+index*116,inset,116,51),func():
 			select_tab(index))
 		tab.text = ["이야기","생활"][index]
 		tab.add_theme_font_override("font",tab_font)
 		tab.add_theme_font_size_override("font_size",23)
 		tabs.append(tab)
 	body = Control.new()
-	body.position.y = 79
+	body.position.y = inset+51
 	panel.add_child(body)
 	selected = maxi(0,FirstQuests.current(app.model.state))
 	select_tab(0)
@@ -48,18 +49,20 @@ func select_tab(index: int) -> void:
 			tabs[item].add_theme_color_override(font_color,Color("9d302b") if item == index else INK)
 	app.clear_children(body)
 	var active_x := 192 + index*116
-	QuestRewards.rule(body,Rect2(32,0,active_x-32,1))
-	QuestRewards.rule(body,Rect2(active_x+116,0,1100-active_x-116,1))
+	var inset := SharedPopupArt.INSET
+	QuestRewards.rule(body,Rect2(inset,0,active_x-inset,1))
+	QuestRewards.rule(body,Rect2(active_x+116,0,panel.size.x-inset-active_x-116,1))
 	if index == 0:
 		story()
 	else:
 		text(body,"등록된 생활 임무가 없어요.",Rect2(35,31,884,48),25)
 
 func story() -> void:
-	QuestRewards.rule(body,Rect2(375,20,1,505))
+	var bottom := panel.size.y-SharedPopupArt.INSET-body.position.y
+	QuestRewards.rule(body,Rect2(375,20,1,bottom-20))
 	var scroll := DevelopmentSettingsScroll.new()
 	scroll.name = "QuestList"
-	scroll.position = Vector2(32,30)
+	scroll.position = Vector2(SharedPopupArt.INSET,30)
 	scroll.size = Vector2(332,468)
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	body.add_child(scroll)
@@ -120,8 +123,8 @@ func render_details(details: Control, current: int) -> void:
 	text(details,"이야기 · "+status(selected,current,app.model.state),Rect2(164,10,530,24),19,Color("80613f"))
 	text(details,FirstQuests.TITLES[selected],Rect2(164,43,550,45),34)
 	text(details,FirstQuests.OBJECTIVES[selected],Rect2(164,93,540,31),20)
-	QuestRewards.rule(details,Rect2(0,143,733,1))
-	var footer := SharedPopupArt.footer_anchor(panel.size,Vector2(720,73))-Vector2(396,99)
+	var footer := SharedPopupArt.content_rect(panel.size).end-body.position-details.position
+	QuestRewards.rule(details,Rect2(0,143,footer.x,1))
 	var status_box := Panel.new()
 	status_box.position = Vector2(0,footer.y-191)
 	status_box.size = Vector2(footer.x,88)

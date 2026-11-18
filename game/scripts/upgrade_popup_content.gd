@@ -227,12 +227,9 @@ func show_instant_notice(message: String) -> void:
 func fit() -> void:
 	var factor := minf(1.0,minf(size.x/DESIGN_SIZE.x,size.y/DESIGN_SIZE.y))
 	art.scale=Vector2.ONE*factor
-	art.position=(size-art.size*factor)*.5
+	art.position=Vector2(0,(size.y-art.size.y*factor)*.5)
 	if factor<=0.0 or footer_buttons.size()!=2: return
-	var shell := get_parent().get_parent().get_parent() as Control
-	var group_size := Vector2(370,44)*factor
-	var padding := shell.size-SharedPopupArt.footer_anchor(shell.size,group_size)
-	var anchor := (size - padding + Vector2.ONE*18.0 - art.position)/factor
+	var anchor := (size-art.position)/factor
 	for i in footer_buttons.size():
 		footer_buttons[i].position = anchor-Vector2(370-194*i,44)
 	if anchor.y-52.0>263.0:

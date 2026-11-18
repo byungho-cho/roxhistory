@@ -333,7 +333,7 @@ func show_waiting(job: String, target: String, occupant := "") -> void:
 	app.overlay.add_child(waiting_overlay)
 	waiting_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	var width := minf(520,app.w-2*app.safe.x-22)
-	var height := minf(230 if not occupant.is_empty() else 174,app.h-2*app.safe.y-24)
+	var height := minf(270 if not occupant.is_empty() else 226,app.h-2*app.safe.y-24)
 	var panel: PanelContainer = app.box(waiting_overlay,Rect2((app.w-width)*.5,(app.h-height)*.5,width,height))
 	app.animate_popup(panel)
 	var list: VBoxContainer = app.column(panel,8)
