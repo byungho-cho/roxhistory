@@ -10,7 +10,8 @@ const MOTIONS := {"idle":"대기","walk":"걷기","run":"달리기","club_attack
 const LOOP_MOTIONS := ["idle","walk","run"]
 const Art := preload("res://scripts/hunt_match_art.gd")
 const SIZE := Vector2(960,540)
-const MOTION_ANCHOR := Vector2(480,352)
+const COLOR_NAMES := ["1 · 따뜻한 자연색","2 · 짙은 갈색","3 · 선명한 적색"]
+const MOTION_RENDER_SCALE := .75
 const RESULTS_SIZE := Vector2(1000,344)
 const SCREEN_MARGIN := 24.0
 const CONTROL_TARGET := 48.0
@@ -19,6 +20,8 @@ const SAPPHIRE_BUTTON := preload("res://assets/ui/d0026/common-sapphire-default.
 const CLOSE_ICON := preload("res://assets/ui/d0020/popup-close-charcoal.svg")
 const RESULTS_ICON := preload("res://assets/ui/d0024/08-ui-rules-book.svg")
 const HOMES := [Vector2(500,306), Vector2(535,272), Vector2(543,326)]
+# Separate the larger comparison silhouettes without moving the combat actors.
+const COMPARISON_OFFSETS := [Vector2.ZERO,Vector2(-108,-24),Vector2(-128,44)]
 const BOAR_HOME := Vector2(665,236)
 const CONTACT := Vector2(557,270)
 const BRACE := Vector2(541,278)
@@ -31,19 +34,16 @@ const SKILLS := [
 var app: Node
 var canvas: Control
 var field: Node2D
-var rig: UramRig
+var rigs: Array[UramRig] = []
 var motion_canvas: Control
 var motion_status: Label
 var motion_buttons: Dictionary = {}
 var mode_buttons: Dictionary = {}
-var compare_button: Button
 var mode := ""
 var motion_clip := ""
 var motion_age := 0.0
-var use_rig := true
 var actors: Array[HybridCharacter] = []
 var boar: TextureRect
-var shield: Polygon2D
 var status: Label
 var stars: Label
 var damage: Label
@@ -113,18 +113,6 @@ func _ready() -> void:
 		if i != 0: hunter.use_training_spear()
 		hunter.set_enabled(true)
 		actors.append(hunter)
-	var uram := actors[0] as Hunt.COMBAT_PREVIEW
-	uram.spear.hide()
-	shield = Polygon2D.new()
-	shield.polygon = PackedVector2Array([Vector2(-21,-20),Vector2(0,-29),Vector2(21,-20),Vector2(16,10),Vector2(0,24),Vector2(-16,10)])
-	shield.color = Color("835934")
-	uram.add_child(shield)
-	var rim := Line2D.new()
-	rim.points = shield.polygon
-	rim.closed = true
-	rim.width = 4
-	rim.default_color = Color("d2a156")
-	shield.add_child(rim)
 	boar = Art.picture(canvas,preload("res://assets/ui/d0024/05-boar-settled-pose.png"),Rect2(0,0,94,70))
 	boar.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	boar.pivot_offset = Vector2(47,66)
@@ -167,23 +155,17 @@ func _ready() -> void:
 	fit()
 	canvas.hide()
 	motion_canvas.hide()
-	compare_button.hide()
 	retry_button.disabled = true
 	results_button.disabled = true
 	for actor in actors: actor.set_enabled(false)
 
 func build_test_picker() -> void:
-	rig = UramRig.new()
-	rig.render_size_factor = .5
-	field.add_child(rig)
-	rig.camera.position = actors[0].camera.position
-	rig.camera.look_at(Vector3(0,1.45,0))
-	rig.display.position = -rig.camera.unproject_position(Vector3.ZERO)*rig.display.scale
-	rig.pivot.rotation.y = atan2(1,.28)
-	rig.scale = actors[0].scale * (1.35 * 1.5)
 	motion_canvas = Art.layer(self,Vector2.ZERO)
-	motion_status = make_label("동작을 선택해 주세요",Rect2(230,144,500,42),24)
+	motion_status = make_label("동작을 선택해 주세요",Rect2(230,134,500,42),24)
 	motion_status.reparent(motion_canvas,false)
+	for i in COLOR_NAMES.size():
+		var caption := make_label(COLOR_NAMES[i],Rect2(510,190+83*i,210,30),18)
+		caption.reparent(motion_canvas,false)
 	var index := 0
 	for key: String in MOTIONS:
 		var control := make_button(MOTIONS[key],Rect2(150+96*index,444,90,42),select_motion.bind(key))
@@ -199,10 +181,6 @@ func build_test_picker() -> void:
 		apply_game_button_art(control)
 		control.reparent(self,false)
 		mode_buttons[key]=control
-	compare_button = make_button("우람 B",Rect2(0,0,100,38),toggle_rig)
-	apply_game_button_art(compare_button)
-	compare_button.reparent(self,false)
-
 func select_mode(value: String) -> void:
 	for key in mode_buttons: mode_buttons[key].set_pressed_no_signal(key==value)
 	if mode==value: return
@@ -216,55 +194,59 @@ func select_mode(value: String) -> void:
 	for control: Button in motion_buttons.values(): control.set_pressed_no_signal(false)
 	canvas.visible=mode=="parry"
 	motion_canvas.visible=mode=="motion"
-	compare_button.visible=mode=="parry"
-	for actor in actors: actor.set_enabled(mode=="parry")
+	place_comparison_models(mode=="motion")
 	if mode=="parry":
-		if rig.get_parent()!=field: rig.reparent(field,false)
-		fit_rig_view(false)
-		sync_rig_choice()
 		restart()
 	else:
-		shield.hide()
-		rig.reparent(motion_canvas,false)
-		motion_canvas.move_child(rig,0)
-		rig.position=MOTION_ANCHOR
-		fit_rig_view(true)
-		rig.set_enabled(true)
-		rig.show_pose("idle",0.0)
+		show_comparison_pose("idle",0.0)
 		motion_status.text="동작을 선택해 주세요"
 		retry_button.disabled=true
 		results_button.disabled=reports.is_empty()
 
-func fit_rig_view(full_map: bool) -> void:
+func place_comparison_models(for_motion: bool) -> void:
+	if rigs.is_empty():
+		for i in COLOR_NAMES.size():
+			var preview := UramRig.new()
+			preview.variant = i
+			preview.render_size_factor = .5
+			field.add_child(preview)
+			preview.camera.position = actors[0].camera.position
+			preview.camera.look_at(Vector3(0,1.45,0))
+			preview.pivot.rotation.y = atan2(1,.28)
+			preview.scale = actors[0].scale * (1.35 * 1.5)
+			rigs.append(preview)
+	for i in rigs.size():
+		var preview := rigs[i]
+		var holder: Node = motion_canvas if for_motion else field
+		if preview.get_parent()!=holder: preview.reparent(holder,false)
+		if for_motion: motion_canvas.move_child(preview,0)
+		preview.position = Vector2(457,246+83*i) if for_motion else HOMES[i]+COMPARISON_OFFSETS[i]
+		fit_rig_view(preview,for_motion)
+		preview.set_enabled(true)
+
+func fit_rig_view(preview: UramRig, full_map: bool) -> void:
 	var battle_size := actors[0].viewport.size
 	var battle_zoom := actors[0].camera.size
 	var battle_display_scale := actors[0].display.scale
-	rig.camera.h_offset = 0.0
-	rig.camera.v_offset = 0.0
-	rig.viewport.size = Vector2i(SIZE) if full_map else battle_size
-	rig.camera.size = battle_zoom
-	rig.display.scale = battle_display_scale
+	preview.camera.h_offset = 0.0
+	preview.camera.v_offset = 0.0
+	preview.viewport.size = Vector2i(SIZE*MOTION_RENDER_SCALE) if full_map else battle_size
+	preview.camera.size = battle_zoom
+	preview.display.scale = battle_display_scale
 	if full_map:
-		# Expand the camera coverage while maintaining the character's on-screen size.
-		rig.camera.size *= SIZE.y / (battle_size.y * battle_display_scale.y * rig.scale.y)
-		rig.display.scale = Vector2.ONE / rig.scale
-		var center := rig.camera.unproject_position(Vector3.ZERO)
-		var units_per_pixel := rig.camera.size / SIZE.y
-		rig.camera.h_offset = (center.x - MOTION_ANCHOR.x) * units_per_pixel
-		rig.camera.v_offset = (MOTION_ANCHOR.y - center.y) * units_per_pixel
-	rig.display.position = -rig.camera.unproject_position(Vector3.ZERO) * rig.display.scale
+		# The viewport covers the entire logical map at reduced render resolution.
+		preview.camera.size *= SIZE.y / (battle_size.y * battle_display_scale.y * preview.scale.y)
+		preview.display.scale = Vector2.ONE / (preview.scale*MOTION_RENDER_SCALE)
+		var center := preview.camera.unproject_position(Vector3.ZERO)
+		var anchor := preview.position * MOTION_RENDER_SCALE
+		var units_per_pixel := preview.camera.size / preview.viewport.size.y
+		preview.camera.h_offset = (center.x - anchor.x) * units_per_pixel
+		preview.camera.v_offset = (anchor.y - center.y) * units_per_pixel
+	preview.display.position = -preview.camera.unproject_position(Vector3.ZERO) * preview.display.scale
 
-func toggle_rig() -> void:
-	use_rig=not use_rig
-	sync_rig_choice()
-	if trial!=null: refresh(Time.get_ticks_msec())
-
-func sync_rig_choice() -> void:
-	actors[0].set_enabled(not use_rig)
-	rig.set_enabled(use_rig)
-	compare_button.text="우람 B" if use_rig else "기존 우람"
-	var holder: Node = rig if use_rig else actors[0]
-	if shield.get_parent()!=holder: shield.reparent(holder,false)
+func show_comparison_pose(clip: String, seconds: float) -> void:
+	for preview in rigs:
+		preview.show_pose(clip,seconds)
 
 func select_motion(key: String) -> void:
 	if mode!="motion": return
@@ -273,18 +255,18 @@ func select_motion(key: String) -> void:
 	for item in motion_buttons: motion_buttons[item].set_pressed_no_signal(item==key)
 	motion_status.text=MOTIONS[key]+(" · 반복" if key in LOOP_MOTIONS else " · 1회")
 	retry_button.disabled=false
-	rig.show_pose(key,0.0)
+	show_comparison_pose(key,0.0)
 
 func advance_motion(delta: float) -> void:
 	if motion_clip.is_empty(): return
 	motion_age+=delta
-	var length := rig.clip_length(motion_clip)
+	var length := rigs[0].clip_length(motion_clip)
 	if motion_clip in LOOP_MOTIONS:
-		rig.show_pose(motion_clip,fposmod(motion_age,length))
+		show_comparison_pose(motion_clip,fposmod(motion_age,length))
 	elif motion_age<length:
-		rig.show_pose(motion_clip,motion_age)
+		show_comparison_pose(motion_clip,motion_age)
 	else:
-		rig.show_pose("idle",fposmod(motion_age-length,rig.clip_length("idle")))
+		show_comparison_pose("idle",fposmod(motion_age-length,rigs[0].clip_length("idle")))
 
 func fit() -> void:
 	var region := Rect2(Vector2.ZERO,size)
@@ -306,7 +288,6 @@ func fit() -> void:
 	retry_button.position = Vector2(right,region.end.y-CONTROL_TARGET-SCREEN_MARGIN)
 	mode_buttons.parry.position=Vector2(region.get_center().x-150,top+50)
 	mode_buttons.motion.position=Vector2(region.get_center().x+6,top+50)
-	compare_button.position=Vector2(left,region.end.y-38-SCREEN_MARGIN)
 	var title_width := maxf(0,2.0*minf(size.x*.5-left-CONTROL_TARGET,right-size.x*.5))
 	header_title.add_theme_font_size_override("font_size",clampi(int(title_width/10),11,20))
 	header_title.size = Vector2(title_width,CONTROL_TARGET)
@@ -423,7 +404,7 @@ func _input(event: InputEvent) -> void:
 	if event is InputEventScreenTouch:
 		if event.pressed:
 			if touch_id >= 0: return
-			var buttons: Array = result_buttons if showing_result else [exit_button,results_button,retry_button,compare_button] + mode_buttons.values()
+			var buttons: Array = result_buttons if showing_result else [exit_button,results_button,retry_button] + mode_buttons.values()
 			if not showing_result:
 				if mode=="parry": buttons.append_array(card_buttons+skill_buttons)
 				elif mode=="motion": buttons.append_array(motion_buttons.values())
@@ -611,15 +592,10 @@ func refresh(now: int) -> void:
 	uram.position = HOMES[0].lerp(stop-Vector2(19*stepped,0),recovery) if success and reacting else HOMES[0]
 	var clip := "Hit_Reaction" if (reacting and success) or defending else "Combat_Idle"
 	uram.show_combat_pose(Vector2(1,.28),clip,clampf(float(now-normal_at)/380.0,0,1) if defending else brace_age if reacting else fposmod(now*.001,1.8)/1.8)
-	shield.visible = reacting or defending
-	shield.position = Vector2(40-36*sin(minf(brace_age*3.4,1)*PI*.5),-62)
-	shield.rotation = -.22*sin(brace_age*PI)
-	if use_rig:
-		rig.position=uram.position
-		var rig_clip := "parry" if reacting and success else "club_attack" if defending else "hit_reaction" if trial.contact>=0 and now-trial.contact<420 else "idle"
-		var rig_time := brace_age*rig.clip_length("parry") if rig_clip=="parry" else (now-normal_at)*.001 if rig_clip=="club_attack" else (now-trial.contact)*.001 if rig_clip=="hit_reaction" else fposmod(now*.001,rig.clip_length("idle"))
-		rig.show_pose(rig_clip,rig_time)
-		shield.position = rig.projected_shield_hand()
+	rigs[0].position = uram.position
+	var rig_clip := "parry" if reacting and success else "club_attack" if defending else "hit_reaction" if trial.contact>=0 and now-trial.contact<420 else "idle"
+	var rig_time := brace_age*rigs[0].clip_length("parry") if rig_clip=="parry" else (now-normal_at)*.001 if rig_clip=="club_attack" else (now-trial.contact)*.001 if rig_clip=="hit_reaction" else fposmod(now*.001,rigs[0].clip_length("idle"))
+	show_comparison_pose(rig_clip,rig_time)
 	for i in range(1,3):
 		var age: int = now-followup_at[i-1]
 		var attacking := followup_at[i-1] >= 0 and age < 450

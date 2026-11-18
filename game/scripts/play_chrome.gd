@@ -5,7 +5,6 @@ var pulse := {"wood":0.0,"stone":0.0,"tokens":0.0}
 var styles: Dictionary={}
 var portrait: Texture2D
 const RESIDENT_ICON=preload("res://assets/ui/resource-bars/resident.png")
-const DIAMOND_ICON := preload("res://assets/ui/d0020/diamond-premium-illustrated.png")
 const CORN_ICON=preload("res://assets/ui/resource-bars/corn.png")
 const LEVEL_BRUSH := preload("res://assets/ui/d0009/job-name-brush.png")
 const PIECE_SPACING := .043
@@ -15,14 +14,16 @@ const PIECE_FLIGHT := .49
 const TRACK_COLOR:=Color("523621")
 const TRACK_RIM:=Color("874f0d")
 const FILL_COLORS:=[Color("ffdb45"),Color("f2b00a"),Color("d48005")]
-const RESOURCE_RAIL := preload("res://assets/ui/d0047/hud-backing-and-empty-rails.png")
-const RESOURCE_RAIL_SIZE := Vector2(552,42)
+const RESOURCE_RAIL := preload("res://assets/ui/d0048/hud-brush-30@2x.png")
+const DIAMOND_ART := preload("res://assets/ui/d0048/hud-diamond-art@2x.png")
+const RESOURCE_RAIL_SIZE := Vector2(565,42)
 const RESOURCE_KEYS := ["tokens","wood","stone","residents","diamonds"]
-const CELL_EDGES := [10,135,265,396,482,542]
-const ICON_POSITIONS := [Vector2(12,5),Vector2(141,3),Vector2(272,3),Vector2(402,6),Vector2(486,8)]
-const GAUGE_STARTS := [26,156,286,401]
-const GAUGE_WIDTHS := [98,95,93,48]
-const NUMBER_ENDS := [121,248,376,450,542]
+const CELL_EDGES := [10,135,260,396,477,565]
+const ICON_POSITIONS := [Vector2(12,5),Vector2(138,3),Vector2(266,3),Vector2(396,6),Vector2(477,0)]
+const GAUGE_STARTS := [26,153,280,407]
+const GAUGE_WIDTHS := [98,95,93,54]
+const NUMBER_ENDS := [121.0,245.0,370.0,442.0,540.5]
+const TRACK_PALETTE := [Color("493e26"),Color("392e19"),Color("392e19")]
 const HUD_GOLD := [Color("fbd034"),Color("f1ae0a"),Color("da8a06")]
 const DIAMOND_RIM := Color("a9dfff")
 const DIAMOND_FILL := [Color("74dfff"),Color("4299c9"),Color("276994")]
@@ -72,7 +73,7 @@ func resource_rail_rect() -> Rect2:
 	var portrait_layout: bool = app.w<app.h
 	var right: float = app.w-app.safe.x-112.0
 	var left: float = app.safe.x+(0.0 if portrait_layout else 244.0)
-	var width := clampf(right-left,160.0,414.0)
+	var width := clampf(right-left,160.0,RESOURCE_RAIL_SIZE.x)
 	var top: float = app.safe.y+(69.0 if portrait_layout else -1.0)
 	return Rect2(right-width,top,width,RESOURCE_RAIL_SIZE.y*width/RESOURCE_RAIL_SIZE.x)
 
@@ -86,7 +87,8 @@ func slot(kind: String) -> Rect2:
 func resource_icon_center(kind: String) -> Vector2:
 	var index := RESOURCE_KEYS.find(kind)
 	var rail := resource_rail_rect()
-	return rail.position+(ICON_POSITIONS[index]+Vector2.ONE*16)*rail.size.x/RESOURCE_RAIL_SIZE.x
+	var anchor: Vector2 = Vector2(495,21) if kind=="diamonds" else ICON_POSITIONS[index]+Vector2.ONE*16
+	return rail.position+anchor*rail.size.x/RESOURCE_RAIL_SIZE.x
 
 static func compact_amount(value: int) -> String:
 	if value<1000: return str(value)
@@ -100,6 +102,7 @@ func draw_resource_rail(font: Font) -> void:
 	var rect := resource_rail_rect()
 	draw_set_transform(rect.position,0.0,Vector2.ONE*rect.size.x/RESOURCE_RAIL_SIZE.x)
 	draw_texture_rect(RESOURCE_RAIL,Rect2(Vector2.ZERO,RESOURCE_RAIL_SIZE),false)
+	draw_texture_rect(DIAMOND_ART,Rect2(477,0,88,42),false)
 	for i in RESOURCE_KEYS.size():
 		var key: String = RESOURCE_KEYS[i]
 		var amount: int
@@ -112,12 +115,16 @@ func draw_resource_rail(font: Font) -> void:
 			var limit: int = app.model.resident_capacity() if key=="residents" else resource_capacities["grain" if key=="tokens" else key]
 			quantity = compact_amount(amount)+"/"+compact_amount(limit)
 			var fraction := clampf(float(amount)/maxi(1,limit),0,1)
-			if fraction>0.0: draw_resource_fill(Rect2(GAUGE_STARTS[i],21,GAUGE_WIDTHS[i]*fraction,11.5),HUD_GOLD)
-		var extent := 32.0+float(pulse.get(key,0.0))*4.0 if i<3 else 26.0
-		draw_texture_rect(DIAMOND_ICON if i==4 else resource_icon(key),Rect2(ICON_POSITIONS[i],Vector2.ONE*extent),false)
-		var start: float = ICON_POSITIONS[i].x+(26.0 if i<3 else 22.0)
+			var track := Rect2(GAUGE_STARTS[i],21,GAUGE_WIDTHS[i],11.5)
+			draw_resource_fill(track,TRACK_PALETTE)
+			if fraction>0.0:
+				track.size.x *= fraction
+				draw_resource_fill(track,HUD_GOLD)
+			var extent := 32.0+float(pulse.get(key,0.0))*4.0 if i<3 else 26.0
+			draw_texture_rect(resource_icon(key),Rect2(ICON_POSITIONS[i],Vector2.ONE*extent),false)
+		var start: float = ICON_POSITIONS[i].x+(26.0 if i<3 else 17.0)
 		var room: float = NUMBER_ENDS[i]-start
-		var point := 16
+		var point := 13
 		while point>6 and font.get_string_size(quantity,HORIZONTAL_ALIGNMENT_LEFT,-1,point).x>room: point-=1
 		var at := Vector2(start,26)
 		draw_string_outline(font,at,quantity,HORIZONTAL_ALIGNMENT_RIGHT,room,point,3,Color("352b18"))
