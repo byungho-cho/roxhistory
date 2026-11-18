@@ -373,11 +373,13 @@ func start_model_review() -> void:
 		motion_canvas.add_child(model_preview)
 		motion_canvas.move_child(model_preview,0)
 	model_preview.set_enabled(true)
-	motion_status.text = PREVIEW_NAMES[selected_character]+" · 1회"
+	motion_status.text = "대기"
 	motion_caption.text = CHARACTERS[selected_character]
 	model_age=0.0
 	selected_motion_key = "skill" if mode=="parry" else "idle"
 	model_preview.sample_motion(selected_motion_key,0.0)
+	motion_status.text = MOTIONS[selected_motion_key]
+	for key in motion_buttons: motion_buttons[key].set_pressed_no_signal(key==selected_motion_key)
 	results_button.disabled=true
 	retry_button.disabled=false
 	retry_button.show()
@@ -421,7 +423,7 @@ func fit_rig_view(preview: UramRig, full_map: bool) -> void:
 	preview.display.position = -preview.camera.unproject_position(Vector3.ZERO) * preview.display.scale
 
 func select_motion(key: String) -> void:
-	if mode!="motion": return
+	if mode.is_empty() or (mode!="motion" and selected_character=="uram"): return
 	if not Catalog.CLIPS[selected_character].has(key): return
 	selected_motion_key=key
 	if selected_character!="uram":
