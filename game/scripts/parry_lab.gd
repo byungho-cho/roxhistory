@@ -6,6 +6,7 @@ const Trial := preload("res://scripts/parry_trial.gd")
 const Hunt := preload("res://scripts/deer_hunt_screen.gd")
 const LabAudio := preload("res://scripts/hunt_audio.gd")
 const UramRig := preload("res://scripts/uram_lab_rig.gd")
+const AppearanceComparison := preload("res://scripts/uram_appearance_comparison.gd")
 const Res011Preview := preload("res://scripts/res011_lab_preview.gd")
 const CHARACTERS := {"uram":"우람","hangyeol":"한결","saebom":"새봄"}
 const PREVIEW_NAMES := {"hangyeol":"석창 찌르기","saebom":"돌팔매"}
@@ -49,6 +50,8 @@ var motion_canvas: Control
 var motion_status: Label
 var motion_caption: Label
 var motion_buttons: Dictionary = {}
+var comparison_button: Button
+var appearance_comparison: AppearanceComparison
 var mode_buttons: Dictionary = {}
 var character_buttons: Dictionary = {}
 var selected_character := "uram"
@@ -184,6 +187,11 @@ func build_test_picker() -> void:
 	motion_status.reparent(motion_canvas,false)
 	motion_caption = make_label(URAM_PREVIEW_LABEL,Rect2(355,357,250,30),18)
 	motion_caption.reparent(motion_canvas,false)
+	comparison_button = make_button("외형 비교",Rect2(747,139,126,38),toggle_appearance_comparison)
+	comparison_button.name = "UramAppearanceComparison"
+	apply_game_button_art(comparison_button)
+	comparison_button.reparent(motion_canvas,false)
+	comparison_button.hide()
 	var index := 0
 	for key: String in MOTIONS:
 		var control := make_button(MOTIONS[key],Rect2(150+96*index,444,90,42),select_motion.bind(key))
@@ -235,6 +243,7 @@ func select_mode(value: String) -> void:
 	motion_canvas.visible=mode=="motion"
 	motion_caption.text=URAM_PREVIEW_LABEL
 	for control: Button in motion_buttons.values(): control.show()
+	comparison_button.visible = mode=="motion"
 	for i in range(1,actors.size()):
 		actors[i].set_enabled(mode=="parry")
 	place_uram_preview(mode=="motion")
@@ -245,7 +254,44 @@ func select_mode(value: String) -> void:
 		motion_status.text="동작을 선택해 주세요"
 		results_button.disabled=reports.is_empty()
 
+func toggle_appearance_comparison() -> void:
+	if mode!="motion" or selected_character!="uram": return
+	if is_instance_valid(appearance_comparison):
+		close_appearance_comparison()
+		for control: Button in motion_buttons.values(): control.show()
+		motion_status.show()
+		motion_caption.show()
+		uram_preview.set_enabled(true)
+		if not motion_clip.is_empty():
+			retry_button.disabled = false
+			retry_button.show()
+		results_button.disabled = reports.is_empty()
+		return
+	appearance_comparison = AppearanceComparison.new()
+	appearance_comparison.name = "AppearanceComparison"
+	motion_canvas.add_child(appearance_comparison)
+	appearance_comparison.build()
+	comparison_button.text = "외형 비교 닫기"
+	for control: Button in motion_buttons.values(): control.hide()
+	motion_status.hide()
+	motion_caption.hide()
+	uram_preview.set_enabled(false)
+	lab_audio.update(false,false)
+	retry_button.hide()
+	results_button.disabled = true
+
+func close_appearance_comparison() -> void:
+	if not is_instance_valid(appearance_comparison): return
+	appearance_comparison.hide()
+	appearance_comparison.queue_free()
+	appearance_comparison = null
+	comparison_button.text = "외형 비교"
+
 func reset_test() -> void:
+	close_appearance_comparison()
+	comparison_button.hide()
+	motion_status.show()
+	motion_caption.show()
 	mode=""
 	trial=null
 	lab_audio.update(false,false)
@@ -504,7 +550,9 @@ func _input(event: InputEvent) -> void:
 			var buttons: Array = result_buttons if showing_result else [exit_button,results_button,retry_button] + character_buttons.values() + mode_buttons.values()
 			if not showing_result:
 				if mode=="parry": buttons.append_array(card_buttons+skill_buttons)
-				elif mode=="motion": buttons.append_array(motion_buttons.values())
+				elif mode=="motion":
+					buttons.append(comparison_button)
+					buttons.append_array(motion_buttons.values())
 			for button in buttons:
 				if button.is_visible_in_tree() and not button.disabled and button.get_global_rect().has_point(event.position):
 					touch_id = event.index
@@ -660,6 +708,7 @@ func _process(delta: float) -> void:
 			model_preview.sample(model_age)
 		return
 	if mode=="motion":
+		if is_instance_valid(appearance_comparison): return
 		lab_audio.update(app.audio.enabled,not app.application_active)
 		advance_motion(delta)
 		return

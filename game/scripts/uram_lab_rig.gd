@@ -4,6 +4,7 @@ const ASSETS := "res://assets/characters/d0048/"
 const CLUB_SIZE := Vector2(1.43,.53)
 var variant := 0
 var use_retouch := false
+var comparison_model_path := ""
 var club_tilt := 0.0
 var shield_push := 0.0
 var animator: AnimationPlayer
@@ -20,7 +21,10 @@ var club: MeshInstance3D
 var shield: MeshInstance3D
 
 func build_villager() -> void:
-	var packed := load(ASSETS+("uram-natural-retouch.glb" if use_retouch else "uram-warm.glb")) as PackedScene
+	var path := comparison_model_path
+	if path.is_empty():
+		path = ASSETS+("uram-natural-retouch.glb" if use_retouch else "uram-warm.glb")
+	var packed := load(path) as PackedScene
 	var rig := packed.instantiate() as Node3D
 	pivot.add_child(rig)
 	animator = rig.find_children("*","AnimationPlayer",true,false)[0]
