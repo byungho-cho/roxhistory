@@ -4,6 +4,10 @@ const ASSETS := "res://assets/characters/d0051/"
 const CLIPS := {"hangyeol":"stone_spear_thrust","saebom":"sling_cast"}
 const GAME_CAMERA := Vector3(.33,7.05,6.0)
 const GAME_AIM := Vector3(.33,1.45,0.0)
+const MOTION_RENDER_FACTOR := .75
+const MOTION_DISPLAY_SCALE := .92
+const MOTION_GROUND_Y := 325.0
+const MOTION_HEADING := atan2(1.0,.28)
 
 var character := "hangyeol"
 var shared_motion_view := false
@@ -15,10 +19,9 @@ func build_villager() -> void:
 	var packed := load(ASSETS+character+"-combat.glb") as PackedScene
 	var model := packed.instantiate() as Node3D
 	pivot.add_child(model)
-	if not shared_motion_view:
-		model.scale = Vector3.ONE*1.24
-		model.position.y = -.12
-	pivot.rotation.y = atan2(1.0,.28)
+	model.scale = Vector3.ONE*1.24
+	model.position.y = -.12
+	pivot.rotation.y = MOTION_HEADING
 	camera.position = GAME_CAMERA
 	camera.look_at(GAME_AIM)
 	animation = model.find_children("*","AnimationPlayer",true,false)[0]

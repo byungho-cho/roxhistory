@@ -12,7 +12,6 @@ const CLIPS := {
 # The approved Uram composite starts its club attack at frame 216 (60 fps).
 const COMPOSITE_ATTACK_START := 216.0/60.0
 const REPEATS := ["idle","walk","run"]
-const VIEW := Vector2i(256,232)
 
 var previews: Dictionary = {}
 var statuses: Dictionary = {}
@@ -22,23 +21,8 @@ var duration := 0.0
 
 func _ready() -> void:
 	mouse_filter = MOUSE_FILTER_IGNORE
-	var skin := StyleBoxFlat.new()
-	skin.bg_color = Color("2c2018e8")
-	skin.border_color = Color("c5a775")
-	skin.set_border_width_all(1)
-	skin.set_corner_radius_all(8)
 	for character in NAMES:
 		var index := previews.size()
-		var card := Panel.new()
-		card.name = character
-		card.position = Vector2(69+278*index,155)
-		card.size = Vector2(266,266)
-		card.mouse_filter = MOUSE_FILTER_IGNORE
-		card.clip_contents = true
-		card.add_theme_stylebox_override("panel",skin)
-		add_child(card)
-		var name_label := FigmaArt.text(card,NAMES[character],Rect2(8,6,250,27),18,FigmaArt.BODY,Color("fff1d8"))
-		name_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		var preview: HybridCharacter
 		if character=="uram":
 			var uram := UramRig.new()
@@ -49,18 +33,22 @@ func _ready() -> void:
 			resident.character = character
 			resident.shared_motion_view = true
 			preview = resident
-		card.add_child(preview)
+		preview.name = character
+		preview.render_size_factor = Res011Preview.MOTION_RENDER_FACTOR
+		preview.scale = Vector2.ONE*Res011Preview.MOTION_DISPLAY_SCALE
+		preview.position = Vector2(278+202*index,Res011Preview.MOTION_GROUND_Y)
+		add_child(preview)
 		previews[character] = preview
-		preview.viewport.size = VIEW
-		preview.camera.position = Vector3(0,4.2,7)
-		preview.camera.look_at(Vector3(0,1.12,0))
-		preview.camera.size = 3.25
-		preview.pivot.rotation.y = deg_to_rad(29.0)
-		preview.display.position = Vector2(16,32)
-		preview.display.scale = Vector2.ONE*.91
+		if preview is UramRig:
+			preview.camera.position = Res011Preview.GAME_CAMERA
+			preview.camera.look_at(Res011Preview.GAME_AIM)
+			preview.pivot.rotation.y = Res011Preview.MOTION_HEADING
+			preview.display.position = -preview.camera.unproject_position(Vector3.ZERO)*preview.display.scale
 		preview.set_enabled(true)
-		var status := FigmaArt.text(card,"대기",Rect2(8,233,250,26),15,FigmaArt.BODY,Color("e8cc9f"))
+		var status := FigmaArt.text(self,NAMES[character],Rect2(preview.position.x-90,preview.position.y+12,180,24),16,FigmaArt.BODY,Color("fff1d8"))
 		status.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		status.add_theme_color_override("font_outline_color",Color("49321e"))
+		status.add_theme_constant_override("outline_size",5)
 		statuses[character] = status
 		sample(character,"",0)
 	render_frame()
@@ -89,7 +77,7 @@ func render_frame() -> void:
 		var length := clip_duration(character,clip) if not clip.is_empty() else 0.0
 		var playing := not clip.is_empty() and elapsed>=0 and (selection in REPEATS or elapsed<length)
 		var caption: Label = statuses[character]
-		caption.text = "대기" if selection.is_empty() else "미연결" if clip.is_empty() else "재생 중" if playing else "대기"
+		caption.text = NAMES[character]+(" · 미연결" if not selection.is_empty() and clip.is_empty() else "")
 		sample(character,clip if playing else "",fposmod(elapsed,length) if playing else 0.0)
 
 func clip_for(character: String) -> String:

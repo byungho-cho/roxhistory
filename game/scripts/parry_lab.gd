@@ -358,9 +358,9 @@ func start_model_review() -> void:
 	if not is_instance_valid(model_preview):
 		model_preview = Res011Preview.new()
 		model_preview.character = selected_character
-		model_preview.render_size_factor = .75
-		model_preview.position = Vector2(480,325)
-		model_preview.scale = Vector2.ONE*.92
+		model_preview.render_size_factor = Res011Preview.MOTION_RENDER_FACTOR
+		model_preview.position = Vector2(480,Res011Preview.MOTION_GROUND_Y)
+		model_preview.scale = Vector2.ONE*Res011Preview.MOTION_DISPLAY_SCALE
 		motion_canvas.add_child(model_preview)
 		motion_canvas.move_child(model_preview,0)
 	model_preview.set_enabled(true)
@@ -472,11 +472,6 @@ func fit() -> void:
 		character_buttons[CHARACTERS.keys()[index]].position=Vector2(middle-196+100*index,top+43)
 	mode_buttons.parry.position=Vector2(middle-172,top+88)
 	mode_buttons.motion.position=Vector2(middle-83 if selected_character=="all" else middle+6,top+88)
-	if is_instance_valid(all_motion) and factor>0:
-		var comparison_top := maxf(top+138,motion_canvas.position.y+155*factor)
-		var comparison_scale := minf(factor,maxf(1.0,region.end.y-SCREEN_MARGIN-comparison_top)/324.0)
-		all_motion.scale = Vector2.ONE*(comparison_scale/factor)
-		all_motion.position = (Vector2(middle,comparison_top)-motion_canvas.position)/factor-Vector2(480,155)*all_motion.scale
 	var title_width := maxf(0,2.0*minf(size.x*.5-left-CONTROL_TARGET,right-size.x*.5))
 	header_title.add_theme_font_size_override("font_size",clampi(int(title_width/10),11,20))
 	header_title.size = Vector2(title_width,CONTROL_TARGET)
