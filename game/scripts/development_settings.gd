@@ -46,7 +46,7 @@ static func entries(app:Node)->Array[Dictionary]:
 
 static func open(app:Node)->void:
 	var scroll:ScrollContainer=app.show_modal("개발 설정","",[
-		{"text":"돌아가기","action":app.show_game_settings}],false,true,false,Vector2(460,430))
+		{"text":"돌아가기","action":app.show_game_settings}],false,true,false,Vector2(920,430))
 	preload("res://scripts/game_settings_menu.gd").detail_header(app,scroll,"DevelopmentBack")
 	scroll.name="DevelopmentSettingsScroll"
 	scroll.follow_focus=true
@@ -58,7 +58,7 @@ static func populate(app:Node,scroll:ScrollContainer,settings:Array[Dictionary])
 	var list:=VBoxContainer.new()
 	list.name="SettingsList"
 	list.size_flags_horizontal=Control.SIZE_EXPAND_FILL
-	list.add_theme_constant_override("separation",8)
+	list.add_theme_constant_override("separation",4)
 	scroll.add_child(list)
 	for setting in settings:
 		var panel:=PanelContainer.new()
@@ -67,35 +67,35 @@ static func populate(app:Node,scroll:ScrollContainer,settings:Array[Dictionary])
 		style.bg_color=Color("7c54241a")
 		style.set_corner_radius_all(8)
 		style.set_content_margin_all(6)
+		style.content_margin_top = 1
+		style.content_margin_bottom = 1
 		panel.add_theme_stylebox_override("panel",style)
 		list.add_child(panel)
 		var row:=HBoxContainer.new()
 		row.add_theme_constant_override("separation",12)
 		panel.add_child(row)
-		var title:Label=app.label(row,setting.title,18)
+		var title:Label=app.label(row,setting.title,16)
 		title.size_flags_horizontal=Control.SIZE_EXPAND_FILL
 		title.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
+		title.vertical_alignment=VERTICAL_ALIGNMENT_CENTER
 		if setting.kind=="toggle":
-			var toggle:=DevelopmentSettingToggle.new()
+			var toggle:=SettingsSwitch.new()
 			toggle.name=setting.id+"Toggle"
-			toggle.custom_minimum_size=Vector2(104,44)
-			var toggle_skin:=StyleBoxFlat.new();toggle_skin.bg_color=Color("59432d");toggle_skin.border_color=Color("b69a60");toggle_skin.set_border_width_all(1);toggle_skin.set_corner_radius_all(9);toggle_skin.content_margin_left=8;toggle_skin.content_margin_right=8;toggle_skin.content_margin_top=4;toggle_skin.content_margin_bottom=4
-			for variant in ["normal","hover","pressed","hover_pressed","focus"]:toggle.add_theme_stylebox_override(variant,toggle_skin)
-			toggle.add_theme_font_size_override("font_size",18)
-			toggle.set_pressed_no_signal(setting.value)
-			toggle.text="ON" if setting.value else "OFF"
-			for color in ["font_color","font_hover_color","font_pressed_color","font_focus_color"]:
-				toggle.add_theme_color_override(color,Color("fff2d3"))
-			toggle.toggled.connect(func(enabled:bool):
+			toggle.compact=true
+			row.add_child(toggle)
+			toggle.show_state(setting.value)
+			toggle.pressed.connect(func():
+				var enabled := not toggle.enabled_state
 				setting.changed.call(enabled)
 				var actual:bool=setting.read.call() if setting.has("read") else enabled
-				toggle.set_pressed_no_signal(actual)
-				toggle.text="ON" if actual else "OFF"
+				toggle.show_state(actual)
 				app.audio.cue("debug_click"))
-			row.add_child(toggle)
 		else:
 			var action:DemoButton=app.button(row,setting.button,setting.action,false,"","debug_click")
 			action.name=setting.id+"Button"
-			action.custom_minimum_size=Vector2(104,44)
+			action.custom_minimum_size=Vector2(102,28)
 			action.focus_mode=Control.FOCUS_ALL
 			action.disabled=setting.get("disabled",false)
+			action.add_theme_font_size_override("font_size",15)
+			var destructive: bool = setting.id in ["ResetProgress","FullReset","PerformanceDelete"]
+			SharedPopupArt.button_style(action,"wood","red" if destructive else "gold")

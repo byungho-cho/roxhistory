@@ -5,16 +5,17 @@ const ON_KNOB := preload("res://assets/ui/d0052/switch-knob-on.svg")
 const OFF_KNOB := preload("res://assets/ui/d0052/switch-knob-off.svg")
 var knob: TextureRect
 var enabled_state := false
+var compact := false
 
 func _ready() -> void:
-	custom_minimum_size = Vector2(102,44)
+	custom_minimum_size = Vector2(102,28 if compact else 44)
 	size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	add_theme_font_override("font",FigmaArt.BODY)
 	add_theme_font_size_override("font_size",15)
 	knob = TextureRect.new()
 	knob.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	knob.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	knob.size = Vector2.ONE*24
+	knob.size = Vector2.ONE*(20 if compact else 24)
 	add_child(knob)
 	resized.connect(position_knob)
 	show_state(enabled_state)
@@ -31,8 +32,8 @@ func show_state(enabled: bool) -> void:
 	skin.shadow_offset = Vector2(0,1)
 	skin.set_border_width_all(1)
 	skin.set_corner_radius_all(15)
-	skin.expand_margin_top = -7
-	skin.expand_margin_bottom = -7
+	skin.expand_margin_top = 0 if compact else -7
+	skin.expand_margin_bottom = skin.expand_margin_top
 	skin.content_margin_left = 22
 	skin.content_margin_right = 18
 	for state in ["normal","hover","pressed","hover_pressed","disabled","focus"]:
@@ -43,4 +44,4 @@ func show_state(enabled: bool) -> void:
 	position_knob()
 
 func position_knob() -> void:
-	knob.position = Vector2(size.x-31 if enabled_state else 5,(size.y-24)*.5)
+	knob.position = Vector2(size.x-knob.size.x-7 if enabled_state else 5,(size.y-knob.size.y)*.5)

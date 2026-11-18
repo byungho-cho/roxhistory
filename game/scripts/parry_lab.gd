@@ -8,7 +8,8 @@ const LabAudio := preload("res://scripts/hunt_audio.gd")
 const UramRig := preload("res://scripts/uram_lab_rig.gd")
 const AppearanceComparison := preload("res://scripts/uram_appearance_comparison.gd")
 const Res011Preview := preload("res://scripts/res011_lab_preview.gd")
-const CHARACTERS := {"uram":"우람","hangyeol":"한결","saebom":"새봄"}
+const AllMotion := preload("res://scripts/lab_all_motion.gd")
+const CHARACTERS := {"uram":"우람","hangyeol":"한결","saebom":"새봄","all":"모두"}
 const PREVIEW_NAMES := {"hangyeol":"석창 찌르기","saebom":"돌팔매"}
 const URAM_STRIKE := preload("res://assets/audio/lab-uram-res009/strike-c.mp3")
 const URAM_HURT := preload("res://assets/audio/lab-uram-res009/hurt-a.mp3")
@@ -52,6 +53,8 @@ var motion_caption: Label
 var motion_buttons: Dictionary = {}
 var comparison_button: Button
 var appearance_comparison: AppearanceComparison
+var all_motion: AllMotion
+var all_motion_buttons: Dictionary = {}
 var mode_buttons: Dictionary = {}
 var character_buttons: Dictionary = {}
 var selected_character := "uram"
@@ -222,20 +225,27 @@ func select_character(value: String) -> void:
 	if selected_character==value: return
 	reset_test()
 	selected_character=value
+	mode_buttons.parry.visible = value!="all"
 	if is_instance_valid(model_preview):
 		model_preview.set_enabled(false)
 		model_preview.queue_free()
 		model_preview=null
 	results_button.disabled = value!="uram" or reports.is_empty()
+	fit()
+	if value=="all": select_mode("motion")
 
 func select_mode(value: String) -> void:
 	if not mode_buttons.has(value): return
+	if selected_character=="all" and value!="motion": return
 	if mode==value:
 		mode_buttons[value].set_pressed_no_signal(true)
 		return
 	reset_test()
 	mode=value
 	mode_buttons[value].set_pressed_no_signal(true)
+	if selected_character=="all":
+		open_all_motion()
+		return
 	if selected_character!="uram":
 		start_model_review()
 		return
@@ -289,6 +299,11 @@ func close_appearance_comparison() -> void:
 
 func reset_test() -> void:
 	close_appearance_comparison()
+	if is_instance_valid(all_motion):
+		all_motion.hide()
+		all_motion.queue_free()
+		all_motion = null
+		all_motion_buttons.clear()
 	comparison_button.hide()
 	motion_status.show()
 	motion_caption.show()
@@ -309,6 +324,33 @@ func reset_test() -> void:
 	for actor in actors: actor.set_enabled(false)
 	if is_instance_valid(uram_preview): uram_preview.set_enabled(false)
 	if is_instance_valid(model_preview): model_preview.set_enabled(false)
+
+func open_all_motion() -> void:
+	motion_canvas.show()
+	motion_status.hide()
+	motion_caption.hide()
+	for control: Button in motion_buttons.values(): control.hide()
+	all_motion = AllMotion.new()
+	all_motion.name = "AllMotionComparison"
+	motion_canvas.add_child(all_motion)
+	results_button.disabled = true
+	for key in AllMotion.MOTIONS:
+		var index := all_motion_buttons.size()
+		var control := make_button(AllMotion.MOTIONS[key],Rect2(74+116*index,437,110,42),select_all_motion.bind(key))
+		control.name = "AllMotion_"+key
+		control.toggle_mode = true
+		apply_game_button_art(control)
+		control.reparent(all_motion,false)
+		all_motion_buttons[key] = control
+	fit()
+
+func select_all_motion(key: String) -> void:
+	if not is_instance_valid(all_motion): return
+	all_motion.play(key)
+	for id in all_motion_buttons:
+		all_motion_buttons[id].set_pressed_no_signal(id==key)
+	retry_button.disabled = false
+	retry_button.show()
 
 func start_model_review() -> void:
 	motion_canvas.show()
@@ -427,9 +469,14 @@ func fit() -> void:
 	retry_button.position = Vector2(right,region.end.y-CONTROL_TARGET-SCREEN_MARGIN)
 	var middle := region.get_center().x
 	for index in character_buttons.size():
-		character_buttons[CHARACTERS.keys()[index]].position=Vector2(middle-146+100*index,top+43)
+		character_buttons[CHARACTERS.keys()[index]].position=Vector2(middle-196+100*index,top+43)
 	mode_buttons.parry.position=Vector2(middle-172,top+88)
-	mode_buttons.motion.position=Vector2(middle+6,top+88)
+	mode_buttons.motion.position=Vector2(middle-83 if selected_character=="all" else middle+6,top+88)
+	if is_instance_valid(all_motion) and factor>0:
+		var comparison_top := maxf(top+138,motion_canvas.position.y+155*factor)
+		var comparison_scale := minf(factor,maxf(1.0,region.end.y-SCREEN_MARGIN-comparison_top)/324.0)
+		all_motion.scale = Vector2.ONE*(comparison_scale/factor)
+		all_motion.position = (Vector2(middle,comparison_top)-motion_canvas.position)/factor-Vector2(480,155)*all_motion.scale
 	var title_width := maxf(0,2.0*minf(size.x*.5-left-CONTROL_TARGET,right-size.x*.5))
 	header_title.add_theme_font_size_override("font_size",clampi(int(title_width/10),11,20))
 	header_title.size = Vector2(title_width,CONTROL_TARGET)
@@ -553,6 +600,7 @@ func _input(event: InputEvent) -> void:
 				elif mode=="motion":
 					buttons.append(comparison_button)
 					buttons.append_array(motion_buttons.values())
+					buttons.append_array(all_motion_buttons.values())
 			for button in buttons:
 				if button.is_visible_in_tree() and not button.disabled and button.get_global_rect().has_point(event.position):
 					touch_id = event.index
@@ -600,6 +648,9 @@ func close_results() -> void:
 
 func retry_round() -> void:
 	if showing_result: return
+	if is_instance_valid(all_motion):
+		if not all_motion.selection.is_empty(): select_all_motion(all_motion.selection)
+		return
 	if selected_character!="uram":
 		if not mode.is_empty(): start_model_review()
 		return
@@ -702,6 +753,9 @@ func show_damage(now: int, amount: int, ally: bool) -> void:
 	damage.position = (HOMES[1] if ally else boar.position+Vector2(47,12))-Vector2(38,52)
 
 func _process(delta: float) -> void:
+	if is_instance_valid(all_motion):
+		if app.application_active: all_motion.advance(delta)
+		return
 	if selected_character!="uram":
 		if is_instance_valid(model_preview) and app.application_active and model_age<model_preview.duration():
 			model_age=minf(model_age+delta,model_preview.duration())

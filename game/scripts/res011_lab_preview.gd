@@ -6,6 +6,7 @@ const GAME_CAMERA := Vector3(.33,7.05,6.0)
 const GAME_AIM := Vector3(.33,1.45,0.0)
 
 var character := "hangyeol"
+var shared_motion_view := false
 var animation: AnimationPlayer
 var environment: Environment
 var cool_fill: DirectionalLight3D
@@ -14,8 +15,9 @@ func build_villager() -> void:
 	var packed := load(ASSETS+character+"-combat.glb") as PackedScene
 	var model := packed.instantiate() as Node3D
 	pivot.add_child(model)
-	model.scale = Vector3.ONE*1.24
-	model.position.y = -.12
+	if not shared_motion_view:
+		model.scale = Vector3.ONE*1.24
+		model.position.y = -.12
 	pivot.rotation.y = atan2(1.0,.28)
 	camera.position = GAME_CAMERA
 	camera.look_at(GAME_AIM)
@@ -23,7 +25,7 @@ func build_villager() -> void:
 	animation.callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_MANUAL
 	animation.play(CLIPS[character])
 	animation.advance(0.0)
-	if character=="saebom":
+	if character=="saebom" and not shared_motion_view:
 		var lighting := viewport.find_children("*","WorldEnvironment",true,false)[0] as WorldEnvironment
 		environment = lighting.environment
 		cool_fill = DirectionalLight3D.new()
