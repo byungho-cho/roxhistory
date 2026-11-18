@@ -157,7 +157,7 @@ func open_assignment_panel(key := "") -> void:
 	var heading_text := "주민 배정"
 	if not key.is_empty():
 		heading_text = BuildingWorkflow.building_name(key.get_slice(":",0)) + " · 주민 배정"
-	var list := content(heading_text,"",664.0 if key.is_empty() else 216.0)
+	var list := content(heading_text,"",664.0 if key.is_empty() else 234.0)
 	assignment_list = list
 	var header: HBoxContainer = list.get_parent().get_parent().get_node("ModalHeader")
 	var heading := header.find_child("ModalTitle",true,false) as Label
@@ -173,16 +173,16 @@ func open_assignment_panel(key := "") -> void:
 	count.add_theme_font_override("font",FigmaArt.BODY)
 	count.add_theme_font_size_override("font_size",14)
 	count.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	var content_box := list.get_parent().get_parent() as VBoxContainer
 	list.add_theme_constant_override("separation",6)
-	list.remove_child(count)
-	content_box.add_child(count)
-	content_box.move_child(count,1)
-	content_box.add_theme_constant_override("separation",4)
-	var header_gap := Control.new()
-	header_gap.custom_minimum_size.y = 14
-	content_box.add_child(header_gap)
-	content_box.move_child(header_gap,2)
+	var title_slot := heading.get_parent() as Control
+	var stack := VBoxContainer.new()
+	stack.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	stack.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	stack.add_theme_constant_override("separation",0)
+	header.add_child(stack)
+	header.move_child(stack,title_slot.get_index())
+	title_slot.reparent(stack,false)
+	count.reparent(stack,false)
 	refresh_assignment_panel()
 
 func refresh_assignment_panel() -> void:

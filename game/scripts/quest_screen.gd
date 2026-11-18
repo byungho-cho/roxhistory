@@ -73,10 +73,14 @@ func story() -> void:
 	rail.add_theme_stylebox_override("scroll",track)
 	for state in ["grabber","grabber_highlight","grabber_pressed"]:
 		rail.add_theme_stylebox_override(state,journal_skin("scroll-thumb",4))
+	var inset := MarginContainer.new()
+	inset.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	inset.add_theme_constant_override("margin_right",8)
+	scroll.add_child(inset)
 	var rows := VBoxContainer.new()
 	rows.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	rows.add_theme_constant_override("separation",12)
-	scroll.add_child(rows)
+	inset.add_child(rows)
 	var details := Control.new()
 	details.position = Vector2(396,20)
 	body.add_child(details)

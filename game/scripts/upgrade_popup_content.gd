@@ -18,6 +18,10 @@ var shortage_motion: Tween
 var submission_pending := false
 var footer_buttons: Array[DemoButton] = []
 var footer_rule: ColorRect
+var header_rule: ColorRect
+var effects_box: ColorRect
+var effects_divider: ColorRect
+var capacity_label: Label
 const COST_INK := Color("553820")
 const SHORTAGE_INK := Color("a32a20")
 
@@ -34,7 +38,7 @@ func _ready() -> void:
 	add_child(art)
 	resized.connect(fit)
 	fit()
-	rule(Rect2(0,0,652,1))
+	header_rule = rule(Rect2(0,0,652,1))
 	rule(Rect2(284,20,1,239))
 	footer_rule = rule(Rect2(0,277,652,1))
 	var shade := Gradient.new()
@@ -61,14 +65,12 @@ func _ready() -> void:
 	fade.tween_property(glow_art,"modulate:a",.56,.66)
 	var image := BuildingWorkflow.approved_texture(BuildingWorkflow.building_asset_id(kind,current+1))
 	if image:
-		var cropped: Texture2D = image
-		if not image is AtlasTexture:
-			var atlas := AtlasTexture.new()
-			atlas.atlas=image
-			atlas.region=Rect2(image.get_image().get_used_rect())
-			atlas.filter_clip=true
-			cropped=atlas
-		app.picture(art,cropped,Rect2(24,70,236,160))
+		var atlas := AtlasTexture.new()
+		atlas.atlas=image
+		atlas.region=Rect2(image.get_image().get_used_rect())
+		atlas.filter_clip=true
+		var preview: TextureRect = app.picture(art,atlas,Rect2(24,41,236,176))
+		preview.name = "UpgradeBuildingPreview"
 	FigmaArt.text(art,"Lv. %d" % current,Rect2(308,24,73,38),27,FigmaArt.BODY,Color("796654"),false)
 	app.picture(art,preload(FINISH_ART+"upgrade-level-arrow-gold-right.svg"),Rect2(392,28,36,36))
 	FigmaArt.text(art,str(current+1),Rect2(445,24,48,40),31,FigmaArt.BODY,Color("47240e"),false)
@@ -89,6 +91,7 @@ func _ready() -> void:
 	if not detail.is_empty() or not unlocks.is_empty():
 		FigmaArt.text(art,"업그레이드 효과",Rect2(308,82,242,21),17,FigmaArt.BODY,Color("553820"),false)
 		var group := ColorRect.new()
+		effects_box = group
 		group.color=Color(.54,.37,.20,.12)
 		group.position=Vector2(304,122)
 		group.size=Vector2(348,(58.0 if not detail.is_empty() else 0.0)+(81.0 if not unlocks.is_empty() else 0.0))
@@ -97,12 +100,12 @@ func _ready() -> void:
 		if not detail.is_empty():
 			FigmaArt.text(group,detail,Rect2(14,0,320,58),17,FigmaArt.BODY,Color("553820"),false)
 		if kind=="chief" and not detail.is_empty():
-			var capacity := FigmaArt.text(group,"%d채 → %d채"%[current,current+1],Rect2(230,0,104,58),17,FigmaArt.BODY,Color("553820"),false)
-			capacity.horizontal_alignment=HORIZONTAL_ALIGNMENT_RIGHT
+			capacity_label = FigmaArt.text(group,"%d채 → %d채"%[current,current+1],Rect2(230,0,104,58),17,FigmaArt.BODY,Color("553820"),false)
+			capacity_label.horizontal_alignment=HORIZONTAL_ALIGNMENT_RIGHT
 		if not unlocks.is_empty():
 			var y := 8.0
 			if not detail.is_empty():
-				rule(Rect2(14,58,320,1),group)
+				effects_divider = rule(Rect2(14,58,320,1),group)
 				y += 58.0
 			FigmaArt.text(group,"신규 건설",Rect2(14,y,244,19),17,FigmaArt.BODY,Color("553820"),false)
 			for i in unlocks.size():
@@ -133,6 +136,7 @@ func _ready() -> void:
 	unsupported_notice.modulate.a=0.0
 	refresh_cost_ink()
 	app.model.changed.connect(refresh_cost_ink)
+	fit()
 
 func add_shortage_art(item: Control, amount: Label, resource: String) -> void:
 	var badge := Label.new()
@@ -232,8 +236,12 @@ func fit() -> void:
 	var anchor := (size-art.position)/factor
 	for i in footer_buttons.size():
 		footer_buttons[i].position = anchor-Vector2(370-194*i,44)
-	if anchor.y-52.0>263.0:
-		footer_rule.size.x = anchor.x
+	header_rule.size.x = anchor.x
+	footer_rule.size.x = anchor.x
+	if effects_box:
+		effects_box.size.x = anchor.x-effects_box.position.x
+		if effects_divider: effects_divider.size.x = effects_box.size.x-28
+		if capacity_label: capacity_label.position.x = effects_box.size.x-capacity_label.size.x-14
 
 func action(rect: Rect2, title: String, value: String, icon: Texture2D, locked: bool) -> void:
 	var button: DemoButton=app.button(art,"",request_upgrade if not locked else request_instant_upgrade,false,"","")

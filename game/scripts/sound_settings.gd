@@ -6,6 +6,7 @@ const CHANNELS := [
 	["sfx", "효과음", "메뉴 · 알림 · 채집 · 주변 환경 소리", [&"SFX", &"Environment"]],
 	["combat", "전투음", "타격 · 기술 · 피격 등 전투 효과", [&"Combat"]],
 ]
+const SPEAKER_EDGE_INSET := 8
 
 static func apply(prefs: ConfigFile) -> void:
 	var master: bool = prefs.get_value("app", "sound", true)
@@ -37,6 +38,11 @@ static func open(app: Node) -> void:
 	var master_text: Label = app.label(master_row, "", 15, Color("49321e"))
 	var master := speaker(app,master_row)
 	master.name="MasterSoundSwitch"
+	var master_inset := Control.new()
+	master_inset.custom_minimum_size.x = SPEAKER_EDGE_INSET
+	master_inset.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	master_row.add_child(master_inset)
+	master_row.add_theme_constant_override("separation", 0)
 	var sliders: Array[HSlider] = []
 	var switches: Array[DemoButton] = []
 	var refresh := func():
@@ -70,7 +76,7 @@ static func open(app: Node) -> void:
 		card_style.bg_color = Color(.45, .28, .12, .06)
 		card_style.set_corner_radius_all(6)
 		card_style.content_margin_left = 12
-		card_style.content_margin_right = 12
+		card_style.content_margin_right = SPEAKER_EDGE_INSET
 		card.add_theme_stylebox_override("panel", card_style)
 		list.add_child(card)
 		var row := HBoxContainer.new()
@@ -79,13 +85,11 @@ static func open(app: Node) -> void:
 		var body := VBoxContainer.new()
 		body.add_theme_constant_override("separation", -8)
 		body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		body.size_flags_stretch_ratio = 4.0
 		row.add_child(body)
 		var header := HBoxContainer.new()
 		body.add_child(header)
 		add_description(app, header, channel[1], channel[2])
 		var speaker_slot := CenterContainer.new()
-		speaker_slot.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		row.add_child(speaker_slot)
 		var toggle := speaker(app, speaker_slot)
 		switches.append(toggle)
@@ -114,6 +118,7 @@ static func open(app: Node) -> void:
 		sliders.append(slider)
 		var amount: Label = app.label(controls, "%d%%" % slider.value, 15, Color("49321e"))
 		amount.custom_minimum_size.x = 53
+		amount.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 		amount.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		slider.drag_started.connect(func(): slider.set_meta("dragging", true))
 		slider.value_changed.connect(func(value: float):

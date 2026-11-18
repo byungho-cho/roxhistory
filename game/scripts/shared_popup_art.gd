@@ -43,9 +43,9 @@ static func button_style(button: Button, finish: String, color: String) -> void:
 		button.add_theme_color_override("font_color" if state=="normal" else "font_"+state+"_color",ink)
 
 static func close_icon(button: Button) -> void:
-	align_close_icon(button,CLOSE,20.0)
+	align_header_icon(button,CLOSE,20.0)
 
-static func align_close_icon(button: Button, source: Texture2D, extent: float) -> void:
+static func align_header_icon(button: Button, source: Texture2D, extent: float, at_left := false) -> void:
 	var icon := button.find_child("Icon",true,false) as TextureRect
 	if icon.get_parent()!=button: icon.reparent(button,false)
 	if not close_faces.has(source):
@@ -55,9 +55,9 @@ static func align_close_icon(button: Button, source: Texture2D, extent: float) -
 		face.filter_clip = true
 		close_faces[source] = face
 	icon.texture = close_faces[source]
-	icon.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
-	icon.offset_left = -extent
-	icon.offset_right = 0.0
+	icon.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT if at_left else Control.PRESET_TOP_RIGHT)
+	icon.offset_left = 0.0 if at_left else -extent
+	icon.offset_right = extent if at_left else 0.0
 	icon.offset_top = 0.0
 	icon.offset_bottom = extent
 	button.set_process(false)

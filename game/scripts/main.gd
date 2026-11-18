@@ -1894,8 +1894,43 @@ func show_demolition_confirmation(key:String)->void:
 	if modal or not application_active or screen!="play":return
 	var quote:=model.demolition_quote(key)
 	if quote.is_empty():toast("현재 철거할 수 없는 건물이에요");return
-	var found:=model.lookup_building(key)
-	show_modal("건물을 철거할까요?","반환: 나무 %d개 · 돌 %d개"%[quote.wood,quote.stone]+("\n수용 인원이 줄어 주민 %d명이 무작위로 떠나며 배정이 해제됩니다. 운반 짐은 즉시 마을 자원에 반환합니다."%int(quote.departures) if int(quote.departures)>0 else ""),[{"text":"취소","action":close_modal},{"text":"철거","action":func():confirm_demolition(key),"color":"red"}],false,true,false,Vector2(480,280),true,false,"popup_open","s")
+	var departures := int(quote.departures)
+	var scroll := show_modal("건물을 철거할까요?","",[
+		{"text":"취소","action":close_modal},
+		{"text":"철거","action":confirm_demolition.bind(key),"color":"red"},
+	],false,true,false,Vector2(432,300 if departures>0 else 252),false,false,"popup_open","s")
+	var layout := scroll.get_parent()
+	var header := layout.get_node("ModalHeader")
+	header.get_node("ModalClose").hide()
+	var heading := header.find_child("ModalTitle",true,false) as Label
+	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	heading.add_theme_font_override("font",FigmaArt.BODY)
+	heading.add_theme_font_size_override("font_size",25)
+	heading.add_theme_color_override("font_color",Color("423021"))
+	SharedPopupArt.update_header_title(heading)
+	var actions := layout.find_child("ModalActions",true,false) as HBoxContainer
+	actions.alignment = BoxContainer.ALIGNMENT_CENTER
+	var content := VBoxContainer.new()
+	content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	content.add_theme_constant_override("separation",8)
+	scroll.add_child(content)
+	var message := label(content,"철거하면 일부 자원을 돌려받아요.",16)
+	message.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	message.add_theme_font_override("font",FigmaArt.BODY)
+	var refund := HBoxContainer.new()
+	refund.name = "DemolitionRefund"
+	refund.alignment = BoxContainer.ALIGNMENT_CENTER
+	refund.add_theme_constant_override("separation",18)
+	content.add_child(refund)
+	for resource in ["wood","stone"]:
+		var item := HBoxContainer.new()
+		refund.add_child(item)
+		picture(item,DemoArt.icon(resource),Rect2()).custom_minimum_size = Vector2(29,29)
+		var amount := label(item,"%d개"%int(quote[resource]),17)
+		amount.add_theme_font_override("font",FigmaArt.BODY)
+		amount.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	if departures>0:
+		paragraph(content,"수용 인원이 줄어 주민 %d명이 무작위로 떠나며 배정이 해제됩니다. 운반 짐은 즉시 마을 자원에 반환합니다."%departures,14)
 	demolition_key=key
 
 func confirm_demolition(key:String)->void:

@@ -98,7 +98,10 @@ static func detail_header(app: Node, scroll: ScrollContainer, back_id: String) -
 	back.custom_minimum_size=Vector2.ONE*48
 	for state in ["normal","hover","pressed","focus"]:
 		back.add_theme_stylebox_override(state,StyleBoxEmpty.new())
-	app.picture(back,preload("res://assets/ui/d0024/08-ui-back-button.png"),Rect2(0,0,38,38))
+	var arrow := preload("res://assets/ui/d0024/09-bag-back-charcoal.svg")
+	var icon: TextureRect = app.picture(back,arrow,Rect2())
+	icon.name = "Icon"
+	SharedPopupArt.align_header_icon(back,arrow,20.0,true)
 	header.move_child(back,0)
 	var close := header.get_node("ModalClose") as Button
 	if close.pressed.is_connected(app.close_modal): close.pressed.disconnect(app.close_modal)
@@ -112,4 +115,6 @@ static func icon_button(app: Node, header: Control, texture: Texture2D, id: Stri
 	control.custom_minimum_size = Vector2.ONE*diameter
 	for state in ["normal","hover","pressed","focus"]:
 		control.add_theme_stylebox_override(state, StyleBoxEmpty.new())
-	app.picture(control, texture, Rect2((diameter-32.0)*.5,0,32,32))
+	var icon: TextureRect = app.picture(control,texture,Rect2())
+	icon.name = "Icon"
+	SharedPopupArt.align_header_icon(control,texture,20.0)
