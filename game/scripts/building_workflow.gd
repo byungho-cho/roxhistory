@@ -78,10 +78,11 @@ func show_upgrade_confirmation(key:String,cost:Dictionary,callback:Callable)->vo
 	var title := building_name(str(found.get("kind","chief")))+" 업그레이드"
 	var scroll: ScrollContainer=app.show_modal(title,"",[],false,true,false,Vector2(724,440),false,false,"popup_open","l")
 	var header: HBoxContainer = scroll.get_parent().get_node("ModalHeader")
-	var title_label := header.get_child(0) as Label
+	var title_label := header.find_child("ModalTitle",true,false) as Label
 	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title_label.add_theme_font_override("font",FigmaArt.BODY)
 	title_label.add_theme_font_size_override("font_size",30)
+	SharedPopupArt.update_header_title(title_label)
 	var balance := Control.new()
 	balance.custom_minimum_size.x = header.get_node("ModalClose").custom_minimum_size.x
 	balance.mouse_filter = Control.MOUSE_FILTER_IGNORE

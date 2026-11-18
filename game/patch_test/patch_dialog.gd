@@ -187,8 +187,9 @@ func button_art(button: Button, texture: Texture2D) -> NinePatchRect:
 
 func set_action(button: Button, art: NinePatchRect, value: String, x: float, width: float) -> void:
 	button.visible = not value.is_empty()
-	button.position = Vector2(x,PAPER_SIZE.y-SharedPopupArt.INSET-52)
-	button.size = Vector2(width,52)
+	var height := SharedPopupArt.WOOD_ACTION_HEIGHT
+	button.position = Vector2(x,PAPER_SIZE.y-SharedPopupArt.INSET-height)
+	button.size = Vector2(width,height)
 	button.tooltip_text = value
 	art.size = button.size*2.0
 	button.get_node("Caption").text = value
@@ -196,6 +197,7 @@ func set_action(button: Button, art: NinePatchRect, value: String, x: float, wid
 func render(title: String, description: String, note: String, current: String, next: String, downloading: bool,
 		secondary: String, primary: String, single_width: float = 195.0) -> void:
 	heading.text = title
+	heading.position = Vector2.ONE*SharedPopupArt.INSET+SharedPopupArt.title_ink_offset(heading)
 	body.text = description
 	hint.text = note
 	version_row.visible = not next.is_empty()

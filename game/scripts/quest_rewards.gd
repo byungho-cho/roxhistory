@@ -148,6 +148,7 @@ static func open(app:Node) -> void:
 	var heading := caption(app,panel,"퀘스트 보상",Rect2(content.position,Vector2(590,58)),40,INK)
 	heading.name = "QuestRewardHeading"
 	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	heading.position += SharedPopupArt.title_ink_offset(heading)
 	var close := HudButtons.create_modal_close(panel,app.close_modal,"QuestRewardClose",1.5,56.0)
 	close.position = Vector2(content.end.x-close.size.x,content.position.y)
 	rule(panel,Rect2(content.position.x,91,content.size.x,1.5))

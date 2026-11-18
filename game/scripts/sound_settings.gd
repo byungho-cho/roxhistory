@@ -23,21 +23,9 @@ static func apply_channel(channel: Array, enabled: bool, level: float) -> void:
 
 static func open(app: Node) -> void:
 	var scroll: ScrollContainer = app.show_modal("사운드 설정","",[
-		{"text":"확인","primary":true,"action":app.close_modal}],false,true,false,Vector2(610,465))
+		{"text":"확인","primary":true,"action":app.close_modal}],false,true,false,Vector2(610,495))
 	scroll.name = "SoundSettingsScroll"
-	var modal_header: HBoxContainer = scroll.get_parent().get_node("ModalHeader")
-	var back: DemoButton = app.button(modal_header,"",app.show_game_settings)
-	back.name="SoundSettingsBack"
-	back.tooltip_text="뒤로가기"
-	back.custom_minimum_size=Vector2.ONE*48
-	for state in ["normal","hover","pressed","focus"]:
-		back.add_theme_stylebox_override(state,StyleBoxEmpty.new())
-	app.picture(back,preload("res://assets/ui/d0024/08-ui-back-button.png"),Rect2(5,5,38,38))
-	modal_header.move_child(back,0)
-	var close := modal_header.get_node("ModalClose") as Button
-	close.pressed.disconnect(app.close_modal)
-	close.pressed.connect(app.show_game_settings)
-	app.overlay.set_meta("back_action",app.show_game_settings)
+	preload("res://scripts/game_settings_menu.gd").detail_header(app,scroll,"SoundSettingsBack")
 	var list := VBoxContainer.new()
 	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	list.add_theme_constant_override("separation", 6)
@@ -47,15 +35,14 @@ static func open(app: Node) -> void:
 	list.add_child(master_row)
 	add_description(app, master_row, "전체 사운드", "시작 화면의 스피커와 함께 켜고 꺼집니다.")
 	var master_text: Label = app.label(master_row, "", 15, Color("49321e"))
-	var master := SettingsSwitch.new()
+	var master := speaker(app,master_row)
 	master.name="MasterSoundSwitch"
-	master_row.add_child(master)
 	var sliders: Array[HSlider] = []
 	var switches: Array[DemoButton] = []
 	var refresh := func():
 		var master_on: bool = app.settings.get_value("app", "sound", true)
 		master_text.text = "전체 켜짐" if master_on else "전체 꺼짐"
-		master.show_state(master_on)
+		app.update_speaker_icon(master,master_on)
 		for i in CHANNELS.size():
 			var key: String = CHANNELS[i][0]
 			var on: bool = app.settings.get_value("app", key, true)
@@ -86,13 +73,21 @@ static func open(app: Node) -> void:
 		card_style.content_margin_right = 12
 		card.add_theme_stylebox_override("panel", card_style)
 		list.add_child(card)
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation",0)
+		card.add_child(row)
 		var body := VBoxContainer.new()
-		body.add_theme_constant_override("separation", -15)
-		card.add_child(body)
+		body.add_theme_constant_override("separation", -8)
+		body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		body.size_flags_stretch_ratio = 4.0
+		row.add_child(body)
 		var header := HBoxContainer.new()
 		body.add_child(header)
 		add_description(app, header, channel[1], channel[2])
-		var toggle := speaker(app, header)
+		var speaker_slot := CenterContainer.new()
+		speaker_slot.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		row.add_child(speaker_slot)
+		var toggle := speaker(app, speaker_slot)
 		switches.append(toggle)
 		toggle.pressed.connect(func():
 			if app.set_audio_preference(key, not app.settings.get_value("app", key, true)):
@@ -142,7 +137,7 @@ static func add_description(app: Node, row: HBoxContainer, title: String, descri
 	var caption: Label = app.label(text, description, 13, Color("80613f"))
 	caption.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 
-static func speaker(app: Node, row: HBoxContainer) -> DemoButton:
+static func speaker(app: Node, row: Container) -> DemoButton:
 	var toggle: DemoButton = app.button(row,"",func(): pass,false,"","")
 	toggle.custom_minimum_size = Vector2(48,48)
 	for state in ["normal","hover","pressed","disabled","focus"]:

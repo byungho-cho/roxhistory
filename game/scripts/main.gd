@@ -2153,8 +2153,9 @@ func set_audio_preference(key: String, value: Variant) -> bool:
 
 func show_about() -> void:
 	var c := DemoConfig.get_data()
-	show_modal("RoxHistory · v"+str(ProjectSettings.get_setting("application/config/version")),c.history.fact+"\n\n"+c.history.fiction+"\n\n지역 선택 음악과 자연음, 채집·건설 효과음을 제공합니다. 곡식은 농장에서 생산합니다. 구리 화폐 수입 규칙은 준비 중입니다.",[
-		{"text":"돌아가기","primary":true,"action":close_modal}])
+	var scroll := show_modal("RoxHistory · v"+str(ProjectSettings.get_setting("application/config/version")),c.history.fact+"\n\n"+c.history.fiction+"\n\n지역 선택 음악과 자연음, 채집·건설 효과음을 제공합니다. 곡식은 농장에서 생산합니다. 구리 화폐 수입 규칙은 준비 중입니다.",[
+		{"text":"돌아가기","primary":true,"action":show_game_settings}],false,true)
+	preload("res://scripts/game_settings_menu.gd").detail_header(self,scroll,"AboutBack")
 	enable_settings_backdrop()
 
 func show_modal(title: String, body: String, actions: Array, compact: bool = false, preserve_work:bool=false, brief:bool=false, panel_size:Vector2=Vector2.ZERO,confirmation:bool=false,custom_panel:=false, opening_cue := "popup_open", stone_format := "") -> ScrollContainer:
@@ -2204,6 +2205,7 @@ func show_modal(title: String, body: String, actions: Array, compact: bool = fal
 	var v := column(p,8 if brief else 12)
 	var header:=HBoxContainer.new();header.name="ModalHeader";header.add_theme_constant_override("separation",10);v.add_child(header)
 	var modal_title:=label(header,title,20 if brief else 28,Color("47240e"));modal_title.add_theme_font_override("font",FigmaArt.TITLE);modal_title.size_flags_horizontal=Control.SIZE_EXPAND_FILL;modal_title.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART
+	SharedPopupArt.header_title(modal_title)
 	var close := HudButtons.create_modal_close(header,dismiss,"ModalClose")
 	if not custom_panel and finish=="wood": SharedPopupArt.close_icon(close)
 	var scroll:ScrollContainer = DevelopmentSettingsScroll.new() if title in ["개발 설정","전체 주민 배분","일 선택","주민 배정","미배정 주민 선택"] or title.ends_with(" · 주민 배정") else ScrollContainer.new()
@@ -2226,15 +2228,13 @@ func show_modal(title: String, body: String, actions: Array, compact: bool = fal
 	for a in displayed_actions:
 		var b := button(row,a.text,a.action,a.get("primary",false))
 		b.disabled=a.get("disabled",false)
-		if brief:b.custom_minimum_size=Vector2(80,44)
-		if confirmation:b.custom_minimum_size.y=58
 		for state in ["normal","hover","pressed","disabled","focus"]:b.add_theme_stylebox_override(state,StyleBoxEmpty.new())
 		for color_key in ["font_color","font_hover_color","font_pressed_color","font_disabled_color"]:b.add_theme_color_override(color_key,Color("47240e"))
 		b.add_theme_font_override("font",FigmaArt.BODY)
 		var color: String = a.get("color","gold" if a.get("primary",false) or displayed_actions.size()==1 else "silver" if finish=="stone" else "gray")
 		SharedPopupArt.button_style(b,finish,color)
 		b.custom_minimum_size.x = minf(button_width,(available_width-12*maxi(0,displayed_actions.size()-1))/maxi(1,displayed_actions.size()))
-		b.custom_minimum_size.y = 44.0 if finish=="stone" or brief else 55.0
+		b.custom_minimum_size.y = 44.0 if finish=="stone" or brief else SharedPopupArt.WOOD_ACTION_HEIGHT
 		b.add_theme_font_size_override("font_size",17)
 	return scroll
 
@@ -2592,12 +2592,7 @@ func enable_settings_backdrop()->void:
 
 func show_notification_settings()->void:
 	var scroll := show_modal("알림 설정", "", [{"text":"확인","primary":true,"action":close_modal}], false, true, false, Vector2(610,400))
-	var header: HBoxContainer = scroll.get_parent().get_node("ModalHeader")
-	var original := header.get_node("ModalClose")
-	header.remove_child(original)
-	original.queue_free()
-	var settings_menu := preload("res://scripts/game_settings_menu.gd")
-	settings_menu.icon_button(self, header, HudButtons.MODAL_CLOSE, "NotificationClose", close_modal)
+	preload("res://scripts/game_settings_menu.gd").detail_header(self,scroll,"NotificationBack")
 	var list := VBoxContainer.new()
 	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	list.add_theme_constant_override("separation", 9)

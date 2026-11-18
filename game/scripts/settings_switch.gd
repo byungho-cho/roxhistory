@@ -7,13 +7,14 @@ var knob: TextureRect
 var enabled_state := false
 
 func _ready() -> void:
-	custom_minimum_size = Vector2(170,50)
+	custom_minimum_size = Vector2(102,44)
 	size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	add_theme_font_override("font",FigmaArt.BODY)
-	add_theme_font_size_override("font_size",24)
+	add_theme_font_size_override("font_size",15)
 	knob = TextureRect.new()
 	knob.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	knob.size = Vector2.ONE*40
+	knob.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	knob.size = Vector2.ONE*24
 	add_child(knob)
 	resized.connect(position_knob)
 	show_state(enabled_state)
@@ -29,9 +30,11 @@ func show_state(enabled: bool) -> void:
 	skin.shadow_size = 2
 	skin.shadow_offset = Vector2(0,1)
 	skin.set_border_width_all(1)
-	skin.set_corner_radius_all(25)
-	skin.content_margin_left = 36
-	skin.content_margin_right = 30
+	skin.set_corner_radius_all(15)
+	skin.expand_margin_top = -7
+	skin.expand_margin_bottom = -7
+	skin.content_margin_left = 22
+	skin.content_margin_right = 18
 	for state in ["normal","hover","pressed","hover_pressed","disabled","focus"]:
 		add_theme_stylebox_override(state,skin)
 		add_theme_color_override("font_color" if state=="normal" else "font_"+state+"_color",Color("1f2d08") if enabled else Color("fff4dd"))
@@ -40,4 +43,4 @@ func show_state(enabled: bool) -> void:
 	position_knob()
 
 func position_knob() -> void:
-	knob.position = Vector2(size.x-52 if enabled_state else 9,(size.y-40)*.5)
+	knob.position = Vector2(size.x-31 if enabled_state else 5,(size.y-24)*.5)

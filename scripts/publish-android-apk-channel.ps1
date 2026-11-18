@@ -3,13 +3,14 @@ param(
     [string]$GodotPath = $env:ROX_GODOT_EXE,
     [string]$JavaHome = $env:JAVA_HOME,
     [string]$AndroidSdkPath = $env:ANDROID_HOME,
+    [string]$OutputDirectory,
     [switch]$Publish
 )
 $ErrorActionPreference = 'Stop'
 $repo = Split-Path $PSScriptRoot -Parent
 $repository = 'byungho-cho/roxhistory'
 $channel = 'android-apk-channel'
-$build = Join-Path $repo 'build'
+$build = if ($OutputDirectory) { $OutputDirectory } else { Join-Path $repo 'build' }
 $manifest = Get-Content -Raw (Join-Path $build 'release-manifest.json') | ConvertFrom-Json
 $version = $manifest.version
 if ($version -notmatch '^\d{1,4}\.\d{1,4}\.\d{1,4}$') { throw 'Invalid APK version.' }

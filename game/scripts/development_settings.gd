@@ -46,7 +46,8 @@ static func entries(app:Node)->Array[Dictionary]:
 
 static func open(app:Node)->void:
 	var scroll:ScrollContainer=app.show_modal("개발 설정","",[
-		{"text":"돌아가기","action":app.pause_game}],false,true,false,Vector2(460,430))
+		{"text":"돌아가기","action":app.show_game_settings}],false,true,false,Vector2(460,430))
+	preload("res://scripts/game_settings_menu.gd").detail_header(app,scroll,"DevelopmentBack")
 	scroll.name="DevelopmentSettingsScroll"
 	scroll.follow_focus=true
 	populate(app,scroll,entries(app))

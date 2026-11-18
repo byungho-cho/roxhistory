@@ -160,13 +160,14 @@ func open_assignment_panel(key := "") -> void:
 	var list := content(heading_text,"",664.0 if key.is_empty() else 216.0)
 	assignment_list = list
 	var header: HBoxContainer = list.get_parent().get_parent().get_node("ModalHeader")
-	var heading: Label = header.get_child(0)
+	var heading := header.find_child("ModalTitle",true,false) as Label
 	var spacer := Control.new()
-	spacer.custom_minimum_size.x = HudButtons.DIAMETER
+	spacer.custom_minimum_size.x = HudButtons.CLOSE_TARGET
 	header.add_child(spacer)
 	header.move_child(spacer,0)
 	heading.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	heading.remove_theme_font_override("font")
+	SharedPopupArt.update_header_title(heading)
 	var count: Label = list.get_child(0)
 	assignment_count = count
 	count.add_theme_font_override("font",FigmaArt.BODY)
@@ -341,6 +342,7 @@ func show_waiting(job: String, target: String, occupant := "") -> void:
 	list.add_child(header)
 	var title: Label = app.label(header,"%s 배정할 주민"%job_name(job),22)
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	SharedPopupArt.header_title(title)
 	HudButtons.create_modal_close(header,close_waiting,"CloseWaiting")
 	var ids := waiting(jobs)
 	app.label(list,"미배정 %d명 · 주민을 누르면 바로 배정합니다."%ids.size() if occupant.is_empty() else "%s · 교체할 주민을 선택하세요."%display_name(occupant),16)

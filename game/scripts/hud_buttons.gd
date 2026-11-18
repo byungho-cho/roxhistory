@@ -8,10 +8,7 @@ static func create_modal_close(parent:Node, callback:Callable, id:String, glyph_
 	var button := create(parent,false,callback,id)
 	button.custom_minimum_size = Vector2.ONE * hit_size
 	button.size = button.custom_minimum_size
-	var image := button.find_child("Icon",true,false) as TextureRect
-	image.texture = MODAL_CLOSE
-	image.size = Vector2(32,34) * glyph_scale
-	image.position = (button.size-image.size)*.5
+	SharedPopupArt.align_close_icon(button,MODAL_CLOSE,20.0*glyph_scale)
 	return button
 static func world_scale(zoom:float)->float:return clampf(zoom*.85,.34,.68)
 static func create(parent:Node,positive:bool,callback:Callable,id:String)->DemoButton:

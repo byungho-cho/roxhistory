@@ -20,7 +20,7 @@ func open() -> void:
 	panel.add_theme_stylebox_override("panel",SharedPopupArt.panel_style("wood","l"))
 	var inset := SharedPopupArt.INSET
 	var heading := text(panel,"여정의 기록",Rect2(inset,inset,157,51),28)
-	heading.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	heading.position += SharedPopupArt.title_ink_offset(heading)
 	var close := HudButtons.create_modal_close(panel,app.close_modal,"QuestClose",1.5,56.0)
 	SharedPopupArt.close_icon(close)
 	close.position = Vector2(dimensions.x-inset-close.size.x,inset)

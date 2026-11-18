@@ -28,7 +28,7 @@ static func open(app: Node) -> void:
 		for state in ["normal", "hover", "pressed", "disabled", "focus"]:
 			var style := StyleBoxFlat.new()
 			style.bg_color = Color({"normal":"efe0ba", "hover":"efe0ba", "pressed":"e4c17d", "disabled":"e9ddc4", "focus":"f8df9a"}[state])
-			style.border_color = Color("ab7939") if state in ["pressed", "focus"] else Color("d5bd8b")
+			style.border_color = Color("ab7939") if state=="focus" else Color("d5bd8b")
 			style.set_border_width_all(1)
 			style.set_corner_radius_all(7)
 			row.add_theme_stylebox_override(state, style)
@@ -45,7 +45,7 @@ static func open(app: Node) -> void:
 		arrow.set_anchors_and_offsets_preset(Control.PRESET_CENTER_RIGHT)
 		arrow.position.x -= 20
 		arrow.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		row.enable_art_feedback()
+		row.set_process(false)
 	var footer := HBoxContainer.new()
 	column.add_child(footer)
 	var version := String(ProjectSettings.get_setting("application/config/version"))
@@ -87,14 +87,29 @@ static func open(app: Node) -> void:
 	footer.add_child(spacer)
 	var home: DemoButton = app.button(footer, "시작 화면", func(): app.close_modal(); app.show_screen("title"), true)
 	home.size_flags_horizontal = Control.SIZE_SHRINK_END
-	home.custom_minimum_size = Vector2(137, 48)
+	home.custom_minimum_size = Vector2(137, SharedPopupArt.WOOD_ACTION_HEIGHT)
 	SharedPopupArt.button_style(home,"wood","gold")
+
+static func detail_header(app: Node, scroll: ScrollContainer, back_id: String) -> void:
+	var header: HBoxContainer = scroll.get_parent().get_node("ModalHeader")
+	var back: DemoButton = app.button(header,"",app.show_game_settings)
+	back.name=back_id
+	back.tooltip_text="뒤로가기"
+	back.custom_minimum_size=Vector2.ONE*48
+	for state in ["normal","hover","pressed","focus"]:
+		back.add_theme_stylebox_override(state,StyleBoxEmpty.new())
+	app.picture(back,preload("res://assets/ui/d0024/08-ui-back-button.png"),Rect2(0,0,38,38))
+	header.move_child(back,0)
+	var close := header.get_node("ModalClose") as Button
+	if close.pressed.is_connected(app.close_modal): close.pressed.disconnect(app.close_modal)
+	close.pressed.connect(app.show_game_settings)
+	app.overlay.set_meta("back_action",app.show_game_settings)
 
 static func icon_button(app: Node, header: Control, texture: Texture2D, id: String, action: Callable, cue := "ui") -> void:
 	var control: DemoButton = app.button(header, "", action, false, "", cue)
 	control.name = id
-	var diameter := HudButtons.CLOSE_TARGET if texture == HudButtons.MODAL_CLOSE else 48.0
+	var diameter := 48.0
 	control.custom_minimum_size = Vector2.ONE*diameter
 	for state in ["normal","hover","pressed","focus"]:
 		control.add_theme_stylebox_override(state, StyleBoxEmpty.new())
-	app.picture(control, texture, Rect2(Vector2.ONE*(diameter-32.0)*.5,Vector2.ONE*32))
+	app.picture(control, texture, Rect2((diameter-32.0)*.5,0,32,32))

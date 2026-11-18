@@ -39,6 +39,7 @@ func _ready() -> void:
 	var title := text_label("업데이트 내역",26,FigmaArt.TITLE)
 	title.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	header.add_child(title)
+	SharedPopupArt.header_title(title)
 	SharedPopupArt.close_icon(HudButtons.create_modal_close(header,dismiss,"UpdateNotesClose"))
 	var divider := TextureRect.new()
 	divider.texture = SharedPopupArt.WOOD_DIVIDER
