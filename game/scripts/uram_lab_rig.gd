@@ -70,7 +70,10 @@ func show_pose(clip: String, seconds: float) -> void:
 	animator.seek(clampf(seconds,0.0,clip_length(clip)),true)
 	var anchor := skeleton.get_bone_pose_position(root_bone)
 	var rest := skeleton.get_bone_rest(root_bone).origin
-	skeleton.set_bone_pose_position(root_bone,Vector3(rest.x,anchor.y,rest.z))
+	# Offset the entire preview so skin and equipment share the same root motion
+	# compensation without changing the clip's bone transforms.
+	pivot.position = -(skeleton.global_basis * Vector3(anchor.x-rest.x,0.0,anchor.z-rest.z))
+	skeleton.force_update_all_bone_transforms()
 	update_equipment()
 
 func update_equipment() -> void:
