@@ -611,8 +611,8 @@ func _input(event: InputEvent) -> void:
 			if touch_id >= 0: return
 			var buttons: Array = result_buttons if showing_result else [exit_button,results_button,retry_button] + character_buttons.values() + mode_buttons.values()
 			if not showing_result:
-				if mode=="parry": buttons.append_array(card_buttons+skill_buttons)
-				elif mode=="motion":
+				if mode=="parry" and selected_character=="uram": buttons.append_array(card_buttons+skill_buttons)
+				elif mode=="motion" or (mode=="parry" and selected_character!="uram"):
 					buttons.append(comparison_button)
 					buttons.append_array(motion_buttons.values())
 					buttons.append_array(all_motion_buttons.values())

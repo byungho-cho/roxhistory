@@ -4,9 +4,10 @@
   "sources": {
     "hangyeol-walk-req013.glb": "ba489352e39b631ff77398ee2625c7ac4627876a2a906642eb97211d307c22a3",
     "hangyeol-spear-guard-recoil.glb": "94cf6e368aa09540493636a2484c3054fca9f49e0af9d6c08cb736d2873e6bce",
-    "run.glb": "b808c3d97271803b040ad2075c87fd0ffda14156010ae477b1f4fe4ff464bcd1",
     "hangyeol-lab-req031.glb": "f4282d47bb347d3b184372102d70a0d16aa344d1692fa73eda892f13b65956d1",
-    "saebom-req028.glb": "69aa327cd9e918baaa3d0bed0249ce8dd52e003f41075aed259d439aceb460ce"
+    "saebom-req028.glb": "69aa327cd9e918baaa3d0bed0249ce8dd52e003f41075aed259d439aceb460ce",
+    "hangyeol-run-req027.glb": "b808c3d97271803b040ad2075c87fd0ffda14156010ae477b1f4fe4ff464bcd1",
+    "Hangyeol-REQ031-editable-preview.zip": "7e633949619e5d92cca7a5768313c10e5a8a4a9ac7637191b67fda1e6a966fdc"
   },
   "clips": {
     "hangyeol-lab-req031.glb": [
