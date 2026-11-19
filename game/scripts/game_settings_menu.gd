@@ -71,12 +71,12 @@ static func open(app: Node) -> void:
 	footer.add_child(apk_gap)
 	var patch_dialog := preload("res://patch_test/patch_dialog.gd")
 	var apk_link: DemoButton = app.button(footer,"",func():
-		app.toast(patch_dialog.copy_full_apk_link(version)))
+		app.toast(patch_dialog.copy_full_apk_link(patch_dialog.full_apk_version())))
 	apk_link.name = "SettingsFullApkLink"
-	apk_link.custom_minimum_size = Vector2(112,48)
+	apk_link.custom_minimum_size = Vector2(220,48)
 	for state in ["normal","hover","pressed","focus"]:
 		apk_link.add_theme_stylebox_override(state,StyleBoxEmpty.new())
-	var apk_label: Label = app.label(apk_link,"APK 링크 복사",15,Color("183d65"))
+	var apk_label: Label = app.label(apk_link,"APK v%s 링크 복사"%patch_dialog.full_apk_version(),15,Color("183d65"))
 	apk_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	apk_label.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
 	apk_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)

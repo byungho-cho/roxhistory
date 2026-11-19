@@ -110,7 +110,7 @@ func _ready() -> void:
 	var apk_caption := make_label(14,700,Color("183d65"))
 	apk_link_button.add_child(apk_caption)
 	apk_caption.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	var version := str(ProjectSettings.get_setting("application/config/version"))
+	var version := full_apk_version()
 	var caption := "전체 APK v%s · 링크 복사" % version
 	apk_caption.text = caption
 	apk_link_button.pressed.connect(func(): apk_caption.text = copy_full_apk_link(version))
@@ -120,6 +120,10 @@ func _ready() -> void:
 			apk_caption.text = caption)
 	resized.connect(fit_paper)
 	fit_paper()
+
+static func full_apk_version() -> String:
+	# A PCK-only version need not have a matching APK release.
+	return str(ProjectSettings.get_setting("roxhistory/distribution/full_apk_version",ProjectSettings.get_setting("application/config/version")))
 
 static func full_apk_url(version: String) -> String:
 	return "https://github.com/byungho-cho/roxhistory/releases/download/v%s/Roxhistory_%s.apk" % [version,version]
