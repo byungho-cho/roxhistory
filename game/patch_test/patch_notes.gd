@@ -1,6 +1,7 @@
 extends RefCounted
 
 const ENTRIES := {
+	"0.2.269": ["자원바를 오른쪽 약 100px, 위로 약 20px 옮겼습니다. 줄인 폭과 숫자 정렬은 유지합니다."],
 	"0.2.268": ["자원바 폭과 숫자 정렬을 정리하고 미니맵·설정 아이콘 위치를 조정했습니다.", "모델 테스트 전장을 전체 화면으로 넓히고 뒤로가기를 초상화 줄에 배치했습니다.", "새봄 기본 공격 모션을 기존 대비 1.5배 빠르게 조정하고 게임 재실행 툴팁을 제거했습니다."],
 	"0.2.267": ["D0066 신규 모션을 반영하고, 달리기 A/B/C 비교에서 종료되는 문제를 수정했습니다."],
 	"0.2.266": ["모델 테스트에 아군 신규 가드·반격·사망과 일반 스킬·연계 스킬을 연결했습니다.", "아군 모두의 연계는 우람 → 새봄 → 한결 순서로 재생합니다.", "야생동물 경량판의 신규 모션과 준비·발동 구간 배속, 사망 연출을 적용했습니다. 기존 전투 판정과 사운드는 유지합니다."],
@@ -80,5 +81,3 @@ static func recent_versions(through_version: String) -> Array[String]:
 			versions.append(version)
 	versions.sort_custom(func(a:String,b:String): return a.naturalnocasecmp_to(b)>0)
 	return versions.slice(0,20)
-
-
