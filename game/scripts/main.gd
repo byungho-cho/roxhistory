@@ -1363,7 +1363,7 @@ func play_hud(spread:=false) -> void:
 	for state in ["normal","hover","pressed","focus"]:map_toggle.add_theme_stylebox_override(state,StyleBoxEmpty.new())
 	var settings_button:=button(stage,"",pause_game);settings_button.name="SettingsButton";settings_button.z_index=31
 	settings_button.icon=load("res://assets/ui/review-v037/settings-figma.png");settings_button.expand_icon=true
-	settings_button.custom_minimum_size=Vector2.ZERO;settings_button.position=Vector2(w-safe.x-36,safe.y-2);settings_button.size=Vector2(36,36)
+	settings_button.custom_minimum_size=Vector2.ZERO;settings_button.position=chrome.settings_rect().position;settings_button.size=chrome.settings_rect().size
 	settings_button.add_theme_constant_override("icon_max_width",36)
 	for state in ["normal","hover","pressed","focus"]:settings_button.add_theme_stylebox_override(state,StyleBoxEmpty.new())
 	quest_reward_count=QuestRewards.install_entry(self)

@@ -16,13 +16,15 @@ const TRACK_RIM:=Color("874f0d")
 const FILL_COLORS:=[Color("ffdb45"),Color("f2b00a"),Color("d48005")]
 const RESOURCE_RAIL := preload("res://assets/ui/d0048/hud-brush-30@2x.png")
 const DIAMOND_ART := preload("res://assets/ui/d0048/hud-diamond-art@2x.png")
-const RESOURCE_RAIL_SIZE := Vector2(565,42)
+const RESOURCE_RAIL_SIZE := Vector2(517,42)
+const SOURCE_CELL_EDGES := [0,135,260,396,477,565]
+const DRAW_CELL_EDGES := [0,119,228,348,429,517]
 const RESOURCE_KEYS := ["tokens","wood","stone","residents","diamonds"]
-const CELL_EDGES := [10,135,260,396,477,565]
-const ICON_POSITIONS := [Vector2(12,5),Vector2(138,3),Vector2(266,3),Vector2(396,6),Vector2(477,0)]
-const GAUGE_STARTS := [26,153,280,407]
-const GAUGE_WIDTHS := [98,95,93,54]
-const NUMBER_ENDS := [121.0,245.0,370.0,442.0,540.5]
+const CELL_EDGES := [10,119,228,348,429,517]
+const ICON_POSITIONS := [Vector2(12,5),Vector2(122,3),Vector2(234,3),Vector2(348,6),Vector2(429,0)]
+const GAUGE_STARTS := [26,137,248,359]
+const GAUGE_WIDTHS := [82,79,77,54]
+const NUMBER_ENDS := [105.0,213.0,322.0,413.0,492.5]
 const TRACK_PALETTE := [Color("493e26"),Color("392e19"),Color("392e19")]
 const HUD_GOLD := [Color("fbd034"),Color("f1ae0a"),Color("da8a06")]
 const DIAMOND_RIM := Color("a9dfff")
@@ -79,6 +81,7 @@ func resource_rail_rect() -> Rect2:
 	if not portrait_layout:
 		var available := minimap_hit_rect().position.x-2.0-right
 		right += clampf(available,0.0,app.h*(50.0/1546.0))
+	if not portrait_layout:right-=12.0
 	return Rect2(right-width,top,width,RESOURCE_RAIL_SIZE.y*width/RESOURCE_RAIL_SIZE.x)
 
 func slot(kind: String) -> Rect2:
@@ -91,7 +94,7 @@ func slot(kind: String) -> Rect2:
 func resource_icon_center(kind: String) -> Vector2:
 	var index := RESOURCE_KEYS.find(kind)
 	var rail := resource_rail_rect()
-	var anchor: Vector2 = Vector2(495,21) if kind=="diamonds" else ICON_POSITIONS[index]+Vector2.ONE*16
+	var anchor: Vector2 = Vector2(447,21) if kind=="diamonds" else ICON_POSITIONS[index]+Vector2.ONE*16
 	return rail.position+anchor*rail.size.x/RESOURCE_RAIL_SIZE.x
 
 static func compact_amount(value: int) -> String:
@@ -105,8 +108,11 @@ static func compact_amount(value: int) -> String:
 func draw_resource_rail(font: Font) -> void:
 	var rect := resource_rail_rect()
 	draw_set_transform(rect.position,0.0,Vector2.ONE*rect.size.x/RESOURCE_RAIL_SIZE.x)
-	draw_texture_rect(RESOURCE_RAIL,Rect2(Vector2.ZERO,RESOURCE_RAIL_SIZE),false)
-	draw_texture_rect(DIAMOND_ART,Rect2(477,0,88,42),false)
+	for i in RESOURCE_KEYS.size():
+		var source:=Rect2(SOURCE_CELL_EDGES[i],0,SOURCE_CELL_EDGES[i+1]-SOURCE_CELL_EDGES[i],42)
+		var target:=Rect2(DRAW_CELL_EDGES[i],0,DRAW_CELL_EDGES[i+1]-DRAW_CELL_EDGES[i],42)
+		draw_texture_rect_region(RESOURCE_RAIL,target,Rect2(source.position*2.0,source.size*2.0))
+	draw_texture_rect(DIAMOND_ART,Rect2(429,0,88,42),false)
 	for i in RESOURCE_KEYS.size():
 		var key: String = RESOURCE_KEYS[i]
 		var amount: int
@@ -136,7 +142,10 @@ func draw_resource_rail(font: Font) -> void:
 	draw_set_transform(Vector2.ZERO)
 
 func minimap_center() -> Vector2:
-	return Vector2(app.w-app.safe.x-50,app.safe.y+60+app.h*.04)
+	return Vector2(app.w-app.safe.x-50,app.safe.y+78+app.h*.04)
+
+func settings_rect()->Rect2:
+	return Rect2(minimap_center()+Vector2(14,-66),Vector2(36,36))
 
 func minimap_hit_rect() -> Rect2:
 	return Rect2(minimap_center()-Vector2.ONE*50,Vector2.ONE*100)

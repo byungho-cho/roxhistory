@@ -66,19 +66,19 @@ func _ready()->void:
 	name="Z90000"
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter=MOUSE_FILTER_STOP
-	var backdrop:=ColorRect.new();backdrop.color=Color("162e2a");add_child(backdrop);backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	var backdrop:=Art.picture(self,preload("res://assets/ui/hunting-formation/clearing-dirt.png"),Rect2())
+	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT);backdrop.stretch_mode=TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	canvas=Control.new();add_child(canvas)
-	text(canvas,"모델 테스트",Rect2(30,20,900,46),34,false)
-	text(canvas,"캐릭터의 움직임을 한눈에",Rect2(30,66,900,28),18,false)
-	back_button=button(canvas,"돌아가기",Rect2(1380,30,190,56),func():exited.emit())
-	field=Control.new();canvas.add_child(field);field.position=Vector2(30,120);field.clip_contents=true
+	field=Control.new();canvas.add_child(field);field.clip_contents=true
 	var ground:=Art.picture(field,preload("res://assets/ui/hunting-formation/clearing-dirt.png"),Rect2())
 	ground.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT);ground.stretch_mode=TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	hud=ColorRect.new();hud.color=Color(0,0,0,.5);hud.mouse_filter=MOUSE_FILTER_IGNORE;field.add_child(hud)
 	selectors=Control.new();field.add_child(selectors);selectors.position=Vector2(24,15.8);selectors.scale=Vector2.ONE*1.3
-	category_buttons.allies=icon_button(selectors,"hangyeol",Rect2(0,0,68,68),choose_category.bind("allies"),false)
-	category_buttons.animals=icon_button(selectors,"adult",Rect2(80,0,68,68),choose_category.bind("animals"),false)
-	var divider:=ColorRect.new();divider.color=Color("64796c");divider.position=Vector2(168,12);divider.size=Vector2(1,44);divider.mouse_filter=MOUSE_FILTER_IGNORE;selectors.add_child(divider)
+	back_button=button(selectors,"‹",Rect2(0,0,68,68),func():exited.emit(),"round")
+	back_button.add_theme_font_size_override("font_size",54)
+	category_buttons.allies=icon_button(selectors,"hangyeol",Rect2(80,0,68,68),choose_category.bind("allies"),false)
+	category_buttons.animals=icon_button(selectors,"adult",Rect2(160,0,68,68),choose_category.bind("animals"),false)
+	var divider:=ColorRect.new();divider.color=Color("64796c");divider.position=Vector2(248,12);divider.size=Vector2(1,44);divider.mouse_filter=MOUSE_FILTER_IGNORE;selectors.add_child(divider)
 	var status_brush:=Art.picture(field,preload("res://assets/ui/brush/resource-slot-brush@2x.png"),Rect2(605,35,330,50));status_brush.modulate.a=.25
 	status_brush.name="StatusBrush"
 	status=text(field,"",Rect2(605,35,330,26),20)
@@ -96,7 +96,7 @@ func _ready()->void:
 	restart_button=button(field,"↻",Rect2(1414,934,96,96),restart,"round")
 	skin(restart_button,ROUND_RUBY);restart_button.modulate.a=.8
 	restart_button.add_theme_font_size_override("font_size",51)
-	running_button=button(canvas,"달리기 비교",Rect2(1100,30,240,56),toggle_running_comparison)
+	running_button=button(field,"달리기 비교",Rect2(925,77,190,36),toggle_running_comparison)
 	running_button.add_theme_font_size_override("font_size",20)
 	resized.connect(fit)
 	choose_category("allies")
@@ -160,8 +160,8 @@ func choose_category(value:String)->void:
 	for item in model_buttons.values():item.free()
 	model_buttons.clear()
 	var ids:Array=ALLIES if category=="allies" else ANIMALS
-	for i in ids.size():model_buttons[ids[i]]=icon_button(selectors,ids[i],Rect2(189+i*80,0,68,68),select_model.bind(ids[i]))
-	model_buttons.all=button(selectors,"ALL",Rect2(189+ids.size()*80+12,0,68,68),select_model.bind("all"),"round")
+	for i in ids.size():model_buttons[ids[i]]=icon_button(selectors,ids[i],Rect2(269+i*80,0,68,68),select_model.bind(ids[i]))
+	model_buttons.all=button(selectors,"ALL",Rect2(269+ids.size()*80+12,0,68,68),select_model.bind("all"),"round")
 	for key in category_buttons:category_buttons[key].modulate=Color.WHITE if key==category else Color(.65,.65,.65)
 	rebuild_motions();select_model("all");fit()
 
@@ -323,9 +323,10 @@ func refresh()->void:
 	if running_comparison:status.text+=" · 달리기 A/B/C"
 	running_button.visible=selected in ["hangyeol","saebom"]
 	running_button.text="기본 보기로" if running_comparison else "달리기 비교"
-	status.position.x=805
+	status.position=Vector2(900,16)
 	motion_status.position.x=status.position.x
-	status.size.x=330
+	motion_status.position.y=44
+	status.size.x=240
 	motion_status.size.x=status.size.x
 	field.get_node("StatusBrush").position.x=status.position.x
 	motion_status.text=motion_buttons[selection].text+" · "+str(rate)+"배속"
@@ -336,10 +337,10 @@ func fit()->void:
 		var safe:=DisplayServer.get_display_safe_area();var physical:=Vector2(DisplayServer.screen_get_size())
 		if safe.has_area() and physical.x>0 and physical.y>0:region=Rect2(Vector2(safe.position)*size/physical,Vector2(safe.size)*size/physical)
 	var factor:=region.size.x/1600.0
-	logical_size=Vector2(1600,maxf(640,region.size.y/factor))
+	logical_size=Vector2(1600,region.size.y/factor)
 	factor=minf(factor,region.size.y/logical_size.y)
 	canvas.scale=Vector2.ONE*factor;canvas.position=region.position+(region.size-logical_size*factor)*.5
-	field.size=Vector2(1540,logical_size.y-150);hud.size=Vector2(field.size.x,120)
+	field.size=logical_size;hud.size=Vector2(field.size.x,120)
 	motions.position=Vector2(24,field.size.y-177.6)
 	var control_scale:=minf(1,(field.size.y-155)/856.0)
 	speeds.scale=Vector2.ONE*control_scale;speeds.position=Vector2(field.size.x-30-96*control_scale,131)

@@ -194,7 +194,7 @@ func set_action(button: Button, art: NinePatchRect, value: String, x: float, wid
 	var height := SharedPopupArt.WOOD_ACTION_HEIGHT
 	button.position = Vector2(x,PAPER_SIZE.y-SharedPopupArt.INSET-height)
 	button.size = Vector2(width,height)
-	button.tooltip_text = value
+	button.tooltip_text = "" if value=="게임 재실행" else value
 	art.size = button.size*2.0
 	button.get_node("Caption").text = value
 
