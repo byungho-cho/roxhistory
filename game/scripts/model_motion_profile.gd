@@ -2,10 +2,10 @@ extends RefCounted
 # D0066 owns preview mappings, never gameplay rules or sound events.
 const ANIMAL_NAMES={"forest":"forest-deer","stag":"mountain-stag","juvenile":"juvenile-boar","adult":"adult-boar"}
 const ANIMAL_MODELS={
-	"forest":"res://assets/animals/d0061/forest-deer-B.glb",
-	"stag":"res://assets/animals/d0061/mountain-stag-B.glb",
-	"juvenile":"res://assets/animals/d0061/juvenile-boar-B.glb",
-	"adult":"res://assets/animals/d0061/adult-boar-B.glb",
+	"forest":"res://assets/animals/res050/forest-deer-latest.glb",
+	"stag":"res://assets/animals/res050/mountain-stag-latest.glb",
+	"juvenile":"res://assets/animals/res050/juvenile-boar-latest.glb",
+	"adult":"res://assets/animals/res050/adult-boar-latest.glb",
 }
 const ALLY_CLIPS={
 	"uram":{"skill":"req047_club_slam","chain":"parry","guard":"req045_shield_guard","counter":"req045_shield_counter","death":"req045_death"},
@@ -26,11 +26,17 @@ const DEATH_HOLD:=.6
 const DEATH_FADE:=.6
 
 static func install(player:AnimationPlayer,character:String)->void:
+	# RES-050 contains complete approved clips. Never replace its reformed
+	# channels with the older D0066 supplemental animations.
+	var missing:Array=[]
+	for clip in ADDITIONS[character]:
+		if not player.has_animation(clip):missing.append(clip)
+	if missing.is_empty():return
 	var library:=player.get_animation_library("").duplicate()
 	var animal:=ANIMAL_NAMES.has(character)
 	var folder:="res://assets/"+("animals" if animal else "characters")+"/d0066/"
 	var stem:String=ANIMAL_NAMES.get(character,character)
-	for clip in ADDITIONS[character]:
+	for clip in missing:
 		if library.has_animation(clip):library.remove_animation(clip)
 		library.add_animation(clip,load(folder+stem+"-"+clip+".tres"))
 	player.remove_animation_library("");player.add_animation_library("",library)

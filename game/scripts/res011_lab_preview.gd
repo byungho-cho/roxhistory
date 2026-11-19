@@ -3,7 +3,7 @@ extends HybridCharacter
 const ASSETS := "res://assets/characters/d0057/"
 const Timing := preload("res://scripts/motion_timing.gd")
 const Catalog := preload("res://scripts/lab_motion_catalog.gd")
-const JUMP_MODEL := "res://assets/characters/d0061/hangyeol-B-12k.glb"
+const JUMP_MODEL := "res://assets/characters/res050/hangyeol-latest.glb"
 const JUMP_CLIP := "jump_spear_auto_r03"
 const JUMP_SECONDS := 3.2
 const JUMP_CONTACT_SECONDS := 94.0/60.0
@@ -39,7 +39,7 @@ func _ready() -> void:
 	display.position = -camera.unproject_position(Vector3.ZERO)*display.scale
 
 func build_villager() -> void:
-	var packed := load(JUMP_MODEL if character=="hangyeol" else ASSETS+character+"-req035.glb") as PackedScene
+	var packed := load(JUMP_MODEL if character=="hangyeol" else "res://assets/characters/res050/saebom-latest.glb") as PackedScene
 	var model := packed.instantiate() as Node3D
 	pivot.add_child(model)
 	model.scale = Vector3.ONE*1.24

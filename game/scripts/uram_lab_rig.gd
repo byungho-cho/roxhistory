@@ -8,6 +8,7 @@ var extra_motions := false
 var comparison_model_path := ""
 var club_tilt := 0.0
 var shield_push := 0.0
+var counter_cover := 0.0
 var animator: AnimationPlayer
 var skeleton: Skeleton3D
 var root_bone: int
@@ -24,7 +25,7 @@ var shield: MeshInstance3D
 func build_villager() -> void:
 	var path := comparison_model_path
 	if path.is_empty():
-		path = ASSETS+("uram-natural-retouch.glb" if use_retouch else "uram-warm.glb")
+		path = "res://assets/characters/res050/uram-latest.glb" if use_retouch else ASSETS+"uram-warm.glb"
 	var packed := load(path) as PackedScene
 	var rig := packed.instantiate() as Node3D
 	pivot.add_child(rig)
@@ -95,6 +96,9 @@ func show_pose(clip: String, seconds: float) -> void:
 				phase = (seconds*60.0-304.0)/63.0
 		club_tilt = 0.0
 		shield_push = 0.0
+		counter_cover = 0.0
+		if gesture=="req045_shield_counter":
+			counter_cover = smoothstep(.14,.27,seconds)*(1.0-smoothstep(.75,1.15,seconds))
 		if gesture=="club_attack":
 			club_tilt = .44*smoothstep(.32,.50,phase)*(1.0-smoothstep(.66,.88,phase))
 		elif gesture=="parry":
@@ -121,7 +125,7 @@ func update_equipment() -> void:
 	var wrist := skeleton.to_global(skeleton.get_bone_global_pose(left_hand_bone).origin)
 	var forward := pivot.global_basis.z.normalized()
 	var toward_camera := camera.global_basis.z.normalized()
-	var ratio := .47 + shield_push*.30
+	var ratio := lerpf(.47 + shield_push*.30,.82,counter_cover)
 	var normal := (toward_camera * ratio + forward * (1.0-ratio)).normalized()
 	var arm := (forearm.origin - wrist).normalized()
 	var right := (Vector3.UP * .72 + arm * .28).cross(normal).normalized()
@@ -131,4 +135,12 @@ func update_equipment() -> void:
 	if shield_push > 0.0:
 		var correction := clampf((wrist-center).dot(normal)+.085,0.0,.18)
 		center += (normal*correction+toward_camera*.075)*shield_push
+	if counter_cover > 0.0:
+		# Apply the supplied attachment correction in this actual rig's space.
+		# Keep ordinary depth testing; do not force the shield on top.
+		var palm := skeleton.global_transform * skeleton.get_bone_global_pose(left_hand_bone)
+		var knuckles := wrist + palm.basis.y.normalized()*.13
+		var face_up := normal.cross(right).normalized()
+		var covered := knuckles + normal*.10 + face_up*.025
+		center = center.lerp(covered,counter_cover)
 	shield.global_transform = Transform3D(Basis(right,normal.cross(right),normal),center)

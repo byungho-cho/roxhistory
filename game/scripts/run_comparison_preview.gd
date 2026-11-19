@@ -7,10 +7,15 @@ func build_villager()->void:
 	use_run_candidate=false
 	super.build_villager()
 	if variant=="C":
+		# The complete RES-050 library has already sampled idle in super.
+		# Invalidate mixer bindings before replacing that live library.
+		animation.stop()
+		animation.clear_caches()
 		var library=animation.get_animation_library("").duplicate()
 		library.add_animation(CLIP_NAME,load("res://assets/characters/d0064/"+character+"-run-C.tres"))
 		animation.remove_animation_library("")
 		animation.add_animation_library("",library)
+		animation.clear_caches()
 
 func motion_duration(key:String)->float:
 	if key!="run":return super.motion_duration(key)

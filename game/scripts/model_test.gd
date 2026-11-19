@@ -237,8 +237,10 @@ func restart()->void:play_motion(selection)
 
 func chain_start(key:String)->float:
 	if selected!="all" or category!="allies" or selection!="chain":return 0.0
-	if key=="saebom":return actors.uram.duration
-	if key=="hangyeol":return actors.uram.duration+actors.saebom.duration
+	# Preserve the existing handoff schedule in this model-only reform patch.
+	# RES-050's support transfer is now 2.72s; integration is a separate task.
+	if key=="saebom":return 1.05
+	if key=="hangyeol":return 2.65
 	return 0.0
 func paired_comparison()->bool:return Poly.MODELS.has(selected) and not running_comparison
 func toggle_running_comparison()->void:

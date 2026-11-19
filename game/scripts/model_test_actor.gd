@@ -49,7 +49,7 @@ func create(parent:Node, id:String,comparison_b:=false,run_variant:="")->void:
 	preview.camera.size=7.0*960.0/720.0
 	configure(false)
 	if key=="saebom" and run_variant.is_empty():
-		resident_sample("chain",.78)
+		resident_sample("chain",2.72)
 		var skeleton=preview.skeleton
 		var chest=skeleton.get_bone_global_pose(skeleton.find_bone("spine")).origin
 		var hands=(skeleton.get_bone_global_pose(skeleton.find_bone("hand.R")).origin+skeleton.get_bone_global_pose(skeleton.find_bone("hand.L")).origin)*.5
