@@ -10,10 +10,26 @@ const MEADOW := Vector2(1280,720)
 const MEADOW_IDLE := preload("res://assets/ui/hunt-selection/hunt-meadow-idle-loop.ogv")
 const CAMP_MASK := """
 shader_type canvas_item;
+uniform sampler2D minimum_plate : filter_linear;
 void fragment() {
-	float edge = 1.0 - smoothstep(0.169, 0.189, UV.x);
-	float vertical = smoothstep(0.18, 0.23, UV.y) * (1.0 - smoothstep(0.56, 0.61, UV.y));
-	COLOR.a *= edge * vertical;
+	vec2 p=UV*vec2(1280.0,720.0);
+	vec3 pixel=texture(TEXTURE,UV).rgb;
+	// The source plume starts above the old tent roof. Re-anchor its base
+	// to the fire without moving either the source video or its playback clock.
+	vec2 plume=vec2(p.x,(p.y-375.0)/1.6+285.0);
+	vec3 vapour=texture(TEXTURE,plume/vec2(1280.0,720.0)).rgb;
+	vec3 plate=texture(minimum_plate,(plume-vec2(40.0,100.0))/vec2(200.0,300.0)).rgb;
+	float area=smoothstep(70.0,90.0,plume.x)*(1.0-smoothstep(215.0,235.0,plume.x))*smoothstep(125.0,145.0,plume.y)*(1.0-smoothstep(275.0,295.0,plume.y));
+	float chroma=max(vapour.r,max(vapour.g,vapour.b))-min(vapour.r,min(vapour.g,vapour.b));
+	float neutral=1.0-smoothstep(.12,.28,chroma);
+	float light=dot(vapour,vec3(.299,.587,.114));
+	float base=dot(plate,vec3(.299,.587,.114));
+	float change=light-base;
+	float smoke=clamp((change-.04)/max(.15,1.0-base)*1.6,0.0,.8)*smoothstep(.04,.09,change)*neutral*area;
+	float fire_area=1.0-smoothstep(.65,1.0,length((p-vec2(126.0,361.0))/vec2(29.0,43.0)));
+	float fire=fire_area*smoothstep(.52,.85,pixel.r)*smoothstep(.08,.30,pixel.r-pixel.b)*smoothstep(.22,.52,dot(pixel,vec3(.299,.587,.114)));
+	float alpha=max(smoke,fire);
+	COLOR=vec4(mix(vec3(1.0),pixel,fire/max(.001,fire+smoke)),alpha);
 }
 """
 const STAGE_ROW_Y := 385.0
@@ -22,6 +38,12 @@ const BOAR_DISPLAY_SCALE := .86
 const TITLE := preload(ART+"08-ui-title-plaque-660.png")
 const BOSS := preload(ART+"08-ui-stage-finalboss-crest.png")
 const FIELD := preload(ART+"02-meadow-background.png")
+const CLEAN_FIELD := preload("res://assets/ui/d0061/meadow-clean.png")
+const TENT := preload("res://assets/ui/d0061/tent.png")
+const TENT_RECT := Rect2(872,285,137,92)
+const CAMP_SOURCE := Vector2(126,375)
+const CAMP_TARGET := Vector2(937,374)
+const CAMP_SCALE := .52
 const BOAR := preload(ART+"03-boar-entrance-atlas.png")
 const HOLD := preload(ART+"05-boar-settled-pose.png")
 const ENTRY_AUDIO := preload("res://assets/ui/d0027/boar-entry-sync.wav")
@@ -43,6 +65,9 @@ var top_group: Control
 var footer: Control
 var backdrop: TextureRect
 var camp_idle: VideoStreamPlayer
+var camp_still:TextureRect
+var tent:TextureRect
+var tent_shadow:TextureRect
 var static_motion := false
 var boar: TextureRect
 var shadow: TextureRect
@@ -73,7 +98,7 @@ func _ready() -> void:
 	clip_contents=true
 	chapter=int(app.hunt_stage)/STAGES_PER_CHAPTER
 	plaque_art=IntegratedMenuArt.trimmed(TITLE,Rect2(TITLE.get_image().get_used_rect()))
-	backdrop=app.picture(self,FIELD,Rect2())
+	backdrop=app.picture(self,CLEAN_FIELD if chapter==0 else FIELD,Rect2())
 	backdrop.stretch_mode=TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	var gradient := Gradient.new()
 	gradient.colors=PackedColorArray([Color(0,0,0,.31),Color(0,0,0,0)])
@@ -82,6 +107,10 @@ func _ready() -> void:
 	soft.fill=GradientTexture2D.FILL_RADIAL
 	soft.fill_from=Vector2(.5,.5)
 	soft.fill_to=Vector2(1,.5)
+	tent_shadow=app.picture(self,soft,Rect2())
+	tent_shadow.modulate.a=.5
+	tent=app.picture(self,TENT,Rect2())
+	tent.visible=chapter==0;tent_shadow.visible=chapter==0
 	shadow=app.picture(self,soft,Rect2())
 	shadow.stretch_mode=TextureRect.STRETCH_SCALE
 	boar=app.picture(self,null,Rect2())
@@ -132,8 +161,8 @@ func reduce_motion() -> bool:
 	return settings_class!=null and activity!=null and float(settings_class.getFloat(activity.getContentResolver(),"animator_duration_scale",1.0))<=0.0
 
 func _process(delta: float) -> void:
+	if is_instance_valid(camp_idle):camp_idle.paused=not app.application_active
 	if entry_finished:
-		if is_instance_valid(camp_idle):camp_idle.paused = not app.application_active
 		if chapter == 0 and not static_motion and app.application_active and is_visible_in_tree():
 			if idle_frames.is_empty() and not load_boar_idle():
 				return
@@ -178,13 +207,16 @@ func finish_entry(skipped := false) -> void:
 	sync_camp_idle()
 
 func sync_camp_idle() -> void:
-	if not entry_finished:return
 	var allow_idle := chapter==0 and not static_motion and DisplayServer.get_name()!="headless"
 	if not allow_idle:
 		if is_instance_valid(camp_idle):
 			camp_idle.stop()
 			camp_idle.hide()
-		set_process(false)
+		if chapter==0 and static_motion and not is_instance_valid(camp_still):
+			camp_still=app.picture(self,FIELD,Rect2())
+			camp_still.material=camp_material()
+			move_child(camp_still,tent.get_index()+1)
+			fit_camp_idle()
 		return
 	if not is_instance_valid(camp_idle):
 		camp_idle = VideoStreamPlayer.new()
@@ -194,24 +226,28 @@ func sync_camp_idle() -> void:
 		camp_idle.loop = true
 		camp_idle.volume_db = -80.0
 		camp_idle.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		var shader := Shader.new()
-		shader.code = CAMP_MASK
-		var mask := ShaderMaterial.new()
-		mask.shader = shader
-		camp_idle.material = mask
+		camp_idle.material = camp_material()
 		add_child(camp_idle)
-		move_child(camp_idle,backdrop.get_index()+1)
+		move_child(camp_idle,tent.get_index()+1)
 	camp_idle.show()
 	fit_camp_idle()
 	if not camp_idle.is_playing():camp_idle.play()
 	camp_idle.paused=not app.application_active
 	set_process(true)
 
+func camp_material()->ShaderMaterial:
+	var shader:=Shader.new();shader.code=CAMP_MASK
+	var material:=ShaderMaterial.new();material.shader=shader
+	material.set_shader_parameter("minimum_plate",preload("res://assets/ui/d0061/camp-min.png"))
+	return material
+
 func fit_camp_idle() -> void:
-	if not is_instance_valid(camp_idle):return
 	var cover := maxf(size.x/MEADOW.x,size.y/MEADOW.y)
-	camp_idle.size=MEADOW*cover
-	camp_idle.position=(size-camp_idle.size)*.5
+	var offset:=(size-MEADOW*cover)*.5
+	for layer in [camp_idle,camp_still]:
+		if not is_instance_valid(layer):continue
+		layer.size=MEADOW*CAMP_SCALE*cover
+		layer.position=offset+(CAMP_TARGET-CAMP_SOURCE*CAMP_SCALE)*cover
 
 func _input(event: InputEvent) -> void:
 	if not is_visible_in_tree() or not app.application_active:return
@@ -312,8 +348,16 @@ func layer(parent: Control) -> Control:
 
 func draw_page() -> void:
 	if size.x<=0 or size.y<=0:return
+	backdrop.texture=CLEAN_FIELD if chapter==0 else FIELD
+	tent.visible=chapter==0;tent_shadow.visible=chapter==0
+	if is_instance_valid(camp_still):camp_still.visible=chapter==0 and static_motion
 	backdrop.size=size
+	var cover:=maxf(size.x/MEADOW.x,size.y/MEADOW.y)
+	var offset:=(size-MEADOW*cover)*.5
+	tent.position=offset+TENT_RECT.position*cover;tent.size=TENT_RECT.size*cover
+	tent_shadow.position=offset+Vector2(899,365)*cover;tent_shadow.size=Vector2(86,18)*cover
 	fit_camp_idle()
+	sync_camp_idle()
 	layout_boar()
 	if is_instance_valid(page):
 		remove_child(page)

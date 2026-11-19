@@ -45,6 +45,8 @@ var toggles:Control
 var pointer:=-1
 var pressed_button:Button
 var logical_size:=Vector2(1600,1200)
+var comparison_b:=false
+var comparison_button:Button
 
 static func portrait(id:String)->Texture2D:
 	var source:=load("res://assets/ui/d0060/"+id+".png") as Texture2D
@@ -86,6 +88,8 @@ func _ready()->void:
 	motions=Control.new();field.add_child(motions)
 	restart_button=button(field,"↻",Rect2(1446,966,64,64),restart,"round")
 	restart_button.add_theme_font_size_override("font_size",34)
+	comparison_button=button(field,"",Rect2(24,140,270,50),toggle_comparison)
+	comparison_button.add_theme_font_size_override("font_size",20)
 	resized.connect(fit)
 	choose_category("allies")
 	fit()
@@ -170,9 +174,10 @@ func select_model(id:String)->void:
 	actors.clear();captions.clear()
 	var ids:Array=(["uram","hangyeol","saebom"] if category=="allies" else ANIMALS).duplicate() if id=="all" else [id]
 	for key in ids:
-		var actor:=Actor.new();actor.create(field,key);field.move_child(actor.preview,1)
+		var actor:=Actor.new();actor.create(field,key,comparison_b);field.move_child(actor.preview,1)
+		actor.configure(battle)
 		actors[key]=actor
-		captions[key]=text(field,NAMES[key],Rect2(0,0,150,32),22)
+		captions[key]=text(field,NAMES[key]+(" · B" if key=="hangyeol" and comparison_b else ""),Rect2(0,0,150,32),22)
 		var brush:=StyleBoxFlat.new();brush.bg_color=Color("162e2a");brush.set_corner_radius_all(6)
 		captions[key].add_theme_stylebox_override("normal",brush)
 	for key in model_buttons:model_buttons[key].modulate=Color.WHITE if key==id else Color(.7,.7,.7)
@@ -190,6 +195,12 @@ func play_motion(id:String)->void:
 	render_frame();refresh()
 
 func restart()->void:play_motion(selection)
+func toggle_comparison()->void:
+	if selected!="hangyeol":return
+	var clock:=age
+	comparison_b=not comparison_b
+	select_model(selected)
+	age=clock;render_frame();refresh()
 func set_rate(value:float)->void:
 	if value not in RATES:return
 	rate=value;refresh()
@@ -237,6 +248,9 @@ func refresh()->void:
 	for value in speed_buttons:skin(speed_buttons[value],ROUND_GOLD if value==rate else ROUND_SILVER)
 	show_switch(battle_button,battle);show_switch(route_button,route)
 	status.text=("아군 · 3명 비교" if category=="allies" else "CH1 · 4종 비교") if selected=="all" else NAMES[selected]
+	comparison_button.visible=selected=="hangyeol"
+	comparison_button.text="B · 11,979 Tris ⇄ A" if comparison_b else "A · 60,037 Tris ⇄ B"
+	if selected=="hangyeol":status.text+=" · "+("B · 11,979 Tris" if comparison_b else "A · 60,037 Tris")
 	status.position.x=690 if category=="animals" else 605
 	motion_status.position.x=status.position.x
 	status.size.x=240 if category=="animals" else 330
@@ -269,7 +283,7 @@ func _input(event:InputEvent)->void:
 	if not event is InputEventScreenTouch:return
 	if event.pressed:
 		if pointer>=0:return
-		var list:Array=[back_button,battle_button,route_button,restart_button]+category_buttons.values()+model_buttons.values()+motion_buttons.values()+speed_buttons.values()
+		var list:Array=[back_button,battle_button,route_button,restart_button,comparison_button]+category_buttons.values()+model_buttons.values()+motion_buttons.values()+speed_buttons.values()
 		for item in list:
 			if item.is_visible_in_tree() and not item.disabled and item.get_global_rect().has_point(event.position):pointer=event.index;pressed_button=item;get_viewport().set_input_as_handled();return
 	elif event.index==pointer:

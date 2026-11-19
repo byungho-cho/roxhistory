@@ -22,7 +22,7 @@ func resident_sample(id:String,clock:float)->void:
 	if preview is Uram:preview.show_pose(clip_for(id),clock)
 	else:preview.sample_motion(id,clock)
 
-func create(parent:Node, id:String)->void:
+func create(parent:Node, id:String,comparison_b:=false)->void:
 	key=id
 	if Wildlife.ANIMALS.has(key):
 		preview=Animal.new()
@@ -31,6 +31,7 @@ func create(parent:Node, id:String)->void:
 		preview=Uram.new();preview.use_retouch=true
 	else:
 		preview=Residents.new();preview.character=key;preview.shared_motion_view=true
+		if key=="hangyeol" and comparison_b:preview.comparison_model_path="res://assets/characters/d0061/hangyeol-B-12k.glb"
 	preview.render_size_factor=.75
 	parent.add_child(preview)
 	preview.set_enabled(true)

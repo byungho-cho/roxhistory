@@ -7,6 +7,8 @@ const CHANNELS := [
 	["combat", "전투음", "타격 · 기술 · 피격 등 전투 효과", [&"Combat"]],
 ]
 const SPEAKER_EDGE_INSET := 8
+const BGM_REFERENCE_GAIN := .90 # D0029's pre-reduction -0.91515 dB reference.
+const BGM_MIX := .70
 
 static func apply(prefs: ConfigFile) -> void:
 	var master: bool = prefs.get_value("app", "sound", true)
@@ -17,7 +19,7 @@ static func apply(prefs: ConfigFile) -> void:
 static func apply_channel(channel: Array, enabled: bool, level: float) -> void:
 	for bus in channel[3]:
 		var index := AudioServer.get_bus_index(bus)
-		var profile_gain := .32 if bus == &"BGM" else 1.0
+		var profile_gain := BGM_REFERENCE_GAIN*BGM_MIX if bus == &"BGM" else 1.0
 		AudioServer.set_bus_volume_db(index, linear_to_db(maxf(level / 100, .0001)*profile_gain))
 		AudioServer.set_bus_mute(index, not enabled or level == 0)
 

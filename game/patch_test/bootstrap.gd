@@ -47,6 +47,9 @@ var candidate := {}
 var envelope := PackedByteArray()
 var delta := {}
 var delta_fallback := false
+const PATCH_IDLE_TIMEOUT_MS := 30000
+var patch_received := 0
+var patch_last_progress_ms := 0
 
 const DELTA := preload("res://patch_test/pack_delta.gd")
 func _init(mount_on_start := true) -> void:
@@ -126,7 +129,19 @@ func _process(_delta: float) -> void:
 	if apk_bridge and apk_selected:
 		poll_apk()
 	if phase==Phase.DOWNLOADING and not apk_selected:
-		update_download_progress(request.get_downloaded_bytes(), transfer_size())
+		var received:=request.get_downloaded_bytes()
+		update_download_progress(received, transfer_size())
+		if patch_download_stalled(received,Time.get_ticks_msec()):
+			request.cancel_request()
+			show_failure("30초 동안 게임 파일을 받지 못했습니다. 다시 시도해 주세요.")
+
+func patch_download_stalled(received:int,now:int)->bool:
+	# Response headers/elapsed wall time are not progress. Only new body bytes
+	# restart the idle window; metadata and native APK transfers keep their policy.
+	if received>patch_received:
+		patch_received=received
+		patch_last_progress_ms=now
+	return now-patch_last_progress_ms>=PATCH_IDLE_TIMEOUT_MS
 
 func update_download_progress(received: int, total: int) -> void:
 	var downloaded := clampi(received, 0, total)
@@ -303,7 +318,9 @@ func download_patch() -> void:
 	check_status = ""
 	update_download_progress(0,transfer_size())
 	render_phase()
-	request.timeout = 30.0
+	request.timeout = 0.0
+	patch_received=0
+	patch_last_progress_ms=Time.get_ticks_msec()
 	request.download_file = cache+"incoming.part"
 	request.body_size_limit = transfer_size()
 	var filename: String = candidate.file if delta.is_empty() else delta.file

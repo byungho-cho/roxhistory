@@ -24,6 +24,7 @@ var timeline: Dictionary = {}
 var character := "hangyeol"
 var shared_motion_view := false
 var animation: AnimationPlayer
+var comparison_model_path := ""
 var environment: Environment
 var cool_fill: DirectionalLight3D
 
@@ -36,7 +37,7 @@ func _ready() -> void:
 	display.position = -camera.unproject_position(Vector3.ZERO)*display.scale
 
 func build_villager() -> void:
-	var packed := load(ASSETS+character+"-req035.glb") as PackedScene
+	var packed := load(comparison_model_path if not comparison_model_path.is_empty() else ASSETS+character+"-req035.glb") as PackedScene
 	var model := packed.instantiate() as Node3D
 	pivot.add_child(model)
 	model.scale = Vector3.ONE*1.24

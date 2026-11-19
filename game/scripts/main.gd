@@ -895,6 +895,20 @@ func intro_screen() -> void:
 	backdrop.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	stage.add_child(backdrop)
 	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	# A real GUI hit target behind the existing controls handles touch/mouse
+	# once on release. The transition cover then captures subsequent input.
+	var background_skip:=DemoButton.new()
+	background_skip.name="IntroBackgroundSkip"
+	background_skip.focus_mode=Control.FOCUS_NONE
+	background_skip.set_process(false)
+	for state in ["normal","hover","pressed","focus"]:
+		background_skip.add_theme_stylebox_override(state,StyleBoxEmpty.new())
+	stage.add_child(background_skip)
+	background_skip.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	background_skip.pressed.connect(func():
+		if not application_active or screen!="intro" or intro_leaving:return
+		background_skip.disabled=true
+		finish_intro())
 	intro_player = VideoStreamPlayer.new()
 	intro_player.stream = intro_stream
 	intro_player.expand = true

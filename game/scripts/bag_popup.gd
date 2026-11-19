@@ -27,6 +27,12 @@ var drag_offset := 0.0
 var dragging := false
 var entrance_offset := 0.0
 var capacity := DEFAULT_CAPACITY
+var content_height:=0.0
+var rail:Panel
+var footer_rule:Panel
+var close_button:Control
+var rail_top:=RAIL_TOP
+var rail_height:=RAIL_HEIGHT
 
 func _init(owner: Node) -> void:
 	app=owner
@@ -58,7 +64,7 @@ func _ready() -> void:
 	count.horizontal_alignment=HORIZONTAL_ALIGNMENT_RIGHT
 	var left := SharedPopupArt.INSET
 	panel(layout,Rect2(left,97,1018,1),style(Color(.91,.85,.64,.36)))
-	panel(layout,Rect2(left,805,1018,1),style(Color(.91,.85,.64,.22)))
+	footer_rule=panel(layout,Rect2(left,805,1018,1),style(Color(.91,.85,.64,.22)))
 	count.position.x = left+915
 	viewport=Control.new()
 	viewport.clip_contents=true
@@ -87,17 +93,17 @@ func _ready() -> void:
 		amount.horizontal_alignment=HORIZONTAL_ALIGNMENT_RIGHT
 		amounts[key]=amount
 	var rows := ceili(float(capacity)/COLUMNS)
-	var content_height := rows*SLOT_SIZE.y+(rows-1)*SLOT_GAP.y
+	content_height = rows*SLOT_SIZE.y+(rows-1)*SLOT_GAP.y
 	max_offset = maxf(0,content_height-viewport.size.y)
-	if max_offset>0:
-		panel(layout,Rect2(left+1034,RAIL_TOP,3,RAIL_HEIGHT),style(Color(.06,.10,.07,.66),Color(.84,.82,.63,.25),2))
-		thumb=panel(layout,Rect2(left+1032.5,RAIL_TOP,6,RAIL_HEIGHT*viewport.size.y/content_height),style(Color(.90,.85,.60,.79),Color.TRANSPARENT,3))
+	rail=panel(layout,Rect2(left+1034,RAIL_TOP,3,RAIL_HEIGHT),style(Color(.06,.10,.07,.66),Color(.84,.82,.63,.25),2))
+	thumb=panel(layout,Rect2(left+1032.5,RAIL_TOP,6,RAIL_HEIGHT*viewport.size.y/content_height),style(Color(.90,.85,.60,.79),Color.TRANSPARENT,3))
 	close_layer = Control.new()
 	close_layer.size = DESIGN
 	close_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(close_layer)
 	var content_end := SharedPopupArt.content_rect(DESIGN).end
 	var close := QuestRewards.gold_button(app,close_layer,"BagClose",Rect2(content_end-Vector2(171,55),Vector2(171,55)),app.close_modal)
+	close_button=close
 	QuestRewards.caption(app,close,"닫기",Rect2(0,0,171,55),24,QuestRewards.INK)
 	resized.connect(fit)
 	app.model.changed.connect(update_amounts)
@@ -151,6 +157,24 @@ func fit() -> void:
 	var region := size-Vector2(app.safe)*2.0
 	var factor := maxf(.1,minf(region.x/DESIGN.x,region.y/DESIGN.y))
 	var at := (size-DESIGN*factor)*.5
+	var unfolded:=region.x/maxf(region.y,1)<1.6
+	var logical:=DESIGN
+	if unfolded:
+		factor=maxf(.1,region.x/DESIGN.x)
+		logical.y=region.y/factor
+		at=Vector2(app.safe)
+	layout.size=logical
+	close_layer.size=logical
+	viewport.size.y=logical.y-LIST_TOP-115.0 if unfolded else SLOT_SIZE.y*5+SLOT_GAP.y*4
+	footer_rule.position.y=logical.y-95
+	close_button.position=SharedPopupArt.content_rect(logical).end-close_button.size
+	rail_top=viewport.position.y+8
+	rail_height=viewport.size.y-16
+	rail.position.y=rail_top;rail.size.y=rail_height
+	max_offset=maxf(0,content_height-viewport.size.y)
+	rail.visible=max_offset>0;thumb.visible=max_offset>0
+	thumb.size.y=rail_height*minf(1,viewport.size.y/content_height)
+	scroll_to(offset)
 	layout.scale=Vector2.ONE*factor
 	layout.position=at - Vector2(entrance_offset*factor,0)
 	close_layer.scale = layout.scale
@@ -165,7 +189,7 @@ func scroll_to(next: float) -> void:
 	offset=clampf(next,0,max_offset)
 	grid.position.y=-offset
 	if is_instance_valid(thumb):
-		thumb.position.y=RAIL_TOP+(RAIL_HEIGHT-thumb.size.y)*offset/max_offset
+		thumb.position.y=rail_top+(rail_height-thumb.size.y)*offset/max_offset if max_offset>0 else rail_top
 
 func _input(event: InputEvent) -> void:
 	if not is_visible_in_tree() or not app.modal or not is_instance_valid(app.overlay) or not app.overlay.is_ancestor_of(self):return
