@@ -1,6 +1,7 @@
 extends HybridCharacter
 
 const ASSETS := "res://assets/characters/d0057/"
+const Timing := preload("res://scripts/motion_timing.gd")
 const Catalog := preload("res://scripts/lab_motion_catalog.gd")
 const JUMP_MODEL := "res://assets/characters/d0055/hangyeol-auto-r03.glb"
 const JUMP_CLIP := "jump_spear_auto_r03"
@@ -14,6 +15,10 @@ const MOTION_DISPLAY_SCALE := .92
 const MOTION_GROUND_Y := 325.0
 const MOTION_HEADING := atan2(1.0,.28)
 
+var skeleton: Skeleton3D
+var root_bone := -1
+var last_sample := 0.0
+var extract_tail := 0.0
 var motion_key := "idle"
 var timeline: Dictionary = {}
 var character := "hangyeol"
@@ -40,6 +45,8 @@ func build_villager() -> void:
 	camera.position = GAME_CAMERA
 	camera.look_at(GAME_AIM)
 	animation = model.find_children("*","AnimationPlayer",true,false)[0]
+	skeleton = model.find_children("*","Skeleton3D",true,false)[0]
+	root_bone = skeleton.find_bone("root")
 	animation.callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_MANUAL
 	timeline = JSON.parse_string(FileAccess.get_file_as_string(ASSETS+character+"-timeline.json"))
 	animation.play("idle")
@@ -62,10 +69,25 @@ func set_corrected_light(corrected: bool) -> void:
 func motion_supported(key: String) -> bool:
 	return Catalog.CLIPS[character].has(key)
 
+func playlist() -> Array:
+	var result:Array=[]
+	var cursor:=0.0
+	for source in timeline.segments:
+		var segment:Dictionary=source.duplicate()
+		var native:float=segment.native_length
+		var loops:float=roundf(float(segment.duration)/native) if segment.clip in ["walk","run"] else 1.0
+		var length:float=Timing.duration(character,segment.clip,native)*loops if segment.clip in ["walk","run"] else float(segment.duration)
+		segment.start=cursor
+		segment.end=cursor+length
+		cursor+=length
+		result.append(segment)
+	return result
+
 func motion_duration(key: String) -> float:
 	if not motion_supported(key): return 0.0
-	if key=="full": return float(timeline.seconds)
-	return animation.get_animation(Catalog.CLIPS[character][key]).length
+	if key=="full": return float(playlist()[-1].end)
+	var clip:String=Catalog.CLIPS[character][key]
+	return Timing.duration(character,clip,animation.get_animation(clip).length)
 
 func duration() -> float:
 	return motion_duration(motion_key)
@@ -79,11 +101,25 @@ func sample_motion(key: String, seconds: float) -> void:
 	var at := seconds
 	if clip=="playlist":
 		clip="idle"
-		for segment in timeline.segments:
+		for segment in playlist():
 			if seconds<float(segment.end):
 				clip=segment.clip
-				at=fposmod(maxf(0.0,seconds-float(segment.start)),float(segment.native_length))
+				var period:=Timing.duration(character,clip,float(segment.native_length))
+				at=fposmod(maxf(0.0,seconds-float(segment.start)),period)
 				break
-	if animation.current_animation!=clip:
-		animation.play(clip)
-	animation.seek(clampf(at,0.0,animation.get_animation(clip).length),true)
+	var previous:String=animation.current_animation
+	var dt:=clampf(seconds-last_sample,0.0,.1)
+	if seconds<last_sample:dt=1.0/30.0
+	last_sample=seconds
+	if previous!=clip:
+		if previous in ["walk","run"]:extract_tail=.1
+		animation.play(clip,.1 if Timing.enabled and clip!=JUMP_CLIP else 0.0)
+	animation.advance(dt if Timing.enabled else 0.0)
+	animation.seek(Timing.sample(character,clip,at,animation.get_animation(clip).length),true)
+	# Extract locomotion only for this fixed lab comparison, without deleting any source channels.
+	# Skill/recoil travel remains native. The real hunt keeps its original controller and models.
+	extract_tail=maxf(0.0,extract_tail-dt)
+	pivot.position=Vector3.ZERO
+	if Timing.enabled and clip!=JUMP_CLIP and root_bone>=0 and (clip in ["walk","run"] or extract_tail>0):
+		var delta:=skeleton.get_bone_pose_position(root_bone)-skeleton.get_bone_rest(root_bone).origin
+		pivot.position=-(skeleton.global_basis*Vector3(delta.x,0,delta.z))

@@ -769,14 +769,23 @@ func show_damage(now: int, amount: int, ally: bool) -> void:
 	damage.text = str(amount)
 	damage.position = (HOMES[1] if ally else boar.position+Vector2(47,12))-Vector2(38,52)
 
+func advance_model_review(delta:float) -> void:
+	model_age+=delta
+	var length:=model_preview.motion_duration(selected_motion_key)
+	if selected_motion_key in LOOP_MOTIONS:
+		model_preview.sample_motion(selected_motion_key,fposmod(model_age,length))
+	elif model_age<=length:
+		model_preview.sample_motion(selected_motion_key,model_age)
+	else:
+		model_preview.sample_motion("idle",fposmod(model_age-length,model_preview.motion_duration("idle")))
+
 func _process(delta: float) -> void:
 	if is_instance_valid(all_motion):
 		if app.application_active: all_motion.advance(delta)
 		return
 	if selected_character!="uram":
-		if is_instance_valid(model_preview) and app.application_active and (selected_motion_key in LOOP_MOTIONS or model_age<model_preview.duration()):
-			model_age+=delta
-			model_preview.sample(fposmod(model_age,model_preview.duration()) if selected_motion_key in LOOP_MOTIONS else minf(model_age,model_preview.duration()))
+		if is_instance_valid(model_preview) and app.application_active:
+			advance_model_review(delta)
 		return
 	if mode=="motion":
 		if is_instance_valid(appearance_comparison): return

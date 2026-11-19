@@ -2,6 +2,7 @@ extends Control
 
 signal preparation_ready
 
+const Timing := preload("res://scripts/motion_timing.gd")
 const MATCH := preload("res://scripts/hunt_match_art.gd")
 const RULES := preload("res://scripts/deer_hunt_rules.gd")
 const DESIGN := Vector2(960,540)
@@ -939,8 +940,6 @@ func play_pose(id: String) -> void:
 		rules.action_lock = maxf(rules.action_lock,JumpMotion.JUMP_SECONDS)
 	match id:
 		"auto_thrust":hunt_audio.cue("S15",2)
-		"strike":hunt_audio.cue("S18",2)
-		"team":hunt_audio.cue("S20",2)
 
 func _process(delta: float) -> void:
 	hunt_audio.update(app.application_active and app.settings.get_value("app","sound",true),exit_popup!=null or app.modal)
@@ -975,6 +974,8 @@ func _process(delta: float) -> void:
 				hit_label.text = "−%d" % hit_damage
 			impact_pending = false
 			if pose=="thrust": hunt_audio.cue("S15",2)
+			if pose=="strike": hunt_audio.cue("S18",2)
+			if pose=="team": hunt_audio.cue("S20",2)
 			if pose=="counter":
 				hunt_audio.cue("S21",2)
 			else:
@@ -1071,7 +1072,8 @@ func update_actors(delta: float) -> void:
 		deer.camera.position.y = lerpf(7.0,6.65,approach)
 		deer.camera.look_at(Vector3(0,1,0))
 		deer.update_geometry()
-	var beat := sin(clampf(pose_clock/RULES.POSE_SECONDS,0,1)*PI)
+	var movement_beat := sin(clampf(pose_clock/RULES.POSE_SECONDS,0,1)*PI)
+	var beat := sin(Timing.combat_phase(pose_clock/RULES.POSE_SECONDS)*PI)
 	var basic_attack := pose in ["thrust","auto_thrust"]
 	for i in hunters.size():
 		var hunter := hunters[i]
@@ -1094,12 +1096,12 @@ func update_actors(delta: float) -> void:
 				hunter_field_bars[i].get_parent().visible = approach>=1.0
 				continue
 			hunter.stop_jump()
-		hunter.position = base + attack_direction*(lunge if attack else 10 if assisting else -18 if dodge else 0)*beat
+		hunter.position = base + attack_direction*(lunge if attack else 10 if assisting else -18 if dodge else 0)*movement_beat
 		var heading := Vector2(1,.55).lerp(Vector2(1,.28),approach)
 		var approaching := transition_elapsed >= 0.0 and approach > 0.0 and approach < 1.0
 		if hunter is COMBAT_PREVIEW:
 			var clip := "Spear_Thrust" if attack or assisting else "Hit_Reaction" if dodge and hit_on_hunter and hit_age < .26 else "Combat_Idle"
-			var progress := clampf(pose_clock/RULES.POSE_SECONDS,0,1) if clip != "Combat_Idle" else fposmod(hunter.clock,1.8)/1.8
+			var progress := Timing.combat_phase(pose_clock/RULES.POSE_SECONDS) if clip=="Spear_Thrust" else clampf(hit_age/.26,0,1) if clip=="Hit_Reaction" else fposmod(hunter.clock,1.8)/1.8
 			hunter.clock += delta
 			hunter.show_combat_pose(hunter.position.direction_to(deer.position) if attack or assisting else heading,clip,progress)
 			hunter.viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
@@ -1114,7 +1116,7 @@ func update_actors(delta: float) -> void:
 				var travel := previous_position.distance_to(hunter.position)
 				female_approach_phase = fposmod(female_approach_phase + travel / (hunter.stride_world_length() * hunter.scale.x) * TAU, TAU)
 			phase = female_approach_phase if not dodge else pose_clock * 12.0
-		hunter.animate(delta, heading, phase, dodge or approaching, "" if female or not attack else "hunt", pose_clock, false)
+		hunter.animate(delta, heading, phase, dodge or approaching, "" if female or not attack else "hunt", Timing.combat_phase(pose_clock/RULES.POSE_SECONDS)*HeroMotion.CYCLE if attack else pose_clock, false)
 		if female or (not attack and not dodge):
 			hunter.blend_bone("spine",Vector3(.21,0,-.09),.65)
 			hunter.blend_bone("armR",Vector3(-.48,0,-.2),.65)
@@ -1139,11 +1141,11 @@ func update_actors(delta: float) -> void:
 		hunter_field_bars[i].get_parent().visible = approach>=1.0
 	var charge := running and pose=="counter"
 	var deer_motion := Vector2(-29,-8) if charge else Vector2.ZERO if basic_attack else Vector2(23,-8)
-	deer.position = ENEMY_CELLS[4].lerp(DEER_SLOT,approach)+(deer_motion*beat if running else Vector2.ZERO)
+	deer.position = ENEMY_CELLS[4].lerp(DEER_SLOT,approach)+(deer_motion*movement_beat if running else Vector2.ZERO)
 	if basic_recoil>0:
 		deer.position += Vector2(13,-3)*basic_recoil/BASIC_RECOIL_TIME
 	deer.scale = Vector2.ONE*lerpf(.60,.63,approach)
-	deer.walking = 1.0 if transition_elapsed>=0 and approach>0.0 and approach<1.0 else (beat if running and (charge or basic_recoil>0.0) else 0.0)
+	deer.walking = 1.0 if transition_elapsed>=0 and approach>0.0 and approach<1.0 else (movement_beat if running and (charge or basic_recoil>0.0) else 0.0)
 	deer.heading = lerp_angle(-PI*.34,-PI*.35,approach)
 	deer.gait_phase = pose_clock*14
 	deer.clock += delta

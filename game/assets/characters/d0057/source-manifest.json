@@ -1,0 +1,13 @@
+{
+  "instruction": "D0058 R02",
+  "prerequisite": "RES-036 from D0057; not independently released",
+  "original": {
+    "hangyeol-req035.glb": "ee9b919b2c3a6d722e952864a41e0793cfd249d5ce17f9d6d3cf56f9b4e4e96f",
+    "saebom-req035.glb": "c307a178f4f42ab26ff66a3250d499f9eca3346e00d4139ffaaa2d735c9e6164"
+  },
+  "runtime": {
+    "hangyeol-req035.glb": "dc90e7aa0e25738e5fd9d1a4befafaf76949394e4853f1127d51f67fbc55e699",
+    "saebom-req035.glb": "c307a178f4f42ab26ff66a3250d499f9eca3346e00d4139ffaaa2d735c9e6164"
+  },
+  "guard_exception": "New Hangyeol GLB omits spear_guard. Retained approved RES-032 guard only, identical skeleton/rest transform checks. Latest body/walk/run/R03 unchanged."
+}
