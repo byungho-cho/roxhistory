@@ -7,3 +7,10 @@ const MODELS={
 	"juvenile":{"file":"res://assets/animals/d0061/juvenile-boar-B.glb","a":23995,"b":9998},
 	"adult":{"file":"res://assets/animals/d0061/adult-boar-B.glb","a":23995,"b":11998},
 }
+const LABELS={
+	"hangyeol":["폴리곤 6만","폴리곤 1.2만"],
+	"forest":["폴리곤 1.8만","폴리곤 1만"],
+	"stag":["폴리곤 1.8만","폴리곤 1만"],
+	"juvenile":["폴리곤 2.4만","폴리곤 1만"],
+	"adult":["폴리곤 2.4만","폴리곤 1.2만"],
+}
