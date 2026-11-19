@@ -1,6 +1,7 @@
 extends RefCounted
 
 const ENTRIES := {
+	"0.2.267": ["D0066 신규 모션을 반영하고, 달리기 A/B/C 비교에서 종료되는 문제를 수정했습니다."],
 	"0.2.266": ["모델 테스트에 아군 신규 가드·반격·사망과 일반 스킬·연계 스킬을 연결했습니다.", "아군 모두의 연계는 우람 → 새봄 → 한결 순서로 재생합니다.", "야생동물 경량판의 신규 모션과 준비·발동 구간 배속, 사망 연출을 적용했습니다. 기존 전투 판정과 사운드는 유지합니다."],
 	"0.2.265": ["한결을 1.2만 폴리곤 경량판으로 통일하고 한결 폴리곤 비교를 단일 보기로 바꿨습니다.", "한결·새봄 달리기 C안을 적용하고 아군 기존 모션의 재생 속도를 조정했습니다. 별도 달리기 A/B/C와 야생동물은 유지됩니다."],
 	"0.2.264": ["최신 변경사항을 포함한 전체 APK를 새로 배포했습니다.", "시작 화면과 설정의 APK 링크 복사는 실제 풀버전 배포를 가리키며 이후 패치 버전과 별도로 유지됩니다."],
@@ -78,3 +79,4 @@ static func recent_versions(through_version: String) -> Array[String]:
 			versions.append(version)
 	versions.sort_custom(func(a:String,b:String): return a.naturalnocasecmp_to(b)>0)
 	return versions.slice(0,20)
+

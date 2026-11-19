@@ -2,7 +2,7 @@ config_version=5
 
 [application]
 config/name="RoxHistory"
-config/version="0.2.266"
+config/version="0.2.267"
 config/build_date="2026.11.20"
 config/icon="res://assets/app-icon-pioneer.png"
 run/main_scene="res://scenes/main.tscn"
@@ -39,3 +39,4 @@ distribution/full_apk_version="0.2.264"
 inventory/capacity=64
 
 development/settings_entry=true
+

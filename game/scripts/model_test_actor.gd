@@ -39,7 +39,7 @@ func create(parent:Node, id:String,comparison_b:=false,run_variant:="")->void:
 		preview=Uram.new();preview.use_retouch=true;preview.extra_motions=true
 	else:
 		preview=Residents.new() if run_variant.is_empty() else RunPreview.new()
-		preview.character=key;preview.shared_motion_view=true;preview.extra_motions=true
+		preview.character=key;preview.shared_motion_view=true;preview.extra_motions=run_variant.is_empty()
 		if not run_variant.is_empty():preview.variant=run_variant
 		if key=="hangyeol":preview.excluded_playlist_clips=PackedStringArray(["stone_spear_thrust"])
 	preview.render_size_factor=.75
@@ -164,3 +164,4 @@ func sample(age:float, route:bool)->void:
 	# the 2D ground anchor for its fixed path, never the camera or skill roots.
 	preview.set_meta("route_fraction",clampf(at/(travel_period*2),0,1) if route and moving and not preview is Animal and stride.length()<=.02 else 0.0)
 	preview.viewport.render_target_update_mode=SubViewport.UPDATE_ONCE
+
