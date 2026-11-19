@@ -1,0 +1,115 @@
+{
+  "request": "REQ040",
+  "baseline": "v0.2.258",
+  "purpose": "D0061 preview only; no adoption or hunt model replacement",
+  "assets": {
+    "forest-deer": {
+      "A_tris": 18000,
+      "B_tris": 10000,
+      "reduction_percent": 44.44444444444444,
+      "rig_rest_skin_bind_exact": true,
+      "all_clips_time_values_interpolation_root_exact": true,
+      "retained_vertex_attributes_exact": true,
+      "materials_texture_bytes_exact": true,
+      "bounds_A": [
+        -0.2653219997882843,
+        0,
+        -0.7000470161437988,
+        0.2642250061035156,
+        1.9043129682540894,
+        0.7098829746246338
+      ],
+      "bounds_B": [
+        -0.2653219997882843,
+        0,
+        -0.7000470161437988,
+        0.2642250061035156,
+        1.9043129682540894,
+        0.7098829746246338
+      ],
+      "A_sha256": "8e9113ac39ff7e2fcb7dbdcf6e4a5fdf0a4382bae957c79d2c6b4ed7e1329c19",
+      "B_sha256": "82e1ec44aa5759bf07c5b150a47a13b516f9b549bc436622e6ef5c1b6c61b4aa"
+    },
+    "mountain-stag": {
+      "A_tris": 18000,
+      "B_tris": 10000,
+      "reduction_percent": 44.44444444444444,
+      "rig_rest_skin_bind_exact": true,
+      "all_clips_time_values_interpolation_root_exact": true,
+      "retained_vertex_attributes_exact": true,
+      "materials_texture_bytes_exact": true,
+      "bounds_A": [
+        -0.37754473090171814,
+        0,
+        -0.8400564193725586,
+        0.3764628469944,
+        2.3085107803344727,
+        0.8518595695495605
+      ],
+      "bounds_B": [
+        -0.37754473090171814,
+        0,
+        -0.8400564193725586,
+        0.3764628469944,
+        2.3085107803344727,
+        0.8518595695495605
+      ],
+      "A_sha256": "5f3b20d95ecb9c09bf23b9b36225a95a929fbe8d29ed8a58f7214744f6e6c188",
+      "B_sha256": "8cc152a773b986acd4b924ffa6128f831c1446de3bf984f1a9ce454e3bca8fcd"
+    },
+    "juvenile-boar": {
+      "A_tris": 23995,
+      "B_tris": 9998,
+      "reduction_percent": 58.33298603875807,
+      "rig_rest_skin_bind_exact": true,
+      "all_clips_time_values_interpolation_root_exact": true,
+      "retained_vertex_attributes_exact": true,
+      "materials_texture_bytes_exact": true,
+      "bounds_A": [
+        -0.33055007457733154,
+        0,
+        -0.6993840932846069,
+        0.3286963999271393,
+        0.924851655960083,
+        0.6239754557609558
+      ],
+      "bounds_B": [
+        -0.33055007457733154,
+        0,
+        -0.6993840932846069,
+        0.3286963999271393,
+        0.924851655960083,
+        0.6239754557609558
+      ],
+      "A_sha256": "c7b24e2baef701cc9c8977f48ac001407af10a78bb78e4f208c3995c7b78162d",
+      "B_sha256": "f978b7c4302f5a569f61c0aee010c6339bc7934bcafc53bfc33edc28262f229d"
+    },
+    "adult-boar": {
+      "A_tris": 23995,
+      "B_tris": 11998,
+      "reduction_percent": 49.99791623254845,
+      "rig_rest_skin_bind_exact": true,
+      "all_clips_time_values_interpolation_root_exact": true,
+      "retained_vertex_attributes_exact": true,
+      "materials_texture_bytes_exact": true,
+      "bounds_A": [
+        -0.44972801208496094,
+        0,
+        -0.9515429735183716,
+        0.4472059905529022,
+        1.506930947303772,
+        0.9509869813919067
+      ],
+      "bounds_B": [
+        -0.44972801208496094,
+        0,
+        -0.9515429735183716,
+        0.4472059905529022,
+        1.506930947303772,
+        0.9509869813919067
+      ],
+      "A_sha256": "6fd7bb43052d531579a17110fcaa18c94d53d6dabc8fb49900be8870d8e3fddd",
+      "B_sha256": "51f610d00287a39450b42edeb8791d0cbb2dce0cc3fd22c83174ab5381172478"
+    }
+  }
+}

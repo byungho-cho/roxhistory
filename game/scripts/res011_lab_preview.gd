@@ -25,6 +25,7 @@ var character := "hangyeol"
 var shared_motion_view := false
 var animation: AnimationPlayer
 var comparison_model_path := ""
+var excluded_playlist_clips:PackedStringArray=[]
 var environment: Environment
 var cool_fill: DirectionalLight3D
 
@@ -74,6 +75,7 @@ func playlist() -> Array:
 	var result:Array=[]
 	var cursor:=0.0
 	for source in timeline.segments:
+		if source.clip in excluded_playlist_clips:continue
 		var segment:Dictionary=source.duplicate()
 		var native:float=segment.native_length
 		var loops:float=roundf(float(segment.duration)/native) if segment.clip in ["walk","run"] else 1.0

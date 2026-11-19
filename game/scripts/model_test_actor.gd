@@ -6,6 +6,7 @@ const Uram = preload("res://scripts/uram_lab_rig.gd")
 const Wildlife = preload("res://scripts/wildlife_lab.gd")
 const Animal = preload("res://scripts/wildlife_lab_preview.gd")
 const Hunt = preload("res://scripts/deer_hunt_screen.gd")
+const Poly = preload("res://scripts/model_test_poly_catalog.gd")
 var key:String
 var preview:HybridCharacter
 var motion := "idle"
@@ -27,10 +28,12 @@ func create(parent:Node, id:String,comparison_b:=false)->void:
 	if Wildlife.ANIMALS.has(key):
 		preview=Animal.new()
 		preview.model_path="res://assets/animals/d0059/"+Wildlife.ANIMALS[key].file
+		if comparison_b and Poly.MODELS.has(key):preview.model_path=Poly.MODELS[key].file
 	elif key=="uram":
 		preview=Uram.new();preview.use_retouch=true
 	else:
 		preview=Residents.new();preview.character=key;preview.shared_motion_view=true
+		if key=="hangyeol":preview.excluded_playlist_clips=PackedStringArray(["stone_spear_thrust"])
 		if key=="hangyeol" and comparison_b:preview.comparison_model_path="res://assets/characters/d0061/hangyeol-B-12k.glb"
 	preview.render_size_factor=.75
 	parent.add_child(preview)

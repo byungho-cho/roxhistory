@@ -1,6 +1,7 @@
 extends Control
 signal exited
 const Actor=preload("res://scripts/model_test_actor.gd")
+const Poly=preload("res://scripts/model_test_poly_catalog.gd")
 const Catalog=preload("res://scripts/lab_motion_catalog.gd")
 const Wildlife=preload("res://scripts/wildlife_lab.gd")
 const Hunt=preload("res://scripts/deer_hunt_screen.gd")
@@ -14,7 +15,7 @@ const RATES=[3.0,2.5,2.0,1.75,1.5,1.25,1.0,.5]
 const ALLIES=["hangyeol","uram","saebom"]
 const ANIMALS=["forest","stag","juvenile","adult"]
 const NAMES={"hangyeol":"한결","uram":"우람","saebom":"새봄","forest":"숲사슴","stag":"산수사슴","juvenile":"어린 수퇘지","adult":"큰 멧돼지"}
-const ORDER=["idle","walk","run","attack","hit","skill","full","guard","counter","thrust","short","dodge","death"]
+const ORDER=["idle","walk","run","attack","hit","skill","full","guard","counter","death"]
 var app:Node
 var canvas:Control
 var field:Control
@@ -46,6 +47,7 @@ var pointer:=-1
 var pressed_button:Button
 var logical_size:=Vector2(1600,1200)
 var comparison_b:=false
+var comparison_versions:Dictionary={}
 var comparison_button:Button
 
 static func portrait(id:String)->Texture2D:
@@ -164,20 +166,22 @@ func rebuild_motions()->void:
 	for i in keys.size():
 		var id:String=keys[i]
 		var title:String=Catalog.MOTIONS.get(id,Wildlife.MOTIONS.get(id,id))
+		if category=="allies" and id=="guard":title="가드"
 		if category=="animals" and id=="attack":title="기본 공격"
 		motion_buttons[id]=button(motions,title,Rect2((i%7)*144.6,(i/7)*80.8,132.6,72.8),play_motion.bind(id))
 
 func select_model(id:String)->void:
 	selected=id;pointer=-1;pressed_button=null
+	comparison_b=bool(comparison_versions.get(id,false))
 	for actor in actors.values():actor.preview.set_enabled(false);actor.preview.free()
 	for label in captions.values():label.free()
 	actors.clear();captions.clear()
 	var ids:Array=(["uram","hangyeol","saebom"] if category=="allies" else ANIMALS).duplicate() if id=="all" else [id]
 	for key in ids:
-		var actor:=Actor.new();actor.create(field,key,comparison_b);field.move_child(actor.preview,1)
+		var actor:=Actor.new();actor.create(field,key,bool(comparison_versions.get(key,false)));field.move_child(actor.preview,1)
 		actor.configure(battle)
 		actors[key]=actor
-		captions[key]=text(field,NAMES[key]+(" · B" if key=="hangyeol" and comparison_b else ""),Rect2(0,0,150,32),22)
+		captions[key]=text(field,NAMES[key]+(" · B" if Poly.MODELS.has(key) and comparison_versions.get(key,false) else ""),Rect2(0,0,150,32),22)
 		var brush:=StyleBoxFlat.new();brush.bg_color=Color("162e2a");brush.set_corner_radius_all(6)
 		captions[key].add_theme_stylebox_override("normal",brush)
 	for key in model_buttons:model_buttons[key].modulate=Color.WHITE if key==id else Color(.7,.7,.7)
@@ -196,9 +200,10 @@ func play_motion(id:String)->void:
 
 func restart()->void:play_motion(selection)
 func toggle_comparison()->void:
-	if selected!="hangyeol":return
+	if not Poly.MODELS.has(selected):return
 	var clock:=age
 	comparison_b=not comparison_b
+	comparison_versions[selected]=comparison_b
 	select_model(selected)
 	age=clock;render_frame();refresh()
 func set_rate(value:float)->void:
@@ -248,9 +253,12 @@ func refresh()->void:
 	for value in speed_buttons:skin(speed_buttons[value],ROUND_GOLD if value==rate else ROUND_SILVER)
 	show_switch(battle_button,battle);show_switch(route_button,route)
 	status.text=("아군 · 3명 비교" if category=="allies" else "CH1 · 4종 비교") if selected=="all" else NAMES[selected]
-	comparison_button.visible=selected=="hangyeol"
-	comparison_button.text="B · 11,979 Tris ⇄ A" if comparison_b else "A · 60,037 Tris ⇄ B"
-	if selected=="hangyeol":status.text+=" · "+("B · 11,979 Tris" if comparison_b else "A · 60,037 Tris")
+	comparison_button.visible=Poly.MODELS.has(selected)
+	if Poly.MODELS.has(selected):
+		var spec:Dictionary=Poly.MODELS[selected]
+		var variant_text:String=("B · %s Tris"%spec.b) if comparison_b else ("A · %s Tris"%spec.a)
+		comparison_button.text=variant_text+(" ⇄ A" if comparison_b else " ⇄ B")
+		status.text+=" · "+variant_text
 	status.position.x=690 if category=="animals" else 605
 	motion_status.position.x=status.position.x
 	status.size.x=240 if category=="animals" else 330
