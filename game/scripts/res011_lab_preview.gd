@@ -25,6 +25,7 @@ var character := "hangyeol"
 var shared_motion_view := false
 var animation: AnimationPlayer
 var use_run_candidate := true
+var extra_motions := false
 var excluded_playlist_clips:PackedStringArray=[]
 var environment: Environment
 var cool_fill: DirectionalLight3D
@@ -47,6 +48,7 @@ func build_villager() -> void:
 	camera.position = GAME_CAMERA
 	camera.look_at(GAME_AIM)
 	animation = model.find_children("*","AnimationPlayer",true,false)[0]
+	if extra_motions:preload("res://scripts/model_motion_profile.gd").install(animation,character)
 	if use_run_candidate:
 		var library:=animation.get_animation_library("").duplicate()
 		library.remove_animation("run")
@@ -117,19 +119,25 @@ func sample_motion(key: String, seconds: float) -> void:
 				var period:=Timing.duration(character,clip,float(segment.native_length))
 				at=fposmod(maxf(0.0,seconds-float(segment.start)),period)
 				break
+	sample_clip(clip,at,seconds)
+
+func sample_clip(clip:String,at:float,source_clock:=NAN)->void:
 	var previous:String=animation.current_animation
-	var dt:=clampf(seconds-last_sample,0.0,.1)
-	if seconds<last_sample:dt=1.0/30.0
-	last_sample=seconds
+	var clock:=at if is_nan(source_clock) else source_clock
+	var dt:=clampf(clock-last_sample,0.0,.1)
+	if clock<last_sample:dt=1.0/30.0
+	last_sample=clock
 	if previous!=clip:
 		if previous in ["walk","run"]:extract_tail=.1
-		animation.play(clip,.1 if Timing.enabled and clip!=JUMP_CLIP else 0.0)
+		var addition:=clip.begins_with("req") or previous.begins_with("req")
+		if addition:skeleton.reset_bone_poses()
+		animation.play(clip,.1 if Timing.enabled and clip!=JUMP_CLIP and not addition else 0.0)
 	animation.advance(dt if Timing.enabled else 0.0)
 	animation.seek(Timing.sample(character,clip,at,animation.get_animation(clip).length),true)
 	# Extract locomotion only for this fixed lab comparison, without deleting any source channels.
 	# Skill/recoil travel remains native. The real hunt keeps its original controller and models.
 	extract_tail=maxf(0.0,extract_tail-dt)
 	pivot.position=Vector3.ZERO
-	if Timing.enabled and clip!=JUMP_CLIP and root_bone>=0 and (clip in ["walk","run"] or extract_tail>0):
+	if Timing.enabled and clip!=JUMP_CLIP and not clip.begins_with("req") and root_bone>=0 and (clip in ["walk","run"] or extract_tail>0):
 		var delta:=skeleton.get_bone_pose_position(root_bone)-skeleton.get_bone_rest(root_bone).origin
 		pivot.position=-(skeleton.global_basis*Vector3(delta.x,0,delta.z))

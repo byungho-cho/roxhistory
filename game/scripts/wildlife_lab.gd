@@ -101,7 +101,7 @@ func select_animal(key:String)->void:
 	motion_buttons.clear()
 	selected=key
 	preview=Preview.new()
-	preview.model_path="res://assets/animals/d0059/"+ANIMALS[key].file
+	preview.model_path=preload("res://scripts/model_motion_profile.gd").ANIMAL_MODELS[key]
 	preview.render_size_factor=.75
 	preview.scale=Vector2.ONE*.92
 	preview.position=Vector2(480,325)

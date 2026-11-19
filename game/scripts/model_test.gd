@@ -16,7 +16,7 @@ const RATES=[3.0,2.5,2.0,1.75,1.5,1.0,.5]
 const ALLIES=["hangyeol","uram","saebom"]
 const ANIMALS=["forest","stag","juvenile","adult"]
 const NAMES={"hangyeol":"한결","uram":"우람","saebom":"새봄","forest":"숲사슴","stag":"산수사슴","juvenile":"어린 수퇘지","adult":"큰 멧돼지"}
-const ORDER=["idle","walk","run","attack","hit","skill","full","guard","counter","death"]
+const ORDER=["idle","walk","run","attack","hit","skill","chain","guard","counter","death","full"]
 var app:Node
 var canvas:Control
 var field:Control
@@ -172,6 +172,8 @@ func rebuild_motions()->void:
 	for i in keys.size():
 		var id:String=keys[i]
 		var title:String=Catalog.MOTIONS.get(id,Wildlife.MOTIONS.get(id,id))
+		if category=="allies" and id=="skill":title="일반 스킬"
+		if category=="allies" and id=="chain":title="연계 스킬"
 		if category=="allies" and id=="guard":title="가드"
 		if category=="animals" and id=="attack":title="기본 공격"
 		motion_buttons[id]=button(motions,title,Rect2((i%7)*144.6,(i/7)*80.8,132.6,72.8),play_motion.bind(id))
@@ -232,6 +234,12 @@ func play_motion(id:String)->void:
 	render_frame();refresh()
 
 func restart()->void:play_motion(selection)
+
+func chain_start(key:String)->float:
+	if selected!="all" or category!="allies" or selection!="chain":return 0.0
+	if key=="saebom":return actors.uram.duration
+	if key=="hangyeol":return actors.uram.duration+actors.saebom.duration
+	return 0.0
 func paired_comparison()->bool:return Poly.MODELS.has(selected) and not running_comparison
 func toggle_running_comparison()->void:
 	if selected not in ["hangyeol","saebom"]:return
@@ -286,12 +294,20 @@ func render_frame()->void:
 		var velocity=p.skeleton.global_basis*source.stride/source.duration
 		common_velocity=(p.camera.unproject_position(velocity)-p.camera.unproject_position(Vector3.ZERO))*p.display.scale*p.scale
 	for key in actors:
-		var actor:Actor=actors[key];actor.sample(local_age,false) if running_comparison else actor.sample(age,route)
+		var actor:Actor=actors[key]
+		var start:=chain_start(key)
+		if age<start:
+			actor.resident_sample("idle",0.0)
+		else:
+			actor.sample(local_age,false) if running_comparison else actor.sample(age-start,route)
 		var travel:float=actor.preview.get_meta("route_fraction",0.0)
 		var direction:=Vector2(.82,-.36) if battle else Vector2(1,.28)
 		actor.preview.position=actor.preview.get_meta("ground")+direction*travel*field.size.x*.12
 		if running_comparison:actor.preview.position=actor.preview.get_meta("ground")+common_velocity*local_age
 		captions[key].position=actor.preview.position+Vector2(-75,18)
+	if selected=="all" and category=="allies":
+		if selection=="chain":actors.saebom.face_support(actors.hangyeol.screen_anchor())
+		else:actors.saebom.configure(battle)
 
 func refresh()->void:
 	for id in motion_buttons:
@@ -324,7 +340,7 @@ func fit()->void:
 	factor=minf(factor,region.size.y/logical_size.y)
 	canvas.scale=Vector2.ONE*factor;canvas.position=region.position+(region.size-logical_size*factor)*.5
 	field.size=Vector2(1540,logical_size.y-150);hud.size=Vector2(field.size.x,120)
-	motions.position=Vector2(24,field.size.y-(177.6 if category=="allies" else 96.8))
+	motions.position=Vector2(24,field.size.y-177.6)
 	var control_scale:=minf(1,(field.size.y-155)/856.0)
 	speeds.scale=Vector2.ONE*control_scale;speeds.position=Vector2(field.size.x-30-96*control_scale,131)
 	restart_button.scale=Vector2.ONE*control_scale

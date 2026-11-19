@@ -4,6 +4,7 @@ const ASSETS := "res://assets/characters/d0048/"
 const CLUB_SIZE := Vector2(1.43,.53)
 var variant := 0
 var use_retouch := false
+var extra_motions := false
 var comparison_model_path := ""
 var club_tilt := 0.0
 var shield_push := 0.0
@@ -28,6 +29,7 @@ func build_villager() -> void:
 	var rig := packed.instantiate() as Node3D
 	pivot.add_child(rig)
 	animator = rig.find_children("*","AnimationPlayer",true,false)[0]
+	if extra_motions:preload("res://scripts/model_motion_profile.gd").install(animator,"uram")
 	skeleton = rig.find_children("*","Skeleton3D",true,false)[0]
 	root_bone = skeleton.find_bone("root")
 	for item in rig.find_children("*","MeshInstance3D",true,false):
@@ -79,7 +81,7 @@ func show_pose(clip: String, seconds: float) -> void:
 	var rest := skeleton.get_bone_rest(root_bone).origin
 	# Offset the entire preview so skin and equipment share the same root motion
 	# compensation without changing the clip's bone transforms.
-	pivot.position = -(skeleton.global_basis * Vector3(anchor.x-rest.x,0.0,anchor.z-rest.z))
+	pivot.position = Vector3.ZERO if clip.begins_with("req") else -(skeleton.global_basis * Vector3(anchor.x-rest.x,0.0,anchor.z-rest.z))
 	skeleton.force_update_all_bone_transforms()
 	if use_retouch:
 		var phase := clampf(seconds/clip_length(clip),0.0,1.0)

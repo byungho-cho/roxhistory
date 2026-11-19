@@ -8,7 +8,9 @@ const Animal = preload("res://scripts/wildlife_lab_preview.gd")
 const Hunt = preload("res://scripts/deer_hunt_screen.gd")
 const Poly = preload("res://scripts/model_test_poly_catalog.gd")
 const RunPreview=preload("res://scripts/run_comparison_preview.gd")
-const ANIMAL_ORDER=["idle","walk","run","attack","hit","skill"]
+const Profile=preload("res://scripts/model_motion_profile.gd")
+const ANIMAL_ORDER=["idle","walk","run","attack","hit","skill","death"]
+const ALLY_ORDER=["idle","walk","run","attack","hit","guard","counter","skill","chain","death"]
 var key:String
 var preview:HybridCharacter
 var motion := "idle"
@@ -17,25 +19,27 @@ var duration := 0.0
 var active_clip := ""
 var stride:=Vector3.ZERO
 var root_start:=Vector3.ZERO
+var support_yaw:=0.0
 
 func resident_root()->Vector3:
 	return preview.skeleton.get_bone_pose_position(preview.root_bone)
 
 func resident_sample(id:String,clock:float)->void:
 	if preview is Uram:preview.show_pose(clip_for(id),clock)
-	else:preview.sample_motion(id,clock)
+	elif preview is RunPreview and id=="run":preview.sample_motion(id,clock)
+	else:preview.sample_clip(clip_for(id),clock)
 
 func create(parent:Node, id:String,comparison_b:=false,run_variant:="")->void:
 	key=id
 	if Wildlife.ANIMALS.has(key):
 		preview=Animal.new()
-		preview.model_path="res://assets/animals/d0059/"+Wildlife.ANIMALS[key].file
-		if comparison_b and Poly.MODELS.has(key):preview.model_path=Poly.MODELS[key].file
+		preview.model_path=Profile.ANIMAL_MODELS[key]
+		preview.profile_key=key
 	elif key=="uram":
-		preview=Uram.new();preview.use_retouch=true
+		preview=Uram.new();preview.use_retouch=true;preview.extra_motions=true
 	else:
 		preview=Residents.new() if run_variant.is_empty() else RunPreview.new()
-		preview.character=key;preview.shared_motion_view=true
+		preview.character=key;preview.shared_motion_view=true;preview.extra_motions=true
 		if not run_variant.is_empty():preview.variant=run_variant
 		if key=="hangyeol":preview.excluded_playlist_clips=PackedStringArray(["stone_spear_thrust"])
 	preview.render_size_factor=.75
@@ -44,6 +48,32 @@ func create(parent:Node, id:String,comparison_b:=false,run_variant:="")->void:
 	preview.viewport.size=Vector2i(1536,960)
 	preview.camera.size=7.0*960.0/720.0
 	configure(false)
+	if key=="saebom":
+		resident_sample("chain",.78)
+		var skeleton=preview.skeleton
+		var chest=skeleton.get_bone_global_pose(skeleton.find_bone("spine")).origin
+		var hands=(skeleton.get_bone_global_pose(skeleton.find_bone("hand.R")).origin+skeleton.get_bone_global_pose(skeleton.find_bone("hand.L")).origin)*.5
+		var gesture=preview.pivot.global_basis.inverse()*skeleton.global_basis*(hands-chest)
+		support_yaw=atan2(gesture.x,gesture.z)
+		resident_sample("idle",0.0)
+
+func screen_anchor()->Vector2:
+	var skeleton=preview.skeleton
+	var bone=skeleton.find_bone("spine")
+	if bone<0:bone=preview.root_bone
+	var point=skeleton.global_transform*skeleton.get_bone_global_pose(bone).origin
+	return preview.position+(preview.display.position+preview.camera.unproject_position(point)*preview.display.scale)*preview.scale
+
+func face_support(target:Vector2)->void:
+	# Calibrate the authored palm gesture, then invert the current camera's
+	# ground projection. Actor ground markers are not always at chest centers.
+	var origin=preview.camera.unproject_position(Vector3.ZERO)
+	var x=preview.camera.unproject_position(Vector3.RIGHT)-origin
+	var z=preview.camera.unproject_position(Vector3.BACK)-origin
+	for i in 2:
+		var delta=target-screen_anchor()
+		var world=Vector2(delta.cross(z),x.cross(delta))/x.cross(z)
+		preview.pivot.rotation.y=atan2(world.x,world.y)-support_yaw
 
 func configure(battle:bool)->void:
 	var animal := Wildlife.ANIMALS.has(key)
@@ -55,29 +85,30 @@ func configure(battle:bool)->void:
 
 func clip_for(id:String)->String:
 	if Wildlife.ANIMALS.has(key):
-		if id in ["idle","walk","run"]:return id
-		if id=="hit":return "hit_reaction"
-		if id=="attack":return "antler_ram" if key in ["forest","stag"] else "basic_attack"
-		if id=="skill":return "front_hoof_slam" if key in ["forest","stag"] else "charge_ram" if key=="juvenile" else "heavy_charge_ram"
-		return ""
+		return Profile.animal_clip(key,id)
+	if Profile.ALLY_CLIPS[key].has(id):return Profile.ALLY_CLIPS[key][id]
 	return Catalog.CLIPS[key].get(id,"")
 
 func supported(id:String)->bool:
 	return id=="full" or not clip_for(id).is_empty()
 
 func span(id:String)->float:
-	if preview is Animal:return preview.length(clip_for(id))
+	if preview is Animal:
+		if id=="skill":return preview.length("req046_skill_anticipation")+preview.length("req046_skill_execute")
+		return preview.presentation_length(clip_for(id))
 	if preview is Uram:return preview.clip_length(clip_for(id))
-	return preview.motion_duration(id)
+	if preview is RunPreview and id=="run":return preview.motion_duration(id)
+	var clip:=clip_for(id)
+	return Residents.Timing.duration(key,clip,preview.animation.get_animation(clip).length)
 
 func play(id:String)->void:
 	motion=id if supported(id) else "idle"
 	active_clip=""
 	segments.clear()
 	duration=0
-	if motion=="full" and preview is Animal:
+	if motion=="full":
 		var included:Array=[]
-		for item in ANIMAL_ORDER:
+		for item in (ANIMAL_ORDER if preview is Animal else ALLY_ORDER):
 			if supported(item):
 				var clip:=clip_for(item)
 				if clip in included:continue
@@ -98,10 +129,11 @@ func sample(age:float, route:bool)->void:
 	var id:=motion
 	var at:=age
 	if not segments.is_empty():
-		id="idle";at=0
+		var last:Dictionary=segments[-1]
+		id=last.key;at=maxf(0,age-float(last.start))
 		for segment in segments:
 			if age<float(segment.end):id=segment.key;at=age-float(segment.start);break
-	elif id not in Catalog.REPEATS and age>=duration:id="idle";at=maxf(0,age-duration)
+	elif id!="death" and id not in Catalog.REPEATS and age>=duration:id="idle";at=maxf(0,age-duration)
 	var period:=span(id)
 	var moving:=id in ["walk","run"]
 	var travel_period:=period
@@ -112,6 +144,10 @@ func sample(age:float, route:bool)->void:
 	# The animal adapter preserves native root travel and stops after two cycles.
 	if preview is Animal:
 		var clip:=clip_for(id)
+		if id=="skill":
+			var preparation:float=preview.length("req046_skill_anticipation")
+			clip="req046_skill_anticipation" if at<preparation else "req046_skill_execute"
+			at=at if at<preparation else at-preparation
 		if active_clip!=clip:preview.start(clip);active_clip=clip
 		preview.sample(at,route)
 	else:
