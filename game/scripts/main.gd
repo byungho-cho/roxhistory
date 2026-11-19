@@ -2025,7 +2025,7 @@ func show_development_settings()->void:
 	DevelopmentSettings.open(self)
 	enable_settings_backdrop()
 
-func start_parry_lab() -> void:
+func start_parry_lab(model_only := false) -> void:
 	if screen != "play" or modal or not application_active: return
 	if gestures: gestures.clear()
 	if is_instance_valid(joystick): joystick.clear()
@@ -2036,7 +2036,7 @@ func start_parry_lab() -> void:
 	if is_instance_valid(building_workflow):
 		parry_work_mode = building_workflow.process_mode
 		building_workflow.process_mode = Node.PROCESS_MODE_DISABLED
-	parry_lab = preload("res://scripts/parry_lab.gd").new()
+	parry_lab = preload("res://scripts/model_test.gd").new() if model_only else preload("res://scripts/parry_lab.gd").new()
 	parry_lab.app = self
 	parry_lab.z_index = 57
 	parry_lab.exited.connect(exit_parry_lab)
@@ -2064,6 +2064,19 @@ func add_parry_lab_entry(at: Vector2) -> void:
 	flask.z_index = 36
 	picture(flask,preload("res://assets/ui/d0031/lab-flask.png"),Rect2(8,8,32,32))
 	flask.tooltip_text = "실험실 · 우람 받아치기"
+	var model_button := button(stage,"",func():start_parry_lab(true),false,"","")
+	model_button.name="ModelTestEntry"
+	model_button.custom_minimum_size=Vector2.ZERO
+	model_button.position=at+Vector2(0,57)
+	model_button.size=Vector2(48,48)
+	model_button.z_index=36
+	model_button.tooltip_text="모델 테스트"
+	# Reserve the next row rather than overlap the existing performance shortcut.
+	debug_shortcut.position.y+=57
+	for pair in [[flask,preload("res://assets/ui/d0060/round-silver.svg")],[model_button,preload("res://assets/ui/d0060/round-gold.svg")]]:
+		var box:=StyleBoxTexture.new();box.texture=pair[1]
+		for state in ["normal","hover","pressed","focus"]:pair[0].add_theme_stylebox_override(state,box)
+	picture(model_button,preload("res://scripts/model_test.gd").portrait("hangyeol"),Rect2(9,9,30,30))
 
 func set_quest_preview_enabled(enabled: bool) -> void:
 	var previous := quest_preview_enabled
@@ -2420,7 +2433,7 @@ func close_hunt() -> void:
 
 func go_back() -> void:
 	if is_instance_valid(parry_lab):
-		if parry_lab.showing_result: parry_lab.close_results()
+		if parry_lab.has_method("close_results") and parry_lab.get("showing_result"): parry_lab.close_results()
 		else: exit_parry_lab()
 		return
 	if modal and is_instance_valid(overlay) and overlay.has_meta("full_screen_bag"):
