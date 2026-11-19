@@ -7,6 +7,7 @@ const Wildlife = preload("res://scripts/wildlife_lab.gd")
 const Animal = preload("res://scripts/wildlife_lab_preview.gd")
 const Hunt = preload("res://scripts/deer_hunt_screen.gd")
 const Poly = preload("res://scripts/model_test_poly_catalog.gd")
+const ANIMAL_ORDER=["idle","walk","run","attack","hit","skill"]
 var key:String
 var preview:HybridCharacter
 var motion := "idle"
@@ -54,7 +55,9 @@ func clip_for(id:String)->String:
 	if Wildlife.ANIMALS.has(key):
 		if id in ["idle","walk","run"]:return id
 		if id=="hit":return "hit_reaction"
-		return Wildlife.ANIMALS[key].get(id,"")
+		if id=="attack":return "antler_ram" if key in ["forest","stag"] else "basic_attack"
+		if id=="skill":return "front_hoof_slam" if key in ["forest","stag"] else "charge_ram" if key=="juvenile" else "heavy_charge_ram"
+		return ""
 	return Catalog.CLIPS[key].get(id,"")
 
 func supported(id:String)->bool:
@@ -71,8 +74,12 @@ func play(id:String)->void:
 	segments.clear()
 	duration=0
 	if motion=="full" and preview is Animal:
-		for item in Wildlife.MOTIONS:
+		var included:Array=[]
+		for item in ANIMAL_ORDER:
 			if supported(item):
+				var clip:=clip_for(item)
+				if clip in included:continue
+				included.append(clip)
 				var length:=span(item)*(2 if item in ["walk","run"] else 1)
 				segments.append({"key":item,"start":duration,"end":duration+length})
 				duration+=length

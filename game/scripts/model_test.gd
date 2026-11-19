@@ -11,7 +11,8 @@ const BLUE=preload("res://assets/ui/d0026/common-sapphire-default.svg")
 const SILVER=preload("res://assets/ui/d0049/button-stone-silver@2x.png")
 const ROUND_GOLD=preload("res://assets/ui/d0060/round-gold.svg")
 const ROUND_SILVER=preload("res://assets/ui/d0060/round-silver.svg")
-const RATES=[3.0,2.5,2.0,1.75,1.5,1.25,1.0,.5]
+const ROUND_RUBY=preload("res://assets/ui/d0063/round-ruby.svg")
+const RATES=[3.0,2.5,2.0,1.75,1.5,1.0,.5]
 const ALLIES=["hangyeol","uram","saebom"]
 const ANIMALS=["forest","stag","juvenile","adult"]
 const NAMES={"hangyeol":"한결","uram":"우람","saebom":"새봄","forest":"숲사슴","stag":"산수사슴","juvenile":"어린 수퇘지","adult":"큰 멧돼지"}
@@ -72,7 +73,7 @@ func _ready()->void:
 	var ground:=Art.picture(field,preload("res://assets/ui/hunting-formation/clearing-dirt.png"),Rect2())
 	ground.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT);ground.stretch_mode=TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	hud=ColorRect.new();hud.color=Color(0,0,0,.5);hud.mouse_filter=MOUSE_FILTER_IGNORE;field.add_child(hud)
-	selectors=Control.new();field.add_child(selectors);selectors.position=Vector2(38,26)
+	selectors=Control.new();field.add_child(selectors);selectors.position=Vector2(24,15.8);selectors.scale=Vector2.ONE*1.3
 	category_buttons.allies=icon_button(selectors,"hangyeol",Rect2(0,0,68,68),choose_category.bind("allies"),false)
 	category_buttons.animals=icon_button(selectors,"adult",Rect2(80,0,68,68),choose_category.bind("animals"),false)
 	var divider:=ColorRect.new();divider.color=Color("64796c");divider.position=Vector2(168,12);divider.size=Vector2(1,44);divider.mouse_filter=MOUSE_FILTER_IGNORE;selectors.add_child(divider)
@@ -84,11 +85,15 @@ func _ready()->void:
 	battle_button=switch_button("전장뷰",0,toggle_battle)
 	route_button=switch_button("고정 경로",180,toggle_route)
 	speeds=Control.new();field.add_child(speeds)
-	text(speeds,"배속",Rect2(0,0,64,27),20)
-	for i in RATES.size():speed_buttons[RATES[i]]=button(speeds,str(RATES[i]),Rect2(0,32+i*69,64,64),set_rate.bind(RATES[i]),"round")
+	text(speeds,"배속",Rect2(0,0,96,27),20)
+	for i in RATES.size():
+		var item:=button(speeds,str(RATES[i]),Rect2(0,32+i*102,96,96),set_rate.bind(RATES[i]),"round")
+		item.add_theme_font_size_override("font_size",29);item.modulate.a=.8
+		speed_buttons[RATES[i]]=item
 	motions=Control.new();field.add_child(motions)
-	restart_button=button(field,"↻",Rect2(1446,966,64,64),restart,"round")
-	restart_button.add_theme_font_size_override("font_size",34)
+	restart_button=button(field,"↻",Rect2(1414,934,96,96),restart,"round")
+	skin(restart_button,ROUND_RUBY);restart_button.modulate.a=.8
+	restart_button.add_theme_font_size_override("font_size",51)
 	resized.connect(fit)
 	choose_category("allies")
 	fit()
@@ -154,12 +159,12 @@ func choose_category(value:String)->void:
 	for i in ids.size():model_buttons[ids[i]]=icon_button(selectors,ids[i],Rect2(189+i*80,0,68,68),select_model.bind(ids[i]))
 	model_buttons.all=button(selectors,"ALL",Rect2(189+ids.size()*80+12,0,68,68),select_model.bind("all"),"round")
 	for key in category_buttons:category_buttons[key].modulate=Color.WHITE if key==category else Color(.65,.65,.65)
-	rebuild_motions();select_model("all")
+	rebuild_motions();select_model("all");fit()
 
 func rebuild_motions()->void:
 	for item in motion_buttons.values():item.free()
 	motion_buttons.clear()
-	var keys:Array=ORDER if category=="allies" else ["idle","walk","run","attack","hit","full","slam","ram","charge"]
+	var keys:Array=ORDER if category=="allies" else Actor.ANIMAL_ORDER+["full"]
 	for i in keys.size():
 		var id:String=keys[i]
 		var title:String=Catalog.MOTIONS.get(id,Wildlife.MOTIONS.get(id,id))
@@ -195,6 +200,7 @@ func select_model(id:String)->void:
 		polygon_labels[id]=text(field,Poly.LABELS[id][0],Rect2(0,0,260,36),28)
 		polygon_labels[right_id]=text(field,Poly.LABELS[id][1],Rect2(0,0,260,36),28)
 	for key in model_buttons:model_buttons[key].modulate=Color.WHITE if key==id else Color(.7,.7,.7)
+	skin(model_buttons.all,ROUND_GOLD if id=="all" else ROUND_SILVER)
 	var next:=selection if motion_buttons.has(selection) else "idle"
 	var supported:=false
 	for actor in actors.values():supported=supported or actor.supported(next)
@@ -265,9 +271,9 @@ func refresh()->void:
 	show_switch(battle_button,battle);show_switch(route_button,route)
 	status.text=("아군 · 3명 비교" if category=="allies" else "CH1 · 4종 비교") if selected=="all" else NAMES[selected]
 	if paired_comparison():status.text+=" · 원본 / 경량판"
-	status.position.x=690 if category=="animals" else 605
+	status.position.x=805
 	motion_status.position.x=status.position.x
-	status.size.x=240 if category=="animals" else 330
+	status.size.x=330
 	motion_status.size.x=status.size.x
 	field.get_node("StatusBrush").position.x=status.position.x
 	motion_status.text=motion_buttons[selection].text+" · "+str(rate)+"배속"
@@ -282,10 +288,12 @@ func fit()->void:
 	factor=minf(factor,region.size.y/logical_size.y)
 	canvas.scale=Vector2.ONE*factor;canvas.position=region.position+(region.size-logical_size*factor)*.5
 	field.size=Vector2(1540,logical_size.y-150);hud.size=Vector2(field.size.x,120)
-	motions.position=Vector2(24,field.size.y-177.6)
-	var speed_scale:=minf(1,(field.size.y-250)/580.0)
-	speeds.scale=Vector2.ONE*speed_scale;speeds.position=Vector2(field.size.x-30-64*speed_scale,140+(field.size.y-250-580*speed_scale)*.5)
-	restart_button.position=Vector2(field.size.x-94,field.size.y-88)
+	motions.position=Vector2(24,field.size.y-(177.6 if category=="allies" else 96.8))
+	var control_scale:=minf(1,(field.size.y-155)/856.0)
+	speeds.scale=Vector2.ONE*control_scale;speeds.position=Vector2(field.size.x-30-96*control_scale,131)
+	restart_button.scale=Vector2.ONE*control_scale
+	restart_button.position=Vector2(field.size.x-30-96*control_scale,field.size.y-24-96*control_scale)
+	# Keep the same right edge at every aspect ratio while fitting the rail.
 	layout_actors()
 
 func advance(delta:float)->void:
