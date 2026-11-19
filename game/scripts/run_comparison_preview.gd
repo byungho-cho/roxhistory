@@ -4,6 +4,7 @@ var variant:="A"
 const CLIP_NAME:="d0064_run_C"
 
 func build_villager()->void:
+	use_run_candidate=false
 	super.build_villager()
 	if variant=="C":
 		var library=animation.get_animation_library("").duplicate()
@@ -21,7 +22,7 @@ func sample_motion(key:String,seconds:float)->void:
 	motion_key="run"
 	var clip:=CLIP_NAME if variant=="C" else "run"
 	var at:=fposmod(seconds,motion_duration("run"))
-	if variant=="A":at=Timing.sample(character,"run",at,animation.get_animation("run").length)
+	if variant=="A":at=Timing.phase(Timing.CURVES[character].run,at/Timing.RUN_PERIOD,true)*animation.get_animation("run").length
 	elif variant=="B":at*=1.5
 	if animation.current_animation!=clip:animation.play(clip,0.0)
 	animation.seek(at,true)

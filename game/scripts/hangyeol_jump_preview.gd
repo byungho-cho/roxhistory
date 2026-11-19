@@ -48,7 +48,7 @@ func show_jump(direction: Vector2, seconds: float) -> void:
 	for child in legacy_visuals: child.hide()
 	jump_model.show()
 	pivot.rotation.y = atan2(direction.x,direction.y)
-	jump_animation.seek(clampf(seconds,0,R03.JUMP_SECONDS),true)
+	jump_animation.seek(R03.Timing.event_sample("hangyeol",R03.JUMP_CLIP,seconds,R03.JUMP_CONTACT_SECONDS,R03.JUMP_SECONDS),true)
 	jump_skeleton.force_update_all_bone_transforms()
 	display.position = -camera.unproject_position(Vector3.ZERO)*display.scale
 	viewport.render_target_update_mode = SubViewport.UPDATE_ONCE

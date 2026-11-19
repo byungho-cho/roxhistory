@@ -38,7 +38,6 @@ func create(parent:Node, id:String,comparison_b:=false,run_variant:="")->void:
 		preview.character=key;preview.shared_motion_view=true
 		if not run_variant.is_empty():preview.variant=run_variant
 		if key=="hangyeol":preview.excluded_playlist_clips=PackedStringArray(["stone_spear_thrust"])
-		if key=="hangyeol" and comparison_b:preview.comparison_model_path="res://assets/characters/d0061/hangyeol-B-12k.glb"
 	preview.render_size_factor=.75
 	parent.add_child(preview)
 	preview.set_enabled(true)
@@ -105,9 +104,11 @@ func sample(age:float, route:bool)->void:
 	elif id not in Catalog.REPEATS and age>=duration:id="idle";at=maxf(0,age-duration)
 	var period:=span(id)
 	var moving:=id in ["walk","run"]
-	if route and moving:at=minf(at,period*2)
+	var travel_period:=period
+	if moving and preview is Residents:travel_period*=Residents.Timing.rate(key,clip_for(id))
+	if route and moving:at=minf(at,travel_period*2)
 	var clock:=fposmod(at,period) if id in Catalog.REPEATS else at
-	if route and moving and at>=period*2:clock=period-.00001
+	if route and moving and at>=travel_period*2:clock=period-.00001
 	# The animal adapter preserves native root travel and stops after two cycles.
 	if preview is Animal:
 		var clip:=clip_for(id)
@@ -116,10 +117,9 @@ func sample(age:float, route:bool)->void:
 	else:
 		resident_sample(id,clock)
 		if route and moving and stride.length()>.02:
-			var cycles:=mini(1,floori(at/period))
-			var anchor:=resident_root()-root_start;anchor.y=0
-			preview.pivot.position+=preview.skeleton.global_basis*(anchor+stride*cycles)
+			# Visual cadence changes never multiply the preview's path velocity.
+			preview.pivot.position+=preview.skeleton.global_basis*stride*(at/travel_period)
 	# Resident locomotion is authored in-place in the deployed lab. Move only
 	# the 2D ground anchor for its fixed path, never the camera or skill roots.
-	preview.set_meta("route_fraction",clampf(at/(period*2),0,1) if route and moving and not preview is Animal and stride.length()<=.02 else 0.0)
+	preview.set_meta("route_fraction",clampf(at/(travel_period*2),0,1) if route and moving and not preview is Animal and stride.length()<=.02 else 0.0)
 	preview.viewport.render_target_update_mode=SubViewport.UPDATE_ONCE

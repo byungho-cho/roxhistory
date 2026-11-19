@@ -306,7 +306,7 @@ func refresh()->void:
 	if paired_comparison():status.text+=" · 원본 / 경량판"
 	if running_comparison:status.text+=" · 달리기 A/B/C"
 	running_button.visible=selected in ["hangyeol","saebom"]
-	running_button.text=("경량 비교로" if selected=="hangyeol" else "기본 보기로") if running_comparison else "달리기 비교"
+	running_button.text="기본 보기로" if running_comparison else "달리기 비교"
 	status.position.x=805
 	motion_status.position.x=status.position.x
 	status.size.x=330

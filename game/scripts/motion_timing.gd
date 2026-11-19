@@ -2,6 +2,10 @@ extends RefCounted
 ## Visual clocks only. Combat rules, root skill travel and global speed are not owned here.
 static var enabled := true
 const RUN_PERIOD := .4 # Measured approved Uram lab run; actual legacy hunt has no run clip.
+const ALLY_RATES := {
+	"hangyeol":{"idle":1.5,"walk":1.5,"hit_reaction":1.2,"jump_spear_auto_r03":2.0,"spear_guard":1.5,"parry_counter":1.5},
+	"saebom":{"idle":1.5,"walk":1.5,"hit_reaction":2.0,"sling_heavy":3.0,"sling_cast":3.0,"parry_counter":1.5},
+}
 const CURVES := {
 	"hangyeol":{
 		"run":[Vector2(0,0),Vector2(.22,.26),Vector2(.50,.50),Vector2(.72,.76),Vector2(1,1)],
@@ -24,7 +28,16 @@ const CURVES := {
 const LEGACY := [Vector2(0,0),Vector2(.26,.18),Vector2(.50,.50),Vector2(.72,.82),Vector2(1,1)]
 
 static func duration(character:String,clip:String,native:float) -> float:
-	return RUN_PERIOD if enabled and clip=="run" and character in ["hangyeol","saebom"] else native
+	return native/rate(character,clip)
+
+static func rate(character:String,clip:String)->float:
+	return float(ALLY_RATES.get(character,{}).get(clip,1.0)) if enabled else 1.0
+
+# Keep authored gameplay events and action locks on their existing clocks.
+# An accelerated visual starts later, reaches the same event, then recovers faster.
+static func event_sample(character:String,clip:String,seconds:float,event_seconds:float,native:float)->float:
+	var multiplier:=rate(character,clip)
+	return clampf((seconds-event_seconds*(1.0-1.0/multiplier))*multiplier,0.0,native)
 
 static func phase(points:Array,t:float,cyclic:=false) -> float:
 	t=clampf(t,0,1)
@@ -53,7 +66,7 @@ static func phase(points:Array,t:float,cyclic:=false) -> float:
 static func sample(character:String,clip:String,seconds:float,native:float) -> float:
 	var length:=duration(character,clip,native)
 	var t:=clampf(seconds/length,0,1)
-	if enabled and CURVES.get(character,{}).has(clip):t=phase(CURVES[character][clip],t,clip=="run")
+	if enabled and clip!="run" and CURVES.get(character,{}).has(clip):t=phase(CURVES[character][clip],t)
 	return t*native
 
 static func combat_phase(t:float) -> float:

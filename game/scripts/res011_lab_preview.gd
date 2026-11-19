@@ -3,7 +3,7 @@ extends HybridCharacter
 const ASSETS := "res://assets/characters/d0057/"
 const Timing := preload("res://scripts/motion_timing.gd")
 const Catalog := preload("res://scripts/lab_motion_catalog.gd")
-const JUMP_MODEL := "res://assets/characters/d0055/hangyeol-auto-r03.glb"
+const JUMP_MODEL := "res://assets/characters/d0061/hangyeol-B-12k.glb"
 const JUMP_CLIP := "jump_spear_auto_r03"
 const JUMP_SECONDS := 3.2
 const JUMP_CONTACT_SECONDS := 94.0/60.0
@@ -24,7 +24,7 @@ var timeline: Dictionary = {}
 var character := "hangyeol"
 var shared_motion_view := false
 var animation: AnimationPlayer
-var comparison_model_path := ""
+var use_run_candidate := true
 var excluded_playlist_clips:PackedStringArray=[]
 var environment: Environment
 var cool_fill: DirectionalLight3D
@@ -38,7 +38,7 @@ func _ready() -> void:
 	display.position = -camera.unproject_position(Vector3.ZERO)*display.scale
 
 func build_villager() -> void:
-	var packed := load(comparison_model_path if not comparison_model_path.is_empty() else ASSETS+character+"-req035.glb") as PackedScene
+	var packed := load(JUMP_MODEL if character=="hangyeol" else ASSETS+character+"-req035.glb") as PackedScene
 	var model := packed.instantiate() as Node3D
 	pivot.add_child(model)
 	model.scale = Vector3.ONE*1.24
@@ -47,6 +47,11 @@ func build_villager() -> void:
 	camera.position = GAME_CAMERA
 	camera.look_at(GAME_AIM)
 	animation = model.find_children("*","AnimationPlayer",true,false)[0]
+	if use_run_candidate:
+		var library:=animation.get_animation_library("").duplicate()
+		library.remove_animation("run")
+		library.add_animation("run",load("res://assets/characters/d0064/"+character+"-run-C.tres"))
+		animation.remove_animation_library("");animation.add_animation_library("",library)
 	skeleton = model.find_children("*","Skeleton3D",true,false)[0]
 	root_bone = skeleton.find_bone("root")
 	animation.callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_MANUAL
@@ -77,9 +82,11 @@ func playlist() -> Array:
 	for source in timeline.segments:
 		if source.clip in excluded_playlist_clips:continue
 		var segment:Dictionary=source.duplicate()
-		var native:float=segment.native_length
-		var loops:float=roundf(float(segment.duration)/native) if segment.clip in ["walk","run"] else 1.0
-		var length:float=Timing.duration(character,segment.clip,native)*loops if segment.clip in ["walk","run"] else float(segment.duration)
+		var old_native:float=segment.native_length
+		var native:float=animation.get_animation(segment.clip).length
+		segment.native_length=native
+		var loops:float=roundf(float(segment.duration)/old_native) if segment.clip in ["walk","run"] else float(segment.duration)/old_native
+		var length:float=Timing.duration(character,segment.clip,native)*loops
 		segment.start=cursor
 		segment.end=cursor+length
 		cursor+=length
