@@ -6,6 +6,8 @@ Baseline: D0060 / 0.2.259 / 9aa64e83753ac9b27a70a43ab9de5adcb5968f3a.
 Remote main was still 4ecd7e7 (0.2.258); the released D0060 commit is preserved as the task parent.
 R03 supersedes the initially fetched instruction. Local R03 text SHA-256: ec63305fe13ff844ff19d32f1879ab0a5145dda04814905a3d2dda5388bb100c.
 
+Final upload readback found a newly edited R04 in the same Drive file. R04 adds REQ-042 motion reform to the combined release, whereas the user's direct message for this manual task explicitly says motion reform is separate. The direct user scope is retained: no motion reform is inferred or applied from that later document edit. This conflict is reported in the handoff; an explicit user scope update is needed before adding that work. All other prepared items and the REQ-040 release hold remain unchanged.
+
 ## Release gate
 
 REQ-040 lightweight wildlife GLBs are not present in the provided folder at final manual readback. Do not substitute models, expose unfinished animal comparison slots, or publish this partial patch. All four originals remain unchanged. REQ-042 motion reform is separate. No release version bump, build/release publication, merge or monitoring activation is performed here.
