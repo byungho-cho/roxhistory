@@ -82,8 +82,8 @@ func resource_rail_rect() -> Rect2:
 		var available := minimap_hit_rect().position.x-2.0-right
 		right += clampf(available,0.0,app.h*(50.0/1546.0))
 	if not portrait_layout:
-		right=minf(app.w-app.safe.x,right-12.0+100.0)
-		top=maxf(0.0,top-20.0)
+		right=minf(app.w-app.safe.x,right-12.0+100.0)-5.0
+		top=maxf(0.0,top-20.0)+5.0
 	return Rect2(right-width,top,width,RESOURCE_RAIL_SIZE.y*width/RESOURCE_RAIL_SIZE.x)
 
 func slot(kind: String) -> Rect2:
@@ -144,7 +144,7 @@ func draw_resource_rail(font: Font) -> void:
 	draw_set_transform(Vector2.ZERO)
 
 func minimap_center() -> Vector2:
-	return Vector2(app.w-app.safe.x-50,app.safe.y+48+app.h*.04)
+	return Vector2(app.w-app.safe.x-50,app.safe.y+58+app.h*.04)
 
 func settings_rect()->Rect2:
 	return Rect2(minimap_center()+Vector2(14,-66),Vector2(36,36))
