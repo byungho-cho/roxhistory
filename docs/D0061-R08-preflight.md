@@ -10,3 +10,7 @@ User explicitly confirmed R08 and excluded resource-download architecture separa
 - Continue to use existing build/publish scripts and signing material; no download-architecture split, save reset, key replacement or monitoring activation.
 
 Conditional release remains held until the missing approved motion inputs and required verification are satisfied. Existing 0.2.259 distribution remains usable.
+
+## Subsequent direct user decision
+
+The user explicitly confirmed that REQ-042 final approval is unavailable and instructed preserving current Hangyeol/Saebom motions, shipping the other D0061 work after APK validation, with reform separate later. The prior motion-input release gate is therefore revoked. No RES-043 candidate is imported. The packaging candidate measured 818,844,031 bytes, above the 800,000,000-byte in-game APK catalog limit; use a direct same-signer APK link, not that prompt. Final build size/hash must be checked again after this documentation/patch-note commit. Actual device overwrite remains unverified because ADB has no device; report static signer/package checks and host-side save compatibility separately.
