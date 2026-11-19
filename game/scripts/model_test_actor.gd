@@ -117,8 +117,13 @@ func sample(age:float, route:bool)->void:
 	else:
 		resident_sample(id,clock)
 		if route and moving and stride.length()>.02:
-			# Visual cadence changes never multiply the preview's path velocity.
-			preview.pivot.position+=preview.skeleton.global_basis*stride*(at/travel_period)
+			if preview is Residents:
+				# Visual cadence changes never multiply the preview's path velocity.
+				preview.pivot.position+=preview.skeleton.global_basis*stride*(at/travel_period)
+			else:
+				var cycles:=mini(1,floori(at/period))
+				var anchor:=resident_root()-root_start;anchor.y=0
+				preview.pivot.position+=preview.skeleton.global_basis*(anchor+stride*cycles)
 	# Resident locomotion is authored in-place in the deployed lab. Move only
 	# the 2D ground anchor for its fixed path, never the camera or skill roots.
 	preview.set_meta("route_fraction",clampf(at/(travel_period*2),0,1) if route and moving and not preview is Animal and stride.length()<=.02 else 0.0)
