@@ -1,6 +1,6 @@
 extends HybridCharacter
 
-const ASSETS := "res://assets/characters/d0056/"
+const ASSETS := "res://assets/characters/d0057/"
 const Catalog := preload("res://scripts/lab_motion_catalog.gd")
 const JUMP_MODEL := "res://assets/characters/d0055/hangyeol-auto-r03.glb"
 const JUMP_CLIP := "jump_spear_auto_r03"
@@ -31,7 +31,7 @@ func _ready() -> void:
 	display.position = -camera.unproject_position(Vector3.ZERO)*display.scale
 
 func build_villager() -> void:
-	var packed := load(ASSETS+("hangyeol-lab-req031.glb" if character=="hangyeol" else "saebom-req028.glb")) as PackedScene
+	var packed := load(ASSETS+character+"-req035.glb") as PackedScene
 	var model := packed.instantiate() as Node3D
 	pivot.add_child(model)
 	model.scale = Vector3.ONE*1.24
@@ -41,7 +41,7 @@ func build_villager() -> void:
 	camera.look_at(GAME_AIM)
 	animation = model.find_children("*","AnimationPlayer",true,false)[0]
 	animation.callback_mode_process = AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_MANUAL
-	timeline = JSON.parse_string(FileAccess.get_file_as_string(ASSETS+"hangyeol-timeline.json"))
+	timeline = JSON.parse_string(FileAccess.get_file_as_string(ASSETS+character+"-timeline.json"))
 	animation.play("idle")
 	animation.advance(0.0)
 	if character=="saebom" and not shared_motion_view:
@@ -64,7 +64,7 @@ func motion_supported(key: String) -> bool:
 
 func motion_duration(key: String) -> float:
 	if not motion_supported(key): return 0.0
-	if character=="hangyeol" and key=="full": return float(timeline.seconds)
+	if key=="full": return float(timeline.seconds)
 	return animation.get_animation(Catalog.CLIPS[character][key]).length
 
 func duration() -> float:
