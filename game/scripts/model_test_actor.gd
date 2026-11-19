@@ -48,7 +48,7 @@ func create(parent:Node, id:String,comparison_b:=false,run_variant:="")->void:
 	preview.viewport.size=Vector2i(1536,960)
 	preview.camera.size=7.0*960.0/720.0
 	configure(false)
-	if key=="saebom":
+	if key=="saebom" and run_variant.is_empty():
 		resident_sample("chain",.78)
 		var skeleton=preview.skeleton
 		var chest=skeleton.get_bone_global_pose(skeleton.find_bone("spine")).origin
@@ -164,4 +164,5 @@ func sample(age:float, route:bool)->void:
 	# the 2D ground anchor for its fixed path, never the camera or skill roots.
 	preview.set_meta("route_fraction",clampf(at/(travel_period*2),0,1) if route and moving and not preview is Animal and stride.length()<=.02 else 0.0)
 	preview.viewport.render_target_update_mode=SubViewport.UPDATE_ONCE
+
 
