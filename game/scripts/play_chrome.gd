@@ -144,7 +144,7 @@ func draw_resource_rail(font: Font) -> void:
 	draw_set_transform(Vector2.ZERO)
 
 func minimap_center() -> Vector2:
-	return Vector2(app.w-app.safe.x-50,app.safe.y+78+app.h*.04)
+	return Vector2(app.w-app.safe.x-50,app.safe.y+48+app.h*.04)
 
 func settings_rect()->Rect2:
 	return Rect2(minimap_center()+Vector2(14,-66),Vector2(36,36))
