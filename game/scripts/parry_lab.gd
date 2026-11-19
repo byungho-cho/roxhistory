@@ -54,6 +54,8 @@ var motion_caption: Label
 var motion_buttons: Dictionary = {}
 var comparison_button: Button
 var appearance_comparison: AppearanceComparison
+var wildlife_lab: Control
+var wildlife_entry: Button
 var all_motion: AllMotion
 var all_motion_buttons: Dictionary = {}
 var mode_buttons: Dictionary = {}
@@ -187,6 +189,9 @@ func _ready() -> void:
 	for actor in actors: actor.set_enabled(false)
 
 func build_test_picker() -> void:
+	wildlife_entry=make_button("야생동물",Rect2(0,0,120,40),open_wildlife_lab)
+	apply_game_button_art(wildlife_entry)
+	wildlife_entry.reparent(self,false)
 	motion_canvas = Art.layer(self,Vector2.ZERO)
 	motion_status = make_label("동작을 선택해 주세요",Rect2(230,162,500,42),24)
 	motion_status.reparent(motion_canvas,false)
@@ -219,6 +224,22 @@ func build_test_picker() -> void:
 		control.set_pressed_no_signal(key==selected_character)
 		control.reparent(self,false)
 		character_buttons[key] = control
+
+func open_wildlife_lab()->void:
+	if is_instance_valid(wildlife_lab):return
+	reset_test()
+	set_process(false)
+	wildlife_lab=preload("res://scripts/wildlife_lab.gd").new()
+	wildlife_lab.app=app
+	wildlife_lab.z_index=20
+	wildlife_lab.exited.connect(close_wildlife_lab)
+	add_child(wildlife_lab)
+
+func close_wildlife_lab()->void:
+	if not is_instance_valid(wildlife_lab):return
+	wildlife_lab.queue_free()
+	wildlife_lab=null
+	set_process(true)
 
 func select_character(value: String) -> void:
 	if not CHARACTERS.has(value): return
@@ -488,6 +509,7 @@ func fit() -> void:
 	results_button.position = Vector2(right,top)
 	retry_button.position = Vector2(right,region.end.y-CONTROL_TARGET-SCREEN_MARGIN)
 	var middle := region.get_center().x
+	wildlife_entry.position=Vector2(middle+216,top+43)
 	for index in character_buttons.size():
 		character_buttons[CHARACTERS.keys()[index]].position=Vector2(middle-196+100*index,top+43)
 	mode_buttons.parry.position=Vector2(middle-172,top+88)
@@ -603,13 +625,14 @@ func build_results() -> void:
 		button.reparent(results,false)
 
 func _input(event: InputEvent) -> void:
+	if is_instance_valid(wildlife_lab):return
 	if showing_result and scroll_report(event):
 		get_viewport().set_input_as_handled()
 		return
 	if event is InputEventScreenTouch:
 		if event.pressed:
 			if touch_id >= 0: return
-			var buttons: Array = result_buttons if showing_result else [exit_button,results_button,retry_button] + character_buttons.values() + mode_buttons.values()
+			var buttons: Array = result_buttons if showing_result else [exit_button,results_button,retry_button,wildlife_entry] + character_buttons.values() + mode_buttons.values()
 			if not showing_result:
 				if mode=="parry" and selected_character=="uram": buttons.append_array(card_buttons+skill_buttons)
 				elif mode=="motion" or (mode=="parry" and selected_character!="uram"):
