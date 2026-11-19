@@ -7,6 +7,7 @@ const Wildlife = preload("res://scripts/wildlife_lab.gd")
 const Animal = preload("res://scripts/wildlife_lab_preview.gd")
 const Hunt = preload("res://scripts/deer_hunt_screen.gd")
 const Poly = preload("res://scripts/model_test_poly_catalog.gd")
+const RunPreview=preload("res://scripts/run_comparison_preview.gd")
 const ANIMAL_ORDER=["idle","walk","run","attack","hit","skill"]
 var key:String
 var preview:HybridCharacter
@@ -24,7 +25,7 @@ func resident_sample(id:String,clock:float)->void:
 	if preview is Uram:preview.show_pose(clip_for(id),clock)
 	else:preview.sample_motion(id,clock)
 
-func create(parent:Node, id:String,comparison_b:=false)->void:
+func create(parent:Node, id:String,comparison_b:=false,run_variant:="")->void:
 	key=id
 	if Wildlife.ANIMALS.has(key):
 		preview=Animal.new()
@@ -33,7 +34,9 @@ func create(parent:Node, id:String,comparison_b:=false)->void:
 	elif key=="uram":
 		preview=Uram.new();preview.use_retouch=true
 	else:
-		preview=Residents.new();preview.character=key;preview.shared_motion_view=true
+		preview=Residents.new() if run_variant.is_empty() else RunPreview.new()
+		preview.character=key;preview.shared_motion_view=true
+		if not run_variant.is_empty():preview.variant=run_variant
 		if key=="hangyeol":preview.excluded_playlist_clips=PackedStringArray(["stone_spear_thrust"])
 		if key=="hangyeol" and comparison_b:preview.comparison_model_path="res://assets/characters/d0061/hangyeol-B-12k.glb"
 	preview.render_size_factor=.75

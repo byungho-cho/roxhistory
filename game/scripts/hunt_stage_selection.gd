@@ -13,10 +13,13 @@ shader_type canvas_item;
 uniform sampler2D minimum_plate : filter_linear;
 void fragment() {
 	vec2 p=UV*vec2(1280.0,720.0);
-	vec3 pixel=texture(TEXTURE,UV).rgb;
+	// Enlarge just the flame around its ground contact, not the whole camp.
+	vec2 flame=vec2(126.0,375.0)+(p-vec2(126.0,375.0))/1.45;
+	vec3 pixel=texture(TEXTURE,flame/vec2(1280.0,720.0)).rgb;
 	// The source plume starts above the old tent roof. Re-anchor its base
 	// to the fire without moving either the source video or its playback clock.
-	vec2 plume=vec2(p.x,(p.y-375.0)/1.6+285.0);
+	float height=clamp((375.0-p.y)/285.0,0.0,1.0);
+	vec2 plume=vec2(126.0+(p.x-126.0)/mix(1.0,1.35,height),(p.y-375.0)/1.8+285.0);
 	vec3 vapour=texture(TEXTURE,plume/vec2(1280.0,720.0)).rgb;
 	vec3 plate=texture(minimum_plate,(plume-vec2(40.0,100.0))/vec2(200.0,300.0)).rgb;
 	float area=smoothstep(70.0,90.0,plume.x)*(1.0-smoothstep(215.0,235.0,plume.x))*smoothstep(125.0,145.0,plume.y)*(1.0-smoothstep(275.0,295.0,plume.y));
@@ -25,11 +28,12 @@ void fragment() {
 	float light=dot(vapour,vec3(.299,.587,.114));
 	float base=dot(plate,vec3(.299,.587,.114));
 	float change=light-base;
-	float smoke=clamp((change-.04)/max(.15,1.0-base)*1.6,0.0,.8)*smoothstep(.04,.09,change)*neutral*area;
-	float fire_area=1.0-smoothstep(.65,1.0,length((p-vec2(126.0,361.0))/vec2(29.0,43.0)));
+	float smoke=clamp((change-.035)/max(.15,1.0-base)*.8,0.0,.36)*smoothstep(.035,.09,change)*neutral*area;
+	smoke*=smoothstep(65.0,145.0,p.y)*(1.0-smoothstep(365.0,395.0,p.y));
+	float fire_area=1.0-smoothstep(.65,1.0,length((flame-vec2(126.0,361.0))/vec2(29.0,43.0)));
 	float fire=fire_area*smoothstep(.52,.85,pixel.r)*smoothstep(.08,.30,pixel.r-pixel.b)*smoothstep(.22,.52,dot(pixel,vec3(.299,.587,.114)));
 	float alpha=max(smoke,fire);
-	COLOR=vec4(mix(vec3(1.0),pixel,fire/max(.001,fire+smoke)),alpha);
+	COLOR=vec4(mix(vec3(.91,.92,.92),pixel,fire/max(.001,fire+smoke)),alpha);
 }
 """
 const STAGE_ROW_Y := 385.0
@@ -40,6 +44,9 @@ const BOSS := preload(ART+"08-ui-stage-finalboss-crest.png")
 const FIELD := preload(ART+"02-meadow-background.png")
 const CLEAN_FIELD := preload("res://assets/ui/d0061/meadow-clean.png")
 const TENT := preload("res://assets/ui/d0061/tent.png")
+# 54 source pixels are about 80 screen pixels at the unfolded review scale.
+# All camp parts share this offset; vertical position and tent size stay fixed.
+const CAMP_SHIFT := Vector2(-54,0)
 const TENT_RECT := Rect2(872,285,137,92)
 const CAMP_SOURCE := Vector2(126,375)
 const CAMP_TARGET := Vector2(937,374)
@@ -247,7 +254,7 @@ func fit_camp_idle() -> void:
 	for layer in [camp_idle,camp_still]:
 		if not is_instance_valid(layer):continue
 		layer.size=MEADOW*CAMP_SCALE*cover
-		layer.position=offset+(CAMP_TARGET-CAMP_SOURCE*CAMP_SCALE)*cover
+		layer.position=offset+(CAMP_TARGET+CAMP_SHIFT-CAMP_SOURCE*CAMP_SCALE)*cover
 
 func _input(event: InputEvent) -> void:
 	if not is_visible_in_tree() or not app.application_active:return
@@ -354,8 +361,8 @@ func draw_page() -> void:
 	backdrop.size=size
 	var cover:=maxf(size.x/MEADOW.x,size.y/MEADOW.y)
 	var offset:=(size-MEADOW*cover)*.5
-	tent.position=offset+TENT_RECT.position*cover;tent.size=TENT_RECT.size*cover
-	tent_shadow.position=offset+Vector2(899,365)*cover;tent_shadow.size=Vector2(86,18)*cover
+	tent.position=offset+(TENT_RECT.position+CAMP_SHIFT)*cover;tent.size=TENT_RECT.size*cover
+	tent_shadow.position=offset+(Vector2(899,365)+CAMP_SHIFT)*cover;tent_shadow.size=Vector2(86,18)*cover
 	fit_camp_idle()
 	sync_camp_idle()
 	layout_boar()

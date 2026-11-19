@@ -49,6 +49,8 @@ var pointer:=-1
 var pressed_button:Button
 var logical_size:=Vector2(1600,1200)
 var comparison_versions:Dictionary={}
+var running_comparison:=false
+var running_button:Button
 
 static func portrait(id:String)->Texture2D:
 	var source:=load("res://assets/ui/d0060/"+id+".png") as Texture2D
@@ -94,6 +96,8 @@ func _ready()->void:
 	restart_button=button(field,"↻",Rect2(1414,934,96,96),restart,"round")
 	skin(restart_button,ROUND_RUBY);restart_button.modulate.a=.8
 	restart_button.add_theme_font_size_override("font_size",51)
+	running_button=button(canvas,"달리기 비교",Rect2(1100,30,240,56),toggle_running_comparison)
+	running_button.add_theme_font_size_override("font_size",20)
 	resized.connect(fit)
 	choose_category("allies")
 	fit()
@@ -152,7 +156,7 @@ func show_switch(item:Button,enabled:bool)->void:
 	for state in ["normal","hover","pressed","focus"]:item.add_theme_stylebox_override(state,StyleBoxEmpty.new())
 
 func choose_category(value:String)->void:
-	category=value;selected="all"
+	category=value;selected="all";running_comparison=false
 	for item in model_buttons.values():item.free()
 	model_buttons.clear()
 	var ids:Array=ALLIES if category=="allies" else ANIMALS
@@ -173,6 +177,7 @@ func rebuild_motions()->void:
 		motion_buttons[id]=button(motions,title,Rect2((i%7)*144.6,(i/7)*80.8,132.6,72.8),play_motion.bind(id))
 
 func select_model(id:String)->void:
+	if id!=selected:running_comparison=false
 	selected=id;pointer=-1;pressed_button=null
 	for actor in actors.values():actor.preview.set_enabled(false);actor.preview.free()
 	for label in captions.values():label.free()
@@ -180,7 +185,7 @@ func select_model(id:String)->void:
 	actors.clear();captions.clear();polygon_labels.clear()
 	var ids:Array=(["uram","hangyeol","saebom"] if category=="allies" else ANIMALS).duplicate() if id=="all" else [id]
 	for key in ids:
-		var actor:=Actor.new();actor.create(field,key,false if paired_comparison() else bool(comparison_versions.get(key,false)));field.move_child(actor.preview,1)
+		var actor:=Actor.new();actor.create(field,key,false if paired_comparison() or running_comparison else bool(comparison_versions.get(key,false)),"A" if running_comparison else "");field.move_child(actor.preview,1)
 		actor.configure(battle)
 		actors[key]=actor
 		captions[key]=text(field,NAMES[key]+(" · B" if Poly.MODELS.has(key) and comparison_versions.get(key,false) else ""),Rect2(0,0,150,32),22)
@@ -199,6 +204,17 @@ func select_model(id:String)->void:
 		captions[id].hide();captions[right_id].hide()
 		polygon_labels[id]=text(field,Poly.LABELS[id][0],Rect2(0,0,260,36),28)
 		polygon_labels[right_id]=text(field,Poly.LABELS[id][1],Rect2(0,0,260,36),28)
+	elif running_comparison:
+		for variant in ["A","B","C"]:
+			var key:String=id if variant=="A" else id+"_"+variant
+			if variant!="A":
+				var actor:=Actor.new();actor.create(field,id,false,variant);actor.configure(battle)
+				actors[key]=actor;field.move_child(actor.preview,1)
+				captions[key]=text(field,"",Rect2(),20)
+			captions[key].hide()
+			var label:String=variant+" · "+("현행" if variant=="A" else "원본 1.5배" if variant=="B" else "리폼 후보")
+			label+="\n%.3f초"%actors[key].preview.motion_duration("run")
+			polygon_labels[key]=text(field,label,Rect2(0,0,260,68),24)
 	for key in model_buttons:model_buttons[key].modulate=Color.WHITE if key==id else Color(.7,.7,.7)
 	skin(model_buttons.all,ROUND_GOLD if id=="all" else ROUND_SILVER)
 	var next:=selection if motion_buttons.has(selection) else "idle"
@@ -207,6 +223,7 @@ func select_model(id:String)->void:
 	layout_actors();play_motion(next if supported else "idle");refresh()
 
 func play_motion(id:String)->void:
+	if running_comparison and id not in ["idle","run"]:return
 	var supported:=false
 	for actor in actors.values():supported=supported or actor.supported(id)
 	if not supported:return
@@ -215,7 +232,12 @@ func play_motion(id:String)->void:
 	render_frame();refresh()
 
 func restart()->void:play_motion(selection)
-func paired_comparison()->bool:return Poly.MODELS.has(selected)
+func paired_comparison()->bool:return Poly.MODELS.has(selected) and not running_comparison
+func toggle_running_comparison()->void:
+	if selected not in ["hangyeol","saebom"]:return
+	running_comparison=not running_comparison
+	selection="run" if running_comparison else "idle"
+	select_model(selected)
 func set_rate(value:float)->void:
 	if value not in RATES:return
 	rate=value;refresh()
@@ -244,33 +266,47 @@ func layout_actors()->void:
 			ground.x=field.size.x*(.30 if index==0 else .67)
 			ground.y=minf(ground.y,field.size.y-210)
 			if field.size.y<700:ground.y=field.size.y-200
+		elif running_comparison:
+			ground=Vector2(field.size.x*(.12+.28*index),field.size.y*.62 if field.size.y>=700 else field.size.y-200)
 		actor.preview.set_meta("ground",ground)
 		actor.preview.position=ground
 		actor.preview.scale=Vector2.ONE*.92*(1.3 if key=="uram" else 1.05 if category=="allies" else 1.0)*(field.size.x/960.0)
-		if paired_comparison():
+		if paired_comparison() or running_comparison:
 			actor.preview.scale*=minf(1,(field.size.y-300)/350.0)
 			polygon_labels[key].position=Vector2(ground.x-130,124)
 		captions[key].position=ground+Vector2(-75,18)
 		index+=1
 
 func render_frame()->void:
+	var common_velocity:=Vector2.ZERO
+	var local_age:=minf(age,.6) if running_comparison and route else age
+	if running_comparison and route and selection=="run":
+		var source:Actor=actors[selected]
+		var p=source.preview
+		var velocity=p.skeleton.global_basis*source.stride/source.duration
+		common_velocity=(p.camera.unproject_position(velocity)-p.camera.unproject_position(Vector3.ZERO))*p.display.scale*p.scale
 	for key in actors:
-		var actor:Actor=actors[key];actor.sample(age,route)
+		var actor:Actor=actors[key];actor.sample(local_age,false) if running_comparison else actor.sample(age,route)
 		var travel:float=actor.preview.get_meta("route_fraction",0.0)
 		var direction:=Vector2(.82,-.36) if battle else Vector2(1,.28)
 		actor.preview.position=actor.preview.get_meta("ground")+direction*travel*field.size.x*.12
+		if running_comparison:actor.preview.position=actor.preview.get_meta("ground")+common_velocity*local_age
 		captions[key].position=actor.preview.position+Vector2(-75,18)
 
 func refresh()->void:
 	for id in motion_buttons:
 		var supported:=false
 		for actor in actors.values():supported=supported or actor.supported(id)
+		if running_comparison and id not in ["idle","run"]:supported=false
 		motion_buttons[id].disabled=not supported
 		skin(motion_buttons[id],SILVER if id=="full" else BLUE if id==selection else GOLD)
 	for value in speed_buttons:skin(speed_buttons[value],ROUND_GOLD if value==rate else ROUND_SILVER)
 	show_switch(battle_button,battle);show_switch(route_button,route)
 	status.text=("아군 · 3명 비교" if category=="allies" else "CH1 · 4종 비교") if selected=="all" else NAMES[selected]
 	if paired_comparison():status.text+=" · 원본 / 경량판"
+	if running_comparison:status.text+=" · 달리기 A/B/C"
+	running_button.visible=selected in ["hangyeol","saebom"]
+	running_button.text=("경량 비교로" if selected=="hangyeol" else "기본 보기로") if running_comparison else "달리기 비교"
 	status.position.x=805
 	motion_status.position.x=status.position.x
 	status.size.x=330
@@ -305,7 +341,7 @@ func _input(event:InputEvent)->void:
 	if not event is InputEventScreenTouch:return
 	if event.pressed:
 		if pointer>=0:return
-		var list:Array=[back_button,battle_button,route_button,restart_button]+category_buttons.values()+model_buttons.values()+motion_buttons.values()+speed_buttons.values()
+		var list:Array=[back_button,battle_button,route_button,restart_button,running_button]+category_buttons.values()+model_buttons.values()+motion_buttons.values()+speed_buttons.values()
 		for item in list:
 			if item.is_visible_in_tree() and not item.disabled and item.get_global_rect().has_point(event.position):pointer=event.index;pressed_button=item;get_viewport().set_input_as_handled();return
 	elif event.index==pointer:
