@@ -3,8 +3,8 @@ extends RefCounted
 static var enabled := true
 const RUN_PERIOD := .4 # Measured approved Uram lab run; actual legacy hunt has no run clip.
 const ALLY_RATES := {
-	"hangyeol":{"idle":1.5,"walk":1.5,"hit_reaction":1.2,"jump_spear_auto_r03":2.0,"spear_guard":1.5,"parry_counter":1.5},
-	"saebom":{"idle":1.5,"walk":1.5,"basic_attack":1.5,"hit_reaction":2.0,"sling_heavy":3.0,"sling_cast":3.0,"parry_counter":1.5},
+	"hangyeol":{"idle":1.5,"walk":2.25,"hit_reaction":1.2,"jump_spear_auto_r03":2.0,"spear_guard":1.5,"parry_counter":1.5},
+	"saebom":{"idle":1.5,"walk":2.25,"basic_attack":1.5,"hit_reaction":2.0,"sling_heavy":3.0,"sling_cast":3.0,"parry_counter":1.5},
 }
 const CURVES := {
 	"hangyeol":{
