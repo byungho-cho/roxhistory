@@ -8,6 +8,7 @@ const ModelTest = preload("res://scripts/model_test.gd")
 const Profile = preload("res://scripts/model_motion_profile.gd")
 const Hunt = preload("res://scripts/deer_hunt_screen.gd")
 const HuntArt = preload("res://scripts/hunt_match_art.gd")
+const Presentation = preload("res://scripts/duel_motion_presenter.gd")
 const Ground = preload("res://assets/ui/hunting-formation/clearing-dirt.png")
 const UIFont = preload("res://assets/fonts/NotoSansKR.ttf")
 const SceneSize := Vector2(960,540)
@@ -35,12 +36,15 @@ var pause_caption: Label
 var name_labels: Array[Label] = []
 var selection_frames: Dictionary = {}
 var cast_from := Left
+var presentation := Presentation.new()
 var effects_layer := Node2D.new()
 var a: Actor
 var b: Actor
 var motion: Array[String] = ["idle","idle"]
 var age := [0.0,0.0]
 var contact_at := [-1.0,-1.0]
+var motion_contact := [-1.0,-1.0]
+var frame_contact := [-1.0,-1.0]
 var start_cast_at := -1.0
 var execute_at := -1.0
 var next_attack := [0.4,1.6]
@@ -278,6 +282,8 @@ func reset_round() -> void:
 	motion = ["idle","idle"]
 	age = [0.0,0.0]
 	contact_at = [-1.0,-1.0]
+	motion_contact = [-1.0,-1.0]
+	frame_contact = [-1.0,-1.0]
 	start_cast_at = -1.0
 	execute_at = -1.0
 	visual_clock = 0.0
@@ -289,6 +295,11 @@ func reset_round() -> void:
 	a.preview.position = Left
 	b.preview.position = Right
 	cast_from=Left
+	presentation.reset(rules.hp)
+	if a.key=="hangyeol":
+		a.play("attack")
+		presentation.prepare_spear(a,Left,Right-Vector2(0,33),a.duration*.55)
+		a.play("idle")
 	_start_battle_camera()
 	skill_hud.reset(a.key)
 	_render_actors()
@@ -298,10 +309,12 @@ func reset_round() -> void:
 
 func _refresh(delta := 0.0) -> void:
 	timer.text = rules.elapsed_label()
+	presentation.update_hp(rules.hp,delta)
 	for i in 2:
 		bars[i].max_value = rules.full_hp(i)
-		bars[i].value = rules.hp[i]
+		bars[i].value = presentation.hp[i]
 	skill_hud.sync(rules.sp,rules.hp[0],rules.full_hp(0),rules.living(),_can_request(),delta)
+	skill_hud.hp.value=presentation.hp[0]
 	pause_caption.visible=paused;pause_icon.visible=not paused
 	pause_button.tooltip_text="재개" if paused else "일시정지"
 	name_labels[0].text=ModelTest.NAMES[rules.ally_id]
@@ -327,9 +340,12 @@ func _act(side: int, key: String) -> void:
 	var actor := a if side == 0 else b
 	motion[side] = key
 	age[side] = 0.0
+	frame_contact[side]=-1.0
 	actor.play(key)
 	var duration: float = actor.duration
 	contact_at[side] = duration * (.55 if key == "attack" else .63)
+	if side==0 and actor.key=="hangyeol" and key in ["attack","skill"]:
+		presentation.prepare_spear(actor,Left,_position(1)-Vector2(0,33),contact_at[side])
 	if side == 0 and key != "attack":
 		start_cast_at = rules.elapsed
 	if side == 1 and key == "skill":
@@ -348,6 +364,7 @@ func _act(side: int, key: String) -> void:
 	if side == 0 and key == "chain" and actor.key != "hangyeol":
 		contact_at[side] = -1.0
 	next_attack[side] = rules.elapsed+maxf(Rules.BASIC_EVERY,duration+.26)
+	motion_contact[side]=contact_at[side]
 
 func _ally_color() -> Color:
 	return Color({"hangyeol":"#8bd7ff","uram":"#ef781e","saebom":"#ffe073"}[a.key])
@@ -375,6 +392,9 @@ func _land(side: int, key: String) -> void:
 		return
 	var defender := 1-side
 	var impact_point := _position(defender)-Vector2(0,33)
+	if side==0 and a.key=="hangyeol" and key in ["attack","skill"]:
+		# The calibrated mesh tip and the body's actual contact location coincide.
+		impact_point=presentation.spear_point(a)
 	var skill := key != "attack"
 	# Forward approach moves the actor to its strike distance. Check the
 	# simulation positions at contact instead of firing a hit from a timer alone.
@@ -403,6 +423,7 @@ func _react(side: int, key: String) -> void:
 	var actor := a if side==0 else b
 	motion[side] = key
 	age[side] = 0.0
+	frame_contact[side]=-1.0
 	actor.play(key)
 
 func _die(side: int) -> void:
@@ -410,6 +431,9 @@ func _die(side: int) -> void:
 	contact_at = [-1.0,-1.0]
 	execute_at = -1.0
 	_sound("ally_death" if side==0 else "enemy_death")
+
+func _visual_age(side:int)->float:
+	return float(frame_contact[side]) if float(frame_contact[side])>=0 else float(age[side])
 
 func _position(side: int) -> Vector2:
 	var place := Left if side==0 else Right
@@ -419,15 +443,17 @@ func _position(side: int) -> Vector2:
 		return place
 	if side==0 and motion[side]=="chain" and a.key=="uram":
 		return place
-	var elapsed := float(age[side])
+	var elapsed := _visual_age(side)
 	var duration := a.duration if side==0 else b.duration
-	var impact := float(contact_at[side])
+	var impact := float(motion_contact[side])
 	if impact <= 0.0:
 		impact = duration*.59 if side==0 or motion[side]!="skill" else float(Profile.CONTACT[b.key])
 	var windup := float(b.preview.length("req046_skill_anticipation")) if side==1 and motion[side]=="skill" else 0.0
 	var p := (elapsed-windup)/maxf(.04,impact-windup) if elapsed < impact else 1.0-(elapsed-impact)/maxf(.04,duration-impact)
 	var direction := Left.direction_to(Right)*(1.0 if side==0 else -1.0)
 	var point:=place + direction*78.0*smoothstep(0.05,0.96,clampf(p,0,1))
+	if side==0 and a.key=="hangyeol" and motion[0] in ["attack","skill"]:
+		point=place+(presentation.thrust_peak+_position(1)-presentation.thrust_target)*smoothstep(0.05,0.96,clampf(p,0,1))
 	if side==0 and motion[0] in ["skill","chain"]:point+=(cast_from-Left)*(1.0-smoothstep(0,.18,elapsed))
 	return point
 
@@ -444,7 +470,14 @@ func advance(delta: float) -> void:
 		reset_round()
 		return
 	for side in 2:
-		age[side] += delta
+		age[side]+=delta
+		# On a low-FPS frame crossing contact, show the actual contact pose once
+		# instead of skipping straight to recovery. Simulation time is untouched.
+		frame_contact[side]=contact_at[side] if float(contact_at[side])>=0 and float(age[side])>=float(contact_at[side]) else -1.0
+	# Sample both participants at this frame before evaluating contact, so FX,
+	# reactions and display HP start from the same visible hit frame.
+	_render_actors(delta)
+	for side in 2:
 		if side==1 and execute_at>=0.0 and float(age[side])>=execute_at:
 			_sound(SoundNames[b.key]+"_skill")
 			execute_at = -1.0
@@ -461,7 +494,7 @@ func advance(delta: float) -> void:
 		if motion[1]=="idle" and rules.elapsed>=float(next_attack[1]):
 			animal_attack_count += 1
 			_act(1,"skill" if animal_attack_count%3==0 else "attack")
-	_render_actors(delta)
+	_render_actors()
 	effects_layer.queue_redraw()
 	_refresh(delta)
 
@@ -481,11 +514,10 @@ func _start_battle_camera()->void:
 
 func _render_actors(delta:=0.0)->void:
 	a.preview.position=_position(0);b.preview.position=_position(1)
-	# Campaign idle/basic heading is the settled 1-1 heading, not the model
-	# viewer's direction from the formation center to the opponent.
 	if a.key=="hangyeol":
-		a.preview.pivot.rotation.y=Hunt.JumpMotion.MOTION_HEADING if motion[0] in ["idle","attack","hit","death"] else atan2((Right-Left).x,(Right-Left).y)
-	a.sample(float(age[0]),false);b.sample(float(age[1]),false)
+		a.preview.pivot.rotation.y=atan2((Right-Left).x,(Right-Left).y) if motion[0]=="chain" else presentation.thrust_yaw
+	presentation.sample(a,0,motion[0],_visual_age(0),float(next_attack[0])-rules.elapsed,delta)
+	presentation.sample(b,1,motion[1],_visual_age(1),float(next_attack[1])-rules.elapsed,delta)
 	a.place_effect();b.place_effect()
 	battle_camera.hunters.assign([a.preview]);battle_camera.rules.attacker=0
 	battle_camera.pose="strike" if start_cast_at>=0 and rules.elapsed-start_cast_at<.70 else ""
@@ -509,9 +541,11 @@ func _draw_effects() -> void:
 			var hand := center+Vector2(29,-40)
 			match effect.name:
 				"cast_hangyeol":
-					var head := hand+Vector2(25+90*p,11+14*p)
-					effects_layer.draw_line(hand,head,Color(color,alpha*.27),22.0*alpha,true)
-					effects_layer.draw_line(hand,head,Color(Color.WHITE,alpha*.85),4.0*alpha,true)
+					# Weapon trail follows the sampled mesh; no unrelated down-right beam.
+					if a.key=="hangyeol" and motion[0]=="skill":
+						var head:=presentation.spear_point(a)
+						var tail:=head+head.direction_to(_position(0))*12.0
+						effects_layer.draw_line(tail,head,Color(color,alpha*.5),3.0*alpha,true)
 				"cast_uram":
 					var at := hand+Vector2(18,2)
 					effects_layer.draw_arc(at,41,lerpf(-2.2,-.4,p),lerpf(-.8,1.3,p),30,Color(color,alpha*.55),16.0*alpha,true)
