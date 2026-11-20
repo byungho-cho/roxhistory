@@ -30,6 +30,11 @@ func run():
    lab.toggle_pause()
    for i in 30:lab.advance(1.0/120);await process_frame
    check(is_equal_approx(lab.bars[1].value,float(lab.rules.hp[1])),"HP reaches authoritative target by .22s")
+ # Frame crossings must show contact, not skip it or calibrate a blended pose.
+ for fps in [30,60]:
+  lab.reset_round();lab.next_attack=[999.0,999.0];lab._act(0,"attack")
+  while lab.rules.hp[1]==100:lab.advance(1.0/fps);await process_frame
+  check(lab.presentation.spear_point(lab.a).distance_to(lab._position(1)-Vector2(0,33))<.1,"exact basic contact on %d FPS hit frame"%fps)
  # Portrait cast from a live approach retains position and real weapon contact.
  for at in [.08,.22]:
   lab.reset_round();lab._act(0,"attack");lab.advance(at);lab.rules.sp=2

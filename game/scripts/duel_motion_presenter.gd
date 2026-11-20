@@ -81,6 +81,10 @@ func prepare_spear(actor,origin:Vector2,target:Vector2,contact:float)->void:
 			var local:=spear_skeleton.to_local(mesh.to_global(vertex))
 			var distance:=local.distance_squared_to(rest.origin)
 			if distance>longest:longest=distance;tip_in_hand=rest.affine_inverse()*local
+	# Do not calibrate from a partially blended idle/attack pose. The lab's
+	# explicit bone crossfade below owns the transition used in actual play.
+	p.animation.play(actor.clip_for(actor.motion),0.0)
+	p.animation.advance(0)
 	actor.sample(contact,false)
 	spear_skeleton.force_update_all_bone_transforms()
 	var ideal:=origin+origin.direction_to(target+Vector2(0,33))*78.0
