@@ -11,8 +11,12 @@ const HuntArt = preload("res://scripts/hunt_match_art.gd")
 const Ground = preload("res://assets/ui/hunting-formation/clearing-dirt.png")
 const UIFont = preload("res://assets/fonts/NotoSansKR.ttf")
 const SceneSize := Vector2(960,540)
-const Left := Vector2(397,333)
-const Right := Vector2(563,351)
+const Left := Hunt.HUNTER_BATTLE_CENTER+(Hunt.ALLY_CELLS[0]-Hunt.FORMATION_CENTER)*.62
+const Right := Hunt.DEER_SLOT
+# Preserve latest model proportions; these projection scales match the measured
+# settled 1-1 Han/deer heights (63.885 / 67.540 logical pixels at 960x540).
+const HANGYEOL_BATTLE_SCALE := .76588
+const FOREST_BATTLE_SCALE := .82588
 const SP_COST := {"skill":2,"chain":3}
 const SoundPath := "res://assets/audio/hunt-duel-lab/"
 const SoundNames := {"hangyeol":"han", "uram":"uram", "saebom":"bom", "forest":"deer", "adult":"boar"}
@@ -20,7 +24,17 @@ const SoundNames := {"hangyeol":"han", "uram":"uram", "saebom":"bom", "forest":"
 var app: Node
 var rules := Rules.new()
 var arena := Control.new()
-var field := Node2D.new()
+var field := Control.new()
+var ground: TextureRect
+# Reuse the campaign battle camera implementation, without adding its scene or rules to the tree.
+var battle_camera := Hunt.new()
+var paused := false
+var pause_button: Button
+var pause_icon: TextureRect
+var pause_caption: Label
+var name_labels: Array[Label] = []
+var selection_frames: Dictionary = {}
+var cast_from := Left
 var effects_layer := Node2D.new()
 var a: Actor
 var b: Actor
@@ -35,7 +49,7 @@ var visual_clock := 0.0
 var fx: Array[Dictionary] = []
 var controls: Dictionary = {}
 var timer: Label
-var bars: Array[ProgressBar] = []
+var bars: Array[TextureProgressBar] = []
 var skill_hud: SkillHUD
 var skill_button: Button
 var chain_button: Button
@@ -51,7 +65,8 @@ var touch_buttons: Array[Button] = []
 func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	theme = Theme.new()
-	var bold:=FontVariation.new();bold.base_font=UIFont;bold.variation_opentype={"wght":700}
+	var bold:=FontVariation.new();bold.base_font=UIFont
+	bold.variation_opentype={TextServerManager.get_primary_interface().name_to_tag("wght"):700.0}
 	theme.default_font = bold
 	var backdrop := ColorRect.new()
 	backdrop.color = Color("#1d1712")
@@ -59,15 +74,16 @@ func _ready() -> void:
 	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(arena)
 	arena.size = SceneSize
-	arena.clip_contents = true
+	arena.clip_contents = false
+	arena.mouse_filter=MOUSE_FILTER_IGNORE
+	field.mouse_filter=MOUSE_FILTER_IGNORE
 	arena.add_child(field)
-	var ground := Sprite2D.new()
-	ground.texture = Ground
-	ground.position = SceneSize * .5
-	ground.scale = Vector2.ONE * maxf(SceneSize.x/Ground.get_width(), SceneSize.y/Ground.get_height())
-	field.add_child(ground)
-	var header:=ColorRect.new();header.color=Color(.08,.10,.10,.86)
-	header.mouse_filter=MOUSE_FILTER_IGNORE;header.size=Vector2(960,119);arena.add_child(header)
+	ground=HuntArt.picture(self,Hunt.CLEARING,Rect2())
+	ground.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	ground.stretch_mode=TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	move_child(ground,1)
+	battle_camera.canvas=arena;battle_camera.battlefield=field;battle_camera.ground=ground
+	battle_camera.arrival_finished=true;battle_camera.approach=1.0
 	field.add_child(effects_layer)
 	effects_layer.z_index = 10
 	effects_layer.draw.connect(_draw_effects)
@@ -82,9 +98,21 @@ func _ready() -> void:
 	reset_round()
 
 func _fit() -> void:
-	var fit := minf(size.x/SceneSize.x,size.y/SceneSize.y)
+	var safe_start:=Vector2.ZERO
+	var safe_end:=size
+	if OS.has_feature("android"):
+		var area:=DisplayServer.get_display_safe_area()
+		var physical:=Vector2(DisplayServer.screen_get_size())
+		if physical.x>0 and physical.y>0 and area.has_area():
+			safe_start=(Vector2(area.position)*size/physical).clamp(Vector2.ZERO,size)
+			safe_end=(Vector2(area.end)*size/physical).clamp(safe_start,size)
+	var safe_size:=safe_end-safe_start
+	var fit := minf(safe_size.x/SceneSize.x,safe_size.y/SceneSize.y)
 	arena.scale = Vector2.ONE * fit
-	arena.position = (size - SceneSize*fit)*.5
+	arena.position = safe_start+(safe_size - SceneSize*fit)*.5
+	battle_camera.size=size
+	# Refit the painted ground without snapping the current combat camera ease.
+	battle_camera.update_camera(.000000000001)
 
 func _label(value: String, rect: Rect2, font_size: int) -> Label:
 	var item := Label.new()
@@ -94,8 +122,10 @@ func _label(value: String, rect: Rect2, font_size: int) -> Label:
 	item.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	item.text = value
 	item.add_theme_font_size_override("font_size", font_size)
-	item.add_theme_color_override("font_shadow_color", Color.BLACK)
-	item.add_theme_constant_override("shadow_offset_y", 2)
+	item.add_theme_color_override("font_color",Color("fff2d6"))
+	item.add_theme_color_override("font_shadow_color",Color(0,0,0,.5))
+	item.add_theme_constant_override("outline_size",0)
+	item.add_theme_constant_override("shadow_offset_y", 1)
 	arena.add_child(item)
 	return item
 
@@ -106,7 +136,7 @@ func _button(value: String, rect: Rect2, pressed: Callable) -> Button:
 	item.size = rect.size
 	item.pressed.connect(pressed)
 	item.focus_mode=Control.FOCUS_NONE
-	var texture=ModelTest.ROUND_RUBY if value=="↻" else ModelTest.ROUND_GOLD
+	var texture=preload("res://assets/ui/duel-hud/control-round-gold.svg")
 	if value in ["×","↻",""]:
 		for state in ["normal","hover","pressed","focus","disabled"]:
 			var style:=StyleBoxTexture.new();style.texture=texture
@@ -115,51 +145,66 @@ func _button(value: String, rect: Rect2, pressed: Callable) -> Button:
 	touch_buttons.append(item)
 	return item
 
+func _plaque(rect:Rect2)->Panel:
+	var panel:=Panel.new();panel.position=rect.position;panel.size=rect.size;panel.mouse_filter=MOUSE_FILTER_IGNORE
+	var style:=StyleBoxFlat.new();style.bg_color=Color(.12,.086,.055,.76);style.set_corner_radius_all(7)
+	panel.add_theme_stylebox_override("panel",style);arena.add_child(panel);return panel
+
+func _button_art(button:Button,texture:Texture2D,span:float)->TextureRect:
+	return HuntArt.picture(button,texture,Rect2((button.size-Vector2.ONE*span)*.5,Vector2.ONE*span))
+
 func _setup_ui() -> void:
-	_label("1대1 전투 · 실험실",Rect2(365,14,230,34),26)
-	timer = _label("00:00",Rect2(808,16,84,36),23)
-	_button("×",Rect2(904,16,40,38),_exit)
-	_button("↻",Rect2(746,16,44,42),reset_round).tooltip_text = "같은 조합으로 다시 시작"
+	# Local backplates only; no full-width title/header covers the battlefield.
+	_plaque(Rect2(68,10,304,52))
+	_plaque(Rect2(774,17,66,30))
+	timer=_label("00:00",Rect2(774,17,66,30),13)
+	timer.add_theme_color_override("font_color",Color("fff2d6"))
+	var exit_button:=_button("",Rect2(16,16,36,36),_exit)
+	exit_button.name="DuelClose"
+	exit_button.tooltip_text="닫기"
+	_button_art(exit_button,preload("res://assets/ui/duel-hud/close-ivory.svg"),20)
+	var reset:=_button("",Rect2(900,16,36,36),reset_round)
+	reset.name="DuelReset";reset.tooltip_text="같은 조합으로 다시 시작"
+	_button_art(reset,preload("res://assets/ui/duel-hud/restart-ivory.svg"),20)
+	pause_button=_button("",Rect2(850,16,36,36),toggle_pause)
+	pause_button.name="DuelPause"
+	pause_icon=_button_art(pause_button,preload("res://assets/ui/duel-hud/pause-ivory.svg"),20)
+	pause_caption=_label("▶",Rect2(0,0,36,36),18);pause_caption.reparent(pause_button,false)
+	pause_caption.add_theme_color_override("font_color",Color("fff2d6"))
 	var ids := ["hangyeol","uram","saebom","forest","adult"]
 	for i in ids.size():
-		var key: String = ids[i]
-		var item := _button("",Rect2(20+58*i+(24 if i>=3 else 0),16,48,48),_select.bind(key,i>=3))
-		item.icon = ModelTest.portrait(key)
-		item.expand_icon = true
-		item.tooltip_text = ["한결","우람","새봄","꽃사슴","큰 멧돼지"][i]
-		item.toggle_mode = true
-		controls[key] = item
+		var key:String=ids[i]
+		var item:=_button("",Rect2(78+54*i+(14 if i>=3 else 0),14,44,44),_select.bind(key,i>=3))
+		item.name="Select_"+key;item.toggle_mode=true
+		item.tooltip_text=["한결","우람","새봄","꽃사슴","큰 멧돼지"][i]
+		var icon=ModelTest.portrait(key) if i<3 else preload("res://assets/ui/duel-hud/deer-selector.png") if i==3 else preload("res://assets/ui/duel-hud/boar-selector.png")
+		var picture:=_button_art(item,icon,33)
+		var material:=ShaderMaterial.new();material.shader=preload("res://shaders/duel_selector_crop.gdshader");picture.material=material
+		selection_frames[key]=HuntArt.picture(item,preload("res://assets/ui/duel-hud/selection-gold.svg"),Rect2(0,0,44,44))
+		controls[key]=item
 	for i in 2:
-		var bar := ProgressBar.new()
-		bar.position = Vector2(270+264*i,95)
-		bar.size = Vector2(156,8)
-		bar.show_percentage = false
-		bar.add_theme_font_size_override("font_size",1)
-		bar.mouse_filter=MOUSE_FILTER_IGNORE
-		for style_key in ["background","fill"]:
-			var box:=StyleBoxFlat.new();box.set_corner_radius_all(4)
-			box.bg_color=Color("4a5550") if style_key=="background" else Color("76ae8e" if i==0 else "bf665c")
-			bar.add_theme_stylebox_override(style_key,box)
-		arena.add_child(bar)
-		bars.append(bar)
-	_label("평타 자동",Rect2(38,462,110,38),17)
-	if app != null:
-		_button("받아치기",Rect2(24,503,92,25),_open_parry)
-	skill_hud=SkillHUD.new()
-	skill_hud.position=Vector2(447,450)
-	arena.add_child(skill_hud)
-	skill_hud.requested.connect(_try_player)
-	skill_button=skill_hud.portrait_button
-	chain_button=skill_hud.chain_button
-	touch_buttons.append(chain_button)
-	touch_buttons.append(skill_button)
+		var at:=Vector2(273+264*i,70)
+		_plaque(Rect2(at-Vector2(8,4),Vector2(172,36)))
+		name_labels.append(_label("",Rect2(at,Vector2(156,16)),11))
+		var bar:=TextureProgressBar.new();bar.position=at+Vector2(0,20);bar.size=Vector2(156,6)
+		bar.nine_patch_stretch=true;bar.step=0;bar.mouse_filter=MOUSE_FILTER_IGNORE
+		bar.texture_under=preload("res://assets/ui/hunting-combat/png/common/hp-track.png")
+		bar.texture_progress=preload("res://assets/ui/hunting-combat/png/common/hp-fill-ally.png") if i==0 else preload("res://assets/ui/hunting-combat/png/common/hp-fill-enemy.png")
+		arena.add_child(bar);bars.append(bar)
+	skill_hud=SkillHUD.new();skill_hud.position=Vector2(447,450);arena.add_child(skill_hud)
+	skill_hud.requested.connect(_try_player);skill_button=skill_hud.portrait_button;chain_button=skill_hud.chain_button
+	touch_buttons.append(chain_button);touch_buttons.append(skill_button)
 
-func _open_parry() -> void:
-	var owner_app:=app
-	_exit()
-	owner_app.call_deferred("start_parry_lab")
+func toggle_pause()->void:
+	paused=not paused
+	touch_pointer=-1;touch_target=null
+	for player in audio_pool:player.stream_paused=paused
+	_refresh()
 
 func _exit_tree() -> void:
+	# Unparented camera driver never runs campaign processing.
+	battle_camera.hunt_audio.free()
+	battle_camera.free()
 	for player in audio_pool:
 		player.stop()
 		player.stream = null
@@ -215,6 +260,7 @@ func reset_round() -> void:
 	rules.reset(rules.ally_id,rules.enemy_id)
 	for item in audio_pool:
 		item.stop()
+		item.stream_paused=paused
 	if a == null or b == null or a.key != rules.ally_id or b.key != rules.enemy_id:
 		for actor in [a,b]:
 			if actor != null:
@@ -227,8 +273,8 @@ func reset_round() -> void:
 		b.create(field,rules.enemy_id)
 		a.configure(true)
 		b.configure(true)
-		a.preview.scale = Vector2.ONE * (1.08 if a.key == "uram" else .90)
-		b.preview.scale = Vector2.ONE * .92
+		a.preview.scale = Vector2.ONE * (HANGYEOL_BATTLE_SCALE if a.key=="hangyeol" else 1.08 if a.key=="uram" else .90)
+		b.preview.scale = Vector2.ONE * (FOREST_BATTLE_SCALE if b.key=="forest" else .92)
 	motion = ["idle","idle"]
 	age = [0.0,0.0]
 	contact_at = [-1.0,-1.0]
@@ -242,9 +288,10 @@ func reset_round() -> void:
 	b.play("idle")
 	a.preview.position = Left
 	b.preview.position = Right
-	field.scale = Vector2.ONE
-	field.position = Vector2.ZERO
+	cast_from=Left
+	_start_battle_camera()
 	skill_hud.reset(a.key)
+	_render_actors()
 	cues.clear()
 	effects_layer.queue_redraw()
 	_refresh()
@@ -254,14 +301,26 @@ func _refresh(delta := 0.0) -> void:
 	for i in 2:
 		bars[i].max_value = rules.full_hp(i)
 		bars[i].value = rules.hp[i]
-	skill_hud.sync(rules.sp,rules.hp[0],rules.full_hp(0),rules.living(),motion[0]=="idle",delta)
+	skill_hud.sync(rules.sp,rules.hp[0],rules.full_hp(0),rules.living(),_can_request(),delta)
+	pause_caption.visible=paused;pause_icon.visible=not paused
+	pause_button.tooltip_text="재개" if paused else "일시정지"
+	name_labels[0].text=ModelTest.NAMES[rules.ally_id]
+	name_labels[1].text="꽃사슴" if rules.enemy_id=="forest" else "큰 멧돼지"
 	for key in controls:
-		controls[key].set_pressed_no_signal(key in [rules.ally_id,rules.enemy_id])
+		var chosen:bool=key in [rules.ally_id,rules.enemy_id]
+		controls[key].set_pressed_no_signal(chosen)
+		selection_frames[key].visible=chosen
+
+func _can_request()->bool:
+	return not paused and rules.living() and motion[0] in ["idle","walk","run","attack","hit"]
 
 func _try_player(key: String) -> void:
-	if motion[0] != "idle" or not rules.spend(int(SP_COST[key])):
+	if not SP_COST.has(key) or not _can_request() or not rules.spend(int(SP_COST[key])):
 		return
+	cast_from=_position(0)
+	contact_at[0]=-1.0 # Cancel the interrupted automatic contact; never land it twice.
 	_act(0,key)
+	_render_actors()
 	_refresh() # Consume SP and hide readiness in the same input frame.
 
 func _act(side: int, key: String) -> void:
@@ -368,7 +427,9 @@ func _position(side: int) -> Vector2:
 	var windup := float(b.preview.length("req046_skill_anticipation")) if side==1 and motion[side]=="skill" else 0.0
 	var p := (elapsed-windup)/maxf(.04,impact-windup) if elapsed < impact else 1.0-(elapsed-impact)/maxf(.04,duration-impact)
 	var direction := Left.direction_to(Right)*(1.0 if side==0 else -1.0)
-	return place + direction*78.0*smoothstep(0.05,0.96,clampf(p,0,1))
+	var point:=place + direction*78.0*smoothstep(0.05,0.96,clampf(p,0,1))
+	if side==0 and motion[0] in ["skill","chain"]:point+=(cast_from-Left)*(1.0-smoothstep(0,.18,elapsed))
+	return point
 
 func _process(delta: float) -> void:
 	if app != null and not app.application_active:
@@ -376,6 +437,7 @@ func _process(delta: float) -> void:
 	advance(delta)
 
 func advance(delta: float) -> void:
+	if paused:return
 	visual_clock += delta
 	var revived := rules.advance(delta)
 	if not revived.is_empty():
@@ -399,19 +461,36 @@ func advance(delta: float) -> void:
 		if motion[1]=="idle" and rules.elapsed>=float(next_attack[1]):
 			animal_attack_count += 1
 			_act(1,"skill" if animal_attack_count%3==0 else "attack")
-	a.preview.position = _position(0)
-	b.preview.position = _position(1)
-	a.sample(float(age[0]),false)
-	b.sample(float(age[1]),false)
-	a.place_effect()
-	b.place_effect()
-	var focus := 0.0
-	if start_cast_at>=0.0:
-		focus = sin(PI*clampf((rules.elapsed-start_cast_at)/.70,0.0,1.0))
-	field.scale = Vector2.ONE*(1.0+.12*focus)
-	field.position = -Left*(field.scale-Vector2.ONE)
+	_render_actors(delta)
 	effects_layer.queue_redraw()
 	_refresh(delta)
+
+func _start_battle_camera()->void:
+	# Pre-roll only the production VS camera (not AI, SP, audio or rewards).
+	# This preserves the real first battle frame's residual zoom, followed by
+	# the same production-camera easing, instead of forcing a settled frame.
+	field.scale=Vector2.ONE;field.position=Vector2.ZERO
+	battle_camera.pose="";battle_camera.approach=0; battle_camera.transition_elapsed=0
+	battle_camera.update_camera(0)
+	var time:=0.0
+	while time<Hunt.TRANSITION_SECONDS:
+		time+=1.0/60.0
+		battle_camera.approach=smoothstep(.06,.98,clampf(time/Hunt.TRANSITION_SECONDS,0,1))
+		battle_camera.transition_elapsed=-1.0 if time>=Hunt.TRANSITION_SECONDS else time
+		battle_camera.update_camera(1.0/60.0)
+
+func _render_actors(delta:=0.0)->void:
+	a.preview.position=_position(0);b.preview.position=_position(1)
+	# Campaign idle/basic heading is the settled 1-1 heading, not the model
+	# viewer's direction from the formation center to the opponent.
+	if a.key=="hangyeol":
+		a.preview.pivot.rotation.y=Hunt.JumpMotion.MOTION_HEADING if motion[0] in ["idle","attack","hit","death"] else atan2((Right-Left).x,(Right-Left).y)
+	a.sample(float(age[0]),false);b.sample(float(age[1]),false)
+	a.place_effect();b.place_effect()
+	battle_camera.hunters.assign([a.preview]);battle_camera.rules.attacker=0
+	battle_camera.pose="strike" if start_cast_at>=0 and rules.elapsed-start_cast_at<.70 else ""
+	battle_camera.pose_clock=(rules.elapsed-start_cast_at)/.70*Hunt.RULES.POSE_SECONDS
+	if delta>0:battle_camera.update_camera(delta)
 
 func _flash(center: Vector2, key: String, tint: Color, duration: float) -> void:
 	fx.append({"center":center,"name":key,"color":tint,"duration":duration,"at":visual_clock})

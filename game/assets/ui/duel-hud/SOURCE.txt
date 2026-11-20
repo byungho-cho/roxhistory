@@ -7,3 +7,9 @@ saebom-skill.png / saebom-chain.jpg: 3764:12 / 3764:14. Provider chain bytes are
 Normal Han icon and portrait atlas already in d0027 are SHA256-identical to Figma fc1f6/8a87c exports and are reused.
 Uram normal and shield icons reuse existing d0027/skill-hit-B.png and d0036/uram-parry.png.
 No screenshot is used as a game asset. No temporary asset URL is used at runtime.
+
+0.2.278 Figma3879:781 revision:
+deer-selector.png / boar-selector.png: transparent enemy assets27f40 /71da4 from4026:822 /4026:823. Existing allied model-selector portraits remain in use; no new9 portrait set.
+selection-gold.svg:4026:824/825; restart-ivory.svg:4026:832; close-ivory.svg:4026:857; pause-ivory.svg:4026:841.
+selector-round-gold.svg / control-round-gold.svg:4026:798 /4026:853, exact export roots retained. Wrappers scale to their native UI slots.
+Resume uses the requested ▶ character with the same ivory color; imported pause glyph is used in the running state.

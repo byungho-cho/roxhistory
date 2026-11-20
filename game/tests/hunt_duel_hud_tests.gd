@@ -45,8 +45,8 @@ func run():
  var phase=hud.phase;step(.15)
  check(hud.phase!=phase,"only linked edge advances")
  await shot("03-both-3sp")
- # Wait for the already committed automatic attack to finish before an input.
- lab._react(0,"idle");lab._refresh()
+ # Do not force idle: tap the live automatic-combat state.
+ lab._refresh()
  await mouse_tap(hud.chain_button)
  check(lab.motion[0]=="chain" and lab.rules.sp==0,"mouse linked consumes only3")
  check(lab.cues.count("han_chain")==1 and lab.cues.count("han_skill")==0,"linked no portrait input")

@@ -75,7 +75,9 @@ func _ready() -> void:
  hp.position=Vector2(3,68);hp.size=Vector2(60,7);hp.nine_patch_stretch=true;hp.texture_under=Hunt.CARD_TRACK
  var fill:=GradientTexture2D.new();fill.width=60;fill.height=7;fill.gradient=Gradient.new()
  fill.gradient.colors=PackedColorArray([Color("93c341"),Color("93c341")]);hp.texture_progress=fill;add_child(hp)
- sp_label=_label(self,"1 / 3 SP",Rect2(71,62,62,15),10)
+ _panel(self,Rect2(70,59,76,20),Color(.12,.086,.055,.86),Color(.66,.46,.24,.6),5)
+ sp_label=_label(self,"1 / 3 SP",Rect2(72,59,72,20),13)
+ sp_label.add_theme_color_override("font_color",Color("fff2d6"))
  reset("hangyeol")
 
 func _button(parent:Node,rect:Rect2,action:String)->Button:
