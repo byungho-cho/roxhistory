@@ -2039,7 +2039,7 @@ func show_development_settings()->void:
 	DevelopmentSettings.open(self)
 	enable_settings_backdrop()
 
-func start_parry_lab(model_only := false) -> void:
+func start_parry_lab(model_only := false, duel_only := false) -> void:
 	if screen != "play" or modal or not application_active: return
 	if gestures: gestures.clear()
 	if is_instance_valid(joystick): joystick.clear()
@@ -2050,7 +2050,10 @@ func start_parry_lab(model_only := false) -> void:
 	if is_instance_valid(building_workflow):
 		parry_work_mode = building_workflow.process_mode
 		building_workflow.process_mode = Node.PROCESS_MODE_DISABLED
-	parry_lab = preload("res://scripts/model_test.gd").new() if model_only else preload("res://scripts/parry_lab.gd").new()
+	if duel_only:
+		parry_lab = preload("res://scenes/hunt_duel_lab.tscn").instantiate()
+	else:
+		parry_lab = preload("res://scripts/model_test.gd").new() if model_only else preload("res://scripts/parry_lab.gd").new()
 	parry_lab.app = self
 	parry_lab.z_index = 57
 	parry_lab.exited.connect(exit_parry_lab)
@@ -2071,13 +2074,13 @@ func exit_parry_lab() -> void:
 	if is_instance_valid(world): world.player.presentation_paused = not application_active
 
 func add_parry_lab_entry(at: Vector2) -> void:
-	var flask := button(stage,"",start_parry_lab,false,"","")
+	var flask := button(stage,"",func():start_parry_lab(false,true),false,"","")
 	flask.custom_minimum_size = Vector2.ZERO
 	flask.position = at
 	flask.size = Vector2(48,48)
 	flask.z_index = 36
 	picture(flask,preload("res://assets/ui/d0031/lab-flask.png"),Rect2(8,8,32,32))
-	flask.tooltip_text = "실험실 · 우람 받아치기"
+	flask.tooltip_text = "실험실 · 1대1 전투"
 	var model_button := button(stage,"",func():start_parry_lab(true),false,"","")
 	model_button.name="ModelTestEntry"
 	model_button.custom_minimum_size=Vector2.ZERO

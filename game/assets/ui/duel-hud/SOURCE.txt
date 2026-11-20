@@ -1,0 +1,9 @@
+Figma HUD asset provenance
+normal-warm-glow.svg: 4010:797, exact exported SVG132x132, rendered wrapper scale0.5.
+chain-bright-glow.svg: 4009:821, exact exported SVG105.6x105.6, wrapper scale0.5.
+chain-border-electric.svg: 4008:798 and chain-border-sparks.svg:4008:802, exact SVG roots retained. Only border-light visibility windows animate.
+hangyeol-chain.jpg: 4001:874 (underlying asset ef343). Provider returned JPEG bytes under a .png URL; extension corrected, bytes unchanged.
+saebom-skill.png / saebom-chain.jpg: 3764:12 / 3764:14. Provider chain bytes are JPEG; extension corrected only.
+Normal Han icon and portrait atlas already in d0027 are SHA256-identical to Figma fc1f6/8a87c exports and are reused.
+Uram normal and shield icons reuse existing d0027/skill-hit-B.png and d0036/uram-parry.png.
+No screenshot is used as a game asset. No temporary asset URL is used at runtime.

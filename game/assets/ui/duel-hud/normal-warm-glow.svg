@@ -1,0 +1,15 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="132" height="132" viewBox="0 0 132 132" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="&#236;&#157;&#188;&#235;&#176;&#152; &#236;&#164;&#128;&#235;&#185;&#132; &#194;&#183; &#235;&#148;&#176;&#235;&#156;&#187;&#237;&#149;&#156; &#235;&#176;&#176;&#234;&#178;&#189;&#234;&#180;&#145; &#194;&#183; &#237;&#149;&#156; &#235;&#178;&#136; &#236;&#131;&#129;&#236;&#138;&#185; &#237;&#155;&#132; &#236;&#158;&#148;&#236;&#158;&#148;&#237;&#149;&#152;&#234;&#178;&#140; &#236;&#156;&#160;&#236;&#167;&#128;" clip-path="url(#clip0_0_23)">
+<path id="Vector" d="M119 45C135.569 45 149 31.5685 149 15C149 -1.56854 135.569 -15 119 -15C102.431 -15 89 -1.56854 89 15C89 31.5685 102.431 45 119 45Z" fill="url(#paint0_radial_0_23)"/>
+</g>
+<defs>
+<radialGradient id="paint0_radial_0_23" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(119 15) scale(30)">
+<stop stop-color="#FFE9B2" stop-opacity="0.63"/>
+<stop offset="0.44" stop-color="#F9C675" stop-opacity="0.29"/>
+<stop offset="1" stop-color="#F9C675" stop-opacity="0"/>
+</radialGradient>
+<clipPath id="clip0_0_23">
+<rect width="132" height="132" fill="white"/>
+</clipPath>
+</defs>
+</svg>

@@ -1,0 +1,119 @@
+{
+  "files": [
+    {
+      "source": "17eCAeV-u1rCeTFfB5gySLZtOazWes1Zs",
+      "name": "ally_death.wav",
+      "sha256": "20304d923d9b81eea2b154e474f5ffba9e855555bed167410120b7823d5f44d3",
+      "status": "approved-reference"
+    },
+    {
+      "source": "17eCAeV-u1rCeTFfB5gySLZtOazWes1Zs",
+      "name": "ally_hit.wav",
+      "sha256": "d91d7f3b93eafdebe62062134dd2b13647564473ad4439b5bc318931063babaa",
+      "status": "approved-reference"
+    },
+    {
+      "source": "17eCAeV-u1rCeTFfB5gySLZtOazWes1Zs",
+      "name": "boar_basic.wav",
+      "sha256": "07805352fdd5d16a561fbfb1040a7b80f8c6bc9c05b0aeb471d00cd6ae962a8a",
+      "status": "approved-reference"
+    },
+    {
+      "source": "17eCAeV-u1rCeTFfB5gySLZtOazWes1Zs",
+      "name": "boar_hit.wav",
+      "sha256": "8cd04691b3c8e51de2dec685aaeac99b5362813345b73c89bfe4083f4c632169",
+      "status": "approved-reference"
+    },
+    {
+      "source": "17eCAeV-u1rCeTFfB5gySLZtOazWes1Zs",
+      "name": "boar_skill.wav",
+      "sha256": "255afb2ff2e4ddf6b93f7a661168e0a89038f9a0eb4c406b5a3604afaaf178a1",
+      "status": "approved-reference"
+    },
+    {
+      "source": "17eCAeV-u1rCeTFfB5gySLZtOazWes1Zs",
+      "name": "bom_basic.wav",
+      "sha256": "01326f52a2c85ae3657afc1eb15a9798a1389ba399588ad2c1f6ec9262ebdc39",
+      "status": "approved-reference"
+    },
+    {
+      "source": "17eCAeV-u1rCeTFfB5gySLZtOazWes1Zs",
+      "name": "bom_chain.wav",
+      "sha256": "c6529ade7b552ec7830664b1a3579b3c7f4b75b2798b157dbbc5698cc0bb272f",
+      "status": "approved-reference"
+    },
+    {
+      "source": "17eCAeV-u1rCeTFfB5gySLZtOazWes1Zs",
+      "name": "bom_skill.wav",
+      "sha256": "1bbf3c8551b76e5e9ec5f6e2fc6b9a00a91d1671e27d9b09310e5e2072594c1e",
+      "status": "approved-reference"
+    },
+    {
+      "source": "17eCAeV-u1rCeTFfB5gySLZtOazWes1Zs",
+      "name": "deer_basic.wav",
+      "sha256": "9327b9d443a65954bab00977a0b2cbb1b6e565e018ba4c69e5516c11df79fcde",
+      "status": "approved-reference"
+    },
+    {
+      "source": "17eCAeV-u1rCeTFfB5gySLZtOazWes1Zs",
+      "name": "deer_hit.wav",
+      "sha256": "c1261f572d1def22e63399ffcdf8c37ef530ff9a902a51147e6e727be134146c",
+      "status": "approved-reference"
+    },
+    {
+      "source": "17eCAeV-u1rCeTFfB5gySLZtOazWes1Zs",
+      "name": "deer_skill.wav",
+      "sha256": "9dcc8c6fc850a8cf4be836ecb1d60956513f7b2b85389bbc22b3046e2157730f",
+      "status": "approved-reference"
+    },
+    {
+      "source": "17eCAeV-u1rCeTFfB5gySLZtOazWes1Zs",
+      "name": "enemy_death.wav",
+      "sha256": "65677bcdf6ae99d1db7c4a658353e1522f3a0b9957ab79ab9904923bf1d0a47b",
+      "status": "approved-reference"
+    },
+    {
+      "source": "17eCAeV-u1rCeTFfB5gySLZtOazWes1Zs",
+      "name": "han_basic.wav",
+      "sha256": "5c85972ac5adbdea2830b0f66c5a8a0cb499d4dd826acf33e09d953f2fbfa165",
+      "status": "approved-reference"
+    },
+    {
+      "source": "17eCAeV-u1rCeTFfB5gySLZtOazWes1Zs",
+      "name": "han_chain.wav",
+      "sha256": "27faaeac664f3ee4be1ce3198c70563304f621315e90948de1f7edba9370ed62",
+      "status": "approved-reference"
+    },
+    {
+      "source": "17eCAeV-u1rCeTFfB5gySLZtOazWes1Zs",
+      "name": "han_skill.wav",
+      "sha256": "6bfe1ea669eb01faab9b7f6d2df04240cf3d81e9c3c633092b10250b17070711",
+      "status": "approved-reference"
+    },
+    {
+      "source": "17eCAeV-u1rCeTFfB5gySLZtOazWes1Zs",
+      "name": "uram_basic.wav",
+      "sha256": "d727542f384f751551d9775d9a51bedd4f50b72f8c8ba0434b8cf98d7a44fd62",
+      "status": "approved-reference"
+    },
+    {
+      "source": "17eCAeV-u1rCeTFfB5gySLZtOazWes1Zs",
+      "name": "uram_chain.wav",
+      "sha256": "96fb678b1ff1767d5b69b1cdf51bbb74762f218860e1278fdc91f960cadcb2c3",
+      "status": "approved-reference"
+    },
+    {
+      "source": "17eCAeV-u1rCeTFfB5gySLZtOazWes1Zs",
+      "name": "uram_skill.wav",
+      "sha256": "d90c80c5f4e38d1aabb86c71739c951d50de000425b509cabbf1ada766ecedbe",
+      "status": "approved-reference"
+    },
+    {
+      "source": "17eCAeV-u1rCeTFfB5gySLZtOazWes1Zs",
+      "name": "warning.wav",
+      "sha256": "d95eb7bf18304d7630bd24433eeaf73c3fb68b74e0793281bbd13cfd28ab6678",
+      "status": "approved-reference"
+    }
+  ],
+  "scope": "isolated-1v1-lab-only"
+}
