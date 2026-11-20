@@ -22,6 +22,8 @@ var stride:=Vector3.ZERO
 var root_start:=Vector3.ZERO
 var support_yaw:=0.0
 var death_effect:Node2D
+var sampled_motion:="idle"
+var sampled_time:=0.0
 
 func resident_root()->Vector3:
 	return preview.skeleton.get_bone_pose_position(preview.root_bone)
@@ -147,6 +149,7 @@ func sample(age:float, route:bool)->void:
 	if route and moving:at=minf(at,travel_period*2)
 	var clock:=fposmod(at,period) if id in Catalog.REPEATS else at
 	if route and moving and at>=travel_period*2:clock=period-.00001
+	sampled_motion=id;sampled_time=clock
 	# The animal adapter preserves native root travel and stops after two cycles.
 	if preview is Animal:
 		var clip:=clip_for(id)

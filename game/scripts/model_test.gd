@@ -234,17 +234,34 @@ func play_motion(id:String)->void:
 	if not supported:return
 	selection=id;age=0
 	for actor in actors.values():actor.play(id)
+	if id=="full" and selected=="all" and category=="allies":synchronize_full_chain()
 	render_frame();refresh()
 
 func restart()->void:play_motion(selection)
 
-func chain_start(key:String)->float:
-	if selected!="all" or category!="allies" or selection!="chain":return 0.0
-	# Preserve the existing handoff schedule in this model-only reform patch.
-	# RES-050's support transfer is now 2.72s; integration is a separate task.
-	if key=="saebom":return 1.05
-	if key=="hangyeol":return 2.65
+func chain_start(_key:String)->float:
+	# The model test samples each linked clip immediately, with no battle slots.
 	return 0.0
+
+func synchronize_full_chain()->void:
+	# Finish each preceding clip at its own unchanged speed. Shorter playlists
+	# rest before the shared phase, rather than cutting an action or delaying a
+	# character after the linked-skill phase has already begun.
+	var common_start:=0.0
+	for actor in actors.values():
+		for segment in actor.segments:
+			if segment.key=="chain":common_start=maxf(common_start,segment.start)
+	for actor in actors.values():
+		for i in actor.segments.size():
+			if actor.segments[i].key!="chain":continue
+			var prior_start:float=actor.segments[i].start
+			var rest:=common_start-prior_start
+			if rest>0.000001:
+				for j in range(i,actor.segments.size()):
+					actor.segments[j].start+=rest;actor.segments[j].end+=rest
+				actor.segments.insert(i,{"key":"idle","start":prior_start,"end":common_start})
+				actor.duration+=rest
+			break
 func paired_comparison()->bool:return Poly.MODELS.has(selected) and not running_comparison
 func toggle_running_comparison()->void:
 	if selected not in ["hangyeol","saebom"]:return
@@ -313,7 +330,7 @@ func render_frame()->void:
 		actor.place_effect()
 		captions[key].position=actor.preview.position+Vector2(-75,18)
 	if selected=="all" and category=="allies":
-		if selection=="chain":actors.saebom.face_support(actors.hangyeol.screen_anchor())
+		if selection=="chain" or (selection=="full" and actors.saebom.sampled_motion=="chain"):actors.saebom.face_support(actors.hangyeol.screen_anchor())
 		else:actors.saebom.configure(battle)
 
 func refresh()->void:
