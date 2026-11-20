@@ -326,6 +326,7 @@ func render_frame()->void:
 		var travel:float=actor.preview.get_meta("route_fraction",0.0)
 		var direction:=Vector2(.82,-.36) if battle else Vector2(1,.28)
 		actor.preview.position=actor.preview.get_meta("ground")+direction*travel*field.size.x*.12
+		actor.preview.position+=actor.preview.get_meta("walk_offset",Vector2.ZERO)
 		if running_comparison:actor.preview.position=actor.preview.get_meta("ground")+common_velocity*local_age
 		actor.place_effect()
 		captions[key].position=actor.preview.position+Vector2(-75,18)

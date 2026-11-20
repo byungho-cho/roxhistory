@@ -12,6 +12,9 @@ const Profile=preload("res://scripts/model_motion_profile.gd")
 const DeathEffect=preload("res://scripts/model_death_effect.gd")
 const ANIMAL_ORDER=["idle","walk","run","attack","hit","skill","death"]
 const ALLY_ORDER=["idle","walk","run","attack","hit","guard","counter","skill","chain","death"]
+# Approved Uram reference: two steps in .6 preview seconds, 1.02 local units.
+const WALK_PERIOD := .6
+const WALK_STRIDE := 1.02
 var key:String
 var preview:HybridCharacter
 var motion := "idle"
@@ -29,6 +32,10 @@ func resident_root()->Vector3:
 	return preview.skeleton.get_bone_pose_position(preview.root_bone)
 
 func resident_sample(id:String,clock:float)->void:
+	if id=="walk" and preview is Residents:
+		var clip:=clip_for(id)
+		var old_period:=Residents.Timing.duration(key,clip,preview.animation.get_animation(clip).length)
+		clock*=old_period/span("walk")
 	if preview is Uram:preview.show_pose(clip_for(id),clock)
 	elif preview is RunPreview and id=="run":preview.sample_motion(id,clock)
 	else:preview.sample_clip(clip_for(id),clock)
@@ -100,6 +107,7 @@ func supported(id:String)->bool:
 	return id=="full" or not clip_for(id).is_empty()
 
 func span(id:String)->float:
+	if id=="walk" and not preview is Animal:return WALK_PERIOD*(2.0/3.0 if key=="saebom" else 1.0)
 	if preview is Animal:
 		if id=="skill":return preview.length("req046_skill_anticipation")+preview.length("req046_skill_execute")
 		return preview.presentation_length(clip_for(id))
@@ -122,6 +130,7 @@ func play(id:String)->void:
 				if clip in included:continue
 				included.append(clip)
 				var length:=span(item)*(2 if item in ["walk","run"] else 1)
+				if item=="walk" and not preview is Animal:length=WALK_PERIOD*2
 				segments.append({"key":item,"start":duration,"end":duration+length})
 				duration+=length
 	else:duration=span(motion)
@@ -144,8 +153,10 @@ func sample(age:float, route:bool)->void:
 	elif id!="death" and id not in Catalog.REPEATS and age>=duration:id="idle";at=maxf(0,age-duration)
 	var period:=span(id)
 	var moving:=id in ["walk","run"]
+	var shared_walk:=id=="walk" and not preview is Animal
 	var travel_period:=period
 	if moving and preview is Residents:travel_period*=Residents.Timing.rate(key,clip_for(id))
+	if shared_walk:travel_period=WALK_PERIOD
 	if route and moving:at=minf(at,travel_period*2)
 	var clock:=fposmod(at,period) if id in Catalog.REPEATS else at
 	if route and moving and at>=travel_period*2:clock=period-.00001
@@ -161,7 +172,7 @@ func sample(age:float, route:bool)->void:
 		preview.sample(at,route)
 	else:
 		resident_sample(id,clock)
-		if route and moving and stride.length()>.02:
+		if route and moving and not shared_walk and stride.length()>.02:
 			if preview is Residents:
 				# Visual cadence changes never multiply the preview's path velocity.
 				preview.pivot.position+=preview.skeleton.global_basis*stride*(at/travel_period)
@@ -172,6 +183,7 @@ func sample(age:float, route:bool)->void:
 	# Resident locomotion is authored in-place in the deployed lab. Move only
 	# the 2D ground anchor for its fixed path, never the camera or skill roots.
 	preview.set_meta("route_fraction",clampf(at/(travel_period*2),0,1) if route and moving and not preview is Animal and stride.length()<=.02 else 0.0)
+	preview.set_meta("walk_offset",walk_offset(at) if route and shared_walk else Vector2.ZERO)
 	if id=="death":
 		preview.modulate.a=DeathEffect.model_alpha(at)
 		death_effect.sample(at)
@@ -179,6 +191,14 @@ func sample(age:float, route:bool)->void:
 		preview.modulate.a=1.0
 		death_effect.clear()
 	preview.viewport.render_target_update_mode=SubViewport.UPDATE_ONCE
+
+func walk_offset(seconds:float)->Vector2:
+	# Use Uram's projected ground travel for every ally, including individual
+	# views. Model size and authored root stride must not change path velocity.
+	var vector:=preview.pivot.basis*Vector3(0,0,WALK_STRIDE)
+	var projected:=preview.camera.unproject_position(vector)-preview.camera.unproject_position(Vector3.ZERO)
+	var reference_scale:=preview.scale*(1.3/1.05 if preview is Residents else 1.0)
+	return projected*preview.display.scale*reference_scale*clampf(seconds/WALK_PERIOD,0,2)
 
 func place_effect()->void:
 	death_effect.position=preview.position
