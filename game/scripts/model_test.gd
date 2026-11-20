@@ -188,6 +188,7 @@ func select_model(id:String)->void:
 	var ids:Array=(["uram","hangyeol","saebom"] if category=="allies" else ANIMALS).duplicate() if id=="all" else [id]
 	for key in ids:
 		var actor:=Actor.new();actor.create(field,key,false if paired_comparison() or running_comparison else bool(comparison_versions.get(key,false)),"A" if running_comparison else "");field.move_child(actor.preview,1)
+		field.move_child(actor.death_effect,2)
 		actor.configure(battle)
 		actors[key]=actor
 		captions[key]=text(field,NAMES[key]+(" · B" if Poly.MODELS.has(key) and comparison_versions.get(key,false) else ""),Rect2(0,0,150,32),22)
@@ -199,6 +200,7 @@ func select_model(id:String)->void:
 		var right_id:=id+"_B"
 		var right:=Actor.new();right.create(field,id,true);right.configure(battle)
 		field.move_child(right.preview,1);actors[right_id]=right
+		field.move_child(right.death_effect,2)
 		captions[id].text=NAMES[id]+" · 원본"
 		captions[right_id]=text(field,NAMES[id]+" · 경량판",Rect2(0,0,150,32),22)
 		var brush:=StyleBoxFlat.new();brush.bg_color=Color("162e2a");brush.set_corner_radius_all(6)
@@ -212,6 +214,7 @@ func select_model(id:String)->void:
 			if variant!="A":
 				var actor:=Actor.new();actor.create(field,id,false,variant);actor.configure(battle)
 				actors[key]=actor;field.move_child(actor.preview,1)
+				field.move_child(actor.death_effect,2)
 				captions[key]=text(field,"",Rect2(),20)
 			captions[key].hide()
 			var label:String=variant+" · "+("현행" if variant=="A" else "원본 1.5배" if variant=="B" else "리폼 후보")
@@ -285,6 +288,7 @@ func layout_actors()->void:
 			actor.preview.scale*=minf(1,(field.size.y-300)/350.0)
 			polygon_labels[key].position=Vector2(ground.x-130,124)
 		captions[key].position=ground+Vector2(-75,18)
+		actor.place_effect()
 		index+=1
 
 func render_frame()->void:
@@ -306,6 +310,7 @@ func render_frame()->void:
 		var direction:=Vector2(.82,-.36) if battle else Vector2(1,.28)
 		actor.preview.position=actor.preview.get_meta("ground")+direction*travel*field.size.x*.12
 		if running_comparison:actor.preview.position=actor.preview.get_meta("ground")+common_velocity*local_age
+		actor.place_effect()
 		captions[key].position=actor.preview.position+Vector2(-75,18)
 	if selected=="all" and category=="allies":
 		if selection=="chain":actors.saebom.face_support(actors.hangyeol.screen_anchor())

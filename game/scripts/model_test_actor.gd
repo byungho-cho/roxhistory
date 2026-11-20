@@ -9,6 +9,7 @@ const Hunt = preload("res://scripts/deer_hunt_screen.gd")
 const Poly = preload("res://scripts/model_test_poly_catalog.gd")
 const RunPreview=preload("res://scripts/run_comparison_preview.gd")
 const Profile=preload("res://scripts/model_motion_profile.gd")
+const DeathEffect=preload("res://scripts/model_death_effect.gd")
 const ANIMAL_ORDER=["idle","walk","run","attack","hit","skill","death"]
 const ALLY_ORDER=["idle","walk","run","attack","hit","guard","counter","skill","chain","death"]
 var key:String
@@ -20,6 +21,7 @@ var active_clip := ""
 var stride:=Vector3.ZERO
 var root_start:=Vector3.ZERO
 var support_yaw:=0.0
+var death_effect:Node2D
 
 func resident_root()->Vector3:
 	return preview.skeleton.get_bone_pose_position(preview.root_bone)
@@ -44,6 +46,9 @@ func create(parent:Node, id:String,comparison_b:=false,run_variant:="")->void:
 		if key=="hangyeol":preview.excluded_playlist_clips=PackedStringArray(["stone_spear_thrust"])
 	preview.render_size_factor=.75
 	parent.add_child(preview)
+	death_effect=DeathEffect.new(not Wildlife.ANIMALS.has(key));parent.add_child(death_effect)
+	preview.tree_exiting.connect(func():
+		if is_instance_valid(death_effect):death_effect.clear();death_effect.queue_free())
 	preview.set_enabled(true)
 	preview.viewport.size=Vector2i(1536,960)
 	preview.camera.size=7.0*960.0/720.0
@@ -102,6 +107,7 @@ func span(id:String)->float:
 	return Residents.Timing.duration(key,clip,preview.animation.get_animation(clip).length)
 
 func play(id:String)->void:
+	death_effect.clear();preview.modulate.a=1.0
 	motion=id if supported(id) else "idle"
 	active_clip=""
 	segments.clear()
@@ -163,6 +169,16 @@ func sample(age:float, route:bool)->void:
 	# Resident locomotion is authored in-place in the deployed lab. Move only
 	# the 2D ground anchor for its fixed path, never the camera or skill roots.
 	preview.set_meta("route_fraction",clampf(at/(travel_period*2),0,1) if route and moving and not preview is Animal and stride.length()<=.02 else 0.0)
+	if id=="death":
+		preview.modulate.a=DeathEffect.model_alpha(at)
+		death_effect.sample(at)
+	else:
+		preview.modulate.a=1.0
+		death_effect.clear()
 	preview.viewport.render_target_update_mode=SubViewport.UPDATE_ONCE
+
+func place_effect()->void:
+	death_effect.position=preview.position
+	death_effect.scale=preview.scale
 
 
