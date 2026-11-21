@@ -36,6 +36,7 @@ var fade_materials:Array=[[],[]]
 var last_alpha:=[1.0,1.0]
 var direction:=Vector3(1,0,-.88).normalized()
 var screen_origin:=Vector2.ZERO
+var floor_bounce_lights:Array[OmniLight3D]=[]
 
 func configure(left,right,center:Vector2)->void:
 	actors=[left,right]
@@ -66,6 +67,16 @@ func configure(left,right,center:Vector2)->void:
 		originals.append({"parent":p.pivot.get_parent(),"transform":p.pivot.transform,"viewport_size":p.viewport.size})
 		var body:=AnimatableBody3D.new();body.name="HanBody" if i==0 else "DeerBody";body.sync_to_physics=false;body.collision_layer=1;body.collision_mask=5
 		scene.add_child(body);bodies.append(body)
+		if left.key=="hangyeol" and right.key=="forest":
+			var glow:=OmniLight3D.new()
+			glow.name="TeamRingBounce"
+			glow.light_color=Color("54b8ff") if i==0 else Color("ff6b46")
+			glow.light_energy=.95 if i==0 else .63
+			glow.light_specular=.14
+			glow.omni_range=1.18
+			glow.omni_attenuation=1.65
+			glow.position=Vector3(0,.13,.16)
+			body.add_child(glow);floor_bounce_lights.append(glow)
 		var shape:=CollisionShape3D.new();var capsule:=CapsuleShape3D.new();capsule.radius=BODY_RADII[i];capsule.height=1.65 if i==0 else 1.45
 		shape.shape=capsule;shape.position.y=.85;body.add_child(shape);body_shapes.append(shape)
 		var guard:=CollisionShape3D.new();guard.name="HipAndForelegEnvelope";guard.shape=capsule
@@ -291,6 +302,7 @@ func render_poses(lab,delta:float)->Array:
 	for side in 2:
 		var actor=actors[side];var key:String=lab.motion[side];var age:float=lab.age[side]
 		var p=actor.preview
+		if side<floor_bounce_lights.size():floor_bounce_lights[side].visible=key!="death"
 		if key=="death":
 			# Hold the pose from the lethal contact; only opacity changes.
 			root_motion.append(Vector3.ZERO)

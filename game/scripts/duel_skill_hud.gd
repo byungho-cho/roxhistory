@@ -225,30 +225,48 @@ func _draw_arc_streak(layer:Control, box:Rect2, radius:float, perimeter:float, h
 	layer.draw_circle(previous,1.55,tip,true,-1,true)
 
 func _make_linked_outer_glow()->Control:
-	var layer:=Control.new()
-	layer.name="LinkedOuterGlow"
-	layer.mouse_filter=MOUSE_FILTER_IGNORE
-	chain_button.add_child(layer)
-	chain_button.move_child(layer,0)
-	var halo_material:=CanvasItemMaterial.new()
-	halo_material.blend_mode=CanvasItemMaterial.BLEND_MODE_MIX
-	layer.material=halo_material
-	var soft:=_glow([Color.WHITE,Color(1,1,1,.22),Color(1,1,1,0)])
-	layer.draw.connect(func():_draw_linked_outer_glow(layer,soft))
-	layer.hide()
-	return layer
-
-func _draw_linked_outer_glow(layer:Control, soft:Texture2D)->void:
-	var bounds:=Rect2(-1.8,-1.8,56.4,56.4)
-	var radius:=7.0
-	var perimeter:=4.0*(bounds.size.x-2.0*radius)+TAU*radius
-	for j in 24:
-		var u:=float(j)/24.0
-		var position_on_edge:=_arc_point(bounds,radius,u*perimeter)
-		var wave:=pow(.5+.5*cos(TAU*(u-chain_age/1.72)),5.0)
-		var diameter:=lerpf(19.0,31.0,wave)
-		var hue:=Color("138fff").lerp(Color("66ceff"),wave)
-		layer.draw_texture_rect(soft,Rect2(position_on_edge-Vector2.ONE*diameter*.5,Vector2.ONE*diameter),false,Color(hue,.23+wave*.28))
+	var margin:=26.0
+	var halo:=Art.picture(chain_button,_glow([Color.WHITE,Color.WHITE,Color.WHITE]),Rect2(-margin,-margin,52.8+2.0*margin,52.8+2.0*margin))
+	halo.name="LinkedOuterGlow"
+	halo.mouse_filter=MOUSE_FILTER_IGNORE
+	chain_button.move_child(halo,0)
+	var shader:=Shader.new()
+	shader.code="""
+shader_type canvas_item;
+render_mode blend_mix;
+uniform float age = 0.0;
+float bell(float x){return exp(-x*x);}
+void fragment(){
+	vec2 px=(UV-vec2(.5))*104.8;
+	float corner=5.4;
+	vec2 q=abs(px)-vec2(26.4-corner);
+	float d=length(max(q,vec2(0.0)))+min(max(q.x,q.y),0.0)-corner;
+	vec2 around=normalize(px+vec2(.001,0.0));
+	float walk=sin(dot(around,vec2(6.3,-3.8))+age*4.9);
+	float cross=sin(dot(around,vec2(-4.2,8.4))-age*3.4+.73);
+	float rough=sin(dot(around,vec2(16.6,12.1))+age*7.7+walk*.8);
+	float jitter=.52*walk+.31*cross+.14*rough;
+	float peak=.70+.17*walk+.10*cross+.06*rough;
+	float rim=bell((d-.9-jitter)/max(.65,.98+.23*cross+.12*rough));
+	float exterior=smoothstep(-.35,.9,d);
+	float bright=bell((d-2.24-jitter*1.2)/3.45)*(.57+.14*walk)*exterior;
+	float soft=bell(max(d-3.0-jitter*1.6,0.0)/8.5)*(.47+.11*cross)*exterior;
+	float falloff=bell(max(d-4.0,0.0)/15.8)*.29*exterior;
+	float phase=fract(age/2.28+.075*dot(around,vec2(.9,.7)));
+	float pulse=sin(phase*3.14159265);
+	float wave_at=mix(3.8,19.0,phase)+1.55*cross+1.08*walk;
+	float echo=bell((d-wave_at)/2.05)*(.19+.08*rough+.07*walk)*pulse*exterior;
+	float mask=1.0-smoothstep(23.0,25.5,d);
+	vec3 cyan=mix(vec3(.08,.50,1.0),vec3(.54,.91,1.0),clamp(bright+echo,0.0,1.0));
+	vec3 tint=mix(cyan,vec3(.88,.985,1.0),clamp(rim*(.82+.18*walk),0.0,1.0));
+	COLOR=vec4(tint,clamp(rim*peak+bright+soft+falloff+echo,0.0,1.0)*mask);
+}
+"""
+	var material:=ShaderMaterial.new()
+	material.shader=shader
+	halo.material=material
+	halo.hide()
+	return halo
 
 func _setup_ready_convergence()->void:
 	var shader:=Shader.new()
@@ -307,11 +325,11 @@ func _draw_duel_ready_state()->void:
 	var normal_frame:=frame.get_theme_stylebox("panel") as StyleBoxFlat
 	normal_flash.visible=normal_ready
 	badge_flash.visible=normal_ready
-	linked_flash.visible=chain_ready
+	linked_flash.visible=false # Do not wash or pulse the skill art.
 	normal_border_arc.visible=normal_ready
 	if normal_ready:normal_border_arc.queue_redraw()
 	linked_outer_glow.visible=chain_ready
-	if chain_ready:linked_outer_glow.queue_redraw()
+	if chain_ready:linked_outer_glow.material.set_shader_parameter("age",chain_age)
 	normal_frame.set_border_width_all(2 if normal_ready else 1)
 	if normal_ready:
 		var pulse:=pow(.5+.5*cos(normal_age*TAU/1.12),2.4)
@@ -325,4 +343,4 @@ func _draw_duel_ready_state()->void:
 	if chain_ready:
 		linked_flash.material.set_shader_parameter("gather_phase",_ready_gather_phase(chain_age))
 		chain_glow.modulate.a=.62*SKILL_BOX_LIGHT_ALPHA/.90
-		linked_frame.border_color=Color("8edaff")
+		linked_frame.border_color=Color("e8b95e")

@@ -58,6 +58,39 @@ var cast_from := Left
 var presentation := Presentation.new()
 var effects_layer := Node2D.new()
 var ready_light_layer := Node2D.new()
+var han_chain_light := Node2D.new()
+const HAN_CHAIN_IMPACT_SECONDS := .70
+const HAN_CHAIN_TAIL := .32
+const AUTHORED_FRAME_COUNT := 21
+const AUTHORED_FRAME_SECONDS := .70
+const SAEBOM_SUPPORT_START := .16
+const AUTHORED_FILES := {"uram":"uram_chain_impact","saebom":"saebom_chain_support"}
+var authored_asset_size:=192
+var authored_bold:=false
+var authored_polished:=true
+var uram_wave:=true
+var uram_echo:=true
+var saebom_hop:=true
+# The authored 3.5-second cheer lift-off beat (three genuine jumps).
+const SAEBOM_CHEER_NATIVE_SECONDS:=3.5
+const SAEBOM_CHEER_LIFTS:=[.18,.88,1.58]
+var saebom_aurora:=true
+var saebom_aurora_origin:=Vector2.ZERO
+const URAM_WAVE_ORIGIN:=Vector2(86,192)/384.0
+const SAEBOM_AURORA_START:=.16
+var han_authored_size:=192
+var han_radial:=true
+var han_radial_frames:Array[Texture2D]=[]
+const HAN_RADIAL_EXTENT:=Vector2(557,201)
+var han_2sp_enabled:=true
+var han_2sp_frames:Array[Texture2D]=[]
+const HAN_2SP_COUNT:=11
+const HAN_2SP_DURATION:=11.0/30.0
+const HAN_2SP_DISPLAY_SIZE:=288.0
+const HAN_2SP_ORIGIN:=Vector2(90,117)
+var authored_frames:Array[Texture2D]=[]
+var authored_asset_hero:=""
+var authored_load_us:=0
 var cast_notice_layer:=Node2D.new()
 var cast_notice_frames:Array[StyleBoxFlat]=[]
 var cast_notice_anchor:=Vector2.ZERO
@@ -65,6 +98,9 @@ var cast_notice:Dictionary={}
 var location_layer := Node2D.new()
 var ring_halo:GradientTexture2D
 var ring_band:GradientTexture2D
+var floor_light_wash:GradientTexture2D
+var floor_light_halo:GradientTexture2D
+var floor_light_core:GradientTexture2D
 var ground_wave_phase:=0.0
 const GROUND_WAVE_SECONDS:=2.4
 var ground_wave_span:=2.0
@@ -129,6 +165,23 @@ var touch_target: Button
 var touch_buttons: Array[Button] = []
 
 func _ready() -> void:
+	for arg in OS.get_cmdline_user_args():
+		if arg=="--duel-3sp-polished=1":authored_polished=true
+		if arg=="--uram-3sp-wave=1":uram_wave=true
+		if arg=="--uram-3sp-echo=1":uram_echo=true
+		if arg=="--saebom-3sp-hop=1":saebom_hop=true
+		if arg=="--saebom-3sp-aurora=1":saebom_aurora=true
+		if arg=="--duel-3sp-bold=1":
+			authored_bold=true
+		if arg.begins_with("--duel-3sp-asset-size="):
+			var requested:=int(arg.get_slice("=",1))
+			if requested in [0,192]:authored_asset_size=requested
+		if arg=="--han-3sp-radial=1":han_radial=true
+		if arg=="--han-2sp-authored=1":
+			han_2sp_enabled=true
+		if arg.begins_with("--han-3sp-asset-size="):
+			var requested:=int(arg.get_slice("=",1))
+			if requested in [192,384]:han_authored_size=requested
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	theme = Theme.new()
 	var bold:=FontVariation.new();bold.base_font=UIFont
@@ -156,6 +209,11 @@ func _ready() -> void:
 	location_layer.material=ring_material
 	ring_halo=_new_ring_light(PackedFloat32Array([0,.28,.46,.61,.76,.91,1]),PackedFloat32Array([.10,.12,.15,.27,.18,.035,0]))
 	ring_band=_new_ring_light(PackedFloat32Array([0,.53,.60,.65,.68,.72,.79,1]),PackedFloat32Array([0,0,.035,.22,.91,.30,.035,0]))
+	floor_light_wash=_new_ring_light(PackedFloat32Array([0,.24,.45,.58,.70,.82,1]),PackedFloat32Array([.14,.17,.28,.46,.37,.12,0]))
+	floor_light_halo=_new_ring_light(PackedFloat32Array([0,.41,.55,.62,.70,.83,1]),PackedFloat32Array([0,.03,.14,.55,.40,.11,0]))
+	floor_light_core=_new_ring_light(PackedFloat32Array([0,.54,.59,.612,.631,.65,.71,1]),PackedFloat32Array([0,0,.05,.83,.88,.19,0,0]))
+	location_layer.draw.connect(_draw_han_radial)
+	location_layer.draw.connect(_draw_saebom_aurora)
 	location_layer.draw.connect(_draw_location_rings)
 	field.add_child(effects_layer)
 	effects_layer.z_index = 10
@@ -166,6 +224,10 @@ func _ready() -> void:
 	glow_material.blend_mode=CanvasItemMaterial.BLEND_MODE_ADD
 	ready_light_layer.material=glow_material
 	ready_light_layer.draw.connect(_draw_duel_lights)
+	field.add_child(han_chain_light)
+	han_chain_light.z_index=11
+	han_chain_light.material=glow_material
+	han_chain_light.draw.connect(_draw_han_chain_light)
 	for i in 6:
 		var player := AudioStreamPlayer.new()
 		player.volume_db = -9.0
@@ -183,7 +245,33 @@ func _ready() -> void:
 	cast_notice_layer.draw.connect(func():_draw_cast_notice(cast_notice_anchor))
 
 	_setup_ui()
-	for i in 21:chain_impact_frames.append(load("res://assets/effects/d0071-chain/han_chain_impact_%02d.png"%i))
+	for i in 21:
+		var stem:="res://assets/effects/d0071-chain/han_chain_impact_%02d.png"%i
+		var half:="res://assets/effects/duel-3sp-authored/hangyeol/192/han_chain_impact_%02d.png"%i
+		chain_impact_frames.append(load(half if han_authored_size==192 and ResourceLoader.exists(half) else stem))
+	if han_radial:
+		for i in 21:
+			var folder:="duel-3sp-polished" if authored_polished else "duel-3sp-directional"
+			var radial:="res://assets/effects/%s/hangyeol/192/han_3sp_radial_%02d.png"%[folder,i]
+			var texture:=ResourceLoader.load(radial,"Texture2D",ResourceLoader.CACHE_MODE_IGNORE) as Texture2D if ResourceLoader.exists(radial) else null
+			if texture==null or texture.get_size()!=Vector2(192,192):
+				push_warning("Missing or invalid Han radial 3 SP frame: "+radial)
+				han_radial_frames.clear()
+				break
+			han_radial_frames.append(texture)
+	if han_2sp_enabled:
+		for i in HAN_2SP_COUNT:
+			var path:="res://assets/effects/duel-2sp-authored/han_2sp_impact_%02d.png"%i
+			if not ResourceLoader.exists(path):
+				push_warning("Missing Han 2 SP visual trial frame: "+path)
+				han_2sp_frames.clear()
+				break
+			var frame:=ResourceLoader.load(path,"Texture2D",ResourceLoader.CACHE_MODE_IGNORE) as Texture2D
+			if frame==null or frame.get_size()!=Vector2(192,192):
+				push_warning("Invalid Han 2 SP visual trial frame: "+path)
+				han_2sp_frames.clear()
+				break
+			han_2sp_frames.append(frame)
 	resized.connect(_fit)
 	_fit()
 	reset_round()
@@ -339,6 +427,44 @@ func _select(key: String, enemy: bool) -> void:
 		rules.ally_id = key
 	reset_round()
 
+func _prepare_authored_frames()->void:
+	var name:="uram" if _uram_duel() else "saebom" if _saebom_duel() else ""
+	var key:=name if authored_asset_size>0 else ""
+	if key==authored_asset_hero:return
+	authored_asset_hero=key
+	authored_frames.clear()
+	authored_load_us=0
+	if key.is_empty():return
+	var start:=Time.get_ticks_usec()
+	var prefix:String=AUTHORED_FILES[key]
+	for i in AUTHORED_FRAME_COUNT:
+		var directional:bool=authored_asset_size==192 and ((key=="uram" and uram_wave) or (key=="saebom" and saebom_aurora))
+		var asset_root:="duel-3sp-authored"
+		if directional:
+			if (key=="uram" and uram_echo) or (key=="saebom" and saebom_hop):
+				asset_root="duel-3sp-rhythm"
+			else:asset_root="duel-3sp-polished" if authored_polished else "duel-3sp-directional"
+		elif authored_bold and authored_asset_size==192:asset_root="duel-3sp-bold"
+		var path:="res://assets/effects/%s/%s/%d/%s_%02d.png"%[asset_root,key,authored_asset_size,prefix,i]
+		if not ResourceLoader.exists(path):
+			push_warning("Missing authored 3 SP frame: "+path)
+			authored_frames.clear()
+			return
+		var frame:=ResourceLoader.load(path,"Texture2D",ResourceLoader.CACHE_MODE_IGNORE) as Texture2D
+		if frame==null or frame.get_size()!=Vector2.ONE*authored_asset_size:
+			push_warning("Invalid authored 3 SP frame: "+path)
+			authored_frames.clear()
+			return
+		authored_frames.append(frame)
+	authored_load_us=Time.get_ticks_usec()-start
+
+func _draw_authored_frames(origin:Vector2,elapsed:float,screen_size:float)->void:
+	if elapsed<0 or elapsed>=AUTHORED_FRAME_SECONDS or authored_frames.is_empty():return
+	var frame_index:=clampi(floori(elapsed*30.0),0,authored_frames.size()-1)
+	# Both source resolutions use the same art origin and on-screen footprint.
+	var anchor:=Vector2(192.0,243.0)*(screen_size/384.0)
+	effects_layer.draw_texture_rect(authored_frames[frame_index],Rect2(origin-anchor,Vector2.ONE*screen_size),false)
+
 func reset_round(after_fade:=false) -> void:
 	entrance_scale=REVIVAL_ENTRANCE_SCALE if after_fade else 1.0
 	deer_hud_anchor=Vector2.INF
@@ -349,8 +475,11 @@ func reset_round(after_fade:=false) -> void:
 	ground_wave_phase=0.0
 	ground_wave_span=2.0
 	accent.reset()
+	ground.self_modulate=Color.WHITE
+	han_chain_light.queue_redraw()
 	touch_pointer=-1;touch_target=null
 	rules.reset(rules.ally_id,rules.enemy_id)
+	_prepare_authored_frames()
 	for item in audio_pool:
 		item.stop()
 		item.stream_paused=paused
@@ -504,6 +633,8 @@ func _act(side: int, key: String) -> void:
 	var duration: float = actor.duration
 	contact_at[side] = duration * (.55 if key == "attack" else .63)
 	if is_instance_valid(shared_world):shared_world.begin_action(side,key)
+	if side==0 and key=="chain" and _saebom_aurora_active():
+		saebom_aurora_origin=_position(0)
 	if _prototype_duel() and is_instance_valid(shared_world) and side==0 and key=="chain":accent.chain_started(duration)
 	if not is_instance_valid(shared_world) and side==0 and actor.key=="hangyeol" and key in ["attack","skill"]:
 		var travel := 0.0 if _prototype_duel() else 78.0
@@ -559,8 +690,10 @@ func _uram_parry(contact:Dictionary)->void:
 	var point:=shared_world.project(contact.point)
 	accent.parry_contact()
 	_sound("uram_parry")
-	_flash(point,"uram_shield_contact",Color("62e4cb"),.46)
+	var authored:=authored_asset_hero=="uram" and not authored_frames.is_empty()
+	_flash(point,"uram_shield_contact",Color("62e4cb"),AUTHORED_FRAME_SECONDS if authored else .46)
 	fx[-1]["floor_point"]=_position(0).lerp(_position(1),.35)
+	fx[-1]["forward_angle"]=_position(0).direction_to(_position(1)).angle()
 	execute_at=-1
 	next_attack[1]=maxf(next_attack[1],rules.elapsed+.95)
 	_react(1,"hit")
@@ -583,10 +716,24 @@ func _land(side: int, key: String,contact:Dictionary={}) -> void:
 	if is_instance_valid(shared_world):
 		motion_contact[side]=age[side] # Existing D0070 charge/impact FX now use contact time.
 		shared_world.apply_hit(defender,contact.normal,skill)
-		if side==0 and key=="chain":
+		if _prototype_duel() and side==0 and key=="chain":
 			accent.chain_contact()
-			_flash(impact_point,"han_chain_impact",Color.WHITE,.70)
-			fx[-1]["floor_point"]=_position(defender)
+			var floor_contact:Vector3=contact.point
+			floor_contact.y=0.0
+			var floor_point:=shared_world.project(floor_contact)
+			_flash(impact_point,"han_chain_impact",Color.WHITE,HAN_CHAIN_IMPACT_SECONDS)
+			fx[-1]["floor_point"]=floor_point
+			# The authored descending stroke persists briefly through the exact hit,
+			# instead of disappearing in the frame where the impact art starts.
+			var wake_start:=impact_point
+			for sample in tip_trail:
+				var extent:=sample.distance_to(impact_point)
+				if extent>110.0:
+					wake_start=impact_point+(sample-impact_point).limit_length(110.0)
+					break
+				if extent>wake_start.distance_to(impact_point):wake_start=sample
+			fx[-1]["wake_start"]=wake_start
+			_flash(floor_point,"han_chain_afterglow",Color.WHITE,HAN_CHAIN_IMPACT_SECONDS+HAN_CHAIN_TAIL)
 	# Forward approach moves the actor to its strike distance. Check the
 	# simulation positions at contact instead of firing a hit from a timer alone.
 	var origin := _position(side)
@@ -605,12 +752,16 @@ func _land(side: int, key: String,contact:Dictionary={}) -> void:
 		presentation.recoil[defender]=origin.direction_to(target)*(6.0 if skill else 3.0)
 		presentation.recoil_age[defender]=.025
 		var hold:=.48 if skill else .16
+		var authored_2sp:=_prototype_duel() and is_instance_valid(shared_world) and side==0 and key=="skill" and han_2sp_frames.size()==HAN_2SP_COUNT
 		if is_instance_valid(shared_world) and side==0:
 			if key=="attack":hold=.23
-			elif key=="skill":hold=.68
+			elif key=="skill":hold=HAN_2SP_DURATION if authored_2sp else .68
 		if is_instance_valid(shared_world) and side==1 and key=="skill":hold=.67
 		_flash(impact_point,"contact_"+key,tone_for_contact(side),hold)
 		fx[-1]["attacker"]=side
+		if authored_2sp:
+			fx[-1]["han_2sp_authored"]=true
+			fx[-1]["spear_axis"]=(target-origin).angle()+.57
 		if is_instance_valid(shared_world) and (key=="skill" or (_uram_duel() and key=="counter")):
 			var ground_point:Vector3=contact.point
 			ground_point.y=0
@@ -794,6 +945,9 @@ func _render_actors(delta:=0.0)->void:
 		if delta>0:battle_camera.update_camera(delta)
 		camera_base_scale=field.scale;camera_base_position=field.position
 		var focus:Vector2=(_position(0)+_position(1))*.5
+		if _prototype_duel() and accent.kind=="chain":focus.y-=27.0
+		ground.self_modulate=_duel_skill_ground_tint()
+		han_chain_light.queue_redraw()
 		field.scale=camera_base_scale*accent.zoom
 		field.position=camera_base_position+camera_base_scale*focus*(1-accent.zoom)
 		if delta>0 and accent.zoom>1:
@@ -956,8 +1110,17 @@ func _draw_location_rings()->void:
 		var tint:=HeadHUD.duel_team_color(side==0)
 		var settled:=bounds.size*1.08
 		var ring_box:=bounds.size/.68
-		location_layer.draw_texture_rect(ring_halo,Rect2(center-settled*.5,settled),false,Color(tint,.54))
-		location_layer.draw_texture_rect(ring_band,Rect2(center-ring_box*.5,ring_box),false,Color(tint,.97))
+		if _prototype_duel() and is_instance_valid(shared_world):
+			var rich:=Color("1b9df0") if side==0 else Color("e33830")
+			var core:=Color("c2f6ff") if side==0 else Color("ffbeb1")
+			var spread:=bounds.size/.62
+			var disk:=Rect2(center-spread*.5,spread)
+			location_layer.draw_texture_rect(floor_light_wash,disk,false,Color(rich,.86))
+			location_layer.draw_texture_rect(floor_light_halo,disk,false,Color(rich,.90))
+			location_layer.draw_texture_rect(floor_light_core,disk,false,Color(core,.96))
+		else:
+			location_layer.draw_texture_rect(ring_halo,Rect2(center-settled*.5,settled),false,Color(tint,.54))
+			location_layer.draw_texture_rect(ring_band,Rect2(center-ring_box*.5,ring_box),false,Color(tint,.97))
 		if side!=0 or _ground_wave_profile()==Vector2.ZERO:continue
 		var phase:=ground_wave_phase
 		var closing_size:=ring_box*_inward_ring_scale(phase,ground_wave_span)
@@ -1097,42 +1260,164 @@ func _draw_han_impact(effect:Dictionary,p:float,basic:bool)->void:
 		var spark:=at+Vector2(cos(angle),sin(angle)*.62)*lerpf(9,59+float(j%3)*7,sqrt(p))
 		_soft_light(spark,Vector2(14,10)*lerpf(1,.4,p),Color("b8eeff"),glow*.72)
 
+func _duel_skill_ground_tint()->Color:
+	if _prototype_duel():
+		return Color.WHITE.lerp(Color("aebad3"),_han_chain_contrast())
+	if not authored_polished:return Color.WHITE
+	if _uram_duel() and uram_wave and not authored_frames.is_empty() and accent.kind=="parry":
+		var progress:float=accent.age
+		var exposure:=smoothstep(0.0,.042,progress)*(1.0-smoothstep(.14,.45,progress))
+		return Color.WHITE.lerp(Color("c0c7c7"),exposure*.83)
+	if _saebom_aurora_active() and motion[0]=="chain":
+		var elapsed:float=float(age[0])-SAEBOM_AURORA_START
+		if saebom_hop:
+			var clock:=_saebom_cheer_age()
+			var exposure:=0.0
+			for lift:float in SAEBOM_CHEER_LIFTS:
+				var local:=clock-lift
+				exposure=maxf(exposure,smoothstep(0,.095,local)*(1.0-smoothstep(.30,.73,local)))
+			return Color.WHITE.lerp(Color("bcc9c3"),exposure*.76)
+		var exposure:=smoothstep(-.05,.12,elapsed)*(1.0-smoothstep(.33,.66,elapsed))
+		return Color.WHITE.lerp(Color("bcc9c3"),exposure*.76)
+	return Color.WHITE
+
+func _han_chain_contrast()->float:
+	if not _prototype_duel() or accent.kind!="chain":return 0.0
+	var t:float=accent.age
+	var lift:=smoothstep(.16*accent.duration,.40*accent.duration,t)
+	if accent.impact_at<0:
+		return lift*.77*(1.0-smoothstep(.68*accent.duration,.91*accent.duration,t))
+	var from_hit:float=t-accent.impact_at
+	return maxf(.77*lift,1.0-smoothstep(0,.11,from_hit))*(1.0-smoothstep(.14,.81,from_hit))
+
+func _chain_ray(from:Vector2,to:Vector2,width:float,strength:float)->void:
+	if strength<=.001 or from.distance_to(to)<1.0:return
+	var distance:=from.distance_to(to)
+	var axis:Vector2=(to-from)/distance
+	var flank:=axis.orthogonal()
+	han_chain_light.draw_set_transform(from,axis.angle())
+	_soft_light(Vector2(distance*.60,0),Vector2(distance*1.26,width*2.7),Color("23aafe"),strength*.85,han_chain_light)
+	han_chain_light.draw_set_transform(Vector2.ZERO)
+	var knots:=PackedFloat32Array([0,.22,.55,.82,1])
+	var widths:=PackedFloat32Array([.02,.20,.41,.52,.07])
+	var energies:=PackedFloat32Array([0,.23,.63,.83,.94])
+	for k in range(knots.size()-1):
+		var a0:=from.lerp(to,knots[k])
+		var b0:=from.lerp(to,knots[k+1])
+		var c0:=Color("70cfff",strength*energies[k])
+		var c1:=Color("b4eaff",strength*energies[k+1])
+		for side in [-1.0,1.0]:
+			var a1:=a0+flank*width*widths[k]*float(side)
+			var b1:=b0+flank*width*widths[k+1]*float(side)
+			han_chain_light.draw_polygon(PackedVector2Array([a0,b0,b1,a1]),PackedColorArray([c0,c1,Color(c1,0),Color(c0,0)]))
+
+func _draw_han_radial()->void:
+	if not _prototype_duel() or han_radial_frames.size()!=21:return
+	for effect in fx:
+		if effect.name!="han_chain_impact":continue
+		var elapsed:=visual_clock-float(effect.at)
+		if elapsed<0 or elapsed>=HAN_CHAIN_IMPACT_SECONDS:continue
+		var center:Vector2=effect.floor_point
+		var idx:=clampi(floori(elapsed*30.0),0,han_radial_frames.size()-1)
+		var after:=smoothstep(.015,.075,elapsed)*(1.0-smoothstep(.17,.63,elapsed))
+		_soft_light(center,Vector2(175,55),Color("238cff"),after*.46,location_layer)
+		location_layer.draw_texture_rect(han_radial_frames[idx],Rect2(center-HAN_RADIAL_EXTENT*.5,HAN_RADIAL_EXTENT),false)
+
+func _draw_han_charge_gather(foot:Vector2,tip:Vector2,phase:float)->void:
+	var peak:=smoothstep(.07,.19,phase)*(1.0-smoothstep(.43,.54,phase))
+	if peak<=.001:return
+	for i in 11:
+		var side:=Vector2.from_angle(float(i)*TAU/11.0+.21)
+		var offset:=side*Vector2(76.0+float(i%3)*11.0,31.0+float(i%3)*10.0)
+		var start:Vector2=foot+offset+Vector2(0,-11.0*float(i%4))
+		var t:=clampf((phase-.03-.036*float(i%4))/.38,0,1)
+		var bend:=start.lerp(tip,smoothstep(0,1,t))+side*7.0*sin(PI*t)
+		var tail:=start.lerp(tip,smoothstep(0,1,maxf(0,t-.12)))
+		var spark:=peak*sin(PI*t)
+		_soft_light(bend,Vector2(19,15)*lerpf(.72,1.25,t),Color("48caff"),spark*.8,han_chain_light)
+		han_chain_light.draw_line(tail,bend,Color("7edcff",spark*.60),1.7,true)
+		_soft_light(bend,Vector2(7,6),Color("e4fbff"),spark*.93,han_chain_light)
+	_soft_light(tip,Vector2(88,65),Color("2a9cff"),peak*smoothstep(.21,.39,phase)*.58,han_chain_light)
+
+func _draw_han_chain_light()->void:
+	if not _prototype_duel() or not is_instance_valid(shared_world):return
+	if motion[0]=="chain" and not shared_world.consumed[0]:
+		var phase:=_visual_age(0)/maxf(a.duration,.001)
+		var power:=smoothstep(.035,.21,phase)*(1.0-smoothstep(.70,.86,phase))
+		var foot:=_position(0)
+		var chest:=a.screen_anchor()
+		var hand:=presentation.bone_point(a,"hand.R")
+		var tip:=presentation.spear_point(a)
+		var charge:=power*(1.0-smoothstep(.22,.39,phase))
+		if han_radial_frames.size()==21:_draw_han_charge_gather(foot,tip,phase)
+		_soft_light(foot,Vector2(111,40),Color("1ba3ff"),charge*.76,han_chain_light)
+		_soft_light(foot,Vector2(49,19),Color("b8f3ff"),charge*.66,han_chain_light)
+		for i in 5:
+			var rise:=clampf((phase-.052-float(i)*.026)/.23,0,1)
+			var point:=foot.lerp(chest,rise*2.0) if rise<.5 else chest.lerp(hand,(rise-.5)*2.0)
+			_soft_light(point,Vector2(31,31),Color("5cd5ff"),sin(PI*rise)*charge*.69,han_chain_light)
+		var spear:=power*smoothstep(.20,.38,phase)
+		_chain_ray(hand.lerp(tip,.36),tip,8.0,spear*.70)
+		_soft_light(tip,Vector2(61,49),Color("33a9ff"),spear*.85,han_chain_light)
+		_soft_light(tip,Vector2(21,19),Color("e5fbff"),spear,han_chain_light)
+		var descent:=power*smoothstep(.415,.53,phase)
+		if descent>.001 and tip_trail.size()>1:
+			var path_from:Vector2=tip
+			for i in range(1,tip_trail.size()):
+				var sample:Vector2=tip_trail[i]
+				if sample.distance_to(tip)>81.0:break
+				path_from=sample
+				var weight:=1.0-float(i)/float(tip_trail.size())
+				_soft_light(sample,Vector2(31,28)*lerpf(.53,1.0,weight),Color("40b8ff"),descent*weight*.65,han_chain_light)
+			_chain_ray(path_from,tip,18.0,descent)
+	for effect in fx:
+		var elapsed:float=visual_clock-float(effect.at)
+		if effect.name=="han_chain_impact":
+			var center:Vector2=effect.center
+			var peak:=1.0-smoothstep(.025,.155,elapsed)
+			var stroke:=1.0-smoothstep(.015,.145,elapsed)
+			_chain_ray(effect.wake_start,center,22.0,stroke)
+			var floor_point:Vector2=effect.floor_point
+			var wave_alpha:=smoothstep(.01,.095,elapsed)*(1.0-smoothstep(.20,.52,elapsed))
+			var wave_size:=Vector2(58,18).lerp(Vector2(143,48),clampf(elapsed/.52,0,1))
+			if han_radial_frames.size()!=21:
+				han_chain_light.draw_texture_rect(Hunt.GROUND_PULSE,Rect2(floor_point-wave_size*.5,wave_size),false,Color("6ac7ff",wave_alpha*.67))
+			_soft_light(center,Vector2(93,70),Color("36afff"),peak*.85,han_chain_light)
+			_soft_light(center,Vector2(28,24),Color("f2fcff"),peak,han_chain_light)
+		elif effect.name=="han_chain_afterglow":
+			var fade:=smoothstep(.08,.19,elapsed)*(1.0-smoothstep(.15,HAN_CHAIN_IMPACT_SECONDS+HAN_CHAIN_TAIL,elapsed))
+			var spread:=clampf(elapsed/(HAN_CHAIN_IMPACT_SECONDS+HAN_CHAIN_TAIL),0,1)
+			_soft_light(effect.center,Vector2(89,33).lerp(Vector2(184,67),spread),Color("3296ff"),fade*.38,han_chain_light)
+		elif effect.get("han_2sp_authored",false):
+			var bloom:=1.0-smoothstep(.018,.17,elapsed)
+			_soft_light(effect.center,Vector2(139,102),Color("167bff"),bloom*.79,han_chain_light)
+			_soft_light(effect.center,Vector2(53,44),Color("d8fbff"),bloom*.75,han_chain_light)
+
 func _draw_contact_effects()->void:
-	# Reuse the campaign's painted contact/ground assets, anchored to the sampled
-	# mesh and actual collision. No free-floating debug lines, circles or dots.
-	if _prototype_duel() and motion[0] in ["skill","chain"]:
+	if _prototype_duel() and motion[0]=="skill" and is_instance_valid(shared_world):
 		var tip:=presentation.spear_point(a)
 		var p:=clampf(_visual_age(0)/maxf(.01,motion_contact[0]),0,1)
-		if motion[0]=="chain" and _visual_age(0)<motion_contact[0]:
-			var foot:=_position(0)
-			var hand:=presentation.bone_point(a,"hand.R")
-			var chest:=a.screen_anchor()
-			var gather:=smoothstep(0,.7,p)
-			_soft_light(foot,Vector2(66,23),Color("69bbff"),sin(PI*p)*.65)
-			_soft_light(foot.lerp(chest,smoothstep(.1,.55,p)),Vector2(34,48),Color("65baff"),sin(PI*p)*.55)
-			_soft_light(chest.lerp(hand,smoothstep(.35,.75,p)),Vector2(33,33),Color("8bdcff"),gather*.5)
-			_soft_light(hand.lerp(tip,smoothstep(.55,1,p)),Vector2(31,31),Color("a6eaff"),gather*.75)
-		if motion[0]=="skill" and is_instance_valid(shared_world):
-			var release:=1.0 if not shared_world.consumed[0] else 1.0-smoothstep(motion_contact[0],motion_contact[0]+.29,age[0])
-			if release>0:_draw_han_skill_light(tip,p*release)
-		elif p>.65:
-			for j in tip_trail.size():
-				_soft_light(tip_trail[j],Vector2(19,12)*(1.0-float(j)/10),Color("9bdfff"),.32*(1.0-float(j)/7))
-			_soft_light(tip,Vector2(24,24),Color("d8f7ff"),.6)
+		var release:=1.0 if not shared_world.consumed[0] else 1.0-smoothstep(motion_contact[0],motion_contact[0]+.29,age[0])
+		if release>0:_draw_han_skill_light(tip,p*release)
 	for i in range(fx.size()-1,-1,-1):
 		var effect:=fx[i]
 		var p:float=(visual_clock-float(effect.at))/float(effect.duration)
 		if p>=1:fx.remove_at(i);continue
 		if effect.name=="han_chain_impact":
-			var index:=clampi(floori((visual_clock-float(effect.at))*30),0,20)
-			var factor:=.58
-			var burst:=1.0-smoothstep(.04,.71,p)
-			_soft_light(effect.center,Vector2(173,108),Color("43aaff"),burst*.90)
-			_soft_light(effect.center,Vector2(42,37),Color("ebfcff"),burst*.9)
-			var ground_point:Vector2=effect.get("floor_point",effect.center+Vector2(0,17))
-			var wake_size:=Vector2(lerpf(86.0,208.0,p),lerpf(28.0,66.0,p))
-			_soft_light(ground_point,wake_size,Color("79cdff"),.75*(1.0-smoothstep(0,1,p)))
-			effects_layer.draw_texture_rect(chain_impact_frames[index],Rect2(effect.center-Vector2(192,243)*factor,Vector2(384,384)*factor),false)
+			var index:=clampi(floori((visual_clock-float(effect.at))*30),0,chain_impact_frames.size()-1)
+			const FACTOR:=.50
+			effects_layer.draw_texture_rect(chain_impact_frames[index],Rect2(effect.center-Vector2(192,243)*FACTOR,Vector2(384,384)*FACTOR),false)
+			continue
+		if effect.name=="uram_shield_contact" and authored_asset_hero=="uram" and not authored_frames.is_empty():
+			var elapsed:=visual_clock-float(effect.at)
+			if uram_wave and authored_asset_size==192:
+				_draw_uram_wave(effect,elapsed)
+				continue
+			if authored_bold and authored_asset_size==192:
+				var flash:=1.0-smoothstep(.022,.16,elapsed)
+				_soft_light(effect.center,Vector2(180,111),Color("38e8ce"),flash*.74)
+				_soft_light(effect.center,Vector2(61,50),Color("fffbd9"),flash*.84)
+			_draw_authored_frames(effect.center,elapsed,310.0 if authored_bold and authored_asset_size==192 else 207.0)
 			continue
 		if effect.name=="uram_shield_contact" or (_uram_duel() and effect.get("attacker",-1)==0):
 			_draw_uram_contact(effect,p)
@@ -1147,7 +1432,14 @@ func _draw_contact_effects()->void:
 			_draw_sling_contact(effect,p,basic)
 			continue
 		if is_instance_valid(shared_world) and effect.get("attacker",-1)==0 and (basic or effect.name=="contact_skill"):
-			_draw_han_impact(effect,clampf(p,0,1),basic)
+			if effect.get("han_2sp_authored",false):
+				var elapsed:=visual_clock-float(effect.at)
+				var idx:=clampi(floori(elapsed*30.0),0,HAN_2SP_COUNT-1)
+				var scale_factor:=HAN_2SP_DISPLAY_SIZE/192.0
+				effects_layer.draw_set_transform(effect.center,float(effect.spear_axis))
+				effects_layer.draw_texture_rect(han_2sp_frames[idx],Rect2(-HAN_2SP_ORIGIN*scale_factor,Vector2.ONE*HAN_2SP_DISPLAY_SIZE),false)
+				effects_layer.draw_set_transform(Vector2.ZERO)
+			else:_draw_han_impact(effect,clampf(p,0,1),basic)
 			continue
 		if strong and is_instance_valid(shared_world):continue # Replace only the shared-world pilot impact.
 		var at:Vector2=effect.center
@@ -1269,6 +1561,57 @@ func _draw_effects() -> void:
 				var dir := Vector2.from_angle(float(j)*TAU/7.0+.16)
 				effects_layer.draw_line(center+dir*radius*.5,center+dir*radius,Color(color,1.0-p),3.0*(1.0-p),true)
 
+func _draw_uram_wave(effect:Dictionary,elapsed:float)->void:
+	if elapsed<0 or elapsed>=AUTHORED_FRAME_SECONDS:return
+	var center:Vector2=effect.center
+	var flash:=1.0-smoothstep(.028,.13,elapsed)
+	_soft_light(center,Vector2(126,80),Color("48dcca"),flash*.68)
+	var extent:=Vector2(396,260)
+	var frame_index:=clampi(floori(elapsed*30.0),0,authored_frames.size()-1)
+	effects_layer.draw_set_transform(center,float(effect.forward_angle))
+	effects_layer.draw_texture_rect(authored_frames[frame_index],Rect2(-extent*URAM_WAVE_ORIGIN,extent),false)
+	effects_layer.draw_set_transform(Vector2.ZERO)
+
+func _saebom_aurora_active()->bool:
+	return saebom_aurora and authored_asset_size==192 and authored_asset_hero=="saebom" and not authored_frames.is_empty()
+
+func _saebom_cheer_age()->float:
+	return float(age[0])*SAEBOM_CHEER_NATIVE_SECONDS/maxf(.01,a.duration)
+
+func _draw_saebom_aurora()->void:
+	if not _saebom_aurora_active() or motion[0]!="chain" or rules.hp[0]<=0:return
+	if saebom_hop:
+		var clock:=_saebom_cheer_age()
+		for i in SAEBOM_CHEER_LIFTS.size():
+			_draw_saebom_hop_wave(clock-float(SAEBOM_CHEER_LIFTS[i]),i)
+		return
+	var elapsed:float=float(age[0])-SAEBOM_AURORA_START
+	if elapsed<0 or elapsed>=AUTHORED_FRAME_SECONDS:return
+	var idx:=clampi(floori(elapsed*30.0),0,authored_frames.size()-1)
+	var extent:=Vector2(488,171)
+	var origin:=saebom_aurora_origin
+	var rise:=1.0-smoothstep(.045,.21,elapsed)
+	_soft_light(origin,Vector2(90,29),Color("68edbb"),rise*.52,location_layer)
+	location_layer.draw_texture_rect(authored_frames[idx],Rect2(origin-extent*.5,extent),false)
+
+func _draw_saebom_hop_wave(t:float,beat:int)->void:
+	if t<0 or t>=.94:return
+	var extent:=Vector2(488,171)
+	var origin:=saebom_aurora_origin
+	var warm:=Color("ffecd2") if beat%2==1 else Color.WHITE
+	# Keep a trembling afterwave alive under the next hop rather than cutting to blank.
+	if t>.27:
+		var span:=extent*lerpf(.92,1.08,smoothstep(.28,.89,t))
+		var quiver:=.5+.5*sin((t-.27)*TAU*5.45)
+		var shimmer:=smoothstep(.28,.39,t)*(1.0-smoothstep(.57,.94,t))*(.18+.15*quiver)
+		var after_idx:=clampi(floori(lerpf(11.0,17.0,smoothstep(.31,.86,t))),11,17)
+		location_layer.draw_texture_rect(authored_frames[after_idx],Rect2(origin-span*.5,span),false,Color(warm,shimmer))
+	if t<.65:
+		var idx:=clampi(floori(t*21.0/.65),0,authored_frames.size()-1)
+		var lift:=1.0-smoothstep(.025,.13,t)
+		_soft_light(origin,Vector2(100,34),Color("7afed2"),lift*.68,location_layer)
+		location_layer.draw_texture_rect(authored_frames[idx],Rect2(origin-extent*.5,extent),false,warm)
+
 func _draw_sling_exchange()->void:
 	if rules.hp[0]<=0:return
 	var stone:=shared_world.project(shared_world.sling_point())
@@ -1280,14 +1623,25 @@ func _draw_sling_exchange()->void:
 		_soft_light(pouch,Vector2(29,24),Color("d32118"),.50*charge)
 		_soft_light(stone,Vector2(17,16),Color("ff544a"),.84*charge)
 		effects_layer.draw_circle(stone,2.0,Color(1,.77,.67,charge),true,-1,true)
-	if motion[0]=="chain":
+	if motion[0]=="chain" and not _saebom_aurora_active():
 		var phase:=clampf(age[0]/maxf(.01,a.duration),0,1)
 		var pulse:=sin(PI*phase)
 		var ground_point:=_position(0)
 		var palms:=shared_world.bone_screen(0,"hand.R").lerp(shared_world.bone_screen(0,"hand.L"),.5)
 		_soft_light(ground_point,Vector2(66,20),Color("66cfa1"),pulse*.58)
-		# Retain the original inward support particles/ring, in its own green palette.
+		var use_authored:=authored_asset_hero=="saebom" and not authored_frames.is_empty()
+		if use_authored:
+			var elapsed:float=float(age[0])-SAEBOM_SUPPORT_START
+			if authored_bold and authored_asset_size==192:
+				var swell:=smoothstep(.045,.27,elapsed)*(1.0-smoothstep(.35,.67,elapsed))
+				var transfer:=smoothstep(.22,.34,elapsed)*(1.0-smoothstep(.35,.53,elapsed))
+				_soft_light(ground_point,Vector2(144,54),Color("31dfb6"),swell*.56)
+				_soft_light(palms,Vector2(105,83),Color("fff0a6"),transfer*.70)
+			_draw_authored_frames(ground_point,elapsed,298.0 if authored_bold and authored_asset_size==192 else 207.0)
+		# Keep the original windup as the setup for the authored ribbon.
 		var draw_in:=clampf(phase/.45,0,1)
+		if use_authored:
+			pulse*=1.0-smoothstep(SAEBOM_SUPPORT_START,SAEBOM_SUPPORT_START+.20,age[0])
 		var rim:=lerpf(49.0,10.0,draw_in)
 		for i in 12:
 			var direction:=Vector2.from_angle(float(i)*TAU/12.0)
