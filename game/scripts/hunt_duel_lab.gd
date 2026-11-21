@@ -18,6 +18,14 @@ const Right := Hunt.DEER_SLOT
 # settled 1-1 Han/deer heights (63.885 / 67.540 logical pixels at 960x540).
 const HANGYEOL_BATTLE_SCALE := .76588
 const FOREST_BATTLE_SCALE := .82588
+# Local experiment: only this default lab matchup opts into grouped movement.
+const APPROACH_TRAVEL := .88
+const APPROACH_END := 1.04
+const START_GAP := 218.0
+const ENGAGE_GAP := 66.0
+const FIRST_BASIC := [.23,.38]
+const BASIC_CADENCE := [3.05,3.43]
+const BASIC_MAX_TRAVEL := 16.0
 const SP_COST := {"skill":2,"chain":3}
 const SoundPath := "res://assets/audio/hunt-duel-lab/"
 const SoundNames := {"hangyeol":"han", "uram":"uram", "saebom":"bom", "forest":"deer", "adult":"boar"}
@@ -62,6 +70,18 @@ var sounds: Dictionary = {}
 var cues: Array[String] = []
 var pool_index := 0
 var closing := false
+var approach_active := false
+
+func _prototype_duel()->bool:
+	return rules.ally_id=="hangyeol" and rules.enemy_id=="forest"
+
+func _duel_anchor(side:int,gap:float)->Vector2:
+	return (Left+Right)*.5+Left.direction_to(Right)*gap*.5*(-1.0 if side==0 else 1.0)
+
+func _settled_anchor(side:int)->Vector2:
+	if _prototype_duel():
+		return _duel_anchor(side,ENGAGE_GAP)
+	return Left if side==0 else Right
 var touch_pointer := -1
 var touch_target: Button
 var touch_buttons: Array[Button] = []
@@ -287,19 +307,23 @@ func reset_round() -> void:
 	start_cast_at = -1.0
 	execute_at = -1.0
 	visual_clock = 0.0
-	next_attack = [0.4,1.6]
+	approach_active = _prototype_duel()
+	next_attack = FIRST_BASIC.duplicate() if approach_active else [0.4,1.6]
 	animal_attack_count = 0
 	fx.clear()
 	a.play("idle")
 	b.play("idle")
-	a.preview.position = Left
-	b.preview.position = Right
-	cast_from=Left
+	a.preview.position = _position(0)
+	b.preview.position = _position(1)
+	cast_from=_settled_anchor(0)
 	presentation.reset(rules.hp)
 	if a.key=="hangyeol":
 		a.play("attack")
-		presentation.prepare_spear(a,Left,Right-Vector2(0,33),a.duration*.55)
+		presentation.prepare_spear(a,_settled_anchor(0),_settled_anchor(1)-Vector2(0,33),a.duration*.55,0.0 if approach_active else 78.0)
 		a.play("idle")
+	if approach_active:
+		motion = ["run","run"]
+		a.play("run");b.play("run")
 	_start_battle_camera()
 	skill_hud.reset(a.key)
 	_render_actors()
@@ -325,7 +349,7 @@ func _refresh(delta := 0.0) -> void:
 		selection_frames[key].visible=chosen
 
 func _can_request()->bool:
-	return not paused and rules.living() and motion[0] in ["idle","walk","run","attack","hit"]
+	return not paused and not approach_active and rules.living() and motion[0] in ["idle","walk","run","attack","hit"]
 
 func _try_player(key: String) -> void:
 	if not SP_COST.has(key) or not _can_request() or not rules.spend(int(SP_COST[key])):
@@ -345,25 +369,28 @@ func _act(side: int, key: String) -> void:
 	var duration: float = actor.duration
 	contact_at[side] = duration * (.55 if key == "attack" else .63)
 	if side==0 and actor.key=="hangyeol" and key in ["attack","skill"]:
-		presentation.prepare_spear(actor,Left,_position(1)-Vector2(0,33),contact_at[side])
+		var travel := 0.0 if _prototype_duel() and key=="attack" else 78.0
+		presentation.prepare_spear(actor,_settled_anchor(0),_position(1)-Vector2(0,33),contact_at[side],travel)
 	if side == 0 and key != "attack":
 		start_cast_at = rules.elapsed
 	if side == 1 and key == "skill":
 		contact_at[side] = minf(duration-.03,float(Profile.CONTACT[actor.key]))
 		execute_at = float(actor.preview.length("req046_skill_anticipation"))
 		_sound("warning")
-		_flash(Right,"boss_gather" if b.key=="adult" else "gather",Color("#61bbff"),execute_at)
+		_flash(_settled_anchor(1),"boss_gather" if b.key=="adult" else "gather",Color("#61bbff"),execute_at)
 	else:
 		var kind := "basic" if key == "attack" else key
-		_sound(SoundNames[actor.key]+"_"+kind)
+		if key != "attack" or not _prototype_duel():
+			_sound(SoundNames[actor.key]+"_"+kind)
 		if key != "attack":
-			var ground := Left if side==0 else Right
+			var ground := _settled_anchor(side)
 			var name := "chain_"+actor.key if key == "chain" else "cast_"+actor.key
 			_flash(ground,name,_ally_color(), duration if key == "chain" else minf(1.25,duration*.8))
 	# A support cast and the shield preview have no fictitious target damage.
 	if side == 0 and key == "chain" and actor.key != "hangyeol":
 		contact_at[side] = -1.0
-	next_attack[side] = rules.elapsed+maxf(Rules.BASIC_EVERY,duration+.26)
+	var interval:float=BASIC_CADENCE[side] if _prototype_duel() else Rules.BASIC_EVERY
+	next_attack[side] = rules.elapsed+maxf(interval,duration+.26)
 	motion_contact[side]=contact_at[side]
 
 func _ally_color() -> Color:
@@ -388,7 +415,7 @@ func _sound(key: String) -> void:
 	player.play()
 
 func _land(side: int, key: String) -> void:
-	if not rules.living():
+	if approach_active or not rules.living():
 		return
 	var defender := 1-side
 	var impact_point := _position(defender)-Vector2(0,33)
@@ -411,6 +438,8 @@ func _land(side: int, key: String) -> void:
 	# ordinary hit reads as the agreed short white glint.
 	var tone := Color("#fff5df") if defender == 0 or a.key=="hangyeol" else Color("#cf9862")
 	if not skill:
+		if _prototype_duel():
+			_sound(SoundNames[(a if side==0 else b).key]+"_basic")
 		_flash(impact_point,"hit",tone,.21)
 	if rules.damage(defender,38 if key=="chain" else 27 if skill else 11 if side==0 else 13):
 		_die(defender)
@@ -436,7 +465,11 @@ func _visual_age(side:int)->float:
 	return float(frame_contact[side]) if float(frame_contact[side])>=0 else float(age[side])
 
 func _position(side: int) -> Vector2:
-	var place := Left if side==0 else Right
+	var place := _settled_anchor(side)
+	if approach_active:
+		return _duel_anchor(side,lerpf(START_GAP,ENGAGE_GAP,smoothstep(0.0,APPROACH_TRAVEL,visual_clock)))
+	if _prototype_duel() and motion[side]=="attack" and side==1:
+		return place
 	if motion[side] not in ["attack","skill","chain"]:
 		return place
 	if side==0 and a.key=="saebom":
@@ -453,8 +486,11 @@ func _position(side: int) -> Vector2:
 	var direction := Left.direction_to(Right)*(1.0 if side==0 else -1.0)
 	var point:=place + direction*78.0*smoothstep(0.05,0.96,clampf(p,0,1))
 	if side==0 and a.key=="hangyeol" and motion[0] in ["attack","skill"]:
-		point=place+(presentation.thrust_peak+_position(1)-presentation.thrust_target)*smoothstep(0.05,0.96,clampf(p,0,1))
-	if side==0 and motion[0] in ["skill","chain"]:point+=(cast_from-Left)*(1.0-smoothstep(0,.18,elapsed))
+		var correction := presentation.thrust_peak+_position(1)-presentation.thrust_target
+		if _prototype_duel() and motion[0]=="attack":
+			correction=correction.limit_length(BASIC_MAX_TRAVEL)
+		point=place+correction*smoothstep(0.05,0.96,clampf(p,0,1))
+	if side==0 and motion[0] in ["skill","chain"]:point+=(cast_from-_settled_anchor(0))*(1.0-smoothstep(0,.18,elapsed))
 	return point
 
 func _process(delta: float) -> void:
@@ -464,6 +500,22 @@ func _process(delta: float) -> void:
 
 func advance(delta: float) -> void:
 	if paused:return
+	if approach_active:
+		var used:=minf(delta,APPROACH_END-visual_clock)
+		visual_clock+=used
+		if visual_clock>=APPROACH_TRAVEL and motion[0]=="run":
+			_react(0,"idle");_react(1,"idle")
+		else:
+			for side in 2:
+				age[side]+=used
+		_render_actors(used)
+		if visual_clock+.000001<APPROACH_END:
+			return
+		approach_active=false
+		_refresh()
+		delta-=used
+		if delta<=.000001:
+			return
 	visual_clock += delta
 	var revived := rules.advance(delta)
 	if not revived.is_empty():
@@ -481,10 +533,16 @@ func advance(delta: float) -> void:
 		if side==1 and execute_at>=0.0 and float(age[side])>=execute_at:
 			_sound(SoundNames[b.key]+"_skill")
 			execute_at = -1.0
-		var hit: float = contact_at[side]
-		if hit >= 0.0 and float(age[side]) >= hit:
+	var order: Array[int] = [0,1]
+	# Preserve chronological order if a single frame crosses both impacts.
+	if _prototype_duel() and frame_contact[0]>=0.0 and frame_contact[1]>=0.0:
+		if float(age[1])-float(frame_contact[1])>float(age[0])-float(frame_contact[0]):
+			order.reverse()
+	for side in order:
+		if frame_contact[side]>=0.0 and contact_at[side]>=0.0:
 			_land(side,motion[side])
-			contact_at[side] = -1.0
+			contact_at[side]=-1.0
+	for side in 2:
 		var actor := a if side==0 else b
 		if motion[side] not in ["idle","death"] and float(age[side])>=actor.duration:
 			_react(side,"idle")
@@ -515,9 +573,12 @@ func _start_battle_camera()->void:
 func _render_actors(delta:=0.0)->void:
 	a.preview.position=_position(0);b.preview.position=_position(1)
 	if a.key=="hangyeol":
-		a.preview.pivot.rotation.y=atan2((Right-Left).x,(Right-Left).y) if motion[0]=="chain" else presentation.thrust_yaw
-	presentation.sample(a,0,motion[0],_visual_age(0),float(next_attack[0])-rules.elapsed,delta)
-	presentation.sample(b,1,motion[1],_visual_age(1),float(next_attack[1])-rules.elapsed,delta)
+		var run_heading:=atan2((Right-Left).x,(Right-Left).y)
+		var settle:=smoothstep(APPROACH_TRAVEL,APPROACH_END,visual_clock)
+		var heading:=lerp_angle(run_heading,presentation.thrust_yaw,settle) if approach_active else presentation.thrust_yaw
+		a.preview.pivot.rotation.y=run_heading if motion[0]=="chain" else heading
+	presentation.sample(a,0,motion[0],_visual_age(0),INF if approach_active else float(next_attack[0])-rules.elapsed,delta)
+	presentation.sample(b,1,motion[1],_visual_age(1),INF if approach_active else float(next_attack[1])-rules.elapsed,delta)
 	a.place_effect();b.place_effect()
 	battle_camera.hunters.assign([a.preview]);battle_camera.rules.attacker=0
 	battle_camera.pose="strike" if start_cast_at>=0 and rules.elapsed-start_cast_at<.70 else ""

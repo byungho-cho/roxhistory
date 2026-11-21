@@ -69,7 +69,7 @@ func sample(actor,side:int,key:String,age:float,until_attack:float,delta:float)-
 	sk.force_update_all_bone_transforms()
 	actor.preview.viewport.render_target_update_mode=SubViewport.UPDATE_ONCE
 
-func prepare_spear(actor,origin:Vector2,target:Vector2,contact:float)->void:
+func prepare_spear(actor,origin:Vector2,target:Vector2,contact:float,preferred_travel:=78.0)->void:
 	var p=actor.preview
 	thrust_target=target+Vector2(0,33)
 	if spear_skeleton!=p.skeleton:
@@ -87,7 +87,7 @@ func prepare_spear(actor,origin:Vector2,target:Vector2,contact:float)->void:
 	p.animation.advance(0)
 	actor.sample(contact,false)
 	spear_skeleton.force_update_all_bone_transforms()
-	var ideal:=origin+origin.direction_to(target+Vector2(0,33))*78.0
+	var ideal:=origin+origin.direction_to(target+Vector2(0,33))*preferred_travel
 	var best:=INF
 	# Calibrate the authored weapon rather than assuming its local forward axis.
 	# Find the heading whose real tip reaches the body with the least correction
