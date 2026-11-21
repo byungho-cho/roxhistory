@@ -72,6 +72,8 @@ func create(parent:Node, id:String,comparison_b:=false,run_variant:="")->void:
 		resident_sample("idle",0.0)
 
 func screen_anchor()->Vector2:
+	if preview.has_meta("duel_world"):
+		return preview.get_meta("duel_world").bone_screen(int(preview.get_meta("duel_side")),"spine" if key=="hangyeol" else "head")
 	var skeleton=preview.skeleton
 	var bone=skeleton.find_bone("spine")
 	if bone<0:bone=preview.root_bone

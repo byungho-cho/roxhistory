@@ -9,6 +9,7 @@ const Profile = preload("res://scripts/model_motion_profile.gd")
 const Hunt = preload("res://scripts/deer_hunt_screen.gd")
 const HuntArt = preload("res://scripts/hunt_match_art.gd")
 const Presentation = preload("res://scripts/duel_motion_presenter.gd")
+const SharedWorld = preload("res://scripts/duel_shared_world.gd")
 const Ground = preload("res://assets/ui/hunting-formation/clearing-dirt.png")
 const UIFont = preload("res://assets/fonts/NotoSansKR.ttf")
 const SceneSize := Vector2(960,540)
@@ -71,6 +72,7 @@ var cues: Array[String] = []
 var pool_index := 0
 var closing := false
 var approach_active := false
+var shared_world:SharedWorld
 var contact_glow:GradientTexture2D
 var tip_trail:Array[Vector2]=[]
 
@@ -288,6 +290,8 @@ func reset_round() -> void:
 		item.stop()
 		item.stream_paused=paused
 	if a == null or b == null or a.key != rules.ally_id or b.key != rules.enemy_id:
+		if is_instance_valid(shared_world):
+			shared_world.detach();shared_world.queue_free();shared_world=null
 		for actor in [a,b]:
 			if actor != null:
 				actor.preview.hide()
@@ -321,7 +325,14 @@ func reset_round() -> void:
 	cast_from=_settled_anchor(0)
 	presentation.reset(rules.hp)
 	presentation.grounded_spear=_prototype_duel()
-	if a.key=="hangyeol":
+	if _prototype_duel():
+		presentation.cache_spear(a)
+		a.preview.set_meta("duel_presenter",presentation)
+		if not is_instance_valid(shared_world):
+			shared_world=SharedWorld.new();shared_world.name="SharedDuelWorld";field.add_child(shared_world)
+			shared_world.configure(a,b,(Left+Right)*.5)
+		shared_world.reset()
+	elif a.key=="hangyeol":
 		a.play("attack")
 		presentation.prepare_spear(a,_settled_anchor(0),_settled_anchor(1)-Vector2(0,33),a.duration*.55,0.0 if approach_active else 78.0)
 		a.play("idle")
@@ -373,10 +384,11 @@ func _act(side: int, key: String) -> void:
 	actor.play(key)
 	var duration: float = actor.duration
 	contact_at[side] = duration * (.55 if key == "attack" else .63)
-	if side==0 and actor.key=="hangyeol" and key in ["attack","skill"]:
+	if is_instance_valid(shared_world):shared_world.begin_action(side,key)
+	if not is_instance_valid(shared_world) and side==0 and actor.key=="hangyeol" and key in ["attack","skill"]:
 		var travel := 0.0 if _prototype_duel() else 78.0
 		presentation.prepare_spear(actor,_settled_anchor(0),_position(1)-Vector2(0,33),contact_at[side],travel)
-	if _prototype_duel() and side==0 and key=="chain":
+	if _prototype_duel() and not is_instance_valid(shared_world) and side==0 and key=="chain":
 		presentation.prepare_spear(actor,_settled_anchor(0),_position(1)-Vector2(0,33),contact_at[0],0)
 	if side == 0 and key != "attack":
 		start_cast_at = rules.elapsed
@@ -421,21 +433,26 @@ func _sound(key: String) -> void:
 	player.stream = sounds[key]
 	player.play()
 
-func _land(side: int, key: String) -> void:
+func _land(side: int, key: String,contact:Dictionary={}) -> void:
 	if approach_active or not rules.living():
 		return
+	if is_instance_valid(shared_world) and contact.is_empty():return
 	var defender := 1-side
 	var impact_point := _position(defender)-Vector2(0,33)
-	if side==0 and a.key=="hangyeol" and (key in ["attack","skill"] or (_prototype_duel() and key=="chain")):
+	if is_instance_valid(shared_world):impact_point=shared_world.project(contact.point)
+	elif side==0 and a.key=="hangyeol" and (key in ["attack","skill"] or (_prototype_duel() and key=="chain")):
 		# The calibrated mesh tip and the body's actual contact location coincide.
 		impact_point=presentation.spear_point(a)
 	var skill := key != "attack"
+	if is_instance_valid(shared_world):
+		motion_contact[side]=age[side] # Existing D0070 charge/impact FX now use contact time.
+		shared_world.apply_hit(defender,contact.normal,skill)
 	# Forward approach moves the actor to its strike distance. Check the
 	# simulation positions at contact instead of firing a hit from a timer alone.
 	var origin := _position(side)
 	var target := _position(defender)
 	var reach := 180.0 if (side==0 and a.key=="saebom") else 104.0
-	if origin.distance_to(target) > reach:
+	if not is_instance_valid(shared_world) and origin.distance_to(target) > reach:
 		return
 	if side == 1 and skill:
 		_flash(_position(0),"burst",Color("#ffad26"),.40)
@@ -466,7 +483,7 @@ func _react(side: int, key: String) -> void:
 	age[side] = 0.0
 	frame_contact[side]=-1.0
 	actor.play(key)
-	if _prototype_duel() and side==0 and key=="idle":
+	if _prototype_duel() and not is_instance_valid(shared_world) and side==0 and key=="idle":
 		presentation.prepare_ready(a,_settled_anchor(0),_position(1))
 
 func tone_for_contact(side:int)->Color:
@@ -482,6 +499,7 @@ func _visual_age(side:int)->float:
 	return float(frame_contact[side]) if float(frame_contact[side])>=0 else float(age[side])
 
 func _position(side: int) -> Vector2:
+	if is_instance_valid(shared_world):return shared_world.body_screen(side)
 	var place := _settled_anchor(side)
 	if approach_active:
 		return _duel_anchor(side,lerpf(START_GAP,ENGAGE_GAP,smoothstep(0.0,APPROACH_TRAVEL,visual_clock)))
@@ -525,6 +543,9 @@ func _process(delta: float) -> void:
 
 func advance(delta: float) -> void:
 	if paused:return
+	if is_instance_valid(shared_world):
+		_advance_shared(delta)
+		return
 	if approach_active:
 		var used:=minf(delta,APPROACH_END-visual_clock)
 		visual_clock+=used
@@ -596,6 +617,19 @@ func _start_battle_camera()->void:
 		battle_camera.update_camera(1.0/60.0)
 
 func _render_actors(delta:=0.0)->void:
+	if is_instance_valid(shared_world):
+		if delta==0:shared_world.render_poses(self,0)
+		a.preview.position=_position(0);b.preview.position=_position(1)
+		a.place_effect();b.place_effect()
+		if motion[0] in ["skill","chain"] and delta>0:
+			tip_trail.push_front(presentation.spear_point(a))
+			if tip_trail.size()>7:tip_trail.pop_back()
+		elif motion[0] not in ["skill","chain"]:tip_trail.clear()
+		battle_camera.hunters.assign([a.preview]);battle_camera.rules.attacker=0
+		battle_camera.pose="strike" if start_cast_at>=0 and rules.elapsed-start_cast_at<.70 else ""
+		battle_camera.pose_clock=(rules.elapsed-start_cast_at)/.70*Hunt.RULES.POSE_SECONDS
+		if delta>0:battle_camera.update_camera(delta)
+		return
 	a.preview.position=_position(0);b.preview.position=_position(1)
 	if a.key=="hangyeol":
 		var run_heading:=atan2((Right-Left).x,(Right-Left).y)
@@ -624,6 +658,35 @@ func _render_actors(delta:=0.0)->void:
 	battle_camera.pose="strike" if start_cast_at>=0 and rules.elapsed-start_cast_at<.70 else ""
 	battle_camera.pose_clock=(rules.elapsed-start_cast_at)/.70*Hunt.RULES.POSE_SECONDS
 	if delta>0:battle_camera.update_camera(delta)
+
+func _advance_shared(delta:float)->void:
+	# Render rate-independent continuous body/weapon integration. No timer can
+	# call _land on this path: only a swept 3D hurt-volume contact can do so.
+	while delta>.0000001:
+		var dt:=minf(delta,SharedWorld.FIXED_STEP);delta-=dt
+		visual_clock+=dt
+		if approach_active:
+			for side in 2:age[side]+=dt
+			shared_world.step(self,dt)
+			if visual_clock>=APPROACH_TRAVEL and motion[0]=="run":_react(0,"idle");_react(1,"idle")
+			if visual_clock+.000001>=APPROACH_END:approach_active=false
+			_render_actors(dt);_refresh();continue
+		if not rules.advance(dt).is_empty():reset_round();return
+		for side in 2:
+			age[side]+=dt;frame_contact[side]=-1.0
+		var events:=shared_world.step(self,dt)
+		for event in events:_land(int(event.side),event.motion,event)
+		if execute_at>=0 and age[1]>=execute_at:
+			_sound(SoundNames[b.key]+"_skill");execute_at=-1
+		for side in 2:
+			var actor:=a if side==0 else b
+			if motion[side] not in ["idle","death"] and age[side]>=actor.duration:_react(side,"idle")
+		if rules.living():
+			if motion[0]=="idle" and rules.elapsed>=next_attack[0]:_act(0,"attack")
+			if motion[1]=="idle" and rules.elapsed>=next_attack[1]:
+				animal_attack_count+=1;_act(1,"skill" if animal_attack_count%3==0 else "attack")
+		_render_actors(dt);_refresh(dt)
+	effects_layer.queue_redraw()
 
 func _flash(center: Vector2, key: String, tint: Color, duration: float) -> void:
 	fx.append({"center":center,"name":key,"color":tint,"duration":duration,"at":visual_clock})

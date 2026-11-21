@@ -52,7 +52,7 @@ func attack_sample(age:float,duration:float)->float:
 	var contact:=duration*.55
 	return lerpf(duration*.22,contact,clampf(age/contact,0,1)) if age<contact else age
 
-func sample(actor,side:int,key:String,age:float,until_attack:float,delta:float)->void:
+func sample(actor,side:int,key:String,age:float,until_attack:float,delta:float,extract_planar:=true)->void:
 	var next_phase:=key
 	var recovering:=key=="hit" and age>=minf(.14,actor.duration*.35)
 	if (key=="idle" or recovering) and until_attack>0 and until_attack<PREPARE_SECONDS:
@@ -75,7 +75,7 @@ func sample(actor,side:int,key:String,age:float,until_attack:float,delta:float)-
 		if age>=.65:actor.death_effect.sample(age-.65+.08)
 	else:
 		actor.sample(attack_sample(age,actor.duration) if key=="attack" else age,false)
-	if side==0:anchor_spear_root(actor)
+	if side==0 and extract_planar:anchor_spear_root(actor)
 	var sk:Skeleton3D=actor.preview.skeleton
 	if phase[side]!=next_phase:
 		blend_from[side]=poses[side].duplicate(true);blend_age[side]=0;phase[side]=next_phase
@@ -98,15 +98,7 @@ func sample(actor,side:int,key:String,age:float,until_attack:float,delta:float)-
 func prepare_spear(actor,origin:Vector2,target:Vector2,contact:float,preferred_travel:=78.0)->void:
 	var p=actor.preview
 	thrust_target=target+Vector2(0,33)
-	if spear_skeleton!=p.skeleton:
-		spear_skeleton=p.skeleton;hand=spear_skeleton.find_bone("hand.R")
-		var mesh:=p.pivot.find_child("*chipped*",true,false) as MeshInstance3D
-		var rest:=spear_skeleton.get_bone_global_rest(hand)
-		var longest:=-1.0
-		for vertex:Vector3 in mesh.mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX]:
-			var local:=spear_skeleton.to_local(mesh.to_global(vertex))
-			var distance:=local.distance_squared_to(rest.origin)
-			if distance>longest:longest=distance;tip_in_hand=rest.affine_inverse()*local
+	cache_spear(actor)
 	# Do not calibrate from a partially blended idle/attack pose. The lab's
 	# explicit bone crossfade below owns the transition used in actual play.
 	p.animation.play(actor.clip_for(actor.motion),0.0)
@@ -116,9 +108,6 @@ func prepare_spear(actor,origin:Vector2,target:Vector2,contact:float,preferred_t
 	spear_skeleton.force_update_all_bone_transforms()
 	var ideal:=origin+origin.direction_to(target+Vector2(0,33))*preferred_travel
 	var best:=INF
-	# Calibrate the authored weapon rather than assuming its local forward axis.
-	# Find the heading whose real tip reaches the body with the least correction
-	# to the existing approach. Keep this heading for the committed thrust.
 	for i in 180:
 		p.pivot.rotation.y=TAU*float(i)/180.0
 		var offset:Vector2=spear_point(actor)-p.position
@@ -127,6 +116,18 @@ func prepare_spear(actor,origin:Vector2,target:Vector2,contact:float,preferred_t
 		if error<best:best=error;thrust_yaw=p.pivot.rotation.y;thrust_peak=peak-origin
 	p.pivot.rotation.y=thrust_yaw
 	actor.sample(0,false)
+
+func cache_spear(actor)->void:
+	var p=actor.preview
+	if spear_skeleton!=p.skeleton:
+		spear_skeleton=p.skeleton;hand=spear_skeleton.find_bone("hand.R")
+		var mesh:=p.pivot.find_child("*chipped*",true,false) as MeshInstance3D
+		var rest:=spear_skeleton.get_bone_global_rest(hand)
+		var longest:=-1.0
+		for vertex:Vector3 in mesh.mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX]:
+			var local:=spear_skeleton.to_local(mesh.to_global(vertex))
+			var distance:=local.distance_squared_to(rest.origin)
+			if distance>longest:longest=distance;tip_in_hand=rest.affine_inverse()*local
 
 func prepare_ready(actor,origin:Vector2,enemy:Vector2)->void:
 	if not grounded_spear:return
@@ -140,11 +141,16 @@ func prepare_ready(actor,origin:Vector2,enemy:Vector2)->void:
 	actor.preview.pivot.rotation.y=ready_yaw
 
 func spear_point(actor)->Vector2:
+	if actor.preview.has_meta("duel_world"):
+		var world=actor.preview.get_meta("duel_world")
+		return world.project(world.weapon_point(0))
 	var p=actor.preview
 	var world:=spear_skeleton.global_transform*spear_skeleton.get_bone_global_pose(hand)*tip_in_hand
 	return p.position+(p.display.position+p.camera.unproject_position(world)*p.display.scale)*p.scale
 
 func bone_point(actor,name:String)->Vector2:
+	if actor.preview.has_meta("duel_world"):
+		return actor.preview.get_meta("duel_world").bone_screen(int(actor.preview.get_meta("duel_side")),name)
 	var p=actor.preview
 	var sk:Skeleton3D=p.skeleton
 	var world:=sk.global_transform*sk.get_bone_global_pose(sk.find_bone(name)).origin
