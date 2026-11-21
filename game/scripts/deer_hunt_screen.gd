@@ -5,6 +5,7 @@ signal preparation_ready
 const Timing := preload("res://scripts/motion_timing.gd")
 const SkillHUD := preload("res://scripts/duel_skill_hud.gd")
 const HeadHUD := preload("res://scripts/battle_head_hud.gd")
+const RallyBadge := preload("res://scripts/hunt_duel_bom_buff_badge.gd")
 var head_headers:Array=[]
 const MATCH := preload("res://scripts/hunt_match_art.gd")
 const RULES := preload("res://scripts/deer_hunt_rules.gd")
@@ -478,7 +479,7 @@ func build_combat() -> void:
 		hud.position=Vector2(354.6+92.4*index,437)
 		combat_controls.add_child(hud)
 		hud.reset(["hangyeol","uram","saebom"][index])
-		hud.requested.connect(func(action:String):use_skill(RULES.PARTY_SKILLS[index],2 if action=="skill" else 3))
+		hud.requested.connect(_on_party_skill_requested.bind(index))
 		party_cards.append({"hud":hud,"button":hud.chain_button,"portrait":hud.portrait,"charges":hud.orbs,"hp":hud.hp})
 		var head:=HeadHUD.create(combat_controls,["한결","우람","새봄"][index],true)
 		head_headers.append(head)
@@ -897,6 +898,21 @@ func advance_transition(delta: float) -> void:
 			icon.size = control.size
 			icon.texture = [preload(CARD_ART+"auto.png"),preload(CARD_ART+"x2.png")][i]
 		fit_layout()
+
+
+func _on_party_skill_requested(action: String, index: int) -> void:
+	if index == RULES.SAEBOM and action == "chain":
+		if not running or result_shown or exit_popup or app.modal or not app.application_active:
+			return
+		if rules.start_rally():
+			play_pose("rally")
+			update_combat_ui()
+		else:
+			hunt_audio.cue("S25")
+		return
+	use_skill(RULES.PARTY_SKILLS[index], 2 if action == "skill" else 3)
+
+
 func use_skill(id: String, required_sp:int=3) -> void:
 	if not running or result_shown or exit_popup or app.modal or not app.application_active:return
 	var index := RULES.PARTY_SKILLS.find(id)
@@ -935,7 +951,10 @@ func _process(delta: float) -> void:
 	if transition_elapsed>=0:
 		advance_transition(delta)
 	elif running and not result_shown:
-		if impact_pending and pose_clock >= (JumpMotion.JUMP_CONTACT_SECONDS if pose=="thrust" else IMPACT_SECONDS):
+		# Tick existing boosts before a contact; a new release starts at a full five seconds.
+		rules.advance_rally_clock(elapsed)
+		var rally_releases := impact_pending and pose == "rally" and pose_clock >= IMPACT_SECONDS
+		if impact_pending and pose != "rally" and pose_clock >= (JumpMotion.JUMP_CONTACT_SECONDS if pose=="thrust" else IMPACT_SECONDS):
 			var before_hp := rules.hunter_hp if pose == "counter" else rules.deer_hp
 			rules.resolve_attack()
 			hit_damage = before_hp - (rules.hunter_hp if pose == "counter" else rules.deer_hp)
@@ -958,7 +977,14 @@ func _process(delta: float) -> void:
 				if pose=="auto_thrust":
 					hunt_audio.cue("S16",3)
 					hunt_audio.cue("S22",1)
-		var move := rules.advance(elapsed)
+		var move := rules.advance(elapsed, false)
+		if rally_releases:
+			var positions: Array[Vector2] = []
+			for hunter in hunters:
+				positions.append(hunter.position)
+			rules.apply_rally(positions)
+			impact_pending = false
+			hunt_audio.cue("S20",2)
 		if not move.is_empty():play_pose(move)
 	if running:
 		update_combat_ui(elapsed)
@@ -982,7 +1008,11 @@ func update_combat_ui(delta := 0.0) -> void:
 	hunter_health_text.text = str(rules.hunter_hp)
 	deer_health_text.text = str(rules.deer_hp)
 	for i in party_cards.size():
-		party_cards[i].hud.sync(rules.orbs(i),rules.party_hp[i],RULES.PARTY_HP[i],rules.party_hp[i]>0,running and rules.can_use(RULES.PARTY_SKILLS[i]),delta)
+		var hud: Control = party_cards[i].hud
+		hud.sync(rules.orbs(i),rules.party_hp[i],RULES.PARTY_HP[i],rules.party_hp[i]>0,running and rules.can_use(RULES.PARTY_SKILLS[i]),delta)
+		if i == RULES.SAEBOM:
+			hud.chain_button.disabled = not running or result_shown or not rules.can_start_rally()
+			RallyBadge.sync(hud, rules.rally_remaining[i] if rules.party_hp[i] > 0 else 0.0)
 
 func update_camera(delta: float) -> void:
 	var focus := Vector2(480,285).lerp(Vector2(495,305),approach)

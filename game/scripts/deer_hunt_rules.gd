@@ -8,6 +8,10 @@ const CHARGE_SECONDS := [1.5, 1.8, 2.0]
 const PARTY_SKILLS := ["thrust", "strike", "team"]
 const BASIC_INTERVAL := 10.0 / 14.0
 const POSE_SECONDS := 0.52
+const SAEBOM := 2
+const RALLY_COST := 3
+const RALLY_SECONDS := 5.0
+const RALLY_RADIUS := 190.0
 const AUTO_INTERVAL := 2.6
 const SKILLS := {
 	"thrust": {"label": "찌르기", "cost": 1, "damage": 8},
@@ -24,6 +28,12 @@ var deer_max_hp := MAX_HP
 var deer_hp := MAX_HP
 var pending_damage := 0
 var pending_counter := false
+var rally_cast_pending := false
+var rally_remaining: Array[float] = [0.0, 0.0, 0.0]
+# Integer fifths, independent per recipient. A sequence of five 1-point
+# attacks really gains one damage instead of each attack rounding back to 1.
+# Only boosted attacks can consume the earned fraction, even after another cast.
+var rally_fifths: Array[int] = [0, 0, 0]
 var next_attacker := 0
 var attacker := 0
 var outcome := ""
@@ -54,12 +64,14 @@ func resolve_attack() -> void:
 	var damage := pending_damage
 	pending_damage = 0
 	if damage > 0:
-		damage_deer(damage)
+		damage_deer(_rally_damage(damage, attacker))
 	if pending_counter:
 		pending_counter = false
 		party_hp[attacker] = maxi(0, party_hp[attacker] - COUNTER_DAMAGE)
 		if party_hp[attacker]==0:
 			charges[attacker]=0.0
+			rally_remaining[attacker]=0.0
+			rally_fifths[attacker]=0
 			if auto_enabled:reserved_skill=next_auto_skill()
 		if hunter_hp == 0:
 			outcome = "loss"
@@ -80,7 +92,7 @@ func next_auto_skill() -> String:
 	return "" if options.is_empty() else options[rng.randi_range(0,options.size()-1)]
 
 func can_use(skill: String) -> bool:
-	if not SKILLS.has(skill) or not outcome.is_empty() or action_lock > 0 or pending_damage > 0 or pending_counter:
+	if not SKILLS.has(skill) or not outcome.is_empty() or action_lock > 0 or pending_damage > 0 or pending_counter or rally_cast_pending:
 		return false
 	var index := PARTY_SKILLS.find(skill)
 	if party_hp[index]<=0 or orbs(index)<SKILLS[skill].cost:return false
@@ -100,15 +112,65 @@ func use_skill(skill: String) -> bool:
 	queue_attack(SKILLS[skill].damage,index)
 	return true
 
+func can_start_rally() -> bool:
+	return (
+		outcome.is_empty() and party_hp[SAEBOM] > 0 and orbs(SAEBOM) >= RALLY_COST
+		and action_lock <= 0.0 and orb_lock <= 0.0
+		and pending_damage == 0 and not pending_counter and not rally_cast_pending
+	)
+
+
+func start_rally() -> bool:
+	if not can_start_rally():
+		return false
+	charges[SAEBOM] = maxf(0.0, charges[SAEBOM] - RALLY_COST)
+	action_lock = POSE_SECONDS
+	orb_lock = 1.0
+	rally_cast_pending = true
+	return true
+
+
+func apply_rally(positions: Array[Vector2]) -> bool:
+	if not rally_cast_pending:
+		return false
+	rally_cast_pending = false
+	if not outcome.is_empty() or party_hp[SAEBOM] <= 0 or positions.size() != party_hp.size():
+		return false
+	var caster := positions[SAEBOM]
+	for i in party_hp.size():
+		if party_hp[i] <= 0 or caster.distance_squared_to(positions[i]) > RALLY_RADIUS * RALLY_RADIUS:
+			continue
+		rally_remaining[i] = RALLY_SECONDS
+	return true
+
+
+func _rally_damage(damage: int, index: int) -> int:
+	if party_hp[index] <= 0 or rally_remaining[index] <= 0.0:
+		return damage
+	var fifths := damage + rally_fifths[index]
+	rally_fifths[index] = fifths % 5
+	return damage + floori(float(fifths) / 5.0)
+
+
 func damage_deer(amount: int) -> void:
 	deer_hp = maxi(0, deer_hp - amount)
 	if deer_hp == 0:
 		outcome = "win"
 		set_auto(false)
 
-func advance(delta: float) -> String:
+func advance_rally_clock(delta: float) -> void:
+	for index in party_hp.size():
+		if rally_remaining[index] > 0.0:
+			rally_remaining[index] = maxf(0.0, rally_remaining[index] - delta)
+			if rally_remaining[index] <= .000001:
+				rally_remaining[index] = 0.0
+
+
+func advance(delta: float, tick_rally := true) -> String:
 	if not outcome.is_empty():
 		return ""
+	if tick_rally:
+		advance_rally_clock(delta)
 	for index in party_hp.size():
 		if party_hp[index]>0:charges[index]=minf(MAX_ORBS,charges[index]+delta/CHARGE_SECONDS[index])
 	action_lock = maxf(0.0, action_lock - delta)
@@ -120,7 +182,7 @@ func advance(delta: float) -> String:
 		if auto_enabled:
 			reserved_skill = next_auto_skill()
 		return queued
-	if exchange_clock < AUTO_INTERVAL or action_lock > 0 or pending_damage > 0 or pending_counter:
+	if exchange_clock < AUTO_INTERVAL or action_lock > 0 or pending_damage > 0 or pending_counter or rally_cast_pending:
 		return ""
 	exchange_clock = 0.0
 	action_lock = POSE_SECONDS
