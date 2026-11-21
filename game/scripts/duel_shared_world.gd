@@ -13,6 +13,7 @@ var display:Sprite2D
 var actors:Array=[]
 var bodies:Array[AnimatableBody3D]=[]
 var body_shapes:Array[CollisionShape3D]=[]
+var body_guards:Array[CollisionShape3D]=[]
 var hurt:Array[Area3D]=[]
 var originals:Array=[]
 var facing:=[0.0,0.0]
@@ -63,6 +64,8 @@ func configure(left,right,center:Vector2)->void:
 		scene.add_child(body);bodies.append(body)
 		var shape:=CollisionShape3D.new();var capsule:=CapsuleShape3D.new();capsule.radius=BODY_RADII[i];capsule.height=1.65 if i==0 else 1.45
 		shape.shape=capsule;shape.position.y=.85;body.add_child(shape);body_shapes.append(shape)
+		var guard:=CollisionShape3D.new();guard.name="HipAndForelegEnvelope";guard.shape=capsule
+		guard.position.y=.85;body.add_child(guard);body_guards.append(guard)
 		var area:=Area3D.new();area.name="HanHurt" if i==0 else "DeerHurt";area.collision_layer=2;area.collision_mask=0;body.add_child(area);hurt.append(area)
 		var hs:=CollisionShape3D.new();var hc:=CapsuleShape3D.new();hc.radius=.30 if i==0 else .36;hc.height=1.55 if i==0 else 1.5
 		hs.shape=hc;area.add_child(hs)
@@ -178,19 +181,25 @@ static func capsule_hit(from:Vector3,to:Vector3,a:Vector3,b:Vector3,radius:float
 			if t>=0 and t<=1 and axial>=0 and axial<=aa:best=minf(best,t)
 	return best
 
-func resolve_bodies(next:Array,previous_centers:Array=[])->void:
+func resolve_bodies(next:Array,previous_centers:Array=[],previous_guards:Array=[])->void:
 	# Relative swept upright capsules in XYZ (Minkowski sum), resolved together.
 	# The shapes follow the sampled torsos, including airborne jump poses.
 	var old0:Vector3=bodies[0].position;var old1:Vector3=bodies[1].position
-	var center0:=body_shapes[0].global_position;var center1:=body_shapes[1].global_position
-	var before0:Vector3=previous_centers[0] if previous_centers.size()==2 else center0
-	var before1:Vector3=previous_centers[1] if previous_centers.size()==2 else center1
-	var rel:=before0-before1
-	var motion:Vector3=(center0+next[0]-old0)-(center1+next[1]-old1)-rel
 	var r:float=BODY_RADII[0]+BODY_RADII[1]+.025
 	var half:float=0
 	for shape in body_shapes:half+=shape.shape.height*.5-shape.shape.radius
-	var t:=capsule_hit(rel,rel+motion,Vector3.DOWN*half,Vector3.UP*half,r)
+	var proxies:=[body_shapes,body_guards,[body_shapes[0],body_guards[1]],[body_guards[0],body_shapes[1]]]
+	var histories:=[previous_centers,previous_guards,[],[]]
+	if previous_centers.size()==2 and previous_guards.size()==2:
+		histories[2]=[previous_centers[0],previous_guards[1]];histories[3]=[previous_guards[0],previous_centers[1]]
+	var t:=INF
+	for j in proxies.size():
+		var center0:Vector3=proxies[j][0].global_position;var center1:Vector3=proxies[j][1].global_position
+		var before0:Vector3=histories[j][0] if histories[j].size()==2 else center0
+		var before1:Vector3=histories[j][1] if histories[j].size()==2 else center1
+		var rel:=before0-before1
+		var motion:Vector3=(center0+next[0]-old0)-(center1+next[1]-old1)-rel
+		t=minf(t,capsule_hit(rel,rel+motion,Vector3.DOWN*half,Vector3.UP*half,r))
 	if t!=INF:
 		body_contacts+=1
 		var at0:Vector3=old0+(next[0]-old0)*maxf(0,t-.0001)
@@ -210,17 +219,20 @@ func resolve_bodies(next:Array,previous_centers:Array=[])->void:
 		next=[at0+remain0,at1+remain1]
 	for i in 2:bodies[i].position=Vector3(next[i].x,0,next[i].z)
 	# Robustly separate an externally repositioned overlap before the next step.
-	var gap:=body_shapes[1].global_position-body_shapes[0].global_position
-	var vertical:=maxf(0,absf(gap.y)-half);gap.y=0
-	var required:=sqrt(maxf(0,r*r-vertical*vertical))
-	if gap.length()<required:
-		var normal:=gap.normalized() if gap.length()>.0001 else direction
-		var overlap:=required-gap.length()
-		bodies[0].position-=normal*overlap*.5;bodies[1].position+=normal*overlap*.5
-	var end_gap:=body_shapes[1].global_position-body_shapes[0].global_position
-	vertical=maxf(0,absf(end_gap.y)-half);end_gap.y=0
-	var separation:=sqrt(end_gap.length_squared()+vertical*vertical)
-	max_body_penetration=maxf(max_body_penetration,maxf(0,r-separation))
+	for iteration in 3:
+		for proxy in proxies:
+			var gap:Vector3=proxy[1].global_position-proxy[0].global_position
+			var vertical:=maxf(0,absf(gap.y)-half);gap.y=0
+			var required:=sqrt(maxf(0,r*r-vertical*vertical))
+			if gap.length()<required:
+				var normal:=gap.normalized() if gap.length()>.0001 else direction
+				var overlap:=required-gap.length()
+				bodies[0].position-=normal*overlap*.5;bodies[1].position+=normal*overlap*.5
+	for proxy in proxies:
+		var end_gap:Vector3=proxy[1].global_position-proxy[0].global_position
+		var vertical:=maxf(0,absf(end_gap.y)-half);end_gap.y=0
+		var separation:=sqrt(end_gap.length_squared()+vertical*vertical)
+		max_body_penetration=maxf(max_body_penetration,maxf(0,r-separation))
 
 func apply_hit(side:int,direction:Vector3,strong:bool)->void:
 	direction.y=0
@@ -273,6 +285,7 @@ func render_poses(lab,delta:float)->Array:
 		p.viewport.render_target_update_mode=SubViewport.UPDATE_DISABLED
 		var torso:=bone_world(side,"spine" if side==0 else "trunk")
 		body_shapes[side].global_position=torso-Vector3(0,.12 if side==0 else .15,0)
+		body_guards[side].position=Vector3(0,torso.y-.12 if side==0 else torso.y-.15,0)
 		hurt[side].global_position=torso
 		hurt[side].rotation.y=facing[side]
 		p.modulate.a=1 # Shared native render owns visibility; only the rig is faded.
@@ -289,6 +302,7 @@ func step(lab,delta:float)->Array[Dictionary]:
 	var old_hurt:=[hurt_capsule(0),hurt_capsule(1)]
 	var old_weapon:=[weapon_point(0),weapon_point(1)]
 	var old_centers:=[body_shapes[0].global_position,body_shapes[1].global_position]
+	var old_guards:=[body_guards[0].global_position,body_guards[1].global_position]
 	var roots:=render_poses(lab,delta)
 	var desired:=[bodies[0].position,bodies[1].position]
 	for side in 2:
@@ -307,7 +321,7 @@ func step(lab,delta:float)->Array[Dictionary]:
 		previous_root[side]=roots[side]
 		desired[side]+=knockback[side]*delta
 		knockback[side]=knockback[side].move_toward(Vector3.ZERO,delta*5)
-	resolve_bodies(desired,old_centers)
+	resolve_bodies(desired,old_centers,old_guards)
 	var events:Array[Dictionary]=[]
 	for side in 2:
 		var now:=weapon_point(side)

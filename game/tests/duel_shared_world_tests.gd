@@ -83,6 +83,7 @@ func run():
   w.knockback=[w.direction*3,-w.direction*3];lab.advance(1.0/60)
   check((w.bodies[1].position-w.bodies[0].position).dot(w.direction)>0,"sustained opposing charges stop rather than sliding past")
  check(w.max_body_penetration<.0001,"sustained charge capsules remain separated")
+ check(w.bodies[0].position.distance_to(w.bodies[1].position)>=w.BODY_RADII[0]+w.BODY_RADII[1]-.001,"hip/foreleg envelopes prevent visible root/leg stacking")
  # The target approaches while Han is airborne; landing remains on its near side.
  settle();lab.rules.sp=3;lab._try_player("chain");lab.next_attack=[999.0,999.0];lab.advance(.62)
  w.knockback[1]=-w.direction*3

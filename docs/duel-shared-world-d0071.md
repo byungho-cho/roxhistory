@@ -8,7 +8,8 @@ to any other matchup detaches the rigs and retains the original controller.
 Campaign combat, damage values, attack cadence, SP and intro assets are unchanged.
 
 Body and hurt volumes are separate CollisionShape3D capsules on layers1 and2.
-They follow the sampled torso bones. A deterministic1/120s custom capsule solver
+They follow the sampled torso bones; separate hip/foreleg envelopes also protect
+the lower/front body. All four opposing compound-shape pairs are swept. A deterministic1/120s custom capsule solver
 resolves both bodies' relative XYZ sweep together, including pose displacement.
 The static floor is at y=0; foot samples cannot sink below it. This is a custom
 kinematic solver, not rigid-body/ragdoll simulation. Authored planar root motion
