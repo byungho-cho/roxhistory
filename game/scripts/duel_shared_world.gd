@@ -39,6 +39,7 @@ var screen_origin:=Vector2.ZERO
 
 func configure(left,right,center:Vector2)->void:
 	actors=[left,right]
+	uram_pair=left.key=="uram" and right.key=="adult"
 	viewport=SubViewport.new();viewport.name="SharedDuel3DViewport"
 	viewport.size=Vector2i(1280,720);viewport.own_world_3d=true;viewport.transparent_bg=true
 	viewport.msaa_3d=Viewport.MSAA_2X;viewport.render_target_update_mode=SubViewport.UPDATE_ALWAYS
@@ -85,7 +86,7 @@ func configure(left,right,center:Vector2)->void:
 		p.viewport.size=Vector2i(2,2) # Adapter API stays valid without two unused large render targets.
 		p.set_meta("duel_world",self);p.set_meta("duel_side",i)
 		actor.death_effect.z_index=4
-	_calibrate_weapon_axis()
+	if not uram_pair:_calibrate_weapon_axis()
 	reset()
 
 func detach()->void:
@@ -141,10 +142,21 @@ func bone_world(side:int,bone:String)->Vector3:
 func bone_screen(side:int,bone:String)->Vector2:return project(bone_world(side,bone))
 
 func weapon_point(side:int)->Vector3:
+	if uram_pair and side==0:
+		var p=actors[0].preview
+		if action_name[0]=="counter":return p.shield.to_global(Vector3(0,0,.035))
+		var club:MeshInstance3D=p.club
+		var box:=club.get_aabb()
+		return club.to_global(Vector3(box.end.x*.85,0,0))
 	if side==1:
 		# Head-mounted nose/horn probe, transformed by the actual sampled rig.
 		var sk:Skeleton3D=actors[1].preview.skeleton
 		var head:=sk.find_bone("head")
+		if uram_pair:
+			var crown:=bone_world(1,"head")
+			var forward:=crown-bone_world(1,"trunk");forward.y=0.0
+			if forward.length_squared()<.0001:forward=-direction
+			return crown+forward.normalized()*.46+Vector3.UP*.025
 		return sk.to_global(sk.get_bone_global_pose(head)*Vector3(0,0,.23))
 	var p=actors[0].preview
 	var presenter=actors[0].preview.get_meta("duel_presenter",null)
@@ -293,8 +305,8 @@ func render_poses(lab,delta:float)->Array:
 		if side==1 and key=="walk":
 			# Reverse the authored hoof cycle while keeping the deer facing Han.
 			sample_age=fposmod(-age*1.65,actor.duration)
-		if side==0 and key=="chain":sample_age=lab.Accent.chain_pose(age,actor.duration)
-		var directional_hit:=side==1 and key=="hit" and deer_spear_reaction
+		if side==0 and key=="chain" and not uram_pair:sample_age=lab.Accent.chain_pose(age,actor.duration)
+		var directional_hit:=side==1 and key=="hit" and deer_spear_reaction and not uram_pair
 		lab.presentation.sample(actor,side,key,sample_age,INF if lab.approach_active else float(lab.next_attack[side])-lab.rules.elapsed,delta,false,directional_hit)
 		var sk:Skeleton3D=p.skeleton
 		var root:int=p.root_bone if side==0 else p.root_index
@@ -313,12 +325,29 @@ func render_poses(lab,delta:float)->Array:
 		var bottom:=INF
 		for foot in feet:bottom=minf(bottom,bone_world(side,foot).y)
 		if bottom<0:p.pivot.position.y-=bottom;sk.force_update_all_bone_transforms()
-		if side==0:_aim_thrust(key,age,actor.duration)
+		if side==0:
+			if uram_pair:
+				p.update_equipment()
+				if key in ["chain","counter"] and toward.length_squared()>.001:
+					# Use the actual shield quad, facing charging animal, not a detached invisible collider.
+					var shield:MeshInstance3D=p.shield
+					var tr:=shield.global_transform
+					var guard_normal:=toward.normalized().lerp(tr.basis.z,.18).normalized()
+					var right:=Vector3.UP.cross(guard_normal).normalized()
+					tr.basis=Basis(right,guard_normal.cross(right),guard_normal)
+					tr.origin+=toward.normalized()*.07
+					if key=="chain":
+						var lower:=smoothstep(0,.085,age)*(1.0-smoothstep(.26,.43,age))
+						tr.origin-=tr.basis.x*.20*lower
+						tr.origin.y-=.43*lower
+					shield.global_transform=tr
+				if key=="attack":_aim_uram_club(age)
+			else:_aim_thrust(key,age,actor.duration)
 		p.viewport.render_target_update_mode=SubViewport.UPDATE_DISABLED
 		var torso:=bone_world(side,"spine" if side==0 else "trunk")
 		body_shapes[side].global_position=torso-Vector3(0,.12 if side==0 else .15,0)
 		body_guards[side].position=Vector3(0,torso.y-.12 if side==0 else torso.y-.15,0)
-		hurt[side].global_position=torso
+		hurt[side].global_position=torso.lerp(bone_world(1,"head"),.32) if uram_pair and side==1 else torso
 		hurt[side].rotation.y=facing[side]
 		p.modulate.a=1 # Shared native render owns visibility; only the rig is faded.
 		_rig_alpha(side,1.0-smoothstep(.78,1,age) if key=="death" else 1.0)
@@ -333,6 +362,8 @@ func deer_return_offset()->Vector3:
 func step(lab,delta:float,prior_han_age:float=-1.0)->Array[Dictionary]:
 	var old_hurt:=[hurt_capsule(0),hurt_capsule(1)]
 	var old_weapon:=[weapon_point(0),weapon_point(1)]
+	var old_shield:=_shield_transform() if uram_pair else Transform3D.IDENTITY
+	var old_boar_head:=boar_head_hurt() if uram_pair else {}
 	var old_centers:=[body_shapes[0].global_position,body_shapes[1].global_position]
 	var old_guards:=[body_guards[0].global_position,body_guards[1].global_position]
 	var roots:=render_poses(lab,delta)
@@ -342,13 +373,13 @@ func step(lab,delta:float,prior_han_age:float=-1.0)->Array[Dictionary]:
 		var toward:Vector3=bodies[1-side].position-bodies[side].position;toward.y=0
 		var distance:=toward.length();toward=toward.normalized()
 		if lab.approach_active:
-			var gap:=lerpf(START_DISTANCE,ENGAGE_DISTANCE,smoothstep(0,lab.APPROACH_TRAVEL*lab.entrance_scale,lab.visual_clock))
+			var gap:=lerpf(START_DISTANCE,URAM_PAIR_GAP if uram_pair else ENGAGE_DISTANCE,smoothstep(0,lab.APPROACH_TRAVEL*lab.entrance_scale,lab.visual_clock))
 			desired[side]=direction*gap*.5*(-1 if side==0 else 1)
 		elif side==1 and key=="walk" and lab.rules.living():
 			var offset:=deer_return_offset()
 			var speed:=RECOVER_SPEED*lerpf(.30,1.0,smoothstep(0,.22,offset.length()))
 			desired[side]+=offset.limit_length(speed*delta)
-		elif key in ["attack","skill","chain"]:
+		elif key in ["attack","skill","chain"] or (uram_pair and key=="counter"):
 			var forward:=maxf(0,float(roots[side].z-previous_root[side].z))*1.24
 			var safe:=1.75 if side==0 and key=="skill" else 1.85 if key=="chain" else .85
 			if side==1 and key=="attack" and lab.age[side]<actors[side].duration*.55:
@@ -359,6 +390,10 @@ func step(lab,delta:float,prior_han_age:float=-1.0)->Array[Dictionary]:
 					# Plant during the warning; advance only with the headbutt.
 					var drive:=lerpf(7.0,8.4,smoothstep(0,.10,charge_age))
 					forward=maxf(forward,minf(maxf(0,distance-.95),delta*drive))
+			if uram_pair and side==0:
+				if key=="chain":forward=0.0
+				elif key=="counter":forward=maxf(forward,1.8*delta);safe=1.10
+				else:forward=maxf(forward,2.0*delta if lab.age[0]<actors[0].duration*.55 else 0.0);safe=1.38
 			desired[side]+=toward*minf(forward,maxf(0,distance-safe))
 		previous_root[side]=roots[side]
 		if key=="death":knockback[side]=Vector3.ZERO
@@ -373,12 +408,16 @@ func step(lab,delta:float,prior_han_age:float=-1.0)->Array[Dictionary]:
 		var length:float=actors[side].duration
 		var opens:float=length*(.24 if key=="attack" else .31)
 		var closes:float=length*(.70 if key=="attack" else .74)
+		if uram_pair and side==0 and key=="counter":
+			opens=.34;closes=minf(length,.58)
 		if side==1 and key=="skill":
 			opens=actors[side].preview.length("req046_skill_anticipation");closes=length*.94
 		var prior_age:float=prior_han_age if side==0 and prior_han_age>=0 else lab.age[side]-delta
 		var age_span:=maxf(.000001,lab.age[side]-prior_age)
 		var active:bool=lab.age[side]>=opens and prior_age<=closes
-		if not lab.approach_active and key in ["attack","skill","chain"] and not consumed[side] and active and lab.rules.living():
+		var can_strike:=key in ["attack","skill","chain"]
+		if uram_pair and side==0:can_strike=key in ["attack","skill","counter"]
+		if not lab.approach_active and can_strike and not consumed[side] and active and lab.rules.living():
 			# Substeps follow articulated motion; relative target travel is included.
 			var shift:Vector3=(target.a+target.b-old_hurt[1-side].a-old_hurt[1-side].b)*.5
 			var start_fraction:=clampf((opens-prior_age)/age_span,0,1)
@@ -386,6 +425,39 @@ func step(lab,delta:float,prior_han_age:float=-1.0)->Array[Dictionary]:
 			var from:Vector3=(old_weapon[side]+shift).lerp(now,start_fraction)
 			var to:Vector3=(old_weapon[side]+shift).lerp(now,end_fraction)
 			var t:=capsule_hit(from,to,target.a,target.b,float(target.radius)+WEAPON_RADIUS)
+			if uram_pair and side==0:
+				var head_hurt:=boar_head_hurt()
+				var head_shift:Vector3=(head_hurt.a+head_hurt.b-old_boar_head.a-old_boar_head.b)*.5
+				var hf:Vector3=(old_weapon[side]+head_shift).lerp(now,start_fraction)
+				var ht:Vector3=(old_weapon[side]+head_shift).lerp(now,end_fraction)
+				var hit_head:=capsule_hit(hf,ht,head_hurt.a,head_hurt.b,float(head_hurt.radius)+WEAPON_RADIUS)
+				if hit_head<t:
+					t=hit_head;target=head_hurt;from=hf;to=ht
+			if uram_pair and side==0 and key=="counter":
+				var live_face:=_shield_transform()
+				var dimensions:Vector2=actors[0].preview.shield.mesh.size
+				for offset in [Vector3(0,-dimensions.y*.38,.035),Vector3(-dimensions.x*.24,-dimensions.y*.32,.035),Vector3(dimensions.x*.24,-dimensions.y*.32,.035)]:
+					for envelope in [hurt_capsule(1),boar_head_hurt()]:
+						var old_envelope:Dictionary=old_boar_head if envelope.radius<.30 else old_hurt[1]
+						var shift_rim:Vector3=(envelope.a+envelope.b-old_envelope.a-old_envelope.b)*.5
+						var previous_rim:Vector3=old_shield*offset+shift_rim
+						var live_rim:Vector3=live_face*offset
+						var rim_from:=previous_rim.lerp(live_rim,start_fraction)
+						var rim_to:=previous_rim.lerp(live_rim,end_fraction)
+						var hit_rim:=capsule_hit(rim_from,rim_to,envelope.a,envelope.b,float(envelope.radius)+WEAPON_RADIUS)
+						if hit_rim<t:
+							t=hit_rim;target=envelope;from=rim_from;to=rim_to
+			var shield_kind:=false
+			if uram_pair and side==1 and key=="skill" and lab.has_method("uram_guard_active") and lab.uram_guard_active():
+				var current_shield:=_shield_transform()
+				var half_size:Vector2=actors[0].preview.shield.mesh.size*.5
+				var shield_from:=old_shield.interpolate_with(current_shield,start_fraction)
+				var shield_to:=old_shield.interpolate_with(current_shield,end_fraction)
+				# Use the upper muzzle rather than the boar's low central nose as the shield contact candidate.
+				var crown_offset:=Vector3.UP*.10
+				var shield_t:=shield_sweep(old_weapon[side].lerp(now,start_fraction)+crown_offset,old_weapon[side].lerp(now,end_fraction)+crown_offset,shield_from,shield_to,half_size)
+				if shield_t!=INF and shield_t<=t:
+					t=shield_t;shield_kind=true
 			if t!=INF:
 				consumed[side]=true
 				var fraction:=lerpf(start_fraction,end_fraction,t)
@@ -393,8 +465,59 @@ func step(lab,delta:float,prior_han_age:float=-1.0)->Array[Dictionary]:
 				var axis:Vector3=target.b-target.a
 				var nearest:Vector3=target.a+axis*clampf((probe-target.a).dot(axis)/maxf(.0001,axis.length_squared()),0,1)
 				var point:Vector3=nearest+nearest.direction_to(probe)*float(target.radius)
+				if shield_kind:
+					probe=old_weapon[side].lerp(now,fraction)+Vector3.UP*.10
+					var face:=old_shield.interpolate_with(_shield_transform(),fraction)
+					var local:=face.affine_inverse()*probe
+					local.z=0.0;point=face*local
 				var event:={"side":side,"motion":key,"point":point,"probe":probe,"hurt":target.duplicate(),"weapon_from":from,"weapon_to":to,"normal":(bodies[1-side].position-bodies[side].position).normalized(),"action":action_id[side],"time":lab.rules.elapsed-delta+fraction*delta,"attack_age":prior_age+fraction*age_span,"active_from":opens,"active_to":closes}
+				if uram_pair:event["kind"]="shield" if shield_kind else "body"
 				events.append(event);contacts.append(event)
 		previous_weapon[side]=now
 	events.sort_custom(func(first,second):return first.time<second.time)
 	return events
+
+const URAM_PAIR_GAP:=2.22
+var uram_pair:=false
+
+func _shield_transform()->Transform3D:
+	var shield:MeshInstance3D=actors[0].preview.shield
+	return shield.global_transform
+
+static func shield_sweep(old_probe:Vector3,new_probe:Vector3,old_face:Transform3D,new_face:Transform3D,half_size:Vector2)->float:
+	var a:=old_face.affine_inverse()*old_probe
+	var b:=new_face.affine_inverse()*new_probe
+	# Only approach the visible outer face, including first active surface overlap.
+	const NOSE_RADIUS:=.15
+	if a.z < -NOSE_RADIUS or b.z>a.z+.0001:return INF
+	if b.z>NOSE_RADIUS:return INF
+	var t:=0.0 if a.z<=NOSE_RADIUS else (a.z-NOSE_RADIUS)/(a.z-b.z)
+	var at:=a.lerp(b,t)
+	var radial:=Vector2(at.x,at.y)/(half_size+Vector2.ONE*NOSE_RADIUS)
+	return t if radial.length_squared()<=1.0 else INF
+
+func boar_head_hurt()->Dictionary:
+	var crown:=bone_world(1,"head")
+	var muzzle:=weapon_point(1)
+	# A short head capsule joins poll and muzzle; the trunk stays independent.
+	return {"a":crown-Vector3.UP*.04,"b":crown.lerp(muzzle,.64),"radius":.27}
+
+func _aim_uram_club(age:float)->void:
+	# Late aim lowers the fully visible club around its grip, not the hurt volume.
+	var weight:=smoothstep(.17,.249,age)*(1.0-smoothstep(.30,.43,age))
+	if weight<=0.0:return
+	var p=actors[0].preview
+	var club:MeshInstance3D=p.club
+	var sk:Skeleton3D=p.skeleton
+	var grip:Vector3=sk.global_transform*sk.get_bone_global_pose(p.hand_bone)*p.grip_in_hand
+	var from:=club.global_basis.x.normalized()
+	var target:=bone_world(1,"head")+Vector3.UP*.15-grip
+	if target.length()<.15:return
+	var desired:=target.normalized()
+	var axis:=from.cross(desired)
+	if axis.length_squared()<.0001:return
+	var angle:=minf(.64,from.angle_to(desired))*weight
+	var turn:=Basis(axis.normalized(),angle)
+	var tr:=club.global_transform
+	tr=Transform3D(turn*tr.basis,grip+turn*(tr.origin-grip))
+	club.global_transform=tr

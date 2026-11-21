@@ -36,6 +36,9 @@ const BASIC_CADENCE := [3.05,3.43]
 const BASIC_MAX_TRAVEL := 16.0
 const SP_COST := {"skill":2,"chain":3}
 const SoundPath := "res://assets/audio/hunt-duel-lab/"
+const URAM_PARRY_SOUND := preload("res://assets/audio/lab-uram-res009/parry-c.mp3")
+const URAM_GUARD_OPEN := .03
+const URAM_GUARD_CLOSE := .32
 const SoundNames := {"hangyeol":"han", "uram":"uram", "saebom":"bom", "forest":"deer", "adult":"boar"}
 
 var app: Node
@@ -104,6 +107,12 @@ var tip_trail:Array[Vector2]=[]
 
 func _prototype_duel()->bool:
 	return rules.ally_id=="hangyeol" and rules.enemy_id=="forest"
+
+func _uram_duel()->bool:
+	return rules.ally_id=="uram" and rules.enemy_id=="adult"
+
+func uram_guard_active()->bool:
+	return _uram_duel() and rules.living() and motion[0]=="chain" and motion[1]=="skill" and age[0]>=URAM_GUARD_OPEN and age[0]<=URAM_GUARD_CLOSE
 
 func _duel_anchor(side:int,gap:float)->Vector2:
 	return (Left+Right)*.5+Left.direction_to(Right)*gap*.5*(-1.0 if side==0 else 1.0)
@@ -366,7 +375,7 @@ func reset_round(after_fade:=false) -> void:
 	start_cast_at = -1.0
 	execute_at = -1.0
 	visual_clock = 0.0
-	approach_active = _prototype_duel()
+	approach_active = _prototype_duel() or _uram_duel()
 	next_attack = FIRST_BASIC.duplicate() if approach_active else [0.4,1.6]
 	animal_attack_count = 0
 	fx.clear()
@@ -378,9 +387,10 @@ func reset_round(after_fade:=false) -> void:
 	cast_from=_settled_anchor(0)
 	presentation.reset(rules.hp)
 	presentation.grounded_spear=_prototype_duel()
-	if _prototype_duel():
-		presentation.cache_spear(a)
-		a.preview.set_meta("duel_presenter",presentation)
+	if _prototype_duel() or _uram_duel():
+		if _prototype_duel():
+			presentation.cache_spear(a)
+			a.preview.set_meta("duel_presenter",presentation)
 		if not is_instance_valid(shared_world):
 			shared_world=SharedWorld.new();shared_world.name="SharedDuelWorld";field.add_child(shared_world)
 			shared_world.configure(a,b,(Left+Right)*.5)
@@ -425,7 +435,9 @@ func _update_head_hud(delta:float)->void:
 	if a==null or b==null:return
 	var ally_anchor:=presentation.bone_point(a,"head")
 	var deer_anchor:=_position(1)-Vector2(0,54)
-	if is_instance_valid(shared_world):
+	if is_instance_valid(shared_world) and _uram_duel():
+		deer_anchor=shared_world.project(shared_world.bodies[1].position+Vector3.UP*1.65-shared_world.direction*.56)
+	elif is_instance_valid(shared_world):
 		var nominal_head:Vector3=shared_world.bodies[1].position+Vector3.UP*2.02-shared_world.direction*.48
 		deer_anchor=shared_world.project(nominal_head)
 	# Smooth only real body travel before applying the current camera transform.
@@ -489,7 +501,7 @@ func _act(side: int, key: String) -> void:
 	var duration: float = actor.duration
 	contact_at[side] = duration * (.55 if key == "attack" else .63)
 	if is_instance_valid(shared_world):shared_world.begin_action(side,key)
-	if is_instance_valid(shared_world) and side==0 and key=="chain":accent.chain_started(duration)
+	if _prototype_duel() and is_instance_valid(shared_world) and side==0 and key=="chain":accent.chain_started(duration)
 	if not is_instance_valid(shared_world) and side==0 and actor.key=="hangyeol" and key in ["attack","skill"]:
 		var travel := 0.0 if _prototype_duel() else 78.0
 		presentation.prepare_spear(actor,_settled_anchor(0),_position(1)-Vector2(0,33),contact_at[side],travel)
@@ -504,9 +516,9 @@ func _act(side: int, key: String) -> void:
 		_flash(_settled_anchor(1),"boss_gather" if b.key=="adult" else "gather",Color("#61bbff"),execute_at)
 	else:
 		var kind := "basic" if key == "attack" else key
-		if not _prototype_duel():
+		if not _prototype_duel() and not _uram_duel():
 			_sound(SoundNames[actor.key]+"_"+kind)
-		if key != "attack" and not (_prototype_duel() and side==0):
+		if key != "attack" and not ((_prototype_duel() or _uram_duel()) and side==0):
 			var ground := _settled_anchor(side)
 			var name := "chain_"+actor.key if key == "chain" else "cast_"+actor.key
 			_flash(ground,name,_ally_color(), duration if key == "chain" else minf(1.25,duration*.8))
@@ -521,6 +533,7 @@ func _ally_color() -> Color:
 	return Color({"hangyeol":"#8bd7ff","uram":"#ef781e","saebom":"#ffe073"}[a.key])
 
 func _sound(key: String) -> void:
+	if key=="uram_parry":sounds[key]=URAM_PARRY_SOUND
 	if not sounds.has(key):
 		var path := SoundPath+key+".wav"
 		sounds[key] = load(path) if ResourceLoader.exists(path) else null
@@ -538,10 +551,25 @@ func _sound(key: String) -> void:
 	player.stream = sounds[key]
 	player.play()
 
+func _uram_parry(contact:Dictionary)->void:
+	if not uram_guard_active():return
+	var point:=shared_world.project(contact.point)
+	accent.parry_contact()
+	_sound("uram_parry")
+	_flash(point,"uram_shield_contact",Color("62e4cb"),.46)
+	fx[-1]["floor_point"]=_position(0).lerp(_position(1),.35)
+	execute_at=-1
+	next_attack[1]=maxf(next_attack[1],rules.elapsed+.95)
+	_react(1,"hit")
+	_act(0,"counter")
+
 func _land(side: int, key: String,contact:Dictionary={}) -> void:
 	if approach_active or not rules.living():
 		return
 	if is_instance_valid(shared_world) and contact.is_empty():return
+	if contact.get("kind","")=="shield":
+		_uram_parry(contact)
+		return
 	var defender := 1-side
 	var impact_point := _position(defender)-Vector2(0,33)
 	if is_instance_valid(shared_world):impact_point=shared_world.project(contact.point)
@@ -567,8 +595,10 @@ func _land(side: int, key: String,contact:Dictionary={}) -> void:
 		_flash(_position(0),"burst",Color("#ffad26"),.40)
 	if skill:
 		if _prototype_duel() and side==0:_sound("han_"+key)
+		if _uram_duel() and side==0 and key=="skill":_sound("uram_skill")
+		if _uram_duel() and side==0 and key=="counter":_sound("uram_basic")
 		_sound("ally_hit" if defender==0 else SoundNames[b.key]+"_hit")
-	if _prototype_duel():
+	if _prototype_duel() or _uram_duel():
 		presentation.recoil[defender]=origin.direction_to(target)*(6.0 if skill else 3.0)
 		presentation.recoil_age[defender]=.025
 		var hold:=.48 if skill else .16
@@ -578,7 +608,7 @@ func _land(side: int, key: String,contact:Dictionary={}) -> void:
 		if is_instance_valid(shared_world) and side==1 and key=="skill":hold=.67
 		_flash(impact_point,"contact_"+key,tone_for_contact(side),hold)
 		fx[-1]["attacker"]=side
-		if is_instance_valid(shared_world) and key=="skill":
+		if is_instance_valid(shared_world) and (key=="skill" or (_uram_duel() and key=="counter")):
 			var ground_point:Vector3=contact.point
 			ground_point.y=0
 			fx[-1]["floor_point"]=shared_world.project(ground_point)
@@ -586,11 +616,11 @@ func _land(side: int, key: String,contact:Dictionary={}) -> void:
 	# ordinary hit reads as the agreed short white glint.
 	var tone := Color("#fff5df") if defender == 0 or a.key=="hangyeol" else Color("#cf9862")
 	if not skill:
-		if _prototype_duel():
+		if _prototype_duel() or _uram_duel():
 			_sound(SoundNames[(a if side==0 else b).key]+"_basic")
-		if not _prototype_duel():_flash(impact_point,"hit",tone,.21)
+		if not _prototype_duel() and not _uram_duel():_flash(impact_point,"hit",tone,.21)
 	if hp_reveal_at<0:hp_reveal_at=visual_clock
-	if rules.damage(defender,38 if key=="chain" else 27 if skill else 11 if side==0 else 13):
+	if rules.damage(defender,38 if key=="chain" else 18 if _uram_duel() and key=="counter" else 27 if skill else 11 if side==0 else 13):
 		_die(defender)
 		return
 	# Do not cut off a concurrently committed attack for a cosmetic reaction.
@@ -611,6 +641,7 @@ func _react(side: int, key: String) -> void:
 		presentation.prepare_ready(a,_settled_anchor(0),_position(1))
 
 func tone_for_contact(side:int)->Color:
+	if _uram_duel() and side==0:return Color("7ff4d5")
 	return Color("bcefff") if side==0 else Color("fff4df")
 
 func _die(side: int) -> void:
@@ -748,12 +779,12 @@ func _render_actors(delta:=0.0)->void:
 		if delta==0:shared_world.render_poses(self,0)
 		a.preview.position=_position(0);b.preview.position=_position(1)
 		a.place_effect();b.place_effect()
-		if motion[0] in ["skill","chain"] and delta>0:
+		if _prototype_duel() and motion[0] in ["skill","chain"] and delta>0:
 			tip_trail.push_front(presentation.spear_point(a))
 			if tip_trail.size()>7:tip_trail.pop_back()
 		elif motion[0] not in ["skill","chain"]:tip_trail.clear()
 		battle_camera.hunters.assign([a.preview]);battle_camera.rules.attacker=0
-		battle_camera.pose="strike" if start_cast_at>=0 and rules.elapsed-start_cast_at<.70 and accent.kind!="chain" else ""
+		battle_camera.pose="strike" if start_cast_at>=0 and rules.elapsed-start_cast_at<.70 and accent.kind.is_empty() and not (_uram_duel() and motion[0] in ["chain","counter"]) else ""
 		battle_camera.pose_clock=(rules.elapsed-start_cast_at)/.70*Hunt.RULES.POSE_SECONDS
 		field.scale=camera_base_scale;field.position=camera_base_position
 		if delta>0:battle_camera.update_camera(delta)
@@ -812,12 +843,12 @@ func _advance_shared(delta:float)->void:
 		var prior_han_age:float=age[0]
 		for side in 2:
 			age[side]+=dt;frame_contact[side]=-1.0
-		if motion[0]=="skill" and not shared_world.consumed[0]:
+		if _prototype_duel() and motion[0]=="skill" and not shared_world.consumed[0]:
 			var windup_end:=minf(HAN_SKILL_WINDUP_LIMIT,a.duration*.55)
 			var sped_time:=clampf((windup_end-prior_han_age)/HAN_SKILL_WINDUP_RATE,0,dt)
 			age[0]+=sped_time*(HAN_SKILL_WINDUP_RATE-1)
 		var events:=shared_world.step(self,dt,prior_han_age)
-		_sample_deer_wake()
+		if _prototype_duel():_sample_deer_wake()
 		for event in events:_land(int(event.side),event.motion,event)
 		if execute_at>=0 and age[1]>=execute_at:
 			_sound(SoundNames[b.key]+"_skill");execute_at=-1
@@ -1056,7 +1087,7 @@ func _draw_han_impact(effect:Dictionary,p:float,basic:bool)->void:
 func _draw_contact_effects()->void:
 	# Reuse the campaign's painted contact/ground assets, anchored to the sampled
 	# mesh and actual collision. No free-floating debug lines, circles or dots.
-	if motion[0] in ["skill","chain"]:
+	if _prototype_duel() and motion[0] in ["skill","chain"]:
 		var tip:=presentation.spear_point(a)
 		var p:=clampf(_visual_age(0)/maxf(.01,motion_contact[0]),0,1)
 		if motion[0]=="chain" and _visual_age(0)<motion_contact[0]:
@@ -1090,10 +1121,13 @@ func _draw_contact_effects()->void:
 			_soft_light(ground_point,wake_size,Color("79cdff"),.75*(1.0-smoothstep(0,1,p)))
 			effects_layer.draw_texture_rect(chain_impact_frames[index],Rect2(effect.center-Vector2(192,243)*factor,Vector2(384,384)*factor),false)
 			continue
+		if effect.name=="uram_shield_contact" or (_uram_duel() and effect.get("attacker",-1)==0):
+			_draw_uram_contact(effect,p)
+			continue
 		if not String(effect.name).begins_with("contact_"):continue
 		var basic:bool=effect.name=="contact_attack"
 		var strong:bool=effect.name=="contact_chain"
-		if is_instance_valid(shared_world) and effect.get("attacker",-1)==1 and effect.name=="contact_skill":
+		if _prototype_duel() and is_instance_valid(shared_world) and effect.get("attacker",-1)==1 and effect.name=="contact_skill":
 			_draw_deer_impact(effect,clampf(p,0,1))
 			continue
 		if is_instance_valid(shared_world) and effect.get("attacker",-1)==0 and (basic or effect.name=="contact_skill"):
@@ -1114,8 +1148,46 @@ func _draw_contact_effects()->void:
 				var ground_size:=Vector2(96,34)*lerpf(.55,1.4,p)
 				effects_layer.draw_texture_rect(Hunt.GROUND_PULSE,Rect2(_position(1)-ground_size*.5,ground_size),false,Color(.65,.85,1,fade))
 
+func _draw_uram_exchange()->void:
+	if motion[1]=="skill" and not shared_world.consumed[1]:
+		var prep:float=b.preview.length("req046_skill_anticipation")
+		var t:=clampf(age[1]/maxf(.01,prep),0,1)
+		var runup:=1.0-smoothstep(prep,prep+.45,age[1])
+		var feet:=_position(1)
+		var snout:=shared_world.project(shared_world.weapon_point(1))
+		var energy:float=runup*(.25+.50*t+.13*sin(age[1]*18.0))
+		_soft_light(feet,Vector2(100,31),Color("f6773f"),energy)
+		_soft_light(snout,Vector2(50,29),Color("ffc681"),energy*.73)
+		var span:=Vector2(lerpf(86,52,t),lerpf(30,17,t))
+		effects_layer.draw_texture_rect(Hunt.GROUND_PULSE,Rect2(feet-span*.5,span),false,Color("f28f62",energy*.75))
+	if motion[0]=="chain" and not approach_active and age[0]<=URAM_GUARD_CLOSE+.12:
+		var shield:=shared_world.project(a.preview.shield.global_position)
+		var envelope:=smoothstep(0,.12,age[0])*(1.0-smoothstep(URAM_GUARD_CLOSE,URAM_GUARD_CLOSE+.12,age[0]))
+		_soft_light(shield,Vector2(53,45),Color("68d8c9"),envelope*.55)
+
+func _draw_uram_contact(effect:Dictionary,p:float)->void:
+	var at:Vector2=effect.center
+	var block:bool=effect.name=="uram_shield_contact"
+	var light:=1.0-smoothstep(.04,.85,p)
+	var basic:bool=effect.name=="contact_attack"
+	var tint:=Color("58dfc7") if block else Color("ecb176")
+	var radius:=Vector2(85,60) if block else Vector2(32,24) if basic else Vector2(69,46)
+	_soft_light(at,radius*2.1,tint,light*.94)
+	_soft_light(at,radius*.52,Color("fff8dc"),light)
+	var texture:Texture2D=Hunt.BASIC_HIT
+	effects_layer.draw_texture_rect(texture,Rect2(at-radius*.5,radius),false,Color("fff3ce",light*.86))
+	if basic:return
+	var floor_point:Vector2=effect.get("floor_point",at+Vector2(0,18))
+	var span:=Vector2(lerpf(38,145,sqrt(p)),lerpf(13,42,sqrt(p)))
+	_soft_light(floor_point,span,tint,light*.63)
+	for j in 12:
+		var a0:=float(j)*2.39996
+		var mote:=at+Vector2(cos(a0),sin(a0)*.56)*lerpf(7,52,sqrt(p))
+		_soft_light(mote,Vector2(14,10)*(1-p*.4),Color("ffdf9c"),light*.8)
+
 func _draw_effects() -> void:
-	if _prototype_duel():
+	if _prototype_duel() or _uram_duel():
+		if _uram_duel() and is_instance_valid(shared_world):_draw_uram_exchange()
 		_draw_contact_effects()
 		return
 	for i in range(fx.size()-1,-1,-1):
