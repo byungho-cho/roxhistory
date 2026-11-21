@@ -193,6 +193,85 @@ func _screen_suite() -> void:
 		hunt._update_saebom_stone(1.0/60.0,hunt.pose_clock)
 		if not hunt.stone.active: break
 	_check(hunt.stone_last_result == "miss" and raw_rules.deer_hp == 42 and raw_rules.pending_damage == 0,"Moved target yields a true stone miss and cancels queued damage")
+	# Use the nearest real formation slot, not a fabricated alternate scene.
+	hunt.assigned_cells.assign([0,3,5])
+	hunt.approach = 1.0
+	hunt.pose_clock = 1.0
+	hunt.update_actors(.04)
+	var near_feet:Vector2 = saebom.position
+	var gap:float = saebom.position.distance_to(hunt.deer.position)
+	raw_rules.queue_attack(1,Rules.SAEBOM)
+	hunt.play_pose("auto_thrust")
+	_check(not hunt.bom_shoving and gap > 50.0, "Closest current ordinary formation keeps a genuinely out-of-reach basic ranged")
+	hunt._process(.30)
+	hunt.basic_recoil = 0.0
+	hunt.pose_clock = 1.0
+	hunt.update_actors(.04)
+	var old_prey:Vector2 = hunt.deer.position
+	var close_prey := old_prey + Vector2(-5,32)
+	hunt.deer.position = close_prey
+	raw_rules.queue_attack(1,Rules.SAEBOM)
+	hunt.play_pose("auto_thrust")
+	_check(hunt.bom_shoving and hunt.bom_close, "Actual prey at palm reach chooses planted close basic")
+	var hp_before_shove: int = raw_rules.deer_hp
+	for frame in range(31):
+		hunt.pose_clock += 1.0/60.0
+		hunt.update_actors(1.0/60.0)
+		hunt.deer.position = close_prey
+		hunt._pose_saebom_palm(saebom,hunt.pose_clock/Rules.POSE_SECONDS)
+		if hunt.impact_pending: hunt._update_saebom_shove()
+	await _capture_if_requested("saebom-close-palm")
+	_check(hunt.bom_last_shove == "hit" and raw_rules.deer_hp == hp_before_shove-1 and not hunt.stone.active,"Actual close palm deals the normal 1 with no projectile")
+	hunt.deer.position = old_prey
+	raw_rules.charges[Rules.SAEBOM]=3.0
+	raw_rules.orb_lock=0.0
+	raw_rules.action_lock=0.0
+	var rally_positions:Array[Vector2]=[hunt.hunters[0].position,hunt.hunters[1].position,saebom.position]
+	_check(raw_rules.start_rally() and raw_rules.apply_rally(rally_positions),"Close-contact test starts the real rally rule")
+	var boosted_before:int=raw_rules.deer_hp
+	for strike in range(5):
+		hunt.deer.position = close_prey
+		raw_rules.queue_attack(1,Rules.SAEBOM)
+		hunt.play_pose("auto_thrust")
+		for frame in range(31):
+			hunt.pose_clock += 1.0/60.0
+			hunt.update_actors(1.0/60.0)
+			hunt.deer.position = close_prey
+			hunt._pose_saebom_palm(saebom,hunt.pose_clock/Rules.POSE_SECONDS)
+			if hunt.impact_pending: hunt._update_saebom_shove()
+		raw_rules.advance_rally_clock(Rules.POSE_SECONDS)
+	_check(raw_rules.deer_hp == boosted_before-6 and raw_rules.rally_remaining[Rules.SAEBOM] > 0.0,"Five boosted genuine palms deal six damage (1.20x), without projectile")
+	var missed_before:int=raw_rules.deer_hp
+	hunt.deer.position=close_prey
+	raw_rules.queue_attack(1,Rules.SAEBOM)
+	hunt.play_pose("auto_thrust")
+	for frame in range(31):
+		hunt.pose_clock += 1.0/60.0
+		hunt.update_actors(1.0/60.0)
+		hunt.deer.position = close_prey if frame<4 else old_prey+Vector2(130,95)
+		if hunt.impact_pending: hunt._update_saebom_shove()
+	_check(hunt.bom_last_shove=="miss" and raw_rules.deer_hp==missed_before and raw_rules.pending_damage==0,"Enemy leaving actual palm reach produces no basic damage")
+	raw_rules.advance_rally_clock(5.0)
+	hunt.deer.position = old_prey
+	raw_rules.charges[Rules.SAEBOM]=3.0
+	raw_rules.orb_lock=0.0
+	raw_rules.action_lock=0.0
+	caster_hud.portrait_button.pressed.emit()
+	_check(hunt.bom_hop_offset.length() > 4.0 and hunt.bom_hop_offset.length() <= 18.01,"Close 2SP chooses a capped backward hop")
+	for frame in range(7):hunt._process(1.0/60.0)
+	await _capture_if_requested("saebom-close-hop")
+	_check(saebom.position.distance_to(hunt.deer.position) > gap and saebom.pivot.position.y > .01 and not hunt.stone.active,"Actor lifts and moves back before the sling can release")
+	var reset_health:int = raw_rules.deer_hp
+	raw_rules.deer_hp=100
+	for frame in range(30):hunt._process(1.0/60.0)
+	_check(hunt.stone_last_result == "hit" and raw_rules.deer_hp == 42 and saebom.position.is_equal_approx(near_feet),"Close stone retains 58 and returns to the original safe spot")
+	_check(reset_health < 100,"Close shot started from a damaged opponent")
+	hunt.assigned_cells.assign([0,5,3])
+	hunt.update_actors(.04)
+	raw_rules.queue_attack(1,Rules.SAEBOM)
+	hunt.play_pose("auto_thrust")
+	_check(not hunt.bom_shoving and not hunt.bom_close,"Moving apart exits the close hysteresis and preserves ranged basic")
+	hunt._process(.30)
 	var cleared := int(app.model.state.get("hunt_cleared", 0))
 	raw_rules.damage_deer(raw_rules.deer_hp)
 	hunt._process(.01)
@@ -201,9 +280,40 @@ func _screen_suite() -> void:
 	await process_frame
 	_check(app.hunt.rules.rally_remaining == [0.0,0.0,0.0],"Retry cannot leak an old buff")
 	_check(not app.hunt.stone.active and app.hunt.stone_trail.is_empty(), "Retry recreates a clean projectile state")
+	# After a real retry, simulate the two teammates already defeated. The
+	# ordinary alternation must schedule the deer counter and the next basic.
+	var normal:Control=app.hunt
+	normal.set_process(false)
+	normal.arrival_finished=true
+	normal.transition_elapsed=0.0
+	normal.assigned_cells.assign([0,3,5])
+	normal.advance_transition(normal.TRANSITION_SECONDS)
+	var ordinary=normal.rules
+	ordinary.party_hp[0]=0
+	ordinary.party_hp[1]=0
+	ordinary.hunter_turn=false
+	ordinary.exchange_clock=Rules.AUTO_INTERVAL
+	normal.update_actors(.04)
+	var her_hp:int=ordinary.party_hp[Rules.SAEBOM]
+	var prey_hp:int=ordinary.deer_hp
+	for frame in range(32):normal._process(1.0/60.0)
+	_check(normal.pose=="counter" and normal.bom_prey_pocket.is_finite() and normal.deer.position.distance_to(normal.hunters[Rules.SAEBOM].position)<31.0 and ordinary.party_hp[Rules.SAEBOM]==her_hp-2,"Natural enemy counter preserves incoming damage and settles at authentic close range")
+	for frame in range(185):
+		normal._process(1.0/60.0)
+		if normal.bom_last_shove=="hit":
+			await _capture_if_requested("saebom-natural-palm")
+			break
+	_check(normal.bom_last_shove=="hit" and ordinary.deer_hp==prey_hp-1 and not normal.stone.active,"Natural next Saebom auto turn uses actual planted palm for exactly one damage")
 	app.queue_free()
 	await process_frame
 
+
+func _capture_if_requested(name:String) -> void:
+	var dir := OS.get_environment("ROXHISTORY_TEST_CAPTURE_DIR")
+	if dir.is_empty():return
+	await process_frame
+	await RenderingServer.frame_post_draw
+	root.get_texture().get_image().save_png(dir.path_join(name+".png"))
 
 func _run() -> void:
 	_rules_suite()

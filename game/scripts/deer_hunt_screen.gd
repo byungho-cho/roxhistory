@@ -7,6 +7,21 @@ const SkillHUD := preload("res://scripts/duel_skill_hud.gd")
 const HeadHUD := preload("res://scripts/battle_head_hud.gd")
 const StoneContact := preload("res://scripts/hunt_production_projectile_contact.gd")
 const StoneGold := preload("res://scripts/hunt_duel_saebom_2p_effect.gd")
+const BOM_PALM_ENTER := 30.0
+const BOM_PALM_LEAVE := 36.0
+const BOM_HOP_ENTER := 55.0
+const BOM_HOP_LEAVE := 66.0
+const BOM_HOP_MAX := 18.0
+var bom_close := false
+var bom_hop_close := false
+var bom_shoving := false
+var bom_hop_offset := Vector2.ZERO
+var bom_hop_strength := 0.0
+var bom_last_shove := ""
+var bom_hand_previous := Vector3.INF
+var bom_prey_pocket := Vector2.INF
+var bom_prey_depart := Vector2.INF
+var bom_prey_travel_from := Vector2.ZERO
 const STONE_METRIC := 32.0
 const STONE_HEAVY_NATIVE_RELEASE := 3.566667
 var stone := StoneContact.new()
@@ -942,6 +957,8 @@ func play_pose(id: String) -> void:
 	pose = id
 	pose_clock = 0.0
 	impact_pending = true
+	_update_saebom_prey_pocket(id)
+	_begin_saebom_close_action(id)
 	if id=="thrust":
 		rules.action_lock = maxf(rules.action_lock,JumpMotion.JUMP_SECONDS)
 	match id:
@@ -972,12 +989,14 @@ func _process(delta: float) -> void:
 		rules.advance_rally_clock(elapsed)
 		var rally_releases := impact_pending and pose == "rally" and pose_clock >= IMPACT_SECONDS
 		var sling_pending := impact_pending and pose == "team" and rules.attacker == RULES.SAEBOM
-		if sling_pending:
+		var palm_pending := impact_pending and pose == "auto_thrust" and rules.attacker == RULES.SAEBOM and bom_shoving
+		if sling_pending or palm_pending:
 			update_actors(actor_delta+elapsed)
 			actor_delta = 0.0
 			actors_sampled = true
-			_update_saebom_stone(elapsed, previous_pose_clock)
-		if impact_pending and not sling_pending and pose != "rally" and pose_clock >= (JumpMotion.JUMP_CONTACT_SECONDS if pose=="thrust" else IMPACT_SECONDS):
+			if sling_pending: _update_saebom_stone(elapsed, previous_pose_clock)
+			else: _update_saebom_shove()
+		if impact_pending and not sling_pending and not palm_pending and pose != "rally" and pose_clock >= (JumpMotion.JUMP_CONTACT_SECONDS if pose=="thrust" else IMPACT_SECONDS):
 			var before_hp := rules.hunter_hp if pose == "counter" else rules.deer_hp
 			rules.resolve_attack()
 			hit_damage = before_hp - (rules.hunter_hp if pose == "counter" else rules.deer_hp)
@@ -1023,6 +1042,141 @@ func _process(delta: float) -> void:
 	stone_trail_age += elapsed
 	if is_instance_valid(stone_overlay): stone_overlay.queue_redraw()
 	battlefield.queue_redraw()
+
+## Do not alter target selection, incoming counter HP, attack clocks or AI.
+## Only an already scheduled counter into a genuinely near Saebom may occupy
+## the safe finish pocket; the next different target releases it smoothly.
+func _update_saebom_prey_pocket(id:String) -> void:
+	if id != "counter" or approach < 1.0 or not is_instance_valid(deer):
+		return
+	bom_prey_depart = Vector2.INF
+	if rules.attacker != RULES.SAEBOM or rules.party_hp[RULES.SAEBOM] <= 0:
+		if bom_prey_pocket.is_finite(): bom_prey_depart = deer.position
+		bom_prey_pocket = Vector2.INF
+		return
+	var her_feet:Vector2 = hunters[RULES.SAEBOM].position
+	if her_feet.distance_to(deer.position) > 68.0:
+		return
+	var side := -1.0 if deer.position.x < her_feet.x else 1.0
+	var pocket := her_feet + Vector2(22.0*side,-11.0)
+	for i in [0,1]:
+		if rules.party_hp[i] > 0 and pocket.distance_to(hunters[i].position) < 34.0:
+			return
+	if not Rect2(120,100,730,280).has_point(pocket):
+		return
+	bom_prey_travel_from = deer.position
+	bom_prey_pocket = pocket
+
+func _begin_saebom_close_action(id:String) -> void:
+	bom_shoving = false
+	bom_hop_offset = Vector2.ZERO
+	bom_hop_strength = 0.0
+	bom_hand_previous = Vector3.INF
+	if rules.attacker != RULES.SAEBOM or id not in ["auto_thrust","team"]:
+		return
+	var her_feet:Vector2 = hunters[RULES.SAEBOM].position
+	var gap := her_feet.distance_to(deer.position)
+	bom_close = gap <= (BOM_PALM_LEAVE if bom_close else BOM_PALM_ENTER)
+	bom_hop_close = gap <= (BOM_HOP_LEAVE if bom_hop_close else BOM_HOP_ENTER)
+	if id == "auto_thrust" and bom_close:
+		bom_shoving = true
+		bom_last_shove = "windup"
+	elif id == "team" and bom_hop_close:
+		var away := deer.position.direction_to(her_feet)
+		if away.is_zero_approx(): away = Vector2.LEFT
+		var proposed := her_feet + away * clampf(72.0-gap,0.0,BOM_HOP_MAX)
+		var endpoint := _saebom_safe_position(her_feet,proposed)
+		bom_hop_offset = endpoint-her_feet
+		bom_hop_strength = clampf(bom_hop_offset.length() / BOM_HOP_MAX,0.0,1.0)
+
+func _saebom_safe_position(base:Vector2, desired:Vector2) -> Vector2:
+	var candidate := Vector2(clampf(desired.x,50.0,910.0),clampf(desired.y,85.0,452.0))
+	for i in range(3):
+		if i == RULES.SAEBOM or rules.party_hp[i] <= 0: continue
+		var buddy:Vector2 = hunters[i].position
+		var min_gap := minf(25.0,base.distance_to(buddy))
+		if candidate.distance_to(buddy) < min_gap-.1: return base
+	var min_deer_gap := minf(32.0,base.distance_to(deer.position))
+	if candidate.distance_to(deer.position) < min_deer_gap-.1: return base
+	return candidate
+
+static func _saebom_hop_envelope(phase:float) -> float:
+	return smoothstep(.09,.34,phase)*(1.0-smoothstep(.81,1.0,phase))
+
+func _saebom_palm_metric(hero:SaebomRig) -> Vector3:
+	if not hero.has_anchor("hand.R"): return Vector3.INF
+	var rig:Skeleton3D = hero.skeleton
+	rig.force_update_all_bone_transforms()
+	var palm := rig.find_bone("hand.R")
+	return _stone_metric_point(hero.camera,hero.display,rig.to_global(rig.get_bone_global_pose(palm).origin))
+
+func _pose_saebom_palm(hero:SaebomRig, p:float) -> void:
+	var rig:Skeleton3D = hero.skeleton
+	var palm := rig.find_bone("hand.R")
+	if palm<0: return
+	hero.resident_sample("guard",minf(p,.99)*.32)
+	var pulse := smoothstep(.12,.44,p)*(1.0-smoothstep(.57,.92,p))
+	for pair in [["upper.R",-.58],["forearm.R",.72]]:
+		var j := rig.find_bone(pair[0])
+		if j>=0: rig.set_bone_pose_rotation(j,rig.get_bone_pose_rotation(j)*Quaternion(Vector3.RIGHT,float(pair[1])*pulse))
+	rig.force_update_all_bone_transforms()
+	var capsule := _deer_stone_capsule()
+	if capsule.is_empty() or pulse < .02: return
+	var hand := _saebom_palm_metric(hero)
+	var a:Vector3 = capsule.a
+	var axis:Vector3 = capsule.b-a
+	var nearest := a+axis*clampf((hand-a).dot(axis)/maxf(axis.length_squared(),.0001),0.0,1.0)
+	var desired := nearest+nearest.direction_to(hand)*float(capsule.radius)*.65
+	var camera:Camera3D = hero.camera
+	var display:Sprite2D = hero.display
+	var visual := display.to_local(battlefield.get_global_transform() * _stone_render_point(desired))
+	var native_height_scale := (_stone_metric_point(camera,display,Vector3.UP)-_stone_metric_point(camera,display,Vector3.ZERO)).y
+	var ray := camera.project_ray_normal(visual)
+	if absf(ray.y)<.01 or absf(native_height_scale)<.01: return
+	var origin := camera.project_ray_origin(visual)
+	var destination := rig.to_local(origin+ray*((desired.y/native_height_scale-origin.y)/ray.y))
+	var elbow := rig.get_bone_parent(palm)
+	var upper := rig.find_bone("upper.R")
+	for attempt in range(4):
+		for joint in [elbow,upper,elbow]:
+			if joint<0: continue
+			var joint_pose := rig.get_bone_global_pose(joint)
+			var current := rig.get_bone_global_pose(palm).origin-joint_pose.origin
+			var strand := destination-joint_pose.origin
+			if current.length_squared()<.00001 or strand.length_squared()<.00001: continue
+			var turn := Quaternion.IDENTITY.slerp(Quaternion(current.normalized(),strand.normalized()),pulse*.71)
+			joint_pose.basis = Basis(turn)*joint_pose.basis
+			rig.set_bone_global_pose(joint,joint_pose)
+			rig.force_update_all_bone_transforms()
+
+func _update_saebom_shove() -> void:
+	var hero := hunters[RULES.SAEBOM] as SaebomRig
+	var phase := pose_clock / RULES.POSE_SECONDS
+	var now := _saebom_palm_metric(hero) if is_instance_valid(hero) else Vector3.INF
+	var capsule := _deer_stone_capsule()
+	if phase >= .30 and phase <= .77 and now.is_finite() and not capsule.is_empty():
+		var previous := bom_hand_previous if bom_hand_previous.is_finite() else now
+		var hit := StoneContact.capsule_hit(previous,now,capsule.a,capsule.b,float(capsule.radius)+.08)
+		if hit != INF:
+			var hp := rules.deer_hp
+			rules.resolve_attack()
+			impact_pending = false
+			bom_last_shove = "hit"
+			hit_damage = hp-rules.deer_hp
+			hit_age = 0.0
+			hit_kind = "auto_thrust"
+			hit_on_hunter = false
+			hit_point = _stone_render_point(previous.lerp(now,hit))
+			hit_origin = hit_point
+			hit_label.text = "-%d" % hit_damage
+			basic_recoil = BASIC_RECOIL_TIME
+			hunt_audio.cue("S16",3)
+			return
+	bom_hand_previous = now
+	if phase >= .77:
+		rules.pending_damage = 0
+		impact_pending = false
+		bom_last_shove = "miss"
 
 ## Reduce each independent orthographic actor viewport to the same battlefield
 ## coordinates: horizontal pixel, height above projected ground, ground depth.
@@ -1227,6 +1381,9 @@ func update_actors(delta: float) -> void:
 			hunter_field_bars[i].get_parent().visible = approach>=1.0
 			continue
 		if hunter is SaebomRig:
+			var close_phase := clampf(pose_clock / RULES.POSE_SECONDS, 0.0, 1.0)
+			if pose == "team" and rules.attacker == RULES.SAEBOM and not bom_hop_offset.is_zero_approx():
+				hunter.position = _saebom_safe_position(base, base + bom_hop_offset * _saebom_hop_envelope(close_phase))
 			var motion := "skill" if attack and pose == "team" else "attack" if attack or assisting else ""
 			var facing := hunter.position.direction_to(deer.position) if approach >= 1.0 else heading
 			if approaching:
@@ -1234,6 +1391,14 @@ func update_actors(delta: float) -> void:
 				female_approach_phase = fposmod(female_approach_phase + travel / maxf(1.0, 42.0 * hunter.scale.x) * TAU, TAU)
 			var motion_time: float = clampf(pose_clock/RULES.POSE_SECONDS, 0.0, 1.0) * hunter.motion_duration(motion)
 			hunter.animate(delta, facing, female_approach_phase if approaching else pose_clock * 12.0, dodge or approaching, motion, motion_time, false)
+			if pose == "team" and rules.attacker == RULES.SAEBOM and bom_hop_strength > 0.0:
+				var crouch := smoothstep(0.0,.09,close_phase)*(1.0-smoothstep(.09,.18,close_phase))
+				var land := smoothstep(.31,.36,close_phase)*(1.0-smoothstep(.36,.49,close_phase))
+				var rise := sin(PI*clampf((close_phase-.10)/.26,0.0,1.0))
+				var return_lift := sin(PI*clampf((close_phase-.83)/.17,0.0,1.0))
+				hunter.pivot.position.y += bom_hop_strength*(.18*rise+.065*return_lift-.07*(crouch+land))
+			if attack and pose == "auto_thrust" and bom_shoving:
+				_pose_saebom_palm(hunter, close_phase)
 			hunter.viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
 			hunter_markers[i].position = hunter.position+Vector2(0,-63)
 			hunter_markers[i].visible = arrival_finished
@@ -1272,10 +1437,21 @@ func update_actors(delta: float) -> void:
 	var charge := running and pose=="counter"
 	var deer_motion := Vector2(-29,-8) if charge else Vector2.ZERO if basic_attack else Vector2(23,-8)
 	deer.position = ENEMY_CELLS[4].lerp(DEER_SLOT,approach)+(deer_motion*movement_beat if running else Vector2.ZERO)
+	var deer_close_travel := false
+	if running and bom_prey_pocket.is_finite():
+		var close_progress := smoothstep(.06,.70,pose_clock/RULES.POSE_SECONDS) if charge and rules.attacker == RULES.SAEBOM else 1.0
+		deer.position = bom_prey_travel_from.lerp(bom_prey_pocket,close_progress)
+		deer_close_travel = close_progress > 0.0 and close_progress < 1.0
+	elif running and bom_prey_depart.is_finite() and charge:
+		var leave := smoothstep(.04,.93,pose_clock/RULES.POSE_SECONDS)
+		deer.position = bom_prey_depart.lerp(deer.position,leave)
+		deer_close_travel = leave > 0.0 and leave < 1.0
+		if leave >= 1.0: bom_prey_depart = Vector2.INF
 	if basic_recoil>0:
 		deer.position += Vector2(13,-3)*basic_recoil/BASIC_RECOIL_TIME
 	deer.scale = Vector2.ONE*lerpf(.60,.63,approach)
 	deer.walking = 1.0 if transition_elapsed>=0 and approach>0.0 and approach<1.0 else (movement_beat if running and (charge or basic_recoil>0.0) else 0.0)
+	if deer_close_travel: deer.walking = maxf(deer.walking,.74)
 	deer.heading = lerp_angle(-PI*.34,-PI*.35,approach)
 	deer.gait_phase = pose_clock*14
 	deer.clock += delta
