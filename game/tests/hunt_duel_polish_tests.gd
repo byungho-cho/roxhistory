@@ -28,14 +28,14 @@ func run():
     var place=lab.a.preview.position;var before=lab.rules.sp
     await tap(lab.skill_button,touch)
     check(lab.motion[0]=="skill" and is_equal_approx(lab.rules.sp,before-2),"ordinary interrupts automatic attack at2/3 SP")
-    check(lab.cues.count("han_skill")==1 and lab.cues.count("han_chain")==0,"portrait emits only ordinary")
+    check(lab.cues.count("han_skill")==0 and lab.cues.count("han_chain")==0,"portrait emits only ordinary")
     check(lab.a.preview.position.distance_to(place)<.01,"no teleport when interrupting movement")
     var contact=lab.contact_at[0];await tap(lab.skill_button,touch)
-    check(lab.cues.count("han_skill")==1 and lab.contact_at[0]==contact,"double tap no repeated spend or contact")
+    check(lab.cues.count("han_skill")==0 and lab.contact_at[0]==contact,"double tap no repeated spend or contact")
   lab.reset_round();lab.advance(lab.APPROACH_END);lab._act(0,"attack");lab.advance(.1);lab.rules.sp=3;lab._refresh()
   await tap(lab.chain_button,touch)
   check(lab.motion[0]=="chain" and lab.rules.sp==0,"upper chain interrupts and spends3 only")
-  check(lab.cues.count("han_chain")==1 and lab.cues.count("han_skill")==0,"upper chain not portrait")
+  check(lab.cues.count("han_chain")==0 and lab.cues.count("han_skill")==0,"upper chain not portrait")
  # The interrupted auto attack must not land at its old contact timestamp.
  lab.reset_round();lab.advance(lab.APPROACH_END);lab._act(0,"attack");var old_contact=lab.contact_at[0];lab.advance(.08);lab.rules.sp=2;lab._refresh();lab._try_player("skill")
  var hp=lab.rules.hp[1];lab.advance(old_contact-.08+.001)

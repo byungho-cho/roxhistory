@@ -326,7 +326,7 @@
     {
       "id": "intro.d0069.bgm.v001",
       "title": "사냥의 긴장 1안 / bgm",
-      "status": "selected_provisional_not_final_music",
+      "status": "superseded_provisional_preserved",
       "decision_date": "2026-11-21",
       "path": "assets/audio/intro/provisional/d0069-v001/intro-bgm.wav",
       "runtime_integration": "game/assets/audio/d0069/intro-bgm.wav",
@@ -339,12 +339,13 @@
       "loop": false,
       "source_zip": "https://drive.google.com/file/d/1TzA8oJiGUlHbATVV2a7cm6sLkUtwK6yF/view",
       "reference_video": "https://drive.google.com/file/d/1tkk4Hd2yg-hnIb3uNhtvvCHtHgpYjvP8/view",
-      "note": "Provided stems retained without waveform, envelope or time edits; existing BGM/SFX bus preferences apply independently."
+      "note": "Provided stems retained without waveform, envelope or time edits; existing BGM/SFX bus preferences apply independently.",
+      "superseded_by": "D20261121-0070"
     },
     {
       "id": "intro.d0069.sfx.v001",
       "title": "사냥의 긴장 1안 / sfx",
-      "status": "selected_provisional_not_final_music",
+      "status": "superseded_provisional_preserved",
       "decision_date": "2026-11-21",
       "path": "assets/audio/intro/provisional/d0069-v001/intro-sfx.wav",
       "runtime_integration": "game/assets/audio/d0069/intro-sfx.wav",
@@ -357,7 +358,49 @@
       "loop": false,
       "source_zip": "https://drive.google.com/file/d/1TzA8oJiGUlHbATVV2a7cm6sLkUtwK6yF/view",
       "reference_video": "https://drive.google.com/file/d/1tkk4Hd2yg-hnIb3uNhtvvCHtHgpYjvP8/view",
-      "note": "Provided stems retained without waveform, envelope or time edits; existing BGM/SFX bus preferences apply independently."
+      "note": "Provided stems retained without waveform, envelope or time edits; existing BGM/SFX bus preferences apply independently.",
+      "superseded_by": "D20261121-0070"
+    }
+  ],
+  "intro_d0070_20261121": [
+    {
+      "title": "후련한 마무리",
+      "status": "approved_default",
+      "path": "assets/audio/intro/approved/d0070-v001/intro-bgm-01.wav",
+      "runtime_integration": "game/assets/audio/d0070/intro-bgm-01.wav",
+      "sha256": "b7be33b77fbe1b7dd9135967ea7ca888fc14e732b4c27dec597484c8a6453df6",
+      "source_zip": "https://drive.google.com/file/d/1yOjqPV78qrUgeBvmvc-QeSG3GWnvvVqj/view",
+      "decision_date": "2026-11-21",
+      "sample_rate_hz": 48000,
+      "channels": 2,
+      "frames": 1378000,
+      "duration_seconds": 28.708333333333332
+    },
+    {
+      "title": "마을에 남는 여운",
+      "status": "approved_optional",
+      "path": "assets/audio/intro/approved/d0070-v001/intro-bgm-02.wav",
+      "runtime_integration": "game/assets/audio/d0070/intro-bgm-02.wav",
+      "sha256": "2ccf9adbaac1125315078f7df6e32bf7fa94b0fd9e978b8c5ff948641e786379",
+      "source_zip": "https://drive.google.com/file/d/1yOjqPV78qrUgeBvmvc-QeSG3GWnvvVqj/view",
+      "decision_date": "2026-11-21",
+      "sample_rate_hz": 48000,
+      "channels": 2,
+      "frames": 1378000,
+      "duration_seconds": 28.708333333333332
+    },
+    {
+      "title": "인트로 공통 효과음",
+      "status": "approved_common_effects",
+      "path": "assets/audio/intro/approved/d0070-v001/intro-sfx.wav",
+      "runtime_integration": "game/assets/audio/d0070/intro-sfx.wav",
+      "sha256": "368b4a7cbd7ee783b3c4dab71308ebe2eeb244851a026f579a49b1951b11d1a5",
+      "source_zip": "https://drive.google.com/file/d/1yOjqPV78qrUgeBvmvc-QeSG3GWnvvVqj/view",
+      "decision_date": "2026-11-21",
+      "sample_rate_hz": 48000,
+      "channels": 2,
+      "frames": 1378000,
+      "duration_seconds": 28.708333333333332
     }
   ]
 }

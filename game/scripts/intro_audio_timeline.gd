@@ -22,6 +22,15 @@ func configure(music:AudioStream,effects:AudioStream)->void:
 func _audible_seconds(index:int)->float:
 	return maxf(0,players[index].get_playback_position()+AudioServer.get_time_since_last_mix()-AudioServer.get_output_latency())
 
+func select_music(stream:AudioStream,video_seconds:float,running:bool)->void:
+	# Only replace the music voice. The video and common effects keep their clocks.
+	if players.is_empty() or players[0].stream==stream:return
+	var player:=players[0]
+	player.stop();player.stream=stream
+	if running and video_seconds<stream.get_length():
+		player.play(minf(video_seconds+AudioServer.get_output_latency(),stream.get_length()-.001))
+		starts[0]+=1;player.set_meta("timeline_target",video_seconds)
+
 func sync(video_seconds:float,running:bool,force:=false)->void:
 	if not running:
 		stop()

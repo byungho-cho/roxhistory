@@ -71,6 +71,8 @@ var cues: Array[String] = []
 var pool_index := 0
 var closing := false
 var approach_active := false
+var contact_glow:GradientTexture2D
+var tip_trail:Array[Vector2]=[]
 
 func _prototype_duel()->bool:
 	return rules.ally_id=="hangyeol" and rules.enemy_id=="forest"
@@ -311,16 +313,19 @@ func reset_round() -> void:
 	next_attack = FIRST_BASIC.duplicate() if approach_active else [0.4,1.6]
 	animal_attack_count = 0
 	fx.clear()
+	tip_trail.clear()
 	a.play("idle")
 	b.play("idle")
 	a.preview.position = _position(0)
 	b.preview.position = _position(1)
 	cast_from=_settled_anchor(0)
 	presentation.reset(rules.hp)
+	presentation.grounded_spear=_prototype_duel()
 	if a.key=="hangyeol":
 		a.play("attack")
 		presentation.prepare_spear(a,_settled_anchor(0),_settled_anchor(1)-Vector2(0,33),a.duration*.55,0.0 if approach_active else 78.0)
 		a.play("idle")
+		if _prototype_duel():presentation.prepare_ready(a,_settled_anchor(0),_settled_anchor(1))
 	if approach_active:
 		motion = ["run","run"]
 		a.play("run");b.play("run")
@@ -369,8 +374,10 @@ func _act(side: int, key: String) -> void:
 	var duration: float = actor.duration
 	contact_at[side] = duration * (.55 if key == "attack" else .63)
 	if side==0 and actor.key=="hangyeol" and key in ["attack","skill"]:
-		var travel := 0.0 if _prototype_duel() and key=="attack" else 78.0
+		var travel := 0.0 if _prototype_duel() else 78.0
 		presentation.prepare_spear(actor,_settled_anchor(0),_position(1)-Vector2(0,33),contact_at[side],travel)
+	if _prototype_duel() and side==0 and key=="chain":
+		presentation.prepare_spear(actor,_settled_anchor(0),_position(1)-Vector2(0,33),contact_at[0],0)
 	if side == 0 and key != "attack":
 		start_cast_at = rules.elapsed
 	if side == 1 and key == "skill":
@@ -380,9 +387,9 @@ func _act(side: int, key: String) -> void:
 		_flash(_settled_anchor(1),"boss_gather" if b.key=="adult" else "gather",Color("#61bbff"),execute_at)
 	else:
 		var kind := "basic" if key == "attack" else key
-		if key != "attack" or not _prototype_duel():
+		if not _prototype_duel():
 			_sound(SoundNames[actor.key]+"_"+kind)
-		if key != "attack":
+		if key != "attack" and not (_prototype_duel() and side==0):
 			var ground := _settled_anchor(side)
 			var name := "chain_"+actor.key if key == "chain" else "cast_"+actor.key
 			_flash(ground,name,_ally_color(), duration if key == "chain" else minf(1.25,duration*.8))
@@ -419,7 +426,7 @@ func _land(side: int, key: String) -> void:
 		return
 	var defender := 1-side
 	var impact_point := _position(defender)-Vector2(0,33)
-	if side==0 and a.key=="hangyeol" and key in ["attack","skill"]:
+	if side==0 and a.key=="hangyeol" and (key in ["attack","skill"] or (_prototype_duel() and key=="chain")):
 		# The calibrated mesh tip and the body's actual contact location coincide.
 		impact_point=presentation.spear_point(a)
 	var skill := key != "attack"
@@ -433,14 +440,19 @@ func _land(side: int, key: String) -> void:
 	if side == 1 and skill:
 		_flash(_position(0),"burst",Color("#ffad26"),.40)
 	if skill:
+		if _prototype_duel() and side==0:_sound("han_"+key)
 		_sound("ally_hit" if defender==0 else SoundNames[b.key]+"_hit")
+	if _prototype_duel():
+		presentation.recoil[defender]=origin.direction_to(target)*(6.0 if skill else 3.0)
+		presentation.recoil_age[defender]=.025
+		_flash(impact_point,"contact_"+key,tone_for_contact(side),.48 if skill else .16)
 	# Han is a light glint, Uram dust, Saebom stone fragments. The inbound
 	# ordinary hit reads as the agreed short white glint.
 	var tone := Color("#fff5df") if defender == 0 or a.key=="hangyeol" else Color("#cf9862")
 	if not skill:
 		if _prototype_duel():
 			_sound(SoundNames[(a if side==0 else b).key]+"_basic")
-		_flash(impact_point,"hit",tone,.21)
+		if not _prototype_duel():_flash(impact_point,"hit",tone,.21)
 	if rules.damage(defender,38 if key=="chain" else 27 if skill else 11 if side==0 else 13):
 		_die(defender)
 		return
@@ -454,6 +466,11 @@ func _react(side: int, key: String) -> void:
 	age[side] = 0.0
 	frame_contact[side]=-1.0
 	actor.play(key)
+	if _prototype_duel() and side==0 and key=="idle":
+		presentation.prepare_ready(a,_settled_anchor(0),_position(1))
+
+func tone_for_contact(side:int)->Color:
+	return Color("bcefff") if side==0 else Color("fff4df")
 
 func _die(side: int) -> void:
 	_react(side,"death")
@@ -484,6 +501,14 @@ func _position(side: int) -> Vector2:
 	var windup := float(b.preview.length("req046_skill_anticipation")) if side==1 and motion[side]=="skill" else 0.0
 	var p := (elapsed-windup)/maxf(.04,impact-windup) if elapsed < impact else 1.0-(elapsed-impact)/maxf(.04,duration-impact)
 	var direction := Left.direction_to(Right)*(1.0 if side==0 else -1.0)
+	if _prototype_duel():
+		if side==0:
+			var correction:Vector2=(presentation.thrust_peak+_position(1)-presentation.thrust_target).limit_length(BASIC_MAX_TRAVEL)
+			var result:=place+correction*smoothstep(.05,.96,clampf(p,0,1))
+			if motion[0] in ["skill","chain"]:result+=(cast_from-place)*(1.0-smoothstep(0,.18,elapsed))
+			return result
+		# A deer cannot lunge its body past the actual defender either.
+		return place+direction*maxf(0,place.distance_to(_settled_anchor(0))-35.0)*smoothstep(.05,.96,clampf(p,0,1))
 	var point:=place + direction*78.0*smoothstep(0.05,0.96,clampf(p,0,1))
 	if side==0 and a.key=="hangyeol" and motion[0] in ["attack","skill"]:
 		var correction := presentation.thrust_peak+_position(1)-presentation.thrust_target
@@ -576,9 +601,24 @@ func _render_actors(delta:=0.0)->void:
 		var run_heading:=atan2((Right-Left).x,(Right-Left).y)
 		var settle:=smoothstep(APPROACH_TRAVEL,APPROACH_END,visual_clock)
 		var heading:=lerp_angle(run_heading,presentation.thrust_yaw,settle) if approach_active else presentation.thrust_yaw
-		a.preview.pivot.rotation.y=run_heading if motion[0]=="chain" else heading
+		if _prototype_duel() and motion[0] in ["idle","hit","death"]:heading=presentation.ready_yaw
+		a.preview.pivot.rotation.y=run_heading if motion[0]=="chain" and not _prototype_duel() else heading
 	presentation.sample(a,0,motion[0],_visual_age(0),INF if approach_active else float(next_attack[0])-rules.elapsed,delta)
 	presentation.sample(b,1,motion[1],_visual_age(1),INF if approach_active else float(next_attack[1])-rules.elapsed,delta)
+	if _prototype_duel():
+		# Ground depth controls the compositing of independent 3D viewports.
+		a.preview.z_index=2 if a.preview.position.y>=b.preview.position.y else 1
+		b.preview.z_index=1 if a.preview.z_index==2 else 2
+		for side in 2:
+			presentation.recoil_age[side]+=delta
+			var q:=clampf(presentation.recoil_age[side]/.28,0,1)
+			var actor:=a if side==0 else b
+			actor.preview.position+=presentation.recoil[side]*sin(PI*q)*(1-q)
+		if motion[0] in ["skill","chain"]:
+			if delta>0:
+				tip_trail.push_front(presentation.spear_point(a))
+				if tip_trail.size()>7:tip_trail.pop_back()
+		else:tip_trail.clear()
 	a.place_effect();b.place_effect()
 	battle_camera.hunters.assign([a.preview]);battle_camera.rules.attacker=0
 	battle_camera.pose="strike" if start_cast_at>=0 and rules.elapsed-start_cast_at<.70 else ""
@@ -588,7 +628,57 @@ func _render_actors(delta:=0.0)->void:
 func _flash(center: Vector2, key: String, tint: Color, duration: float) -> void:
 	fx.append({"center":center,"name":key,"color":tint,"duration":duration,"at":visual_clock})
 
+func _soft_light(center:Vector2,extent:Vector2,tint:Color,alpha:float)->void:
+	if alpha<=0:return
+	if not contact_glow:
+		contact_glow=GradientTexture2D.new();contact_glow.width=64;contact_glow.height=64
+		contact_glow.fill=GradientTexture2D.FILL_RADIAL;contact_glow.fill_from=Vector2(.5,.5);contact_glow.fill_to=Vector2(1,.5)
+		var gradient:=Gradient.new();gradient.offsets=PackedFloat32Array([0,.18,.48,1])
+		gradient.colors=PackedColorArray([Color(1,1,1,.95),Color(1,1,1,.65),Color(1,1,1,.18),Color(1,1,1,0)])
+		contact_glow.gradient=gradient
+	effects_layer.draw_texture_rect(contact_glow,Rect2(center-extent*.5,extent),false,Color(tint,alpha))
+
+func _draw_contact_effects()->void:
+	# Reuse the campaign's painted contact/ground assets, anchored to the sampled
+	# mesh and actual collision. No free-floating debug lines, circles or dots.
+	if motion[0] in ["skill","chain"]:
+		var tip:=presentation.spear_point(a)
+		var p:=clampf(_visual_age(0)/maxf(.01,motion_contact[0]),0,1)
+		if motion[0]=="chain" and _visual_age(0)<motion_contact[0]:
+			var foot:=_position(0)
+			var hand:=presentation.bone_point(a,"hand.R")
+			var chest:=a.screen_anchor()
+			var gather:=smoothstep(0,.7,p)
+			_soft_light(foot,Vector2(66,23),Color("69bbff"),sin(PI*p)*.65)
+			_soft_light(foot.lerp(chest,smoothstep(.1,.55,p)),Vector2(34,48),Color("65baff"),sin(PI*p)*.55)
+			_soft_light(chest.lerp(hand,smoothstep(.35,.75,p)),Vector2(33,33),Color("8bdcff"),gather*.5)
+			_soft_light(hand.lerp(tip,smoothstep(.55,1,p)),Vector2(31,31),Color("a6eaff"),gather*.75)
+		if p>.65:
+			for j in tip_trail.size():
+				_soft_light(tip_trail[j],Vector2(19,12)*(1.0-float(j)/10),Color("9bdfff"),.32*(1.0-float(j)/7))
+			_soft_light(tip,Vector2(24,24),Color("d8f7ff"),.6)
+	for i in range(fx.size()-1,-1,-1):
+		var effect:=fx[i]
+		var p:float=(visual_clock-float(effect.at))/float(effect.duration)
+		if p>=1:fx.remove_at(i);continue
+		if not String(effect.name).begins_with("contact_"):continue
+		var basic:bool=effect.name=="contact_attack"
+		var strong:bool=effect.name=="contact_chain"
+		var at:Vector2=effect.center
+		var fade:=1.0-smoothstep(.05,1,p)
+		var extent:=Vector2(22,19) if basic else Vector2(74,58) if strong else Vector2(51,38)
+		var texture:Texture2D=Hunt.BASIC_HIT if basic else Hunt.HEAVY_HIT
+		effects_layer.draw_texture_rect(texture,Rect2(at-extent*.5,extent),false,Color(effect.color,fade))
+		if not basic:
+			_soft_light(at,extent*1.35,Color("74c9ff"),fade*.55)
+			if strong:
+				var ground_size:=Vector2(96,34)*lerpf(.55,1.4,p)
+				effects_layer.draw_texture_rect(Hunt.GROUND_PULSE,Rect2(_position(1)-ground_size*.5,ground_size),false,Color(.65,.85,1,fade))
+
 func _draw_effects() -> void:
+	if _prototype_duel():
+		_draw_contact_effects()
+		return
 	for i in range(fx.size()-1,-1,-1):
 		var effect := fx[i]
 		var p := (visual_clock-float(effect.at))/maxf(.01,float(effect.duration))

@@ -1,0 +1,1 @@
+D0070 approved intro: BGM 01 default / BGM 02 selectable / common SFX. Original provided PCM WAVs retained without edits. Legacy intro_bgm preference uses 0/1 indices. User levels/mute remain on their buses; intro-only compensation cancels scene-music .63 gain to match the supplied MP4 mix. D0069 originals retained as superseded provisional.

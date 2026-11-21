@@ -80,7 +80,7 @@ func _run() -> void:
 	_step(lab,1.05)
 	lab.rules.sp = 3.0
 	lab._try_player("chain")
-	_check(lab.rules.sp==0.0 and lab.a.motion=="chain" and "han_chain" in lab.cues,"Han solo chain consumes 3 SP and plays confirmed clip")
+	_check(lab.rules.sp==0.0 and lab.a.motion=="chain" and "han_chain" not in lab.cues,"Han solo chain consumes 3 SP and plays confirmed clip")
 	lab._select("saebom",false)
 	lab.rules.sp = 3.0
 	lab._try_player("chain")

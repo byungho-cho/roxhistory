@@ -16,11 +16,28 @@ var spear_skeleton: Skeleton3D
 var thrust_yaw := 0.0
 var thrust_peak := Vector2.ZERO
 var thrust_target := Vector2.ZERO
+var grounded_spear := false
+var recoil := [Vector2.ZERO,Vector2.ZERO]
+var recoil_age := [1.0,1.0]
+var ready_yaw:=0.0
 
 func reset(health:Array)->void:
 	for i in 2:
 		hp[i]=float(health[i]);hp_from[i]=hp[i];hp_target[i]=hp[i];hp_age[i]=0
 	poses=[{},{}];blend_from=[{},{}];blend_age=[1.0,1.0];phase=["",""]
+	recoil=[Vector2.ZERO,Vector2.ZERO];recoil_age=[1.0,1.0]
+
+func anchor_spear_root(actor)->void:
+	# Extract authored planar root motion in this matchup only. Jump height,
+	# limbs and weapon remain authored; movement belongs to the target-aware path.
+	if not grounded_spear or actor.key!="hangyeol":return
+	var sk:Skeleton3D=actor.preview.skeleton
+	var root:int=actor.preview.root_bone
+	var pose:=sk.get_bone_pose_position(root)
+	var rest:=sk.get_bone_rest(root).origin
+	pose.x=rest.x;pose.z=rest.z;sk.set_bone_pose_position(root,pose)
+	actor.preview.pivot.position=Vector3.ZERO
+	sk.force_update_all_bone_transforms()
 
 func update_hp(health:Array,delta:float)->void:
 	for i in 2:
@@ -48,8 +65,17 @@ func sample(actor,side:int,key:String,age:float,until_attack:float,delta:float)-
 			actor.preview.start(actor.clip_for("attack"))
 			actor.preview.sample(windup,false)
 			actor.active_clip="" # Restore the authoritative motion on the next sample.
+	elif grounded_spear and side==1 and key=="death":
+		# Read the authored fall before the existing one-second reset. Do not
+		# use the generic model-test effect that hides the mesh at .18 seconds.
+		actor.preview.start(actor.clip_for("death"))
+		actor.preview.sample(minf(age/.78,1.0)*actor.duration,false)
+		actor.preview.modulate.a=1.0-smoothstep(.78,1.0,age)
+		actor.death_effect.clear()
+		if age>=.65:actor.death_effect.sample(age-.65+.08)
 	else:
 		actor.sample(attack_sample(age,actor.duration) if key=="attack" else age,false)
+	if side==0:anchor_spear_root(actor)
 	var sk:Skeleton3D=actor.preview.skeleton
 	if phase[side]!=next_phase:
 		blend_from[side]=poses[side].duplicate(true);blend_age[side]=0;phase[side]=next_phase
@@ -86,6 +112,7 @@ func prepare_spear(actor,origin:Vector2,target:Vector2,contact:float,preferred_t
 	p.animation.play(actor.clip_for(actor.motion),0.0)
 	p.animation.advance(0)
 	actor.sample(contact,false)
+	anchor_spear_root(actor)
 	spear_skeleton.force_update_all_bone_transforms()
 	var ideal:=origin+origin.direction_to(target+Vector2(0,33))*preferred_travel
 	var best:=INF
@@ -101,7 +128,24 @@ func prepare_spear(actor,origin:Vector2,target:Vector2,contact:float,preferred_t
 	p.pivot.rotation.y=thrust_yaw
 	actor.sample(0,false)
 
+func prepare_ready(actor,origin:Vector2,enemy:Vector2)->void:
+	if not grounded_spear:return
+	actor.sample(0,false);anchor_spear_root(actor)
+	var target:=enemy+enemy.direction_to(origin)*28.0-Vector2(0,33)
+	var best:=INF
+	for i in 180:
+		actor.preview.pivot.rotation.y=TAU*float(i)/180.0
+		var distance:=spear_point(actor).distance_squared_to(target)
+		if distance<best:best=distance;ready_yaw=actor.preview.pivot.rotation.y
+	actor.preview.pivot.rotation.y=ready_yaw
+
 func spear_point(actor)->Vector2:
 	var p=actor.preview
 	var world:=spear_skeleton.global_transform*spear_skeleton.get_bone_global_pose(hand)*tip_in_hand
+	return p.position+(p.display.position+p.camera.unproject_position(world)*p.display.scale)*p.scale
+
+func bone_point(actor,name:String)->Vector2:
+	var p=actor.preview
+	var sk:Skeleton3D=p.skeleton
+	var world:=sk.global_transform*sk.get_bone_global_pose(sk.find_bone(name)).origin
 	return p.position+(p.display.position+p.camera.unproject_position(world)*p.display.scale)*p.scale

@@ -30,15 +30,16 @@ var debug_shortcut_icon:TextureRect
 const HUNT_SELECTION := preload("res://scripts/hunt_stage_selection.gd")
 var hunt_stage := 0
 const HUNT_SCREEN := preload("res://scripts/deer_hunt_screen.gd")
-const INTRO_VIDEO_PATH := "res://assets/video/d0069/intro-visual.ogv"
+const INTRO_VIDEO_PATH := "res://assets/video/d0070/intro-visual.ogv"
 const IntroStems := preload("res://scripts/intro_audio_timeline.gd")
-const INTRO_BGM_PATH := "res://assets/audio/d0069/intro-bgm.wav"
-const INTRO_SFX_PATH := "res://assets/audio/d0069/intro-sfx.wav"
+const INTRO_BGM_PATHS := ["res://assets/audio/d0070/intro-bgm-01.wav","res://assets/audio/d0070/intro-bgm-02.wav"]
+const INTRO_SFX_PATH := "res://assets/audio/d0070/intro-sfx.wav"
 var hunt: HUNT_SCREEN
 var hunt_preparing := false
 var hunt_preparation_cancelled := false
 var intro_music: Array[AudioStreamPlayer] = []
 var intro_audio: IntroStems
+var intro_music_choice: DemoButton
 var intro_playback_failed := false
 var intro_sound: DemoButton
 var title_sound: DemoButton
@@ -932,8 +933,17 @@ func intro_screen() -> void:
 		intro_sound.add_theme_stylebox_override(state,StyleBoxEmpty.new())
 	update_title_sound()
 	intro_audio=IntroStems.new();intro_audio.name="IntroStemTimeline";stage.add_child(intro_audio)
-	intro_audio.configure(load(INTRO_BGM_PATH),load(INTRO_SFX_PATH))
+	intro_audio.configure(load(INTRO_BGM_PATHS[intro_track_index()]),load(INTRO_SFX_PATH))
+	# The approved intro already includes its mix envelope. Cancel only the
+	# global scene-music reduction; user BGM level/mute still applies on its bus.
+	intro_audio.players[0].volume_db=linear_to_db(1.0/(SoundSettings.BGM_REFERENCE_GAIN*SoundSettings.BGM_MIX))
 	intro_music.assign(intro_audio.players)
+	intro_music_choice=button(stage,"음원 %d"%(intro_track_index()+1),cycle_intro_music)
+	style_start_prompt(intro_music_choice)
+	intro_music_choice.name="IntroMusicChoice"
+	intro_music_choice.anchor_left=1.0;intro_music_choice.anchor_right=1.0
+	intro_music_choice.offset_left=-130;intro_music_choice.offset_right=-22
+	intro_music_choice.alignment=HORIZONTAL_ALIGNMENT_RIGHT
 	var skip := button(stage,"화면을 터치하여 시작",finish_intro)
 	style_start_prompt(skip)
 	skip.name = "SkipIntro"
@@ -1083,6 +1093,18 @@ func update_speaker_icon(control: DemoButton, enabled: bool) -> void:
 	icon.modulate.a = .45 if control.disabled else 1.0
 	control.set_meta("semantic_text","소리 끄기" if enabled else "소리 켜기")
 
+
+func intro_track_index()->int:
+	var saved=settings.get_value("app","intro_bgm",0)
+	return int(saved) if (typeof(saved)==TYPE_INT and int(saved) in [0,1]) else 0
+
+func cycle_intro_music()->void:
+	if screen!="intro" or intro_leaving:return
+	settings.set_value("app","intro_bgm",1-intro_track_index())
+	if settings.save(prefs_path)!=OK:show_error("인트로 음악 설정을 저장하지 못했습니다.")
+	intro_music_choice.text="음원 %d"%(intro_track_index()+1)
+	var running:=application_active and not intro_preparing and not intro_playback_failed and intro_player.is_playing() and not intro_player.paused
+	intro_audio.select_music(load(INTRO_BGM_PATHS[intro_track_index()]),intro_player.stream_position,running)
 
 func sync_intro_music(force := false) -> void:
 	if not is_instance_valid(intro_audio):return
