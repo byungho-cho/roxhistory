@@ -108,6 +108,9 @@ var tip_trail:Array[Vector2]=[]
 func _prototype_duel()->bool:
 	return rules.ally_id=="hangyeol" and rules.enemy_id=="forest"
 
+func _saebom_duel()->bool:
+	return rules.ally_id=="saebom" and rules.enemy_id=="forest"
+
 func _uram_duel()->bool:
 	return rules.ally_id=="uram" and rules.enemy_id=="adult"
 
@@ -375,7 +378,7 @@ func reset_round(after_fade:=false) -> void:
 	start_cast_at = -1.0
 	execute_at = -1.0
 	visual_clock = 0.0
-	approach_active = _prototype_duel() or _uram_duel()
+	approach_active = _prototype_duel() or _uram_duel() or _saebom_duel()
 	next_attack = FIRST_BASIC.duplicate() if approach_active else [0.4,1.6]
 	animal_attack_count = 0
 	fx.clear()
@@ -387,7 +390,7 @@ func reset_round(after_fade:=false) -> void:
 	cast_from=_settled_anchor(0)
 	presentation.reset(rules.hp)
 	presentation.grounded_spear=_prototype_duel()
-	if _prototype_duel() or _uram_duel():
+	if _prototype_duel() or _uram_duel() or _saebom_duel():
 		if _prototype_duel():
 			presentation.cache_spear(a)
 			a.preview.set_meta("duel_presenter",presentation)
@@ -516,7 +519,7 @@ func _act(side: int, key: String) -> void:
 		_flash(_settled_anchor(1),"boss_gather" if b.key=="adult" else "gather",Color("#61bbff"),execute_at)
 	else:
 		var kind := "basic" if key == "attack" else key
-		if not _prototype_duel() and not _uram_duel():
+		if not _prototype_duel() and not _uram_duel() and not (_saebom_duel() and key in ["attack","skill"]):
 			_sound(SoundNames[actor.key]+"_"+kind)
 		if key != "attack" and not ((_prototype_duel() or _uram_duel()) and side==0):
 			var ground := _settled_anchor(side)
@@ -598,7 +601,7 @@ func _land(side: int, key: String,contact:Dictionary={}) -> void:
 		if _uram_duel() and side==0 and key=="skill":_sound("uram_skill")
 		if _uram_duel() and side==0 and key=="counter":_sound("uram_basic")
 		_sound("ally_hit" if defender==0 else SoundNames[b.key]+"_hit")
-	if _prototype_duel() or _uram_duel():
+	if _prototype_duel() or _uram_duel() or _saebom_duel():
 		presentation.recoil[defender]=origin.direction_to(target)*(6.0 if skill else 3.0)
 		presentation.recoil_age[defender]=.025
 		var hold:=.48 if skill else .16
@@ -616,9 +619,10 @@ func _land(side: int, key: String,contact:Dictionary={}) -> void:
 	# ordinary hit reads as the agreed short white glint.
 	var tone := Color("#fff5df") if defender == 0 or a.key=="hangyeol" else Color("#cf9862")
 	if not skill:
-		if _prototype_duel() or _uram_duel():
-			_sound(SoundNames[(a if side==0 else b).key]+"_basic")
-		if not _prototype_duel() and not _uram_duel():_flash(impact_point,"hit",tone,.21)
+		if _prototype_duel() or _uram_duel() or _saebom_duel():
+			if not (_saebom_duel() and side==0):_sound(SoundNames[(a if side==0 else b).key]+"_basic")
+			else:_sound("deer_hit")
+		if not _prototype_duel() and not _uram_duel() and not _saebom_duel():_flash(impact_point,"hit",tone,.21)
 	if hp_reveal_at<0:hp_reveal_at=visual_clock
 	if rules.damage(defender,38 if key=="chain" else 18 if _uram_duel() and key=="counter" else 27 if skill else 11 if side==0 else 13):
 		_die(defender)
@@ -847,14 +851,20 @@ func _advance_shared(delta:float)->void:
 			var windup_end:=minf(HAN_SKILL_WINDUP_LIMIT,a.duration*.55)
 			var sped_time:=clampf((windup_end-prior_han_age)/HAN_SKILL_WINDUP_RATE,0,dt)
 			age[0]+=sped_time*(HAN_SKILL_WINDUP_RATE-1)
+		var release_count:=shared_world.projectile_releases.size()
 		var events:=shared_world.step(self,dt,prior_han_age)
+		if _saebom_duel() and shared_world.projectile_releases.size()>release_count:
+			_sound("bom_skill" if shared_world.projectile_releases[-1].motion=="skill" else "bom_basic")
 		if _prototype_duel():_sample_deer_wake()
 		for event in events:_land(int(event.side),event.motion,event)
 		if execute_at>=0 and age[1]>=execute_at:
 			_sound(SoundNames[b.key]+"_skill");execute_at=-1
 		for side in 2:
 			var actor:=a if side==0 else b
-			if side==1 and motion[1]=="walk":
+			if _saebom_duel() and side==1 and motion[1]=="run":
+				if shared_world.bodies[0].position.distance_to(shared_world.bodies[1].position)<=SharedWorld.SAEBOM_DEER_APPROACH_GAP+.006:
+					animal_attack_count+=1;_act(1,"skill" if animal_attack_count%3==0 else "attack")
+			elif side==1 and motion[1]=="walk":
 				if shared_world.deer_return_offset().length()<.005 or age[1]>=1.2:
 					_react(1,"idle")
 			elif motion[side] not in ["idle","death"] and age[side]>=actor.duration:
@@ -867,7 +877,10 @@ func _advance_shared(delta:float)->void:
 		if rules.living():
 			if motion[0]=="idle" and rules.elapsed>=next_attack[0]:_act(0,"attack")
 			if motion[1]=="idle" and rules.elapsed>=next_attack[1]:
-				animal_attack_count+=1;_act(1,"skill" if animal_attack_count%3==0 else "attack")
+				if _saebom_duel() and shared_world.bodies[0].position.distance_to(shared_world.bodies[1].position)>SharedWorld.SAEBOM_DEER_APPROACH_GAP+.006:
+					_react(1,"run")
+				else:
+					animal_attack_count+=1;_act(1,"skill" if animal_attack_count%3==0 else "attack")
 		_render_actors(dt);_refresh(dt)
 	effects_layer.queue_redraw()
 
@@ -1130,6 +1143,9 @@ func _draw_contact_effects()->void:
 		if _prototype_duel() and is_instance_valid(shared_world) and effect.get("attacker",-1)==1 and effect.name=="contact_skill":
 			_draw_deer_impact(effect,clampf(p,0,1))
 			continue
+		if _saebom_duel() and effect.get("attacker",-1)==0 and (basic or effect.name=="contact_skill"):
+			_draw_sling_contact(effect,p,basic)
+			continue
 		if is_instance_valid(shared_world) and effect.get("attacker",-1)==0 and (basic or effect.name=="contact_skill"):
 			_draw_han_impact(effect,clampf(p,0,1),basic)
 			continue
@@ -1186,8 +1202,9 @@ func _draw_uram_contact(effect:Dictionary,p:float)->void:
 		_soft_light(mote,Vector2(14,10)*(1-p*.4),Color("ffdf9c"),light*.8)
 
 func _draw_effects() -> void:
-	if _prototype_duel() or _uram_duel():
+	if _prototype_duel() or _uram_duel() or _saebom_duel():
 		if _uram_duel() and is_instance_valid(shared_world):_draw_uram_exchange()
+		if _saebom_duel() and is_instance_valid(shared_world):_draw_sling_exchange()
 		_draw_contact_effects()
 		return
 	for i in range(fx.size()-1,-1,-1):
@@ -1251,3 +1268,62 @@ func _draw_effects() -> void:
 			for j in 11:
 				var dir := Vector2.from_angle(float(j)*TAU/7.0+.16)
 				effects_layer.draw_line(center+dir*radius*.5,center+dir*radius,Color(color,1.0-p),3.0*(1.0-p),true)
+
+func _draw_sling_exchange()->void:
+	if rules.hp[0]<=0:return
+	var stone:=shared_world.project(shared_world.sling_point())
+	if motion[0]=="skill" and not shared_world.consumed[0] and age[0]<SharedWorld.sling_release_seconds("skill"):
+		var charge:=smoothstep(.16,.65,age[0])
+		var pouch:=shared_world.bone_screen(0,"sling_pouch")
+		var hand:=shared_world.bone_screen(0,"hand.R")
+		effects_layer.draw_line(hand,pouch,Color(1,.23,.15,.58*charge),2.5,true)
+		_soft_light(pouch,Vector2(29,24),Color("d32118"),.50*charge)
+		_soft_light(stone,Vector2(17,16),Color("ff544a"),.84*charge)
+		effects_layer.draw_circle(stone,2.0,Color(1,.77,.67,charge),true,-1,true)
+	if motion[0]=="chain":
+		var phase:=clampf(age[0]/maxf(.01,a.duration),0,1)
+		var pulse:=sin(PI*phase)
+		var ground_point:=_position(0)
+		var palms:=shared_world.bone_screen(0,"hand.R").lerp(shared_world.bone_screen(0,"hand.L"),.5)
+		_soft_light(ground_point,Vector2(66,20),Color("66cfa1"),pulse*.58)
+		# Retain the original inward support particles/ring, in its own green palette.
+		var draw_in:=clampf(phase/.45,0,1)
+		var rim:=lerpf(49.0,10.0,draw_in)
+		for i in 12:
+			var direction:=Vector2.from_angle(float(i)*TAU/12.0)
+			var offset:=direction*lerpf(86.0,6.0,draw_in)*Vector2(1,.35)
+			effects_layer.draw_circle(ground_point+offset,2.0+2.0*phase,Color(.40,.81,.64,pulse*.54))
+		effects_layer.draw_set_transform(ground_point,0,Vector2(1,.36))
+		effects_layer.draw_arc(Vector2.ZERO,rim,0,TAU,38,Color(.54,.91,.72,pulse*.52),3.0,true)
+		effects_layer.draw_set_transform(Vector2.ZERO)
+		_soft_light(ground_point.lerp(palms,smoothstep(.08,.65,phase)),Vector2(29,31),Color("88e8ba"),pulse*.62)
+		_soft_light(palms,Vector2(30,25),Color("b1f6ca"),pulse*.62*smoothstep(.27,.68,phase))
+	if not shared_world.projectile.is_empty():
+		var shot:Dictionary=shared_world.projectile
+		var point:Vector3=shot.position
+		var velocity:Vector3=shot.velocity
+		var tip:=shared_world.project(point)
+		var tail:=shared_world.project(point-velocity*(.063 if shot.motion=="skill" else .029))
+		var color:=Color("f34937") if shot.motion=="skill" else Color("c99575")
+		var strong:bool=shot.motion=="skill"
+		var beam:=tip-tail
+		var scale:=1.0 if strong else .62
+		for i in range(1,8):
+			var u:=float(i)/8.0
+			var width:=lerpf(17.0,7.0,u)*scale
+			_soft_light(tip-beam*u,Vector2(width,width*.78),color,(1.0-u)*(1.0-u)*(.86 if strong else .62))
+		_soft_light(tip,Vector2(25,20)*scale,color,.78)
+		_soft_light(tip,Vector2(9,8)*scale,Color("fff1d9"),.92)
+
+func _draw_sling_contact(effect:Dictionary,p:float,basic:bool)->void:
+	var center:Vector2=effect.center
+	var life:=1.0-smoothstep(.09,.74,p)
+	var warm:=Color("e9b794") if basic else Color("f55a45")
+	_soft_light(center,Vector2(34,25) if basic else Vector2(70,50),warm,life*.77)
+	for i in (5 if basic else 9):
+		var ray:=Vector2.from_angle(float(i)*2.39+.3)
+		var distance:=lerpf(2.0,18.0 if basic else 34.0,p)
+		var at:=center+ray*distance
+		var tail:=at-ray*(4.0 if basic else 7.0)
+		effects_layer.draw_line(tail,at,Color(warm,life*.74),2.2,true)
+	_soft_light(center,Vector2(17,15),Color("fff2d6"),life*.82)

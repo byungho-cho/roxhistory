@@ -40,6 +40,7 @@ var screen_origin:=Vector2.ZERO
 func configure(left,right,center:Vector2)->void:
 	actors=[left,right]
 	uram_pair=left.key=="uram" and right.key=="adult"
+	saebom_pair=left.key=="saebom" and right.key=="forest"
 	viewport=SubViewport.new();viewport.name="SharedDuel3DViewport"
 	viewport.size=Vector2i(1280,720);viewport.own_world_3d=true;viewport.transparent_bg=true
 	viewport.msaa_3d=Viewport.MSAA_2X;viewport.render_target_update_mode=SubViewport.UPDATE_ALWAYS
@@ -86,10 +87,12 @@ func configure(left,right,center:Vector2)->void:
 		p.viewport.size=Vector2i(2,2) # Adapter API stays valid without two unused large render targets.
 		p.set_meta("duel_world",self);p.set_meta("duel_side",i)
 		actor.death_effect.z_index=4
-	if not uram_pair:_calibrate_weapon_axis()
+	if not uram_pair and not saebom_pair:_calibrate_weapon_axis()
+	if saebom_pair:_setup_projectile()
 	reset()
 
 func detach()->void:
+	_restore_sling_stone()
 	for i in actors.size():
 		var p=actors[i].preview
 		if not is_instance_valid(p):continue
@@ -112,6 +115,7 @@ func _calibrate_weapon_axis()->void:
 	actor.play("idle");actors[1].play("idle")
 
 func reset()->void:
+	_end_projectile();projectile_releases.clear();_restore_sling_stone()
 	contacts.clear();body_contacts=0;max_body_penetration=0;deer_spear_reaction=false
 	knockback=[Vector3.ZERO,Vector3.ZERO]
 	previous_hurt.clear();consumed=[false,false];action_name=["idle","idle"];action_id=[0,0]
@@ -142,6 +146,7 @@ func bone_world(side:int,bone:String)->Vector3:
 func bone_screen(side:int,bone:String)->Vector2:return project(bone_world(side,bone))
 
 func weapon_point(side:int)->Vector3:
+	if saebom_pair and side==0:return sling_point()
 	if uram_pair and side==0:
 		var p=actors[0].preview
 		if action_name[0]=="counter":return p.shield.to_global(Vector3(0,0,.035))
@@ -305,7 +310,7 @@ func render_poses(lab,delta:float)->Array:
 		if side==1 and key=="walk":
 			# Reverse the authored hoof cycle while keeping the deer facing Han.
 			sample_age=fposmod(-age*1.65,actor.duration)
-		if side==0 and key=="chain" and not uram_pair:sample_age=lab.Accent.chain_pose(age,actor.duration)
+		if side==0 and key=="chain" and not uram_pair and not saebom_pair:sample_age=lab.Accent.chain_pose(age,actor.duration)
 		var directional_hit:=side==1 and key=="hit" and deer_spear_reaction and not uram_pair
 		lab.presentation.sample(actor,side,key,sample_age,INF if lab.approach_active else float(lab.next_attack[side])-lab.rules.elapsed,delta,false,directional_hit)
 		var sk:Skeleton3D=p.skeleton
@@ -342,7 +347,7 @@ func render_poses(lab,delta:float)->Array:
 						tr.origin.y-=.43*lower
 					shield.global_transform=tr
 				if key=="attack":_aim_uram_club(age)
-			else:_aim_thrust(key,age,actor.duration)
+			elif not saebom_pair:_aim_thrust(key,age,actor.duration)
 		p.viewport.render_target_update_mode=SubViewport.UPDATE_DISABLED
 		var torso:=bone_world(side,"spine" if side==0 else "trunk")
 		body_shapes[side].global_position=torso-Vector3(0,.12 if side==0 else .15,0)
@@ -373,8 +378,11 @@ func step(lab,delta:float,prior_han_age:float=-1.0)->Array[Dictionary]:
 		var toward:Vector3=bodies[1-side].position-bodies[side].position;toward.y=0
 		var distance:=toward.length();toward=toward.normalized()
 		if lab.approach_active:
-			var gap:=lerpf(START_DISTANCE,URAM_PAIR_GAP if uram_pair else ENGAGE_DISTANCE,smoothstep(0,lab.APPROACH_TRAVEL*lab.entrance_scale,lab.visual_clock))
+			var gap:=lerpf(START_DISTANCE,URAM_PAIR_GAP if uram_pair else SAEBOM_GAP if saebom_pair else ENGAGE_DISTANCE,smoothstep(0,lab.APPROACH_TRAVEL*lab.entrance_scale,lab.visual_clock))
 			desired[side]=direction*gap*.5*(-1 if side==0 else 1)
+		elif saebom_pair and side==1 and key=="run" and lab.rules.living():
+			# Use native run until the deer reaches its own actual attack range.
+			desired[side]+=toward*minf(2.9*delta,maxf(0,distance-SAEBOM_DEER_APPROACH_GAP))
 		elif side==1 and key=="walk" and lab.rules.living():
 			var offset:=deer_return_offset()
 			var speed:=RECOVER_SPEED*lerpf(.30,1.0,smoothstep(0,.22,offset.length()))
@@ -394,6 +402,7 @@ func step(lab,delta:float,prior_han_age:float=-1.0)->Array[Dictionary]:
 				if key=="chain":forward=0.0
 				elif key=="counter":forward=maxf(forward,1.8*delta);safe=1.10
 				else:forward=maxf(forward,2.0*delta if lab.age[0]<actors[0].duration*.55 else 0.0);safe=1.38
+			if saebom_pair and side==0:forward=0.0
 			desired[side]+=toward*minf(forward,maxf(0,distance-safe))
 		previous_root[side]=roots[side]
 		if key=="death":knockback[side]=Vector3.ZERO
@@ -417,6 +426,7 @@ func step(lab,delta:float,prior_han_age:float=-1.0)->Array[Dictionary]:
 		var active:bool=lab.age[side]>=opens and prior_age<=closes
 		var can_strike:=key in ["attack","skill","chain"]
 		if uram_pair and side==0:can_strike=key in ["attack","skill","counter"]
+		if saebom_pair and side==0:can_strike=false
 		if not lab.approach_active and can_strike and not consumed[side] and active and lab.rules.living():
 			# Substeps follow articulated motion; relative target travel is included.
 			var shift:Vector3=(target.a+target.b-old_hurt[1-side].a-old_hurt[1-side].b)*.5
@@ -474,6 +484,9 @@ func step(lab,delta:float,prior_han_age:float=-1.0)->Array[Dictionary]:
 				if uram_pair:event["kind"]="shield" if shield_kind else "body"
 				events.append(event);contacts.append(event)
 		previous_weapon[side]=now
+	if saebom_pair:
+		var hit:=_projectile_step(lab,delta,old_hurt[1],old_weapon[0],prior_han_age if prior_han_age>=0 else lab.age[0]-delta)
+		if not hit.is_empty():events.append(hit);contacts.append(hit)
 	events.sort_custom(func(first,second):return first.time<second.time)
 	return events
 
@@ -521,3 +534,103 @@ func _aim_uram_club(age:float)->void:
 	var tr:=club.global_transform
 	tr=Transform3D(turn*tr.basis,grip+turn*(tr.origin-grip))
 	club.global_transform=tr
+const SAEBOM_GAP:=3.7
+const SAEBOM_DEER_APPROACH_GAP:=1.98
+const SLING_SKIN_RADIUS:=.066
+const MotionTiming=preload("res://scripts/motion_timing.gd")
+var saebom_pair:=false
+var projectile:Dictionary={}
+var projectile_releases:Array[Dictionary]=[]
+var projectile_mesh:MeshInstance3D
+var embedded_stone:MeshInstance3D
+var embedded_stone_visible:=true
+var sling_visual_previous:=Vector3.ZERO
+
+func _setup_projectile()->void:
+	var mesh:=SphereMesh.new()
+	mesh.radius=SLING_SKIN_RADIUS;mesh.height=SLING_SKIN_RADIUS*2
+	mesh.radial_segments=9;mesh.rings=5
+	var skin:=StandardMaterial3D.new()
+	skin.albedo_color=Color("8d7766");skin.roughness=.73
+	mesh.material=skin
+	projectile_mesh=MeshInstance3D.new()
+	projectile_mesh.name="SaebomFlightStone";projectile_mesh.mesh=mesh;projectile_mesh.hide()
+	scene.add_child(projectile_mesh)
+	for model in actors[0].preview.pivot.find_children("*","MeshInstance3D",true,false):
+		var label:=String(model.name).to_lower()
+		if "large stone" in label or "large_stone" in label:
+			embedded_stone=model
+			embedded_stone_visible=embedded_stone.visible
+			break
+
+func sling_point()->Vector3:
+	return bone_world(0,"sling_stone")
+
+static func sling_release_seconds(key:String)->float:
+	# The heavy release is the pinned authored 3.566667s curve event, not .63 of the cast.
+	if key=="skill":return 3.566667/MotionTiming.rate("saebom","sling_heavy")
+	if key=="attack":return .48/MotionTiming.rate("saebom","basic_attack")
+	return INF
+
+func _restore_sling_stone()->void:
+	if is_instance_valid(embedded_stone):embedded_stone.visible=embedded_stone_visible
+
+func _end_projectile()->void:
+	projectile.clear()
+	if is_instance_valid(projectile_mesh):projectile_mesh.hide()
+
+func _projectile_step(lab,delta:float,old_hurt:Dictionary,old_origin:Vector3,prior_age:float)->Dictionary:
+	if not lab.rules.living():
+		_end_projectile()
+		return {}
+	var begin_fraction:=0.0
+	var key:String=lab.motion[0]
+	var mark:=sling_release_seconds(key)
+	var age:float=lab.age[0]
+	if lab.approach_active:return {}
+	if key not in ["attack","skill"] or not consumed[0]:_restore_sling_stone()
+	elif is_instance_valid(embedded_stone):embedded_stone.hide()
+	if not consumed[0] and mark!=INF and prior_age<=mark and age>=mark:
+		begin_fraction=clampf((mark-prior_age)/maxf(.000001,age-prior_age),0,1)
+		var point:=old_origin.lerp(sling_point(),begin_fraction)
+		var target:=hurt_capsule(1)
+		var aim:Vector3=target.a.lerp(target.b,.62)
+		var heading:=aim-point
+		var flight_speed:=15.0 if key=="skill" else 12.0
+		var planar:=Vector3(heading.x,0,heading.z)
+		var flight_time:=clampf(planar.length()/flight_speed,.075,.45)
+		var velocity_planar:=planar.limit_length(flight_speed*flight_time)/flight_time
+		# Aim only once. The airborne stone does not home, and reacts only to live intersections.
+		var velocity:=velocity_planar+Vector3.UP*(heading.y/flight_time+1.9*flight_time)
+		projectile={"position":point,"velocity":velocity,"motion":key,"action":action_id[0],"flight_age":0.0,"release_age":mark,"release_time":lab.rules.elapsed-delta+delta*begin_fraction}
+		projectile_releases.append({"position":point,"motion":key,"action":action_id[0],"time":projectile.release_time,"attack_age":mark})
+		consumed[0]=true
+		if is_instance_valid(embedded_stone):embedded_stone.hide()
+		projectile_mesh.position=point
+		projectile_mesh.show()
+	if projectile.is_empty():return {}
+	var dt:=delta*(1.0-begin_fraction)
+	if dt<.000001:return {}
+	var previous:Vector3=projectile.position
+	var velocity:Vector3=projectile.velocity
+	var down:=Vector3.DOWN*3.8
+	var next:=previous+velocity*dt+down*dt*dt*.5
+	var target:=hurt_capsule(1)
+	var shift:Vector3=(target.a+target.b-old_hurt.a-old_hurt.b)*(.5*(1.0-begin_fraction))
+	var from:=previous+shift
+	var t:=capsule_hit(from,next,target.a,target.b,float(target.radius)+SLING_SKIN_RADIUS)
+	if t!=INF:
+		var axis:Vector3=target.b-target.a
+		var local_probe:=from.lerp(next,t)
+		var nearest:Vector3=target.a+axis*clampf((local_probe-target.a).dot(axis)/maxf(.000001,axis.length_squared()),0,1)
+		var point:=nearest+nearest.direction_to(local_probe)*float(target.radius)
+		var elapsed:=float(projectile.flight_age)+dt*t
+		var hit:={"side":0,"kind":"projectile","motion":projectile.motion,"point":point,"probe":local_probe,"hurt":target.duplicate(),"weapon_from":from,"weapon_to":next,"normal":velocity.normalized(),"action":projectile.action,"time":float(projectile.release_time)+elapsed,"attack_age":float(projectile.release_age)+elapsed,"active_from":float(projectile.release_age),"active_to":float(projectile.release_age)+.50}
+		_end_projectile()
+		return hit
+	projectile.position=next
+	projectile.velocity=velocity+down*dt
+	projectile.flight_age=float(projectile.flight_age)+dt
+	projectile_mesh.position=next
+	if next.y<.03 or float(projectile.flight_age)>.50:_end_projectile()
+	return {}
