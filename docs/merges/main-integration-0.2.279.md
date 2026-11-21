@@ -25,7 +25,7 @@ Tracked working changes were captured with `git stash create` into named snapsho
 
 ## Historical source references
 
-Each listed commit retains its complete original tree and history. See the JSON audit for changed files and unique commit subjects.
+Each listed commit retains its complete original tree and history. See the JSON audit for source-tree links, changed-file counts and unique-commit counts.
 
 | Branch/reference | Commit | Treatment |
 | --- | --- | --- |
