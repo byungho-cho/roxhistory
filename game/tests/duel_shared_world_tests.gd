@@ -78,6 +78,12 @@ func run():
   check((w.bodies[1].position-w.bodies[0].position).dot(w.direction)>0,"simultaneous bodies cannot exchange sides")
   check(w.max_body_penetration<.0001,"continuous close-range collision leaves no overlap")
  # The target approaches while Han is airborne; landing remains on its near side.
+ settle();lab.motion.assign(["run","run"]);lab.a.play("run");lab.b.play("run")
+ for i in 150:
+  w.knockback=[w.direction*3,-w.direction*3];lab.advance(1.0/60)
+  check((w.bodies[1].position-w.bodies[0].position).dot(w.direction)>0,"sustained opposing charges stop rather than sliding past")
+ check(w.max_body_penetration<.0001,"sustained charge capsules remain separated")
+ # The target approaches while Han is airborne; landing remains on its near side.
  settle();lab.rules.sp=3;lab._try_player("chain");lab.next_attack=[999.0,999.0];lab.advance(.62)
  w.knockback[1]=-w.direction*3
  for i in 90:

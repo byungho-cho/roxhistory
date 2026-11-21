@@ -58,7 +58,7 @@ func configure(left,right,center:Vector2)->void:
 	screen_origin=display.position
 	for i in 2:
 		var actor=actors[i];var p=actor.preview
-		originals.append({"parent":p.pivot.get_parent(),"transform":p.pivot.transform})
+		originals.append({"parent":p.pivot.get_parent(),"transform":p.pivot.transform,"viewport_size":p.viewport.size})
 		var body:=AnimatableBody3D.new();body.name="HanBody" if i==0 else "DeerBody";body.sync_to_physics=false;body.collision_layer=1;body.collision_mask=5
 		scene.add_child(body);bodies.append(body)
 		var shape:=CollisionShape3D.new();var capsule:=CapsuleShape3D.new();capsule.radius=BODY_RADII[i];capsule.height=1.65 if i==0 else 1.45
@@ -77,6 +77,7 @@ func configure(left,right,center:Vector2)->void:
 					mesh.set_surface_override_material(surface,copy)
 					fade_materials[i].append({"material":copy,"mode":copy.transparency})
 		p.display.hide();p.viewport.render_target_update_mode=SubViewport.UPDATE_DISABLED
+		p.viewport.size=Vector2i(2,2) # Adapter API stays valid without two unused large render targets.
 		p.set_meta("duel_world",self);p.set_meta("duel_side",i)
 		actor.death_effect.z_index=4
 	_calibrate_weapon_axis()
@@ -87,6 +88,7 @@ func detach()->void:
 		var p=actors[i].preview
 		if not is_instance_valid(p):continue
 		p.pivot.reparent(originals[i].parent,false);p.pivot.transform=originals[i].transform
+		p.viewport.size=originals[i].viewport_size
 		p.remove_meta("duel_world");p.remove_meta("duel_side");p.display.show()
 
 func _calibrate_weapon_axis()->void:
@@ -196,8 +198,15 @@ func resolve_bodies(next:Array,previous_centers:Array=[])->void:
 		var normal:Vector3=(at0-at1).normalized();normal.y=0;normal=normal.normalized()
 		if normal.length_squared()<.5:normal=-direction
 		var remain0:Vector3=next[0]-at0;var remain1:Vector3=next[1]-at1
-		if remain0.dot(normal)<0:remain0-=normal*remain0.dot(normal)
-		if remain1.dot(normal)>0:remain1-=normal*remain1.dot(normal)
+		var move0:Vector3=next[0]-old0;var move1:Vector3=next[1]-old1
+		var head_on:=move0.dot(old1-old0)>0 and move1.dot(old0-old1)>0 and move0.normalized().dot(move1.normalized())<-.75
+		if head_on:
+			# Opposing straight charges stop at contact. Do not synthesize sideways
+			# motion that lets offset torso centers slide the actors past each other.
+			remain0=Vector3.ZERO;remain1=Vector3.ZERO
+		else:
+			if remain0.dot(normal)<0:remain0-=normal*remain0.dot(normal)
+			if remain1.dot(normal)>0:remain1-=normal*remain1.dot(normal)
 		next=[at0+remain0,at1+remain1]
 	for i in 2:bodies[i].position=Vector3(next[i].x,0,next[i].z)
 	# Robustly separate an externally repositioned overlap before the next step.
