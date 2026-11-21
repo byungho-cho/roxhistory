@@ -30,17 +30,15 @@ var debug_shortcut_icon:TextureRect
 const HUNT_SELECTION := preload("res://scripts/hunt_stage_selection.gd")
 var hunt_stage := 0
 const HUNT_SCREEN := preload("res://scripts/deer_hunt_screen.gd")
-const INTRO_VIDEO_PATH := "res://assets/video/intro.ogv"
+const INTRO_VIDEO_PATH := "res://assets/video/d0069/intro-visual.ogv"
+const IntroStems := preload("res://scripts/intro_audio_timeline.gd")
+const INTRO_BGM_PATH := "res://assets/audio/d0069/intro-bgm.wav"
+const INTRO_SFX_PATH := "res://assets/audio/d0069/intro-sfx.wav"
 var hunt: HUNT_SCREEN
 var hunt_preparing := false
 var hunt_preparation_cancelled := false
-const INTRO_TRACKS := [
-	"res://assets/audio/intro-d0004/05_Direct_Era_Rise_Story_End_Smooth_v2_35s.mp3",
-	"res://assets/audio/intro-d0004/07_Runway_Opening_Ending_35s.mp3",
-]
 var intro_music: Array[AudioStreamPlayer] = []
-var intro_music_fade: Tween
-var intro_music_choice: DemoButton
+var intro_audio: IntroStems
 var intro_playback_failed := false
 var intro_sound: DemoButton
 var title_sound: DemoButton
@@ -312,6 +310,9 @@ func show_screen(next: String,spread_hud:=false) -> void:
 	region_snapshot=region_selection.snapshot() if next=="region" and screen=="region" and is_instance_valid(region_selection) else {}
 	if is_instance_valid(joystick):
 		joystick.clear()
+	if is_instance_valid(intro_audio):intro_audio.stop()
+	intro_audio=null
+	intro_music.clear()
 	clear_children(ui)
 	overlay = null
 	modal = false
@@ -929,21 +930,10 @@ func intro_screen() -> void:
 	install_speaker_icon(intro_sound)
 	for state in ["normal","hover","pressed","focus"]:
 		intro_sound.add_theme_stylebox_override(state,StyleBoxEmpty.new())
-	intro_music_choice = button(stage,"",cycle_intro_music)
-	style_start_prompt(intro_music_choice)
-	intro_music_choice.name = "IntroMusicChoice"
-	intro_music_choice.anchor_left = 1.0
-	intro_music_choice.anchor_right = 1.0
-	intro_music_choice.offset_left = -118
-	intro_music_choice.offset_right = -22
-	intro_music_choice.alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	update_title_sound()
-	for track in INTRO_TRACKS:
-		var player := AudioStreamPlayer.new()
-		player.bus = &"BGM"
-		player.stream = load(track)
-		stage.add_child(player)
-		intro_music.append(player)
+	intro_audio=IntroStems.new();intro_audio.name="IntroStemTimeline";stage.add_child(intro_audio)
+	intro_audio.configure(load(INTRO_BGM_PATH),load(INTRO_SFX_PATH))
+	intro_music.assign(intro_audio.players)
 	var skip := button(stage,"화면을 터치하여 시작",finish_intro)
 	style_start_prompt(skip)
 	skip.name = "SkipIntro"
@@ -1084,8 +1074,6 @@ func update_title_sound() -> void:
 	var enabled: bool = settings.get_value("app","sound",true)
 	for control in [title_sound,intro_sound]:
 		if is_instance_valid(control):update_speaker_icon(control, enabled)
-	if is_instance_valid(intro_music_choice):
-		intro_music_choice.text = "음원 %d" % (intro_track_index()+1)
 
 
 func update_speaker_icon(control: DemoButton, enabled: bool) -> void:
@@ -1096,42 +1084,12 @@ func update_speaker_icon(control: DemoButton, enabled: bool) -> void:
 	control.set_meta("semantic_text","소리 끄기" if enabled else "소리 켜기")
 
 
-func intro_track_index() -> int:
-	return clampi(int(settings.get_value("app","intro_bgm",0)),0,1)
-
-
-func cycle_intro_music() -> void:
-	if screen!="intro" or intro_leaving:return
-	settings.set_value("app","intro_bgm",1-intro_track_index())
-	if settings.save(prefs_path)!=OK:show_error("인트로 음악 설정을 저장하지 못했습니다.")
-	update_title_sound()
-	sync_intro_music(true)
-
-
-func sync_intro_music(crossfade := false) -> void:
-	if intro_music.size()!=2:return
-	if intro_music_fade and intro_music_fade.is_valid():intro_music_fade.kill()
-	var audible: bool = screen=="intro" and application_active and not intro_leaving and not intro_preparing and not intro_playback_failed and settings.get_value("app","sound",true)
-	var selected := intro_track_index()
-	for index in intro_music.size():
-		var player := intro_music[index]
-		if not is_instance_valid(player):continue
-		if not audible:
-			player.stop()
-		elif index==selected:
-			if not player.playing:
-				player.volume_db = -40.0 if crossfade else -9.0
-				player.play(maxf(0.0,intro_player.stream_position))
-			elif not crossfade:
-				player.volume_db = -9.0
-		elif not crossfade:
-			player.stop()
-	if not audible or not crossfade:return
-	intro_music_fade = create_tween().set_parallel()
-	intro_music_fade.tween_property(intro_music[selected],"volume_db",-9.0,.24)
-	var outgoing := intro_music[1-selected]
-	intro_music_fade.tween_property(outgoing,"volume_db",-48.0,.24)
-	intro_music_fade.chain().tween_callback(outgoing.stop)
+func sync_intro_music(force := false) -> void:
+	if not is_instance_valid(intro_audio):return
+	var running:bool=screen=="intro" and application_active and not intro_leaving and not intro_preparing and not intro_playback_failed and is_instance_valid(intro_player) and intro_player.is_playing() and not intro_player.paused
+	# Muting belongs to the existing BGM/SFX buses; keep the silent decoder
+	# clocks moving so changing a volume never restarts either stem.
+	intro_audio.sync(intro_player.stream_position if is_instance_valid(intro_player) else 0.0,running,force)
 
 
 func chapter_menu() -> void:
@@ -1578,6 +1536,7 @@ func _process(delta: float) -> void:
 				sync_intro_music()
 				reveal_intro_destination()
 			elif intro_preparing:intro_loading.visible = intro_stall>=1.0
+		sync_intro_music()
 		return
 	if screen=="title" and application_active and is_instance_valid(title_prompt):
 		advance_title_loading()

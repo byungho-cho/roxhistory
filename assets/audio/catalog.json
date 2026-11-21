@@ -321,5 +321,43 @@
     "master_status": "WAV not yet received",
     "date": "2026-11-03"
   },
-  "transition_policy_20261104": "S20000 title and A303/S30000 region share the existing starlight player without restart; play remains first embers; pause/mute preserved."
+  "transition_policy_20261104": "S20000 title and A303/S30000 region share the existing starlight player without restart; play remains first embers; pause/mute preserved.",
+  "intro_d0069_20261121": [
+    {
+      "id": "intro.d0069.bgm.v001",
+      "title": "사냥의 긴장 1안 / bgm",
+      "status": "selected_provisional_not_final_music",
+      "decision_date": "2026-11-21",
+      "path": "assets/audio/intro/provisional/d0069-v001/intro-bgm.wav",
+      "runtime_integration": "game/assets/audio/d0069/intro-bgm.wav",
+      "sha256": "f07a9a42d49352df2009f0bdfcad4c2997ff183846db5300a818584b04163266",
+      "format": "WAV PCM16",
+      "sample_rate_hz": 48000,
+      "channels": 2,
+      "frames": 1378304,
+      "duration_seconds": 28.714666666666666,
+      "loop": false,
+      "source_zip": "https://drive.google.com/file/d/1TzA8oJiGUlHbATVV2a7cm6sLkUtwK6yF/view",
+      "reference_video": "https://drive.google.com/file/d/1tkk4Hd2yg-hnIb3uNhtvvCHtHgpYjvP8/view",
+      "note": "Provided stems retained without waveform, envelope or time edits; existing BGM/SFX bus preferences apply independently."
+    },
+    {
+      "id": "intro.d0069.sfx.v001",
+      "title": "사냥의 긴장 1안 / sfx",
+      "status": "selected_provisional_not_final_music",
+      "decision_date": "2026-11-21",
+      "path": "assets/audio/intro/provisional/d0069-v001/intro-sfx.wav",
+      "runtime_integration": "game/assets/audio/d0069/intro-sfx.wav",
+      "sha256": "6d9e5776345d1df383224762d92806956f0be97f4888b3dfd30000f4a9e72277",
+      "format": "WAV PCM16",
+      "sample_rate_hz": 48000,
+      "channels": 2,
+      "frames": 1378304,
+      "duration_seconds": 28.714666666666666,
+      "loop": false,
+      "source_zip": "https://drive.google.com/file/d/1TzA8oJiGUlHbATVV2a7cm6sLkUtwK6yF/view",
+      "reference_video": "https://drive.google.com/file/d/1tkk4Hd2yg-hnIb3uNhtvvCHtHgpYjvP8/view",
+      "note": "Provided stems retained without waveform, envelope or time edits; existing BGM/SFX bus preferences apply independently."
+    }
+  ]
 }

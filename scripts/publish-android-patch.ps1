@@ -50,6 +50,7 @@ if ($PreviousPack -or $PreviousManifest) {
     $next = [version]$version
     $parent = Split-Path $directory -Parent
     $deltas = @()
+    $specifiedPrior = Get-Content -Raw -LiteralPath $PreviousManifest | ConvertFrom-Json
     if ($Publish) {
         $channel = gh release view $tag -R $repository --json assets | ConvertFrom-Json
         if ($LASTEXITCODE -ne 0) { throw 'Cannot verify predecessor artifacts.' }
@@ -57,9 +58,17 @@ if ($PreviousPack -or $PreviousManifest) {
     foreach ($distance in 1..3) {
         if ($next.Build -lt $distance) { continue }
         $expected = "$($next.Major).$($next.Minor).$($next.Build-$distance)"
+        # A built-but-held version may occupy the intervening number. Never
+        # publish a recipe based on that unpublished local pack. The supplied
+        # predecessor is the last published head; all remote hash checks below
+        # still apply before updating the signed catalog.
+        if ([version]$expected -gt [version]$specifiedPrior.version) {
+            Write-Output "Skipping unreleased predecessor $expected (published head $($specifiedPrior.version))."
+            continue
+        }
         $manifestPath = $PreviousManifest
         $sourcePack = $PreviousPack
-        if ($distance -gt 1) {
+        if ($expected -ne $specifiedPrior.version) {
             $priorDirectory = Join-Path $parent "patch-$($next.Build-$distance)"
             $manifestPath = Join-Path $priorDirectory "manifest-$expected.json"
             $sourcePack = Join-Path $priorDirectory "Roxhistory_${base}_to_$expected.pck"
@@ -93,7 +102,7 @@ if ($PreviousPack -or $PreviousManifest) {
         }
         $deltas += $entry
         # Older clients recognize only the immediately preceding version.
-        if ($distance -eq 1) { $payload.delta = $entry }
+        if (!$payload.Contains('delta')) { $payload.delta = $entry }
         Write-Output "Difference patch $deltaName ($deltaSize bytes)"
     }
     if ($deltas.Count) { $payload.deltas = $deltas }
