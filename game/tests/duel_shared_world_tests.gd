@@ -104,10 +104,12 @@ func run():
  for i in 120:
   lab.advance(1.0/120)
   if not lab.rules.living():break
- check(lab.motion[1]=="death","real hit triggers authored deer fall")
- lab.advance(.15);check(lab.b.preview.pivot.visible and lab.b.death_effect.age<0,"D0070 fall before reward is retained")
+ check(lab.motion[1]=="death","real hit starts deer defeat sequence")
+ lab.advance(.15);check(lab.b.preview.pivot.visible and lab.b.death_effect.age<0,"deer remains visible before reward")
  lab.toggle_pause();frozen=snapshot();lab.advance(3);check(snapshot()==frozen,"death reset wait pauses")
  lab.toggle_pause();lab.advance(.87)
+ check(lab.rules.hp[1]==0 and not lab.approach_active,"round stays down during fade and post-fade wait")
+ lab.advance(.39)
  check(lab.approach_active and lab.rules.hp==[100,100] and lab.rules.sp==1 and lab.timer.text=="00:00","death resets both bodies/HP/SP/timer together")
  lab.toggle_pause();lab.reset_round();check(lab.paused and lab.rules.sp==1,"manual reset preserves pause")
  lab.toggle_pause()
@@ -116,5 +118,7 @@ func run():
  lab._select("hangyeol",false)
  check(lab.shared_world!=null and lab.a.preview.skeleton.get_world_3d()==lab.b.preview.skeleton.get_world_3d(),"return selection creates one valid common scene")
  print("D0071 shared world: ",checks," checks, ",failures," failures")
- FileAccess.open("D:/workspace/roxhistory/build/d0071-283/physics-verification.json",FileAccess.WRITE).store_string(JSON.stringify({"checks":checks,"failures":failures,"cases":cases},"  "))
+ DirAccess.make_dir_recursive_absolute("user://reports")
+ var report:=FileAccess.open("user://reports/physics-verification.json",FileAccess.WRITE)
+ if report: report.store_string(JSON.stringify({"checks":checks,"failures":failures,"cases":cases},"  "))
  lab.queue_free();await process_frame;await create_timer(.3).timeout;quit(1 if failures else 0)

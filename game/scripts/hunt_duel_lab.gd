@@ -24,6 +24,11 @@ const FOREST_BATTLE_SCALE := .82588
 # Local experiment: only this default lab matchup opts into grouped movement.
 const APPROACH_TRAVEL := .88
 const APPROACH_END := 1.04
+const REVIVAL_ENTRANCE_SCALE := 1.30
+const SHARED_REVIVAL_DELAY := 1.38
+const HAN_SKILL_WINDUP_RATE := 3.25
+const HAN_SKILL_WINDUP_LIMIT := .73
+var entrance_scale := 1.0
 const START_GAP := 218.0
 const ENGAGE_GAP := 66.0
 const FIRST_BASIC := [.23,.38]
@@ -49,6 +54,19 @@ var selection_frames: Dictionary = {}
 var cast_from := Left
 var presentation := Presentation.new()
 var effects_layer := Node2D.new()
+var ready_light_layer := Node2D.new()
+var cast_notice_layer:=Node2D.new()
+var cast_notice_frames:Array[StyleBoxFlat]=[]
+var cast_notice_anchor:=Vector2.ZERO
+var cast_notice:Dictionary={}
+var location_layer := Node2D.new()
+var ring_halo:GradientTexture2D
+var ring_band:GradientTexture2D
+var ground_wave_phase:=0.0
+const GROUND_WAVE_SECONDS:=2.4
+var ground_wave_span:=2.0
+var hp_reveal_at := -1.0
+var deer_wake:Array[Dictionary]=[]
 var a: Actor
 var b: Actor
 var motion: Array[String] = ["idle","idle"]
@@ -76,6 +94,7 @@ var closing := false
 var approach_active := false
 var shared_world:SharedWorld
 var overhead:Array=[]
+var deer_hud_anchor:=Vector2.INF
 var accent:=Accent.new()
 var camera_base_scale:=Vector2.ONE
 var camera_base_position:=Vector2.ZERO
@@ -119,14 +138,38 @@ func _ready() -> void:
 	move_child(ground,1)
 	battle_camera.canvas=arena;battle_camera.battlefield=field;battle_camera.ground=ground
 	battle_camera.arrival_finished=true;battle_camera.approach=1.0
+	field.add_child(location_layer)
+	var ring_material:=CanvasItemMaterial.new()
+	ring_material.blend_mode=CanvasItemMaterial.BLEND_MODE_MIX
+	location_layer.material=ring_material
+	ring_halo=_new_ring_light(PackedFloat32Array([0,.28,.46,.61,.76,.91,1]),PackedFloat32Array([.10,.12,.15,.27,.18,.035,0]))
+	ring_band=_new_ring_light(PackedFloat32Array([0,.53,.60,.65,.68,.72,.79,1]),PackedFloat32Array([0,0,.035,.22,.91,.30,.035,0]))
+	location_layer.draw.connect(_draw_location_rings)
 	field.add_child(effects_layer)
 	effects_layer.z_index = 10
 	effects_layer.draw.connect(_draw_effects)
+	field.add_child(ready_light_layer)
+	ready_light_layer.z_index=9
+	var glow_material:=CanvasItemMaterial.new()
+	glow_material.blend_mode=CanvasItemMaterial.BLEND_MODE_ADD
+	ready_light_layer.material=glow_material
+	ready_light_layer.draw.connect(_draw_duel_lights)
 	for i in 6:
 		var player := AudioStreamPlayer.new()
 		player.volume_db = -9.0
 		add_child(player)
 		audio_pool.append(player)
+	arena.add_child(cast_notice_layer)
+	cast_notice_layer.z_index=31
+	for tint in [Color("ffd179"),Color("87ddff")]:
+		var style:=StyleBoxFlat.new()
+		style.bg_color=Color("101d2c",.93)
+		style.border_color=tint
+		style.set_border_width_all(1)
+		style.set_corner_radius_all(4)
+		cast_notice_frames.append(style)
+	cast_notice_layer.draw.connect(func():_draw_cast_notice(cast_notice_anchor))
+
 	_setup_ui()
 	for i in 21:chain_impact_frames.append(load("res://assets/effects/d0071-chain/han_chain_impact_%02d.png"%i))
 	resized.connect(_fit)
@@ -219,8 +262,8 @@ func _setup_ui() -> void:
 		selection_frames[key]=HuntArt.picture(item,preload("res://assets/ui/duel-hud/selection-gold.svg"),Rect2(0,0,44,44))
 		controls[key]=item
 	for i in 2:
-		var header:=HeadHUD.create(arena,"",i==0);overhead.append(header);name_labels.append(header.label);bars.append(header.bar)
-	skill_hud=SkillHUD.new();skill_hud.position=Vector2(447,437);arena.add_child(skill_hud)
+		var header:=HeadHUD.create_compact(arena,i==0);overhead.append(header);name_labels.append(header.label);bars.append(header.bar)
+	skill_hud=SkillHUD.new();skill_hud.position=Vector2(447,437);arena.add_child(skill_hud);skill_hud.enable_duel_ready_feedback()
 	skill_hud.requested.connect(_try_player);skill_button=skill_hud.portrait_button;chain_button=skill_hud.chain_button
 	touch_buttons.append(chain_button);touch_buttons.append(skill_button)
 
@@ -284,7 +327,15 @@ func _select(key: String, enemy: bool) -> void:
 		rules.ally_id = key
 	reset_round()
 
-func reset_round() -> void:
+func reset_round(after_fade:=false) -> void:
+	entrance_scale=REVIVAL_ENTRANCE_SCALE if after_fade else 1.0
+	deer_hud_anchor=Vector2.INF
+	deer_wake.clear()
+	cast_notice.clear()
+	cast_notice_layer.queue_redraw()
+	hp_reveal_at=-1.0
+	ground_wave_phase=0.0
+	ground_wave_span=2.0
 	accent.reset()
 	touch_pointer=-1;touch_target=null
 	rules.reset(rules.ally_id,rules.enemy_id)
@@ -361,17 +412,60 @@ func _refresh(delta := 0.0) -> void:
 	pause_button.tooltip_text="재개" if paused else "일시정지"
 	name_labels[0].text=ModelTest.NAMES[rules.ally_id]
 	name_labels[1].text="꽃사슴" if rules.enemy_id=="forest" else "큰 멧돼지"
-	_update_head_hud()
+	_update_head_hud(delta)
+	_advance_ground_wave(delta)
+	ready_light_layer.queue_redraw()
+	location_layer.queue_redraw()
 	for key in controls:
 		var chosen:bool=key in [rules.ally_id,rules.enemy_id]
 		controls[key].set_pressed_no_signal(chosen)
 		selection_frames[key].visible=chosen
 
-func _update_head_hud()->void:
+func _update_head_hud(delta:float)->void:
 	if a==null or b==null:return
-	var points:Array=[]
-	for actor in [a,b]:points.append(field.get_transform()*presentation.bone_point(actor,"head"))
-	HeadHUD.layout(overhead,points,Rect2(8,66,944,350))
+	var ally_anchor:=presentation.bone_point(a,"head")
+	var deer_anchor:=_position(1)-Vector2(0,54)
+	if is_instance_valid(shared_world):
+		var nominal_head:Vector3=shared_world.bodies[1].position+Vector3.UP*2.02-shared_world.direction*.48
+		deer_anchor=shared_world.project(nominal_head)
+	# Smooth only real body travel before applying the current camera transform.
+	if deer_hud_anchor==Vector2.INF:
+		deer_hud_anchor=deer_anchor
+	elif deer_hud_anchor.distance_squared_to(deer_anchor)>16.0 and delta>0:
+		deer_hud_anchor=deer_hud_anchor.lerp(deer_anchor,1.0-exp(-12.0*delta))
+	var transform:=field.get_transform()
+	var points:=[transform*ally_anchor,transform*deer_hud_anchor]
+	HeadHUD.layout_compact(overhead,points,Rect2(8,66,944,350))
+	cast_notice_anchor=points[0]
+	cast_notice_layer.queue_redraw()
+	var reveal:=smoothstep(0,.27,visual_clock-hp_reveal_at) if hp_reveal_at>=0 else 0.0
+	for side in overhead.size():
+		var alpha:=reveal
+		if rules.hp[side]<=0:
+			alpha=minf(alpha,1.0-smoothstep(.13,.58,age[side]))
+		var panel:Panel=overhead[side].panel
+		panel.modulate.a=alpha
+		panel.visible=alpha>.001
+
+func _draw_cast_notice(anchor:Vector2)->void:
+	if cast_notice.is_empty() or rules.hp[0]<=0:return
+	var elapsed:=visual_clock-float(cast_notice.at)
+	if elapsed>=.74:return
+	var p:=clampf(elapsed/.74,0.0,1.0)
+	var linked:bool=cast_notice.key=="chain"
+	var tint:=Color("58b9ff") if linked else Color("ffd179")
+	var alpha:float=smoothstep(0.0,.08,p)*(1.0-smoothstep(.65,1.0,p))
+	var side:=lerpf(24.0,29.0,smoothstep(0,.24,p)) if linked else lerpf(20.0,24.0,smoothstep(0,.24,p))
+	var panel:Control=overhead[0].panel
+	var center:=Vector2(anchor.x,minf(anchor.y-17.0,panel.position.y-12.0) if panel.visible else anchor.y-17.0)
+	center.y=maxf(70.0,center.y-lerpf(0.0,21.0,smoothstep(0,.78,p)))
+	var extent:=Vector2.ONE*side
+	var box:=Rect2(center-extent*.5,extent)
+	cast_notice_layer.draw_texture_rect(ring_halo,box.grow(13.0),false,Color(tint,.72))
+	cast_notice_layer.draw_style_box(cast_notice_frames[1 if linked else 0],box)
+	cast_notice_layer.draw_texture_rect(cast_notice.icon,box.grow(-2.0),false,Color.WHITE)
+	cast_notice_layer.modulate.a=alpha
+
 
 func _can_request()->bool:
 	return not paused and not approach_active and rules.living() and motion[0] in ["idle","walk","run","attack","hit"]
@@ -379,6 +473,7 @@ func _can_request()->bool:
 func _try_player(key: String) -> void:
 	if not SP_COST.has(key) or not _can_request() or not rules.spend(int(SP_COST[key])):
 		return
+	cast_notice={"key":key,"at":visual_clock,"icon":skill_hud.chain_art.texture if key=="chain" else skill_hud.badge_art.texture}
 	cast_from=_position(0)
 	contact_at[0]=-1.0 # Cancel the interrupted automatic contact; never land it twice.
 	_act(0,key)
@@ -460,6 +555,7 @@ func _land(side: int, key: String,contact:Dictionary={}) -> void:
 		if side==0 and key=="chain":
 			accent.chain_contact()
 			_flash(impact_point,"han_chain_impact",Color.WHITE,.70)
+			fx[-1]["floor_point"]=_position(defender)
 	# Forward approach moves the actor to its strike distance. Check the
 	# simulation positions at contact instead of firing a hit from a timer alone.
 	var origin := _position(side)
@@ -475,7 +571,17 @@ func _land(side: int, key: String,contact:Dictionary={}) -> void:
 	if _prototype_duel():
 		presentation.recoil[defender]=origin.direction_to(target)*(6.0 if skill else 3.0)
 		presentation.recoil_age[defender]=.025
-		_flash(impact_point,"contact_"+key,tone_for_contact(side),.48 if skill else .16)
+		var hold:=.48 if skill else .16
+		if is_instance_valid(shared_world) and side==0:
+			if key=="attack":hold=.23
+			elif key=="skill":hold=.68
+		if is_instance_valid(shared_world) and side==1 and key=="skill":hold=.67
+		_flash(impact_point,"contact_"+key,tone_for_contact(side),hold)
+		fx[-1]["attacker"]=side
+		if is_instance_valid(shared_world) and key=="skill":
+			var ground_point:Vector3=contact.point
+			ground_point.y=0
+			fx[-1]["floor_point"]=shared_world.project(ground_point)
 	# Han is a light glint, Uram dust, Saebom stone fragments. The inbound
 	# ordinary hit reads as the agreed short white glint.
 	var tone := Color("#fff5df") if defender == 0 or a.key=="hangyeol" else Color("#cf9862")
@@ -483,11 +589,12 @@ func _land(side: int, key: String,contact:Dictionary={}) -> void:
 		if _prototype_duel():
 			_sound(SoundNames[(a if side==0 else b).key]+"_basic")
 		if not _prototype_duel():_flash(impact_point,"hit",tone,.21)
+	if hp_reveal_at<0:hp_reveal_at=visual_clock
 	if rules.damage(defender,38 if key=="chain" else 27 if skill else 11 if side==0 else 13):
 		_die(defender)
 		return
 	# Do not cut off a concurrently committed attack for a cosmetic reaction.
-	if motion[defender] == "idle":
+	if motion[defender] == "idle" or (defender==1 and motion[defender]=="walk" and is_instance_valid(shared_world)):
 		_react(defender,"hit")
 
 func _react(side: int, key: String) -> void:
@@ -495,7 +602,11 @@ func _react(side: int, key: String) -> void:
 	motion[side] = key
 	age[side] = 0.0
 	frame_contact[side]=-1.0
-	actor.play(key)
+	if key=="death" and is_instance_valid(shared_world):
+		actor.preview.animation.pause()
+		actor.death_effect.clear()
+	else:
+		actor.play(key)
 	if _prototype_duel() and not is_instance_valid(shared_world) and side==0 and key=="idle":
 		presentation.prepare_ready(a,_settled_anchor(0),_position(1))
 
@@ -503,6 +614,8 @@ func tone_for_contact(side:int)->Color:
 	return Color("bcefff") if side==0 else Color("fff4df")
 
 func _die(side: int) -> void:
+	if is_instance_valid(shared_world):
+		rules.revive_at[side]=rules.elapsed+SHARED_REVIVAL_DELAY
 	_react(side,"death")
 	contact_at = [-1.0,-1.0]
 	execute_at = -1.0
@@ -691,19 +804,35 @@ func _advance_shared(delta:float)->void:
 		if approach_active:
 			for side in 2:age[side]+=dt
 			shared_world.step(self,dt)
-			if visual_clock>=APPROACH_TRAVEL and motion[0]=="run":_react(0,"idle");_react(1,"idle")
-			if visual_clock+.000001>=APPROACH_END:approach_active=false
+			if visual_clock>=APPROACH_TRAVEL*entrance_scale and motion[0]=="run":_react(0,"idle");_react(1,"idle")
+			if visual_clock+.000001>=APPROACH_END*entrance_scale:approach_active=false
+			_advance_ground_wave(dt)
 			_render_actors(dt);_refresh();continue
-		if not rules.advance(dt).is_empty():reset_round();return
+		if not rules.advance(dt).is_empty():reset_round(true);return
+		var prior_han_age:float=age[0]
 		for side in 2:
 			age[side]+=dt;frame_contact[side]=-1.0
-		var events:=shared_world.step(self,dt)
+		if motion[0]=="skill" and not shared_world.consumed[0]:
+			var windup_end:=minf(HAN_SKILL_WINDUP_LIMIT,a.duration*.55)
+			var sped_time:=clampf((windup_end-prior_han_age)/HAN_SKILL_WINDUP_RATE,0,dt)
+			age[0]+=sped_time*(HAN_SKILL_WINDUP_RATE-1)
+		var events:=shared_world.step(self,dt,prior_han_age)
+		_sample_deer_wake()
 		for event in events:_land(int(event.side),event.motion,event)
 		if execute_at>=0 and age[1]>=execute_at:
 			_sound(SoundNames[b.key]+"_skill");execute_at=-1
 		for side in 2:
 			var actor:=a if side==0 else b
-			if motion[side] not in ["idle","death"] and age[side]>=actor.duration:_react(side,"idle")
+			if side==1 and motion[1]=="walk":
+				if shared_world.deer_return_offset().length()<.005 or age[1]>=1.2:
+					_react(1,"idle")
+			elif motion[side] not in ["idle","death"] and age[side]>=actor.duration:
+				if side==1 and rules.living() and motion[1] in ["attack","skill","hit"] and shared_world.action_name[1] in ["attack","skill"] and shared_world.deer_return_offset().length()>.045:
+					# The lunge and backwards hoof steps are one committed move.
+					# Only the lunge has a contact window.
+					_react(1,"walk")
+				else:
+					_react(side,"idle")
 		if rules.living():
 			if motion[0]=="idle" and rules.elapsed>=next_attack[0]:_act(0,"attack")
 			if motion[1]=="idle" and rules.elapsed>=next_attack[1]:
@@ -714,7 +843,7 @@ func _advance_shared(delta:float)->void:
 func _flash(center: Vector2, key: String, tint: Color, duration: float) -> void:
 	fx.append({"center":center,"name":key,"color":tint,"duration":duration,"at":visual_clock})
 
-func _soft_light(center:Vector2,extent:Vector2,tint:Color,alpha:float)->void:
+func _soft_light(center:Vector2,extent:Vector2,tint:Color,alpha:float,layer:Node2D=null)->void:
 	if alpha<=0:return
 	if not contact_glow:
 		contact_glow=GradientTexture2D.new();contact_glow.width=64;contact_glow.height=64
@@ -722,7 +851,207 @@ func _soft_light(center:Vector2,extent:Vector2,tint:Color,alpha:float)->void:
 		var gradient:=Gradient.new();gradient.offsets=PackedFloat32Array([0,.18,.48,1])
 		gradient.colors=PackedColorArray([Color(1,1,1,.95),Color(1,1,1,.65),Color(1,1,1,.18),Color(1,1,1,0)])
 		contact_glow.gradient=gradient
-	effects_layer.draw_texture_rect(contact_glow,Rect2(center-extent*.5,extent),false,Color(tint,alpha))
+	var target:=effects_layer if layer==null else layer
+	target.draw_texture_rect(contact_glow,Rect2(center-extent*.5,extent),false,Color(tint,alpha))
+
+func _location_ring(side:int)->PackedVector2Array:
+	var path:=PackedVector2Array()
+	if a==null or b==null or rules.hp[side]<=0:return path
+	var center:=_position(side)
+	for j in 41:
+		var angle:=TAU*float(j)/40.0
+		var unit:=Vector2.from_angle(angle)
+		if is_instance_valid(shared_world):
+			var radius:=.64
+			var origin:Vector3=shared_world.bodies[side].position
+			path.append(shared_world.project(origin+Vector3(unit.x*radius,.025,unit.y*radius)))
+		else:
+			var span:=Vector2(24,9)
+			path.append(center+unit*span)
+	return path
+
+func _new_ring_light(stops:PackedFloat32Array,levels:PackedFloat32Array)->GradientTexture2D:
+	var gradient:=Gradient.new()
+	gradient.offsets=stops
+	var colors:=PackedColorArray()
+	for alpha in levels:colors.append(Color(1,1,1,alpha))
+	gradient.colors=colors
+	var texture:=GradientTexture2D.new()
+	texture.width=128;texture.height=128
+	texture.fill=GradientTexture2D.FILL_RADIAL
+	texture.fill_from=Vector2(.5,.5);texture.fill_to=Vector2(1,.5)
+	texture.gradient=gradient
+	return texture
+
+func _ground_wave_profile()->Vector2:
+	if not _can_request():return Vector2.ZERO
+	if skill_hud.chain_ready:return Vector2(3.0,2.0)
+	if skill_hud.normal_ready:return Vector2(2.0,1.5)
+	return Vector2.ZERO
+
+func _advance_ground_wave(delta:float)->void:
+	if paused or delta<=0:return
+	var profile:=_ground_wave_profile()
+	if profile==Vector2.ZERO:
+		ground_wave_phase=0.0
+		ground_wave_span=2.0
+		return
+	ground_wave_phase=fposmod(ground_wave_phase+delta*profile.y/GROUND_WAVE_SECONDS,1.0)
+	ground_wave_span=lerpf(ground_wave_span,profile.x,1.0-exp(-15.0*delta))
+
+func _inward_ring_scale(phase:float,start:float=1.2)->float:
+	return lerpf(start,.035,smoothstep(0.0,1.0,phase))
+
+func _draw_location_rings()->void:
+	for side in 2:
+		var path:=_location_ring(side)
+		if path.is_empty():continue
+		var bounds:=Rect2(path[0],Vector2.ZERO)
+		for point in path:bounds=bounds.expand(point)
+		var center:=bounds.get_center()
+		var tint:=HeadHUD.duel_team_color(side==0)
+		var settled:=bounds.size*1.08
+		var ring_box:=bounds.size/.68
+		location_layer.draw_texture_rect(ring_halo,Rect2(center-settled*.5,settled),false,Color(tint,.54))
+		location_layer.draw_texture_rect(ring_band,Rect2(center-ring_box*.5,ring_box),false,Color(tint,.97))
+		if side!=0 or _ground_wave_profile()==Vector2.ZERO:continue
+		var phase:=ground_wave_phase
+		var closing_size:=ring_box*_inward_ring_scale(phase,ground_wave_span)
+		var opacity:=.72*smoothstep(0,.14,phase)*(1.0-smoothstep(.86,1.0,phase))
+		location_layer.draw_texture_rect(ring_band,Rect2(center-closing_size*.5,closing_size),false,Color(tint.lightened(.25),opacity))
+		var focus:=smoothstep(.71,.93,phase)*(1.0-smoothstep(.95,1.0,phase))
+		var dot_size:=Vector2(10,7)*lerpf(.6,1,focus)
+		if focus>0:
+			location_layer.draw_texture_rect(ring_halo,Rect2(center-dot_size*.5,dot_size),false,Color(tint.lightened(.45),focus*.84))
+
+func _han_tip_light_position()->Vector2:
+	if not is_instance_valid(shared_world) or rules.hp[0]<=0:return Vector2.INF
+	return presentation.spear_point(a)
+
+func _sample_deer_wake()->void:
+	while not deer_wake.is_empty() and visual_clock-float(deer_wake[0].at)>.59:
+		deer_wake.pop_front()
+	if motion[1]!="skill" or not rules.living():return
+	var anticipation:float=b.preview.length("req046_skill_anticipation")
+	if age[1]<anticipation:return
+	var foot:=_position(1)
+	if not deer_wake.is_empty():
+		var last:Vector2=deer_wake[-1].foot
+		if foot.distance_squared_to(last)<8.0:return
+	deer_wake.append({"foot":foot,"at":visual_clock})
+	if deer_wake.size()>20:deer_wake.pop_front()
+
+func _draw_duel_lights()->void:
+	var tip:=_han_tip_light_position()
+	if tip!=Vector2.INF:
+		var breath:=.88+.12*sin(visual_clock*TAU*.75)
+		var hand:=presentation.bone_point(a,"hand.R")
+		var blade:=tip-hand
+		var blade_length:=clampf(blade.length()*.24,10,21)
+		var blade_center:=tip-blade.normalized()*blade_length*.42
+		ready_light_layer.draw_set_transform(blade_center,blade.angle(),Vector2.ONE)
+		_soft_light(Vector2.ZERO,Vector2(blade_length*1.68,13),Color("389fff"),.31*breath,ready_light_layer)
+		_soft_light(Vector2(1,0),Vector2(blade_length*1.24,5.5),Color("96dcff"),.34*breath,ready_light_layer)
+		ready_light_layer.draw_set_transform(Vector2.ZERO)
+	_draw_deer_skill_lights()
+
+func _draw_deer_skill_lights()->void:
+	if not is_instance_valid(shared_world):return
+	for j in deer_wake.size():
+		var entry:=deer_wake[j]
+		var elapsed:float=visual_clock-float(entry.at)
+		var fade:=1.0-smoothstep(.01,.59,elapsed)
+		var foot:Vector2=entry.foot
+		if j>0:
+			var prev:Vector2=deer_wake[j-1].foot
+			ready_light_layer.draw_line(prev,foot,Color(1,.52,.13,.24*fade),lerpf(13,28,fade),true)
+			ready_light_layer.draw_line(prev,foot,Color(1,.88,.46,.42*fade),lerpf(3,9,fade),true)
+		_soft_light(foot,Vector2(lerpf(77,35,fade),lerpf(30,16,fade)),Color("ff8f22"),fade*.48,ready_light_layer)
+		_soft_light(foot,Vector2(45,17),Color("ffc86a"),fade*.44,ready_light_layer)
+	if motion[1]!="skill" or rules.hp[1]<=0:return
+	var warning:float=maxf(.01,b.preview.length("req046_skill_anticipation"))
+	var progress:=clampf(float(age[1])/warning,0,1)
+	var drive:=float(age[1])>=warning
+	var swell:=smoothstep(.02,.80,progress)
+	var beat:=.77+.23*sin(float(age[1])*TAU*2.2)
+	var intensity:=lerpf(.24,1.0,swell)*beat if not drive else 1.0
+	var hoof:=_position(1)
+	var head:=shared_world.bone_screen(1,"head")
+	var sk:Skeleton3D=b.preview.skeleton
+	var antlers:=sk.get_bone_global_pose(sk.find_bone("head"))
+	for sign_x in [-1.0,1.0]:
+		# The mesh has no antler bones; the two sockets follow its head pose.
+		var socket:Vector3=sk.to_global(antlers*Vector3(.21*sign_x,.36,.06))
+		var glow:=shared_world.project(socket)
+		_soft_light(glow,Vector2(34,27),Color("ff9f2a"),intensity*.49,ready_light_layer)
+		_soft_light(glow,Vector2(11,9),Color("ffdfa1"),intensity*.47,ready_light_layer)
+
+	if drive:
+		_soft_light(shared_world.project(shared_world.weapon_point(1)),Vector2(49,39),Color("ffd573"),.53,ready_light_layer)
+		return
+	var wave:=fposmod(float(age[1])*1.55,1.0)
+
+	for j in 9:
+		var angle:=float(j)*2.39996+float(age[1])*1.8
+		var stream:=fposmod(wave+float(j)*.113,1.0)
+		var point:=hoof.lerp(head,stream*.76)+Vector2(cos(angle)*58,sin(angle)*15)*(1-stream)
+		_soft_light(point,Vector2(14,11),Color("fff0be"),sin(PI*stream)*intensity*.82,ready_light_layer)
+
+func _draw_deer_impact(effect:Dictionary,p:float)->void:
+	var at:Vector2=effect.center
+	var flare:=1.0-smoothstep(.02,.62,p)
+	var afterglow:=1.0-smoothstep(.06,1.0,p)
+	var extent:=Vector2(112,76)
+	_soft_light(at,extent*1.76,Color("ff8627"),afterglow*.91)
+	_soft_light(at,extent*.82,Color("fff5d2"),flare)
+	effects_layer.draw_texture_rect(Hunt.HEAVY_HIT,Rect2(at-extent*.5,extent),false,Color("ffe5a1",flare))
+	var floor_point:Vector2=effect.floor_point
+	var span:=Vector2(lerpf(60,177,p),lerpf(20,55,p))
+	effects_layer.draw_texture_rect(Hunt.GROUND_PULSE,Rect2(floor_point-span*.5,span),false,Color(1,.64,.22,afterglow*.85))
+	for j in 11:
+		var angle:=float(j)*2.4
+		var spark:=at+Vector2(cos(angle),sin(angle)*.62)*lerpf(7,62+float(j%3)*9,sqrt(p))
+		_soft_light(spark,Vector2(16,11),Color("ffda7a"),afterglow*.72)
+
+func _draw_han_skill_light(tip:Vector2,charge:float)->void:
+	var hand:=presentation.bone_point(a,"hand.R")
+	var foot:=_position(0)+Vector2(0,2)
+	var power:=smoothstep(.03,.68,charge)
+	_soft_light(foot,Vector2(78,28),Color("319cfd"),power*.56)
+	_soft_light(hand,Vector2(44,39),Color("4ac5ff"),power*.66)
+	for j in range(1,5):
+		var f:=float(j)/5.0
+		_soft_light(hand.lerp(tip,f),Vector2(29,18),Color("8ce8ff"),power*(.2+f*.18))
+	for j in tip_trail.size():
+		var tail:=1.0-float(j)/maxf(1,tip_trail.size())
+		_soft_light(tip_trail[j],Vector2(49,27)*tail,Color("65bbff"),tail*power*.57)
+	_soft_light(tip,Vector2(85,64),Color("56c6ff"),power*.96)
+	_soft_light(tip,Vector2(35,31),Color("e3fbff"),power)
+
+func _draw_han_impact(effect:Dictionary,p:float,basic:bool)->void:
+	var at:Vector2=effect.center
+	var flare:=1.0-smoothstep(.02,.67,p)
+	var glow:=1.0-smoothstep(.05,1.0,p)
+	var extent:=Vector2(37,25) if basic else Vector2(116,78)
+	_soft_light(at,extent*(1.83 if basic else 2.0),Color("46baff"),glow*.91)
+	_soft_light(at,extent*.82,Color("ebfdff"),flare)
+	if basic:
+		effects_layer.draw_texture_rect(Hunt.BASIC_HIT,Rect2(at-extent*.5,extent),false,Color("d7f5ff",flare))
+		return
+	var axis:=(_position(1)-_position(0)).angle()
+	effects_layer.draw_set_transform(at,axis,Vector2.ONE)
+	_soft_light(Vector2(-14,0),Vector2(145,24),Color("369cff"),flare*.90)
+	_soft_light(Vector2(-10,0),Vector2(80,9),Color("d8f6ff"),flare*.94)
+	_soft_light(Vector2(0,0),Vector2(24,29),Color("ecfbff"),flare*.86)
+	effects_layer.draw_set_transform(Vector2.ZERO)
+	var ground_mark:Vector2=effect.floor_point
+	var spread:=Vector2(lerpf(62,178,p),lerpf(20,50,p))
+	effects_layer.draw_texture_rect(Hunt.GROUND_PULSE,Rect2(ground_mark-spread*.5,spread),false,Color(.45,.81,1,glow*.8))
+	_soft_light(ground_mark,spread*.89,Color("49b5ff"),glow*.63)
+	for j in 15:
+		var angle:=float(j)*2.39996
+		var spark:=at+Vector2(cos(angle),sin(angle)*.62)*lerpf(9,59+float(j%3)*7,sqrt(p))
+		_soft_light(spark,Vector2(14,10)*lerpf(1,.4,p),Color("b8eeff"),glow*.72)
 
 func _draw_contact_effects()->void:
 	# Reuse the campaign's painted contact/ground assets, anchored to the sampled
@@ -739,7 +1068,10 @@ func _draw_contact_effects()->void:
 			_soft_light(foot.lerp(chest,smoothstep(.1,.55,p)),Vector2(34,48),Color("65baff"),sin(PI*p)*.55)
 			_soft_light(chest.lerp(hand,smoothstep(.35,.75,p)),Vector2(33,33),Color("8bdcff"),gather*.5)
 			_soft_light(hand.lerp(tip,smoothstep(.55,1,p)),Vector2(31,31),Color("a6eaff"),gather*.75)
-		if p>.65:
+		if motion[0]=="skill" and is_instance_valid(shared_world):
+			var release:=1.0 if not shared_world.consumed[0] else 1.0-smoothstep(motion_contact[0],motion_contact[0]+.29,age[0])
+			if release>0:_draw_han_skill_light(tip,p*release)
+		elif p>.65:
 			for j in tip_trail.size():
 				_soft_light(tip_trail[j],Vector2(19,12)*(1.0-float(j)/10),Color("9bdfff"),.32*(1.0-float(j)/7))
 			_soft_light(tip,Vector2(24,24),Color("d8f7ff"),.6)
@@ -749,17 +1081,32 @@ func _draw_contact_effects()->void:
 		if p>=1:fx.remove_at(i);continue
 		if effect.name=="han_chain_impact":
 			var index:=clampi(floori((visual_clock-float(effect.at))*30),0,20)
-			var factor:=.45
+			var factor:=.58
+			var burst:=1.0-smoothstep(.04,.71,p)
+			_soft_light(effect.center,Vector2(173,108),Color("43aaff"),burst*.90)
+			_soft_light(effect.center,Vector2(42,37),Color("ebfcff"),burst*.9)
+			var ground_point:Vector2=effect.get("floor_point",effect.center+Vector2(0,17))
+			var wake_size:=Vector2(lerpf(86.0,208.0,p),lerpf(28.0,66.0,p))
+			_soft_light(ground_point,wake_size,Color("79cdff"),.75*(1.0-smoothstep(0,1,p)))
 			effects_layer.draw_texture_rect(chain_impact_frames[index],Rect2(effect.center-Vector2(192,243)*factor,Vector2(384,384)*factor),false)
 			continue
 		if not String(effect.name).begins_with("contact_"):continue
 		var basic:bool=effect.name=="contact_attack"
 		var strong:bool=effect.name=="contact_chain"
+		if is_instance_valid(shared_world) and effect.get("attacker",-1)==1 and effect.name=="contact_skill":
+			_draw_deer_impact(effect,clampf(p,0,1))
+			continue
+		if is_instance_valid(shared_world) and effect.get("attacker",-1)==0 and (basic or effect.name=="contact_skill"):
+			_draw_han_impact(effect,clampf(p,0,1),basic)
+			continue
 		if strong and is_instance_valid(shared_world):continue # Replace only the shared-world pilot impact.
 		var at:Vector2=effect.center
 		var fade:=1.0-smoothstep(.05,1,p)
 		var extent:=Vector2(22,19) if basic else Vector2(74,58) if strong else Vector2(51,38)
 		var texture:Texture2D=Hunt.BASIC_HIT if basic else Hunt.HEAVY_HIT
+		if is_instance_valid(shared_world):
+			extent*=1.28
+			_soft_light(at,extent*1.75,effect.color,fade*.65)
 		effects_layer.draw_texture_rect(texture,Rect2(at-extent*.5,extent),false,Color(effect.color,fade))
 		if not basic:
 			_soft_light(at,extent*1.35,Color("74c9ff"),fade*.55)
@@ -829,6 +1176,6 @@ func _draw_effects() -> void:
 		else:
 			var radius := lerpf(6,(67 if b.key=="adult" else 43) if effect.name=="burst" else 21,p)
 			effects_layer.draw_circle(center,radius,Color(color,.33*(1.0-p)))
-			for j in 7:
+			for j in 11:
 				var dir := Vector2.from_angle(float(j)*TAU/7.0+.16)
 				effects_layer.draw_line(center+dir*radius*.5,center+dir*radius,Color(color,1.0-p),3.0*(1.0-p),true)

@@ -2,7 +2,8 @@ extends Node2D
 ## Han/forest laboratory only. One renderer and metric space own both rigs,
 ## body capsules, floor and swept weapon/hurt-volume contacts. No screen tests.
 const FIXED_STEP:=1.0/120.0
-const ENGAGE_DISTANCE:=2.25
+const ENGAGE_DISTANCE:=2.45
+const RECOVER_SPEED:=2.7
 const START_DISTANCE:=7.5
 const BODY_RADII:=[.29,.46]
 const WEAPON_RADIUS:=.055
@@ -30,6 +31,7 @@ var contacts:Array[Dictionary]=[]
 var body_contacts:=0
 var knockback:=[Vector3.ZERO,Vector3.ZERO]
 var max_body_penetration:=0.0
+var deer_spear_reaction:=false
 var fade_materials:Array=[[],[]]
 var last_alpha:=[1.0,1.0]
 var direction:=Vector3(1,0,-.88).normalized()
@@ -109,7 +111,7 @@ func _calibrate_weapon_axis()->void:
 	actor.play("idle");actors[1].play("idle")
 
 func reset()->void:
-	contacts.clear();body_contacts=0;max_body_penetration=0
+	contacts.clear();body_contacts=0;max_body_penetration=0;deer_spear_reaction=false
 	knockback=[Vector3.ZERO,Vector3.ZERO]
 	previous_hurt.clear();consumed=[false,false];action_name=["idle","idle"];action_id=[0,0]
 	for i in 2:
@@ -237,6 +239,7 @@ func resolve_bodies(next:Array,previous_centers:Array=[],previous_guards:Array=[
 func apply_hit(side:int,direction:Vector3,strong:bool)->void:
 	direction.y=0
 	knockback[side]=direction.normalized()*(.9 if strong else .45)
+	if side==1:deer_spear_reaction=not strong
 
 func _aim_thrust(key:String,age:float,duration:float)->void:
 	if key not in ["attack","skill"]:return
@@ -258,25 +261,53 @@ func _aim_thrust(key:String,age:float,duration:float)->void:
 	sk.set_bone_pose_rotation(upper,(parent_basis.inverse()*Basis(axis,angle)*global_basis).get_rotation_quaternion())
 	sk.force_update_all_bone_transforms()
 
+func _rig_alpha(side:int,fade:float)->void:
+	if not is_equal_approx(last_alpha[side],fade):
+		for item in fade_materials[side]:
+			item.material.transparency=BaseMaterial3D.TRANSPARENCY_ALPHA if fade<.999 else item.mode
+			item.material.albedo_color.a=fade
+		last_alpha[side]=fade
+	actors[side].preview.pivot.visible=fade>.02
+
 func render_poses(lab,delta:float)->Array:
 	var root_motion:Array=[]
 	for side in 2:
 		var actor=actors[side];var key:String=lab.motion[side];var age:float=lab.age[side]
 		var p=actor.preview
+		if key=="death":
+			# Hold the pose from the lethal contact; only opacity changes.
+			root_motion.append(Vector3.ZERO)
+			_rig_alpha(side,1.0-smoothstep(.09,.63,age))
+			if age>=.36:
+				# Let the existing dust and meat outlive the fading rig.
+				actor.death_effect.sample(age-.36+.08)
+				actor.death_effect.modulate.a=smoothstep(.36,.47,age)
+			continue
 		var toward:=bodies[1-side].position-bodies[side].position;toward.y=0
 		if toward.length()>.001:
 			var heading:float=atan2(toward.x,toward.z)-(aim_bias[side] if side==0 else 0.0)
 			facing[side]=lerp_angle(facing[side],heading,minf(1,delta*18)) if delta>0 else heading
-		p.pivot.rotation.y=facing[side]
+		p.pivot.rotation=Vector3(0,facing[side],0)
 		# Reuse D0070 recovery blending and death-before-reward presentation.
-		var pose_age:float=lab.Accent.chain_pose(age,actor.duration) if side==0 and key=="chain" else age
-		lab.presentation.sample(actor,side,key,pose_age,INF if lab.approach_active else float(lab.next_attack[side])-lab.rules.elapsed,delta,false)
+		var sample_age:float=age/float(lab.entrance_scale) if lab.approach_active else age
+		if side==1 and key=="walk":
+			# Reverse the authored hoof cycle while keeping the deer facing Han.
+			sample_age=fposmod(-age*1.65,actor.duration)
+		if side==0 and key=="chain":sample_age=lab.Accent.chain_pose(age,actor.duration)
+		var directional_hit:=side==1 and key=="hit" and deer_spear_reaction
+		lab.presentation.sample(actor,side,key,sample_age,INF if lab.approach_active else float(lab.next_attack[side])-lab.rules.elapsed,delta,false,directional_hit)
 		var sk:Skeleton3D=p.skeleton
 		var root:int=p.root_bone if side==0 else p.root_index
 		var root_pose:=sk.get_bone_pose_position(root);var rest:=sk.get_bone_rest(root).origin
 		root_motion.append(root_pose-rest)
 		root_pose.x=rest.x;root_pose.z=rest.z;sk.set_bone_pose_position(root,root_pose)
 		p.pivot.position=Vector3(0,.12,0)
+		if directional_hit:
+			# Lift the forequarters along the incoming thrust, then settle on
+			# the hind feet. The actor root still follows normal collision.
+			var lift:=smoothstep(0,.083,age)*(1.0-smoothstep(.10,.31,age))
+			p.pivot.rotation.x=-.21*lift
+			p.pivot.position-=toward.normalized()*.105*lift
 		sk.force_update_all_bone_transforms()
 		var feet:=["foot.R","foot.L"] if side==0 else ["front_foot.R","front_foot.L","hind_foot.R","hind_foot.L"]
 		var bottom:=INF
@@ -290,16 +321,16 @@ func render_poses(lab,delta:float)->Array:
 		hurt[side].global_position=torso
 		hurt[side].rotation.y=facing[side]
 		p.modulate.a=1 # Shared native render owns visibility; only the rig is faded.
-		var fade:=1.0-smoothstep(.78,1,age) if key=="death" else 1.0
-		if not is_equal_approx(last_alpha[side],fade):
-			for item in fade_materials[side]:
-				item.material.transparency=BaseMaterial3D.TRANSPARENCY_ALPHA if fade<.999 else item.mode
-				item.material.albedo_color.a=fade
-			last_alpha[side]=fade
-		p.pivot.visible=fade>.02
+		_rig_alpha(side,1.0-smoothstep(.78,1,age) if key=="death" else 1.0)
 	return root_motion
 
-func step(lab,delta:float)->Array[Dictionary]:
+func deer_return_offset()->Vector3:
+	# Convex return path constrained to the shared floor; preserve incidental
+	# lateral displacement and hit knockback rather than undoing them.
+	var remaining:float=(action_origin[1]-bodies[1].position).dot(direction)
+	return direction*maxf(0,remaining)
+
+func step(lab,delta:float,prior_han_age:float=-1.0)->Array[Dictionary]:
 	var old_hurt:=[hurt_capsule(0),hurt_capsule(1)]
 	var old_weapon:=[weapon_point(0),weapon_point(1)]
 	var old_centers:=[body_shapes[0].global_position,body_shapes[1].global_position]
@@ -311,15 +342,26 @@ func step(lab,delta:float)->Array[Dictionary]:
 		var toward:Vector3=bodies[1-side].position-bodies[side].position;toward.y=0
 		var distance:=toward.length();toward=toward.normalized()
 		if lab.approach_active:
-			var gap:=lerpf(START_DISTANCE,ENGAGE_DISTANCE,smoothstep(0,lab.APPROACH_TRAVEL,lab.visual_clock))
+			var gap:=lerpf(START_DISTANCE,ENGAGE_DISTANCE,smoothstep(0,lab.APPROACH_TRAVEL*lab.entrance_scale,lab.visual_clock))
 			desired[side]=direction*gap*.5*(-1 if side==0 else 1)
+		elif side==1 and key=="walk" and lab.rules.living():
+			var offset:=deer_return_offset()
+			var speed:=RECOVER_SPEED*lerpf(.30,1.0,smoothstep(0,.22,offset.length()))
+			desired[side]+=offset.limit_length(speed*delta)
 		elif key in ["attack","skill","chain"]:
 			var forward:=maxf(0,float(roots[side].z-previous_root[side].z))*1.24
 			var safe:=1.75 if side==0 and key=="skill" else 1.85 if key=="chain" else .85
 			if side==1 and key=="attack" and lab.age[side]<actors[side].duration*.55:
 				forward=maxf(forward,minf(maxf(0,distance-1.15),delta*2.4))
+			if side==1 and key=="skill":
+				var charge_age:float=lab.age[1]-actors[1].preview.length("req046_skill_anticipation")
+				if charge_age>=0 and charge_age<.62 and not consumed[1]:
+					# Plant during the warning; advance only with the headbutt.
+					var drive:=lerpf(7.0,8.4,smoothstep(0,.10,charge_age))
+					forward=maxf(forward,minf(maxf(0,distance-.95),delta*drive))
 			desired[side]+=toward*minf(forward,maxf(0,distance-safe))
 		previous_root[side]=roots[side]
+		if key=="death":knockback[side]=Vector3.ZERO
 		desired[side]+=knockback[side]*delta
 		knockback[side]=knockback[side].move_toward(Vector3.ZERO,delta*5)
 	resolve_bodies(desired,old_centers,old_guards)
@@ -333,13 +375,14 @@ func step(lab,delta:float)->Array[Dictionary]:
 		var closes:float=length*(.70 if key=="attack" else .74)
 		if side==1 and key=="skill":
 			opens=actors[side].preview.length("req046_skill_anticipation");closes=length*.94
-		var prior_age:float=lab.age[side]-delta
+		var prior_age:float=prior_han_age if side==0 and prior_han_age>=0 else lab.age[side]-delta
+		var age_span:=maxf(.000001,lab.age[side]-prior_age)
 		var active:bool=lab.age[side]>=opens and prior_age<=closes
 		if not lab.approach_active and key in ["attack","skill","chain"] and not consumed[side] and active and lab.rules.living():
 			# Substeps follow articulated motion; relative target travel is included.
 			var shift:Vector3=(target.a+target.b-old_hurt[1-side].a-old_hurt[1-side].b)*.5
-			var start_fraction:=clampf((opens-prior_age)/maxf(.000001,delta),0,1)
-			var end_fraction:=clampf((closes-prior_age)/maxf(.000001,delta),0,1)
+			var start_fraction:=clampf((opens-prior_age)/age_span,0,1)
+			var end_fraction:=clampf((closes-prior_age)/age_span,0,1)
 			var from:Vector3=(old_weapon[side]+shift).lerp(now,start_fraction)
 			var to:Vector3=(old_weapon[side]+shift).lerp(now,end_fraction)
 			var t:=capsule_hit(from,to,target.a,target.b,float(target.radius)+WEAPON_RADIUS)
@@ -350,7 +393,7 @@ func step(lab,delta:float)->Array[Dictionary]:
 				var axis:Vector3=target.b-target.a
 				var nearest:Vector3=target.a+axis*clampf((probe-target.a).dot(axis)/maxf(.0001,axis.length_squared()),0,1)
 				var point:Vector3=nearest+nearest.direction_to(probe)*float(target.radius)
-				var event:={"side":side,"motion":key,"point":point,"probe":probe,"hurt":target.duplicate(),"weapon_from":from,"weapon_to":to,"normal":(bodies[1-side].position-bodies[side].position).normalized(),"action":action_id[side],"time":lab.rules.elapsed-delta+fraction*delta,"attack_age":prior_age+fraction*delta,"active_from":opens,"active_to":closes}
+				var event:={"side":side,"motion":key,"point":point,"probe":probe,"hurt":target.duplicate(),"weapon_from":from,"weapon_to":to,"normal":(bodies[1-side].position-bodies[side].position).normalized(),"action":action_id[side],"time":lab.rules.elapsed-delta+fraction*delta,"attack_age":prior_age+fraction*age_span,"active_from":opens,"active_to":closes}
 				events.append(event);contacts.append(event)
 		previous_weapon[side]=now
 	events.sort_custom(func(first,second):return first.time<second.time)

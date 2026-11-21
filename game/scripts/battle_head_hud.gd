@@ -22,3 +22,42 @@ static func layout(headers:Array,points:Array,bounds:Rect2)->void:
 			var rect:=Rect2((base+offset).clamp(bounds.position,bounds.end-SIZE),SIZE);chosen=rect
 			if not occupied.any(func(other):return other.grow(2).intersects(rect)):break
 		headers[i].panel.position=chosen.position;occupied.append(chosen)
+
+const COMPACT_SIZE:=Vector2(58,4)
+const COMPACT_OUTER:=COMPACT_SIZE+Vector2(2,2)
+const COMPACT_CLEARANCE:=26.0
+
+static func duel_team_color(ally:bool)->Color:
+	return Color("46b6ff") if ally else Color("ff454e")
+
+static func create_compact(parent:Node,ally:bool)->Dictionary:
+	var entry:=create(parent,"",ally)
+	var outline:=StyleBoxFlat.new()
+	outline.draw_center=true
+	outline.bg_color=Color("090b10",.83)
+	outline.border_color=Color("343d4c",.90)
+	outline.set_border_width_all(1)
+	outline.set_corner_radius_all(2)
+	entry.panel.add_theme_stylebox_override("panel",outline)
+	entry.panel.size=COMPACT_OUTER
+	entry.label.hide()
+	entry.bar.texture_under=null
+	var fill:GradientTexture2D=entry.bar.texture_progress
+	fill.width=int(COMPACT_SIZE.x);fill.height=int(COMPACT_SIZE.y)
+	var team:=duel_team_color(ally)
+	fill.gradient.colors=PackedColorArray([team,team])
+	entry.bar.position=Vector2.ONE;entry.bar.size=COMPACT_SIZE
+	entry.bar.modulate.a=.90
+	return entry
+
+static func layout_compact(headers:Array,points:Array,bounds:Rect2)->void:
+	var occupied:Array[Rect2]=[]
+	for i in headers.size():
+		var clearance:=COMPACT_CLEARANCE if i==0 else 13.0
+		var base:Vector2=(points[i]-Vector2(COMPACT_OUTER.x*.5,COMPACT_OUTER.y+clearance)).clamp(bounds.position,bounds.end-COMPACT_OUTER)
+		var chosen:=Rect2(base,COMPACT_OUTER)
+		for offset in [Vector2.ZERO,Vector2(0,-9),Vector2(-64,0),Vector2(64,0)]:
+			chosen=Rect2((base+offset).clamp(bounds.position,bounds.end-COMPACT_OUTER),COMPACT_OUTER)
+			if not occupied.any(func(other):return other.grow(2).intersects(chosen)):break
+		headers[i].panel.position=chosen.position
+		occupied.append(chosen)

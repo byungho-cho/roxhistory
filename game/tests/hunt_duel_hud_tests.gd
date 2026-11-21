@@ -75,6 +75,8 @@ func run():
   lab.rules.damage(side,1000);lab._die(side);lab._refresh()
   check(not hud.badge.visible and not hud.chain_button.visible,"KO immediate clear")
   step(1.01)
+  check(lab.rules.hp[side]==0 and not hud.badge.visible and not hud.chain_button.visible,"HUD stays cleared during the post-fade wait")
+  step(.39)
   check(lab.rules.hp==[100,100] and lab.rules.sp<1.01 and lab.timer.text=="00:00" and not hud.badge.visible,"auto full-round reset")
  for ally in ["hangyeol","uram","saebom"]:
   for enemy in ["forest","adult"]:

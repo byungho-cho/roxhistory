@@ -2,6 +2,7 @@ extends RefCounted
 ## Lab-only presentation. Never schedules damage or alters source animations.
 const PREPARE_SECONDS := .65
 const HP_SECONDS := .22
+
 var hp := [100.0,100.0]
 var hp_from := [100.0,100.0]
 var hp_target := [100.0,100.0]
@@ -52,10 +53,14 @@ func attack_sample(age:float,duration:float)->float:
 	var contact:=duration*.55
 	return lerpf(duration*.22,contact,clampf(age/contact,0,1)) if age<contact else age
 
-func sample(actor,side:int,key:String,age:float,until_attack:float,delta:float,extract_planar:=true)->void:
+func sample(actor,side:int,key:String,age:float,until_attack:float,delta:float,extract_planar:=true, directional_deer_hit:=false)->void:
 	var next_phase:=key
 	var recovering:=key=="hit" and age>=minf(.14,actor.duration*.35)
-	if (key=="idle" or recovering) and until_attack>0 and until_attack<PREPARE_SECONDS:
+	if directional_deer_hit:
+		# Keep the current facing; the imported hit clip rolls to the side.
+		actor.preview.start(actor.clip_for("idle"));actor.preview.sample(age,false)
+		actor.active_clip=""
+	elif (key=="idle" or recovering) and until_attack>0 and until_attack<PREPARE_SECONDS:
 		next_phase="prepare"
 		var windup:float=actor.span("attack")*.22*(1.0-smoothstep(0,PREPARE_SECONDS,until_attack))
 		if side==0:
@@ -65,15 +70,8 @@ func sample(actor,side:int,key:String,age:float,until_attack:float,delta:float,e
 			actor.preview.start(actor.clip_for("attack"))
 			actor.preview.sample(windup,false)
 			actor.active_clip="" # Restore the authoritative motion on the next sample.
-	elif grounded_spear and side==1 and key=="death":
-		# Read the authored fall before the existing one-second reset. Do not
-		# use the generic model-test effect that hides the mesh at .18 seconds.
-		actor.preview.start(actor.clip_for("death"))
-		actor.preview.sample(minf(age/.78,1.0)*actor.duration,false)
-		actor.preview.modulate.a=1.0-smoothstep(.78,1.0,age)
-		actor.death_effect.clear()
-		if age>=.65:actor.death_effect.sample(age-.65+.08)
 	else:
+		actor.death_effect.modulate.a=1.0
 		actor.sample(attack_sample(age,actor.duration) if key=="attack" else age,false)
 	if side==0 and extract_planar:anchor_spear_root(actor)
 	var sk:Skeleton3D=actor.preview.skeleton

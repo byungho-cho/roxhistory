@@ -4,6 +4,7 @@ signal requested(action:String)
 const Art=preload("res://scripts/hunt_match_art.gd")
 const ROOT="res://assets/ui/d0071-hud/"
 const PORTRAIT_SIZE:=66.0
+const SKILL_BOX_LIGHT_ALPHA:=.50
 const FACTOR:=.66
 const PORTRAITS={"hangyeol":preload(ROOT+"han.png"),"uram":preload(ROOT+"uram.png"),"saebom":preload(ROOT+"saebom.png")}
 const ORDINARY={"hangyeol":preload(ROOT+"han-2sp.png"),"uram":preload(ROOT+"uram-2sp.png"),"saebom":preload(ROOT+"saebom-2sp.png")}
@@ -22,7 +23,17 @@ var chain_art:TextureRect
 var warm_glow:TextureRect
 var chain_glow:TextureRect
 var orbs:Array[TextureRect]=[]
+var orb_lights:Array[TextureRect]=[]
+var orb_light_progress:Array[float]=[1.0,0.0,0.0]
 var names:Label
+var name_strip:Panel
+var chain_frame:Panel
+var duel_ready_feedback:=false
+var normal_flash:TextureRect
+var badge_flash:TextureRect
+var linked_flash:TextureRect
+var normal_border_arc:Control
+var linked_outer_glow:Control
 var hp:TextureProgressBar # Hidden compatibility state; HP is displayed overhead.
 var sp_label:Label # Hidden: no separate SP text is drawn.
 var normal_ready:=false
@@ -46,7 +57,7 @@ func _ready()->void:
 	var mask=_panel(portrait_button,Rect2(1.98,1.98,62.04,62.04),Color.WHITE,Color.TRANSPARENT,4.62,0)
 	mask.clip_children=CanvasItem.CLIP_CHILDREN_ONLY;mask.clip_contents=true
 	portrait=Art.picture(mask,PORTRAITS.hangyeol,Rect2(-3.828,-3.696,69.696,65.736));portrait.stretch_mode=TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	_panel(portrait_button,Rect2(3.3,3.3,59.4,10.56),Color(.129,.102,.071,.8),Color.TRANSPARENT,2.64,0)
+	name_strip=_panel(portrait_button,Rect2(3.3,3.3,59.4,10.56),Color(.129,.102,.071,.8),Color.TRANSPARENT,2.64,0)
 	names=_label(portrait_button,"한결",Rect2(3.3,3.3,59.4,10.56),8)
 	frame=_panel(portrait_button,Rect2(1.32,1.32,63.36,63.36),Color.TRANSPARENT,Color("a38760"),5.94,1)
 	badge=_panel(self,Rect2(-3.96,41.91,26.4,26.4),Color("0d2a22"),Color.TRANSPARENT,4.62,0)
@@ -57,9 +68,9 @@ func _ready()->void:
 	chain_button=_button(self,Rect2(6.6,-57.42,52.8,52.8),"chain")
 	_panel(chain_button,Rect2(0,0,52.8,52.8),Color("122038"),Color.TRANSPARENT,5.28,0)
 	chain_glow=_rounded_glow(chain_button,Rect2(0,0,52.8,52.8),[Color("8ee6ff"),Color("2e75a2"),Color("122038")],5.28)
-	chain_foreground=Control.new();chain_foreground.mouse_filter=MOUSE_FILTER_IGNORE;chain_foreground.size=Vector2(52.8,52.8);chain_button.add_child(chain_foreground)
+	chain_foreground=Control.new();chain_foreground.mouse_filter=MOUSE_FILTER_IGNORE;chain_foreground.size=Vector2(52.8,52.8);chain_foreground.pivot_offset=chain_foreground.size*.5;chain_button.add_child(chain_foreground)
 	chain_art=Art.picture(chain_foreground,LINKED.hangyeol,Rect2(1.98,1.98,48.84,48.84))
-	_panel(chain_button,Rect2(0,0,52.8,52.8),Color.TRANSPARENT,Color("9af3ff"),4.62,1)
+	chain_frame=_panel(chain_button,Rect2(0,0,52.8,52.8),Color.TRANSPARENT,Color("9af3ff"),4.62,1)
 	for i in 3:
 		var orb=Art.picture(self,ORB_EMPTY,Rect2(Vector2((14+25*i)*FACTOR,104*FACTOR),Vector2(22,22)));orb.scale=Vector2.ONE*FACTOR;orbs.append(orb)
 	hp=TextureProgressBar.new();hp.hide();add_child(hp);sp_label=Label.new();sp_label.hide();add_child(sp_label)
@@ -82,6 +93,7 @@ func _glow(colors:Array)->GradientTexture2D:
 	var texture:=GradientTexture2D.new();texture.width=96;texture.height=96;texture.fill=GradientTexture2D.FILL_RADIAL;texture.fill_from=Vector2(.5,.5);texture.fill_to=Vector2(1,.5);texture.gradient=Gradient.new();texture.gradient.offsets=PackedFloat32Array([0,.58,1]);texture.gradient.colors=PackedColorArray(colors);return texture
 func reset(id:String)->void:
 	character=id;normal_ready=false;chain_ready=false;normal_age=0;chain_age=0;phase=0;normal_entries=0;chain_entries=0
+	orb_light_progress.assign([1.0,0.0,0.0])
 	portrait.texture=PORTRAITS[id];badge_art.texture=ORDINARY[id];chain_art.texture=LINKED[id];names.text={"hangyeol":"한결","uram":"우람","saebom":"새봄"}[id]
 	# Figma's88% figure width enlarged20%, with its real aspect and lower edge pinned.
 	portrait.size=Vector2(69.696,69.696*portrait.texture.get_height()/portrait.texture.get_width())
@@ -99,7 +111,218 @@ func sync(sp:float,health:int,max_health:int,living:bool,input_available:bool,de
 	badge.visible=ordinary;chain_button.visible=linked;portrait_button.disabled=not ordinary or not input_available;chain_button.disabled=not linked or not input_available
 	warm_glow.visible=ordinary;warm_glow.modulate.a=smoothstep(0,.35,normal_age);frame.get_theme_stylebox("panel").border_color=Color("ffe2a0") if ordinary else Color("a38760")
 	chain_glow.modulate=Color(1,1,1,lerpf(.5,1,smoothstep(0,.3,chain_age)))
-	var twitch:=sin(phase/.2*TAU*2)*(1.0-phase/.2) if linked and chain_age>=3 and phase<.2 else 0.0
-	chain_foreground.position=Vector2(twitch*.65,-absf(twitch)*.35)
+	var t:=clampf(phase/.32,0.0,1.0)
+	var angle:=sin(t*TAU*2.0)*(1.0-t) if linked and chain_age>=3 and phase<.32 else 0.0
+	chain_foreground.rotation=deg_to_rad(7.2)*angle
 	portrait.modulate=Color.WHITE if health>0 else Color(.35,.35,.35,.85);hp.max_value=max_health;hp.value=health
-	for i in 3:orbs[i].texture=ORB_FULL if living and i<floori(sp+.000001) else ORB_EMPTY
+	for i in 3:
+		var filled:=living and i<floori(sp+.000001)
+		if not duel_ready_feedback or orb_lights.size()!=3:
+			orbs[i].texture=ORB_FULL if filled else ORB_EMPTY
+			continue
+		orbs[i].texture=ORB_EMPTY
+		orb_light_progress[i]=move_toward(orb_light_progress[i],1.0 if filled else 0.0,delta/(.22 if filled else .14))
+		var light:=orb_lights[i]
+		light.visible=orb_light_progress[i]>.001
+		light.material.set_shader_parameter("fill_amount",orb_light_progress[i])
+	_draw_duel_ready_state()
+
+func enable_duel_ready_feedback()->void:
+	duel_ready_feedback=true
+	names.add_theme_font_size_override("font_size",9)
+	var strip_height:=maxf(14,ceilf(names.get_minimum_size().y)+2)
+	name_strip.position=Vector2(3.3,3.3)
+	name_strip.size=Vector2(59.4,strip_height)
+	names.position=name_strip.position
+	names.size=name_strip.size
+	var gold:=[Color("fff4bf"),Color("ffca65",.73),Color("efa328",0)]
+	var blue:=[Color("f2fbff"),Color("70dbff",.75),Color("60a9ff",0)]
+	var portrait_mask:=portrait.get_parent() as Control
+	normal_flash=_ready_light(portrait_mask,Rect2(Vector2.ZERO,portrait_mask.size),gold)
+	portrait_mask.move_child(normal_flash,portrait.get_index())
+	badge_flash=_ready_light(badge,Rect2(0,0,26.4,26.4),gold)
+	badge.move_child(badge_flash,badge_art.get_index())
+	linked_flash=_ready_light(chain_button,Rect2(1,1,50.8,50.8),blue)
+	chain_button.move_child(linked_flash,chain_foreground.get_index())
+	normal_border_arc=_make_ready_arc(portrait_button,Rect2(2,2,62,62),5.8)
+	linked_outer_glow=_make_linked_outer_glow()
+	_setup_ready_convergence()
+	_setup_orb_lights()
+
+func _make_ready_arc(parent:Control, contour:Rect2, radius:float)->Control:
+	var layer:=Control.new()
+	layer.name="OrdinaryBorderArc"
+	layer.mouse_filter=MOUSE_FILTER_IGNORE
+	parent.add_child(layer)
+	layer.draw.connect(func():_draw_ready_arc(layer,contour,radius))
+	layer.hide()
+	return layer
+
+func _arc_point(box:Rect2, radius:float, distance:float)->Vector2:
+	var straight:=box.size.x-2.0*radius
+	var vertical:=box.size.y-2.0*radius
+	var corner:=radius*PI*.5
+	var d:=fposmod(distance,2.0*(straight+vertical)+4.0*corner)
+	var p:=Vector2(radius,0)
+	var points:=[Vector2(box.size.x-radius,radius),box.size-Vector2.ONE*radius,Vector2(radius,box.size.y-radius),Vector2.ONE*radius]
+	var edges:=[straight,vertical,straight,vertical]
+	for i in 4:
+		var a:=float(i)*PI*.5-PI*.5
+		if d < edges[i]:
+			return box.position+p+Vector2(-sin(a),cos(a))*d
+		d-=edges[i]
+		if d < corner:
+			return box.position+points[i]+Vector2.from_angle(a+d/radius)*radius
+		d-=corner
+		p=points[i]+Vector2.from_angle(a+PI*.5)*radius
+	return box.position+p
+
+func _ready_arc_heads(age:float, perimeter:float)->PackedFloat32Array:
+	var base:=age*1.5/1.72+.05
+	return PackedFloat32Array([perimeter*base,perimeter*(base+1.0/3.0),perimeter*(base+2.0/3.0)])
+
+func _draw_ready_arc(layer:Control, box:Rect2, radius:float)->void:
+	var perimeter:=2.0*(box.size.x+box.size.y-4.0*radius)+TAU*radius
+	var path:=_closed_ready_arc(box,radius,perimeter,normal_age)
+	layer.draw_polyline(path,Color("ffab38",.20),5.2,true)
+	layer.draw_polyline(path,Color("ffd66d",.54),2.1,true)
+	layer.draw_polyline(path,Color("ffe5a7",.49),1.0,true)
+	for head in _ready_arc_heads(normal_age,perimeter):
+		_draw_arc_streak(layer,box,radius,perimeter,head,normal_age+head/perimeter)
+
+func _closed_ready_arc(box:Rect2, radius:float, perimeter:float, age:float)->PackedVector2Array:
+	var path:=PackedVector2Array()
+	for i in 80:
+		var u:=float(i)/80.0
+		var d:=perimeter*u
+		var tangent:=_arc_point(box,radius,d+.6)-_arc_point(box,radius,d-.6)
+		var ripple:=sin(TAU*(u*19.0-age*3.4))*.45+sin(TAU*(u*33.0-age*2.1))*.28
+		path.append(_arc_point(box,radius,d)+tangent.normalized().orthogonal()*ripple)
+	path.append(path[0])
+	return path
+
+func _draw_arc_streak(layer:Control, box:Rect2, radius:float, perimeter:float, head:float, age:float)->void:
+	var tint:=Color("ffbc43")
+	var tip:=Color("fff2bd")
+	var span:=perimeter*.30
+	var previous:=_arc_point(box,radius,head-span)
+	for j in range(1,19):
+		var f:=float(j)/18.0
+		var d:=head-span*(1.0-f)
+		var point:=_arc_point(box,radius,d)
+		var tangent:=_arc_point(box,radius,d+.6)-_arc_point(box,radius,d-.6)
+		var jag:=sin(float(j)*7.5+age*13.0)*lerpf(1.7,.45,f)*sin(f*PI)
+		point+=tangent.normalized().orthogonal()*jag
+		var power:=smoothstep(0.0,.75,f)
+		layer.draw_line(previous,point,Color(tint,.12*power),7.5,true)
+		layer.draw_line(previous,point,Color(tint,.55*power),3.6,true)
+		layer.draw_line(previous,point,Color(tip,power),1.65,true)
+		previous=point
+	var tip_normal:=(_arc_point(box,radius,head+.6)-_arc_point(box,radius,head-.6)).normalized().orthogonal()
+	var fork:=previous+tip_normal*4.1
+	layer.draw_line(previous,fork,Color(tint,.72),2.4,true)
+	layer.draw_circle(previous,3.2,Color(tint,.28),true,-1,true)
+	layer.draw_circle(previous,1.55,tip,true,-1,true)
+
+func _make_linked_outer_glow()->Control:
+	var layer:=Control.new()
+	layer.name="LinkedOuterGlow"
+	layer.mouse_filter=MOUSE_FILTER_IGNORE
+	chain_button.add_child(layer)
+	chain_button.move_child(layer,0)
+	var halo_material:=CanvasItemMaterial.new()
+	halo_material.blend_mode=CanvasItemMaterial.BLEND_MODE_MIX
+	layer.material=halo_material
+	var soft:=_glow([Color.WHITE,Color(1,1,1,.22),Color(1,1,1,0)])
+	layer.draw.connect(func():_draw_linked_outer_glow(layer,soft))
+	layer.hide()
+	return layer
+
+func _draw_linked_outer_glow(layer:Control, soft:Texture2D)->void:
+	var bounds:=Rect2(-1.8,-1.8,56.4,56.4)
+	var radius:=7.0
+	var perimeter:=4.0*(bounds.size.x-2.0*radius)+TAU*radius
+	for j in 24:
+		var u:=float(j)/24.0
+		var position_on_edge:=_arc_point(bounds,radius,u*perimeter)
+		var wave:=pow(.5+.5*cos(TAU*(u-chain_age/1.72)),5.0)
+		var diameter:=lerpf(19.0,31.0,wave)
+		var hue:=Color("138fff").lerp(Color("66ceff"),wave)
+		layer.draw_texture_rect(soft,Rect2(position_on_edge-Vector2.ONE*diameter*.5,Vector2.ONE*diameter),false,Color(hue,.23+wave*.28))
+
+func _setup_ready_convergence()->void:
+	var shader:=Shader.new()
+	shader.code="""
+shader_type canvas_item;
+render_mode blend_add;
+uniform vec4 glow_color : source_color = vec4(1.0,0.7,0.3,1.0);
+uniform float gather_phase = 0.0;
+uniform float strength = 0.50;
+void fragment() {
+	vec2 uv = (UV - vec2(0.5)) * 2.0;
+	float dist = length(uv);
+	float edge = 1.0 - smoothstep(0.88, 1.0, max(abs(uv.x), abs(uv.y)));
+	float radius = mix(1.07, 0.03, smoothstep(0.0, 1.0, gather_phase));
+	float ring = exp(-pow((dist - radius) / 0.14, 2.0));
+	float in_motion = smoothstep(0.0, 0.12, gather_phase) * (1.0 - smoothstep(0.81, 1.0, gather_phase));
+	float core = exp(-pow(dist / 0.27, 2.0));
+	float settled = smoothstep(0.65, 0.93, gather_phase);
+	vec3 color = mix(glow_color.rgb, vec3(1.0), 0.22 * ring);
+	COLOR = vec4(color, (0.15 * core + 0.58 * in_motion * ring + 0.17 * settled * core) * edge * strength);
+}
+"""
+	for light in [badge_flash,linked_flash]:
+		var material:=ShaderMaterial.new()
+		material.shader=shader
+		material.set_shader_parameter("glow_color",Color("ffd07a") if light==badge_flash else Color("86dcff"))
+		material.set_shader_parameter("strength",SKILL_BOX_LIGHT_ALPHA)
+		light.material=material
+
+func _ready_gather_phase(age:float)->float:
+	return clampf(fposmod(age,2.0)/1.42,0,1)
+
+func _setup_orb_lights()->void:
+	var shader:=Shader.new()
+	shader.code="shader_type canvas_item; uniform float fill_amount = 0.0; void fragment() { vec4 orb = texture(TEXTURE, UV); float d = length(UV - vec2(0.50)); float radius = mix(0.04, 0.76, fill_amount); float spread = 1.0 - smoothstep(max(0.0, radius - 0.13), radius, d); COLOR = vec4(orb.rgb, orb.a * spread * smoothstep(0.0, 0.17, fill_amount)); }"
+	for orb in orbs:
+		var overlay:=Art.picture(self,ORB_FULL,Rect2(orb.position,orb.size))
+		overlay.scale=orb.scale
+		overlay.mouse_filter=MOUSE_FILTER_IGNORE
+		var mat:=ShaderMaterial.new();mat.shader=shader
+		overlay.material=mat
+		overlay.hide()
+		orb_lights.append(overlay)
+
+func _ready_light(parent:Control,rect:Rect2,colors:Array)->TextureRect:
+	var light:=Art.picture(parent,_glow(colors),rect)
+	light.mouse_filter=MOUSE_FILTER_IGNORE
+	var additive:=CanvasItemMaterial.new()
+	additive.blend_mode=CanvasItemMaterial.BLEND_MODE_ADD
+	light.material=additive
+	light.hide()
+	return light
+
+func _draw_duel_ready_state()->void:
+	if not duel_ready_feedback:return
+	var normal_frame:=frame.get_theme_stylebox("panel") as StyleBoxFlat
+	normal_flash.visible=normal_ready
+	badge_flash.visible=normal_ready
+	linked_flash.visible=chain_ready
+	normal_border_arc.visible=normal_ready
+	if normal_ready:normal_border_arc.queue_redraw()
+	linked_outer_glow.visible=chain_ready
+	if chain_ready:linked_outer_glow.queue_redraw()
+	normal_frame.set_border_width_all(2 if normal_ready else 1)
+	if normal_ready:
+		var pulse:=pow(.5+.5*cos(normal_age*TAU/1.12),2.4)
+		normal_flash.modulate.a=.34 if character=="hangyeol" else (.11+pulse*.39)*.90
+		if character=="hangyeol":warm_glow.modulate.a=.82
+		badge_flash.material.set_shader_parameter("gather_phase",_ready_gather_phase(normal_age))
+		normal_frame.border_color=Color("ffe2a0") if character=="hangyeol" else Color("df9f34").lerp(Color("fff1ac"),.48+pulse*.52)
+		badge_glow.modulate.a=.66*SKILL_BOX_LIGHT_ALPHA/.90
+	var linked_frame:=chain_frame.get_theme_stylebox("panel") as StyleBoxFlat
+	linked_frame.set_border_width_all(2 if chain_ready else 1)
+	if chain_ready:
+		linked_flash.material.set_shader_parameter("gather_phase",_ready_gather_phase(chain_age))
+		chain_glow.modulate.a=.62*SKILL_BOX_LIGHT_ALPHA/.90
+		linked_frame.border_color=Color("8edaff")
