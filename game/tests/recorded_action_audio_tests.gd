@@ -14,7 +14,11 @@ func run()->void:
 	var audio:DemoSoundscape=app.audio;audio.configure(true,true,true,false)
 	for key in ["wood","stone","build","demolish"]:
 		var stream:AudioStreamWAV=audio.streams["recorded_"+key]
-		check(stream.mix_rate==48000 and not stream.stereo and stream.get_length()<1,"Approved short PCM interval loaded")
+		if key in ["stone","build"]:
+			var expected_length := 1.0 if key == "stone" else 2.0
+			check(stream.mix_rate==44100 and not stream.stereo and absf(stream.get_length()-expected_length)<.01,"Selected v0.2 PCM loaded")
+		else:
+			check(stream.mix_rate==48000 and not stream.stereo and stream.get_length()<1,"Unchanged v0.1 PCM loaded")
 		check(stream.loop_mode==AudioStreamWAV.LOOP_DISABLED,"No automatic loops")
 		audio.cue(key);check(audio.recorded_work.playing and audio.recorded_work.stream==stream,"Correct approved selection plays")
 		check(audio.recorded_work.pitch_scale==1.0,"No pitch resynthesis")
