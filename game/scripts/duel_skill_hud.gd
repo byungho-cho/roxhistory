@@ -103,12 +103,12 @@ func reset(id:String)->void:
 	var ordinary_colors:Array=[Color("469d9b"),Color("1a575b"),Color("112b32")] if id=="uram" else [Color("7ed9e3"),Color("236b7b"),Color("102e37")] if id=="saebom" else [Color("8ef1be"),Color("2b7955"),Color("0d2a22")]
 	badge_glow.texture=_glow(ordinary_colors)
 	sync(1,100,100,true,true,0)
-func sync(sp:float,health:int,max_health:int,living:bool,input_available:bool,delta:float)->void:
+func sync(sp:float,health:int,max_health:int,living:bool,input_available:bool,delta:float,chain_input_available:Variant=null)->void:
 	var ordinary:=living and sp+.000001>=normal_threshold;var linked:=living and sp+.000001>=chain_threshold
 	if ordinary and not normal_ready:normal_age=0;normal_entries+=1
 	if linked and not chain_ready:chain_age=0;chain_entries+=1
 	normal_ready=ordinary;chain_ready=linked;normal_age=normal_age+delta if ordinary else 0;chain_age=chain_age+delta if linked else 0;phase=fposmod(chain_age,3.0) if linked else 0
-	badge.visible=ordinary;chain_button.visible=linked;portrait_button.disabled=not ordinary or not input_available;chain_button.disabled=not linked or not input_available
+	badge.visible=ordinary;chain_button.visible=linked;portrait_button.disabled=not ordinary or not input_available;chain_button.disabled=not linked or not (input_available if chain_input_available==null else bool(chain_input_available))
 	warm_glow.visible=ordinary;warm_glow.modulate.a=smoothstep(0,.35,normal_age);frame.get_theme_stylebox("panel").border_color=Color("ffe2a0") if ordinary else Color("a38760")
 	chain_glow.modulate=Color(1,1,1,lerpf(.5,1,smoothstep(0,.3,chain_age)))
 	var t:=clampf(phase/.32,0.0,1.0)
