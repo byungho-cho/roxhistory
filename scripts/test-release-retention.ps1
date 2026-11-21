@@ -25,6 +25,11 @@ function global:gh {
     }
     throw "Unexpected mock API request: $endpoint"
 }
+function global:Invoke-RestMethod {
+    param($Uri)
+    $bytes=[Text.Encoding]::UTF8.GetBytes(($global:retentionChannelPayload | ConvertTo-Json -Compress))
+    return [pscustomobject]@{payload=[Convert]::ToBase64String($bytes);signature='fixture'}
+}
 try {
     $global:retentionReleases = @((Release 1 'v0.1.58'),(Release 2 'v0.1.59'),(Release 3 'v0.1.60'),(Release 4 'draft' $true),(Release 5 'pck-test-0.1.58-to-0.1.59'),(Release 6 'android-patch-base'))
     $global:retentionAssets = @{
@@ -50,8 +55,28 @@ try {
     $global:retentionAssets[1]=@((Asset 11 'RoxHistory-0.1.58-cloud-test.apk'))
     & $script -Apply | Out-Null
     if ($global:retentionDeleted.Count) { throw 'Cleanup deleted files without any complete pair.' }
+    $global:retentionAssets[1]=@((Asset 11 'Roxhistory_0.1.58.apk'),(Asset 12 'Roxhistory_0.1.58.exe'))
+    $global:retentionAssets[2]=@((Asset 21 'Roxhistory_0.1.59.apk'),(Asset 22 'Roxhistory_0.1.59.exe'))
+    $global:retentionReleases+=Release 7 'android-apk-channel'
+    $global:retentionAssets[7]=@((Asset 71 'apk-latest.json'))
+    $global:retentionChannelPayload=@{schema=1;kind='apk';version='0.1.58';tag='v0.1.58';file='Roxhistory_0.1.58.apk'}
+    $global:retentionReadCount=0
+    & $script -Apply | Out-Null
+    if (($global:retentionDeleted -join ',') -ne '12') { throw 'Required native APK target was not preserved.' }
+    $global:retentionDeleted.Clear();$global:retentionReadCount=0
+    $global:retentionChannelPayload=@{schema=1;kind='apk';package='com.roxhistory.demo';version='0.1.59';update_available=$false;reason='compatible_pck_available';patch_base='0.2.174';patch_runtime='godot-4.5.1-android-pck-2'}
+    & $script -Apply | Out-Null
+    if (($global:retentionDeleted -join ',') -ne '11,12') { throw 'Patch-only policy did not retain only the latest complete pair.' }
+    $global:retentionDeleted.Clear();$global:retentionReadCount=0
+    $global:retentionChannelPayload.reason='unknown'
+    $stopped=$false
+    try { & $script -Apply | Out-Null } catch { $stopped=$true }
+    if (-not $stopped -or $global:retentionDeleted.Count) { throw 'Unknown policy did not stop cleanup safely.' }
     Write-Output 'Retention checks passed: pagination, dry run, latest pair, newer incomplete release, drafts, PCK test assets, source assets, concurrent removal, and no complete pair.'
+    Write-Output 'APK-policy checks passed: required native target retained, patch-only latest pair retained, unknown policy rejected.'
 } finally {
     Remove-Item Function:\gh
+    Remove-Item Function:\Invoke-RestMethod
+    Remove-Variable retentionChannelPayload -Scope Global -ErrorAction SilentlyContinue
     Remove-Variable retentionDeleted,retentionAssets,retentionMissingPair,retentionReadCount,retentionReleases -Scope Global -ErrorAction SilentlyContinue
 }

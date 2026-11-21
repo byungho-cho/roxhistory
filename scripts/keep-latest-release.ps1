@@ -33,12 +33,25 @@ $protectedApkName = ''
 if ($apkChannel.Count) {
     $pointer = Invoke-RestMethod "https://github.com/$Repository/releases/download/android-apk-channel/apk-latest.json"
     $payload = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($pointer.payload)) | ConvertFrom-Json
-    if ($payload.kind -cne 'apk' -or $payload.version -notmatch '^\d+\.\d+\.\d+$' -or
-        $payload.tag -cne "v$($payload.version)" -or $payload.file -cne "Roxhistory_$($payload.version).apk") {
+    if ($payload.kind -cne 'apk' -or $payload.version -notmatch '^\d+\.\d+\.\d+$') {
         throw 'APK channel target cannot be identified. Cleanup stopped.'
     }
-    $protectedApkTag = $payload.tag
-    $protectedApkName = $payload.file
+    if ($payload.update_available -is [bool] -and -not $payload.update_available) {
+        # A verified compatible-PCK policy advertises no installable APK.
+        # Keep the latest complete pair; there is no older native target to pin.
+        if ($payload.schema -ne 1 -or $payload.package -cne 'com.roxhistory.demo' -or
+            $payload.reason -cne 'compatible_pck_available' -or
+            $payload.patch_base -notmatch '^\d+\.\d+\.\d+$' -or
+            [string]::IsNullOrWhiteSpace($payload.patch_runtime) -or $payload.tag -or $payload.file) {
+            throw 'Patch-only APK policy cannot be identified. Cleanup stopped.'
+        }
+    } else {
+        if ($payload.tag -cne "v$($payload.version)" -or $payload.file -cne "Roxhistory_$($payload.version).apk") {
+            throw 'APK channel target cannot be identified. Cleanup stopped.'
+        }
+        $protectedApkTag = $payload.tag
+        $protectedApkName = $payload.file
+    }
 }
 foreach ($release in $releases) {
     foreach ($asset in $release.assets) {
