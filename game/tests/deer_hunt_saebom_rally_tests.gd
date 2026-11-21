@@ -159,6 +159,40 @@ func _screen_suite() -> void:
 	hunt.speed = 1.0
 	hunt._process(.27)
 	_check(saebom.position.is_equal_approx(saebom_settled) and saebom.animation.current_animation == "sling_heavy","Legacy 2SP shows real sling motion without the old spear lunge")
+	_check(raw_rules.deer_hp == 100 and not hunt.stone.active, "Before the native sling release, no phantom projectile or damage")
+	for frame in range(16):
+		hunt._process(1.0/60.0)
+		if hunt.stone.active: break
+	_check(hunt.stone.active and raw_rules.deer_hp == 100 and hunt.stone_trail.size() >= 1,"Native release spawns a stone before doing damage")
+	var frozen_stone:Vector3 = hunt.stone.position
+	app.modal = true
+	hunt._process(.10)
+	_check(hunt.stone.position == frozen_stone and raw_rules.deer_hp == 100,"Actual projectile pauses with ordinary modal")
+	app.modal = false
+	hunt.speed = 2.0
+	for frame in range(30):
+		hunt._process(1.0/60.0)
+		if not hunt.stone.active: break
+	_check(hunt.stone_last_result == "hit" and raw_rules.deer_hp == 42 and hunt.hit_kind == "sling_contact","Actual stationary deer anatomy receives one 58 damage hit and contact FX")
+	hunt._process(.10)
+	_check(raw_rules.deer_hp == 42,"No second damage event after contact")
+	hunt.speed=1.0
+	raw_rules.charges[Rules.SAEBOM]=3.0
+	raw_rules.orb_lock=0.0
+	raw_rules.action_lock=0.0
+	caster_hud.portrait_button.pressed.emit()
+	for frame in range(30):
+		hunt._process(1.0/60.0)
+		if hunt.stone.active: break
+	_check(hunt.stone.active,"Second ordinary stone launched for moving anatomy miss")
+	# The current production fight has no lateral dodge. Move the actual enemy
+	# actor to an intentionally disjoint in-plane position, then tick its stone
+	# solver independently of the scripted normal actor placement.
+	hunt.deer.position += Vector2(135,104)
+	for frame in range(34):
+		hunt._update_saebom_stone(1.0/60.0,hunt.pose_clock)
+		if not hunt.stone.active: break
+	_check(hunt.stone_last_result == "miss" and raw_rules.deer_hp == 42 and raw_rules.pending_damage == 0,"Moved target yields a true stone miss and cancels queued damage")
 	var cleared := int(app.model.state.get("hunt_cleared", 0))
 	raw_rules.damage_deer(raw_rules.deer_hp)
 	hunt._process(.01)
@@ -166,6 +200,7 @@ func _screen_suite() -> void:
 	app.retry_hunt()
 	await process_frame
 	_check(app.hunt.rules.rally_remaining == [0.0,0.0,0.0],"Retry cannot leak an old buff")
+	_check(not app.hunt.stone.active and app.hunt.stone_trail.is_empty(), "Retry recreates a clean projectile state")
 	app.queue_free()
 	await process_frame
 

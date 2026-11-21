@@ -5,6 +5,21 @@ signal preparation_ready
 const Timing := preload("res://scripts/motion_timing.gd")
 const SkillHUD := preload("res://scripts/duel_skill_hud.gd")
 const HeadHUD := preload("res://scripts/battle_head_hud.gd")
+const StoneContact := preload("res://scripts/hunt_production_projectile_contact.gd")
+const StoneGold := preload("res://scripts/hunt_duel_saebom_2p_effect.gd")
+const STONE_METRIC := 32.0
+const STONE_HEAVY_NATIVE_RELEASE := 3.566667
+var stone := StoneContact.new()
+var stone_previous_capsule: Dictionary
+var stone_trail := PackedVector2Array()
+var stone_origin := Vector2.ZERO
+var stone_hit_point := Vector2.ZERO
+var stone_hit_direction := Vector2.RIGHT
+var stone_hit_age := 2.0
+var stone_trail_age := 2.0
+var stone_last_result := ""
+var stone_glow: GradientTexture2D
+var stone_overlay: Control
 const SaebomRig := preload("res://scripts/hunt_production_saebom_rig.gd")
 const RallyBadge := preload("res://scripts/hunt_duel_bom_buff_badge.gd")
 var head_headers:Array=[]
@@ -941,6 +956,8 @@ func _process(delta: float) -> void:
 	if not arrival_finished:
 		advance_arrival(delta)
 	var elapsed := delta*speed
+	var actors_sampled := false
+	var previous_pose_clock := pose_clock
 	pose_clock += elapsed
 	basic_recoil = maxf(0.0,basic_recoil-elapsed)
 	hit_age += elapsed
@@ -954,7 +971,13 @@ func _process(delta: float) -> void:
 		# Tick existing boosts before a contact; a new release starts at a full five seconds.
 		rules.advance_rally_clock(elapsed)
 		var rally_releases := impact_pending and pose == "rally" and pose_clock >= IMPACT_SECONDS
-		if impact_pending and pose != "rally" and pose_clock >= (JumpMotion.JUMP_CONTACT_SECONDS if pose=="thrust" else IMPACT_SECONDS):
+		var sling_pending := impact_pending and pose == "team" and rules.attacker == RULES.SAEBOM
+		if sling_pending:
+			update_actors(actor_delta+elapsed)
+			actor_delta = 0.0
+			actors_sampled = true
+			_update_saebom_stone(elapsed, previous_pose_clock)
+		if impact_pending and not sling_pending and pose != "rally" and pose_clock >= (JumpMotion.JUMP_CONTACT_SECONDS if pose=="thrust" else IMPACT_SECONDS):
 			var before_hp := rules.hunter_hp if pose == "counter" else rules.deer_hp
 			rules.resolve_attack()
 			hit_damage = before_hp - (rules.hunter_hp if pose == "counter" else rules.deer_hp)
@@ -990,12 +1013,133 @@ func _process(delta: float) -> void:
 		update_combat_ui(elapsed)
 		if not result_shown and not rules.outcome.is_empty() and not impact_pending and (pose!="thrust" or pose_clock>=JumpMotion.JUMP_SECONDS):show_result()
 	if result_shown: return
-	actor_delta += elapsed
+	if not actors_sampled:
+		actor_delta += elapsed
 	if actor_delta>=1.0/30.0:
 		update_actors(actor_delta)
 		actor_delta = 0.0
 	update_camera(delta)
+	stone_hit_age += elapsed
+	stone_trail_age += elapsed
+	if is_instance_valid(stone_overlay): stone_overlay.queue_redraw()
 	battlefield.queue_redraw()
+
+## Reduce each independent orthographic actor viewport to the same battlefield
+## coordinates: horizontal pixel, height above projected ground, ground depth.
+## This is a visible/anatomical proxy, not a shared Godot PhysicsServer world.
+func _stone_metric_point(camera:Camera3D, display:Sprite2D, world_point:Vector3) -> Vector3:
+	var inv := battlefield.get_global_transform().affine_inverse()
+	var visual := inv * display.to_global(camera.unproject_position(world_point))
+	var floor_point := inv * display.to_global(camera.unproject_position(Vector3(world_point.x,0.0,world_point.z)))
+	return Vector3(visual.x, floor_point.y - visual.y, floor_point.y) / STONE_METRIC
+
+func _stone_render_point(metric:Vector3) -> Vector2:
+	return Vector2(metric.x,metric.z-metric.y)*STONE_METRIC
+
+func _deer_stone_capsule() -> Dictionary:
+	if not is_instance_valid(deer) or rules.deer_hp <= 0 or not is_instance_valid(deer.rig):
+		return {}
+	var rig: Skeleton3D = deer.rig
+	var rear: int = rig.find_bone("body")
+	var front: int = rig.find_bone("neck")
+	if rear < 0 or front < 0:
+		return {}
+	rig.force_update_all_bone_transforms()
+	var a := _stone_metric_point(deer.camera,deer.display,rig.to_global(rig.get_bone_global_pose(rear).origin))
+	var b := _stone_metric_point(deer.camera,deer.display,rig.to_global(rig.get_bone_global_pose(front).origin))
+	if not a.is_finite() or not b.is_finite() or (a.y+b.y) <= .05:
+		return {}
+	var radius := clampf(a.distance_to(b)*.30,.21,.43)
+	return {"a":a, "b":b, "radius":radius}
+
+func _ensure_stone_overlay() -> void:
+	if is_instance_valid(stone_overlay):
+		return
+	stone_overlay = layer(battlefield)
+	stone_overlay.z_index = 2
+	stone_overlay.draw.connect(_draw_saebom_stone)
+	var gradient := Gradient.new()
+	gradient.offsets = PackedFloat32Array([0.0,.25,.57,1.0])
+	gradient.colors = PackedColorArray([Color.WHITE,Color(1,1,1,.65),Color(1,1,1,.15),Color(1,1,1,0)])
+	stone_glow = GradientTexture2D.new()
+	stone_glow.width = 128
+	stone_glow.height = 128
+	stone_glow.fill = GradientTexture2D.FILL_RADIAL
+	stone_glow.fill_from = Vector2(.5,.5)
+	stone_glow.fill_to = Vector2(1,.5)
+	stone_glow.gradient = gradient
+
+func _finish_saebom_stone(struck:bool, point:Vector2=Vector2.ZERO) -> void:
+	stone.cancel()
+	stone_previous_capsule = {}
+	impact_pending = false
+	stone_last_result = "hit" if struck else "miss"
+	stone_trail_age = 0.0
+	if not struck:
+		rules.pending_damage = 0
+		return
+	var before_hp := rules.deer_hp
+	rules.resolve_attack()
+	hit_damage = before_hp - rules.deer_hp
+	if hit_damage <= 0:
+		return
+	hit_age = 0.0
+	hit_kind = "sling_contact"
+	hit_on_hunter = false
+	hit_origin = stone_origin
+	hit_point = point
+	stone_hit_point = point
+	stone_hit_direction = stone_origin.direction_to(point)
+	stone_hit_age = 0.0
+	hit_label.text = "-%d" % hit_damage
+	basic_recoil = BASIC_RECOIL_TIME
+	hunt_audio.cue("S20",2)
+
+func _update_saebom_stone(delta:float, previous_time:float) -> void:
+	var current := _deer_stone_capsule()
+	var elapsed := delta
+	if not stone.active:
+		var rig := hunters[RULES.SAEBOM] as SaebomRig
+		if not is_instance_valid(rig) or not rig.has_anchor("sling_stone"):
+			_finish_saebom_stone(false)
+			return
+		var length:float = rig.animation.get_animation("sling_heavy").length
+		var release_time := RULES.POSE_SECONDS * STONE_HEAVY_NATIVE_RELEASE / maxf(STONE_HEAVY_NATIVE_RELEASE,length)
+		if pose_clock < release_time:
+			return
+		if current.is_empty():
+			_finish_saebom_stone(false)
+			return
+		rig.sample_native_release("skill",STONE_HEAVY_NATIVE_RELEASE)
+		var skeleton:Skeleton3D = rig.skeleton
+		var native:Vector3 = skeleton.to_global(skeleton.get_bone_global_pose(skeleton.find_bone("sling_stone")).origin)
+		var origin := _stone_metric_point(rig.camera,rig.display,native)
+		var aim:Vector3 = (current.a+current.b)*.5
+		if not stone.launch(origin,aim,14.0,7.0,{},.54,5.2,.065):
+			_finish_saebom_stone(false)
+			return
+		_ensure_stone_overlay()
+		stone_origin = _stone_render_point(origin)
+		stone_trail = PackedVector2Array([stone_origin])
+		stone_trail_age = 0.0
+		stone_previous_capsule = current
+		stone_last_result = "flight"
+		elapsed = minf(delta,maxf(0.0,pose_clock-maxf(previous_time,release_time)))
+	var result := stone.step(elapsed,stone_previous_capsule,current)
+	stone_previous_capsule = current
+	var endpoint := _stone_render_point(stone.position)
+	if stone_trail.is_empty() or endpoint.distance_to(stone_trail[-1]) > 1.5:
+		stone_trail.append(endpoint)
+		if stone_trail.size() > 9: stone_trail.remove_at(0)
+	if not result.is_empty():
+		var struck:bool = result.kind == "hit"
+		_finish_saebom_stone(struck,_stone_render_point(result.point) if struck else Vector2.ZERO)
+
+func _draw_saebom_stone() -> void:
+	if stone.active or stone_trail_age < .20:
+		StoneGold.draw_trail(stone_overlay,stone_glow,stone_trail,1.0 if stone.active else 1.0-stone_trail_age/.20)
+	if stone_hit_age <= 1.35:
+		StoneGold.draw_hit(stone_overlay,stone_glow,stone_hit_point,stone_hit_direction,stone_hit_age)
 
 func update_combat_ui(delta := 0.0) -> void:
 	var weight := 1.0-exp(-delta*15.0)
@@ -1159,7 +1303,7 @@ func draw_stage() -> void:
 	for hunter in hunters:
 		battlefield.draw_texture_rect(ALLY_RING,Rect2(hunter.position-Vector2(21.25,8.5),Vector2(42.5,17)),false)
 	battlefield.draw_texture_rect(ENEMY_RING,Rect2(deer.position-Vector2(26,10.25),Vector2(52,20.5)),false)
-	if hit_on_hunter or hit_damage <= 0: return
+	if hit_on_hunter or hit_damage <= 0 or hit_kind == "sling_contact": return
 	var duration := .28 if hit_kind == "team" else .24 if hit_kind == "strike" else .16
 	if hit_age >= duration: return
 	var fade := 1.0-hit_age/duration
