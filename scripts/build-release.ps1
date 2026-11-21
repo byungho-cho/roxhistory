@@ -4,12 +4,18 @@ param(
     [string]$AndroidSdkPath = $env:ANDROID_HOME,
     [string]$JavaHome = $env:JAVA_HOME,
     [string]$EditorSettingsPath,
-    [switch]$AndroidOnly
+    [switch]$AndroidOnly,
+    [switch]$Arm64Test
 )
 $ErrorActionPreference = 'Stop'
 $repo = Split-Path $PSScriptRoot -Parent
 $output = Join-Path $repo 'build'
 $logs = Join-Path $repo '.work/release-logs'
+if ($Arm64Test) {
+    $AndroidOnly = $true
+    $output = Join-Path $output 'arm64'
+    $logs = Join-Path $logs 'arm64'
+}
 if (-not $GodotPath) {
     $GodotPath = (Get-Command 'Godot_v4.5.1-stable_win64_console.exe' -ErrorAction Stop).Source
 }
@@ -65,11 +71,19 @@ Assert-Replaceable
 $variableNames = @('JAVA_HOME','GODOT_ANDROID_KEYSTORE_DEBUG_PATH','GODOT_ANDROID_KEYSTORE_DEBUG_USER','GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD')
 $savedEnvironment = @{}
 foreach ($name in $variableNames) { $savedEnvironment[$name] = [Environment]::GetEnvironmentVariable($name) }
+$presetPath = Join-Path $repo 'game/export_presets.cfg'
+$originalPreset = $null
 try {
     $env:JAVA_HOME = $JavaHome
     $env:GODOT_ANDROID_KEYSTORE_DEBUG_PATH = $key
     $env:GODOT_ANDROID_KEYSTORE_DEBUG_USER = $keyUser
     $env:GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD = $keyPassword
+    if ($Arm64Test) {
+        $originalPreset = [IO.File]::ReadAllBytes($presetPath)
+        $preset = [Text.Encoding]::UTF8.GetString($originalPreset)
+        if ($preset -notmatch '(?m)^architectures/x86_64=true\r?$') { throw 'The universal Android preset must enable x86_64 for the comparison.' }
+        [IO.File]::WriteAllText($presetPath,$preset.Replace('architectures/x86_64=true','architectures/x86_64=false'))
+    }
     foreach ($platform in $exports) {
         & $GodotPath --headless --path (Join-Path $repo 'game') --export-debug $platform.preset $platform.path *> (Join-Path $logs "$($platform.log)-export.log")
         if ($LASTEXITCODE -ne 0) { throw "$($platform.preset) export failed; existing release files have been preserved." }
@@ -80,6 +94,7 @@ try {
     if ($LASTEXITCODE -ne 0) { throw 'APK alignment verification failed.' }
     $metadata = & (Join-Path $tools 'aapt.exe') dump badging $pendingApk
     if ($LASTEXITCODE -ne 0 -or -not ($metadata -match "versionName='$([regex]::Escape($version))'")) { throw 'APK version verification failed.' }
+    if ($Arm64Test -and -not ($metadata -match "^native-code:\s+'arm64-v8a'\s*$")) { throw 'The test APK contains an unexpected Android ABI.' }
     $manifestTree = & (Join-Path $tools 'aapt.exe') dump xmltree $pendingApk AndroidManifest.xml
     if ($LASTEXITCODE -ne 0 -or -not ($manifestTree -match 'android.permission.POST_NOTIFICATIONS') -or -not ($manifestTree -match 'com.roxhistory.notifications.VillageAlarm')) {
         throw 'Android notification permission or receiver is missing from the APK.'
@@ -112,6 +127,7 @@ try {
     if (Test-Path -LiteralPath $sidecar) { Remove-Item -LiteralPath $sidecar }
     foreach ($file in $releaseFiles) { Write-Output "Ready: $file" }
 } finally {
+    if ($null -ne $originalPreset) { [IO.File]::WriteAllBytes($presetPath,$originalPreset) }
     foreach ($name in $variableNames) { [Environment]::SetEnvironmentVariable($name, $savedEnvironment[$name]) }
     $settings=$null; $keyPassword=$null
 }
