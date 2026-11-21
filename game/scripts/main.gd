@@ -2338,6 +2338,10 @@ func sync_audio() -> void:
 		hunt_popup = is_instance_valid(hunt.exit_popup)
 	audio.configure(sound, application_active, screen == "play",
 		modal or hunt_popup, screen == "region", screen == "title", hunt_music, world_map_open)
+	if screen=="intro":
+		# Do not leave a title/region crossfade audible beneath the authored intro.
+		for player in audio.scene_music_players.values():player.stop()
+		audio.bgm.stop()
 
 func toast(message: String, seconds: float = 3.0) -> void:
 	if is_instance_valid(toast_label): toast_label.text = message

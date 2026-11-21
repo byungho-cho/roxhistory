@@ -26,6 +26,8 @@ func run():
  check(timeline.players[0].stream.resource_path==app.INTRO_BGM_PATH and timeline.players[1].stream.resource_path==app.INTRO_SFX_PATH,"provided stems are the active players")
  check(app.stage.find_child("IntroMusicChoice",true,false)==null and app.settings.get_value("app","intro_bgm")==1,"legacy selector removed without rewriting old preference")
  check(await wait_for(func():return timeline.players[0].playing and timeline.players[1].playing,2),"both stems start on first playback")
+ app.audio.scene_music_players["title"].play();app.sync_audio()
+ check(not app.audio.scene_music_players["title"].playing and not app.audio.bgm.playing,"old title/region music cannot overlap candidate")
  var starts=timeline.starts.duplicate()
  app.settings.set_value("app","bgm_volume",0);app.settings.set_value("app","sfx_volume",37);app.sync_audio();await create_timer(.2).timeout
  var bgm=AudioServer.get_bus_index("BGM");var sfx=AudioServer.get_bus_index("SFX")
