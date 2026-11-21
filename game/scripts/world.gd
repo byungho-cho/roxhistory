@@ -348,7 +348,7 @@ func _process(_delta: float) -> void:
 		if indicator.reserved_by_other!=reserved:
 			indicator.reserved_by_other=reserved
 			icon.self_modulate=Color(.86,.88,.94,.86) if reserved else Color.WHITE
-		indicator.update_geometry(icon.texture.get_height()*icon.scale.y,player.camera.zoom.x)
+		indicator.update_zoom(player.camera.zoom.x)
 		indicator.visible=art_nodes[key].visible
 
 func _draw() -> void:
