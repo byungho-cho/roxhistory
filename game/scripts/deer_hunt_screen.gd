@@ -5,6 +5,7 @@ signal preparation_ready
 const Timing := preload("res://scripts/motion_timing.gd")
 const SkillHUD := preload("res://scripts/duel_skill_hud.gd")
 const HeadHUD := preload("res://scripts/battle_head_hud.gd")
+const SaebomRig := preload("res://scripts/hunt_production_saebom_rig.gd")
 const RallyBadge := preload("res://scripts/hunt_duel_bom_buff_badge.gd")
 var head_headers:Array=[]
 const MATCH := preload("res://scripts/hunt_match_art.gd")
@@ -168,12 +169,11 @@ func _ready() -> void:
 	actors.y_sort_enabled = true
 	battlefield.add_child(actors)
 	for index in 3:
-		var hunter: HybridCharacter = COMBAT_PREVIEW.new() if index == 1 else HangyeolJump.new() if index==0 else HybridCharacter.new()
-		if index == 2:hunter.model_path = HybridCharacter.MESHY_HUNT_MODEL
+		var hunter: HybridCharacter = COMBAT_PREVIEW.new() if index == 1 else HangyeolJump.new() if index==0 else SaebomRig.new()
 		hunter.render_size_factor = .5
 		actors.add_child(hunter)
 		hunter.set_enabled(true)
-		if index != 1: hunter.use_training_spear()
+		if index == 0: hunter.use_training_spear()
 		hunter.camera.position.y = 7.45
 		hunter.camera.look_at(Vector3(0,1.45,0))
 		hunter.display.position = -hunter.camera.unproject_position(Vector3.ZERO)*hunter.display.scale
@@ -1069,7 +1069,7 @@ func update_actors(delta: float) -> void:
 				hunter_field_bars[i].get_parent().visible = approach>=1.0
 				continue
 			hunter.stop_jump()
-		hunter.position = base + attack_direction*(lunge if attack else 10 if assisting else -18 if dodge else 0)*movement_beat
+		hunter.position = base + attack_direction*(lunge if attack and not hunter is SaebomRig else 10 if assisting and not hunter is SaebomRig else -18 if dodge else 0)*movement_beat
 		var heading := Vector2(1,.55).lerp(Vector2(1,.28),approach)
 		var approaching := transition_elapsed >= 0.0 and approach > 0.0 and approach < 1.0
 		if hunter is COMBAT_PREVIEW:
@@ -1081,6 +1081,19 @@ func update_actors(delta: float) -> void:
 			hunter_markers[i].position = hunter.position+Vector2(0,-63)
 			hunter_markers[i].visible = arrival_finished
 			hunter_field_bars[i].get_parent().visible = approach>=1.0
+			continue
+		if hunter is SaebomRig:
+			var motion := "skill" if attack and pose == "team" else "attack" if attack or assisting else ""
+			var facing := hunter.position.direction_to(deer.position) if approach >= 1.0 else heading
+			if approaching:
+				var travel := previous_position.distance_to(hunter.position)
+				female_approach_phase = fposmod(female_approach_phase + travel / maxf(1.0, 42.0 * hunter.scale.x) * TAU, TAU)
+			var motion_time: float = clampf(pose_clock/RULES.POSE_SECONDS, 0.0, 1.0) * hunter.motion_duration(motion)
+			hunter.animate(delta, facing, female_approach_phase if approaching else pose_clock * 12.0, dodge or approaching, motion, motion_time, false)
+			hunter.viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
+			hunter_markers[i].position = hunter.position+Vector2(0,-63)
+			hunter_markers[i].visible = arrival_finished
+			hunter_field_bars[i].get_parent().visible = approach >= 1.0
 			continue
 		var female := hunter.meshy_hunt_rig
 		var phase := pose_clock * 12.0

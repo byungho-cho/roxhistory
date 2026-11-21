@@ -109,6 +109,20 @@ func _screen_suite() -> void:
 	hunt.arrival_finished = true
 	hunt.transition_elapsed = -1.0
 	hunt.running = true
+	var saebom = hunt.hunters[Rules.SAEBOM]
+	_check(saebom.get_script().resource_path == "res://scripts/hunt_production_saebom_rig.gd" and saebom.character == "saebom","Normal hunt instantiates Saebom's authored 3D rig")
+	_check(saebom.has_anchor("sling_stone") and saebom.tool_3d.get_child_count() == 0,"Native sling stone is available; no generated training spear")
+	hunt.transition_elapsed = .3
+	hunt.approach = .35
+	hunt.update_actors(.05)
+	var approach_start: Vector2 = saebom.position
+	hunt.approach = .65
+	hunt.update_actors(.05)
+	_check(saebom.position.distance_to(approach_start) > 2.0 and saebom.animation.current_animation == "run","Saebom follows the existing movement path using authored run")
+	hunt.transition_elapsed = -1.0
+	hunt.approach = 1.0
+	hunt.update_actors(.05)
+	var saebom_settled: Vector2 = saebom.position
 	var caster_hud: Control = hunt.party_cards[Rules.SAEBOM].hud
 	var raw_rules = hunt.rules
 	raw_rules.party_hp[0] = 0
@@ -142,7 +156,9 @@ func _screen_suite() -> void:
 	raw_rules.charges[Rules.SAEBOM]=3.0
 	caster_hud.portrait_button.pressed.emit()
 	_check(raw_rules.pending_damage == 58 and raw_rules.charges[Rules.SAEBOM] == 1.0, "Real portrait light skill keeps the legacy 2SP attack")
+	hunt.speed = 1.0
 	hunt._process(.27)
+	_check(saebom.position.is_equal_approx(saebom_settled) and saebom.animation.current_animation == "sling_heavy","Legacy 2SP shows real sling motion without the old spear lunge")
 	var cleared := int(app.model.state.get("hunt_cleared", 0))
 	raw_rules.damage_deer(raw_rules.deer_hp)
 	hunt._process(.01)
