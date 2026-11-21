@@ -2,8 +2,8 @@ config_version=5
 
 [application]
 config/name="RoxHistory"
-config/version="0.2.287"
-config/build_date="2026.11.21"
+config/version="0.2.288"
+config/build_date="2026.11.22"
 config/icon="res://assets/app-icon-pioneer.png"
 run/main_scene="res://scenes/main.tscn"
 config/features=PackedStringArray("4.5", "GL Compatibility")
@@ -34,7 +34,7 @@ pointing/emulate_touch_from_mouse=false
 pointing/emulate_mouse_from_touch=false
 
 [roxhistory]
-distribution/full_apk_version="0.2.287"
+distribution/full_apk_version="0.2.288"
 
 inventory/capacity=64
 
