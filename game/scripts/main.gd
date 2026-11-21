@@ -29,6 +29,10 @@ var debug_shortcut:DemoButton
 var debug_shortcut_icon:TextureRect
 const HUNT_SELECTION := preload("res://scripts/hunt_stage_selection.gd")
 var hunt_stage := 0
+# Candidate-only route: disable to restore original deer for every saved stage.
+const HUNT_STAGE5_ADULT_CANDIDATE := true
+const HUNT_PREY_PROFILE := preload("res://scripts/hunt_production_prey_profile.gd")
+var hunt_prey_id := "forest"
 const HUNT_SCREEN := preload("res://scripts/deer_hunt_screen.gd")
 const INTRO_VIDEO_PATH := "res://assets/video/d0070/intro-visual.ogv"
 const IntroStems := preload("res://scripts/intro_audio_timeline.gd")
@@ -2383,16 +2387,25 @@ func open_hunt() -> void:
 	gestures.clear()
 	world.player.direction = Vector2.ZERO
 	hunt_stage = clampi(int(model.state.get("hunt_cleared",0)), 0, HUNT_SELECTION.TOTAL_STAGES - 1)
+	hunt_prey_id = "forest"
 	show_screen("hunt_select")
 
 func prepare_selected_hunt() -> void:
-	if screen != "hunt_select" or hunt_preparing or modal or hunt_stage > int(model.state.get("hunt_cleared", 0)):
+	var cleared := int(model.state.get("hunt_cleared", 0))
+	if screen != "hunt_select" or hunt_preparing or modal or hunt_stage < 0 or hunt_stage >= HUNT_SELECTION.TOTAL_STAGES or hunt_stage > cleared:
 		return
+	var selected_stage := hunt_stage
+	var requested_prey := HUNT_PREY_PROFILE.encounter_species(selected_stage, cleared, HUNT_STAGE5_ADULT_CANDIDATE)
+	var adult_path := HUNT_PREY_PROFILE.model_path("adult") if requested_prey == "adult" else ""
+	var adult_ready := false
+	hunt_prey_id = "forest"
 	hunt_preparing = true
 	hunt_preparation_cancelled = false
 	audio.cue("action_click")
 	toast("사냥터 준비 중…")
 	var paths := [HybridCharacter.MESHY_HUNT_MODEL, "res://assets/characters/residents/roxhistory-hunter-male-combat-v2-preview.glb", WorldAnimal.MODELS.deer]
+	if not adult_path.is_empty() and ResourceLoader.exists(adult_path, "PackedScene"):
+		paths.append(adult_path)
 	var pending: Array[String] = []
 	var warmed: Array[Resource] = []
 	for path: String in paths:
@@ -2403,14 +2416,18 @@ func prepare_selected_hunt() -> void:
 			var path := pending[index]
 			match ResourceLoader.load_threaded_get_status(path):
 				ResourceLoader.THREAD_LOAD_LOADED:
-					warmed.append(ResourceLoader.load_threaded_get(path))
+					var loaded := ResourceLoader.load_threaded_get(path)
+					warmed.append(loaded)
+					if path == adult_path:
+						adult_ready = loaded is PackedScene and (loaded as PackedScene).can_instantiate()
 					pending.remove_at(index)
 				ResourceLoader.THREAD_LOAD_FAILED, ResourceLoader.THREAD_LOAD_INVALID_RESOURCE:
 					pending.remove_at(index)
 	while not application_active and not hunt_preparation_cancelled:
 		await get_tree().process_frame
 	hunt_preparing = false
-	if not hunt_preparation_cancelled and screen=="hunt_select" and not modal and not world_map_open:
+	if not hunt_preparation_cancelled and screen=="hunt_select" and not modal and not world_map_open and selected_stage == hunt_stage and selected_stage <= int(model.state.get("hunt_cleared", 0)):
+		hunt_prey_id = "adult" if adult_ready else "forest"
 		toast_time = 0.0
 		show_screen("hunt")
 
@@ -2431,6 +2448,7 @@ func retry_hunt() -> void:
 func close_hunt() -> void:
 	if screen!="hunt":return
 	hunt = null
+	hunt_prey_id = "forest"
 	show_screen("hunt_select")
 
 func go_back() -> void:

@@ -44,6 +44,8 @@ const DESIGN := Vector2(960,540)
 const CLEARING := preload("res://assets/ui/hunting-formation/clearing-dirt.png")
 const ALLY_CELL := preload("res://assets/ui/hunting-formation/ally-cell.svg")
 const ENEMY_CELL := preload("res://assets/ui/hunting-formation/enemy-cell.svg")
+const NativeBoar := preload("res://scripts/hunt_production_boar_actor.gd")
+const APPROVED_BOAR := preload("res://assets/ui/duel-hud/boar-selector.png")
 const APPROVED_DEER := preload("res://assets/ui/hunting-combat/png/common/deer-approved.png")
 const COMBAT_PREVIEW := preload("res://scripts/hunt_combat_preview.gd")
 const IMPACT_ART := "res://assets/ui/hunt-impact/"
@@ -160,6 +162,7 @@ var transition_elapsed := -1.0
 var combat_layout := false
 var hunters: Array[HybridCharacter] = []
 var deer: WorldAnimal
+var adult_markers: Dictionary
 var hunter_bar: TextureProgressBar
 var deer_bar: TextureProgressBar
 var running := false
@@ -208,11 +211,24 @@ func _ready() -> void:
 		hunter.camera.look_at(Vector3(0,1.45,0))
 		hunter.display.position = -hunter.camera.unproject_position(Vector3.ZERO)*hunter.display.scale
 		hunters.append(hunter)
-	deer = WorldAnimal.new()
-	deer.world_height = 90
-	deer.heading = -PI*.72
-	deer.position = DEER_SLOT
-	actors.add_child(deer)
+	if app.get("hunt_prey_id") == "adult":
+		var adult := NativeBoar.new()
+		adult.world_height = 90
+		adult.heading = -PI*.72
+		adult.position = DEER_SLOT
+		actors.add_child(adult)
+		if adult.is_native_ready():
+			deer = adult
+			adult_markers = adult.native_markers()
+		else:
+			adult.queue_free()
+			app.set("hunt_prey_id","forest")
+	if not is_instance_valid(deer):
+		deer = WorldAnimal.new()
+		deer.world_height = 90
+		deer.heading = -PI*.72
+		deer.position = DEER_SLOT
+		actors.add_child(deer)
 	deer.camera.position.y = 7.0
 	deer.camera.look_at(Vector3(0,1,0))
 	deer.update_geometry()
@@ -395,11 +411,14 @@ func build_preparation_plaque() -> void:
 	brush.modulate.a = .8
 	caption(bag,"가방",Rect2(4,43,48,17),12)
 
+func _portrait_for_prey() -> Texture2D:
+	return APPROVED_BOAR if deer is NativeBoar else APPROVED_DEER
+
 func build_power_comparison() -> void:
 	MATCH.picture(power_header,preload(PREP_ART+"power-comparison-background.svg"),Rect2(-195,2.5,390,82.5))
 	prep_ally_portrait = app.picture(power_header,hunter_portrait(selected_hunter),Rect2(-101,15,52,52))
-	# This encounter's actual opponent is the deer instantiated above.
-	app.picture(power_header,APPROVED_DEER,Rect2(50,8,50,66))
+	# Reflect the actual runtime actor, including a safe asset fallback.
+	app.picture(power_header,_portrait_for_prey(),Rect2(50,8,50,66))
 	header_spears = app.picture(power_header,preload(PREP_ART+"header-crossed-spears.png"),Rect2(-22,26,44,42))
 	# There is no stored rating. Read the real HP and basic damage for a display-only comparison.
 	var ratings := [RULES.MAX_HP*int(RULES.SKILLS.thrust.damage),rules.deer_max_hp*RULES.COUNTER_DAMAGE]
@@ -458,7 +477,7 @@ func build_duel_header() -> void:
 		text.add_theme_constant_override("outline_size",4)
 	duel_ally_portrait = app.picture(ally_hud,hunter_portrait(selected_hunter),Rect2(303,13,46,49))
 	duel_ally_portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	var deer_portrait: TextureRect = app.picture(enemy_hud,APPROVED_DEER,Rect2(701,11,54,52))
+	var deer_portrait: TextureRect = app.picture(enemy_hud,_portrait_for_prey(),Rect2(701,11,54,52))
 	deer_portrait.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	# This first encounter uses the same level on both portraits.
 	for badge in [[ally_hud,321],[enemy_hud,730]]:
@@ -515,7 +534,7 @@ func build_combat() -> void:
 		head_headers.append(head)
 		hunter_markers.append(head.panel)
 		hunter_field_bars.append(head.bar)
-	var enemy:=HeadHUD.create(combat_controls,"꽃사슴",false)
+	var enemy:=HeadHUD.create(combat_controls,"멧돼지" if deer is NativeBoar else "꽃사슴",false)
 	head_headers.append(enemy)
 	prey_hud=enemy.panel
 	prey_hp=enemy.bar
@@ -1047,7 +1066,7 @@ func _process(delta: float) -> void:
 ## Only an already scheduled counter into a genuinely near Saebom may occupy
 ## the safe finish pocket; the next different target releases it smoothly.
 func _update_saebom_prey_pocket(id:String) -> void:
-	if id != "counter" or approach < 1.0 or not is_instance_valid(deer):
+	if id != "counter" or approach < 1.0 or not is_instance_valid(deer) or deer is NativeBoar:
 		return
 	bom_prey_depart = Vector2.INF
 	if rules.attacker != RULES.SAEBOM or rules.party_hp[RULES.SAEBOM] <= 0:
@@ -1194,8 +1213,8 @@ func _deer_stone_capsule() -> Dictionary:
 	if not is_instance_valid(deer) or rules.deer_hp <= 0 or not is_instance_valid(deer.rig):
 		return {}
 	var rig: Skeleton3D = deer.rig
-	var rear: int = rig.find_bone("body")
-	var front: int = rig.find_bone("neck")
+	var rear: int = rig.find_bone("trunk" if deer is NativeBoar else "body")
+	var front: int = rig.find_bone("head" if deer is NativeBoar else "neck")
 	if rear < 0 or front < 0:
 		return {}
 	rig.force_update_all_bone_transforms()
@@ -1203,7 +1222,7 @@ func _deer_stone_capsule() -> Dictionary:
 	var b := _stone_metric_point(deer.camera,deer.display,rig.to_global(rig.get_bone_global_pose(front).origin))
 	if not a.is_finite() or not b.is_finite() or (a.y+b.y) <= .05:
 		return {}
-	var radius := clampf(a.distance_to(b)*.30,.21,.43)
+	var radius := clampf(a.distance_to(b)*.30,.32,.62) if deer is NativeBoar else clampf(a.distance_to(b)*.30,.21,.43)
 	return {"a":a, "b":b, "radius":radius}
 
 func _ensure_stone_overlay() -> void:
@@ -1455,7 +1474,8 @@ func update_actors(delta: float) -> void:
 	deer.heading = lerp_angle(-PI*.34,-PI*.35,approach)
 	deer.gait_phase = pose_clock*14
 	deer.clock += delta
-	deer.animate_rig(delta)
+	if deer is NativeBoar: _pose_adult_boar(deer,charge)
+	else: deer.animate_rig(delta)
 	prey_hud.position = deer.position + Vector2(0,-deer.world_height*deer.scale.y-15)
 	prey_hud.visible = arrival_finished
 	var points:Array=[]
@@ -1466,6 +1486,21 @@ func update_actors(delta: float) -> void:
 	for head in head_headers:head.panel.visible=arrival_finished and approach>=1.0
 	hunter_bar.hide()
 	deer_bar.hide()
+
+## Marks drive clips, never damage or scheduling.
+func _pose_adult_boar(adult:NativeBoar, charge:bool) -> void:
+	if adult_markers.is_empty():
+		return
+	if charge and pose_clock < RULES.POSE_SECONDS:
+		var reference:float = adult_markers.charge_contact_reference
+		var phase := lerpf(0.0,reference,pose_clock/IMPACT_SECONDS) if pose_clock <= IMPACT_SECONDS else lerpf(reference,float(adult_markers.charge_end),(pose_clock-IMPACT_SECONDS)/(RULES.POSE_SECONDS-IMPACT_SECONDS))
+		adult.sample_native_phase("charge",phase)
+	elif basic_recoil>0.0:
+		adult.sample_native_phase("hit", (1.0-basic_recoil/BASIC_RECOIL_TIME)*float(adult_markers.hit))
+	elif deer.walking>.20:
+		adult.sample_native_phase("approach",fposmod(deer.clock,float(adult_markers.approach)))
+	else:
+		adult.sample_native_phase("idle",fposmod(deer.clock,float(adult_markers.idle)))
 
 func draw_stage() -> void:
 	if arrival_finished and transition_elapsed<0 and not combat_layout:
