@@ -47,7 +47,9 @@ const ENEMY_CELL := preload("res://assets/ui/hunting-formation/enemy-cell.svg")
 const NativeBoar := preload("res://scripts/hunt_production_boar_actor.gd")
 const APPROVED_BOAR := preload("res://assets/ui/duel-hud/boar-selector.png")
 const APPROVED_DEER := preload("res://assets/ui/hunting-combat/png/common/deer-approved.png")
-const COMBAT_PREVIEW := preload("res://scripts/hunt_combat_preview.gd")
+const COMBAT_PREVIEW := preload("res://scripts/hunt_combat_preview.gd") # Legacy parry lab import.
+const Frontline := preload("res://scripts/hunt_production_frontline_rig.gd")
+const FRONTLINE_VISUAL_SCALE := 1.20
 const IMPACT_ART := "res://assets/ui/hunt-impact/"
 const BASIC_HIT := preload(IMPACT_ART+"basic-contact.svg")
 const HEAVY_HIT := preload(IMPACT_ART+"heavy-contact.svg")
@@ -62,7 +64,6 @@ var hit_damage := 0
 var hit_on_hunter := false
 var hit_label: Label
 const IMPACT_SECONDS := RULES.POSE_SECONDS * .5
-const HangyeolJump := preload("res://scripts/hangyeol_jump_preview.gd")
 const JumpMotion := preload("res://scripts/res011_lab_preview.gd")
 # Final 1920×1080 placement centers expressed in the 960×540 game canvas.
 const ALLY_CELLS := [Vector2(396.5,377.5),Vector2(422.75,321.75),Vector2(475.25,358.75),
@@ -169,7 +170,7 @@ var running := false
 var result_shown := false
 
 var pose_clock := 1.0
-var female_approach_phase := 0.0
+var hunt_stride_phases: Array[float] = [0.,0.,0.]
 const BASIC_RECOIL_TIME := 0.19
 var basic_recoil := 0.0
 var actor_delta := 0.0
@@ -202,11 +203,10 @@ func _ready() -> void:
 	actors.y_sort_enabled = true
 	battlefield.add_child(actors)
 	for index in 3:
-		var hunter: HybridCharacter = COMBAT_PREVIEW.new() if index == 1 else HangyeolJump.new() if index==0 else SaebomRig.new()
+		var hunter: HybridCharacter = Frontline.create("uram") if index == 1 else Frontline.create("hangyeol") if index==0 else SaebomRig.new()
 		hunter.render_size_factor = .5
 		actors.add_child(hunter)
 		hunter.set_enabled(true)
-		if index == 0: hunter.use_training_spear()
 		hunter.camera.position.y = 7.45
 		hunter.camera.look_at(Vector3(0,1.45,0))
 		hunter.display.position = -hunter.camera.unproject_position(Vector3.ZERO)*hunter.display.scale
@@ -1024,7 +1024,7 @@ func _process(delta: float) -> void:
 				hit_kind = pose
 				hit_on_hunter = pose == "counter"
 				var attacker := hunters[rules.attacker]
-				hit_origin = attacker.contact_point() if attacker is COMBAT_PREVIEW or attacker is HangyeolJump else attacker.position + (attacker.tool_contact_world()-attacker.global_position)*attacker.scale
+				hit_origin = _hunter_contact_canvas(attacker)
 				hit_point = hit_origin if hit_on_hunter else deer.position+Vector2(-18,-37)
 				hit_label.text = "−%d" % hit_damage
 			impact_pending = false
@@ -1352,6 +1352,14 @@ func update_camera(delta: float) -> void:
 	ground.position = (size-size*ground.scale)*.5 + (battlefield.position + DESIGN*(battlefield.scale-Vector2.ONE)*.5)*canvas.scale
 	ground.position = ground.position.clamp(size-size*ground.scale,Vector2.ZERO)
 
+func _hunter_contact_canvas(actor:HybridCharacter) -> Vector2:
+	var world:Vector2 = actor.tool_contact_world()
+	if actor is Frontline.Han or actor is Frontline.Uram:
+		world = actor.contact_point()
+	elif actor is SaebomRig:
+		world = actor.stone_world()
+	return battlefield.get_global_transform().affine_inverse()*world
+
 func update_actors(delta: float) -> void:
 	if absf(camera_progress-approach)>.001:
 		camera_progress = approach
@@ -1363,53 +1371,49 @@ func update_actors(delta: float) -> void:
 		deer.camera.look_at(Vector3(0,1,0))
 		deer.update_geometry()
 	var movement_beat := sin(clampf(pose_clock/RULES.POSE_SECONDS,0,1)*PI)
-	var beat := sin(Timing.combat_phase(pose_clock/RULES.POSE_SECONDS)*PI)
 	var basic_attack := pose in ["thrust","auto_thrust"]
 	for i in hunters.size():
 		var hunter := hunters[i]
+		var side_han_jump := i == 0 and running and pose == "thrust" and pose_clock < JumpMotion.JUMP_SECONDS
 		var attack := running and pose_clock<RULES.POSE_SECONDS and pose in ["thrust","auto_thrust","strike","team"] and i == rules.attacker
 		var dodge := running and pose=="counter" and pose_clock<RULES.POSE_SECONDS and i == rules.attacker
 		var placed: Vector2 = ALLY_CELLS[assigned_cells[i]]
 		var battle_target := HUNTER_BATTLE_CENTER+(placed-FORMATION_CENTER)*.62
 		var base := placed.lerp(battle_target,approach)
-		hunter.scale = Vector2.ONE*lerpf(.60,.56,approach)
+		hunter.scale = Vector2.ONE*lerpf(.60,.56,approach)*(1.0 if i == RULES.SAEBOM else FRONTLINE_VISUAL_SCALE)
 		var lunge := 42 if basic_attack else 24
 		var assisting := running and pose == "team" and pose_clock < RULES.POSE_SECONDS and not attack and rules.party_hp[i]>0
 		var attack_direction := base.direction_to(DEER_SLOT)
 		var previous_position := hunter.position
-		if hunter is HangyeolJump:
-			if running and pose=="thrust" and pose_clock<JumpMotion.JUMP_SECONDS:
-				hunter.position = base
-				hunter.show_jump(base.direction_to(deer.position),pose_clock)
-				hunter_markers[i].position = base+Vector2(0,-63)
-				hunter_markers[i].visible = arrival_finished
-				hunter_field_bars[i].get_parent().visible = approach>=1.0
-				continue
-			hunter.stop_jump()
-		hunter.position = base + attack_direction*(lunge if attack and not hunter is SaebomRig else 10 if assisting and not hunter is SaebomRig else -18 if dodge else 0)*movement_beat
-		var heading := Vector2(1,.55).lerp(Vector2(1,.28),approach)
+		var shift := 0.0
+		if not side_han_jump and i != RULES.SAEBOM:
+			if attack: shift = lunge
+			elif assisting: shift = 10.0
+		if dodge: shift = -18.0
+		hunter.position = base + attack_direction*shift*movement_beat
+		var arrival_heading := Vector2(1,.55).lerp(Vector2(1,.28),approach)
 		var approaching := transition_elapsed >= 0.0 and approach > 0.0 and approach < 1.0
-		if hunter is COMBAT_PREVIEW:
-			var clip := "Spear_Thrust" if attack or assisting else "Hit_Reaction" if dodge and hit_on_hunter and hit_age < .26 else "Combat_Idle"
-			var progress := Timing.combat_phase(pose_clock/RULES.POSE_SECONDS) if clip=="Spear_Thrust" else clampf(hit_age/.26,0,1) if clip=="Hit_Reaction" else fposmod(hunter.clock,1.8)/1.8
-			hunter.clock += delta
-			hunter.show_combat_pose(hunter.position.direction_to(deer.position) if attack or assisting else heading,clip,progress)
-			hunter.viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
-			hunter_markers[i].position = hunter.position+Vector2(0,-63)
-			hunter_markers[i].visible = arrival_finished
-			hunter_field_bars[i].get_parent().visible = approach>=1.0
-			continue
-		if hunter is SaebomRig:
-			var close_phase := clampf(pose_clock / RULES.POSE_SECONDS, 0.0, 1.0)
+		var close_phase := clampf(pose_clock / RULES.POSE_SECONDS, 0.0, 1.0)
+		if approaching:
+			var travel := previous_position.distance_to(hunter.position)
+			hunt_stride_phases[i] = fposmod(hunt_stride_phases[i]+travel/maxf(1.0,42.0*hunter.scale.x)*TAU,TAU)
+		var approach_phase := hunt_stride_phases[i] if approaching else pose_clock*12.0
+		var facing := hunter.position.direction_to(deer.position) if approach >= 1.0 else arrival_heading
+		if i != RULES.SAEBOM:
+			var motion := ""
+			if side_han_jump: motion = "chain"
+			elif attack: motion = "skill" if pose == "strike" else "basic"
+			elif assisting: motion = "basic"
+			elif dodge: motion = "hit" if hit_on_hunter and hit_age < .26 else "guard"
+			var duration:float = hunter.clip_duration(motion)
+			var motion_time := duration*clampf(pose_clock/JumpMotion.JUMP_SECONDS,0.0,1.0) if side_han_jump else duration*close_phase
+			hunter.animate(delta,facing,approach_phase,approaching,motion,motion_time,false)
+		elif hunter is SaebomRig:
 			if pose == "team" and rules.attacker == RULES.SAEBOM and not bom_hop_offset.is_zero_approx():
 				hunter.position = _saebom_safe_position(base, base + bom_hop_offset * _saebom_hop_envelope(close_phase))
 			var motion := "skill" if attack and pose == "team" else "attack" if attack or assisting else ""
-			var facing := hunter.position.direction_to(deer.position) if approach >= 1.0 else heading
-			if approaching:
-				var travel := previous_position.distance_to(hunter.position)
-				female_approach_phase = fposmod(female_approach_phase + travel / maxf(1.0, 42.0 * hunter.scale.x) * TAU, TAU)
-			var motion_time: float = clampf(pose_clock/RULES.POSE_SECONDS, 0.0, 1.0) * hunter.motion_duration(motion)
-			hunter.animate(delta, facing, female_approach_phase if approaching else pose_clock * 12.0, dodge or approaching, motion, motion_time, false)
+			var motion_time: float = close_phase * hunter.motion_duration(motion)
+			hunter.animate(delta, facing, approach_phase, dodge or approaching, motion, motion_time, false)
 			if pose == "team" and rules.attacker == RULES.SAEBOM and bom_hop_strength > 0.0:
 				var crouch := smoothstep(0.0,.09,close_phase)*(1.0-smoothstep(.09,.18,close_phase))
 				var land := smoothstep(.31,.36,close_phase)*(1.0-smoothstep(.36,.49,close_phase))
@@ -1418,37 +1422,6 @@ func update_actors(delta: float) -> void:
 				hunter.pivot.position.y += bom_hop_strength*(.18*rise+.065*return_lift-.07*(crouch+land))
 			if attack and pose == "auto_thrust" and bom_shoving:
 				_pose_saebom_palm(hunter, close_phase)
-			hunter.viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
-			hunter_markers[i].position = hunter.position+Vector2(0,-63)
-			hunter_markers[i].visible = arrival_finished
-			hunter_field_bars[i].get_parent().visible = approach >= 1.0
-			continue
-		var female := hunter.meshy_hunt_rig
-		var phase := pose_clock * 12.0
-		if female:
-			if approaching:
-				var travel := previous_position.distance_to(hunter.position)
-				female_approach_phase = fposmod(female_approach_phase + travel / (hunter.stride_world_length() * hunter.scale.x) * TAU, TAU)
-			phase = female_approach_phase if not dodge else pose_clock * 12.0
-		hunter.animate(delta, heading, phase, dodge or approaching, "" if female or not attack else "hunt", Timing.combat_phase(pose_clock/RULES.POSE_SECONDS)*HeroMotion.CYCLE if attack else pose_clock, false)
-		if female or (not attack and not dodge):
-			hunter.blend_bone("spine",Vector3(.21,0,-.09),.65)
-			hunter.blend_bone("armR",Vector3(-.48,0,-.2),.65)
-			hunter.blend_bone("forearmR",Vector3(-.63,0,0),.65)
-		if attack and female:
-			# Keep the spear attached to the right hand throughout the thrust.
-			hunter.blend_bone("spine", Vector3(.34, -.21, -.09), beat)
-			hunter.blend_bone("armR", Vector3(-1.39, 0.0, -.2), beat)
-			hunter.blend_bone("forearmR", Vector3(-.14, 0.0, 0.0), beat)
-			hunter.blend_bone("armL", Vector3(-.43*beat, 0.0, .25*beat), beat)
-		elif attack:
-			hunter.blend_bone("spine",Vector3(.10+beat*.12,0,-.08),.9)
-			hunter.blend_bone("armR",Vector3(-.88-beat*.38,0,-.15),1)
-			hunter.blend_bone("forearmR",Vector3(-.95+beat*.75,0,0),1)
-		if assisting:
-			hunter.blend_bone("spine", Vector3(.30, .08, -.09), beat)
-			hunter.blend_bone("armL", Vector3(-.75, 0.0, .18), beat)
-		hunter.tool_3d.visible = true
 		hunter.viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
 		hunter_markers[i].position = hunter.position+Vector2(0,-63)
 		hunter_markers[i].visible = arrival_finished
@@ -1520,7 +1493,7 @@ func draw_stage() -> void:
 	var fade := 1.0-hit_age/duration
 	if hit_kind == "team":
 		for hunter in hunters:
-			var from: Vector2 = hunter.contact_point() if hunter is COMBAT_PREVIEW else hunter.position+(hunter.tool_contact_world()-hunter.global_position)*hunter.scale
+			var from: Vector2 = _hunter_contact_canvas(hunter)
 			var direction := from.direction_to(hit_point)
 			var tail := hit_point-direction*minf(50,from.distance_to(hit_point))
 			battlefield.draw_line(tail,hit_point,Color(.25,.91,.87,.26*fade),6,true)
