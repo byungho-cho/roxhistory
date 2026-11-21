@@ -269,7 +269,8 @@ func render_poses(lab,delta:float)->Array:
 			facing[side]=lerp_angle(facing[side],heading,minf(1,delta*18)) if delta>0 else heading
 		p.pivot.rotation.y=facing[side]
 		# Reuse D0070 recovery blending and death-before-reward presentation.
-		lab.presentation.sample(actor,side,key,age,INF if lab.approach_active else float(lab.next_attack[side])-lab.rules.elapsed,delta,false)
+		var pose_age:float=lab.Accent.chain_pose(age,actor.duration) if side==0 and key=="chain" else age
+		lab.presentation.sample(actor,side,key,pose_age,INF if lab.approach_active else float(lab.next_attack[side])-lab.rules.elapsed,delta,false)
 		var sk:Skeleton3D=p.skeleton
 		var root:int=p.root_bone if side==0 else p.root_index
 		var root_pose:=sk.get_bone_pose_position(root);var rest:=sk.get_bone_rest(root).origin

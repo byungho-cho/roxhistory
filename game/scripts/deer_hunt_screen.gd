@@ -3,6 +3,9 @@ extends Control
 signal preparation_ready
 
 const Timing := preload("res://scripts/motion_timing.gd")
+const SkillHUD := preload("res://scripts/duel_skill_hud.gd")
+const HeadHUD := preload("res://scripts/battle_head_hud.gd")
+var head_headers:Array=[]
 const MATCH := preload("res://scripts/hunt_match_art.gd")
 const RULES := preload("res://scripts/deer_hunt_rules.gd")
 const DESIGN := Vector2(960,540)
@@ -470,50 +473,22 @@ func build_combat() -> void:
 	combat = layer()
 	combat.hide()
 	combat_controls = layer(combat)
-	var tray := plaque(combat_controls,Rect2(366,444,228,93),Color(.21,.16,.10,.72),Color(.56,.43,.26,.65))
 	for index in hunters.size():
-		var card := MATCH.layer(tray,Vector2(9.5+71.5*index,15))
-		card.size = Vector2(66,66)
-		card.name = "CombatCard%d"%index
-		var portrait := MATCH.picture(card,CARD_PORTRAITS[index],Rect2(0,0,66,66))
-		var charge_icons: Array[TextureRect] = []
-		for slot in RULES.MAX_ORBS:
-			charge_icons.append(MATCH.picture(card,CHARGE_EMPTY,Rect2(6+19*slot,-9,16,6)))
-		var hp := TextureProgressBar.new()
-		hp.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		hp.position = Vector2(3,68)
-		hp.size = Vector2(60,8)
-		hp.nine_patch_stretch = true
-		hp.texture_under = CARD_TRACK
-		var fill := GradientTexture2D.new()
-		fill.gradient = Gradient.new()
-		fill.gradient.colors = PackedColorArray([Color("74bb4f"),Color("459633")])
-		fill.width = 60
-		fill.height = 8
-		hp.texture_progress = fill
-		hp.max_value = RULES.PARTY_HP[index]
-		hp.value = hp.max_value
-		card.add_child(hp)
-		var highlight := plaque(card,Rect2(0,0,66,66),Color(1,.83,.35,0),Color(1,.85,.42,.95))
-		highlight.hide()
-		var skill := make_button(tray,"",Rect2(card.position+Vector2(12,-49),Vector2(42,42)),use_skill.bind(RULES.PARTY_SKILLS[index]),"")
-		clear_button_art(skill)
-		skill.focus_mode = Control.FOCUS_NONE
-		skill.pivot_offset = skill.size*.5
-		MATCH.picture(skill,CARD_SKILLS[index],Rect2(Vector2.ZERO,skill.size))
-		skill.hide()
-		party_cards.append({"button":skill,"portrait":portrait,"charges":charge_icons,"hp":hp,
-			"highlight":highlight,"skill_origin":skill.position,"skill_age":0.0})
-	prey_hud = layer(battlefield)
-	prey_hud.hide()
-	build_level(prey_hud,false)
-	prey_hp = hp_bar(layer(prey_hud),Rect2(-29.6,3,59.2,11.84),false)
-	for hunter in hunters:
-		var marker := layer(battlefield)
-		marker.hide()
-		hunter_markers.append(marker)
-		build_level(marker,true)
-		hunter_field_bars.append(hp_bar(layer(marker),Rect2(-18.4,0,36.8,7.36),true))
+		var hud:=SkillHUD.new()
+		hud.position=Vector2(354.6+92.4*index,437)
+		combat_controls.add_child(hud)
+		hud.reset(["hangyeol","uram","saebom"][index])
+		hud.requested.connect(func(action:String):use_skill(RULES.PARTY_SKILLS[index],2 if action=="skill" else 3))
+		party_cards.append({"hud":hud,"button":hud.chain_button,"portrait":hud.portrait,"charges":hud.orbs,"hp":hud.hp})
+		var head:=HeadHUD.create(combat_controls,["한결","우람","새봄"][index],true)
+		head_headers.append(head)
+		hunter_markers.append(head.panel)
+		hunter_field_bars.append(head.bar)
+	var enemy:=HeadHUD.create(combat_controls,"꽃사슴",false)
+	head_headers.append(enemy)
+	prey_hud=enemy.panel
+	prey_hp=enemy.bar
+	prey_hp.max_value=rules.deer_max_hp
 
 func build_level(marker: Control, ally: bool) -> void:
 	app.picture(marker,NAME_BRUSH,Rect2(-19,-16,38,13)).modulate.a = .8
@@ -568,7 +543,7 @@ func request_exit() -> void:
 	artwork_button(panel,Rect2(40,85,170,52),"종료","png/popup/exit-button-background.png",app.close_hunt).name = "ExitBattle"
 	artwork_button(panel,Rect2(227,85,170,52),"계속","png/popup/continue-button-background.png",resume_battle,Color("49321e")).name = "ContinueBattle"
 	# A touch that began before the popup must not activate an underlying skill.
-	for card in party_cards:card.button.clear()
+	for card in party_cards:card.hud.reset(card.hud.character)
 
 func fit_exit_shade() -> void:
 	if not is_instance_valid(exit_shade):return
@@ -697,7 +672,7 @@ func _input(event: InputEvent) -> void:
 		var span := previous.distance_to(other)
 		if span>1.0:
 			zoom = clampf(zoom*event.position.distance_to(other)/span,1.0,1.30)
-			for card in party_cards:card.button.clear()
+			for card in party_cards:card.hud.reset(card.hud.character)
 			get_viewport().set_input_as_handled()
 
 func _gui_input(event: InputEvent) -> void:
@@ -922,10 +897,10 @@ func advance_transition(delta: float) -> void:
 			icon.size = control.size
 			icon.texture = [preload(CARD_ART+"auto.png"),preload(CARD_ART+"x2.png")][i]
 		fit_layout()
-func use_skill(id: String) -> void:
+func use_skill(id: String, required_sp:int=3) -> void:
 	if not running or result_shown or exit_popup or app.modal or not app.application_active:return
 	var index := RULES.PARTY_SKILLS.find(id)
-	if index<0 or rules.orbs(index)<RULES.MAX_ORBS:return
+	if index<0 or rules.orbs(index)<required_sp:return
 	if not rules.use_skill(id):
 		hunt_audio.cue("S25")
 		return
@@ -1007,39 +982,7 @@ func update_combat_ui(delta := 0.0) -> void:
 	hunter_health_text.text = str(rules.hunter_hp)
 	deer_health_text.text = str(rules.deer_hp)
 	for i in party_cards.size():
-		var card: Dictionary = party_cards[i]
-		var alive := rules.party_hp[i]>0
-		var full := running and alive and rules.orbs(i)==RULES.MAX_ORBS
-		update_skill_box(card,full,delta)
-		card.button.disabled = not full or not rules.can_use(RULES.PARTY_SKILLS[i])
-		card.highlight.visible = full
-		card.portrait.modulate = Color.WHITE if alive else Color(.35,.35,.35,.85)
-		card.hp.value = rules.party_hp[i]
-		for slot in RULES.MAX_ORBS:
-			card.charges[slot].texture = CHARGE_FULL if alive and slot<rules.orbs(i) else CHARGE_EMPTY
-
-func update_skill_box(card: Dictionary, full: bool, delta: float) -> void:
-	var button: DemoButton = card.button
-	if not full:
-		if button.visible:button.clear()
-		button.hide()
-		card.skill_age = 0.0
-		return
-	button.show()
-	card.skill_age += delta / speed
-	var age: float = card.skill_age
-	var lift := 0.0
-	var grow := 1.0
-	if age < .60:
-		var spring := exp(-age*7.0)*cos(TAU*4.5*age)
-		lift = spring*16.0
-		grow = 1.0-spring*.28
-	else:
-		var tick := pow(maxf(0.0,sin((age-.60)*TAU/1.8)),12.0)
-		lift = -2.0*tick
-		grow = 1.0+.045*tick
-	button.position = card.skill_origin+Vector2(0,lift)
-	button.scale = Vector2.ONE*grow
+		party_cards[i].hud.sync(rules.orbs(i),rules.party_hp[i],RULES.PARTY_HP[i],rules.party_hp[i]>0,running and rules.can_use(RULES.PARTY_SKILLS[i]),delta)
 
 func update_camera(delta: float) -> void:
 	var focus := Vector2(480,285).lerp(Vector2(495,305),approach)
@@ -1152,7 +1095,14 @@ func update_actors(delta: float) -> void:
 	deer.animate_rig(delta)
 	prey_hud.position = deer.position + Vector2(0,-deer.world_height*deer.scale.y-15)
 	prey_hud.visible = arrival_finished
-	prey_hp.get_parent().visible = approach>=1.0
+	var points:Array=[]
+	var transform:=combat_controls.get_global_transform().affine_inverse()*battlefield.get_global_transform()
+	for hunter in hunters:points.append(transform*(hunter.position+Vector2(0,-63)))
+	points.append(transform*(deer.position+Vector2(0,-deer.world_height*deer.scale.y-15)))
+	HeadHUD.layout(head_headers,points,Rect2(8,70,944,350))
+	for head in head_headers:head.panel.visible=arrival_finished and approach>=1.0
+	hunter_bar.hide()
+	deer_bar.hide()
 
 func draw_stage() -> void:
 	if arrival_finished and transition_elapsed<0 and not combat_layout:

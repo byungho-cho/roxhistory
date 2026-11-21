@@ -71,7 +71,7 @@ func run():
  lab.toggle_pause();step(lab.APPROACH_END+3)
  check(absf(lab.rules.sp-2.0)<.003,"3s SP cadence retained")
  check(lab.timer.get_theme_color("font_color")==Color("fff2d6") and lab.timer.get_theme_font_size("font_size")==13,"small ivory timer")
- check(hud.sp_label.get_theme_font_size("font_size")==13,"SP legibility")
+ check(not hud.sp_label.visible,"separate SP number removed by D0071")
  # Uram keeps its existing individual shield motion.
  lab._select("uram",false);lab.rules.sp=3;lab._try_player("chain")
  check(lab.a.clip_for("chain")=="parry" and lab.motion[0]=="chain","Uram individual parry preserved")

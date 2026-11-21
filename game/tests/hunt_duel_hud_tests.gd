@@ -28,7 +28,7 @@ func run():
  var hud=lab.skill_hud
  check(lab.a.key=="hangyeol" and lab.b.key=="forest","default matchup")
  check(not hud.badge.visible and not hud.chain_button.visible,"1SP hides both")
- check(hud.badge.size==hud.portrait_button.size*.5,"ordinary half width and height")
+ check(hud.badge.size.is_equal_approx(hud.portrait_button.size*.4),"ordinary40 percent")
  check(hud.chain_button.size.is_equal_approx(hud.portrait_button.size*.8),"chain 80 percent")
  await shot("01-initial-1sp")
  # Natural recharge: no testing SP cheat for 2→3 transition.
@@ -42,15 +42,16 @@ func run():
  check(hud.normal_ready and hud.chain_ready,"natural 3SP both")
  check(hud.normal_entries==1,"2 to 3 must not retrigger normal")
  check(hud.background.get_theme_stylebox("panel").bg_color==stable and is_equal_approx(hud.warm_glow.modulate.a,glow),"ordinary background stays fixed")
- var phase=hud.phase;step(.15)
- check(hud.phase!=phase,"only linked edge advances")
+ var touch_rect=hud.chain_button.get_global_rect();var phase=hud.phase;step(3.15)
+ check(hud.chain_button.get_global_rect()==touch_rect,"twitch never moves touch target")
+ check(hud.phase!=phase,"linked foreground clock advances")
  await shot("03-both-3sp")
  # Do not force idle: tap the live automatic-combat state.
  lab._refresh()
  await mouse_tap(hud.chain_button)
  check(lab.motion[0]=="chain" and lab.rules.sp==0,"mouse linked consumes only3")
  check(lab.cues.count("han_chain")==0 and lab.cues.count("han_skill")==0,"linked no portrait input")
- check(not hud.normal_ready and not hud.chain_ready and not hud.badge.visible and not hud.electricity.visible,"activation refresh same frame")
+ check(not hud.normal_ready and not hud.chain_ready and not hud.badge.visible and not hud.chain_button.visible,"activation refresh same frame")
  await shot("04-chain-activated")
  lab.reset_round();lab.advance(lab.APPROACH_END if lab.approach_active else 0.0);lab.rules.sp=3;lab._refresh(.6)
  await mouse_tap(hud.portrait_button)

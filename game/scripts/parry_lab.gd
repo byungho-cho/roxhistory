@@ -2,6 +2,12 @@ extends Control
 
 signal exited
 
+const SkillHUD:=preload("res://scripts/duel_skill_hud.gd")
+const HeadHUD:=preload("res://scripts/battle_head_hud.gd")
+const Accent:=preload("res://scripts/battle_presentation_accent.gd")
+var accent:=Accent.new()
+var common_cards:Array=[]
+var head_headers:Array=[]
 const Trial := preload("res://scripts/parry_trial.gd")
 const Hunt := preload("res://scripts/deer_hunt_screen.gd")
 const LabAudio := preload("res://scripts/hunt_audio.gd")
@@ -87,8 +93,8 @@ var touch_button: Button
 var report_finger := -1
 var report_drag_origin := 0.0
 var report_scroll_origin := 0.0
-var bars: Array[ProgressBar] = []
-var enemy_bar: ProgressBar
+var bars: Array[TextureProgressBar] = []
+var enemy_bar: TextureProgressBar
 var results: Panel
 var report_box: TextEdit
 var copied: Label
@@ -141,31 +147,28 @@ func _ready() -> void:
 	boar = Art.picture(canvas,preload("res://assets/ui/d0024/05-boar-settled-pose.png"),Rect2(0,0,94,70))
 	boar.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	boar.pivot_offset = Vector2(47,66)
-	enemy_bar = make_hp(Rect2(0,0,70,8),Color("c35c46"))
+
 	damage = make_label("",Rect2(0,0,76,32),20)
 	damage.modulate = Color("ffd494")
-	var tray := Panel.new()
-	tray.position = Vector2(328,438)
-	tray.size = Vector2(304,100)
-	tray.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	canvas.add_child(tray)
-	var names := ["우람","한결","새봄"]
+	boar.reparent(field,false)
+	stars.reparent(field,false)
+	damage.reparent(field,false)
 	for i in 3:
-		var x := 344.0+92.0*i
-		var card := make_button("",Rect2(x,445,86,86),use_skill.bind(i))
-		card.name = "SkillCard%d"%i
-		for style in ["normal","hover","pressed","disabled","focus"]:
-			card.add_theme_stylebox_override(style,StyleBoxEmpty.new())
-		Art.picture(card,Hunt.CARD_PORTRAITS[[1,0,2][i]],Rect2(0,0,86,86))
-		card.enable_art_feedback()
-		card_buttons.append(card)
-		for orb in 3:
-			Art.picture(canvas,Hunt.CHARGE_FULL,Rect2(x+14+21*orb,438,16,5))
-		skill_buttons.append(make_button("",Rect2(x+9,367,68,68),use_skill.bind(i)))
-		Art.picture(skill_buttons[i],SKILLS[i],Rect2(3,3,62,62))
-		skill_buttons[i].tooltip_text = ["우람 받아치기","한결 찌르기","새봄 협동"][i]
-		make_label(names[i],Rect2(x,506,86,23),14)
-		bars.append(make_hp(Rect2(x+6,532,74,7),Color("76ac55")))
+		var hud:=SkillHUD.new()
+		hud.position=Vector2(317+120*i,410)
+		hud.scale=Vector2.ONE*(86.0/66.0)
+		canvas.add_child(hud)
+		hud.reset(["uram","hangyeol","saebom"][i])
+		hud.requested.connect(func(_action:String):use_skill(i))
+		common_cards.append(hud)
+		card_buttons.append(hud.portrait_button)
+		skill_buttons.append(hud.chain_button)
+		var head:=HeadHUD.create(canvas,["우람","한결","새봄"][i],true)
+		head_headers.append(head)
+		bars.append(head.bar)
+	var enemy:=HeadHUD.create(canvas,"멧돼지",false)
+	head_headers.append(enemy)
+	enemy_bar=enemy.bar
 	lab_audio = LabAudio.new()
 	add_child(lab_audio)
 	lab_audio.streams["boar_warning"] = preload("res://assets/ui/d0024/06-sfx-boar-hoof.wav")
@@ -263,6 +266,9 @@ func select_mode(value: String) -> void:
 	if mode==value:
 		mode_buttons[value].set_pressed_no_signal(true)
 		return
+	accent.reset()
+	field.scale=Vector2.ONE
+	field.position=Vector2.ZERO
 	reset_test()
 	mode=value
 	mode_buttons[value].set_pressed_no_signal(true)
@@ -698,6 +704,9 @@ func retry_round() -> void:
 	elif mode=="motion" and not motion_clip.is_empty(): select_motion(selected_motion_key)
 
 func restart() -> void:
+	accent.reset()
+	field.scale=Vector2.ONE
+	field.position=Vector2.ZERO
 	lab_audio.update(false,false)
 	lab_audio.recent.clear()
 	lab_audio.update(app.audio.enabled,not app.application_active)
@@ -755,6 +764,7 @@ func advance_trial(now: int) -> void:
 	if previous_hit < 0 and trial.hangeul_hit >= 0: mark_contact("spear",now)
 
 func mark_contact(kind: String, now: int) -> void:
+	if kind=="parry":accent.parry_contact()
 	impacts.append({"kind":kind,"at":boar.position+Vector2(46,48),"start":now})
 	lab_audio.cue({"parry":"uram_parry","spear":"S16","cooperation":"S20"}[kind])
 
@@ -767,7 +777,8 @@ func draw_feedback() -> void:
 	if round_done or trial == null: return
 	var now := Time.get_ticks_msec()
 	if guide_target > 0:
-		var rect := Rect2(card_buttons[guide_target].position,card_buttons[guide_target].size).grow(3)
+		var hud:Control=common_cards[guide_target]
+		var rect := Rect2(hud.position,hud.portrait_button.size*hud.scale).grow(3)
 		feedback.draw_rect(rect,Color("eac47c"),false,1.6,true)
 		var progress := clampf(float(now-guide_at)/370.0,0.0,1.0)
 		if progress < 1.0 and not app.reduced_ui_motion():
@@ -775,6 +786,7 @@ func draw_feedback() -> void:
 			var edge := floori(progress*4.0)
 			var tail: Vector2 = corners[edge].lerp(corners[(edge+1)%4],fposmod(progress*4.0,1.0))
 			feedback.draw_circle(tail,4.0,Color(1,.86,.49,1.0-progress*.65),true,-1,true)
+	feedback.draw_set_transform(field.position,0,field.scale)
 	for impact in impacts:
 		var progress := clampf(float(now-int(impact.start))/250.0,0,1)
 		if progress >= 1.0: continue
@@ -786,6 +798,8 @@ func draw_feedback() -> void:
 			feedback.draw_line(from.lerp(at,progress*.65),at,Color(1,.9,.62,1.0-progress),2.5,true)
 		if impact.kind == "cooperation": extent *= Vector2(1.0,.59)
 		feedback.draw_texture_rect(texture,Rect2(at-extent*.5,extent),false,Color(1,1,1,1.0-progress))
+
+	feedback.draw_set_transform(Vector2.ZERO,0,Vector2.ONE)
 
 func show_damage(now: int, amount: int, ally: bool) -> void:
 	damage_at = now
@@ -816,6 +830,9 @@ func _process(delta: float) -> void:
 		advance_motion(delta)
 		return
 	if round_done or trial == null: return
+	accent.advance(delta)
+	field.scale=Vector2.ONE*accent.zoom
+	field.position=CONTACT*(1-accent.zoom)
 	frames += 1
 	lab_audio.update(app.audio.enabled,not app.application_active)
 	var now := Time.get_ticks_msec()
@@ -843,13 +860,12 @@ func refresh(now: int) -> void:
 	boar.scale = Vector2(1.0+crouch*.055,1.0-crouch*.14)
 	boar.self_modulate = Color(1.0+crouch*.21,1.0-crouch*.10,1.0-crouch*.19)
 	boar.rotation = sin(now*.025)*.08 if stun else 0.0
-	enemy_bar.position = boar_at-Vector2(35,74)
 	enemy_bar.value = trial.boar_hp
 	stars.visible = stun
 	stars.position = boar_at-Vector2(45,101)+Vector2(sin(now*.012)*9,cos(now*.012)*3)
 	var reacting := trial.input >= 0 and now-trial.input < 480
 	var defending := normal_at >= 0 and now-normal_at < 380
-	var brace_age := clampf(float(now-trial.input)/480.0,0,1) if reacting else 0.0
+	var brace_age := clampf(float(Accent.parry_pose_ms(now,trial.input)-trial.input)/480.0,0,1) if reacting else 0.0
 	var stepped := smoothstep(.18,.55,brace_age)
 	var recovery := 1.0-smoothstep(.65,1.0,brace_age)
 	var stop := CONTACT.lerp(boar_at,.65)-Vector2(18,-4)
@@ -868,17 +884,14 @@ func refresh(now: int) -> void:
 		actors[i].animate(1.0/60.0,movement,now*.001,false,"hunt" if attacking else "",age*.001,false)
 		bars[i].value = trial.party_hp if i == 1 else 100
 	bars[0].value = 100
-	skill_buttons[0].disabled = trial.input >= 0 or not trial.outcome.is_empty() or (now < trial.warning and trial.normal_defense)
-	card_buttons[0].disabled = skill_buttons[0].disabled
-	card_buttons[0].modulate = Color(1.35,1.23,.78) if trial.parry_window(now) else Color.WHITE
-	skill_buttons[0].modulate = card_buttons[0].modulate
-	for i in [1,2]:
-		var ready := trial.can_followup(i-1,now)
-		skill_buttons[i].disabled = not ready
-		skill_buttons[i].visible = ready
-		card_buttons[i].disabled = not ready
-		card_buttons[i].modulate = Color.WHITE
-		skill_buttons[i].scale = Vector2.ONE
+	var uram_ready:=trial.input<0 and trial.outcome.is_empty() and not(now<trial.warning and trial.normal_defense)
+	for i in 3:
+		var ready:bool=uram_ready if i==0 else trial.can_followup(i-1,now)
+		common_cards[i].sync(3 if ready else 1,int(bars[i].value),100,true,ready,1.0/60.0)
+	var heads:Array=[]
+	for actor in actors:heads.append(field.transform*(actor.position+Vector2(0,-70)))
+	heads.append(field.transform*(boar_at-Vector2(0,74)))
+	HeadHUD.layout(head_headers,heads,Rect2(8,178,944,220))
 	var target := -1
 	if trial.can_followup(0,now): target = 1
 	elif trial.hangeul_hit >= 0 and trial.can_followup(1,now): target = 2
@@ -894,6 +907,10 @@ func refresh(now: int) -> void:
 
 func end_round() -> void:
 	if round_done: return
+	accent.reset()
+	field.scale=Vector2.ONE
+	field.position=Vector2.ZERO
+	for hud in common_cards:hud.sync(1,100,100,true,false,0)
 	var now := Time.get_ticks_msec()
 	var elapsed := maxi(1,now-trial.start)
 	reports.append(trial.report(rounds,roundi(frames*1000.0/elapsed),now))

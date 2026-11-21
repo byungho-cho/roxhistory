@@ -10,6 +10,8 @@ const Hunt = preload("res://scripts/deer_hunt_screen.gd")
 const HuntArt = preload("res://scripts/hunt_match_art.gd")
 const Presentation = preload("res://scripts/duel_motion_presenter.gd")
 const SharedWorld = preload("res://scripts/duel_shared_world.gd")
+const HeadHUD = preload("res://scripts/battle_head_hud.gd")
+const Accent = preload("res://scripts/battle_presentation_accent.gd")
 const Ground = preload("res://assets/ui/hunting-formation/clearing-dirt.png")
 const UIFont = preload("res://assets/fonts/NotoSansKR.ttf")
 const SceneSize := Vector2(960,540)
@@ -73,6 +75,11 @@ var pool_index := 0
 var closing := false
 var approach_active := false
 var shared_world:SharedWorld
+var overhead:Array=[]
+var accent:=Accent.new()
+var camera_base_scale:=Vector2.ONE
+var camera_base_position:=Vector2.ZERO
+var chain_impact_frames:Array[Texture2D]=[]
 var contact_glow:GradientTexture2D
 var tip_trail:Array[Vector2]=[]
 
@@ -121,6 +128,7 @@ func _ready() -> void:
 		add_child(player)
 		audio_pool.append(player)
 	_setup_ui()
+	for i in 21:chain_impact_frames.append(load("res://assets/effects/d0071-chain/han_chain_impact_%02d.png"%i))
 	resized.connect(_fit)
 	_fit()
 	reset_round()
@@ -211,15 +219,8 @@ func _setup_ui() -> void:
 		selection_frames[key]=HuntArt.picture(item,preload("res://assets/ui/duel-hud/selection-gold.svg"),Rect2(0,0,44,44))
 		controls[key]=item
 	for i in 2:
-		var at:=Vector2(273+264*i,70)
-		_plaque(Rect2(at-Vector2(8,4),Vector2(172,36)))
-		name_labels.append(_label("",Rect2(at,Vector2(156,16)),11))
-		var bar:=TextureProgressBar.new();bar.position=at+Vector2(0,20);bar.size=Vector2(156,6)
-		bar.nine_patch_stretch=true;bar.step=0;bar.mouse_filter=MOUSE_FILTER_IGNORE
-		bar.texture_under=preload("res://assets/ui/hunting-combat/png/common/hp-track.png")
-		bar.texture_progress=preload("res://assets/ui/hunting-combat/png/common/hp-fill-ally.png") if i==0 else preload("res://assets/ui/hunting-combat/png/common/hp-fill-enemy.png")
-		arena.add_child(bar);bars.append(bar)
-	skill_hud=SkillHUD.new();skill_hud.position=Vector2(447,450);arena.add_child(skill_hud)
+		var header:=HeadHUD.create(arena,"",i==0);overhead.append(header);name_labels.append(header.label);bars.append(header.bar)
+	skill_hud=SkillHUD.new();skill_hud.position=Vector2(447,437);arena.add_child(skill_hud)
 	skill_hud.requested.connect(_try_player);skill_button=skill_hud.portrait_button;chain_button=skill_hud.chain_button
 	touch_buttons.append(chain_button);touch_buttons.append(skill_button)
 
@@ -284,6 +285,7 @@ func _select(key: String, enemy: bool) -> void:
 	reset_round()
 
 func reset_round() -> void:
+	accent.reset()
 	touch_pointer=-1;touch_target=null
 	rules.reset(rules.ally_id,rules.enemy_id)
 	for item in audio_pool:
@@ -359,10 +361,17 @@ func _refresh(delta := 0.0) -> void:
 	pause_button.tooltip_text="재개" if paused else "일시정지"
 	name_labels[0].text=ModelTest.NAMES[rules.ally_id]
 	name_labels[1].text="꽃사슴" if rules.enemy_id=="forest" else "큰 멧돼지"
+	_update_head_hud()
 	for key in controls:
 		var chosen:bool=key in [rules.ally_id,rules.enemy_id]
 		controls[key].set_pressed_no_signal(chosen)
 		selection_frames[key].visible=chosen
+
+func _update_head_hud()->void:
+	if a==null or b==null:return
+	var points:Array=[]
+	for actor in [a,b]:points.append(field.get_transform()*presentation.bone_point(actor,"head"))
+	HeadHUD.layout(overhead,points,Rect2(8,66,944,350))
 
 func _can_request()->bool:
 	return not paused and not approach_active and rules.living() and motion[0] in ["idle","walk","run","attack","hit"]
@@ -385,6 +394,7 @@ func _act(side: int, key: String) -> void:
 	var duration: float = actor.duration
 	contact_at[side] = duration * (.55 if key == "attack" else .63)
 	if is_instance_valid(shared_world):shared_world.begin_action(side,key)
+	if is_instance_valid(shared_world) and side==0 and key=="chain":accent.chain_started(duration)
 	if not is_instance_valid(shared_world) and side==0 and actor.key=="hangyeol" and key in ["attack","skill"]:
 		var travel := 0.0 if _prototype_duel() else 78.0
 		presentation.prepare_spear(actor,_settled_anchor(0),_position(1)-Vector2(0,33),contact_at[side],travel)
@@ -447,6 +457,9 @@ func _land(side: int, key: String,contact:Dictionary={}) -> void:
 	if is_instance_valid(shared_world):
 		motion_contact[side]=age[side] # Existing D0070 charge/impact FX now use contact time.
 		shared_world.apply_hit(defender,contact.normal,skill)
+		if side==0 and key=="chain":
+			accent.chain_contact()
+			_flash(impact_point,"han_chain_impact",Color.WHITE,.70)
 	# Forward approach moves the actor to its strike distance. Check the
 	# simulation positions at contact instead of firing a hit from a timer alone.
 	var origin := _position(side)
@@ -615,6 +628,7 @@ func _start_battle_camera()->void:
 		battle_camera.approach=smoothstep(.06,.98,clampf(time/Hunt.TRANSITION_SECONDS,0,1))
 		battle_camera.transition_elapsed=-1.0 if time>=Hunt.TRANSITION_SECONDS else time
 		battle_camera.update_camera(1.0/60.0)
+	camera_base_scale=field.scale;camera_base_position=field.position
 
 func _render_actors(delta:=0.0)->void:
 	if is_instance_valid(shared_world):
@@ -626,9 +640,17 @@ func _render_actors(delta:=0.0)->void:
 			if tip_trail.size()>7:tip_trail.pop_back()
 		elif motion[0] not in ["skill","chain"]:tip_trail.clear()
 		battle_camera.hunters.assign([a.preview]);battle_camera.rules.attacker=0
-		battle_camera.pose="strike" if start_cast_at>=0 and rules.elapsed-start_cast_at<.70 else ""
+		battle_camera.pose="strike" if start_cast_at>=0 and rules.elapsed-start_cast_at<.70 and accent.kind!="chain" else ""
 		battle_camera.pose_clock=(rules.elapsed-start_cast_at)/.70*Hunt.RULES.POSE_SECONDS
+		field.scale=camera_base_scale;field.position=camera_base_position
 		if delta>0:battle_camera.update_camera(delta)
+		camera_base_scale=field.scale;camera_base_position=field.position
+		var focus:Vector2=(_position(0)+_position(1))*.5
+		field.scale=camera_base_scale*accent.zoom
+		field.position=camera_base_position+camera_base_scale*focus*(1-accent.zoom)
+		if delta>0 and accent.zoom>1:
+			var center:Vector2=arena.position+(camera_base_position+camera_base_scale*focus)*arena.scale
+			ground.position=center+(ground.position-center)*accent.zoom;ground.scale*=accent.zoom
 		return
 	a.preview.position=_position(0);b.preview.position=_position(1)
 	if a.key=="hangyeol":
@@ -665,6 +687,7 @@ func _advance_shared(delta:float)->void:
 	while delta>.0000001:
 		var dt:=minf(delta,SharedWorld.FIXED_STEP);delta-=dt
 		visual_clock+=dt
+		accent.advance(dt)
 		if approach_active:
 			for side in 2:age[side]+=dt
 			shared_world.step(self,dt)
@@ -724,9 +747,15 @@ func _draw_contact_effects()->void:
 		var effect:=fx[i]
 		var p:float=(visual_clock-float(effect.at))/float(effect.duration)
 		if p>=1:fx.remove_at(i);continue
+		if effect.name=="han_chain_impact":
+			var index:=clampi(floori((visual_clock-float(effect.at))*30),0,20)
+			var factor:=.45
+			effects_layer.draw_texture_rect(chain_impact_frames[index],Rect2(effect.center-Vector2(192,243)*factor,Vector2(384,384)*factor),false)
+			continue
 		if not String(effect.name).begins_with("contact_"):continue
 		var basic:bool=effect.name=="contact_attack"
 		var strong:bool=effect.name=="contact_chain"
+		if strong and is_instance_valid(shared_world):continue # Replace only the shared-world pilot impact.
 		var at:Vector2=effect.center
 		var fade:=1.0-smoothstep(.05,1,p)
 		var extent:=Vector2(22,19) if basic else Vector2(74,58) if strong else Vector2(51,38)
