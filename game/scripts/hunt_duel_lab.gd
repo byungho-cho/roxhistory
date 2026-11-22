@@ -30,6 +30,7 @@ const HAN_SKILL_WINDUP_RATE := 3.25
 const HAN_SKILL_WINDUP_LIMIT := .73
 var entrance_scale := 1.0
 const START_GAP := 218.0
+const SPOTLIGHT_DIM := .228
 const ENGAGE_GAP := 66.0
 const FIRST_BASIC := [.23,.38]
 const BASIC_CADENCE := [3.05,3.43]
@@ -49,9 +50,13 @@ var local_formation_button:Button
 var show_final_test35 := false
 var local_test_charge:Button
 var local_formation_banner:Label
+var local_distance_buttons:Dictionary={}
+var local_top_hud_positions:Dictionary={}
+var local_version_stamp:Label
+var local_bottom_hud_shift:=0.0
 
 
-func _toggle_local_formation()->void:
+func _toggle_local_formation(distance_drill:String="")->void:
 	if is_instance_valid(local_formation):
 		_close_local_formation()
 		return
@@ -59,7 +64,14 @@ func _toggle_local_formation()->void:
 	local_formation.name="LocalHuntFormation"
 	arena.add_child(local_formation)
 	local_formation.setup(_draw_animal_launch_dust if wild_takeoff_dust else Callable(), _draw_uram_gong if uram_gong_test else Callable(), _draw_local_uram_contact if local_all_effects else Callable(), _draw_local_uram_windup if local_all_effects else Callable(), _draw_squad_authored if local_full_squad_effects else Callable(), _draw_silver_deer if local_squad_silver else Callable(), _draw_deer_impact if local_squad_silver else Callable(), _project_preview_ring if local_world_ring else Callable(), _draw_local_weapon_glow if local_shared_ranged else Callable(), 2.04 if local_melee_polish else (1.84 if local_shared_ranged else 1.15), _draw_bom_hit if local_saebom_latest else Callable(), _draw_bom_trail if local_saebom_latest else Callable(), _draw_bom_wings if local_saebom_latest else Callable(), _draw_bom_ally if local_saebom_latest else Callable(), _pose_bom_cast if local_saebom_latest else Callable(), local_melee_polish)
+	if local_melee_polish:
+		local_formation.configure_spotlight(_draw_local_parry_floor,_draw_local_parry_flash,_draw_parry_stars,LOCAL_PARRY_SLOW,.50)
+		local_formation.configure_uram_ground(_draw_squad_uram_ground)
+		local_formation.parry_spotlight_started.connect(_squad_spotlight_started)
+	if not distance_drill.is_empty():
+		local_formation.configure_saebom_distance_drill(distance_drill)
 	local_formation.set_input_paused(paused)
+	if local_melee_polish:local_formation.place_bottom_hud(local_bottom_hud_shift)
 	for audio in audio_pool:audio.stop()
 	field.hide()
 	skill_hud.hide()
@@ -69,7 +81,14 @@ func _toggle_local_formation()->void:
 		touch_buttons.append(hud.portrait_button)
 		touch_buttons.append(hud.chain_button)
 	local_formation_button.text="1:1"
+	if distance_drill=="far":
+		local_formation_banner.text="\uC6D0\uAC70\uB9AC  \uC2DC\uD5D8  /  \uC6B0\uB78C HP 22%"
+	elif distance_drill=="near":
+		local_formation_banner.text="\uADFC\uAC70\uB9AC  \uC2DC\uD5D8  /  \uC0C8\uBD04 vs \uAF43\uC0AC\uC2B4"
+	else:
+		local_formation_banner.text="3 : 3  \uC804\uD22C \uC2DC\uD5D8"
 	local_formation_banner.show()
+	_sync_local_distance_buttons()
 
 
 func _close_local_formation()->void:
@@ -81,6 +100,8 @@ func _close_local_formation()->void:
 	local_formation.hide()
 	local_formation.queue_free()
 	local_formation=null
+	ground.self_modulate=Color.WHITE
+	local_parry_caption.hide()
 
 	local_formation_button.text="\uBAA8\uB450"
 	local_formation_banner.hide()
@@ -237,6 +258,12 @@ func _local_ram_busy()->bool:
 	if not (_uram_deer_close() and is_instance_valid(shared_world)):return false
 	if local_parry_clock>=0.:return true
 	return shared_world.action_name[1]=="skill" and motion[1] in ["skill","hit","walk"]
+
+const URAM_BORDER_LEAD:=.50
+const URAM_BORDER_RATE:=3.0
+
+func _local_guard_pre_cue()->bool:
+	return _uram_deer_close() and is_instance_valid(shared_world) and rules.living() and not paused and not approach_active and motion[1]=="skill" and not shared_world.consumed[1] and age[1]>=SharedWorld.FOREST_PLANT_AT-URAM_BORDER_LEAD
 
 func _local_guard_accepting()->bool:
 	return _uram_deer_close() and is_instance_valid(shared_world) and rules.living() and not paused and not approach_active and motion[1]=="skill" and not shared_world.consumed[1] and age[1]>=SharedWorld.FOREST_PLANT_AT
@@ -414,8 +441,29 @@ func _fit() -> void:
 	arena.scale = Vector2.ONE * fit
 	arena.position = safe_start+(safe_size - SceneSize*fit)*.5
 	battle_camera.size=size
+	if local_melee_polish and fit>.0001:_place_expanded_test_hud(safe_size.y/fit,fit)
 	# Refit the painted ground without snapping the current combat camera ease.
 	battle_camera.update_camera(.000000000001)
+
+func _place_expanded_test_hud(visible_height:float,fit:float)->void:
+	# Battle presentation stays tied to the original centered 960x540 field.
+	# Only independent interactive controls can use the taller safe area.
+	var gutter:=maxf(0.,(visible_height-SceneSize.y)*.5)
+	const SAFE_INSET:=6.
+	var logical_to_physical:=float(get_window().size.y)/maxf(1.,get_viewport_rect().size.y)
+	var physical_per_unit:=maxf(.001,fit*logical_to_physical)
+	var top_shift:=minf(39./physical_per_unit,maxf(0.,gutter+10.-SAFE_INSET))
+	for control:Control in local_top_hud_positions:
+		control.position=Vector2(local_top_hud_positions[control])-Vector2(0.,top_shift)
+	const CARD_TOP:=406.
+	const CARD_VISUAL_BOTTOM:=531.
+	local_bottom_hud_shift=minf(50./physical_per_unit,maxf(0.,SceneSize.y+gutter-CARD_VISUAL_BOTTOM-SAFE_INSET))
+	if is_instance_valid(skill_hud):skill_hud.position.y=CARD_TOP+local_bottom_hud_shift
+	if is_instance_valid(local_formation):local_formation.place_bottom_hud(local_bottom_hud_shift)
+	if is_instance_valid(local_test_charge) and is_instance_valid(local_version_stamp):
+		var tools_shift:=minf(local_bottom_hud_shift,maxf(0.,SceneSize.y+gutter-533.-SAFE_INSET))
+		local_test_charge.position.y=448.+tools_shift
+		local_version_stamp.position.y=509.+tools_shift
 
 func _label(value: String, rect: Rect2, font_size: int) -> Label:
 	var item := Label.new()
@@ -457,6 +505,7 @@ func _button_art(button:Button,texture:Texture2D,span:float)->TextureRect:
 	return HuntArt.picture(button,texture,Rect2((button.size-Vector2.ONE*span)*.5,Vector2.ONE*span))
 
 func _setup_ui() -> void:
+	var first_top:=arena.get_child_count()
 	# Local backplates only; no full-width title/header covers the battlefield.
 	_plaque(Rect2(68,10,304,52))
 	_plaque(Rect2(774,17,66,30))
@@ -485,6 +534,10 @@ func _setup_ui() -> void:
 		var material:=ShaderMaterial.new();material.shader=preload("res://shaders/duel_selector_crop.gdshader");picture.material=material
 		selection_frames[key]=HuntArt.picture(item,preload("res://assets/ui/duel-hud/selection-gold.svg"),Rect2(0,0,44,44))
 		controls[key]=item
+	if local_melee_polish:
+		for index in range(first_top,arena.get_child_count()):
+			var control:Control=arena.get_child(index)
+			local_top_hud_positions[control]=control.position
 	for i in 2:
 		var header:=HeadHUD.create_compact(arena,i==0);overhead.append(header);name_labels.append(header.label);bars.append(header.bar)
 	skill_hud=SkillHUD.new();skill_hud.position=Vector2(447,437);arena.add_child(skill_hud);skill_hud.enable_duel_ready_feedback()
@@ -492,10 +545,11 @@ func _setup_ui() -> void:
 	skill_hud.requested.connect(_try_player);skill_button=skill_hud.portrait_button;chain_button=skill_hud.chain_button
 	touch_buttons.append(chain_button);touch_buttons.append(skill_button)
 	if wild_takeoff_dust or "--duel-local-test=25" in OS.get_cmdline_user_args() or "--duel-local-test=24" in OS.get_cmdline_user_args() or "--duel-local-test=23" in OS.get_cmdline_user_args() or "--duel-local-test=21" in OS.get_cmdline_user_args():
-		var test_stamp:=_label("TEST 44" if local_melee_polish else "TEST 34" if local_saebom_latest else "TEST 33" if local_shared_ranged else "TEST 32" if local_world_ring else "TEST 31" if local_squad_silver else "TEST 30" if local_full_squad_effects else "TEST 29" if local_all_effects else "TEST 28" if uram_generic_gong_test else "TEST 27" if uram_gong_test else "TEST 26" if wild_takeoff_dust else "TEST 25" if "--duel-local-test=25" in OS.get_cmdline_user_args() else "TEST 24" if "--duel-local-test=24" in OS.get_cmdline_user_args() else "TEST 23" if "--duel-local-test=23" in OS.get_cmdline_user_args() else "TEST 21",Rect2(846,509,94,24),13)
+		var test_stamp:=_label("TEST 48" if local_melee_polish else "TEST 34" if local_saebom_latest else "TEST 33" if local_shared_ranged else "TEST 32" if local_world_ring else "TEST 31" if local_squad_silver else "TEST 30" if local_full_squad_effects else "TEST 29" if local_all_effects else "TEST 28" if uram_generic_gong_test else "TEST 27" if uram_gong_test else "TEST 26" if wild_takeoff_dust else "TEST 25" if "--duel-local-test=25" in OS.get_cmdline_user_args() else "TEST 24" if "--duel-local-test=24" in OS.get_cmdline_user_args() else "TEST 23" if "--duel-local-test=23" in OS.get_cmdline_user_args() else "TEST 21",Rect2(846,509,94,24),13)
 		test_stamp.add_theme_color_override("font_shadow_color",Color.BLACK)
 		test_stamp.add_theme_constant_override("shadow_offset_y",1)
 		test_stamp.mouse_filter=Control.MOUSE_FILTER_IGNORE
+		local_version_stamp=test_stamp
 		var test_charge:=_button("",Rect2(881,448,60,60),_refill_local_test_sp)
 		test_charge.name="DuelTestCharge"
 		test_charge.add_theme_font_size_override("font_size",15)
@@ -511,12 +565,40 @@ func _setup_ui() -> void:
 		test_charge.mouse_exited.connect(func():orb.self_modulate=Color.WHITE)
 		local_test_charge=test_charge
 		if wild_takeoff_dust or "--duel-local-test=25" in OS.get_cmdline_user_args() or "--duel-local-test=24" in OS.get_cmdline_user_args():
-			_plaque(Rect2(379,16,78,39))
+			var formation_panel:=_plaque(Rect2(379,16,78,39))
+			if local_melee_polish:local_top_hud_positions[formation_panel]=formation_panel.position
 			local_formation_button=_button("\uBAA8\uB450",Rect2(381,17,74,37),_toggle_local_formation)
 			local_formation_button.name="DuelTestAll"
 			local_formation_button.add_theme_font_size_override("font_size",16)
 			local_formation_banner=_label("3 : 3  \uC804\uD22C \uC2DC\uD5D8",Rect2(365,78,230,25),16)
 			local_formation_banner.hide()
+			if local_melee_polish:
+				local_top_hud_positions[local_formation_button]=local_formation_button.position
+				local_top_hud_positions[local_formation_banner]=local_formation_banner.position
+			if local_melee_polish:
+				for mode in ["far","near"]:
+					var label:="\uC6D0\uAC70\uB9AC" if mode=="far" else "\uADFC\uAC70\uB9AC"
+					var left:=468.0 if mode=="far" else 560.0
+					var choice:=_button(label,Rect2(left,17,86,37),_start_saebom_distance_drill.bind(mode))
+					choice.name="SaebomDistanceFar" if mode=="far" else "SaebomDistanceNear"
+					choice.toggle_mode=true
+					choice.add_theme_font_size_override("font_size",16)
+					local_distance_buttons[mode]=choice
+					local_top_hud_positions[choice]=choice.position
+					choice.hide()
+
+func _sync_local_distance_buttons()->void:
+	var active:=""
+	if is_instance_valid(local_formation):active=local_formation.saebom_distance_drill
+	for mode in local_distance_buttons:
+		var choice:Button=local_distance_buttons[mode]
+		choice.visible=rules.ally_id=="saebom" and (active!="" or not is_instance_valid(local_formation))
+		choice.set_pressed_no_signal(active==mode)
+
+func _start_saebom_distance_drill(mode:String)->void:
+	if not local_melee_polish or rules.ally_id!="saebom" or mode not in ["far","near"]:return
+	if is_instance_valid(local_formation):_close_local_formation()
+	_toggle_local_formation(mode)
 
 func _refill_local_test_sp()->void:
 	if is_instance_valid(local_formation):
@@ -629,8 +711,9 @@ func _draw_authored_frames(origin:Vector2,elapsed:float,screen_size:float)->void
 
 func reset_round(after_fade:=false) -> void:
 	if is_instance_valid(local_formation):
+		var mode:String=local_formation.saebom_distance_drill
 		_close_local_formation()
-		_toggle_local_formation()
+		_toggle_local_formation(mode)
 		return
 	entrance_scale=REVIVAL_ENTRANCE_SCALE if after_fade else 1.0
 	deer_hud_anchor=Vector2.INF
@@ -728,7 +811,7 @@ func _refresh(delta := 0.0) -> void:
 	for i in 2:
 		bars[i].max_value = rules.full_hp(i)
 		bars[i].value = presentation.hp[i]
-	skill_hud.chain_border_speed=2.45 if _local_guard_accepting() else 1.0
+	skill_hud.chain_border_speed=URAM_BORDER_RATE if _local_guard_pre_cue() else 1.0
 	skill_hud.sync(rules.sp,rules.hp[0],rules.full_hp(0),rules.living(),_can_request(),delta)
 	skill_hud.hp.value=presentation.hp[0]
 	pause_caption.visible=paused;pause_icon.visible=not paused
@@ -744,6 +827,7 @@ func _refresh(delta := 0.0) -> void:
 		var chosen:bool=key in [rules.ally_id,rules.enemy_id]
 		controls[key].set_pressed_no_signal(chosen)
 		selection_frames[key].visible=chosen
+	_sync_local_distance_buttons()
 
 func _update_head_hud(delta:float)->void:
 	if a==null or b==null:return
@@ -812,7 +896,7 @@ func _try_player(key: String) -> void:
 		shared_world.knockback[0]=Vector3.ZERO
 		local_guard_action=shared_world.action_id[1] if honest_guard else -1
 		if honest_guard:shared_world.capture_forest_shield_input_face()
-	_act(0,key)
+	_act(0,"counter" if key=="chain" and _uram_deer_close() and not honest_guard else key)
 	_render_actors()
 	_refresh() # Consume SP and hide readiness in the same input frame.
 
@@ -829,7 +913,7 @@ func _act(side: int, key: String) -> void:
 		local_bom_rally_at=rules.elapsed+.96
 	if side==0 and key=="chain" and _saebom_aurora_active():
 		saebom_aurora_origin=_position(0)
-	if _prototype_duel() and is_instance_valid(shared_world) and side==0 and key=="chain":accent.chain_started(duration)
+	if _prototype_duel() and is_instance_valid(shared_world) and side==0 and key=="chain" and not _uram_deer_close():accent.chain_started(duration)
 	if not is_instance_valid(shared_world) and side==0 and actor.key=="hangyeol" and key in ["attack","skill"]:
 		var travel := 0.0 if _prototype_duel() else 78.0
 		presentation.prepare_spear(actor,_settled_anchor(0),_position(1)-Vector2(0,33),contact_at[side],travel)
@@ -957,7 +1041,7 @@ func _land(side: int, key: String,contact:Dictionary={}) -> void:
 		var axis:=origin.direction_to(target)
 		if bom_path.size()>1:axis=bom_path[bom_path.size()-2].direction_to(impact_point)
 		fx[-1]["forward"]=axis if axis.length_squared()>.0001 else origin.direction_to(target)
-	if local_all_effects and side==0 and a.key=="uram" and key=="skill":
+	if local_all_effects and side==0 and a.key=="uram" and key=="skill" and not (local_melee_polish and is_instance_valid(shared_world)):
 		_flash(impact_point,"local_uram_2p",Color.WHITE,2.04 if local_melee_polish else (1.84 if local_shared_ranged else 1.15))
 		fx[-1]["floor_point"]=_position(1)
 		fx[-1]["forward"]=origin.direction_to(target)
@@ -1003,7 +1087,7 @@ func _land(side: int, key: String,contact:Dictionary={}) -> void:
 			_flash(_position(0),"burst",Color("#ffad26"),.40)
 	if skill:
 		if _prototype_duel() and side==0:_sound("han_"+key)
-		if _uram_duel() and side==0 and key=="skill":_sound("uram_skill")
+		if _uram_duel() and side==0 and key=="skill" and not (local_melee_polish and is_instance_valid(shared_world)):_sound("uram_skill")
 		if _uram_duel() and side==0 and key=="counter":_sound("uram_basic")
 		_sound("ally_hit" if defender==0 else SoundNames[b.key]+"_hit")
 	if _prototype_duel() or _uram_duel() or _saebom_duel():
@@ -1038,6 +1122,15 @@ func _land(side: int, key: String,contact:Dictionary={}) -> void:
 		amount=roundi(float(amount)*1.2)
 	if rules.damage(defender,amount):
 		_die(defender)
+		return
+	if _uram_deer_close() and side==0 and key=="counter" and local_parry_clock<0.:
+		# Charged shield strike, not parry: only actual strike contact interrupts.
+		if motion[1]=="skill" and not shared_world.consumed[1]:
+			shared_world.consumed[1]=true
+			execute_at=-1.
+		next_attack[1]=maxf(next_attack[1],rules.elapsed+1.15)
+		_react(1,"hit")
+		_flash(impact_point,"uram_deer_stun",Color.WHITE,1.15)
 		return
 	# Do not cut off a concurrently committed attack for a cosmetic reaction.
 	if motion[defender] == "idle" or (defender==1 and motion[defender]=="walk" and is_instance_valid(shared_world)):
@@ -1125,6 +1218,9 @@ func _process(delta: float) -> void:
 func advance(delta: float) -> void:
 	if is_instance_valid(local_formation):
 		local_formation.tick(delta,paused)
+		if local_melee_polish:
+			ground.self_modulate=Color.WHITE.lerp(Color.BLACK,local_formation.spotlight_dim())
+			_show_squad_spotlight_caption(local_formation.spotlight_clock)
 		if local_melee_polish:
 			var caster:Dictionary=local_formation.units[2]
 			LocalBomBadge.sync(local_formation.huds[2],float(caster.rally)-local_formation.elapsed if caster.hp>0 else 0.0)
@@ -1235,7 +1331,7 @@ func _render_actors(delta:=0.0)->void:
 		if _prototype_duel() and accent.kind=="chain":focus.y-=27.0
 		ground.self_modulate=_duel_skill_ground_tint()
 		if local_parry_clock>=0.:
-			var dim:=.19*smoothstep(0.,.22,local_parry_clock)*(1.-smoothstep(1.57,LOCAL_PARRY_SLOW,local_parry_clock))
+			var dim:=SPOTLIGHT_DIM*smoothstep(0.,.22,local_parry_clock)*(1.-smoothstep(1.57,LOCAL_PARRY_SLOW,local_parry_clock))
 			ground.self_modulate=ground.self_modulate.lerp(Color.BLACK,dim)
 		han_chain_light.queue_redraw()
 		field.scale=camera_base_scale*accent.zoom
@@ -1359,7 +1455,10 @@ func _advance_shared(delta:float)->void:
 				if shared_world.deer_return_offset().length()<.005 or age[1]>=1.2:
 					_react(1,"idle")
 			elif motion[side] not in ["idle","death"] and age[side]>=actor.duration:
-				if _uram_deer_close() and side==0 and motion[0] in ["attack","skill"] and rules.living() and motion[1]!="skill" and shared_world.uram_attack_return_offset().length()>.10:
+				if _uram_deer_close() and side==0 and motion[0]=="chain":
+					local_guard_action=-1
+					_act(0,"counter")
+				elif _uram_deer_close() and side==0 and motion[0] in ["attack","skill"] and rules.living() and motion[1]!="skill" and shared_world.uram_attack_return_offset().length()>.10:
 					_react(0,"walk")
 				elif side==1 and rules.living() and motion[1] in ["attack","skill","hit"] and shared_world.action_name[1] in ["attack","skill"] and shared_world.deer_return_offset().length()>.045:
 					# The lunge and backwards hoof steps are one committed move.
@@ -2338,6 +2437,19 @@ func _local_club_tip()->Vector2:
 	var tip:=club.to_global(Vector3(club.get_aabb().end.x*.89,0,0))
 	return view.position+(view.display.position+view.camera.unproject_position(tip)*view.display.scale)*view.scale
 
+func _uram_ground_contact(world_origin:Vector3,target:Vector3)->void:
+	var origin:=shared_world.project(world_origin)
+	var finish:=shared_world.project(target*Vector3(1,0,1))
+	_flash(origin,"uram_ground_wave",Color.WHITE,1.04)
+	# Ground projection supplies exact direction/scale; the visual aftershock
+	# never supplies damage or a new target.
+	fx[-1]["end"]=origin+(finish-origin).limit_length(126.0)
+	_sound("uram_skill")
+
+func _draw_squad_uram_ground(origin:Vector2,finish:Vector2,t:float,layer:Node2D)->void:
+	_soft_light(origin,Vector2.ONE,Color.WHITE,.001,layer)
+	LocalUramHeavy.draw_ground_wave(layer,contact_glow,origin,finish,t,SharedWorld.URAM_FLOOR_TRAVEL)
+
 func _draw_local_uram_windup(tip:Vector2,p:float,layer:Node2D)->void:
 	_soft_light(tip,Vector2.ONE,Color.WHITE,.001,layer)
 	LocalUramHeavy.draw_windup(layer,contact_glow,tip,p)
@@ -2346,9 +2458,19 @@ func _draw_local_uram_contact(at:Vector2,ground:Vector2,forward:Vector2,t:float,
 	_soft_light(at,Vector2.ONE,Color.WHITE,.001,layer)
 	LocalUramHeavy.draw(layer,contact_glow,at,ground,forward,t,1.0,1.60 if local_shared_ranged else 1.0,local_melee_polish)
 
+func _squad_spotlight_started()->void:
+	if is_instance_valid(local_parry_thump):local_parry_thump.play()
+
+func _show_squad_spotlight_caption(t:float)->void:
+	var alpha:=smoothstep(.08,.28,t)*(1.-smoothstep(1.63,2.14,t)) if t>=0. else 0.
+	local_parry_caption.visible=alpha>.005
+	local_parry_caption.modulate.a=alpha
+
 func _draw_uram_deer_stun(progress:float)->void:
 	if not is_instance_valid(shared_world) or rules.hp[1]<=0:return
-	var top:=shared_world.bone_screen(1,"head")-Vector2(0,28)
+	_draw_parry_stars(shared_world.bone_screen(1,"head")-Vector2(0,28),progress,effects_layer)
+
+func _draw_parry_stars(top:Vector2,progress:float,layer:Node2D)->void:
 	var life:=1.0-smoothstep(.68,1.0,progress)
 	for i in 3:
 		var phase:=progress*TAU*1.3+float(i)*TAU/3.0
@@ -2356,11 +2478,11 @@ func _draw_uram_deer_stun(progress:float)->void:
 		var point:=top+Vector2(cos(phase)*20.0,depth*6.6)
 		var scale:=lerpf(.68,1.08,(depth+1.0)*.5)
 		var size:=Vector2(36,30)*scale
-		_soft_light(point,size,Color("ee9c35"),life*.70)
+		_soft_light(point,size,Color("ee9c35"),life*.70,layer)
 		var tint:=Color("f6bd55",life*lerpf(.67,1.0,(depth+1.0)*.5))
 		var points:=PackedVector2Array([point+Vector2(0,-4),point+Vector2(1.3,-1.1),point+Vector2(4,0),point+Vector2(1.3,1.1),point+Vector2(0,4),point+Vector2(-1.3,1.1),point+Vector2(-4,0),point+Vector2(-1.3,-1.1)])
 		for n in points.size():points[n]=point+(points[n]-point)*(2.0*scale)
-		effects_layer.draw_colored_polygon(points,tint)
+		layer.draw_colored_polygon(points,tint)
 
 func _draw_local_uram_floor()->void:
 	if not local_melee_polish:return
@@ -2376,7 +2498,11 @@ func _draw_local_uram_floor()->void:
 			_soft_light(foot+Vector2(2.,-1.),Vector2(74,20)*r,Color("d99d60"),.19*life,location_layer)
 	for effect in fx:
 		var forward:Vector2
-		if effect.name=="local_uram_2p":forward=effect.forward
+		if effect.name=="uram_ground_wave":
+			_soft_light(effect.center,Vector2.ONE,Color.WHITE,.001,location_layer)
+			LocalUramHeavy.draw_ground_wave(location_layer,contact_glow,effect.center,effect.end,visual_clock-float(effect.at),SharedWorld.URAM_FLOOR_TRAVEL)
+			continue
+		elif effect.name=="local_uram_2p":forward=effect.forward
 		elif effect.name=="uram_shield_contact" and _uram_deer_close():
 			if local_parry_clock>=0.:_draw_local_parry_floor(effect.floor_point,Vector2.from_angle(effect.forward_angle),local_parry_clock)
 			continue
@@ -2384,19 +2510,20 @@ func _draw_local_uram_floor()->void:
 		_soft_light(effect.floor_point,Vector2.ONE,Color.WHITE,.001,location_layer)
 		LocalUramHeavy.draw_readable_floor(location_layer,contact_glow,effect.floor_point,forward,visual_clock-float(effect.at))
 
-func _draw_local_parry_flash(center:Vector2,forward:Vector2,t:float)->void:
+func _draw_local_parry_flash(center:Vector2,forward:Vector2,t:float,layer:Node2D=null)->void:
+	var paint:=effects_layer if layer==null else layer
 	var power:=1.-smoothstep(.072,.39,t)
 	if power<.005:return
-	_soft_light(center,Vector2(94,65),Color("db791f"),power*.83,effects_layer)
-	_soft_light(center,Vector2(51,36),Color("ffb448"),power*.97,effects_layer)
-	_soft_light(center,Vector2(27,20),Color("fff0a9"),power,effects_layer)
-	_soft_light(center,Vector2(13,12),Color("fffdf0"),power,effects_layer)
-	effects_layer.draw_circle(center,3.1,Color(1.,.99,.88,power),true,-1.,true)
+	_soft_light(center,Vector2(94,65),Color("db791f"),power*.83,paint)
+	_soft_light(center,Vector2(51,36),Color("ffb448"),power*.97,paint)
+	_soft_light(center,Vector2(27,20),Color("fff0a9"),power,paint)
+	_soft_light(center,Vector2(13,12),Color("fffdf0"),power,paint)
+	paint.draw_circle(center,3.1,Color(1.,.99,.88,power),true,-1.,true)
 	for i in 7:
 		var theta:=forward.angle()+(i-3)*.55
 		var ray:=Vector2.from_angle(theta)
 		var point:=center+ray*(5.+t*86.)
-		effects_layer.draw_line(point,point+ray*(8.+float(i%3)*5.),Color(1.,.82,.49,power*.68),1.1,true)
+		paint.draw_line(point,point+ray*(8.+float(i%3)*5.),Color(1.,.82,.49,power*.68),1.1,true)
 
 func _load_approved_parry_asset()->void:
 	for index in 5:
@@ -2423,7 +2550,7 @@ func _load_approved_parry_asset()->void:
 				break
 		add_child(local_parry_thump)
 
-func _draw_local_parry_floor(point:Vector2,_forward:Vector2,t:float)->void:
+func _draw_local_parry_floor(point:Vector2,_forward:Vector2,t:float,layer:Node2D=null)->void:
 	if local_parry_sheets.size()!=5 or t<0. or t>=2.4:return
 	const CELL:=Vector2(433.,251.)
 	const DRAW_SCALE:=1.5
@@ -2432,7 +2559,8 @@ func _draw_local_parry_floor(point:Vector2,_forward:Vector2,t:float)->void:
 	var sheet:Texture2D=local_parry_sheets[id/16]
 	var area:=Rect2(Vector2(cell%4,cell/4)*CELL,CELL)
 	var destination:=Rect2(point-Vector2(206.,137.5)*DRAW_SCALE,CELL*DRAW_SCALE)
-	location_layer.draw_texture_rect_region(sheet,destination,area,Color.WHITE,false,true)
+	var paint:=location_layer if layer==null else layer
+	paint.draw_texture_rect_region(sheet,destination,area,Color.WHITE,false,true)
 
 
 func _draw_local_skill_effect(effect:Dictionary,p:float)->bool:

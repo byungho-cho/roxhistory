@@ -20,6 +20,13 @@ var originals:Array=[]
 var facing:=[0.0,0.0]
 var aim_bias:=[0.0,0.0]
 var aim_by_motion:Dictionary={}
+const URAM_FLOOR_CONTACT:=.84
+const URAM_FLOOR_TRAVEL:=.16
+var uram_floor_trace_advance:=0.0
+var uram_floor_original_tip:=Vector3.ZERO
+var uram_floor_hit:Dictionary={}
+var uram_floor_emitted:=false
+var uram_floor_emit_age:=-1.
 var action_origin:=[Vector3.ZERO,Vector3.ZERO]
 var previous_root:=[Vector3.ZERO,Vector3.ZERO]
 var previous_weapon:=[Vector3.ZERO,Vector3.ZERO]
@@ -152,6 +159,13 @@ func reset()->void:
 		previous_weapon[i]=weapon_point(i);previous_hurt.append(hurt_capsule(i))
 
 func begin_action(side:int,key:String)->void:
+	if side==0 and uram_pair:
+		uram_floor_trace_advance=0.0
+		uram_floor_original_tip=weapon_point(0)
+		uram_floor_hit.clear()
+		uram_floor_emitted=false
+		uram_floor_emit_age=-1.
+		if key=="skill":_capture_uram_feet()
 	if uram_forest_pair:
 		if side==1 and key=="skill":_capture_uram_feet()
 		if side==0:
@@ -159,7 +173,7 @@ func begin_action(side:int,key:String)->void:
 			if uram_basic_anchor:
 				uram_basic_feet_start=(bone_world(0,"foot.R")+bone_world(0,"foot.L"))*.5
 			if key=="chain" and uram_planted_feet.is_empty():_capture_uram_feet()
-			elif key not in ["chain","counter"]:uram_planted_feet.clear()
+			elif key not in ["chain","counter","skill"]:uram_planted_feet.clear()
 	if side==0 and saebom_pair and local_melee_polish:
 		var gap:=bodies[0].position.distance_to(bodies[1].position)
 		bom_close=saebom_close_at(gap,bom_close,1.52,1.82)
@@ -431,7 +445,11 @@ func render_poses(lab,delta:float)->Array:
 						_keep_uram_feet_anchored(sk)
 					if key=="chain" and toward.length_squared()>.001:
 						_aim_uram_forest_guard(sk,toward.normalized(),age,lab.uram_guard_active())
+				if local_melee_polish and key=="skill":_keep_uram_feet_anchored(sk)
 				p.update_equipment()
+				if local_melee_polish and key=="skill":
+					uram_floor_original_tip=weapon_point(0)
+					aim_uram_floor_club(p,toward.normalized(),sample_age)
 				if local_melee_polish and not uram_entry_shield_revealed:
 					# Entrants are still travelling toward the ring slots. Reveal
 					# the now-posed forearm shield only on actual face-off, once.
@@ -533,6 +551,9 @@ func deer_return_offset()->Vector3:
 func step(lab,delta:float,prior_han_age:float=-1.0)->Array[Dictionary]:
 	var old_hurt:=[hurt_capsule(0),hurt_capsule(1)]
 	var old_weapon:=[weapon_point(0),weapon_point(1)]
+	var old_floor_tip:=uram_floor_original_tip
+	var old_floor_advance:=uram_floor_trace_advance
+	var planted:bool=local_melee_polish and uram_pair and lab.motion[0]=="skill"
 	var old_shield:=_shield_transform() if uram_pair else Transform3D.IDENTITY
 	if forest_input_pending:
 		old_shield=forest_input_face
@@ -595,9 +616,13 @@ func step(lab,delta:float,prior_han_age:float=-1.0)->Array[Dictionary]:
 					var hop:=bom_hop*saebom_hop_envelope(float(lab.age[0])/maxf(.01,float(actors[0].duration)))
 					desired[0]+=bom_dir*(hop-bom_prev);bom_prev=hop
 			if uram_forest_pair and side==0 and key in ["attack","skill"]:
-				var walked:float=(bodies[0].position-action_origin[0]).dot(direction)
+				var walked:float=uram_floor_trace_advance if planted else (bodies[0].position-action_origin[0]).dot(direction)
 				forward=minf(forward,maxf(0.,(.50 if key=="attack" else 1.345)-walked))
-			desired[side]+=toward*minf(forward,maxf(0,distance-safe))
+			if planted and side==0:
+				# Keep former advancing weapon reach only as a non-rendered,
+				# bounded hit trace. The physical boot/root never follows it.
+				uram_floor_trace_advance+=minf(forward,maxf(0.,distance-uram_floor_trace_advance-safe))
+			else:desired[side]+=toward*minf(forward,maxf(0,distance-safe))
 		previous_root[side]=roots[side]
 		if key=="death":knockback[side]=Vector3.ZERO
 		desired[side]+=knockback[side]*delta
@@ -635,11 +660,25 @@ func step(lab,delta:float,prior_han_age:float=-1.0)->Array[Dictionary]:
 			var from:Vector3=(old_weapon[side]+shift).lerp(now,start_fraction)
 			var to:Vector3=(old_weapon[side]+shift).lerp(now,end_fraction)
 			var t:=capsule_hit(from,to,target.a,target.b,float(target.radius)+WEAPON_RADIUS)
+			if planted and side==0:
+				var axis:Vector3=(bodies[1].position-bodies[0].position)*Vector3(1,0,1)
+				axis=axis.normalized()
+				var old_trace:=old_floor_tip+axis*old_floor_advance
+				var trace:=uram_floor_original_tip+axis*uram_floor_trace_advance
+				from=(old_trace+shift).lerp(trace,start_fraction)
+				to=(old_trace+shift).lerp(trace,end_fraction)
+				t=capsule_hit(from,to,target.a,target.b,float(target.radius)+WEAPON_RADIUS)
 			if uram_pair and side==0:
 				var head_hurt:=boar_head_hurt()
 				var head_shift:Vector3=(head_hurt.a+head_hurt.b-old_boar_head.a-old_boar_head.b)*.5
 				var hf:Vector3=(old_weapon[side]+head_shift).lerp(now,start_fraction)
 				var ht:Vector3=(old_weapon[side]+head_shift).lerp(now,end_fraction)
+				if planted and side==0:
+					var axis:Vector3=((bodies[1].position-bodies[0].position)*Vector3(1,0,1)).normalized()
+					var old_trace:=old_floor_tip+axis*old_floor_advance
+					var trace:=uram_floor_original_tip+axis*uram_floor_trace_advance
+					hf=(old_trace+head_shift).lerp(trace,start_fraction)
+					ht=(old_trace+head_shift).lerp(trace,end_fraction)
 				var hit_head:=capsule_hit(hf,ht,head_hurt.a,head_hurt.b,float(head_hurt.radius)+WEAPON_RADIUS)
 				if hit_head<t:
 					t=hit_head;target=head_hurt;from=hf;to=ht
@@ -705,8 +744,18 @@ func step(lab,delta:float,prior_han_age:float=-1.0)->Array[Dictionary]:
 				if committed_basic:
 					event["committed_basic"]=true
 					event["visual_contact"]=not authored_only
-				events.append(event);contacts.append(event)
+				if planted and side==0:uram_floor_hit=event
+				else:events.append(event);contacts.append(event)
 		previous_weapon[side]=now
+	if planted and lab.age[0]>=URAM_FLOOR_CONTACT and not uram_floor_emitted and weapon_point(0).y<=.075:
+		uram_floor_emitted=true
+		uram_floor_emit_age=lab.age[0]
+		lab._uram_ground_contact(weapon_point(0)*Vector3(1,0,1),bodies[1].position)
+	if planted and not uram_floor_hit.is_empty() and uram_floor_emitted and lab.age[0]>=uram_floor_emit_age+URAM_FLOOR_TRAVEL:
+		var event:=uram_floor_hit.duplicate()
+		uram_floor_hit.clear()
+		event.time=lab.rules.elapsed
+		events.append(event);contacts.append(event)
 	if saebom_pair:
 		var hit:=_projectile_step(lab,delta,old_hurt[1],old_weapon[0],prior_han_age if prior_han_age>=0 else lab.age[0]-delta)
 		if not hit.is_empty():events.append(hit);contacts.append(hit)
@@ -812,6 +861,22 @@ func _aim_uram_forest_guard(sk:Skeleton3D,toward:Vector3,age:float,armed:bool)->
 			pivot.basis=Basis(turn)*pivot.basis
 			sk.set_bone_global_pose(joint,pivot)
 			sk.force_update_all_bone_transforms()
+
+static func aim_uram_floor_club(p,axis:Vector3,age:float,ground_y:=0.0)->void:
+	var amount:=smoothstep(URAM_FLOOR_CONTACT-.038,URAM_FLOOR_CONTACT,age)*(1.-smoothstep(URAM_FLOOR_CONTACT+.085,URAM_FLOOR_CONTACT+.43,age))
+	if amount<=.001 or axis.length_squared()<.1:return
+	var sk:Skeleton3D=p.skeleton
+	var club:MeshInstance3D=p.club
+	var grip:Vector3=sk.global_transform*sk.get_bone_global_pose(p.hand_bone)*p.grip_in_hand
+	var tip:Vector3=club.to_global(Vector3(club.get_aabb().end.x*.85,0,0))
+	var rel:=tip-grip
+	var arm:=maxf(.08,rel.length())
+	var down:=minf(grip.y-ground_y-.015,arm*.995)
+	var target:Vector3=axis*sqrt(maxf(.002,arm*arm-down*down))-Vector3.UP*down
+	if rel.length_squared()<.005 or target.length_squared()<.005:return
+	var turn:=Basis(Quaternion.IDENTITY.slerp(Quaternion(rel.normalized(),target.normalized()),amount))
+	var tr:=club.global_transform
+	club.global_transform=Transform3D(turn*tr.basis,grip+turn*(tr.origin-grip))
 
 func _aim_uram_club(age:float)->void:
 	# Late aim lowers the fully visible club around its grip, not the hurt volume.

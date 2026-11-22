@@ -92,3 +92,46 @@ static func draw_readable_floor(layer:CanvasItem, texture:Texture2D, origin:Vect
    if j%3==0:
     _light(layer,texture,p,Vector2(46,15),Color("ee9259"),alpha*.39*envelope)
    last=p
+
+## TEST48: the old orange light rides the same low, weighted front as the
+## dust. It starts on the actual club's ground projection, never on a foe.
+static func draw_ground_wave(layer:CanvasItem, texture:Texture2D, origin:Vector2, finish:Vector2, age:float, travel:float)->void:
+ if age<0. or age>1.04:return
+ var delta:=finish-origin
+ var forward:=delta.normalized() if delta.length_squared()>.001 else Vector2.RIGHT
+ var across:=Vector2(-forward.y,forward.x)*.50
+ var dust_alpha:=smoothstep(0.,.028,age)*(1.-smoothstep(.28,.95,age))
+ var head:=clampf(age/maxf(.01,travel),0.,1.)
+ var flash:=1.-smoothstep(.028,.16,age)
+ _light(layer,texture,origin,Vector2(106,28),Color("9f4720"),flash*.94)
+ _light(layer,texture,origin,Vector2(69,21),Color("ffac4e"),flash*.94)
+ _light(layer,texture,origin,Vector2(29,11),Color("ffe3a7"),flash*.94)
+ for j in 16:
+  var n:=float(j)
+  var off:=sin(n*2.39996)
+  var local:=clampf(head*(.39+float(j%6)*.12),0.,1.)
+  var scatter:=lerpf(8.,47.,smoothstep(0.,.55,age))*off
+  var p:=origin+delta*local+across*scatter
+  var dust_size:=(Vector2(37.,17.)+Vector2(7.,2.)*float(j%4))*(.72+smoothstep(0.,.53,age)*.47)
+  _light(layer,texture,p,dust_size,Color("755137"),dust_alpha*.90)
+  _light(layer,texture,p-Vector2(1.5,1.7),dust_size*.63,Color("c69b6b"),dust_alpha*.77)
+  if j<9 and age<.36:
+   var grit:=smoothstep(0.,.027,age)*(1.-smoothstep(.11,.36,age))
+   var grit_p:=p-forward*float(j%4)*2.-Vector2(0,(3.+float(j%3)*3.)*sin(age/.36*PI))
+   layer.draw_line(grit_p-forward*4.,grit_p,Color("d6a26d",grit*.82),1.8,true)
+ for band in 2:
+  var time:=age-float(band)*.069
+  var phase:=clampf(time/maxf(.01,travel),0.,1.)
+  var wave_alpha:=smoothstep(0.,.026,time)*(1.-smoothstep(travel+.025,.47,time))*(1. if band==0 else .45)
+  if wave_alpha<.005:continue
+  var prev:=Vector2.INF
+  for j in 21:
+   var q:=float(j)/20.*2.-1.
+   var weight:=pow(maxf(0.,1.-q*q),.60)
+   var at:=origin+delta*(phase*(.80+weight*.20)) + across*(q*lerpf(11.,68.,phase))
+   if prev!=Vector2.INF:
+    layer.draw_line(prev,at,Color("9a471e",wave_alpha*weight*.87),9.,true)
+    layer.draw_line(prev,at,Color("ffa745",wave_alpha*weight*.96),4.4,true)
+    layer.draw_line(prev-Vector2(0,1.),at-Vector2(0,1.),Color("ffdb91",wave_alpha*weight*.96),1.75,true)
+   if j%4==0:_light(layer,texture,at,Vector2(58,19),Color("f79c3c"),wave_alpha*weight*.83)
+   prev=at

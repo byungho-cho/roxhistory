@@ -20,6 +20,7 @@ var badge:Panel
 var badge_art:TextureRect
 var badge_glow:TextureRect
 var chain_art:TextureRect
+var near_mode:=false
 var warm_glow:TextureRect
 var chain_glow:TextureRect
 var orbs:Array[TextureRect]=[]
@@ -100,6 +101,7 @@ func _glow(colors:Array)->GradientTexture2D:
 	var texture:=GradientTexture2D.new();texture.width=96;texture.height=96;texture.fill=GradientTexture2D.FILL_RADIAL;texture.fill_from=Vector2(.5,.5);texture.fill_to=Vector2(1,.5);texture.gradient=Gradient.new();texture.gradient.offsets=PackedFloat32Array([0,.58,1]);texture.gradient.colors=PackedColorArray(colors);return texture
 func reset(id:String)->void:
 	character=id;normal_ready=false;chain_ready=false;normal_age=0;chain_age=0;phase=0;normal_entries=0;chain_entries=0
+	near_mode=false
 	orb_light_progress.assign([1.0,0.0,0.0])
 	portrait.texture=PORTRAITS[id];badge_art.texture=ORDINARY[id];chain_art.texture=LINKED[id];names.text={"hangyeol":"한결","uram":"우람","saebom":"새봄"}[id]
 	# Figma's88% figure width enlarged20%, with its real aspect and lower edge pinned.
@@ -137,6 +139,13 @@ func sync(sp:float,health:int,max_health:int,living:bool,input_available:bool,de
 		light.visible=orb_light_progress[i]>.001
 		light.material.set_shader_parameter("fill_amount",orb_light_progress[i])
 	_draw_duel_ready_state()
+
+func set_saebom_distance_icon(close_mode:bool,skill:Texture2D)->void:
+	if character!="saebom":return
+	if near_mode!=close_mode:
+		near_mode=close_mode
+		badge_art.texture=skill if close_mode else ORDINARY.saebom
+		portrait_button.tooltip_text="2 SP · \uADFC\uAC70\uB9AC" if close_mode else "2 SP · \uC6D0\uAC70\uB9AC"
 
 func enable_duel_ready_feedback()->void:
 	duel_ready_feedback=true
