@@ -37,10 +37,17 @@ var last_alpha:=[1.0,1.0]
 var direction:=Vector3(1,0,-.88).normalized()
 var screen_origin:=Vector2.ZERO
 var floor_bounce_lights:Array[OmniLight3D]=[]
+var uram_planted_feet:Dictionary={}
+var forest_input_face:=Transform3D.IDENTITY
+var forest_input_pending:=false
+var forest_guard_close_brace:=false
+var uram_basic_feet_start:=Vector3.ZERO
+var uram_basic_anchor:=false
 
-func configure(left,right,center:Vector2,local_ranged_boar:=false)->void:
+func configure(left,right,center:Vector2,local_ranged_boar:=false,local_uram_forest:=false)->void:
 	actors=[left,right]
-	uram_pair=left.key=="uram" and right.key=="adult"
+	uram_forest_pair=left.key=="uram" and right.key=="forest" and local_uram_forest
+	uram_pair=left.key=="uram" and (right.key=="adult" or uram_forest_pair)
 	saebom_pair=left.key=="saebom" and (right.key=="forest" or (local_ranged_boar and right.key=="adult"))
 	viewport=SubViewport.new();viewport.name="SharedDuel3DViewport"
 	viewport.size=Vector2i(1280,720);viewport.own_world_3d=true;viewport.transparent_bg=true
@@ -126,6 +133,10 @@ func _calibrate_weapon_axis()->void:
 	actor.play("idle");actors[1].play("idle")
 
 func reset()->void:
+	uram_planted_feet.clear()
+	forest_input_pending=false
+	forest_guard_close_brace=false
+	uram_basic_anchor=false
 	bom_close=false;bom_shove=false;bom_hop=0.;bom_prev=0.
 	_end_projectile();projectile_releases.clear();_restore_sling_stone()
 	contacts.clear();body_contacts=0;max_body_penetration=0;deer_spear_reaction=false
@@ -138,6 +149,14 @@ func reset()->void:
 		previous_weapon[i]=weapon_point(i);previous_hurt.append(hurt_capsule(i))
 
 func begin_action(side:int,key:String)->void:
+	if uram_forest_pair:
+		if side==1 and key=="skill":_capture_uram_feet()
+		if side==0:
+			uram_basic_anchor=key=="attack"
+			if uram_basic_anchor:
+				uram_basic_feet_start=(bone_world(0,"foot.R")+bone_world(0,"foot.L"))*.5
+			if key=="chain" and uram_planted_feet.is_empty():_capture_uram_feet()
+			elif key not in ["chain","counter"]:uram_planted_feet.clear()
 	if side==0 and saebom_pair and local_melee_polish:
 		var gap:=bodies[0].position.distance_to(bodies[1].position)
 		bom_close=saebom_close_at(gap,bom_close,1.52,1.82)
@@ -334,14 +353,53 @@ func render_poses(lab,delta:float)->Array:
 		p.pivot.rotation=Vector3(0,facing[side],0)
 		# Reuse D0070 recovery blending and death-before-reward presentation.
 		var sample_age:float=age/float(lab.entrance_scale) if lab.approach_active else age
+		if uram_forest_pair and side==0 and key=="chain":
+			# Settle on one visible braced posture. The shield quad and hand still
+			# come from the same rig; the old idle of the clip could drop the shield.
+			sample_age=.14 if lab.uram_guard_active() else minf(sample_age,.14)
+		if side==0 and uram_forest_pair and key=="walk":
+			sample_age=fposmod(-age*1.40,actor.duration)
 		if side==1 and key=="walk":
 			# Reverse the authored hoof cycle while keeping the deer facing Han.
 			sample_age=fposmod(-age*1.65,actor.duration)
 		if side==0 and key=="chain" and not uram_pair and not saebom_pair:sample_age=lab.Accent.chain_pose(age,actor.duration)
 		var directional_hit:=side==1 and key=="hit" and deer_spear_reaction and not uram_pair
 		lab.presentation.sample(actor,side,key,sample_age,INF if lab.approach_active else float(lab.next_attack[side])-lab.rules.elapsed,delta,false,directional_hit)
+		if uram_forest_pair and side==1 and key=="run" and not lab.approach_active and bodies[0].position.distance_to(bodies[1].position)<LOCAL_BASIC_READY_MIN:
+			var length:float=p.length("walk")
+			_blend_forest_backstep(p,fposmod(-age*1.4,maxf(.01,length)),1.)
+		if uram_forest_pair and side==1 and key=="skill":
+			var start:float=p.length("req046_skill_anticipation")
+			if age<start:
+				# One readable warning: neutral → reverse gait → head-down → charge lead-in.
+				# Never show the stock rearing frames before planting.
+				_blend_forest_pose(p,p.animation.get_animation("idle"),0.,1.)
+				if age>=FOREST_RETREAT_AT and age<FOREST_RETREAT_END:
+					var gait:float=p.length("walk")
+					var reverse_time:=fposmod(-((age-FOREST_RETREAT_AT)*1.65),maxf(.001,gait))
+					_blend_forest_backstep(p,reverse_time,smoothstep(FOREST_RETREAT_AT,FOREST_RETREAT_AT+.08,age)*(1.0-smoothstep(FOREST_RETREAT_END-.10,FOREST_RETREAT_END,age)))
+				var rearing:=smoothstep(FOREST_RETREAT_END,FOREST_RAISED_AT,age)*(1.-smoothstep(FOREST_PLANT_AT,FOREST_PLANT_AT+.19,age))
+				# One authored rear, held on the same frame. Never replay the other
+				# head-up beats from the original anticipation clip.
+				var pose_time:float=1.93*p.motion_rate("req046_skill_anticipation")
+				_blend_forest_pose(p,p.animation.get_animation("req046_skill_anticipation"),pose_time,rearing)
+				_blend_forest_pose(p,p.animation.get_animation("req046_skill_execute"),0.,smoothstep(start-.12,start,age))
 		if side==0 and key=="attack" and bom_shove:saebom_shove_pose(actor,age/maxf(.01,actor.duration),Vector3.INF)
 		var sk:Skeleton3D=p.skeleton
+		if uram_forest_pair and side==1 and key=="skill":
+			var nod:=smoothstep(FOREST_PLANT_AT,FOREST_PLANT_AT+.18,age)*(1.-smoothstep(2.25,2.40,age))
+			var head:=sk.find_bone("head")
+			if nod>0. and head>=0 and toward.length_squared()>.001:
+				var neck:=sk.get_bone_parent(head)
+				var axis:=(sk.global_basis.inverse()*(Vector3.UP.cross(toward.normalized()))).normalized()
+				if neck>=0:
+					var neck_pose:=sk.get_bone_global_pose(neck)
+					neck_pose.basis=Basis(axis,.61*nod)*neck_pose.basis
+					sk.set_bone_global_pose(neck,neck_pose)
+					sk.force_update_all_bone_transforms()
+				var pose:=sk.get_bone_global_pose(head)
+				pose.basis=Basis(axis,.21*nod)*pose.basis
+				sk.set_bone_global_pose(head,pose)
 		var root:int=p.root_bone if side==0 else p.root_index
 		var root_pose:=sk.get_bone_pose_position(root);var rest:=sk.get_bone_rest(root).origin
 		root_motion.append(root_pose-rest)
@@ -358,6 +416,14 @@ func render_poses(lab,delta:float)->Array:
 		var bottom:=INF
 		for foot in feet:bottom=minf(bottom,bone_world(side,foot).y)
 		if bottom<0:p.pivot.position.y-=bottom;sk.force_update_all_bone_transforms()
+		if side==0 and uram_forest_pair and uram_basic_anchor and key in ["attack","walk"]:
+			# Cap actual rendered boot/pelvis travel, including gait posing,
+			# rather than only the body's numerical step.
+			var feet_center:=(bone_world(0,"foot.R")+bone_world(0,"foot.L"))*.5
+			var drift:=(feet_center-uram_basic_feet_start).dot(direction)
+			if drift>.502:
+				p.pivot.position-=direction*(drift-.502)
+				sk.force_update_all_bone_transforms()
 		if side==0 and key=="attack" and bom_shove:
 			var q:=hurt_capsule(1)
 			var anchor:=bone_world(0,"upper.R")
@@ -376,7 +442,19 @@ func render_poses(lab,delta:float)->Array:
 		if side==0 and key=="skill" and bom_hop>0.:saebom_hop_pose(actor,age/maxf(.01,actor.duration),bom_hop/.56)
 		if side==0:
 			if uram_pair:
+				if uram_forest_pair:
+					if key in ["chain","counter"] or (key=="idle" and lab.motion[1]=="skill"):
+						_keep_uram_feet_anchored(sk)
+					if key=="chain" and toward.length_squared()>.001:
+						_aim_uram_forest_guard(sk,toward.normalized(),age,lab.uram_guard_active())
 				p.update_equipment()
+				if uram_forest_pair and key not in ["chain","counter"]:
+					# Bind the passive shield directly to its moving wrist and
+					# forearm mid-point. Never leave a free quad where he started.
+					var wrist:=bone_world(0,"hand.L")
+					var elbow:=bone_world(0,"forearm.L")
+					var shield:MeshInstance3D=p.shield
+					shield.global_position=wrist.lerp(elbow,.68)+shield.global_basis.z.normalized()*.042
 				if key in ["chain","counter"] and toward.length_squared()>.001:
 					# Use the actual shield quad, facing charging animal, not a detached invisible collider.
 					var shield:MeshInstance3D=p.shield
@@ -385,7 +463,7 @@ func render_poses(lab,delta:float)->Array:
 					var right:=Vector3.UP.cross(guard_normal).normalized()
 					tr.basis=Basis(right,guard_normal.cross(right),guard_normal)
 					tr.origin+=toward.normalized()*.07
-					if key=="chain":
+					if key=="chain" and not uram_forest_pair:
 						var lower:=smoothstep(0,.085,age)*(1.0-smoothstep(.26,.43,age))
 						tr.origin-=tr.basis.x*.20*lower
 						tr.origin.y-=.43*lower
@@ -402,6 +480,59 @@ func render_poses(lab,delta:float)->Array:
 		_rig_alpha(side,1.0-smoothstep(.78,1,age) if key=="death" else 1.0)
 	return root_motion
 
+func _limit_uram_visible_boots()->void:
+	# After root translation the visible gait may still advance a sole beyond
+	# the intended half-step. Keep this correction in the leg chain only.
+	var p=actors[0].preview
+	var sk:Skeleton3D=p.skeleton
+	var center:=(bone_world(0,"foot.R")+bone_world(0,"foot.L"))*.5
+	var excess:=maxf(0.,(center-uram_basic_feet_start).dot(direction)-.50)
+	if excess<=.0001:return
+	var shift:=sk.global_basis.inverse()*direction*excess
+	for label in ["foot.R","foot.L"]:
+		var foot:=sk.find_bone(label)
+		if foot<0:continue
+		var knee:=sk.get_bone_parent(foot)
+		var foot_pose:=sk.get_bone_global_pose(foot)
+		if knee>=0:
+			var kp:=sk.get_bone_global_pose(knee)
+			kp.origin-=shift*.46
+			sk.set_bone_global_pose(knee,kp)
+			sk.force_update_all_bone_transforms()
+		foot_pose.origin-=shift
+		sk.set_bone_global_pose(foot,foot_pose)
+		sk.force_update_all_bone_transforms()
+
+
+func _limit_local_basic_closure(proposal:Array)->void:
+	# Sum both actors' closing travel before handing it to the actual shared
+	# body solver. This spacing floor is unrelated to hurt radii.
+	var axis:=bodies[0].position.direction_to(bodies[1].position)
+	var start_gap:=bodies[0].position.distance_to(bodies[1].position)
+	var first:float=(proposal[0]-bodies[0].position).dot(axis)
+	var second:float=(bodies[1].position-proposal[1]).dot(axis)
+	var move_sum:=maxf(first,0.)+maxf(second,0.)
+	var spread:=maxf(-first,0.)+maxf(-second,0.)
+	var permitted:=maxf(0.,start_gap-LOCAL_BASIC_CONTACT_MIN)+spread
+	if move_sum<=permitted or move_sum<.000001:return
+	var reduction:=1.-permitted/move_sum
+	proposal[0]-=axis*(maxf(0.,first)*reduction)
+	proposal[1]+=axis*(maxf(0.,second)*reduction)
+
+func local_basic_in_range(side:int)->bool:
+	var a:=bodies[0].position
+	var b:=bodies[1].position
+	var gap:=a.distance_to(b)
+	return gap>=LOCAL_BASIC_READY_MIN-.0001 and gap<=LOCAL_BASIC_START[side]+.0001
+
+func local_basic_too_far(side:int)->bool:
+	return bodies[0].position.distance_to(bodies[1].position)>LOCAL_BASIC_START[side]+.0001
+
+func uram_attack_return_offset()->Vector3:
+	# Only an ordinary attack that stepped in can walk back to its start.
+	var advance:float=(bodies[0].position-action_origin[0]).dot(direction)
+	return -direction*maxf(0.,advance)
+
 func deer_return_offset()->Vector3:
 	# Convex return path constrained to the shared floor; preserve incidental
 	# lateral displacement and hit knockback rather than undoing them.
@@ -412,6 +543,9 @@ func step(lab,delta:float,prior_han_age:float=-1.0)->Array[Dictionary]:
 	var old_hurt:=[hurt_capsule(0),hurt_capsule(1)]
 	var old_weapon:=[weapon_point(0),weapon_point(1)]
 	var old_shield:=_shield_transform() if uram_pair else Transform3D.IDENTITY
+	if forest_input_pending:
+		old_shield=forest_input_face
+		forest_input_pending=false
 	var old_boar_head:=boar_head_hurt() if uram_pair else {}
 	var old_centers:=[body_shapes[0].global_position,body_shapes[1].global_position]
 	var old_guards:=[body_guards[0].global_position,body_guards[1].global_position]
@@ -422,15 +556,29 @@ func step(lab,delta:float,prior_han_age:float=-1.0)->Array[Dictionary]:
 		var toward:Vector3=bodies[1-side].position-bodies[side].position;toward.y=0
 		var distance:=toward.length();toward=toward.normalized()
 		if lab.approach_active:
-			var gap:=lerpf(START_DISTANCE,URAM_PAIR_GAP if uram_pair else SAEBOM_GAP if saebom_pair else ENGAGE_DISTANCE,smoothstep(0,lab.APPROACH_TRAVEL*lab.entrance_scale,lab.visual_clock))
+			var gap:=lerpf(START_DISTANCE,URAM_FOREST_GAP if uram_forest_pair else URAM_PAIR_GAP if uram_pair else SAEBOM_GAP if saebom_pair else ENGAGE_DISTANCE,smoothstep(0,lab.APPROACH_TRAVEL*lab.entrance_scale,lab.visual_clock))
 			desired[side]=direction*gap*.5*(-1 if side==0 else 1)
+		elif uram_forest_pair and key=="run" and lab.rules.living() and not lab._local_ram_busy():
+			if side==1 and distance<LOCAL_BASIC_READY_MIN:
+				desired[side]-=toward*minf(1.66*delta,LOCAL_BASIC_READY_MIN-distance)
+			else:
+				desired[side]+=toward*minf(2.35*delta,maxf(0.,distance-LOCAL_BASIC_START[side]))
 		elif saebom_pair and side==1 and key=="run" and lab.rules.living():
 			# Use native run until the deer reaches its own actual attack range.
 			desired[side]+=toward*minf(2.9*delta,maxf(0,distance-SAEBOM_DEER_APPROACH_GAP))
+		elif uram_forest_pair and side==0 and key=="walk" and lab.rules.living():
+			var offset:=uram_attack_return_offset()
+			var speed:=lerpf(.72,2.45,smoothstep(0.,.26,offset.length()))
+			desired[side]+=offset.limit_length(speed*delta)
 		elif side==1 and key=="walk" and lab.rules.living():
 			var offset:=deer_return_offset()
 			var speed:=RECOVER_SPEED*lerpf(.30,1.0,smoothstep(0,.22,offset.length()))
 			desired[side]+=offset.limit_length(speed*delta)
+		elif uram_forest_pair and side==1 and key=="skill" and lab.age[1]<actors[1].preview.length("req046_skill_anticipation"):
+			var age:float=lab.age[1]
+			var pre:float=age-delta
+			var back:=FOREST_RETREAT_DIST*(smoothstep(FOREST_RETREAT_AT,FOREST_RETREAT_END,age)-smoothstep(FOREST_RETREAT_AT,FOREST_RETREAT_END,pre))
+			desired[side]-=toward*back
 		elif key in ["attack","skill","chain"] or (uram_pair and key=="counter"):
 			var forward:=maxf(0,float(roots[side].z-previous_root[side].z))*1.24
 			var safe:=1.75 if side==0 and key=="skill" else 1.85 if key=="chain" else .85
@@ -440,23 +588,33 @@ func step(lab,delta:float,prior_han_age:float=-1.0)->Array[Dictionary]:
 				var charge_age:float=lab.age[1]-actors[1].preview.length("req046_skill_anticipation")
 				if charge_age>=0 and charge_age<.62 and not consumed[1]:
 					# Plant during the warning; advance only with the headbutt.
-					var drive:=lerpf(7.0,8.4,smoothstep(0,.10,charge_age))
+					var drive:=lerpf(8.0,12.4,smoothstep(0,.07,charge_age)) if uram_forest_pair else lerpf(7.0,8.4,smoothstep(0,.10,charge_age))
 					forward=maxf(forward,minf(maxf(0,distance-.95),delta*drive))
 			if uram_pair and side==0:
 				if key=="chain":forward=0.0
-				elif key=="counter":forward=maxf(forward,1.8*delta);safe=1.10
-				else:forward=maxf(forward,2.0*delta if lab.age[0]<actors[0].duration*.55 else 0.0);safe=1.38
+				elif key=="counter":
+					# The forest counter is a planted shield motion, not a chase
+					# followed by a second backstep. Other targets keep their path.
+					forward=0.0 if uram_forest_pair else maxf(forward,1.8*delta)
+					safe=1.10
+				else:forward=maxf(forward,(3.5 if uram_forest_pair else 2.0)*delta if lab.age[0]<actors[0].duration*.55 else 0.0);safe=1.38
 			if saebom_pair and side==0:
 				forward=0.0
 				if key=="skill" and bom_hop>0.:
 					var hop:=bom_hop*saebom_hop_envelope(float(lab.age[0])/maxf(.01,float(actors[0].duration)))
 					desired[0]+=bom_dir*(hop-bom_prev);bom_prev=hop
+			if uram_forest_pair and side==0 and key in ["attack","skill"]:
+				var walked:float=(bodies[0].position-action_origin[0]).dot(direction)
+				forward=minf(forward,maxf(0.,(.50 if key=="attack" else 1.345)-walked))
 			desired[side]+=toward*minf(forward,maxf(0,distance-safe))
 		previous_root[side]=roots[side]
 		if key=="death":knockback[side]=Vector3.ZERO
 		desired[side]+=knockback[side]*delta
 		knockback[side]=knockback[side].move_toward(Vector3.ZERO,delta*5)
+	if uram_forest_pair and not lab.approach_active and not lab._local_ram_busy() and (lab.motion[0]=="attack" or (lab.motion[1]=="attack" and lab.motion[0]!="skill")):
+		_limit_local_basic_closure(desired)
 	resolve_bodies(desired,old_centers,old_guards)
+	if uram_forest_pair and uram_basic_anchor and lab.motion[0] in ["attack","walk"]:_limit_uram_visible_boots()
 	var events:Array[Dictionary]=[]
 	for side in 2:
 		var now:=weapon_point(side)
@@ -472,6 +630,9 @@ func step(lab,delta:float,prior_han_age:float=-1.0)->Array[Dictionary]:
 		var prior_age:float=prior_han_age if side==0 and prior_han_age>=0 else lab.age[side]-delta
 		var age_span:=maxf(.000001,lab.age[side]-prior_age)
 		var active:bool=lab.age[side]>=opens and prior_age<=closes
+		var committed_basic:=uram_forest_pair and key=="attack"
+		var impact:=.261 if side==0 else length*.53
+		if committed_basic:active=prior_age<impact and lab.age[side]>=impact
 		var can_strike:=key in ["attack","skill","chain"]
 		if uram_pair and side==0:can_strike=key in ["attack","skill","counter"]
 		if saebom_pair and side==0:can_strike=bom_shove and key=="attack"
@@ -506,30 +667,53 @@ func step(lab,delta:float,prior_han_age:float=-1.0)->Array[Dictionary]:
 						if hit_rim<t:
 							t=hit_rim;target=envelope;from=rim_from;to=rim_to
 			var shield_kind:=false
+			var late_profile:=Vector3.ZERO
+			var late_pose:=false
 			if uram_pair and side==1 and key=="skill" and lab.has_method("uram_guard_active") and lab.uram_guard_active():
 				var current_shield:=_shield_transform()
 				var half_size:Vector2=actors[0].preview.shield.mesh.size*.5
 				var shield_from:=old_shield.interpolate_with(current_shield,start_fraction)
 				var shield_to:=old_shield.interpolate_with(current_shield,end_fraction)
 				# Use the upper muzzle rather than the boar's low central nose as the shield contact candidate.
-				var crown_offset:=Vector3.UP*.10
+				var crown_offset:=Vector3.UP*(.02 if uram_forest_pair else .10)
 				var shield_t:=shield_sweep(old_weapon[side].lerp(now,start_fraction)+crown_offset,old_weapon[side].lerp(now,end_fraction)+crown_offset,shield_from,shield_to,half_size)
-				if shield_t!=INF and shield_t<=t:
-					t=shield_t;shield_kind=true
+				# A final-tick guard can physically meet the length of the ram's
+				# muzzle after its foremost probe has passed the extended face.
+				# Only the same, not-yet-committed body hit can enter this priority.
+				var final_guard:bool=uram_forest_pair and lab.age[0]<=delta+.001 and t!=INF
+				if final_guard and shield_t==INF:
+					var skull:=bone_world(1,"head")
+					var horn_line:=(now-skull).normalized()
+					for depth in [.12,.23,.34,.43]:
+						var profile:Vector3=horn_line*float(depth)
+						var first:Vector3=old_weapon[side].lerp(now,start_fraction)+crown_offset-profile
+						var last:Vector3=old_weapon[side].lerp(now,end_fraction)+crown_offset-profile
+						var candidate:=shield_sweep(first,last,shield_to,shield_to,half_size)
+						if candidate<shield_t:
+							shield_t=candidate
+							late_profile=profile
+							late_pose=true
+				if shield_t!=INF and (shield_t<=t or final_guard):
+					t=minf(shield_t,t);shield_kind=true
+			var authored_only:=committed_basic and t==INF
+			if authored_only:t=clampf((impact-prior_age)/age_span,0.,1.)
 			if t!=INF:
 				consumed[side]=true
 				var fraction:=lerpf(start_fraction,end_fraction,t)
 				var probe:Vector3=from.lerp(to,t)
 				var axis:Vector3=target.b-target.a
 				var nearest:Vector3=target.a+axis*clampf((probe-target.a).dot(axis)/maxf(.0001,axis.length_squared()),0,1)
-				var point:Vector3=nearest+nearest.direction_to(probe)*float(target.radius)
+				var point:Vector3=now if authored_only else nearest+nearest.direction_to(probe)*float(target.radius)
 				if shield_kind:
-					probe=old_weapon[side].lerp(now,fraction)+Vector3.UP*.10
-					var face:=old_shield.interpolate_with(_shield_transform(),fraction)
+					probe=old_weapon[side].lerp(now,fraction)+Vector3.UP*(.02 if uram_forest_pair else .10)-late_profile
+					var face:=_shield_transform() if late_pose else old_shield.interpolate_with(_shield_transform(),fraction)
 					var local:=face.affine_inverse()*probe
 					local.z=0.0;point=face*local
 				var event:={"side":side,"motion":key,"point":point,"probe":probe,"hurt":target.duplicate(),"weapon_from":from,"weapon_to":to,"normal":(bodies[1-side].position-bodies[side].position).normalized(),"action":action_id[side],"time":lab.rules.elapsed-delta+fraction*delta,"attack_age":prior_age+fraction*age_span,"active_from":opens,"active_to":closes}
 				if uram_pair:event["kind"]="shield" if shield_kind else "body"
+				if committed_basic:
+					event["committed_basic"]=true
+					event["visual_contact"]=not authored_only
 				events.append(event);contacts.append(event)
 		previous_weapon[side]=now
 	if saebom_pair:
@@ -539,7 +723,26 @@ func step(lab,delta:float,prior_han_age:float=-1.0)->Array[Dictionary]:
 	return events
 
 const URAM_PAIR_GAP:=2.22
+const URAM_FOREST_GAP:=2.82
+const LOCAL_BASIC_START:=[2.90,3.02]
+const LOCAL_BASIC_READY_MIN:=2.34
+const LOCAL_BASIC_CONTACT_MIN:=2.29
+const FOREST_RETREAT_DIST:=.69
+const FOREST_RETREAT_AT:=.01
+const FOREST_RETREAT_END:=.53
+const FOREST_RAISED_AT:=.68
+const FOREST_PLANT_AT:=1.68
 var uram_pair:=false
+var uram_forest_pair:=false
+
+func capture_forest_shield_input_face()->void:
+	forest_input_face=_shield_transform()
+	forest_input_pending=true
+	var line:=bodies[0].position.direction_to(bodies[1].position)
+	var muzzle_depth:float=(weapon_point(1)-bodies[0].position).dot(line)
+	# At the end of a ram the incoming nose can already be inside the fully
+	# extended guard's depth. Raise the same arm as a tight, visible close guard.
+	forest_guard_close_brace=muzzle_depth<.65
 
 func _shield_transform()->Transform3D:
 	var shield:MeshInstance3D=actors[0].preview.shield
@@ -563,21 +766,78 @@ func boar_head_hurt()->Dictionary:
 	# A short head capsule joins poll and muzzle; the trunk stays independent.
 	return {"a":crown-Vector3.UP*.04,"b":crown.lerp(muzzle,.64),"radius":.27}
 
+func _blend_forest_backstep(p,at:float,weight:float)->void:
+	_blend_forest_pose(p,p.animation.get_animation("walk"),at*p.motion_rate("walk"),weight)
+
+func _blend_forest_pose(p,gait:Animation,native_at:float,weight:float)->void:
+	if gait==null or weight<=0.:return
+	var sk:Skeleton3D=p.skeleton
+	for i in gait.get_track_count():
+		var path:=gait.track_get_path(i)
+		if path.get_subname_count()!=1:continue
+		var bone:=sk.find_bone(str(path.get_subname(0)))
+		if bone<0:continue
+		if gait.track_get_type(i)==Animation.TYPE_ROTATION_3D:
+			sk.set_bone_pose_rotation(bone,sk.get_bone_pose_rotation(bone).slerp(gait.rotation_track_interpolate(i,native_at),weight))
+		elif gait.track_get_type(i)==Animation.TYPE_POSITION_3D and bone!=p.root_index:
+			sk.set_bone_pose_position(bone,sk.get_bone_pose_position(bone).lerp(gait.position_track_interpolate(i,native_at),weight))
+
+func _capture_uram_feet()->void:
+	var sk:Skeleton3D=actors[0].preview.skeleton
+	uram_planted_feet.clear()
+	for label in ["foot.R","foot.L"]:
+		var foot:=sk.find_bone(label)
+		if foot<0:continue
+		var knee:=sk.get_bone_parent(foot)
+		var thigh:=sk.get_bone_parent(knee) if knee>=0 else -1
+		# Keep the captured pose of the whole planted leg, in parent-to-child order.
+		for joint in [thigh,knee,foot]:
+			if joint>=0:uram_planted_feet[joint]=sk.global_transform*sk.get_bone_global_pose(joint)
+
+func _keep_uram_feet_anchored(sk:Skeleton3D)->void:
+	var inv:=sk.global_transform.affine_inverse()
+	for joint in uram_planted_feet:
+		sk.set_bone_global_pose(joint,inv*uram_planted_feet[joint])
+		sk.force_update_all_bone_transforms()
+
+func _aim_uram_forest_guard(sk:Skeleton3D,toward:Vector3,age:float,armed:bool)->void:
+	# The tall deer hits higher than a boar. Bring the visible shield arm into
+	# that lane while guarding; the exact same swept quad still decides contact.
+	var weight:=1.0 if armed else 0.0
+	if weight<=.001:return
+	var palm:=sk.find_bone("hand.L")
+	var elbow:=sk.find_bone("forearm.L")
+	var shoulder:=sk.find_bone("upper.L")
+	if palm<0 or elbow<0 or shoulder<0:return
+	var target_world:=bodies[0].position+toward*(.22 if forest_guard_close_brace else .48)+Vector3.UP*(1.21 if forest_guard_close_brace else 1.32)
+	var destination:=sk.to_local(target_world)
+	for pass_index in 5:
+		for joint in [elbow,shoulder,elbow]:
+			var pivot:=sk.get_bone_global_pose(joint)
+			var current:=sk.get_bone_global_pose(palm).origin-pivot.origin
+			var desired:=destination-pivot.origin
+			if current.length_squared()<.00001 or desired.length_squared()<.00001:continue
+			var turn:=Quaternion.IDENTITY.slerp(Quaternion(current.normalized(),desired.normalized()),weight*.68)
+			pivot.basis=Basis(turn)*pivot.basis
+			sk.set_bone_global_pose(joint,pivot)
+			sk.force_update_all_bone_transforms()
+
 func _aim_uram_club(age:float)->void:
 	# Late aim lowers the fully visible club around its grip, not the hurt volume.
-	var weight:=smoothstep(.17,.249,age)*(1.0-smoothstep(.30,.43,age))
+	var weight:=smoothstep(.18,.285,age)*(1.0-smoothstep(.32,.46,age)) if uram_forest_pair else smoothstep(.17,.249,age)*(1.0-smoothstep(.30,.43,age))
 	if weight<=0.0:return
 	var p=actors[0].preview
 	var club:MeshInstance3D=p.club
 	var sk:Skeleton3D=p.skeleton
 	var grip:Vector3=sk.global_transform*sk.get_bone_global_pose(p.hand_bone)*p.grip_in_hand
 	var from:=club.global_basis.x.normalized()
-	var target:=bone_world(1,"head")+Vector3.UP*.15-grip
+	var head:=bone_world(1,"head")
+	var target:Vector3=(head.lerp(weapon_point(1),.42)-Vector3.UP*.12 if uram_forest_pair else head+Vector3.UP*.15)-grip
 	if target.length()<.15:return
 	var desired:=target.normalized()
 	var axis:=from.cross(desired)
 	if axis.length_squared()<.0001:return
-	var angle:=minf(.64,from.angle_to(desired))*weight
+	var angle:=minf(1.40 if uram_forest_pair else .64,from.angle_to(desired))*weight
 	var turn:=Basis(axis.normalized(),angle)
 	var tr:=club.global_transform
 	tr=Transform3D(turn*tr.basis,grip+turn*(tr.origin-grip))

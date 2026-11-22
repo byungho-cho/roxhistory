@@ -1,0 +1,37 @@
+{
+  "fps": 30,
+  "frames": 72,
+  "source_full_size": [
+    1280,
+    720
+  ],
+  "layer_size": [
+    640,
+    360
+  ],
+  "cropped_atlas_cell": [
+    433,
+    251
+  ],
+  "canvas_crop_origin": [
+    130,
+    41
+  ],
+  "canvas_ground_anchor": [
+    336,
+    178.5
+  ],
+  "ground_anchor_in_crop": [
+    206,
+    137.5
+  ],
+  "logical_scale": 1.5,
+  "original_hit_frame": 75,
+  "first_nonzero_frame": 2,
+  "last_nonzero_frame": 60,
+  "alpha": "straight RGBA",
+  "sheets": 5,
+  "cells_per_sheet": 16,
+  "cols": 4,
+  "rows": 4
+}

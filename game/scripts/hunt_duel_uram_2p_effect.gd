@@ -51,3 +51,44 @@ static func draw(layer:CanvasItem, texture:Texture2D, hit:Vector2, floor_point:V
   var at:=hit+(dir*(54.+float((j*43)%134))*reach+Vector2(0.,elapsed*elapsed*16.))*ratio
   var grit:=(1.-smoothstep(.08,.28+float(j%5)*.025,elapsed))*smoothstep(0.,.037,elapsed)
   if grit>.002:layer.draw_line(at-dir*18.*ratio,at,Color("d78c38",grit*.61),2.8*ratio,true)
+
+## TEST36 solo presentation: compact contact plus separate floor aftershock.
+static func draw_readable_flash(layer:CanvasItem, texture:Texture2D, hit:Vector2, direction:Vector2, elapsed:float)->void:
+ if elapsed<0.0 or elapsed>=.23:return
+ var forward:=direction.normalized() if direction.length_squared()>.00001 else Vector2.RIGHT
+ var flash:=1.0-smoothstep(.023,.14,elapsed)
+ _light(layer,texture,hit,Vector2(76,51),Color("f27a33"),flash*.71)
+ _light(layer,texture,hit,Vector2(35,25),Color("fff1b1"),flash*.97)
+ var fade:=1.0-smoothstep(.026,.23,elapsed)
+ for j in 5:
+  var d:=forward.rotated(lerpf(-.65,.65,float(j)/4.0))
+  var p:=hit+d*lerpf(7.0,42.0,smoothstep(0.0,.19,elapsed))
+  layer.draw_line(p-d*(4.0+10.0*fade),p,Color("ffc785",fade*.78),1.4,true)
+
+static func draw_readable_floor(layer:CanvasItem, texture:Texture2D, origin:Vector2, direction:Vector2, elapsed:float)->void:
+ if elapsed<0.0 or elapsed>=2.04:return
+ var forward:=direction.normalized() if direction.length_squared()>.00001 else Vector2.RIGHT
+ var across:=Vector2(-forward.y,forward.x)*.58
+ var spread:=smoothstep(.05,1.24,elapsed)
+ var fade:=smoothstep(.04,.17,elapsed)*(1.0-smoothstep(.57,2.04,elapsed))
+ for j in 10:
+  var a:=float(j)*2.39996
+  var p:=origin+spread*(forward*(40.0+float(j)*18.0)+across*sin(a)*83.0)
+  _light(layer,texture,p,Vector2(36+7*(j%3),12+4*(j%3)),Color("b88a61"),fade*(.10+.12*absf(sin(a))))
+ var wave_alpha:=smoothstep(.018,.085,elapsed)*(1.0-smoothstep(.54,1.46,elapsed))
+ if wave_alpha<.005:return
+ for band in 2:
+  var phase:=smoothstep(.04+float(band)*.17,.91+float(band)*.17,elapsed)
+  var alpha:=wave_alpha*(1.0 if band==0 else .44)*smoothstep(.02,.18,phase)
+  if alpha<.005:continue
+  var last:=Vector2.INF
+  for j in 25:
+   var u:=float(j)/24.0*2.0-1.0
+   var envelope:=pow(maxf(0.0,1.0-u*u),.65)
+   var p:=origin+(forward*(63.0+238.0*envelope)+across*(u*149.0+sin(u*10.0)*8.0))*phase*(1.0 if band==0 else .82)
+   if last!=Vector2.INF:
+    layer.draw_line(last,p,Color("d87c45",alpha*.20*envelope),10.0,true)
+    layer.draw_line(last,p,Color("f3a762",alpha*.43*envelope),2.3,true)
+   if j%3==0:
+    _light(layer,texture,p,Vector2(46,15),Color("ee9259"),alpha*.39*envelope)
+   last=p

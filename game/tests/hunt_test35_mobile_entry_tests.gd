@@ -1,5 +1,5 @@
 extends SceneTree
-## Windows synthetic phone touch on live Main and production TEST35 entry.
+## Windows synthetic phone touch on live Main and production TEST42 entry.
 ## Keep real-device playback/perf as a separate release gate.
 var checks:=0
 var failures:=0
@@ -41,12 +41,12 @@ func test_lab(lab)->void:
  var refill:=lab.find_child("DuelTestCharge",true,false) as Button
  var all:=lab.find_child("DuelTestAll",true,false) as Button
  var pause:=lab.find_child("DuelPause",true,false) as Button
- check("Named TEST35 charge and all controls are visible",is_instance_valid(refill) and refill.is_visible_in_tree() and is_instance_valid(all) and all.is_visible_in_tree())
+ check("Named TEST42 charge and all controls are visible",is_instance_valid(refill) and refill.is_visible_in_tree() and is_instance_valid(all) and all.is_visible_in_tree())
  if not is_instance_valid(refill) or not is_instance_valid(all):return
  var badge_found:=false
  for label in lab.find_children("*","Label",true,false):
-  if label.text=="TEST 35" and label.is_visible_in_tree():badge_found=true
- check("TEST 35 device badge",badge_found)
+  if label.text=="TEST 42" and label.is_visible_in_tree():badge_found=true
+ check("TEST 42 device badge",badge_found)
  check("Uncancelled selected field", await click_touch(lab.find_child("Select_forest",true,false) as Button) and lab.rules.enemy_id=="forest")
  for name in ["hangyeol","uram","saebom"]:
   check("True selectable touch "+name,await click_touch(lab.find_child("Select_"+name,true,false) as Button) and lab.rules.ally_id==name)
@@ -79,6 +79,35 @@ func test_lab(lab)->void:
   if lab.rules.hp[1]<hp_before:break
  check("Solo Han/forest actual contact lowered opponent HP",lab.rules.hp[1]<hp_before)
  await save_frame("mobile-test35-solo-contact")
+ check("Scoped TEST42 Uram and forest selectors remain live",await click_touch(lab.find_child("Select_uram",true,false) as Button) and await click_touch(lab.find_child("Select_forest",true,false) as Button))
+ check("Exportable approved dust atlas and original thump available",lab.local_parry_sheets.size()==5 and is_instance_valid(lab.local_parry_thump))
+ var early_checked:=false
+ var guard_cast:=false
+ var guard_contact:=false
+ var before_guard:=0
+ var actual_rear:=false
+ for i in range(2100):
+  if lab.motion[1]=="skill" and lab.age[1]>=.78 and lab.age[1]<1.25:
+   var w=lab.shared_world
+   actual_rear=minf(w.bone_world(1,"front_foot.R").y,w.bone_world(1,"front_foot.L").y)>.65
+   if not early_checked:
+    await click_touch(refill)
+    await click_touch(lab.chain_button)
+    check("Real Main touch during lift does not spend SP or arm guard",is_equal_approx(lab.rules.sp,3.) and lab.motion[0]!="chain")
+    early_checked=true
+  if lab.motion[1]=="skill" and lab.age[1]>=1.88 and not guard_cast:
+   before_guard=lab.rules.hp[0]
+   guard_cast=await click_touch(lab.chain_button)
+  lab._process(1./120.)
+  if lab.local_parry_clock>=0.:
+   guard_contact=true
+   break
+ check("Main Uram viewport shows real lifted forelegs in the natural ram",actual_rear and early_checked)
+ check("Main Uram true touch guard blocks the contact and plays approved scene",guard_cast and guard_contact and before_guard==lab.rules.hp[0])
+ if guard_contact:
+  for i in range(84):lab._process(1./120.)
+  await save_frame("mobile-test42-uram-guard")
+ check("Han and forest reselect after the Uram guard",await click_touch(lab.find_child("Select_hangyeol",true,false) as Button) and await click_touch(lab.find_child("Select_forest",true,false) as Button))
  check("Real 3v3 toggle touch",await click_touch(all) and is_instance_valid(lab.local_formation))
  var squad=lab.local_formation
  if not is_instance_valid(squad):return
@@ -108,16 +137,16 @@ func run()->void:
  await process_frame
  if app.modal:app.close_modal()
  var flask:=app.find_child("DuelTestEntry",true,false) as Button
- check("Flask exists in the real Main play view without TEST35 CLI",is_instance_valid(flask) and not ("--duel-local-test=35" in OS.get_cmdline_user_args()))
+ check("Flask exists in the real Main play view without TEST42 CLI",is_instance_valid(flask) and not ("--duel-local-test=35" in OS.get_cmdline_user_args()))
  if is_instance_valid(flask):
   var previous_world_mode:int=app.world.process_mode
   check("Real Main flask responds to a phone touch",await click_touch(flask))
   var lab=app.parry_lab
-  check("Main opened the 1v1 TEST35 profile with world safely paused",is_instance_valid(lab) and bool(lab.get("local_melee_polish")) and app.world.process_mode==Node.PROCESS_MODE_DISABLED)
+  check("Main opened the 1v1 TEST42 profile with world safely paused",is_instance_valid(lab) and bool(lab.get("local_melee_polish")) and app.world.process_mode==Node.PROCESS_MODE_DISABLED)
   if is_instance_valid(lab):
    await test_lab(lab)
-   check("Closing TEST35 by real touch restores the Main play world",await click_touch(lab.find_child("DuelClose",true,false) as Button) and not is_instance_valid(app.parry_lab) and app.screen=="play" and not app.modal and app.world.process_mode==previous_world_mode)
+   check("Closing TEST42 by real touch restores the Main play world",await click_touch(lab.find_child("DuelClose",true,false) as Button) and not is_instance_valid(app.parry_lab) and app.screen=="play" and not app.modal and app.world.process_mode==previous_world_mode)
  app.queue_free()
  await process_frame
- print("TEST35 Mobile entry: ",checks," checks; ",failures," failures")
+ print("TEST42 Mobile entry: ",checks," checks; ",failures," failures")
  quit(int(failures>0))
