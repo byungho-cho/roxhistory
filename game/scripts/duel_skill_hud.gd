@@ -33,6 +33,7 @@ var normal_flash:TextureRect
 var badge_flash:TextureRect
 var linked_flash:TextureRect
 var normal_border_arc:Control
+var badge_border_arc:Control
 var linked_outer_glow:Control
 var hp:TextureProgressBar # Hidden compatibility state; HP is displayed overhead.
 var sp_label:Label # Hidden: no separate SP text is drawn.
@@ -145,16 +146,19 @@ func enable_duel_ready_feedback()->void:
 	linked_flash=_ready_light(chain_button,Rect2(1,1,50.8,50.8),blue)
 	chain_button.move_child(linked_flash,chain_foreground.get_index())
 	normal_border_arc=_make_ready_arc(portrait_button,Rect2(2,2,62,62),5.8)
+	badge_border_arc=_make_ready_arc(badge,Rect2(2,2,40,40),6.2,.70)
+	badge_border_arc.name="HangyeolBadgeBorderArc"
+	badge_border_arc.scale=Vector2.ONE*.60
 	linked_outer_glow=_make_linked_outer_glow()
 	_setup_ready_convergence()
 	_setup_orb_lights()
 
-func _make_ready_arc(parent:Control, contour:Rect2, radius:float)->Control:
+func _make_ready_arc(parent:Control, contour:Rect2, radius:float, speed:float=1.0)->Control:
 	var layer:=Control.new()
 	layer.name="OrdinaryBorderArc"
 	layer.mouse_filter=MOUSE_FILTER_IGNORE
 	parent.add_child(layer)
-	layer.draw.connect(func():_draw_ready_arc(layer,contour,radius))
+	layer.draw.connect(func():_draw_ready_arc(layer,contour,radius,normal_age*speed))
 	layer.hide()
 	return layer
 
@@ -181,14 +185,14 @@ func _ready_arc_heads(age:float, perimeter:float)->PackedFloat32Array:
 	var base:=age*1.5/1.72+.05
 	return PackedFloat32Array([perimeter*base,perimeter*(base+1.0/3.0),perimeter*(base+2.0/3.0)])
 
-func _draw_ready_arc(layer:Control, box:Rect2, radius:float)->void:
+func _draw_ready_arc(layer:Control, box:Rect2, radius:float, age:float)->void:
 	var perimeter:=2.0*(box.size.x+box.size.y-4.0*radius)+TAU*radius
-	var path:=_closed_ready_arc(box,radius,perimeter,normal_age)
+	var path:=_closed_ready_arc(box,radius,perimeter,age)
 	layer.draw_polyline(path,Color("ffab38",.20),5.2,true)
 	layer.draw_polyline(path,Color("ffd66d",.54),2.1,true)
 	layer.draw_polyline(path,Color("ffe5a7",.49),1.0,true)
-	for head in _ready_arc_heads(normal_age,perimeter):
-		_draw_arc_streak(layer,box,radius,perimeter,head,normal_age+head/perimeter)
+	for head in _ready_arc_heads(age,perimeter):
+		_draw_arc_streak(layer,box,radius,perimeter,head,age+head/perimeter)
 
 func _closed_ready_arc(box:Rect2, radius:float, perimeter:float, age:float)->PackedVector2Array:
 	var path:=PackedVector2Array()
@@ -235,6 +239,10 @@ func _make_linked_outer_glow()->Control:
 shader_type canvas_item;
 render_mode blend_mix;
 uniform float age = 0.0;
+uniform float spread_scale = 1.0;
+uniform vec3 outer_color = vec3(.08,.50,1.0);
+uniform vec3 glow_tint = vec3(.54,.91,1.0);
+uniform vec3 rim_color = vec3(.88,.985,1.0);
 float bell(float x){return exp(-x*x);}
 void fragment(){
 	vec2 px=(UV-vec2(.5))*104.8;
@@ -248,17 +256,18 @@ void fragment(){
 	float jitter=.52*walk+.31*cross+.14*rough;
 	float peak=.70+.17*walk+.10*cross+.06*rough;
 	float rim=bell((d-.9-jitter)/max(.65,.98+.23*cross+.12*rough));
-	float exterior=smoothstep(-.35,.9,d);
-	float bright=bell((d-2.24-jitter*1.2)/3.45)*(.57+.14*walk)*exterior;
-	float soft=bell(max(d-3.0-jitter*1.6,0.0)/8.5)*(.47+.11*cross)*exterior;
-	float falloff=bell(max(d-4.0,0.0)/15.8)*.29*exterior;
+	float spread_d=d/max(spread_scale,.1);
+	float exterior=smoothstep(-.35,.9,spread_d);
+	float bright=bell((spread_d-2.24-jitter*1.2)/3.45)*(.57+.14*walk)*exterior;
+	float soft=bell(max(spread_d-3.0-jitter*1.6,0.0)/8.5)*(.47+.11*cross)*exterior;
+	float falloff=bell(max(spread_d-4.0,0.0)/15.8)*.29*exterior;
 	float phase=fract(age/2.28+.075*dot(around,vec2(.9,.7)));
 	float pulse=sin(phase*3.14159265);
 	float wave_at=mix(3.8,19.0,phase)+1.55*cross+1.08*walk;
-	float echo=bell((d-wave_at)/2.05)*(.19+.08*rough+.07*walk)*pulse*exterior;
-	float mask=1.0-smoothstep(23.0,25.5,d);
-	vec3 cyan=mix(vec3(.08,.50,1.0),vec3(.54,.91,1.0),clamp(bright+echo,0.0,1.0));
-	vec3 tint=mix(cyan,vec3(.88,.985,1.0),clamp(rim*(.82+.18*walk),0.0,1.0));
+	float echo=bell((spread_d-wave_at)/2.05)*(.19+.08*rough+.07*walk)*pulse*exterior;
+	float mask=1.0-smoothstep(23.0,25.5,spread_d);
+	vec3 cyan=mix(outer_color,glow_tint,clamp(bright+echo,0.0,1.0));
+	vec3 tint=mix(cyan,rim_color,clamp(rim*(.82+.18*walk),0.0,1.0));
 	COLOR=vec4(tint,clamp(rim*peak+bright+soft+falloff+echo,0.0,1.0)*mask);
 }
 """
@@ -326,14 +335,34 @@ func _draw_duel_ready_state()->void:
 	normal_flash.visible=normal_ready
 	badge_flash.visible=normal_ready
 	linked_flash.visible=false # Do not wash or pulse the skill art.
-	normal_border_arc.visible=normal_ready
-	if normal_ready:normal_border_arc.queue_redraw()
+	normal_border_arc.visible=false
+	if normal_border_arc.visible:normal_border_arc.queue_redraw()
+	badge_border_arc.visible=normal_ready
+	if badge_border_arc.visible:badge_border_arc.queue_redraw()
 	linked_outer_glow.visible=chain_ready
-	if chain_ready:linked_outer_glow.material.set_shader_parameter("age",chain_age)
+	linked_outer_glow.material.set_shader_parameter("spread_scale",.70)
+	if chain_ready:
+		var halo_mat:=linked_outer_glow.material as ShaderMaterial
+		halo_mat.set_shader_parameter("age",chain_age)
+		var outer:=Vector3(.08,.50,1.0)
+		var glow:=Vector3(.54,.91,1.0)
+		var rim:=Vector3(.88,.985,1.0)
+		match character:
+			"uram":
+				outer=Vector3(.89,.16,.08)
+				glow=Vector3(1.0,.47,.19)
+				rim=Vector3(1.0,.86,.55)
+			"saebom":
+				outer=Vector3(.91,.51,.08)
+				glow=Vector3(1.0,.78,.28)
+				rim=Vector3(1.0,.96,.69)
+		halo_mat.set_shader_parameter("outer_color",outer)
+		halo_mat.set_shader_parameter("glow_tint",glow)
+		halo_mat.set_shader_parameter("rim_color",rim)
 	normal_frame.set_border_width_all(2 if normal_ready else 1)
 	if normal_ready:
 		var pulse:=pow(.5+.5*cos(normal_age*TAU/1.12),2.4)
-		normal_flash.modulate.a=.34 if character=="hangyeol" else (.11+pulse*.39)*.90
+		normal_flash.modulate.a=(.11+pulse*.39)*.90
 		if character=="hangyeol":warm_glow.modulate.a=.82
 		badge_flash.material.set_shader_parameter("gather_phase",_ready_gather_phase(normal_age))
 		normal_frame.border_color=Color("ffe2a0") if character=="hangyeol" else Color("df9f34").lerp(Color("fff1ac"),.48+pulse*.52)

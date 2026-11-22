@@ -2037,6 +2037,7 @@ func start_parry_lab(model_only := false, duel_only := false) -> void:
 		building_workflow.process_mode = Node.PROCESS_MODE_DISABLED
 	if duel_only:
 		parry_lab = preload("res://scenes/hunt_duel_lab.tscn").instantiate()
+		parry_lab.show_final_test35 = true
 	else:
 		parry_lab = preload("res://scripts/model_test.gd").new() if model_only else preload("res://scripts/parry_lab.gd").new()
 	parry_lab.app = self
@@ -2060,6 +2061,7 @@ func exit_parry_lab() -> void:
 
 func add_parry_lab_entry(at: Vector2) -> void:
 	var flask := button(stage,"",func():start_parry_lab(false,true),false,"","")
+	flask.name = "DuelTestEntry"
 	flask.custom_minimum_size = Vector2.ZERO
 	flask.position = at
 	flask.size = Vector2(48,48)

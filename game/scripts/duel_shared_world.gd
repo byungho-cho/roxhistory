@@ -38,10 +38,10 @@ var direction:=Vector3(1,0,-.88).normalized()
 var screen_origin:=Vector2.ZERO
 var floor_bounce_lights:Array[OmniLight3D]=[]
 
-func configure(left,right,center:Vector2)->void:
+func configure(left,right,center:Vector2,local_ranged_boar:=false)->void:
 	actors=[left,right]
 	uram_pair=left.key=="uram" and right.key=="adult"
-	saebom_pair=left.key=="saebom" and right.key=="forest"
+	saebom_pair=left.key=="saebom" and (right.key=="forest" or (local_ranged_boar and right.key=="adult"))
 	viewport=SubViewport.new();viewport.name="SharedDuel3DViewport"
 	viewport.size=Vector2i(1280,720);viewport.own_world_3d=true;viewport.transparent_bg=true
 	viewport.msaa_3d=Viewport.MSAA_2X;viewport.render_target_update_mode=SubViewport.UPDATE_ALWAYS
@@ -126,6 +126,7 @@ func _calibrate_weapon_axis()->void:
 	actor.play("idle");actors[1].play("idle")
 
 func reset()->void:
+	bom_close=false;bom_shove=false;bom_hop=0.;bom_prev=0.
 	_end_projectile();projectile_releases.clear();_restore_sling_stone()
 	contacts.clear();body_contacts=0;max_body_penetration=0;deer_spear_reaction=false
 	knockback=[Vector3.ZERO,Vector3.ZERO]
@@ -137,6 +138,13 @@ func reset()->void:
 		previous_weapon[i]=weapon_point(i);previous_hurt.append(hurt_capsule(i))
 
 func begin_action(side:int,key:String)->void:
+	if side==0 and saebom_pair and local_melee_polish:
+		var gap:=bodies[0].position.distance_to(bodies[1].position)
+		bom_close=saebom_close_at(gap,bom_close,1.52,1.82)
+		bom_shove=key=="attack" and bom_close
+		bom_hop=clampf(1.90-gap,0.,.56) if key=="skill" and bom_close else 0.
+		bom_prev=0.
+		bom_dir=((bodies[0].position-bodies[1].position)*Vector3(1,0,1)).normalized()
 	action_id[side]+=1;action_name[side]=key;consumed[side]=false
 	action_origin[side]=bodies[side].position;previous_root[side]=Vector3.ZERO
 	previous_weapon[side]=weapon_point(side)
@@ -157,7 +165,14 @@ func bone_world(side:int,bone:String)->Vector3:
 func bone_screen(side:int,bone:String)->Vector2:return project(bone_world(side,bone))
 
 func weapon_point(side:int)->Vector3:
-	if saebom_pair and side==0:return sling_point()
+	if saebom_pair and side==0:
+		if not bom_shove:return sling_point()
+		var sk:Skeleton3D=actors[0].preview.skeleton
+		var hand:=sk.find_bone("hand.R")
+		var tip:=bone_world(0,"hand.R")
+		if hand<0:return tip
+		var elbow:=sk.get_bone_parent(hand)
+		return tip+(tip-sk.to_global(sk.get_bone_global_pose(elbow).origin)).normalized()*.105
 	if uram_pair and side==0:
 		var p=actors[0].preview
 		if action_name[0]=="counter":return p.shield.to_global(Vector3(0,0,.035))
@@ -325,6 +340,7 @@ func render_poses(lab,delta:float)->Array:
 		if side==0 and key=="chain" and not uram_pair and not saebom_pair:sample_age=lab.Accent.chain_pose(age,actor.duration)
 		var directional_hit:=side==1 and key=="hit" and deer_spear_reaction and not uram_pair
 		lab.presentation.sample(actor,side,key,sample_age,INF if lab.approach_active else float(lab.next_attack[side])-lab.rules.elapsed,delta,false,directional_hit)
+		if side==0 and key=="attack" and bom_shove:saebom_shove_pose(actor,age/maxf(.01,actor.duration),Vector3.INF)
 		var sk:Skeleton3D=p.skeleton
 		var root:int=p.root_bone if side==0 else p.root_index
 		var root_pose:=sk.get_bone_pose_position(root);var rest:=sk.get_bone_rest(root).origin
@@ -342,6 +358,22 @@ func render_poses(lab,delta:float)->Array:
 		var bottom:=INF
 		for foot in feet:bottom=minf(bottom,bone_world(side,foot).y)
 		if bottom<0:p.pivot.position.y-=bottom;sk.force_update_all_bone_transforms()
+		if side==0 and key=="attack" and bom_shove:
+			var q:=hurt_capsule(1)
+			var anchor:=bone_world(0,"upper.R")
+			var nearer:Vector3=q.a if anchor.distance_squared_to(q.a)<anchor.distance_squared_to(q.b) else q.b
+			var phase:=age/maxf(.01,actor.duration)
+			var lean:=smoothstep(.15,.42,phase)*(1.-smoothstep(.53,.89,phase))
+			var aim_dir:=nearer-anchor;aim_dir.y=0.
+			p.pivot.position+=aim_dir.normalized()*.19*lean
+			var spine:=sk.find_bone("spine")
+			if spine>=0:
+				var torso_pose:=sk.get_bone_global_pose(spine)
+				var torso_world:=sk.to_global(torso_pose.origin)
+				torso_pose.origin=sk.to_local(torso_world+aim_dir.normalized()*.26*lean-Vector3.UP*.075*lean)
+				sk.set_bone_global_pose(spine,torso_pose)
+			_aim_saebom_palm(sk,nearer,lean)
+		if side==0 and key=="skill" and bom_hop>0.:saebom_hop_pose(actor,age/maxf(.01,actor.duration),bom_hop/.56)
 		if side==0:
 			if uram_pair:
 				p.update_equipment()
@@ -414,7 +446,11 @@ func step(lab,delta:float,prior_han_age:float=-1.0)->Array[Dictionary]:
 				if key=="chain":forward=0.0
 				elif key=="counter":forward=maxf(forward,1.8*delta);safe=1.10
 				else:forward=maxf(forward,2.0*delta if lab.age[0]<actors[0].duration*.55 else 0.0);safe=1.38
-			if saebom_pair and side==0:forward=0.0
+			if saebom_pair and side==0:
+				forward=0.0
+				if key=="skill" and bom_hop>0.:
+					var hop:=bom_hop*saebom_hop_envelope(float(lab.age[0])/maxf(.01,float(actors[0].duration)))
+					desired[0]+=bom_dir*(hop-bom_prev);bom_prev=hop
 			desired[side]+=toward*minf(forward,maxf(0,distance-safe))
 		previous_root[side]=roots[side]
 		if key=="death":knockback[side]=Vector3.ZERO
@@ -438,7 +474,7 @@ func step(lab,delta:float,prior_han_age:float=-1.0)->Array[Dictionary]:
 		var active:bool=lab.age[side]>=opens and prior_age<=closes
 		var can_strike:=key in ["attack","skill","chain"]
 		if uram_pair and side==0:can_strike=key in ["attack","skill","counter"]
-		if saebom_pair and side==0:can_strike=false
+		if saebom_pair and side==0:can_strike=bom_shove and key=="attack"
 		if not lab.approach_active and can_strike and not consumed[side] and active and lab.rules.living():
 			# Substeps follow articulated motion; relative target travel is included.
 			var shift:Vector3=(target.a+target.b-old_hurt[1-side].a-old_hurt[1-side].b)*.5
@@ -551,6 +587,52 @@ const SAEBOM_DEER_APPROACH_GAP:=1.98
 const SLING_SKIN_RADIUS:=.066
 const MotionTiming=preload("res://scripts/motion_timing.gd")
 var saebom_pair:=false
+var local_melee_polish:=false
+var bom_close:=false
+var bom_shove:=false
+var bom_hop:=0.
+var bom_prev:=0.
+var bom_dir:=Vector3.ZERO
+static func saebom_close_at(gap:float,latched:bool,enter:float,leave:float)->bool:
+	return gap<=(leave if latched else enter)
+static func saebom_hop_envelope(p:float)->float:
+	return smoothstep(0.,.26,p)*(1.-smoothstep(.79,1.,p))
+static func saebom_hop_pose(actor,p:float,strength:float)->void:
+	var rig=actor.preview
+	var preload_lift:=smoothstep(0.,.08,p)*(1.-smoothstep(.08,.14,p))
+	var landing:=smoothstep(.26,.32,p)*(1.-smoothstep(.33,.43,p))
+	var launch:=sin(PI*clampf((p-.08)/.24,0.,1.))
+	var return_lift:=sin(PI*clampf((p-.80)/.19,0.,1.))
+	rig.pivot.position.y+=strength*(.16*launch+.085*return_lift-.038*(preload_lift+landing))
+static func saebom_shove_pose(actor,p:float,target:Vector3=Vector3.INF)->void:
+	actor.resident_sample("guard",clampf(p,0.,.99)*actor.span("guard")*.74)
+	var sk:Skeleton3D=actor.preview.skeleton
+	var pulse:=smoothstep(.15,.43,p)*(1.-smoothstep(.57,.92,p))
+	for pair in [["upper.R",-.58],["forearm.R",.72]]:
+		var j:=sk.find_bone(pair[0])
+		if j>=0:sk.set_bone_pose_rotation(j,sk.get_bone_pose_rotation(j)*Quaternion(Vector3.RIGHT,float(pair[1])*pulse))
+	sk.force_update_all_bone_transforms()
+	if target!=Vector3.INF:_aim_saebom_palm(sk,target,pulse)
+
+static func _aim_saebom_palm(sk:Skeleton3D,target:Vector3,pulse:float)->void:
+	if pulse<=.01:return
+	var palm:=sk.find_bone("hand.R")
+	if palm<0:return
+	var destination:=sk.to_local(target+Vector3.UP*.05)
+	var elbow:=sk.get_bone_parent(palm)
+	var upper:=sk.find_bone("upper.R")
+	for pass_index in 4:
+		for joint in [elbow,upper,elbow]:
+			if joint<0:continue
+			var pivot:=sk.get_bone_global_pose(joint)
+			var current:=sk.get_bone_global_pose(palm).origin-pivot.origin
+			var desired:=destination-pivot.origin
+			if current.length_squared()<.00001 or desired.length_squared()<.00001:continue
+			var align:=Quaternion(current.normalized(),desired.normalized())
+			var turn:=Quaternion.IDENTITY.slerp(align,pulse*.65)
+			pivot.basis=Basis(turn)*pivot.basis
+			sk.set_bone_global_pose(joint,pivot)
+			sk.force_update_all_bone_transforms()
 var projectile:Dictionary={}
 var projectile_releases:Array[Dictionary]=[]
 var projectile_mesh:MeshInstance3D
@@ -597,7 +679,7 @@ func _projectile_step(lab,delta:float,old_hurt:Dictionary,old_origin:Vector3,pri
 		return {}
 	var begin_fraction:=0.0
 	var key:String=lab.motion[0]
-	var mark:=sling_release_seconds(key)
+	var mark:=INF if key=="attack" and bom_shove else sling_release_seconds(key)
 	var age:float=lab.age[0]
 	if lab.approach_active:return {}
 	if key not in ["attack","skill"] or not consumed[0]:_restore_sling_stone()

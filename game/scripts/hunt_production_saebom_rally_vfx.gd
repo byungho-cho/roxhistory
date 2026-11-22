@@ -6,7 +6,9 @@ const SaebomRig := preload("res://scripts/hunt_production_saebom_rig.gd")
 const VISUAL_RELEASE := .96
 const CAST_END := 2.24
 const AURA_END := 2.1
-const FIELD_SCALE := .42
+const WING_SCALE := .34
+const ALLY_SCALE := .60
+const WING_JOIN := Vector2(0., -53.)
 var back_layer:Node2D
 var front_layer:Node2D
 var rig:SaebomRig
@@ -86,10 +88,10 @@ func _draw(front:bool) -> void:
  if not active:return
  var layer := front_layer if front else back_layer
  if age<CAST_END and _valid(caster):
-  art.draw_wings(layer,texture,positions[caster]+Vector2(0.,-103.*FIELD_SCALE),age,FIELD_SCALE,front)
+  art.draw_wings(layer,texture,positions[caster]+WING_JOIN,age,WING_SCALE,front)
  if age<aura_start or age>=aura_start+AURA_END:return
  for slot in recipients:
-  if _valid(slot):art.draw_ally(layer,texture,positions[slot],VISUAL_RELEASE+age-aura_start,FIELD_SCALE,front)
+  if _valid(slot):art.draw_ally(layer,texture,positions[slot],VISUAL_RELEASE+age-aura_start,ALLY_SCALE,front)
 
 func _clear_pose() -> void:
  if is_instance_valid(rig):rig.clear_support_pose()

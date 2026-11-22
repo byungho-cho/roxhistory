@@ -134,3 +134,23 @@ func draw_uram_gong(layer:CanvasItem,tex:Texture2D,center:Vector2,direction:Vect
   if j%2==0:_light(layer,tex,point,Vector2(75,49)*(1.+opening*.42)*scale0,Color("ec6826"),strength*envelope*(.30+.10*ring))
   _light(layer,tex,point,Vector2(46,31)*scale0,Color("ff9f48"),strength*envelope*.22*(.8+.2*sin(theta*13.+1.)))
   _light(layer,tex,point-ray*(30.+opening*50.)*.44*scale0,Vector2(59,37)*scale0,Color("d56a36"),strength*envelope*.15)
+
+## Approved standalone ground grit, spatially independent of the shield-face flare.
+## Use actual Uram feet at confirmed block. Wildlife takeoff dust remains separate.
+func draw_uram_gong_dust(layer:CanvasItem,tex:Texture2D,floor_point:Vector2,age:float)->void:
+ if age<=0. or age>=2.15:return
+ const SCALE := .44
+ var dur:=clampf(age/2.15,0.,1.)
+ var env:=smoothstep(0.,.07,age)*(1.-smoothstep(.36,2.15,age))
+ if env<=.003:return
+ for i in 37:
+  var a:=float(i)*2.39996
+  var ray:=Vector2(cos(a),sin(a)*.36)
+  var at:=floor_point+(ray*lerpf(10.,190.+float(i%6)*11.,sqrt(dur))+Vector2(30.*dur,-(17.+float(i%3)*10.)*sin(dur*PI)))*SCALE
+  var extent:=Vector2(78,32)*lerpf(.52,1.65,dur)*SCALE
+  _light(layer,tex,at,extent,Color("513d2e"),env*.30)
+  _light(layer,tex,at-Vector2(3,4)*SCALE,extent*.87,Color("ca9c68"),env*(.29+float(i%3)*.08))
+ for i in 15:
+  var a:=float(i)*2.39996
+  var at:=floor_point+(Vector2(cos(a)*175,sin(a)*38)*sqrt(dur)+Vector2(0,-(25.+float(i%3)*34.)*sin(dur*PI)))*SCALE
+  layer.draw_circle(at,(1.1+float(i%3)*.8)*SCALE,Color("634431",env*.43),true,-1,true)

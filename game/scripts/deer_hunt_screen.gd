@@ -1139,27 +1139,29 @@ func _draw_normal_hunt_art(front:bool) -> void:
 	if front and pose == ManualHunt.URAM_CLUB_2 and pose_clock < .3:
 		var tip := _weapon_metric(1)
 		if tip.is_finite():
-			manual_front_fx.draw_uram_skill_windup(dest,stone_glow,_stone_render_point(tip),pose_clock/.3,.85)
+			manual_front_fx.draw_uram_skill_windup(dest,prey_art.soft,_stone_render_point(tip),pose_clock/.3,1.0)
 	if front and pose == ManualHunt.HAN_SPEAR_3 and pose_clock < _manual_duration(pose) and not spear_wake.is_empty():
 		var foot := hunters[0].position
-		manual_front_fx.draw_han_chain_cast(dest,stone_glow,foot,foot+Vector2(0,-20),foot.lerp(spear_wake[0],.54),spear_wake[0],pose_clock/_manual_duration(pose),spear_wake,.82)
+		manual_front_fx.draw_han_chain_cast(dest,prey_art.soft,foot,foot+Vector2(0,-20),foot.lerp(spear_wake[0],.54),spear_wake[0],pose_clock/_manual_duration(pose),spear_wake,.82)
 	for effect in manual_effects:
 		var position2:Vector2 = effect.pos
 		match effect.kind:
 			"gong":
 				if front:
-					manual_front_fx.draw_uram_gong(dest,stone_glow,position2,effect.axis,effect.age,.85)
+					manual_front_fx.draw_uram_gong(dest,prey_art.soft,position2,effect.axis,effect.age,1.0)
+				else:
+					manual_front_fx.draw_uram_gong_dust(dest,prey_art.soft,effect.floor,effect.age)
 			ManualHunt.HAN_SPEAR_2:
 				if front:
 					manual_front_fx.draw_han_skill_hit(dest,position2,effect.axis,effect.age,.85)
 			ManualHunt.HAN_SPEAR_3:
 				if front:
-					manual_front_fx.draw_han_chain_hit(dest,stone_glow,position2,effect.floor,effect.age,.85)
+					manual_front_fx.draw_han_chain_hit(dest,prey_art.soft,position2,effect.floor,effect.age,.85)
 				else:
-					manual_front_fx.draw_han_chain_ground(dest,stone_glow,effect.floor,effect.age,.85)
+					manual_front_fx.draw_han_chain_ground(dest,prey_art.soft,effect.floor,effect.age,.85)
 			ManualHunt.URAM_CLUB_2:
 				if front:
-					manual_front_fx.draw_uram_skill_hit(dest,stone_glow,position2,effect.floor,effect.axis,effect.age,.85)
+					manual_front_fx.draw_uram_skill_hit(dest,prey_art.soft,position2,effect.floor,effect.axis,effect.age,1.0)
 			"prey_hit":
 				if front:
 					prey_art.draw_impact({"center":position2,"floor_point":effect.floor},clampf(effect.age/.56,0.0,1.0),dest)
