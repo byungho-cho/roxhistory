@@ -43,6 +43,7 @@ var forest_input_pending:=false
 var forest_guard_close_brace:=false
 var uram_basic_feet_start:=Vector3.ZERO
 var uram_basic_anchor:=false
+var uram_entry_shield_revealed:=false
 
 func configure(left,right,center:Vector2,local_ranged_boar:=false,local_uram_forest:=false)->void:
 	actors=[left,right]
@@ -137,6 +138,8 @@ func reset()->void:
 	forest_input_pending=false
 	forest_guard_close_brace=false
 	uram_basic_anchor=false
+	uram_entry_shield_revealed=false
+	if local_melee_polish and uram_pair:actors[0].preview.shield.hide()
 	bom_close=false;bom_shove=false;bom_hop=0.;bom_prev=0.
 	_end_projectile();projectile_releases.clear();_restore_sling_stone()
 	contacts.clear();body_contacts=0;max_body_penetration=0;deer_spear_reaction=false
@@ -368,38 +371,19 @@ func render_poses(lab,delta:float)->Array:
 		if uram_forest_pair and side==1 and key=="run" and not lab.approach_active and bodies[0].position.distance_to(bodies[1].position)<LOCAL_BASIC_READY_MIN:
 			var length:float=p.length("walk")
 			_blend_forest_backstep(p,fposmod(-age*1.4,maxf(.01,length)),1.)
-		if uram_forest_pair and side==1 and key=="skill":
-			var start:float=p.length("req046_skill_anticipation")
-			if age<start:
-				# One readable warning: neutral → reverse gait → head-down → charge lead-in.
-				# Never show the stock rearing frames before planting.
-				_blend_forest_pose(p,p.animation.get_animation("idle"),0.,1.)
-				if age>=FOREST_RETREAT_AT and age<FOREST_RETREAT_END:
-					var gait:float=p.length("walk")
-					var reverse_time:=fposmod(-((age-FOREST_RETREAT_AT)*1.65),maxf(.001,gait))
-					_blend_forest_backstep(p,reverse_time,smoothstep(FOREST_RETREAT_AT,FOREST_RETREAT_AT+.08,age)*(1.0-smoothstep(FOREST_RETREAT_END-.10,FOREST_RETREAT_END,age)))
-				var rearing:=smoothstep(FOREST_RETREAT_END,FOREST_RAISED_AT,age)*(1.-smoothstep(FOREST_PLANT_AT,FOREST_PLANT_AT+.19,age))
-				# One authored rear, held on the same frame. Never replay the other
-				# head-up beats from the original anticipation clip.
-				var pose_time:float=1.93*p.motion_rate("req046_skill_anticipation")
-				_blend_forest_pose(p,p.animation.get_animation("req046_skill_anticipation"),pose_time,rearing)
-				_blend_forest_pose(p,p.animation.get_animation("req046_skill_execute"),0.,smoothstep(start-.12,start,age))
+		if uram_forest_pair and side==1 and key=="skill" and age<FOREST_RAISED_AT:
+			# Uram keeps the retreat, then releases the presentation to the same
+			# actual anticipation + ram clip as Han. No planted artificial dip.
+			_blend_forest_pose(p,p.animation.get_animation("idle"),0.,1.)
+			if age>=FOREST_RETREAT_AT and age<FOREST_RETREAT_END:
+				var gait:float=p.length("walk")
+				var reverse_time:=fposmod(-((age-FOREST_RETREAT_AT)*1.65),maxf(.001,gait))
+				_blend_forest_backstep(p,reverse_time,smoothstep(FOREST_RETREAT_AT,FOREST_RETREAT_AT+.08,age)*(1.0-smoothstep(FOREST_RETREAT_END-.10,FOREST_RETREAT_END,age)))
+			if age>=FOREST_RETREAT_END:
+				var native_at:float=sample_age*p.motion_rate("req046_skill_anticipation")
+				_blend_forest_pose(p,p.animation.get_animation("req046_skill_anticipation"),native_at,smoothstep(FOREST_RETREAT_END,FOREST_RAISED_AT,age))
 		if side==0 and key=="attack" and bom_shove:saebom_shove_pose(actor,age/maxf(.01,actor.duration),Vector3.INF)
 		var sk:Skeleton3D=p.skeleton
-		if uram_forest_pair and side==1 and key=="skill":
-			var nod:=smoothstep(FOREST_PLANT_AT,FOREST_PLANT_AT+.18,age)*(1.-smoothstep(2.25,2.40,age))
-			var head:=sk.find_bone("head")
-			if nod>0. and head>=0 and toward.length_squared()>.001:
-				var neck:=sk.get_bone_parent(head)
-				var axis:=(sk.global_basis.inverse()*(Vector3.UP.cross(toward.normalized()))).normalized()
-				if neck>=0:
-					var neck_pose:=sk.get_bone_global_pose(neck)
-					neck_pose.basis=Basis(axis,.61*nod)*neck_pose.basis
-					sk.set_bone_global_pose(neck,neck_pose)
-					sk.force_update_all_bone_transforms()
-				var pose:=sk.get_bone_global_pose(head)
-				pose.basis=Basis(axis,.21*nod)*pose.basis
-				sk.set_bone_global_pose(head,pose)
 		var root:int=p.root_bone if side==0 else p.root_index
 		var root_pose:=sk.get_bone_pose_position(root);var rest:=sk.get_bone_rest(root).origin
 		root_motion.append(root_pose-rest)
@@ -448,6 +432,13 @@ func render_poses(lab,delta:float)->Array:
 					if key=="chain" and toward.length_squared()>.001:
 						_aim_uram_forest_guard(sk,toward.normalized(),age,lab.uram_guard_active())
 				p.update_equipment()
+				if local_melee_polish and not uram_entry_shield_revealed:
+					# Entrants are still travelling toward the ring slots. Reveal
+					# the now-posed forearm shield only on actual face-off, once.
+					if not lab.approach_active or (lab.visual_clock>=lab.APPROACH_TRAVEL*lab.entrance_scale and key=="idle" and lab.motion[1]=="idle"):
+						uram_entry_shield_revealed=true
+						p.shield.show()
+					else:p.shield.hide()
 				if uram_forest_pair and key not in ["chain","counter"]:
 					# Bind the passive shield directly to its moving wrist and
 					# forearm mid-point. Never leave a free quad where he started.

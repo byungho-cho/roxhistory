@@ -49,6 +49,12 @@ var chain_foreground:Control
 var normal_threshold:=2.0
 var chain_threshold:=3.0
 
+func place_local_combat_hud(center_x:float)->void:
+	# A shared test-only layout inside the existing responsive arena safe area.
+	const HUD_SCALE:=1.5
+	scale=Vector2.ONE*HUD_SCALE
+	position=Vector2(center_x-PORTRAIT_SIZE*HUD_SCALE*.5,406.)
+
 func _ready()->void:
 	mouse_filter=MOUSE_FILTER_IGNORE;size=Vector2(66,84)
 	portrait_button=_button(self,Rect2(0,0,66,66),"skill")
@@ -104,10 +110,14 @@ func reset(id:String)->void:
 	var ordinary_colors:Array=[Color("469d9b"),Color("1a575b"),Color("112b32")] if id=="uram" else [Color("7ed9e3"),Color("236b7b"),Color("102e37")] if id=="saebom" else [Color("8ef1be"),Color("2b7955"),Color("0d2a22")]
 	badge_glow.texture=_glow(ordinary_colors)
 	sync(1,100,100,true,true,0)
+var chain_border_speed:=1.0
+var chain_border_age:=0.0
+
 func sync(sp:float,health:int,max_health:int,living:bool,input_available:bool,delta:float,chain_input_available:Variant=null)->void:
 	var ordinary:=living and sp+.000001>=normal_threshold;var linked:=living and sp+.000001>=chain_threshold
 	if ordinary and not normal_ready:normal_age=0;normal_entries+=1
-	if linked and not chain_ready:chain_age=0;chain_entries+=1
+	if linked and not chain_ready:chain_age=0;chain_border_age=0.;chain_entries+=1
+	chain_border_age=chain_border_age+delta*chain_border_speed if linked else 0.
 	normal_ready=ordinary;chain_ready=linked;normal_age=normal_age+delta if ordinary else 0;chain_age=chain_age+delta if linked else 0;phase=fposmod(chain_age,3.0) if linked else 0
 	badge.visible=ordinary;chain_button.visible=linked;portrait_button.disabled=not ordinary or not input_available;chain_button.disabled=not linked or not (input_available if chain_input_available==null else bool(chain_input_available))
 	warm_glow.visible=ordinary;warm_glow.modulate.a=smoothstep(0,.35,normal_age);frame.get_theme_stylebox("panel").border_color=Color("ffe2a0") if ordinary else Color("a38760")
@@ -343,7 +353,7 @@ func _draw_duel_ready_state()->void:
 	linked_outer_glow.material.set_shader_parameter("spread_scale",.70)
 	if chain_ready:
 		var halo_mat:=linked_outer_glow.material as ShaderMaterial
-		halo_mat.set_shader_parameter("age",chain_age)
+		halo_mat.set_shader_parameter("age",chain_border_age)
 		var outer:=Vector3(.08,.50,1.0)
 		var glow:=Vector3(.54,.91,1.0)
 		var rim:=Vector3(.88,.985,1.0)

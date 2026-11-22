@@ -94,6 +94,7 @@ func setup(dust_draw:Callable=Callable(),gong:Callable=Callable(), heavy:Callabl
 	for i in 3:
 		var hud:=HUD.new();hud.position=Vector2(359+88*i,437);hud_parent.add_child(hud)
 		hud.enable_duel_ready_feedback();hud.reset(HEROES[i])
+		if local_melee_polish:hud.place_local_combat_hud(480.+128.*float(i-1))
 		hud.requested.connect(_request.bind(i))
 		huds.append(hud)
 	_draw_pose(0.0)

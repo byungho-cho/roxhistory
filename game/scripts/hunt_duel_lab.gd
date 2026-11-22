@@ -200,7 +200,6 @@ const APPROVED_PARRY_ASSET_DIR:="res://assets/effects/duel-uram-approved/"
 var local_parry_sheets:Array[Texture2D]=[]
 var local_parry_thump:AudioStreamPlayer
 var local_parry_caption:Label
-var local_guard_prompt:Label
 var local_guard_action:=-1
 var fx: Array[Dictionary] = []
 var controls: Dictionary = {}
@@ -360,13 +359,6 @@ func _ready() -> void:
 	local_parry_caption.add_theme_color_override("font_outline_color",Color("4a2f1e"))
 	local_parry_caption.add_theme_constant_override("outline_size",6)
 	local_parry_caption.hide()
-	local_guard_prompt=_label("지금 받아치기",Rect2(391,375,178,27),15)
-	local_guard_prompt.z_index=32
-	local_guard_prompt.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
-	local_guard_prompt.add_theme_color_override("font_color",Color("fff0b7"))
-	local_guard_prompt.add_theme_color_override("font_outline_color",Color("452919"))
-	local_guard_prompt.add_theme_constant_override("outline_size",5)
-	local_guard_prompt.hide()
 	for tint in [Color("ffd179"),Color("87ddff")]:
 		var style:=StyleBoxFlat.new()
 		style.bg_color=Color("101d2c",.93)
@@ -496,10 +488,11 @@ func _setup_ui() -> void:
 	for i in 2:
 		var header:=HeadHUD.create_compact(arena,i==0);overhead.append(header);name_labels.append(header.label);bars.append(header.bar)
 	skill_hud=SkillHUD.new();skill_hud.position=Vector2(447,437);arena.add_child(skill_hud);skill_hud.enable_duel_ready_feedback()
+	if local_melee_polish:skill_hud.place_local_combat_hud(480.0)
 	skill_hud.requested.connect(_try_player);skill_button=skill_hud.portrait_button;chain_button=skill_hud.chain_button
 	touch_buttons.append(chain_button);touch_buttons.append(skill_button)
 	if wild_takeoff_dust or "--duel-local-test=25" in OS.get_cmdline_user_args() or "--duel-local-test=24" in OS.get_cmdline_user_args() or "--duel-local-test=23" in OS.get_cmdline_user_args() or "--duel-local-test=21" in OS.get_cmdline_user_args():
-		var test_stamp:=_label("TEST 42" if local_melee_polish else "TEST 34" if local_saebom_latest else "TEST 33" if local_shared_ranged else "TEST 32" if local_world_ring else "TEST 31" if local_squad_silver else "TEST 30" if local_full_squad_effects else "TEST 29" if local_all_effects else "TEST 28" if uram_generic_gong_test else "TEST 27" if uram_gong_test else "TEST 26" if wild_takeoff_dust else "TEST 25" if "--duel-local-test=25" in OS.get_cmdline_user_args() else "TEST 24" if "--duel-local-test=24" in OS.get_cmdline_user_args() else "TEST 23" if "--duel-local-test=23" in OS.get_cmdline_user_args() else "TEST 21",Rect2(846,509,94,24),13)
+		var test_stamp:=_label("TEST 44" if local_melee_polish else "TEST 34" if local_saebom_latest else "TEST 33" if local_shared_ranged else "TEST 32" if local_world_ring else "TEST 31" if local_squad_silver else "TEST 30" if local_full_squad_effects else "TEST 29" if local_all_effects else "TEST 28" if uram_generic_gong_test else "TEST 27" if uram_gong_test else "TEST 26" if wild_takeoff_dust else "TEST 25" if "--duel-local-test=25" in OS.get_cmdline_user_args() else "TEST 24" if "--duel-local-test=24" in OS.get_cmdline_user_args() else "TEST 23" if "--duel-local-test=23" in OS.get_cmdline_user_args() else "TEST 21",Rect2(846,509,94,24),13)
 		test_stamp.add_theme_color_override("font_shadow_color",Color.BLACK)
 		test_stamp.add_theme_constant_override("shadow_offset_y",1)
 		test_stamp.mouse_filter=Control.MOUSE_FILTER_IGNORE
@@ -660,7 +653,6 @@ func reset_round(after_fade:=false) -> void:
 	local_parry_focus=Vector2.ZERO
 	local_guard_action=-1
 	if is_instance_valid(local_parry_caption):local_parry_caption.hide()
-	if is_instance_valid(local_guard_prompt):local_guard_prompt.hide()
 	ground.self_modulate=Color.WHITE
 	han_chain_light.queue_redraw()
 	touch_pointer=-1;touch_target=null
@@ -736,14 +728,9 @@ func _refresh(delta := 0.0) -> void:
 	for i in 2:
 		bars[i].max_value = rules.full_hp(i)
 		bars[i].value = presentation.hp[i]
+	skill_hud.chain_border_speed=2.45 if _local_guard_accepting() else 1.0
 	skill_hud.sync(rules.sp,rules.hp[0],rules.full_hp(0),rules.living(),_can_request(),delta)
 	skill_hud.hp.value=presentation.hp[0]
-	if is_instance_valid(local_guard_prompt):
-		var charging:bool=_uram_deer_close() and not paused and not approach_active and rules.living() and motion[1]=="skill" and age[1]>=SharedWorld.FOREST_RETREAT_END and age[1]<SharedWorld.FOREST_PLANT_AT
-		var open:bool=_local_guard_accepting() and motion[0]!="chain" and rules.afford(3)
-		local_guard_prompt.text="지금 받아치기" if open else "꽃사슴 기 모으는 중"
-		local_guard_prompt.add_theme_color_override("font_color",Color("fff0b7") if open else Color("c5deed"))
-		local_guard_prompt.visible=open or charging
 	pause_caption.visible=paused;pause_icon.visible=not paused
 	pause_button.tooltip_text="재개" if paused else "일시정지"
 	name_labels[0].text=ModelTest.NAMES[rules.ally_id]
@@ -811,8 +798,9 @@ func _can_request()->bool:
 	return not paused and not approach_active and rules.living() and motion[0] in ["idle","walk","run","attack","hit"]
 
 func _try_player(key: String) -> void:
-	# Guard presses during the windup or after damage never consume or queue SP.
-	if key=="chain" and _uram_deer_close() and not _local_guard_accepting():return
+	# SP-ready activation is always reachable. Only a click in the current ram
+	# window may attach a guard token, so an early/late press is never a parry.
+	var honest_guard:=key=="chain" and _local_guard_accepting()
 	if key=="skill" and _local_ram_busy():return
 	if not SP_COST.has(key) or not _can_request() or not rules.spend(int(SP_COST[key])):
 		return
@@ -822,8 +810,8 @@ func _try_player(key: String) -> void:
 	if key=="chain" and _uram_deer_close() and is_instance_valid(shared_world):
 		# Plant the current stance when the player braces, not a prior hit slide.
 		shared_world.knockback[0]=Vector3.ZERO
-		local_guard_action=shared_world.action_id[1]
-		shared_world.capture_forest_shield_input_face()
+		local_guard_action=shared_world.action_id[1] if honest_guard else -1
+		if honest_guard:shared_world.capture_forest_shield_input_face()
 	_act(0,key)
 	_render_actors()
 	_refresh() # Consume SP and hide readiness in the same input frame.
@@ -1246,6 +1234,9 @@ func _render_actors(delta:=0.0)->void:
 		var focus:Vector2=(_position(0)+_position(1))*.5
 		if _prototype_duel() and accent.kind=="chain":focus.y-=27.0
 		ground.self_modulate=_duel_skill_ground_tint()
+		if local_parry_clock>=0.:
+			var dim:=.19*smoothstep(0.,.22,local_parry_clock)*(1.-smoothstep(1.57,LOCAL_PARRY_SLOW,local_parry_clock))
+			ground.self_modulate=ground.self_modulate.lerp(Color.BLACK,dim)
 		han_chain_light.queue_redraw()
 		field.scale=camera_base_scale*accent.zoom
 		field.position=camera_base_position+camera_base_scale*focus*(1-accent.zoom)
@@ -2357,17 +2348,18 @@ func _draw_local_uram_contact(at:Vector2,ground:Vector2,forward:Vector2,t:float,
 
 func _draw_uram_deer_stun(progress:float)->void:
 	if not is_instance_valid(shared_world) or rules.hp[1]<=0:return
-	var top:=shared_world.bone_screen(1,"head")-Vector2(0,24)
+	var top:=shared_world.bone_screen(1,"head")-Vector2(0,28)
 	var life:=1.0-smoothstep(.68,1.0,progress)
 	for i in 3:
 		var phase:=progress*TAU*1.3+float(i)*TAU/3.0
 		var depth:=sin(phase)
-		var point:=top+Vector2(cos(phase)*16.0,depth*5.7)
+		var point:=top+Vector2(cos(phase)*20.0,depth*6.6)
 		var scale:=lerpf(.68,1.08,(depth+1.0)*.5)
-		var size:=Vector2(18,15)*scale
-		_soft_light(point,size,Color("ffb344"),life*.70)
-		var tint:=Color("fff4b0",life*lerpf(.57,1.0,(depth+1.0)*.5))
+		var size:=Vector2(36,30)*scale
+		_soft_light(point,size,Color("ee9c35"),life*.70)
+		var tint:=Color("f6bd55",life*lerpf(.67,1.0,(depth+1.0)*.5))
 		var points:=PackedVector2Array([point+Vector2(0,-4),point+Vector2(1.3,-1.1),point+Vector2(4,0),point+Vector2(1.3,1.1),point+Vector2(0,4),point+Vector2(-1.3,1.1),point+Vector2(-4,0),point+Vector2(-1.3,-1.1)])
+		for n in points.size():points[n]=point+(points[n]-point)*(2.0*scale)
 		effects_layer.draw_colored_polygon(points,tint)
 
 func _draw_local_uram_floor()->void:
