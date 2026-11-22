@@ -1,4 +1,4 @@
-name: Keep latest Android and Windows release
+name: Audit Android and Windows release assets
 
 on:
   push:
@@ -9,14 +9,14 @@ on:
   workflow_call:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: release-asset-retention
   cancel-in-progress: false
 
 jobs:
-  cleanup:
+  audit:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -24,8 +24,8 @@ jobs:
           ref: main
           sparse-checkout: scripts/keep-latest-release.ps1
           sparse-checkout-cone-mode: false
-      - name: Preserve latest complete APK and EXE pair
+      - name: Report older release assets without deleting
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
-        run: ./scripts/keep-latest-release.ps1 -Repository '${{ github.repository }}' -Apply
+        run: ./scripts/keep-latest-release.ps1 -Repository '${{ github.repository }}'

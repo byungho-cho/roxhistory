@@ -91,8 +91,4 @@ foreach ($entry in $manifest.files) {
 if ($LASTEXITCODE -ne 0) { throw 'Publishing failed. No cleanup performed.' }
 $tagCommit = & gh api "repos/$Repository/commits/$tag" --jq '.sha'
 if ($LASTEXITCODE -ne 0 -or $tagCommit -ne $manifest.commit) { throw 'Published tag verification failed. No cleanup performed.' }
-if (-not $AndroidOnly) {
-    & (Join-Path $PSScriptRoot 'keep-latest-release.ps1') -Repository $Repository -Apply
-    if (-not $?) { throw 'Release published, but old asset cleanup needs attention.' }
-}
 Write-Output "Published $platforms to https://github.com/$Repository/releases/tag/$tag"
