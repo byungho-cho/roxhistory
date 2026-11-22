@@ -21,6 +21,7 @@ $tag = "android-patches-$base"
 $referenceHashes = @{
     '0.2.91' = '2A87A1D547551F76C858D2F70030DBA7C0F28C794C0BE3B41FF6CDAC67490644'
     '0.2.174' = 'DE8EE37DC8864F201C0B87876BCE599EE694B0C7F3BEED6D2C8CCE459FBD202F'
+    '0.2.295' = '88E90ED277E04229F2C5FFAF16CEA4223A1D47FEDD60476CC87B76FEEC0DFBCB'
 }
 if (!$baseCommit -or !$runtime -or (Get-FileHash $ReferencePack).Hash -ne $referenceHashes[$base]) { throw 'Wrong reference PCK for this runtime.' }
 if (& git -C $GameRepo status --porcelain -- game) { throw 'Commit the game resources before building a patch.' }
