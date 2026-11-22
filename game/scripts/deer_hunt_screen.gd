@@ -1077,7 +1077,10 @@ func _update_native_hunt_art(elapsed:float,previous_pose_clock:float) -> void:
 	for i in hunters.size():
 		feet.append(hunters[i].position)
 		living.append(rules.party_hp[i] > 0)
+	var rally_before:float = rally_art.age
 	rally_art.tick(elapsed,feet,living)
+	if rally_art.active and rally_before<.62 and rally_art.age>=.62:
+		_start_camera_accent("rally",hunters[RULES.SAEBOM].position)
 	for i in range(manual_effects.size()-1,-1,-1):
 		manual_effects[i].age += elapsed
 		if manual_effects[i].age >= 2.2:
@@ -1282,6 +1285,7 @@ func _try_counter_guard(from_clock:float, to_clock:float, last_pose:float) -> vo
 		var event := manual_guard.step(from_clock,to_clock,rules.attacker,previous_counter_muzzle,muzzle,previous_shield_face,face,Vector2(.305,.38),pose_clock >= _native_takeoff_clock() and last_pose <= IMPACT_SECONDS,boundary,.18)
 		if not event.is_empty() and rules.resolve_guard():
 			last_guard_contact = event
+			_start_camera_accent("parry",_stone_render_point(event.point))
 			impact_pending = false
 			guard_active = false
 			chain_window.confirm_guard(manual_input_clock,guard_generation)
@@ -1460,7 +1464,11 @@ func _process(delta: float) -> void:
 	if transition_elapsed>=0:
 		advance_transition(delta)
 	elif running and not result_shown:
-		manual_input_clock += delta/maxf(Engine.time_scale,.0001)
+		var active_visual := delta/maxf(Engine.time_scale,.0001)
+		manual_input_clock += active_visual
+		camera_accent_age += active_visual
+		if pose == ManualHunt.HAN_SPEAR_3 and previous_pose_clock < .40 and pose_clock >= .40:
+			_start_camera_accent("han_chain",hunters[0].position.lerp(deer.position,.52))
 		manual_combat_clock += elapsed
 		chain_window.advance(manual_input_clock)
 		if impact_pending and (pose == "counter" or _is_native_manual(pose)):
@@ -1817,19 +1825,31 @@ func update_combat_ui(delta := 0.0) -> void:
 		if i == RULES.SAEBOM:
 			RallyBadge.sync(hud, rules.rally_remaining[i] if rules.party_hp[i] > 0 else 0.0)
 
+const CAMERA_ACCENT_S := .54
+const CAMERA_ACCENT_LOCK_S := .69
+var camera_accent_age := INF
+var camera_accent_point := Vector2.ZERO
+var camera_accent_source := ""
+
+
+func _start_camera_accent(source:String,point:Vector2) -> bool:
+	if not running or result_shown or camera_accent_age<CAMERA_ACCENT_LOCK_S or not point.is_finite():
+		return false
+	camera_accent_age=0.0
+	camera_accent_point=point
+	camera_accent_source=source
+	return true
+
+
 func update_camera(delta: float) -> void:
 	var focus := Vector2(480,285).lerp(Vector2(495,305),approach)
 	var target := zoom
 	if transition_elapsed>=0:
 		target += .12*sin(approach*PI*.5)
-	if pose in ["strike","team"] and pose_clock < RULES.POSE_SECONDS:
-		var accent := sin(pose_clock/RULES.POSE_SECONDS*PI)
-		var center: Vector2 = hunters[rules.attacker].position
-		if pose=="team":
-			center += hunters[1 - rules.attacker].position
-			center /= hunters.size()
-		focus = focus.lerp(center,.45*accent)
-		target += .12*accent
+	if camera_accent_age<CAMERA_ACCENT_S:
+		var accent := smoothstep(0.0,.12,camera_accent_age)*(1.0-smoothstep(.18,CAMERA_ACCENT_S,camera_accent_age))
+		focus=focus.lerp(camera_accent_point,.33*accent)
+		target+=.065*accent
 	var weight := 1.0 if delta==0.0 or not arrival_finished or transition_elapsed>=0 else 1.0-exp(-delta*11.0)
 	battlefield.scale = battlefield.scale.lerp(Vector2.ONE*target,weight)
 	var anchor := Vector2(480,285).lerp(focus,clampf((battlefield.scale.x-1.0)*2.0,0.0,1.0))
