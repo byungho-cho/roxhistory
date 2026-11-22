@@ -211,8 +211,10 @@ func _ready() -> void:
 		hunter.camera.look_at(Vector3(0,1.45,0))
 		hunter.display.position = -hunter.camera.unproject_position(Vector3.ZERO)*hunter.display.scale
 		hunters.append(hunter)
-	if app.get("hunt_prey_id") == "adult":
+	_setup_native_hunt_art(actors)
+	if app.get("hunt_prey_id") in ["adult","forest"]:
 		var adult := NativeBoar.new()
+		adult.native_species = str(app.get("hunt_prey_id"))
 		adult.world_height = 90
 		adult.heading = -PI*.72
 		adult.position = DEER_SLOT
@@ -411,8 +413,11 @@ func build_preparation_plaque() -> void:
 	brush.modulate.a = .8
 	caption(bag,"가방",Rect2(4,43,48,17),12)
 
+func _prey_is_adult() -> bool:
+	return deer is NativeBoar and deer.native_species == "adult"
+
 func _portrait_for_prey() -> Texture2D:
-	return APPROVED_BOAR if deer is NativeBoar else APPROVED_DEER
+	return APPROVED_BOAR if _prey_is_adult() else APPROVED_DEER
 
 func build_power_comparison() -> void:
 	MATCH.picture(power_header,preload(PREP_ART+"power-comparison-background.svg"),Rect2(-195,2.5,390,82.5))
@@ -528,13 +533,14 @@ func build_combat() -> void:
 		hud.position=Vector2(354.6+92.4*index,437)
 		combat_controls.add_child(hud)
 		hud.reset(["hangyeol","uram","saebom"][index])
+		hud.enable_duel_ready_feedback()
 		hud.requested.connect(_on_party_skill_requested.bind(index))
 		party_cards.append({"hud":hud,"button":hud.chain_button,"portrait":hud.portrait,"charges":hud.orbs,"hp":hud.hp})
-		var head:=HeadHUD.create(combat_controls,["한결","우람","새봄"][index],true)
+		var head:=NativeHud.create_head(combat_controls,true)
 		head_headers.append(head)
 		hunter_markers.append(head.panel)
 		hunter_field_bars.append(head.bar)
-	var enemy:=HeadHUD.create(combat_controls,"멧돼지" if deer is NativeBoar else "꽃사슴",false)
+	var enemy:=NativeHud.create_head(combat_controls,false)
 	head_headers.append(enemy)
 	prey_hud=enemy.panel
 	prey_hp=enemy.bar
@@ -949,18 +955,459 @@ func advance_transition(delta: float) -> void:
 		fit_layout()
 
 
-func _on_party_skill_requested(action: String, index: int) -> void:
-	if index == RULES.SAEBOM and action == "chain":
-		if not running or result_shown or exit_popup or app.modal or not app.application_active:
-			return
-		if rules.start_rally():
-			play_pose("rally")
-			update_combat_ui()
-		else:
-			hunt_audio.cue("S25")
-		return
-	use_skill(RULES.PARTY_SKILLS[index], 2 if action == "skill" else 3)
+const ManualHunt := preload("res://scripts/hunt_production_frontline_actions.gd")
+const ChainWindow := preload("res://scripts/hunt_production_chain_window.gd")
+const FrontFx := preload("res://scripts/hunt_production_frontline_vfx.gd")
+const MANUAL_OWNERS := [&"hangyeol",&"uram",&"saebom"]
+var chain_window := ChainWindow.new()
+var manual_guard := ManualHunt.Guard.new()
+var manual_pending: Array[Dictionary] = []
+var manual_input_clock := 0.0
+var manual_combat_clock := 0.0
+var guard_active := false
+var guard_started := -INF
+var guard_prey_origin := Vector2.INF
+var previous_prey_floor := Vector2.INF
+var guard_generation := -1
+var last_guard_contact: Dictionary = {}
+var manual_tip_prev := Vector3.INF
+var manual_prey_prev: Dictionary = {}
+var previous_counter_muzzle := Vector3.INF
+var previous_shield_face := Transform3D.IDENTITY
+var manual_effects: Array[Dictionary] = []
+var manual_front_fx := FrontFx.new()
+var manual_art_ready := false
 
+const PreyFx := preload("res://scripts/hunt_production_prey_effects.gd")
+const RallyFx := preload("res://scripts/hunt_production_saebom_rally_vfx.gd")
+var prey_art := PreyFx.new(HEAVY_HIT)
+var rally_art := RallyFx.new()
+var battle_vfx_under:Node2D
+var battle_vfx_front:Node2D
+var prey_wake: Array = []
+var prey_dust: Array[Dictionary] = []
+var prey_charge_progress := -1.0
+var prey_fx_tip := Vector2.INF
+var spear_wake := PackedVector2Array()
+
+
+const NativeHud := preload("res://scripts/hunt_production_hunt_presentation.gd")
+var native_hud := NativeHud.new(prey_art)
+var first_blood_age := -INF
+var cast_notices: Array = [null,null,null]
+var ready_phase: Array[float] = [0.,0.,0.]
+var ring_sizing: Array[Vector2] = []
+var tracked_party_hp: Array[int] = []
+
+
+func _mark_hunt_cast(index:int, linked:bool) -> void:
+	if index>=0 and index<cast_notices.size() and index<party_cards.size():
+		var hud=party_cards[index].hud
+		cast_notices[index]={"texture":hud.chain_art.texture if linked else hud.badge_art.texture,"linked":linked,"age":0.0}
+
+
+func _field_ring(actor,index:int) -> Rect2:
+	# The phase-dependent camera is settled on start; invalidate at re-entry, not every redraw.
+	if ring_sizing.size() != 4 or approach<1.0:
+		var sized:=NativeHud.ground_rect(actor.camera,actor.position)
+		return sized
+	return Rect2(actor.position-ring_sizing[index]*.5,ring_sizing[index])
+
+
+func _tick_native_hud(elapsed:float) -> void:
+	if ring_sizing.size() != 4 and approach>=1.0:
+		ring_sizing.clear()
+		for hero in hunters:
+			ring_sizing.append(NativeHud.ground_rect(hero.camera,hero.position).size)
+		ring_sizing.append(NativeHud.ground_rect(deer.camera,deer.position).size)
+	if tracked_party_hp.size()==4:
+		if not is_finite(first_blood_age) and (rules.deer_hp<tracked_party_hp[3] or rules.party_hp[0]<tracked_party_hp[0] or rules.party_hp[1]<tracked_party_hp[1] or rules.party_hp[2]<tracked_party_hp[2]):
+			first_blood_age=0.0
+	for i in 3:
+		if cast_notices[i]!=null:
+			cast_notices[i].age += elapsed
+			if cast_notices[i].age>=NativeHud.CAST_SECONDS: cast_notices[i]=null
+		var sp := rules.orbs(i)
+		ready_phase[i] += elapsed * (2.0 if sp>=3 else 1.5) / 2.4
+	if is_finite(first_blood_age):first_blood_age+=elapsed
+	tracked_party_hp.assign([rules.party_hp[0],rules.party_hp[1],rules.party_hp[2],rules.deer_hp])
+
+
+func _draw_native_weapon_and_notices(dest:Node2D) -> void:
+	var inv := battlefield.get_global_transform().affine_inverse()
+	var han := hunters[0] as Frontline.Han
+	if rules.party_hp[0]>0 and is_instance_valid(han) and han.has_spear_anchor():
+		var hand:Vector3 = han.skeleton.to_global(han.skeleton.get_bone_global_pose(han.hand_index).origin)
+		native_hud.draw_spear_glow(dest, inv*han.spear_tip_world(), inv*han.display.to_global(han.camera.unproject_position(hand)),manual_combat_clock)
+	var uram := hunters[1] as Frontline.Uram
+	if rules.party_hp[1]>0 and is_instance_valid(uram):
+		var marks := PackedVector2Array()
+		for wp in NativeHud.club_head_samples(uram.club):marks.append(inv*uram.display.to_global(uram.camera.unproject_position(wp)))
+		native_hud.draw_club_glow(dest,marks)
+	var bom := hunters[RULES.SAEBOM] as SaebomRig
+	if rules.party_hp[RULES.SAEBOM]>0 and is_instance_valid(bom):
+		if stone.active:
+			native_hud.draw_sling_glow(dest,_stone_render_point(stone.position))
+		elif not (pose=="team" and pose_clock>=.2) and not (rally_art.active and rally_art.age>=.1 and rally_art.age<2.24):
+			native_hud.draw_sling_glow(dest,inv*bom.stone_world())
+	for i in cast_notices.size():
+		var notice:Variant=cast_notices[i]
+		if notice!=null and rules.party_hp[i]>0:
+			native_hud.draw_cast_notice(dest,hunters[i].position-Vector2(0,64),hunter_markers[i],notice.texture,notice.linked,notice.age)
+
+
+func _setup_native_hunt_art(actor_group:Node2D) -> void:
+	manual_art_ready = manual_front_fx.prepare()
+	battle_vfx_under = Node2D.new()
+	battle_vfx_front = Node2D.new()
+	battlefield.add_child(battle_vfx_under)
+	battlefield.move_child(battle_vfx_under,actor_group.get_index())
+	battlefield.add_child(battle_vfx_front)
+	battle_vfx_front.z_index = 2
+	battle_vfx_under.draw.connect(_draw_normal_hunt_art.bind(false))
+	battle_vfx_front.draw.connect(_draw_normal_hunt_art.bind(true))
+	rally_art.setup(battlefield, actor_group,hunters[RULES.SAEBOM] as SaebomRig)
+
+
+func _update_native_hunt_art(elapsed:float,previous_pose_clock:float) -> void:
+	if not is_instance_valid(battle_vfx_front):
+		return
+	var feet: Array[Vector2] = []
+	var living: Array[bool] = []
+	for i in hunters.size():
+		feet.append(hunters[i].position)
+		living.append(rules.party_hp[i] > 0)
+	rally_art.tick(elapsed,feet,living)
+	for i in range(manual_effects.size()-1,-1,-1):
+		manual_effects[i].age += elapsed
+		if manual_effects[i].age >= 2.2:
+			manual_effects.remove_at(i)
+	for i in range(prey_dust.size()-1,-1,-1):
+		prey_dust[i].age += elapsed
+		if prey_dust[i].age >= 2.5:
+			prey_dust.remove_at(i)
+	var charging := pose == "counter" and pose_clock <= RULES.POSE_SECONDS
+	prey_charge_progress = -1.0
+	if charging:
+		var takeoff := _native_takeoff_clock()
+		prey_charge_progress = clampf(pose_clock/takeoff,0.0,1.05)
+		var muzzle := _counter_muzzle()
+		if muzzle.is_finite():
+			prey_fx_tip = _stone_render_point(muzzle)
+		if previous_pose_clock < takeoff and pose_clock >= takeoff:
+			prey_dust.append({"age":0.0,"at":previous_prey_floor if previous_prey_floor.is_finite() else deer.position})
+		if pose_clock > takeoff and pose_clock <= .29 and prey_fx_tip.is_finite():
+			PreyFx.sample_wake(prey_wake,prey_fx_tip,deer.position,manual_combat_clock)
+	previous_prey_floor = deer.position
+	PreyFx.prune_wake(prey_wake,manual_combat_clock)
+	if pose == ManualHunt.HAN_SPEAR_3 and pose_clock < _manual_duration(pose):
+		var tip := _weapon_metric(0)
+		if tip.is_finite():
+			var at := _stone_render_point(tip)
+			if spear_wake.is_empty() or at.distance_squared_to(spear_wake[0]) >= 4.0:
+				spear_wake.insert(0,at)
+				if spear_wake.size() > 9:
+					spear_wake.resize(9)
+	else:
+		spear_wake.clear()
+	battle_vfx_under.queue_redraw()
+	battle_vfx_front.queue_redraw()
+
+
+func _draw_normal_hunt_art(front:bool) -> void:
+	if not combat_layout:
+		return
+	var dest := battle_vfx_front if front else battle_vfx_under
+	if not front:
+		for i in hunters.size():
+			if rules.party_hp[i] > 0:
+				var floor_rect := _field_ring(hunters[i],i)
+				prey_art.draw_ground_ring(dest,floor_rect,true)
+				var ready := _can_take_hunt_input() and (rules.can_use(RULES.PARTY_SKILLS[i]) if i == RULES.SAEBOM else rules.can_use_frontline_skill(i,2))
+				native_hud.draw_ready_ring(dest,floor_rect,3 if _can_submit_manual_chain(i) else 2 if ready else 0,ready_phase[i])
+		if rules.deer_hp > 0:
+			prey_art.draw_ground_ring(dest,_field_ring(deer,3),false)
+		for puff in prey_dust:
+			prey_art.draw_dust(puff.at,puff.age,dest)
+	if front:
+		_draw_native_weapon_and_notices(dest)
+	if front and prey_fx_tip.is_finite():
+		prey_art.draw_charge(deer.position,prey_fx_tip,prey_charge_progress,pose == "counter" and pose_clock <= .29,prey_wake,manual_combat_clock,dest)
+	if front and pose == ManualHunt.URAM_CLUB_2 and pose_clock < .3:
+		var tip := _weapon_metric(1)
+		if tip.is_finite():
+			manual_front_fx.draw_uram_skill_windup(dest,stone_glow,_stone_render_point(tip),pose_clock/.3,.85)
+	if front and pose == ManualHunt.HAN_SPEAR_3 and pose_clock < _manual_duration(pose) and not spear_wake.is_empty():
+		var foot := hunters[0].position
+		manual_front_fx.draw_han_chain_cast(dest,stone_glow,foot,foot+Vector2(0,-20),foot.lerp(spear_wake[0],.54),spear_wake[0],pose_clock/_manual_duration(pose),spear_wake,.82)
+	for effect in manual_effects:
+		var position2:Vector2 = effect.pos
+		match effect.kind:
+			"gong":
+				if front:
+					manual_front_fx.draw_uram_gong(dest,stone_glow,position2,effect.axis,effect.age,.85)
+			ManualHunt.HAN_SPEAR_2:
+				if front:
+					manual_front_fx.draw_han_skill_hit(dest,position2,effect.axis,effect.age,.85)
+			ManualHunt.HAN_SPEAR_3:
+				if front:
+					manual_front_fx.draw_han_chain_hit(dest,stone_glow,position2,effect.floor,effect.age,.85)
+				else:
+					manual_front_fx.draw_han_chain_ground(dest,stone_glow,effect.floor,effect.age,.85)
+			ManualHunt.URAM_CLUB_2:
+				if front:
+					manual_front_fx.draw_uram_skill_hit(dest,stone_glow,position2,effect.floor,effect.axis,effect.age,.85)
+			"prey_hit":
+				if front:
+					prey_art.draw_impact({"center":position2,"floor_point":effect.floor},clampf(effect.age/.56,0.0,1.0),dest)
+
+
+func _can_take_hunt_input() -> bool:
+	return running and not result_shown and exit_popup == null and not app.modal and app.application_active
+
+
+func _uses_ordered_chain() -> bool:
+	return chain_window.active() or (rules.party_hp[0] > 0 and rules.party_hp[1] > 0 and rules.party_hp[2] > 0)
+
+
+func _guard_can_arm() -> bool:
+	return not guard_active and rules.pending_counter and pose == "counter" and rules.attacker == 1 and pose_clock <= .106 and rules.orbs(1) >= 3 and rules.party_hp[1] > 0
+
+
+func _can_submit_manual_chain(index: int) -> bool:
+	if not _can_take_hunt_input() or not rules.can_reserve_manual(index,3):
+		return false
+	if _uses_ordered_chain() and chain_window.actionable() != MANUAL_OWNERS[index]:
+		return false
+	if index == 1:
+		return _guard_can_arm()
+	if _uses_ordered_chain():
+		return true
+	return rules.can_start_rally() if index == RULES.SAEBOM else rules.can_use_frontline_skill(index,3)
+
+
+func _reserve_chain_step(hero: StringName) -> bool:
+	var index := MANUAL_OWNERS.find(hero)
+	return index >= 0 and (index != 1 or _guard_can_arm()) and rules.reserve_manual(index,3)
+
+
+func _submit_manual_chain(index: int) -> void:
+	if not _can_submit_manual_chain(index):
+		return
+	var generation := -1
+	if _uses_ordered_chain():
+		var step:Dictionary = chain_window.accept(MANUAL_OWNERS[index], manual_input_clock, _reserve_chain_step)
+		if step.is_empty():
+			return
+		generation = int(step.generation)
+	elif not rules.reserve_manual(index,3):
+		return
+	if index == 1:
+		guard_active = manual_guard.arm(1,manual_combat_clock)
+		guard_started = manual_combat_clock
+		guard_prey_origin = deer.position
+		guard_generation = generation
+		last_guard_contact.clear()
+		if guard_active: _mark_hunt_cast(1,true)
+	else:
+		manual_pending.append({"index":index,"id":"rally" if index == RULES.SAEBOM else ManualHunt.HAN_SPEAR_3})
+		_execute_reserved_followup()
+	update_combat_ui()
+
+
+func _manual_duration(id: String) -> float:
+	if id == ManualHunt.HAN_SPEAR_3: return .96
+	return .68
+
+
+func _start_frontline_paid(index: int, id: String) -> bool:
+	var data := ManualHunt.describe(id,int(RULES.SKILLS[RULES.PARTY_SKILLS[index]].damage))
+	if data.is_empty() or not rules.start_frontline_paid(index,int(data.damage),_manual_duration(id)):
+		return false
+	play_pose(id)
+	return true
+
+
+func _execute_reserved_followup() -> bool:
+	if not rules.can_execute_manual():
+		return false
+	while not manual_pending.is_empty():
+		var req:Dictionary = manual_pending.pop_front()
+		var index := int(req.index)
+		if rules.party_hp[index] <= 0:
+			continue
+		if req.id == "rally":
+			if rules.start_rally_paid():
+				play_pose("rally")
+				return true
+		elif _start_frontline_paid(index,str(req.id)):
+			return true
+	return false
+
+
+func _reset_manual_contact() -> void:
+	manual_tip_prev = Vector3.INF
+	manual_prey_prev.clear()
+	previous_counter_muzzle = Vector3.INF
+
+func _counter_muzzle() -> Vector3:
+	if deer is NativeBoar:
+		return _stone_metric_point(deer.camera,deer.display,deer.native_muzzle())
+	var rig:Skeleton3D = deer.rig
+	var head := rig.find_bone("head") if is_instance_valid(rig) else -1
+	if head < 0:
+		var capsule := _deer_stone_capsule()
+		return capsule.get("b",Vector3.INF)
+	rig.force_update_all_bone_transforms()
+	return _stone_metric_point(deer.camera,deer.display,rig.to_global(rig.get_bone_global_pose(head).origin))
+
+
+func _shield_metric(uram:Frontline.Uram) -> Transform3D:
+	var shield:Node3D = uram.shield
+	var o := _stone_metric_point(uram.camera,uram.display,shield.global_position)
+	var right := _stone_metric_point(uram.camera,uram.display,shield.to_global(Vector3.RIGHT)) - o
+	var up := _stone_metric_point(uram.camera,uram.display,shield.to_global(Vector3.UP)) - o
+	var front := _stone_metric_point(uram.camera,uram.display,shield.to_global(Vector3.BACK)) - o
+	return Transform3D(Basis(right,up,front),o)
+
+
+func _try_counter_guard(from_clock:float, to_clock:float, last_pose:float) -> void:
+	var muzzle := _counter_muzzle()
+	var uram := hunters[1] as Frontline.Uram
+	if not is_instance_valid(uram) or not uram.has_shield_anchor() or not muzzle.is_finite():
+		return
+	var face := _shield_metric(uram)
+	if guard_active and previous_counter_muzzle.is_finite():
+		var boundary := inverse_lerp(last_pose,pose_clock,IMPACT_SECONDS) if pose_clock >= IMPACT_SECONDS else INF
+		var event := manual_guard.step(from_clock,to_clock,rules.attacker,previous_counter_muzzle,muzzle,previous_shield_face,face,Vector2(.305,.38),pose_clock >= _native_takeoff_clock() and last_pose <= IMPACT_SECONDS,boundary,.18)
+		if not event.is_empty() and rules.resolve_guard():
+			last_guard_contact = event
+			impact_pending = false
+			guard_active = false
+			chain_window.confirm_guard(manual_input_clock,guard_generation)
+			var pos := _stone_render_point(event.point)
+			manual_effects.append({"kind":"gong","age":0.0,"pos":pos,"floor":uram.position,"axis":uram.position.direction_to(deer.position)})
+			hunt_audio.cue("S18",2)
+	previous_counter_muzzle = muzzle
+	previous_shield_face = face
+
+
+func _weapon_metric(index:int) -> Vector3:
+	var hero := hunters[index]
+	if hero is Frontline.Han and hero.has_spear_anchor():
+		hero.skeleton.force_update_all_bone_transforms()
+		return _stone_metric_point(hero.camera,hero.display,hero.skeleton.global_transform*hero.skeleton.get_bone_global_pose(hero.hand_index)*hero.spear_tip_local)
+	if hero is Frontline.Uram and hero.has_club_anchor():
+		return _stone_metric_point(hero.camera,hero.display,hero.club.to_global(Vector3(hero.CLUB_SIZE.x*.34,0,0)))
+	return Vector3.INF
+
+
+func _manual_weapon_contact() -> void:
+	var p := pose_clock / _manual_duration(pose)
+	var tip := _weapon_metric(rules.attacker)
+	var cap := _deer_stone_capsule()
+	if p >= .25 and p <= .87 and tip.is_finite() and manual_tip_prev.is_finite() and not cap.is_empty():
+		var skin:float = .14 if pose == ManualHunt.URAM_CLUB_2 else .06
+		var shift := Vector3.ZERO
+		if not manual_prey_prev.is_empty():
+			shift = ((cap.a + cap.b) - (manual_prey_prev.a + manual_prey_prev.b))*.5
+		var fraction := StoneContact.capsule_hit(manual_tip_prev+shift,tip,cap.a,cap.b,float(cap.radius)+skin)
+		if is_finite(fraction):
+			var contact := manual_tip_prev.lerp(tip,fraction)
+			var before := rules.deer_hp
+			rules.resolve_attack()
+			hit_damage = before-rules.deer_hp
+			hit_age = 0.0
+			hit_kind = "native_manual"
+			hit_on_hunter = false
+			hit_point = _stone_render_point(contact)
+			hit_label.text = "−%d" % hit_damage
+			manual_effects.append({"kind":pose,"age":0.0,"pos":hit_point,"floor":deer.position,"axis":hunters[rules.attacker].position.direction_to(deer.position)})
+			impact_pending = false
+			basic_recoil = BASIC_RECOIL_TIME
+			hunt_audio.cue("S18" if pose == ManualHunt.URAM_CLUB_2 else "S15",2)
+	if impact_pending and p >= .87:
+		rules.pending_damage = 0
+		impact_pending = false
+	manual_tip_prev = tip
+	manual_prey_prev = cap
+
+
+var han_chain_travel := Vector2.ZERO
+var han_chain_facing := Vector2.RIGHT
+
+func _sample_han_chain_travel() -> void:
+	han_chain_travel=Vector2.ZERO
+	var hero := hunters[0] as Frontline.Han
+	var cap := _deer_stone_capsule()
+	if not is_instance_valid(hero) or cap.is_empty():
+		return
+	var home := hero.position
+	var best := INF
+	var fallback_best := INF
+	var fallback := Vector2.ZERO
+	var heading := Vector2(sin(hero.heading),cos(hero.heading))
+	han_chain_facing=heading
+	var peer: Array[Vector2] = []
+	for i in range(1,hunters.size()):
+		if rules.party_hp[i]>0: peer.append(hunters[i].position)
+	for time in [.54,.5666667,.60,.6266667]:
+		if not hero.resident_sample("chain",hero.clip_duration("chain")*time/_manual_duration(ManualHunt.HAN_SPEAR_3)):
+			continue
+		var tip := _weapon_metric(0)
+		if not tip.is_finite():
+			continue
+		var capsule_a:Vector3=cap.a
+		var capsule_b:Vector3=cap.b
+		for j in range(33):
+			var hit := capsule_a.lerp(capsule_b,float(j)/32.0)
+			var gap := hit-tip
+			if absf(gap.y)>=float(cap.radius)+.035:
+				continue
+			var exact := Vector2(gap.x,gap.z)*STONE_METRIC
+			for option in [Vector2(-.025,4.5),Vector2(-.025,6.),Vector2(-.025,8.),Vector2(.048,3.),Vector2(.048,4.)]:
+				var interior := maxf(.075,float(cap.radius)+option.x)
+				var allowed := sqrt(maxf(0.0,interior*interior-gap.y*gap.y))*STONE_METRIC
+				var offset := exact.normalized()*minf(exact.length(),maxf(0.0,exact.length()-allowed)+option.y)
+				var endpoint := home+offset
+				if offset.length()>(74.0 if option.x > 0.0 else 64.0) or endpoint.distance_to(deer.position)<24.0 or not Rect2(24.,95.,912.,335.).has_point(endpoint):
+					continue
+				if tip.distance_to(hit-Vector3(offset.x/STONE_METRIC,0.,offset.y/STONE_METRIC))>float(cap.radius)+.045:
+					continue
+				var safe := true
+				for here in peer:
+					var segment := Geometry2D.get_closest_point_to_segment(here,home,endpoint)
+					if segment.distance_to(here)<minf(home.distance_to(here),19.5)-.1:
+						safe=false
+						break
+				if option.x>0.0:
+					if safe and offset.length_squared()<fallback_best:
+						fallback_best=offset.length_squared()
+						fallback=offset
+				elif safe and offset.length_squared()<best:
+					best=offset.length_squared()
+					han_chain_travel=offset
+	if best==INF: han_chain_travel=fallback
+	hero.animate(0.0,heading,0.0,false,"chain",0.0,false)
+
+
+func _is_native_manual(id:String) -> bool:
+	return id in [ManualHunt.HAN_SPEAR_2,ManualHunt.HAN_SPEAR_3,ManualHunt.URAM_CLUB_2]
+
+
+func _on_party_skill_requested(action: String, index: int) -> void:
+	if not _can_take_hunt_input():
+		return
+	if action == "chain":
+		_submit_manual_chain(index)
+		return
+	if index == RULES.SAEBOM:
+		var previous_charge:float = rules.charges[index]
+		use_skill(RULES.PARTY_SKILLS[index],2)
+		if rules.charges[index]<previous_charge: _mark_hunt_cast(index,false)
+	elif rules.can_use_frontline_skill(index,2) and rules.reserve_manual(index,2):
+		_start_frontline_paid(index,ManualHunt.HAN_SPEAR_2 if index == 0 else ManualHunt.URAM_CLUB_2)
+		update_combat_ui()
 
 func use_skill(id: String, required_sp:int=3) -> void:
 	if not running or result_shown or exit_popup or app.modal or not app.application_active:return
@@ -973,8 +1420,16 @@ func use_skill(id: String, required_sp:int=3) -> void:
 	update_combat_ui()
 
 func play_pose(id: String) -> void:
+	_reset_manual_contact()
 	pose = id
+	guard_prey_origin = Vector2.INF
+	if id == "rally":
+		rally_art.start(RULES.SAEBOM)
+		_mark_hunt_cast(RULES.SAEBOM,true)
+	elif _is_native_manual(id):
+		_mark_hunt_cast(rules.attacker,id == ManualHunt.HAN_SPEAR_3)
 	pose_clock = 0.0
+	if id == ManualHunt.HAN_SPEAR_3: _sample_han_chain_travel()
 	impact_pending = true
 	_update_saebom_prey_pocket(id)
 	_begin_saebom_close_action(id)
@@ -994,6 +1449,7 @@ func _process(delta: float) -> void:
 	var elapsed := delta*speed
 	var actors_sampled := false
 	var previous_pose_clock := pose_clock
+	var previous_manual_clock := manual_combat_clock
 	pose_clock += elapsed
 	basic_recoil = maxf(0.0,basic_recoil-elapsed)
 	hit_age += elapsed
@@ -1004,6 +1460,20 @@ func _process(delta: float) -> void:
 	if transition_elapsed>=0:
 		advance_transition(delta)
 	elif running and not result_shown:
+		manual_input_clock += delta/maxf(Engine.time_scale,.0001)
+		manual_combat_clock += elapsed
+		chain_window.advance(manual_input_clock)
+		if impact_pending and (pose == "counter" or _is_native_manual(pose)):
+			update_actors(actor_delta+elapsed)
+			actor_delta = 0.0
+			actors_sampled = true
+			if pose == "counter":
+				_try_counter_guard(previous_manual_clock,manual_combat_clock,previous_pose_clock)
+			else:
+				_manual_weapon_contact()
+		if guard_active and manual_combat_clock >= guard_started + ManualHunt.GUARD_CLOSE:
+			guard_active = false
+			manual_guard.cancel()
 		# Tick existing boosts before a contact; a new release starts at a full five seconds.
 		rules.advance_rally_clock(elapsed)
 		var rally_releases := impact_pending and pose == "rally" and pose_clock >= IMPACT_SECONDS
@@ -1015,7 +1485,7 @@ func _process(delta: float) -> void:
 			actors_sampled = true
 			if sling_pending: _update_saebom_stone(elapsed, previous_pose_clock)
 			else: _update_saebom_shove()
-		if impact_pending and not sling_pending and not palm_pending and pose != "rally" and pose_clock >= (JumpMotion.JUMP_CONTACT_SECONDS if pose=="thrust" else IMPACT_SECONDS):
+		if impact_pending and not sling_pending and not palm_pending and pose != "rally" and not _is_native_manual(pose) and pose_clock >= (JumpMotion.JUMP_CONTACT_SECONDS if pose=="thrust" else IMPACT_SECONDS):
 			var before_hp := rules.hunter_hp if pose == "counter" else rules.deer_hp
 			rules.resolve_attack()
 			hit_damage = before_hp - (rules.hunter_hp if pose == "counter" else rules.deer_hp)
@@ -1033,23 +1503,31 @@ func _process(delta: float) -> void:
 			if pose=="team": hunt_audio.cue("S20",2)
 			if pose=="counter":
 				hunt_audio.cue("S21",2)
+				if hit_damage > 0:
+					manual_effects.append({"kind":"prey_hit","age":0.0,"pos":hit_point,"floor":hunters[rules.attacker].position,"axis":Vector2.ZERO})
 			else:
 				basic_recoil = BASIC_RECOIL_TIME
 				if pose=="auto_thrust":
 					hunt_audio.cue("S16",3)
 					hunt_audio.cue("S22",1)
-		var move := rules.advance(elapsed, false)
+		var move := rules.advance(elapsed, false, not manual_pending.is_empty())
 		if rally_releases:
 			var positions: Array[Vector2] = []
 			for hunter in hunters:
 				positions.append(hunter.position)
-			rules.apply_rally(positions)
+			if rules.apply_rally(positions):
+				var affected: Array[int] = []
+				for i in hunters.size():
+					if rules.party_hp[i] > 0 and positions[RULES.SAEBOM].distance_squared_to(positions[i]) <= RULES.RALLY_RADIUS*RULES.RALLY_RADIUS:
+						affected.append(i)
+				rally_art.release(affected)
 			impact_pending = false
 			hunt_audio.cue("S20",2)
 		if not move.is_empty():play_pose(move)
+		_execute_reserved_followup()
 	if running:
 		update_combat_ui(elapsed)
-		if not result_shown and not rules.outcome.is_empty() and not impact_pending and (pose!="thrust" or pose_clock>=JumpMotion.JUMP_SECONDS):show_result()
+		if not result_shown and not rules.outcome.is_empty() and _finish_visual_ready():show_result()
 	if result_shown: return
 	if not actors_sampled:
 		actor_delta += elapsed
@@ -1057,6 +1535,9 @@ func _process(delta: float) -> void:
 		update_actors(actor_delta)
 		actor_delta = 0.0
 	update_camera(delta)
+	if running:
+		_tick_native_hud(elapsed)
+		_update_native_hunt_art(elapsed, previous_pose_clock)
 	stone_hit_age += elapsed
 	stone_trail_age += elapsed
 	if is_instance_valid(stone_overlay): stone_overlay.queue_redraw()
@@ -1066,7 +1547,7 @@ func _process(delta: float) -> void:
 ## Only an already scheduled counter into a genuinely near Saebom may occupy
 ## the safe finish pocket; the next different target releases it smoothly.
 func _update_saebom_prey_pocket(id:String) -> void:
-	if id != "counter" or approach < 1.0 or not is_instance_valid(deer) or deer is NativeBoar:
+	if id != "counter" or approach < 1.0 or not is_instance_valid(deer):
 		return
 	bom_prey_depart = Vector2.INF
 	if rules.attacker != RULES.SAEBOM or rules.party_hp[RULES.SAEBOM] <= 0:
@@ -1077,7 +1558,7 @@ func _update_saebom_prey_pocket(id:String) -> void:
 	if her_feet.distance_to(deer.position) > 68.0:
 		return
 	var side := -1.0 if deer.position.x < her_feet.x else 1.0
-	var pocket := her_feet + Vector2(22.0*side,-11.0)
+	var pocket := her_feet + (Vector2(28.0*side,-8.0) if _prey_is_adult() else Vector2(22.0*side,-11.0))
 	for i in [0,1]:
 		if rules.party_hp[i] > 0 and pocket.distance_to(hunters[i].position) < 34.0:
 			return
@@ -1213,16 +1694,22 @@ func _deer_stone_capsule() -> Dictionary:
 	if not is_instance_valid(deer) or rules.deer_hp <= 0 or not is_instance_valid(deer.rig):
 		return {}
 	var rig: Skeleton3D = deer.rig
-	var rear: int = rig.find_bone("trunk" if deer is NativeBoar else "body")
-	var front: int = rig.find_bone("head" if deer is NativeBoar else "neck")
-	if rear < 0 or front < 0:
-		return {}
-	rig.force_update_all_bone_transforms()
-	var a := _stone_metric_point(deer.camera,deer.display,rig.to_global(rig.get_bone_global_pose(rear).origin))
-	var b := _stone_metric_point(deer.camera,deer.display,rig.to_global(rig.get_bone_global_pose(front).origin))
+	var points:Dictionary = {}
+	if deer is NativeBoar:
+		points = deer.native_body_points()
+	else:
+		var rear := rig.find_bone("body")
+		var front := rig.find_bone("neck")
+		if rear < 0 or front < 0: return {}
+		rig.force_update_all_bone_transforms()
+		points = {"a":rig.to_global(rig.get_bone_global_pose(rear).origin),
+			"b":rig.to_global(rig.get_bone_global_pose(front).origin)}
+	if points.is_empty(): return {}
+	var a := _stone_metric_point(deer.camera,deer.display,points.a)
+	var b := _stone_metric_point(deer.camera,deer.display,points.b)
 	if not a.is_finite() or not b.is_finite() or (a.y+b.y) <= .05:
 		return {}
-	var radius := clampf(a.distance_to(b)*.30,.32,.62) if deer is NativeBoar else clampf(a.distance_to(b)*.30,.21,.43)
+	var radius := clampf(a.distance_to(b)*.30,.32,.62) if _prey_is_adult() else clampf(a.distance_to(b)*.30,.21,.43)
 	return {"a":a, "b":b, "radius":radius}
 
 func _ensure_stone_overlay() -> void:
@@ -1326,9 +1813,8 @@ func update_combat_ui(delta := 0.0) -> void:
 	deer_health_text.text = str(rules.deer_hp)
 	for i in party_cards.size():
 		var hud: Control = party_cards[i].hud
-		hud.sync(rules.orbs(i),rules.party_hp[i],RULES.PARTY_HP[i],rules.party_hp[i]>0,running and rules.can_use(RULES.PARTY_SKILLS[i]),delta)
+		hud.sync(rules.orbs(i),rules.party_hp[i],RULES.PARTY_HP[i],rules.party_hp[i]>0,_can_take_hunt_input() and (rules.can_use(RULES.PARTY_SKILLS[i]) if i == RULES.SAEBOM else rules.can_use_frontline_skill(i,2)),delta,_can_submit_manual_chain(i))
 		if i == RULES.SAEBOM:
-			hud.chain_button.disabled = not running or result_shown or not rules.can_start_rally()
 			RallyBadge.sync(hud, rules.rally_remaining[i] if rules.party_hp[i] > 0 else 0.0)
 
 func update_camera(delta: float) -> void:
@@ -1374,7 +1860,9 @@ func update_actors(delta: float) -> void:
 	var basic_attack := pose in ["thrust","auto_thrust"]
 	for i in hunters.size():
 		var hunter := hunters[i]
-		var side_han_jump := i == 0 and running and pose == "thrust" and pose_clock < JumpMotion.JUMP_SECONDS
+		var side_han_jump := i == 0 and running and pose in ["thrust",ManualHunt.HAN_SPEAR_3] and pose_clock < (JumpMotion.JUMP_SECONDS if pose == "thrust" else _manual_duration(pose))
+		var native_manual := running and i == rules.attacker and _is_native_manual(pose) and pose_clock < _manual_duration(pose)
+		var use_guard_pose := running and i == 1 and guard_active
 		var attack := running and pose_clock<RULES.POSE_SECONDS and pose in ["thrust","auto_thrust","strike","team"] and i == rules.attacker
 		var dodge := running and pose=="counter" and pose_clock<RULES.POSE_SECONDS and i == rules.attacker
 		var placed: Vector2 = ALLY_CELLS[assigned_cells[i]]
@@ -1389,8 +1877,14 @@ func update_actors(delta: float) -> void:
 		if not side_han_jump and i != RULES.SAEBOM:
 			if attack: shift = lunge
 			elif assisting: shift = 10.0
-		if dodge: shift = -18.0
+		if native_manual and not side_han_jump: shift = 34.0
+		if dodge and not use_guard_pose: shift = -18.0
 		hunter.position = base + attack_direction*shift*movement_beat
+		if native_manual and not side_han_jump and not _prey_is_adult():
+			hunter.position.y -= (17.0 if i == 0 else 13.0)*sin(PI*clampf(pose_clock/_manual_duration(pose),0.,1.))
+		if native_manual and side_han_jump:
+			var travel_beat:=smoothstep(.05,.52,pose_clock)*(1.0-smoothstep(.64,.96,pose_clock))
+			hunter.position+=han_chain_travel*travel_beat
 		var arrival_heading := Vector2(1,.55).lerp(Vector2(1,.28),approach)
 		var approaching := transition_elapsed >= 0.0 and approach > 0.0 and approach < 1.0
 		var close_phase := clampf(pose_clock / RULES.POSE_SECONDS, 0.0, 1.0)
@@ -1398,15 +1892,19 @@ func update_actors(delta: float) -> void:
 			var travel := previous_position.distance_to(hunter.position)
 			hunt_stride_phases[i] = fposmod(hunt_stride_phases[i]+travel/maxf(1.0,42.0*hunter.scale.x)*TAU,TAU)
 		var approach_phase := hunt_stride_phases[i] if approaching else pose_clock*12.0
-		var facing := hunter.position.direction_to(deer.position) if approach >= 1.0 else arrival_heading
+		var facing := han_chain_facing if native_manual and side_han_jump else hunter.position.direction_to(deer.position) if approach >= 1.0 else arrival_heading
 		if i != RULES.SAEBOM:
 			var motion := ""
-			if side_han_jump: motion = "chain"
+			if use_guard_pose: motion = "counter"
+			elif side_han_jump: motion = "chain"
+			elif native_manual: motion = "skill"
 			elif attack: motion = "skill" if pose == "strike" else "basic"
 			elif assisting: motion = "basic"
 			elif dodge: motion = "hit" if hit_on_hunter and hit_age < .26 else "guard"
 			var duration:float = hunter.clip_duration(motion)
-			var motion_time := duration*clampf(pose_clock/JumpMotion.JUMP_SECONDS,0.0,1.0) if side_han_jump else duration*close_phase
+			var motion_time := duration*clampf(pose_clock/JumpMotion.JUMP_SECONDS,0.0,1.0) if side_han_jump and not native_manual else duration*close_phase
+			if native_manual: motion_time = duration*clampf(pose_clock/_manual_duration(pose),0.0,1.0)
+			if use_guard_pose: motion_time = duration*clampf((manual_combat_clock-guard_started)/ManualHunt.GUARD_CLOSE,0.0,1.0)
 			hunter.animate(delta,facing,approach_phase,approaching,motion,motion_time,false)
 		elif hunter is SaebomRig:
 			if pose == "team" and rules.attacker == RULES.SAEBOM and not bom_hop_offset.is_zero_approx():
@@ -1422,6 +1920,7 @@ func update_actors(delta: float) -> void:
 				hunter.pivot.position.y += bom_hop_strength*(.18*rise+.065*return_lift-.07*(crouch+land))
 			if attack and pose == "auto_thrust" and bom_shoving:
 				_pose_saebom_palm(hunter, close_phase)
+			rally_art.pose_after_actor_sample(not attack and not assisting and not dodge)
 		hunter.viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
 		hunter_markers[i].position = hunter.position+Vector2(0,-63)
 		hunter_markers[i].visible = arrival_finished
@@ -1449,25 +1948,105 @@ func update_actors(delta: float) -> void:
 	deer.clock += delta
 	if deer is NativeBoar: _pose_adult_boar(deer,charge)
 	else: deer.animate_rig(delta)
+	if charge and rules.attacker == 1 and guard_prey_origin.is_finite(): _align_uram_guard()
 	prey_hud.position = deer.position + Vector2(0,-deer.world_height*deer.scale.y-15)
 	prey_hud.visible = arrival_finished
 	var points:Array=[]
 	var transform:=combat_controls.get_global_transform().affine_inverse()*battlefield.get_global_transform()
 	for hunter in hunters:points.append(transform*(hunter.position+Vector2(0,-63)))
 	points.append(transform*(deer.position+Vector2(0,-deer.world_height*deer.scale.y-15)))
-	HeadHUD.layout(head_headers,points,Rect2(8,70,944,350))
-	for head in head_headers:head.panel.visible=arrival_finished and approach>=1.0
+	NativeHud.sync_heads(head_headers,points,Rect2(8,70,944,350),first_blood_age if arrival_finished and approach>=1.0 else -INF)
 	hunter_bar.hide()
 	deer_bar.hide()
+
+## Align authored wildlife windup/execute to the existing production strike clock.
+func _native_contact_mark() -> float:
+	if adult_markers.is_empty(): return IMPACT_SECONDS
+	var lead := .14 if _prey_is_adult() else .22
+	return clampf(maxf(float(adult_markers.charge_release)+lead,float(adult_markers.charge_contact_reference)),0.0,float(adult_markers.charge_end))
+
+func _native_takeoff_clock() -> float:
+	if adult_markers.is_empty(): return .122
+	return clampf(IMPACT_SECONDS*float(adult_markers.charge_release)/maxf(.01,_native_contact_mark()),.09,.194 if _prey_is_adult() else .180)
+
+func _native_charge_elapsed(seconds:float) -> float:
+	var launch_t := _native_takeoff_clock()
+	var release := float(adult_markers.charge_release)
+	var contact := _native_contact_mark()
+	if seconds <= launch_t: return release*clampf(seconds/launch_t,0.0,1.0)
+	if seconds <= IMPACT_SECONDS: return lerpf(release,contact,inverse_lerp(launch_t,IMPACT_SECONDS,seconds))
+	return lerpf(contact,float(adult_markers.charge_end),clampf(inverse_lerp(IMPACT_SECONDS,RULES.POSE_SECONDS,seconds),0.0,1.0))
+
+## Uses the real visible shield plane. For a given muzzle height and signed
+## depth, solve for the nearest point on that plane with that fixed height.
+func _shield_reference_at_height(face:Transform3D,y:float,z:float) -> Vector3:
+	var half := Vector2(.305,.38)
+	var weight := Vector2(face.basis.x.y*half.x,face.basis.y.y*half.y)
+	if weight.length_squared() < .0001: return Vector3.INF
+	var local := weight*(y-face.origin.y-face.basis.z.y*z)/weight.length_squared()
+	if local.length() > .95: return Vector3.INF
+	return face*Vector3(local.x*half.x,local.y*half.y,z)
+
+func _align_uram_guard() -> void:
+	var uram := hunters[1] as Frontline.Uram
+	if not is_instance_valid(uram) or not uram.has_shield_anchor(): return
+	var bow := smoothstep(.02,.14,pose_clock)*(1.0-smoothstep(.27,.45,pose_clock))
+	if bow <= .001: return
+	var toward := uram.position.direction_to(guard_prey_origin)
+	if toward.is_zero_approx(): return
+	var pose_span := uram.clip_duration("counter")
+	var brace := .88 if _prey_is_adult() else .66
+	if pose_span > 0.0: uram.sample_native("counter",pose_span*lerpf(clampf(pose_clock/.32,0.0,1.0),brace,bow))
+	var muzzle := _counter_muzzle()
+	if not muzzle.is_finite(): return
+	var shield:Node3D=uram.shield
+	var raw:Transform3D=shield.global_transform
+	var old_face := _shield_metric(uram)
+	var vertical := (_stone_metric_point(uram.camera,uram.display,raw.origin+Vector3.UP)-old_face.origin).y
+	if absf(vertical) < .001: return
+	var desired_lift := clampf((muzzle.y-old_face.origin.y)/vertical,-.34,.55)*bow
+	# Nudge the real elbow/wrist in its existing pose before orienting the shield.
+	var rig:Skeleton3D=uram.skeleton
+	var wrist: int = uram.left_hand_bone
+	var elbow: int = uram.shield_bone
+	var upper := rig.get_bone_parent(elbow) if elbow >= 0 else -1
+	if wrist >= 0 and upper >= 0 and elbow >= 0:
+		var want := rig.to_local(rig.to_global(rig.get_bone_global_pose(wrist).origin)+Vector3.UP*desired_lift)
+		for repeat in range(3):
+			for joint in [upper,elbow]:
+				var t := rig.get_bone_global_pose(joint)
+				var now := rig.get_bone_global_pose(wrist).origin-t.origin
+				var goal := want-t.origin
+				if now.length_squared()<.0001 or goal.length_squared()<.0001: continue
+				t.basis=Basis(Quaternion.IDENTITY.slerp(Quaternion(now.normalized(),goal.normalized()),.62))*t.basis
+				rig.set_bone_global_pose(joint,t)
+				rig.force_update_all_bone_transforms()
+		uram.update_equipment()
+		raw=shield.global_transform
+	var normal := Vector3(toward.x,.12,toward.y/.65).normalized()
+	var right := Vector3.UP.cross(normal).normalized()
+	var up := normal.cross(right).normalized()
+	shield.global_transform=raw.interpolate_with(Transform3D(Basis(right,up,normal),raw.origin),bow)
+	var face:=_shield_metric(uram)
+	var takeoff:=_native_takeoff_clock()
+	var punch:=smoothstep(takeoff-.013,IMPACT_SECONDS-.022,pose_clock)
+	var z:=lerpf(.48,-.055,punch)
+	var reference:=_shield_reference_at_height(face,muzzle.y,z)
+	if not reference.is_finite(): return
+	var correction:=Vector2(reference.x-muzzle.x,reference.z-muzzle.z)*STONE_METRIC
+	var endpoint:=deer.position+correction
+	var steering:=smoothstep(.055,takeoff+.005,pose_clock)*(1.0-smoothstep(.27,.50,pose_clock))
+	if endpoint.distance_to(guard_prey_origin)>54.0 or endpoint.distance_to(uram.position)<24.0: return
+	for i in [0,2]:
+		if rules.party_hp[i]>0 and endpoint.distance_to(hunters[i].position)<25.0: return
+	deer.position=deer.position.lerp(endpoint,steering)
 
 ## Marks drive clips, never damage or scheduling.
 func _pose_adult_boar(adult:NativeBoar, charge:bool) -> void:
 	if adult_markers.is_empty():
 		return
 	if charge and pose_clock < RULES.POSE_SECONDS:
-		var reference:float = adult_markers.charge_contact_reference
-		var phase := lerpf(0.0,reference,pose_clock/IMPACT_SECONDS) if pose_clock <= IMPACT_SECONDS else lerpf(reference,float(adult_markers.charge_end),(pose_clock-IMPACT_SECONDS)/(RULES.POSE_SECONDS-IMPACT_SECONDS))
-		adult.sample_native_phase("charge",phase)
+		adult.sample_native_phase("charge",_native_charge_elapsed(pose_clock))
 	elif basic_recoil>0.0:
 		adult.sample_native_phase("hit", (1.0-basic_recoil/BASIC_RECOIL_TIME)*float(adult_markers.hit))
 	elif deer.walking>.20:
@@ -1484,10 +2063,7 @@ func draw_stage() -> void:
 		corners.append(corners[0])
 		battlefield.draw_polyline(corners,Color(.32,.78,1),2,true)
 	if not combat_layout:return
-	for hunter in hunters:
-		battlefield.draw_texture_rect(ALLY_RING,Rect2(hunter.position-Vector2(21.25,8.5),Vector2(42.5,17)),false)
-	battlefield.draw_texture_rect(ENEMY_RING,Rect2(deer.position-Vector2(26,10.25),Vector2(52,20.5)),false)
-	if hit_on_hunter or hit_damage <= 0 or hit_kind == "sling_contact": return
+	if hit_on_hunter or hit_damage <= 0 or hit_kind in ["sling_contact","native_manual"]: return
 	var duration := .28 if hit_kind == "team" else .24 if hit_kind == "strike" else .16
 	if hit_age >= duration: return
 	var fade := 1.0-hit_age/duration
@@ -1508,9 +2084,34 @@ func draw_stage() -> void:
 		battlefield.draw_texture_rect(BASIC_HIT,Rect2(hit_point-Vector2(17,20),Vector2(44.5,34.5)),false,Color(1,1,1,fade))
 
 
+func _finish_visual_ready() -> bool:
+	if not impact_pending and pose == "thrust" and pose_clock < JumpMotion.JUMP_SECONDS:
+		return false
+	if rules.outcome != "win":
+		return not impact_pending
+	var span := 0.0
+	var age := hit_age
+	match pose:
+		ManualHunt.HAN_SPEAR_3: span = 1.20
+		ManualHunt.HAN_SPEAR_2: span = .56
+		ManualHunt.URAM_CLUB_2: span = 1.90
+		"team":
+			if hit_kind == "sling_contact":
+				span = 1.22
+				age = stone_hit_age
+	if span > 0.0:
+		deer.modulate.a=1.0-smoothstep(maxf(.16,span-.5),span,age)
+		return not impact_pending and age>=span
+	return not impact_pending
+
+
 func show_result() -> void:
 	if result_shown: return
 	result_shown = true
+	rally_art.cancel()
+	manual_guard.cancel()
+	chain_window.reset()
+	manual_pending.clear()
 	if rules.outcome == "win":
 		app.record_hunt_win()
 		hunt_audio.cue("monster_death",4)

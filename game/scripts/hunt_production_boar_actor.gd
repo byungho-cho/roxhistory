@@ -17,6 +17,8 @@ func _ready() -> void:
 	native.name = "NativeAdultBoar" if native_species == "adult" else "NativeForestDeer"
 	native.set_process(false)
 	native.set_physics_process(false)
+	# HybridCharacter starts hidden; this screen drives the visual child.
+	native.show()
 	native.position = Vector2.ZERO
 	native.scale = Vector2.ONE
 	viewport = native.viewport

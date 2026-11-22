@@ -2403,7 +2403,7 @@ func prepare_selected_hunt() -> void:
 	hunt_preparation_cancelled = false
 	audio.cue("action_click")
 	toast("사냥터 준비 중…")
-	var paths := [HybridCharacter.MESHY_HUNT_MODEL, "res://assets/characters/residents/roxhistory-hunter-male-combat-v2-preview.glb", WorldAnimal.MODELS.deer]
+	var paths := [HybridCharacter.MESHY_HUNT_MODEL, "res://assets/characters/residents/roxhistory-hunter-male-combat-v2-preview.glb", WorldAnimal.MODELS.deer, HUNT_PREY_PROFILE.model_path("forest")]
 	if not adult_path.is_empty() and ResourceLoader.exists(adult_path, "PackedScene"):
 		paths.append(adult_path)
 	var pending: Array[String] = []

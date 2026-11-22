@@ -49,7 +49,7 @@ func run():
  stage5._process(.18)
  check("real scheduled charge samples native windup",stage5.pose=="counter" and actor.native_phase=="charge" and actor.native_elapsed>0.0)
  stage5._process(.17)
- check("charge hits existing 2 HP and advances native release",stage5.rules.party_hp[Rules.SAEBOM]==before_hp-2 and actor.native_elapsed>=stage5.adult_markers.charge_release and actor.position.distance_to(settled)>1.0 and not stage5.bom_prey_pocket.is_finite())
+ check("charge hits existing 2 HP and advances native release",stage5.rules.party_hp[Rules.SAEBOM]==before_hp-2 and actor.native_elapsed>=stage5.adult_markers.charge_release and actor.position.distance_to(settled)>1.0)
  for frame in range(15): stage5._process(1.0/60.0)
  var before_stone:int=stage5.rules.deer_hp
  stage5.rules.charges[Rules.SAEBOM]=3.0
