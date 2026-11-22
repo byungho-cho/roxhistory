@@ -71,6 +71,10 @@ func draw_cast_notice(layer: Node2D, anchor: Vector2, hp_panel: Control, icon: T
 	if is_instance_valid(hp_panel) and hp_panel.visible:
 		y=minf(y,layer.to_local(hp_panel.get_global_transform().origin).y-12.)
 	var center:=Vector2(anchor.x,maxf(70.,y-lerpf(0.,21.,smoothstep(0.,.78,p))))
+	_draw_cast_frame(layer,center,icon,linked,alpha,side)
+
+
+func _draw_cast_frame(layer:Node2D,center:Vector2,icon:Texture2D,linked:bool,alpha:float,side:float)->void:
 	var extent:=Vector2.ONE*side
 	var box:=Rect2(center-extent*.5,extent)
 	var tint:=Color("58b9ff") if linked else Color("ffd179")
@@ -80,6 +84,36 @@ func draw_cast_notice(layer: Node2D, anchor: Vector2, hp_panel: Control, icon: T
 	frame.border_color.a=alpha
 	layer.draw_style_box(frame,box)
 	layer.draw_texture_rect(icon,box.grow(-2.),false,Color(1.,1.,1.,alpha))
+
+static func rally_notice_shape(age:float, remaining:float, fading:float)->Vector3:
+	var p:=clampf(age/CAST_SECONDS,0.,1.)
+	var side:=lerpf(24.,29.,smoothstep(0.,.24,p))
+	var alpha:=smoothstep(0.,.08,p)
+	var rise:=21.*smoothstep(0.,.78,p)
+	if remaining>0.:
+		var final_beat:=remaining<=1.
+		var cycles:float=(1.-remaining)*3. if final_beat else (5.-remaining)*.75
+		var phase:=fposmod(cycles,1.)
+		var dip:=smoothstep(.19,.37,phase)*(1.-smoothstep(.64,.82,phase))
+		var steady:=lerpf(.93 if final_beat else .85,.14 if final_beat else .22,dip)
+		alpha=lerpf(alpha,steady,smoothstep(0.,.20,5.-remaining))
+	elif fading>=0.:
+		var out:=smoothstep(0.,.26,fading)
+		alpha=.93*(1.-out)
+		side*=lerpf(1.,1.5,out)
+		rise+=7.*out
+	return Vector3(alpha,side,rise)
+
+
+func draw_rally_cast_notice(layer:Node2D, anchor:Vector2, hp_panel:Control, icon:Texture2D, age:float, remaining:float, fading:float)->void:
+	if icon==null or not anchor.is_finite():return
+	var shape:=rally_notice_shape(age,remaining,fading)
+	if shape.x<=.001:return
+	var y:=anchor.y-17.
+	if is_instance_valid(hp_panel) and hp_panel.visible:
+		y=minf(y,layer.to_local(hp_panel.get_global_transform().origin).y-12.)
+	_draw_cast_frame(layer,Vector2(anchor.x,maxf(70.,y-shape.z)),icon,true,shape.x,shape.y)
+
 
 func _light(layer: Node2D, point: Vector2, extent: Vector2, tint: Color, opacity: float) -> void:
 	layer.draw_texture_rect(art.soft,Rect2(point-extent*.5,extent),false,Color(tint,opacity))

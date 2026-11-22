@@ -42,11 +42,16 @@ const SoundPath := "res://assets/audio/hunt-duel-lab/"
 const URAM_PARRY_SOUND := preload("res://assets/audio/lab-uram-res009/parry-c.mp3")
 const URAM_GUARD_OPEN := .03
 const URAM_GUARD_CLOSE := .32
+const BasicRope := preload("res://scripts/saebom_rope_sling_basic_presentation.gd")
+var basic_rope_glow:=BasicRope.make_glow()
 const SoundNames := {"hangyeol":"han", "uram":"uram", "saebom":"bom", "forest":"deer", "adult":"boar"}
 
 var app: Node
 var rules := Rules.new()
 var local_formation:Node2D
+var ordinary_knife_fx:Array[Dictionary]=[]
+const MeleeKnife=preload("res://scripts/duel_saebom_stone_knife.gd")
+const MeleeKnifeIcon=preload("res://assets/ui/saebom-melee/stone-knife-2sp.png")
 
 var local_formation_button:Button
 var show_final_test35 := false
@@ -81,8 +86,9 @@ func _toggle_local_formation(distance_drill:String="")->void:
 	for audio in audio_pool:audio.stop()
 	field.hide()
 	skill_hud.hide()
-	if local_melee_polish:LocalBomBadge.sync_field(arena,Vector2.ZERO,0.0)
-	cast_notice_layer.hide()
+	cast_notice.clear()
+	cast_notice_layer.visible=local_melee_polish
+	cast_notice_layer.queue_redraw()
 	for holder in overhead:holder.panel.hide()
 	for hud in local_formation.huds:
 		touch_buttons.append(hud.portrait_button)
@@ -189,7 +195,6 @@ const Saebom2Vfx=preload("res://scripts/hunt_duel_saebom_2p_effect.gd")
 const Saebom3Vfx=preload("res://scripts/hunt_duel_saebom_3p_effect.gd")
 var bom_style:=Saebom3Vfx.new()
 var local_melee_polish:=false
-const LocalBomBadge=preload("res://scripts/hunt_duel_bom_buff_badge.gd")
 var local_bom_rally_at:=-INF
 var local_bom_rally_until:=-INF
 var local_saebom_latest:=false
@@ -722,6 +727,7 @@ func _draw_authored_frames(origin:Vector2,elapsed:float,screen_size:float)->void
 	effects_layer.draw_texture_rect(authored_frames[frame_index],Rect2(origin-anchor,Vector2.ONE*screen_size),false)
 
 func reset_round(after_fade:=false) -> void:
+	ordinary_knife_fx.clear()
 	if is_instance_valid(local_formation):
 		var mode:String=local_formation.saebom_distance_drill
 		_close_local_formation()
@@ -824,6 +830,9 @@ func _refresh(delta := 0.0) -> void:
 		bars[i].max_value = rules.full_hp(i)
 		bars[i].value = presentation.hp[i]
 	skill_hud.chain_border_speed=URAM_BORDER_RATE if _local_guard_pre_cue() else 1.0
+	if local_melee_polish and is_instance_valid(shared_world) and shared_world.saebom_pair:
+		if motion[0] in ["idle","walk","run","hit"]:shared_world.update_knife_latch()
+		skill_hud.set_saebom_distance_icon(shared_world.bom_near_skill if motion[0]=="skill" else shared_world.bom_shove if motion[0]=="attack" else shared_world.bom_close,MeleeKnifeIcon)
 	skill_hud.sync(rules.sp,rules.hp[0],rules.full_hp(0),rules.living(),_can_request(),delta)
 	skill_hud.hp.value=presentation.hp[0]
 	pause_caption.visible=paused;pause_icon.visible=not paused
@@ -831,10 +840,6 @@ func _refresh(delta := 0.0) -> void:
 	name_labels[0].text=ModelTest.NAMES[rules.ally_id]
 	name_labels[1].text="꽃사슴" if rules.enemy_id=="forest" else "큰 멧돼지"
 	_update_head_hud(delta)
-	if local_melee_polish:
-		var hp_panel:Control=overhead[0].panel
-		var anchor:=hp_panel.position+Vector2(hp_panel.size.x*.5,-12.)
-		LocalBomBadge.sync_field(arena,anchor,local_bom_rally_until-rules.elapsed if rules.ally_id=="saebom" and rules.hp[0]>0 else 0.0)
 	_advance_ground_wave(delta)
 	ready_light_layer.queue_redraw()
 	deer_skill_light_layer.queue_redraw()
@@ -873,7 +878,72 @@ func _update_head_hud(delta:float)->void:
 		panel.modulate.a=alpha
 		panel.visible=alpha>.001
 
+func _sync_squad_bom_notice() -> void:
+	var caster:Dictionary=local_formation.units[2]
+	if caster.hp>0 and caster.move=="chain":
+		var start:=float(local_formation.elapsed)-float(caster.age)
+		if cast_notice.is_empty() or absf(start-float(cast_notice.at))>.025:
+			cast_notice={"key":"chain","at":start,"icon":local_formation.huds[2].chain_art.texture,"bom_buff":true}
+	cast_notice_layer.queue_redraw()
+
+
+func _bom_notice_sample(anchor:Vector2)->Dictionary:
+	var clock:=rules.elapsed
+	var deadline:=local_bom_rally_until
+	var alive:=rules.ally_id=="saebom" and rules.hp[0]>0
+	var casting:=motion[0]=="chain"
+	var baseline_y:=anchor.y-17.
+	if is_instance_valid(local_formation):
+		var caster:Dictionary=local_formation.units[2]
+		clock=local_formation.elapsed
+		deadline=float(caster.rally)
+		alive=caster.hp>0
+		casting=caster.move=="chain"
+		anchor=local_formation.get_transform()*Vector2(caster.feet)
+		baseline_y=anchor.y-95.
+	else:
+		var panel:Control=overhead[0].panel
+		if panel.visible:baseline_y=minf(baseline_y,panel.position.y-12.)
+	if not alive:return {}
+	var elapsed:=maxf(0.,clock-float(cast_notice.at))
+	var has_deadline:=is_finite(deadline) and deadline>float(cast_notice.at)
+	var remaining:=deadline-clock if has_deadline else INF
+	if not has_deadline and not casting:return {}
+	if has_deadline and remaining<=-.26:return {}
+	var p:=clampf(elapsed/.74,0.,1.)
+	var side:=lerpf(24.,29.,smoothstep(0.,.24,p))
+	var alpha:=smoothstep(0.,.08,p)
+	var rise:=21.*smoothstep(0.,.78,p)
+	if has_deadline and remaining>0.:
+		var final_beat:=remaining<=1.
+		var cycles:float=(1.-remaining)*3. if final_beat else (5.-remaining)*.75
+		var phase:=fposmod(cycles,1.)
+		var dip:=smoothstep(.19,.37,phase)*(1.-smoothstep(.64,.82,phase))
+		var steady:=lerpf(.93 if final_beat else .85,.14 if final_beat else .22,dip)
+		alpha=lerpf(alpha,steady,smoothstep(0.,.20,5.-remaining))
+	elif has_deadline:
+		var exit:=smoothstep(0.,.26,-remaining)
+		alpha=.93*(1.-exit)
+		side*=lerpf(1.,1.5,exit)
+		rise+=7.*exit
+	return {"center":Vector2(anchor.x,maxf(70.,baseline_y-rise)),"side":side,"alpha":alpha,"remaining":remaining}
+
+
+func _draw_bom_buff_notice(anchor:Vector2) -> void:
+	var sample:=_bom_notice_sample(anchor)
+	if sample.is_empty() or cast_notice.icon==null:return
+	var size:=Vector2.ONE*float(sample.side)
+	var box:=Rect2(Vector2(sample.center)-size*.5,size)
+	cast_notice_layer.draw_texture_rect(ring_halo,box.grow(13.),false,Color(Color("58b9ff"),.72))
+	cast_notice_layer.draw_style_box(cast_notice_frames[1],box)
+	cast_notice_layer.draw_texture_rect(cast_notice.icon,box.grow(-2.),false,Color.WHITE)
+	cast_notice_layer.modulate.a=float(sample.alpha)
+
+
 func _draw_cast_notice(anchor:Vector2)->void:
+	if cast_notice.get("bom_buff",false):
+		_draw_bom_buff_notice(anchor)
+		return
 	if cast_notice.is_empty() or rules.hp[0]<=0:return
 	var elapsed:=visual_clock-float(cast_notice.at)
 	if elapsed>=.74:return
@@ -904,7 +974,7 @@ func _try_player(key: String) -> void:
 	if key=="skill" and _local_ram_busy():return
 	if not SP_COST.has(key) or not _can_request() or not rules.spend(int(SP_COST[key])):
 		return
-	if local_melee_polish and key=="chain" and rules.ally_id=="saebom":cast_notice.clear()
+	if local_melee_polish and key=="chain" and rules.ally_id=="saebom":cast_notice={"key":key,"at":rules.elapsed,"icon":skill_hud.chain_art.texture,"bom_buff":true}
 	else:cast_notice={"key":key,"at":visual_clock,"icon":skill_hud.chain_art.texture if key=="chain" else skill_hud.badge_art.texture}
 	cast_from=_position(0)
 	contact_at[0]=-1.0 # Cancel the interrupted automatic contact; never land it twice.
@@ -1025,6 +1095,11 @@ func _land(side: int, key: String,contact:Dictionary={}) -> void:
 	if contact.get("kind","")=="shield":
 		_uram_parry(contact)
 		return
+	var knife:bool=contact.get("kind","")=="saebom_knife"
+	if knife:
+		if motion[0]!="skill" or not shared_world.knife_skill_active(motion[0]) or int(contact.action)!=int(shared_world.action_id[0]):return
+		ordinary_knife_fx.append({"at":visual_clock,"point":shared_world.project(contact.point),"feet":shared_world.body_screen(1),"beat":int(contact.beat)})
+		if int(contact.beat)<3:return
 	if side==0 and key=="counter" and ordinary_counter_target!=null:
 		if ordinary_counter_spent or ordinary_counter_target!=b or rules.hp[1]<=0:return
 		ordinary_counter_spent=true
@@ -1129,6 +1204,9 @@ func _land(side: int, key: String,contact:Dictionary={}) -> void:
 		if is_instance_valid(shared_world) and side==1 and key=="skill":hold=.67
 		_flash(impact_point,"local_uram_contact_silent" if local_all_effects and side==0 and a.key=="uram" and key=="skill" else "contact_"+key,tone_for_contact(side),hold)
 		fx[-1]["attacker"]=side
+		if side==0 and key=="attack" and a.key=="saebom" and contact.get("kind","")=="projectile":
+			fx[-1]["basic_rope_impact"]=true
+			fx[-1]["duration"]=.30
 		if authored_2sp:
 			fx[-1]["han_2sp_authored"]=true
 			fx[-1]["spear_axis"]=(target-origin).angle()+.57
@@ -1283,9 +1361,7 @@ func advance(delta: float) -> void:
 		if local_melee_polish:
 			ground.self_modulate=Color.WHITE.lerp(Color.BLACK,local_formation.spotlight_dim())
 			_show_squad_spotlight_caption(local_formation.spotlight_clock)
-		if local_melee_polish:
-			var caster:Dictionary=local_formation.units[2]
-			LocalBomBadge.sync_field(local_formation,Vector2(caster.feet)-Vector2(0,88.),float(caster.rally)-local_formation.elapsed if caster.hp>0 else 0.0)
+		if local_melee_polish:_sync_squad_bom_notice()
 		var secs:=int(local_formation.elapsed)
 		timer.text="%02d:%02d"%[secs/60,secs%60]
 		return
@@ -1517,7 +1593,7 @@ func _advance_shared(delta:float)->void:
 			elif side==1 and motion[1]=="walk":
 				if shared_world.deer_return_offset().length()<.005 or age[1]>=1.2:
 					_react(1,"idle")
-			elif motion[side] not in ["idle","death"] and age[side]>=actor.duration+_uram_floor_recovery(side):
+			elif motion[side] not in ["idle","death"] and age[side]>=(MeleeKnife.DURATION if side==0 and shared_world.knife_skill_active(motion[0]) else float(actor.duration))+_uram_floor_recovery(side):
 				if side==0 and motion[0]=="counter" and _ordinary_counter_live():continue
 				if side==0 and motion[0]=="chain" and (_uram_deer_close() or _ordinary_counter_live()):
 					local_guard_action=-1
@@ -1694,16 +1770,29 @@ func _draw_duel_lights()->void:
 	if not _silver_deer_active():_draw_deer_skill_lights()
 
 func _draw_other_weapon_glow()->void:
+	while not ordinary_knife_fx.is_empty() and visual_clock-float(ordinary_knife_fx[0].at)>MeleeKnife.ECHO_SECONDS:ordinary_knife_fx.pop_front()
+	for ev in ordinary_knife_fx:MeleeKnife.draw_event(ready_light_layer,int(ev.beat),ev.point,ev.feet,visual_clock-float(ev.at))
 	if not is_instance_valid(a) or rules.hp[0]<=0:return
 	if local_shared_ranged and a.key in ["uram","saebom"]:
 		var in_flight:=Vector2.INF
 		var expired:=false
 		if a.key=="saebom" and is_instance_valid(shared_world):
+			if a.preview.has_meta("saebom_melee_blade"):
+				MeleeKnife.draw_blade(ready_light_layer,a.preview)
+				if shared_world.projectile.is_empty():return
 			if local_saebom_latest and motion[0]=="chain" and _bom_prop_hidden(age[0]):return
 			if not shared_world.projectile.is_empty():
 				if local_saebom_latest and shared_world.projectile.motion=="skill":return
+				if shared_world.projectile.motion=="attack":
+					BasicRope.draw_stone(ready_light_layer,basic_rope_glow,shared_world.project(Vector3(shared_world.projectile.position)),float(shared_world.projectile.flight_age))
+					return
 				in_flight=shared_world.project(Vector3(shared_world.projectile.position))
 			expired=motion[0] in ["attack","skill"] and (shared_world.consumed[0] or (local_melee_polish and age[0]>=SharedWorld.sling_release_seconds(motion[0])))
+		if a.key=="saebom" and motion[0] not in ["skill","chain"]:
+			if not shared_world.basic_rope_empty and not shared_world.bom_shove and not expired:
+				var anchor:=BasicRope.stone_world(a.preview)
+				if anchor.is_finite():BasicRope.draw_stone(ready_light_layer,basic_rope_glow,shared_world.project(anchor),0.)
+			return
 		_draw_local_weapon_glow(a,in_flight,expired,ready_light_layer,shared_world)
 		return
 	var at:=Vector2.INF
@@ -2123,6 +2212,9 @@ func _draw_contact_effects()->void:
 			continue
 		if _saebom_duel() and effect.get("attacker",-1)==0 and (basic or effect.name=="contact_skill"):
 			if local_saebom_latest and not basic:continue
+			if effect.get("basic_rope_impact",false):
+				BasicRope.draw_impact(effects_layer,basic_rope_glow,effect.center,visual_clock-float(effect.at))
+				continue
 			_draw_sling_contact(effect,p,basic)
 			continue
 		if is_instance_valid(shared_world) and effect.get("attacker",-1)==0 and (basic or effect.name=="contact_skill"):
@@ -2444,6 +2536,7 @@ func _draw_sling_exchange()->void:
 		_soft_light(palms,Vector2(30,25),Color("b1f6ca"),pulse*.62*smoothstep(.27,.68,phase))
 	if not shared_world.projectile.is_empty():
 		var shot:Dictionary=shared_world.projectile
+		if shot.motion=="attack" and local_shared_ranged:return
 		var point:Vector3=shot.position
 		var velocity:Vector3=shot.velocity
 		var tip:=shared_world.project(point)
@@ -2795,6 +2888,9 @@ func _bom_prop_hidden(t:float)->bool:return t>=.10 and t<2.24
 func _pose_bom_cast(actor:Actor,t:float)->void:
 	bom_style.sync_sling(actor.preview.pivot,_bom_prop_hidden(t))
 	if t>=0.0 and t<2.24:bom_style.pose_cast(actor,t)
+	elif t>=2.24:
+		# Keep the relaxed pose after the authored wings; do not fall back to the old gesture.
+		actor.resident_sample("idle",.63+.05*sin(t*2.3))
 
 
 

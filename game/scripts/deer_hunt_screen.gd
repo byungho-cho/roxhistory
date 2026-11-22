@@ -5,6 +5,16 @@ signal preparation_ready
 const Timing := preload("res://scripts/motion_timing.gd")
 const SkillHUD := preload("res://scripts/duel_skill_hud.gd")
 const HeadHUD := preload("res://scripts/battle_head_hud.gd")
+const BasicRope := preload("res://scripts/saebom_rope_sling_basic_presentation.gd")
+var basic_rope_glow:=BasicRope.make_glow()
+var basic_rope_empty:=false
+var basic_rope_flying:=false
+var basic_rope_origin:=Vector2.INF
+var basic_rope_target:=Vector2.INF
+var basic_rope_chips:=Vector2.INF
+var basic_rope_age:=INF
+const BASIC_ROPE_LOAD := .042
+const BASIC_ROPE_RELEASE := .127
 const StoneContact := preload("res://scripts/hunt_production_projectile_contact.gd")
 const StoneGold := preload("res://scripts/hunt_duel_saebom_2p_effect.gd")
 const BOM_PALM_ENTER := 30.0
@@ -36,7 +46,6 @@ var stone_last_result := ""
 var stone_glow: GradientTexture2D
 var stone_overlay: Control
 const SaebomRig := preload("res://scripts/hunt_production_saebom_rig.gd")
-const RallyBadge := preload("res://scripts/hunt_duel_bom_buff_badge.gd")
 var head_headers:Array=[]
 const MATCH := preload("res://scripts/hunt_match_art.gd")
 const RULES := preload("res://scripts/deer_hunt_rules.gd")
@@ -995,6 +1004,7 @@ const NativeHud := preload("res://scripts/hunt_production_hunt_presentation.gd")
 var native_hud := NativeHud.new(prey_art)
 var first_blood_age := -INF
 var cast_notices: Array = [null,null,null]
+var rally_cast_notice:Dictionary={}
 var ready_phase: Array[float] = [0.,0.,0.]
 var ring_sizing: Array[Vector2] = []
 var tracked_party_hp: Array[int] = []
@@ -1014,7 +1024,25 @@ func _field_ring(actor,index:int) -> Rect2:
 	return Rect2(actor.position-ring_sizing[index]*.5,ring_sizing[index])
 
 
+func _tick_rally_notice(elapsed:float)->void:
+	if rally_cast_notice.is_empty():return
+	if rules.party_hp[RULES.SAEBOM]<=0:
+		rally_cast_notice.clear()
+		return
+	rally_cast_notice.age+=elapsed
+	var remaining:float=rules.rally_remaining[RULES.SAEBOM]
+	if remaining>0.:
+		rally_cast_notice.was_active=true
+		rally_cast_notice.fade=-1.
+	elif rally_cast_notice.was_active:
+		rally_cast_notice.fade=maxf(0.,float(rally_cast_notice.fade))+elapsed
+		if rally_cast_notice.fade>=.26:rally_cast_notice.clear()
+	elif not rules.rally_cast_pending:
+		rally_cast_notice.clear()
+
+
 func _tick_native_hud(elapsed:float) -> void:
+	_tick_rally_notice(elapsed)
 	if ring_sizing.size() != 4 and approach>=1.0:
 		ring_sizing.clear()
 		for hero in hunters:
@@ -1048,12 +1076,23 @@ func _draw_native_weapon_and_notices(dest:Node2D) -> void:
 	if rules.party_hp[RULES.SAEBOM]>0 and is_instance_valid(bom):
 		if stone.active:
 			native_hud.draw_sling_glow(dest,_stone_render_point(stone.position))
+		elif basic_rope_flying:
+			var travel:=clampf((pose_clock-BASIC_ROPE_RELEASE)/maxf(.01,IMPACT_SECONDS-BASIC_ROPE_RELEASE),0.,1.)
+			BasicRope.draw_stone(dest,basic_rope_glow,basic_rope_origin.lerp(basic_rope_target,travel),pose_clock-BASIC_ROPE_RELEASE,true)
 		elif not (pose=="team" and pose_clock>=.2) and not (rally_art.active and rally_art.age>=.1 and rally_art.age<2.24):
-			native_hud.draw_sling_glow(dest,inv*bom.stone_world())
+			if pose=="team":native_hud.draw_sling_glow(dest,inv*bom.stone_world())
+			elif not basic_rope_empty and not bom_shoving:
+				var world_center:=BasicRope.stone_world(bom)
+				if world_center.is_finite():BasicRope.draw_stone(dest,basic_rope_glow,inv*bom.display.to_global(bom.camera.unproject_position(world_center)),0.)
+	BasicRope.draw_impact(dest,basic_rope_glow,basic_rope_chips,basic_rope_age)
 	for i in cast_notices.size():
 		var notice:Variant=cast_notices[i]
 		if notice!=null and rules.party_hp[i]>0:
 			native_hud.draw_cast_notice(dest,hunters[i].position-Vector2(0,64),hunter_markers[i],notice.texture,notice.linked,notice.age)
+	# One existing overhead slot per actor; a real 2SP transient keeps precedence.
+	var rally_slot:=RULES.SAEBOM
+	if not rally_cast_notice.is_empty() and rules.party_hp[rally_slot]>0 and cast_notices[rally_slot]==null:
+		native_hud.draw_rally_cast_notice(dest,hunters[rally_slot].position-Vector2(0,64),hunter_markers[rally_slot],rally_cast_notice.texture,rally_cast_notice.age,rules.rally_remaining[rally_slot],rally_cast_notice.fade)
 
 
 func _setup_native_hunt_art(actor_group:Node2D) -> void:
@@ -1431,7 +1470,8 @@ func play_pose(id: String) -> void:
 	guard_prey_origin = Vector2.INF
 	if id == "rally":
 		rally_art.start(RULES.SAEBOM)
-		_mark_hunt_cast(RULES.SAEBOM,true)
+		var hud:Control=party_cards[RULES.SAEBOM].hud
+		rally_cast_notice={"texture":hud.chain_art.texture,"age":0.,"was_active":false,"fade":-1.}
 	elif _is_native_manual(id):
 		_mark_hunt_cast(rules.attacker,id == ManualHunt.HAN_SPEAR_3)
 	pose_clock = 0.0
@@ -1495,6 +1535,11 @@ func _process(delta: float) -> void:
 			actors_sampled = true
 			if sling_pending: _update_saebom_stone(elapsed, previous_pose_clock)
 			else: _update_saebom_shove()
+		var ranged_basic_pending := impact_pending and pose=="auto_thrust" and rules.attacker==RULES.SAEBOM and not bom_shoving
+		if ranged_basic_pending and pose_clock>=BASIC_ROPE_RELEASE and not basic_rope_flying:
+			update_actors(actor_delta+elapsed)
+			actor_delta=0.0;actors_sampled=true
+			_release_saebom_basic_rope()
 		if impact_pending and not sling_pending and not palm_pending and pose != "rally" and not _is_native_manual(pose) and pose_clock >= (JumpMotion.JUMP_CONTACT_SECONDS if pose=="thrust" else IMPACT_SECONDS):
 			var before_hp := rules.hunter_hp if pose == "counter" else rules.deer_hp
 			rules.resolve_attack()
@@ -1507,6 +1552,10 @@ func _process(delta: float) -> void:
 				hit_origin = _hunter_contact_canvas(attacker)
 				hit_point = hit_origin if hit_on_hunter else deer.position+Vector2(-18,-37)
 				hit_label.text = "−%d" % hit_damage
+			if ranged_basic_pending:
+				basic_rope_flying=false
+				if hit_damage>0 and basic_rope_target.is_finite():
+					hit_point=basic_rope_target;basic_rope_chips=hit_point;basic_rope_age=0.
 			impact_pending = false
 			if pose=="thrust": hunt_audio.cue("S15",2)
 			if pose=="strike": hunt_audio.cue("S18",2)
@@ -1548,6 +1597,7 @@ func _process(delta: float) -> void:
 	if running:
 		_tick_native_hud(elapsed)
 		_update_native_hunt_art(elapsed, previous_pose_clock)
+	basic_rope_age += elapsed
 	stone_hit_age += elapsed
 	stone_trail_age += elapsed
 	if is_instance_valid(stone_overlay): stone_overlay.queue_redraw()
@@ -1578,6 +1628,9 @@ func _update_saebom_prey_pocket(id:String) -> void:
 	bom_prey_pocket = pocket
 
 func _begin_saebom_close_action(id:String) -> void:
+	basic_rope_flying=false
+	if rules.attacker==RULES.SAEBOM and id in ["team","rally"]:
+		basic_rope_empty=false
 	bom_shoving = false
 	bom_hop_offset = Vector2.ZERO
 	bom_hop_strength = 0.0
@@ -1598,6 +1651,19 @@ func _begin_saebom_close_action(id:String) -> void:
 		var endpoint := _saebom_safe_position(her_feet,proposed)
 		bom_hop_offset = endpoint-her_feet
 		bom_hop_strength = clampf(bom_hop_offset.length() / BOM_HOP_MAX,0.0,1.0)
+
+func _release_saebom_basic_rope() -> void:
+	var bom:SaebomRig=hunters[RULES.SAEBOM] as SaebomRig
+	if not is_instance_valid(bom):return
+	bom.sample_native_release("attack",.48)
+	bom.skeleton.force_update_all_bone_transforms()
+	var center:=BasicRope.stone_world(bom)
+	if not center.is_finite():return
+	basic_rope_origin=_stone_render_point(_stone_metric_point(bom.camera,bom.display,center))
+	var target:=_deer_stone_capsule()
+	basic_rope_target=_stone_render_point(Vector3(target.a).lerp(target.b,.5)) if not target.is_empty() else deer.position+Vector2(-18,-37)
+	basic_rope_empty=true;basic_rope_flying=true
+	BasicRope.set_loaded(bom,false)
 
 func _saebom_safe_position(base:Vector2, desired:Vector2) -> Vector2:
 	var candidate := Vector2(clampf(desired.x,50.0,910.0),clampf(desired.y,85.0,452.0))
@@ -1824,8 +1890,6 @@ func update_combat_ui(delta := 0.0) -> void:
 	for i in party_cards.size():
 		var hud: Control = party_cards[i].hud
 		hud.sync(rules.orbs(i),rules.party_hp[i],RULES.PARTY_HP[i],rules.party_hp[i]>0,_can_take_hunt_input() and (rules.can_use(RULES.PARTY_SKILLS[i]) if i == RULES.SAEBOM else rules.can_use_frontline_skill(i,2)),delta,_can_submit_manual_chain(i))
-		if i == RULES.SAEBOM:
-			RallyBadge.sync(hud, rules.rally_remaining[i] if rules.party_hp[i] > 0 else 0.0)
 
 const CAMERA_ACCENT_S := .54
 const CAMERA_ACCENT_LOCK_S := .69
@@ -1943,6 +2007,9 @@ func update_actors(delta: float) -> void:
 			if attack and pose == "auto_thrust" and bom_shoving:
 				_pose_saebom_palm(hunter, close_phase)
 			rally_art.pose_after_actor_sample(not attack and not assisting and not dodge)
+			if pose not in ["team","rally"] and not (attack and bom_shoving):
+				if attack and pose=="auto_thrust" and pose_clock>=BASIC_ROPE_LOAD and pose_clock<BASIC_ROPE_RELEASE:basic_rope_empty=false
+				BasicRope.set_loaded(hunter,not basic_rope_empty)
 		hunter.viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
 		hunter_markers[i].position = hunter.position+Vector2(0,-63)
 		hunter_markers[i].visible = arrival_finished
@@ -2131,6 +2198,7 @@ func show_result() -> void:
 	if result_shown: return
 	result_shown = true
 	rally_art.cancel()
+	rally_cast_notice.clear()
 	manual_guard.cancel()
 	chain_window.reset()
 	manual_pending.clear()

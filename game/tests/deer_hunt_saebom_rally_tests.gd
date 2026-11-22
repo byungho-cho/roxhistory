@@ -1,6 +1,7 @@
 extends SceneTree
 
 const Rules := preload("res://scripts/deer_hunt_rules.gd")
+const HudArt := preload("res://scripts/hunt_production_hunt_presentation.gd")
 var checks := 0
 var failures := 0
 
@@ -131,31 +132,50 @@ func _screen_suite() -> void:
 	hunt.update_combat_ui()
 	_check(not caster_hud.chain_button.disabled and caster_hud.portrait_button.disabled,"Portrait 3SP action stays available with only Saebom alive; 2SP remains blocked")
 	raw_rules.party_hp[0] = 34
-	raw_rules.party_hp[1] = 33
+	# One unavailable teammate permits a genuine standalone 3SP input.
+	raw_rules.party_hp[1] = 0
 	hunt.hunters[0].position = Vector2(60,0)
 	hunt.hunters[1].position = Vector2(250,0)
 	hunt.hunters[2].position = Vector2.ZERO
 	caster_hud.chain_button.pressed.emit()
 	_check(hunt.pose == "rally" and raw_rules.rally_cast_pending and raw_rules.orbs(Rules.SAEBOM) == 0,"Real chain button routes to Saebom Rally")
+	raw_rules.party_hp[1]=33 # Alive at release but still outside range in this fixture.
 	hunt._process(.27)
-	var badge: Panel = caster_hud.portrait_button.get_node_or_null("SaebomBuffPortraitTimer")
+	var badge: Dictionary = hunt.rally_cast_notice
 	_check(raw_rules.rally_remaining == [5.0,0.0,5.0] and raw_rules.deer_hp == 100,"Screen resolves radius recipients, no enemy hit")
-	_check(is_instance_valid(badge) and badge.visible and badge.get_node("Seconds").text == "5" and badge.get_node("Icon").texture == caster_hud.chain_art.texture,"Bottom portrait shows five seconds and actual chain icon")
+	_check(not badge.is_empty() and badge.was_active and badge.texture==caster_hud.chain_art.texture and hunt.cast_notices[Rules.SAEBOM]==null and caster_hud.portrait_button.get_node_or_null("SaebomBuffPortraitTimer")==null,"Only the actual chain icon over the caster, no portrait timer")
+	var notice_before:float=badge.get("age",-1.)
 	app.modal = true
 	hunt._process(1.0)
-	_check(raw_rules.rally_remaining[Rules.SAEBOM] == 5.0,"Pause freezes the timer")
+	_check(raw_rules.rally_remaining[Rules.SAEBOM] == 5.0 and badge.get("age",-2.) == notice_before,"Pause freezes both real buff and icon")
 	app.modal = false
 	hunt.speed = 2.0
 	raw_rules.exchange_clock = -100.0
 	for frame in 51:
 		hunt._process(.01)
-	_check(_close(raw_rules.rally_remaining[Rules.SAEBOM], 3.98) and badge.get_node("Seconds").text == "4","2x maintains battle-time semantics and ticks portrait")
+	_check(_close(raw_rules.rally_remaining[Rules.SAEBOM],3.98) and _close(float(badge.get("age",-1.))-notice_before,1.02),"2x preserves combat timer and advances the overhead icon with it")
 	for frame in 199:
 		hunt._process(.01)
-	_check(raw_rules.rally_remaining[Rules.SAEBOM] == 0.0 and not badge.visible,"Portrait indicator hides on expiry")
+	_check(raw_rules.rally_remaining[Rules.SAEBOM]==0.0 and not badge.is_empty() and badge.fade>=0.,"The icon begins its exit when actual boost ends")
+	var growing:=HudArt.rally_notice_shape(float(badge.get("age",0.)),0.,.13)
+	_check(growing.x>0. and growing.x<.93 and growing.y>29.,"Expiration grows and fades the same icon")
+	for f in 15:hunt._process(.01)
+	_check(hunt.rally_cast_notice.is_empty(),"No ghost once the exit fade ends")
+	var peaks:=0
+	var last_alpha:=.93
+	var was_falling:=false
+	for f in 120:
+		var alpha:=HudArt.rally_notice_shape(3.,1.-float(f)/120.,-1.).x
+		if alpha>last_alpha+.0001 and was_falling:
+			peaks+=1
+			was_falling=false
+		elif alpha<last_alpha-.0001:was_falling=true
+		last_alpha=alpha
+	_check(peaks==3,"Actual final-second envelope includes three bright/dim cycles")
 	raw_rules.charges[Rules.SAEBOM]=3.0
 	caster_hud.portrait_button.pressed.emit()
 	_check(raw_rules.pending_damage == 58 and raw_rules.charges[Rules.SAEBOM] == 1.0, "Real portrait light skill keeps the legacy 2SP attack")
+	_check(hunt.rally_cast_notice.is_empty() and hunt.cast_notices[Rules.SAEBOM]!=null and not hunt.cast_notices[Rules.SAEBOM].linked,"Ordinary 2SP still shows its own transient")
 	hunt.speed = 1.0
 	hunt._process(.27)
 	_check(saebom.position.is_equal_approx(saebom_settled) and saebom.animation.current_animation == "sling_heavy","Legacy 2SP shows real sling motion without the old spear lunge")

@@ -148,7 +148,8 @@ func reset()->void:
 	uram_basic_anchor=false
 	uram_entry_shield_revealed=false
 	if local_melee_polish and uram_pair:actors[0].preview.shield.hide()
-	bom_close=false;bom_shove=false;bom_hop=0.;bom_prev=0.
+	bom_close=false;bom_shove=false;bom_near_skill=false;knife_beat=0;bom_hop=0.;bom_prev=0.
+	basic_rope_empty=false
 	_end_projectile();projectile_releases.clear();_restore_sling_stone()
 	contacts.clear();body_contacts=0;max_body_penetration=0;deer_spear_reaction=false
 	knockback=[Vector3.ZERO,Vector3.ZERO]
@@ -176,10 +177,11 @@ func begin_action(side:int,key:String)->void:
 			if key=="chain" and uram_planted_feet.is_empty():_capture_uram_feet()
 			elif key not in ["chain","counter","skill"]:uram_planted_feet.clear()
 	if side==0 and saebom_pair and local_melee_polish:
-		var gap:=bodies[0].position.distance_to(bodies[1].position)
-		bom_close=saebom_close_at(gap,bom_close,1.52,1.82)
+		update_knife_latch()
 		bom_shove=key=="attack" and bom_close
-		bom_hop=clampf(1.90-gap,0.,.56) if key=="skill" and bom_close else 0.
+		bom_near_skill=key=="skill" and bom_close
+		knife_beat=0
+		bom_hop=0.
 		bom_prev=0.
 		bom_dir=((bodies[0].position-bodies[1].position)*Vector3(1,0,1)).normalized()
 	action_id[side]+=1;action_name[side]=key;consumed[side]=false
@@ -187,6 +189,20 @@ func begin_action(side:int,key:String)->void:
 	previous_weapon[side]=weapon_point(side)
 	previous_hurt[side]=hurt_capsule(1-side)
 	if side==0 and aim_by_motion.has(key):aim_bias[0]=aim_by_motion[key]
+
+func update_knife_latch()->void:
+	if not saebom_pair or not local_melee_polish:return
+	bom_close=saebom_close_at(bodies[0].position.distance_to(bodies[1].position),bom_close,1.52,1.82)
+
+func _knife_unit(side:int)->Dictionary:
+	return {"actor":actors[side],"feet":body_screen(side)}
+
+func _knife_tip_world(screen:Vector2)->Vector3:
+	var depth:float=-camera.to_local(bone_world(0,"hand.R")).z
+	return Knife.unproject(actors[0].preview,screen,depth)
+
+func knife_skill_active(key:String)->bool:
+	return local_melee_polish and saebom_pair and key=="skill" and bom_near_skill
 
 func project(point:Vector3)->Vector2:
 	return display.position+camera.unproject_position(point)*display.scale
@@ -203,6 +219,9 @@ func bone_screen(side:int,bone:String)->Vector2:return project(bone_world(side,b
 
 func weapon_point(side:int)->Vector3:
 	if saebom_pair and side==0:
+		if bom_shove and actors[0].preview.has_meta("saebom_melee_blade"):
+			var prop:Array=actors[0].preview.get_meta("saebom_melee_blade")
+			return _knife_tip_world(prop[0][2])
 		if not bom_shove:return sling_point()
 		var sk:Skeleton3D=actors[0].preview.skeleton
 		var hand:=sk.find_bone("hand.R")
@@ -397,7 +416,6 @@ func render_poses(lab,delta:float)->Array:
 			if age>=FOREST_RETREAT_END:
 				var native_at:float=sample_age*p.motion_rate("req046_skill_anticipation")
 				_blend_forest_pose(p,p.animation.get_animation("req046_skill_anticipation"),native_at,smoothstep(FOREST_RETREAT_END,FOREST_RAISED_AT,age))
-		if side==0 and key=="attack" and bom_shove:saebom_shove_pose(actor,age/maxf(.01,actor.duration),Vector3.INF)
 		var sk:Skeleton3D=p.skeleton
 		var root:int=p.root_bone if side==0 else p.root_index
 		var root_pose:=sk.get_bone_pose_position(root);var rest:=sk.get_bone_rest(root).origin
@@ -423,22 +441,11 @@ func render_poses(lab,delta:float)->Array:
 			if drift>.502:
 				p.pivot.position-=direction*(drift-.502)
 				sk.force_update_all_bone_transforms()
-		if side==0 and key=="attack" and bom_shove:
-			var q:=hurt_capsule(1)
-			var anchor:=bone_world(0,"upper.R")
-			var nearer:Vector3=q.a if anchor.distance_squared_to(q.a)<anchor.distance_squared_to(q.b) else q.b
-			var phase:=age/maxf(.01,actor.duration)
-			var lean:=smoothstep(.15,.42,phase)*(1.-smoothstep(.53,.89,phase))
-			var aim_dir:=nearer-anchor;aim_dir.y=0.
-			p.pivot.position+=aim_dir.normalized()*.19*lean
-			var spine:=sk.find_bone("spine")
-			if spine>=0:
-				var torso_pose:=sk.get_bone_global_pose(spine)
-				var torso_world:=sk.to_global(torso_pose.origin)
-				torso_pose.origin=sk.to_local(torso_world+aim_dir.normalized()*.26*lean-Vector3.UP*.075*lean)
-				sk.set_bone_global_pose(spine,torso_pose)
-			_aim_saebom_palm(sk,nearer,lean)
-		if side==0 and key=="skill" and bom_hop>0.:saebom_hop_pose(actor,age/maxf(.01,actor.duration),bom_hop/.56)
+		if side==0 and saebom_pair and local_melee_polish:
+			if key=="attack" and bom_shove:Knife.show_basic(_knife_unit(0),_knife_unit(1),clampf(age/maxf(.01,actor.duration),0.,1.))
+			elif knife_skill_active(key):Knife.sample_skill(_knife_unit(0),_knife_unit(1),age)
+			elif key in ["idle","walk","run","hit"] and bom_close:Knife.blade(p,Vector2.ZERO,0.,0.)
+			elif p.has_meta("saebom_melee_blade"):p.remove_meta("saebom_melee_blade")
 		if side==0:
 			if uram_pair:
 				if uram_forest_pair:
@@ -769,6 +776,15 @@ func step(lab,delta:float,prior_han_age:float=-1.0)->Array[Dictionary]:
 		uram_floor_hit.clear()
 		event.time=lab.rules.elapsed
 		events.append(event);contacts.append(event)
+	if knife_skill_active(lab.motion[0]) and lab.rules.living() and not lab.approach_active:
+		while knife_beat<Knife.contacts.size() and lab.age[0]+.00001>=Knife.contacts[knife_beat]:
+			var beat:=knife_beat
+			knife_beat+=1
+			if bodies[0].position.distance_to(bodies[1].position)>1.68:continue
+			var edge:=Knife.shoulder(_knife_unit(1),body_screen(0))+Vector2(0.,[-2.,3.,-1.,0.][beat])
+			var hit:Dictionary={"side":0,"motion":"skill","kind":"saebom_knife","beat":beat,"point":_knife_tip_world(edge),"normal":(bodies[1].position-bodies[0].position).normalized(),"action":action_id[0],"time":lab.rules.elapsed-delta+clampf((Knife.contacts[beat]-float(lab.age[0])+delta)/maxf(.0001,delta),0.,1.)*delta}
+			events.append(hit)
+			if beat==3:contacts.append(hit)
 	if saebom_pair:
 		var hit:=_projectile_step(lab,delta,old_hurt[1],old_weapon[0],prior_han_age if prior_han_age>=0 else lab.age[0]-delta)
 		if not hit.is_empty():events.append(hit);contacts.append(hit)
@@ -955,6 +971,9 @@ var saebom_pair:=false
 var local_melee_polish:=false
 var bom_close:=false
 var bom_shove:=false
+var bom_near_skill:=false
+var knife_beat:=0
+const Knife=preload("res://scripts/duel_saebom_stone_knife.gd")
 var bom_hop:=0.
 var bom_prev:=0.
 var bom_dir:=Vector3.ZERO
@@ -1001,6 +1020,7 @@ static func _aim_saebom_palm(sk:Skeleton3D,target:Vector3,pulse:float)->void:
 var projectile:Dictionary={}
 var projectile_releases:Array[Dictionary]=[]
 var projectile_mesh:MeshInstance3D
+var basic_rope_empty:=false
 var embedded_stone:MeshInstance3D
 var embedded_stone_visible:=true
 var sling_visual_previous:=Vector3.ZERO
@@ -1044,10 +1064,12 @@ func _projectile_step(lab,delta:float,old_hurt:Dictionary,old_origin:Vector3,pri
 		return {}
 	var begin_fraction:=0.0
 	var key:String=lab.motion[0]
-	var mark:=INF if key=="attack" and bom_shove else sling_release_seconds(key)
+	var mark:=INF if (key=="attack" and bom_shove) or knife_skill_active(key) else sling_release_seconds(key)
 	var age:float=lab.age[0]
 	if lab.approach_active:return {}
-	if key not in ["attack","skill"] or not consumed[0]:_restore_sling_stone()
+	if key=="attack" and not bom_shove and not consumed[0] and age>.125 and age<mark:basic_rope_empty=false
+	if key in ["skill","chain"]:basic_rope_empty=false
+	if (key not in ["attack","skill"] or not consumed[0]) and not basic_rope_empty:_restore_sling_stone()
 	elif is_instance_valid(embedded_stone):embedded_stone.hide()
 	if not consumed[0] and mark!=INF and prior_age<=mark and age>=mark:
 		begin_fraction=clampf((mark-prior_age)/maxf(.000001,age-prior_age),0,1)
@@ -1062,6 +1084,7 @@ func _projectile_step(lab,delta:float,old_hurt:Dictionary,old_origin:Vector3,pri
 		# Aim only once. The airborne stone does not home, and reacts only to live intersections.
 		var velocity:=velocity_planar+Vector3.UP*(heading.y/flight_time+1.9*flight_time)
 		projectile={"position":point,"velocity":velocity,"motion":key,"action":action_id[0],"flight_age":0.0,"release_age":mark,"release_time":lab.rules.elapsed-delta+delta*begin_fraction}
+		if key=="attack":basic_rope_empty=true
 		projectile_releases.append({"position":point,"motion":key,"action":action_id[0],"time":projectile.release_time,"attack_age":mark})
 		consumed[0]=true
 		if is_instance_valid(embedded_stone):embedded_stone.hide()

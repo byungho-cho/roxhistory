@@ -1,5 +1,10 @@
 extends Node2D
 
+const BasicRope := preload("res://scripts/saebom_rope_sling_basic_presentation.gd")
+var basic_rope_glow:=BasicRope.make_glow()
+var basic_rope_hit:=Vector2.INF
+var basic_rope_hit_at:=-INF
+
 signal parry_spotlight_started
 
 const Actor = preload("res://scripts/model_test_actor.gd")
@@ -8,16 +13,18 @@ const Presenter = preload("res://scripts/duel_motion_presenter.gd")
 const HUD = preload("res://scripts/duel_skill_hud.gd")
 const UramCounterWave=preload("res://scripts/duel_uram_counter_wave.gd")
 const Head = preload("res://scripts/battle_head_hud.gd")
+const CastHud=preload("res://scripts/hunt_production_hunt_presentation.gd")
+const CastArt=preload("res://scripts/hunt_production_prey_effects.gd")
 const HEROES := ["hangyeol","uram","saebom"]
 const HERO_SLOTS := [0,5,3]
 const DEER_SLOTS := [4,2,3]
 const MAX_HP := 100
 const STEP := 1.0/120.0
 const SaebomMelee=preload("res://scripts/duel_shared_world.gd")
-const CLOSE_2SP_HIT_PHASES:=[.225,.40,.645,.855]
+const Knife=preload("res://scripts/duel_saebom_stone_knife.gd")
+var knife_events:Array[Dictionary]=[]
 const CLOSE_2SP_FINAL_DAMAGE:=27
-const CloseBasicPose=preload("res://scripts/duel_saebom_close_basic_pose.gd")
-const NEAR_SAE_2SP=preload("res://assets/ui/saebom-melee-test47/near-2sp.png")
+const NEAR_SAE_2SP=preload("res://assets/ui/saebom-melee/stone-knife-2sp.png")
 var local_melee_polish:=false
 var saebom_distance_drill:=""
 var ranged_alignment_contact:=Callable()
@@ -65,6 +72,9 @@ var input_paused:=false
 var hud_parent:Control
 var paint:Node2D
 var bars_paint:Node2D
+var cast_notice_paint:Node2D
+var cast_notice_style:RefCounted
+var cast_notices:Dictionary={}
 var parry_front:Node2D
 var parry_ground:Node2D
 var parry_dust:Callable
@@ -112,6 +122,13 @@ func setup(dust_draw:Callable=Callable(),gong:Callable=Callable(), heavy:Callabl
 	paint.draw.connect(_paint)
 	bars_paint=Node2D.new();bars_paint.z_index=601;add_child(bars_paint)
 	bars_paint.draw.connect(_paint_bars)
+	if local_melee_polish:
+		cast_notice_style=CastHud.new(CastArt.new())
+		cast_notice_paint=Node2D.new()
+		cast_notice_paint.name="SquadTransientCastNotices"
+		cast_notice_paint.z_index=603
+		add_child(cast_notice_paint)
+		cast_notice_paint.draw.connect(_paint_cast_notices)
 	for i in 6:
 		var ally:=i<3
 		var id:String=HEROES[i] if ally else "forest"
@@ -241,10 +258,13 @@ func place_bottom_hud(shift:float)->void:
 	for hud in huds:hud.position.y=406.+shift
 
 func _update_saebom_range()->void:
-	if saebom_distance_drill.is_empty() or units[2].hp<=0:return
+	if not local_melee_polish or units[2].hp<=0:return
 	var target:=_target(2)
 	if target<0:return
 	var u:=units[2]
+	if u.move in ["attack","skill","chain"]:
+		huds[2].set_saebom_distance_icon(bool(u.get("bom_shove",false)) if u.move=="attack" else bool(u.get("bom_near_skill",false)) if u.move=="skill" else bool(u.get("bom_close",false)),NEAR_SAE_2SP)
+		return
 	u.bom_close=SaebomMelee.saebom_close_at(u.feet.distance_to(units[target].feet),bool(u.get("bom_close",false)),65.,80.)
 	huds[2].set_saebom_distance_icon(u.bom_close,NEAR_SAE_2SP)
 
@@ -269,6 +289,14 @@ func _request(key:String,i:int)->void:
 	var target:=_target(i)
 	if target<0:return
 	units[i].sp-=float(cost)
+	if is_instance_valid(cast_notice_paint):
+		if i==2 and key=="chain":
+			cast_notices.erase(i) # The distinct five-second support badge is drawn by the lab.
+		else:
+			var hud=huds[i]
+			var skill_icon:Texture2D=hud.chain_art.texture if key=="chain" else hud.badge_art.texture
+			cast_notices[i]={"at":elapsed,"linked":key=="chain","icon":skill_icon}
+		cast_notice_paint.queue_redraw()
 	if local_melee_polish and i==1 and key=="chain":
 		var guard_index:=_squad_guard_candidate()
 		_begin(i,"chain" if guard_index>=0 else "counter",target)
@@ -337,17 +365,21 @@ func _begin(i:int,key:String,target:int)->void:
 		u.bom_close=SaebomMelee.saebom_close_at(gap,bool(u.get("bom_close",false)),65.,80.)
 		u.bom_shove=key=="attack" and u.bom_close
 		u.bom_hop=clampf(82.-gap,0.,24.) if key=="skill" and u.bom_close else 0.
-		u.bom_near_skill=not saebom_distance_drill.is_empty() and key=="skill" and u.bom_close
+		u.bom_near_skill=key=="skill" and u.bom_close
 		u.bom_strike=0
 		if u.bom_near_skill:
 			u.bom_hop=0.
-			u.contact=dur*float(CLOSE_2SP_HIT_PHASES[0])
+			u.contact=Knife.contacts[0]
+			dur=Knife.DURATION
 		u.bom_origin=u.feet
 		var away:Vector2=u.feet-units[target].feet
 		u.bom_dir=away.normalized()
 		if u.bom_shove:
 			u.contact=dur*.48
 			u["close_basic_edge"]=Vector2.INF
+	if i==2:
+		u.basic_rope_windup=key=="attack" and not bool(u.get("bom_shove",false))
+		if key in ["skill","chain"]:u.basic_rope_empty=false
 	u.next=elapsed+maxf(dur+.28,1.26)
 
 func _gap(i:int)->float:
@@ -403,7 +435,7 @@ func _step(dt:float)->void:
 				u.contact=-1.0
 				_resolve(i)
 			var extra:=SaebomMelee.URAM_FLOOR_HOLD if i==1 and u.move=="skill" and float(u.get("floor_cast_at",-1.))>=0. else 0.
-			if u.age>=u.actor.duration+extra and not (i==1 and u.move=="counter" and not uram_ordinary_wave.is_empty()):_play(u,"idle")
+			if u.age>=(Knife.DURATION if i==2 and u.move=="skill" and bool(u.get("bom_near_skill",false)) else float(u.actor.duration))+extra and not (i==1 and u.move=="counter" and not uram_ordinary_wave.is_empty()):_play(u,"idle")
 			continue
 		if u.move=="hit":
 			if u.age>=u.actor.duration:_play(u,"idle")
@@ -415,6 +447,7 @@ func _step(dt:float)->void:
 			_begin(i,"skill" if i>=3 and int(elapsed*1.45+i)%4==0 else "attack",target)
 		elif u.move!="idle":_play(u,"idle")
 	_update_projectiles(dt)
+	while not knife_events.is_empty() and elapsed-float(knife_events[0].at)>Knife.ECHO_SECONDS:knife_events.pop_front()
 	_advance_uram_ordinary_wave()
 	for index in squad_stuns.keys():
 		if elapsed-float(squad_stuns[index])>=1.15:squad_stuns.erase(index)
@@ -467,15 +500,14 @@ func _resolve(i:int)->void:
 			var destination:=_deer_tip(units[j])
 			uram_ordinary_wave={"to":j,"locked":units[j].actor,"from":origin,"at":elapsed,"span":UramCounterWave.duration(origin,destination)}
 		return
-	if i==2 and not saebom_distance_drill.is_empty():
-		if u.move=="skill" and bool(u.get("bom_near_skill",false)):
-			var hit_index:int=u.bom_strike
-			u.bom_strike+=1
-			if hit_index+1<CLOSE_2SP_HIT_PHASES.size():
-				u.contact=float(u.actor.duration)*float(CLOSE_2SP_HIT_PHASES[hit_index+1])
-			var amount:=roundi(float(CLOSE_2SP_FINAL_DAMAGE)*1.2) if u.rally>elapsed else CLOSE_2SP_FINAL_DAMAGE
-			_resolve_saebom_near(i,j,amount,hit_index+1)
-			return
+	if i==2 and u.move=="skill" and bool(u.get("bom_near_skill",false)):
+		var beat:int=u.bom_strike
+		if beat>=Knife.contacts.size():return
+		u.bom_strike=beat+1
+		if beat+1<Knife.contacts.size():u.contact=Knife.contacts[beat+1]
+		var amount:=roundi(float(CLOSE_2SP_FINAL_DAMAGE)*1.2) if u.rally>elapsed else CLOSE_2SP_FINAL_DAMAGE
+		_resolve_saebom_near(i,j,amount,beat)
+		return
 	var damage:=14 if u.move=="attack" else 27 if u.move=="skill" else 38
 	if i>=3:damage=11 if u.move=="attack" else 23
 	if u.rally>elapsed:damage=roundi(damage*(1.20 if local_melee_polish else 1.25))
@@ -483,20 +515,27 @@ func _resolve(i:int)->void:
 	var finish:Vector2=units[j].feet-Vector2(0,25)
 	if i==2 and not (u.move=="attack" and bool(u.get("bom_shove",false))):
 		if start.distance_to(finish)>149.0:_miss(i,j,"projectile");return
-		var paired_presentation:=saebom_distance_drill=="far"
+		var basic_rope:bool=u.move=="attack"
+		var paired_presentation:=saebom_distance_drill=="far" or basic_rope
 		if paired_presentation:_pose_ranged_release(u)
 		var jewel:=_sling_stone(u)
+		if basic_rope:
+			u.basic_rope_empty=true
+			var view:HybridCharacter=u.actor.preview
+			var center:=BasicRope.stone_world(view)
+			if center.is_finite():jewel=view.position+(view.display.position+view.camera.unproject_position(center)*view.display.scale)*view.scale
+			BasicRope.set_loaded(view,false)
 		var release:=jewel if paired_presentation or (bom_trail_draw.is_valid() and jewel.distance_to(start)<65.0) else start
 		# Original simulation uses start/destination; only drawn trail begins at the rig stone.
-		missiles.append({"from":i,"target":j,"point":start,"destination":finish,"damage":damage,"kind":u.move,"trace":PackedVector2Array([release]),"origin":start,"paired_presentation":paired_presentation,"release":release,"rendered":release})
+		missiles.append({"from":i,"target":j,"point":start,"destination":finish,"damage":damage,"kind":u.move,"trace":PackedVector2Array([release]),"origin":start,"paired_presentation":paired_presentation,"release":release,"rendered":release,"basic_rope":basic_rope,"launched_at":elapsed})
 		return
 	var range_px:=80.0 if i==2 and u.move=="attack" and bool(u.get("bom_shove",false)) else _gap(i)+8.0+(14.0 if u.move!="attack" else 0.0)
 	if u.feet.distance_to(units[j].feet)>range_px:_miss(i,j,u.move);return
 	if i==2 and _uses_close_basic_pose(u,j):
 		# Capture the receiver pose before damage initializes the native hit clip.
 		var target:Dictionary=units[j]
-		var ball:=CloseBasicPose.sample(u,target,.48)
-		target["close_basic_impulse"]=ball.strike_axis
+		Knife.show_basic(u,target,.48)
+		target["close_basic_impulse"]=Vector2(signf((target.feet as Vector2).x-(u.feet as Vector2).x),0.)
 		var receiver:Skeleton3D=target.actor.preview.skeleton
 		target["close_basic_neck_pose"]=receiver.get_bone_pose_rotation(receiver.find_bone("neck"))
 		target["close_basic_head_pose"]=receiver.get_bone_pose_rotation(receiver.find_bone("head"))
@@ -521,21 +560,16 @@ func _advance_uram_ordinary_wave()->void:
 	uram_ordinary_wave.clear()
 	_finish_uram_ordinary_counter(to)
 
-func _resolve_saebom_near(i:int,j:int,amount:int,variant:int)->void:
+func _resolve_saebom_near(i:int,j:int,amount:int,beat:int)->void:
 	var u:=units[i]
 	var v:=units[j]
-	var name:="saebom_melee_2sp_%d"%variant
-	# First three beats still read visually. Only the existing fourth phase
-	# can resolve the one aggregate damage event. An interruption before it
-	# clears the action through _play, so no earlier damage can leak through.
-	if variant<CLOSE_2SP_HIT_PHASES.size():
-		if v.hp>0 and u.feet.distance_to(v.feet)<=72.:
-			glints.append({"at":elapsed,"point":v.feet-Vector2(0,23),"tint":Color("ffc971")})
-		return
+	var final:=beat==Knife.contacts.size()-1
 	if v.hp<=0 or u.feet.distance_to(v.feet)>72.:
-		_miss(i,j,name)
+		if final:_miss(i,j,"saebom_melee_2sp_4")
 		return
-	_damage(i,j,amount,name)
+	var edge:=Knife.shoulder(v,u.feet)+Vector2(0.,[-2.,3.,-1.,0.][beat])
+	knife_events.append({"at":elapsed,"point":edge,"feet":v.feet,"beat":beat})
+	if final:_damage(i,j,amount,"saebom_melee_2sp_4",edge)
 
 func _miss(i:int,j:int,key:String)->void:
 	hits.append({"from":i,"target":j,"type":key,"result":"miss"})
@@ -593,7 +627,7 @@ func _damage(i:int,j:int,amount:int,key:String,stone_impact:=Vector2.INF)->void:
 		var from:Vector2=units[i].feet
 		var ground:Vector2=target.feet
 		heavy_events.append({"at":elapsed,"point":ground-Vector2(0,23),"ground":ground,"forward":from.direction_to(ground)})
-	elif not (i==2 and key=="attack" and _uses_close_basic_pose(units[i],j)):
+	elif not (i==2 and (key=="saebom_melee_2sp_4" or (key=="attack" and _uses_close_basic_pose(units[i],j)))):
 		glints.append({"at":elapsed,"point":target.feet-Vector2(0,23) if stone_impact==Vector2.INF else stone_impact,"tint":Color("ffc971") if i<3 else Color("f0ffe8")})
 	if target.hp<=0:_play(target,"death")
 	elif target.move in ["idle","run","walk"]:_play(target,"hit")
@@ -621,6 +655,8 @@ func _update_projectiles(dt:float)->void:
 		var u:=units[m.target]
 		if u.hp>0 and m.destination.distance_to(u.feet-Vector2(0,25))<=19.0:
 			_damage(m.from,m.target,m.damage,m.kind,drawn if paired else Vector2.INF)
+			if bool(m.get("basic_rope",false)):
+				basic_rope_hit=drawn;basic_rope_hit_at=elapsed
 			if paired and ranged_alignment_contact.is_valid():ranged_alignment_contact.call(String(u.id))
 		else:_miss(m.from,m.target,m.kind)
 		missiles.remove_at(index)
@@ -650,16 +686,6 @@ func _calibrate_han()->void:
 		if Vector2(direction.x,direction.z).length_squared()>.01:
 			spear_forward_bias[key]=atan2(direction.x,direction.z)
 	_play(units[0],"idle")
-
-func _sample_stock_close_2sp(actor,progress:float)->void:
-	# Stable fallback while the new visual choreography is reviewed: reuse the
-	# original close shove pose per actual contact and the ordinary hit glint.
-	var beat:float=CLOSE_2SP_HIT_PHASES[0]
-	for phase in CLOSE_2SP_HIT_PHASES:
-		if absf(progress-float(phase))<absf(progress-beat):beat=float(phase)
-	var from_beat:=progress-beat
-	var phase:=clampf(.48+from_beat/(.20 if from_beat<0. else .18),0.,.99)
-	SaebomMelee.saebom_shove_pose(actor,phase)
 
 func _draw_pose(dt:float)->void:
 	var ambient:=Color.WHITE.lerp(Color.BLACK,spotlight_dim())
@@ -699,17 +725,21 @@ func _draw_pose(dt:float)->void:
 		if i>=3 and u.move!="hit":u.erase("close_basic_impulse")
 		if i==1 and u.move=="skill" and uram_ground_draw.is_valid():_pose_uram_ground(u,actor)
 		if i==2 and u.move=="skill" and float(u.get("bom_hop",0.))>0.:SaebomMelee.saebom_hop_pose(actor,float(u.age)/maxf(.01,float(actor.duration)),float(u.bom_hop)/24.)
-		if i==2 and u.move=="skill" and bool(u.get("bom_near_skill",false)):
-			_sample_stock_close_2sp(actor,float(u.age)/maxf(.01,float(actor.duration)))
+		if i==2 and u.hp>0 and u.move=="skill" and bool(u.get("bom_near_skill",false)) and int(u.victim)>=0:
+			Knife.sample_skill(u,units[int(u.victim)],float(u.age))
 		elif i==2 and u.move=="attack" and bool(u.get("bom_shove",false)):
 			if show_basic:
 				var target:Dictionary=units[int(u.victim)]
 				var p:=clampf(float(u.age)/maxf(.01,float(actor.duration)),0.,1.)
 				if p<.43 or not is_finite((u.get("close_basic_edge",Vector2.INF) as Vector2).x):
-					u.close_basic_edge=CloseBasicPose.shoulder(target,u.feet)
-				CloseBasicPose.sample(u,target,p)
+					u.close_basic_edge=Knife.shoulder(target,u.feet)
+				Knife.show_basic(u,target,p)
 				actor.preview.viewport.render_target_update_mode=SubViewport.UPDATE_ONCE
 			else:SaebomMelee.saebom_shove_pose(actor,float(u.age)/maxf(.01,float(actor.duration)))
+		if i==2 and not show_basic and not (u.move=="skill" and bool(u.get("bom_near_skill",false))):
+			if u.hp>0 and bool(u.get("bom_close",false)) and u.move in ["idle","walk","run","hit"]:
+				Knife.blade(actor.preview,Vector2.ZERO,0.,0.)
+			elif actor.preview.has_meta("saebom_melee_blade"):actor.preview.remove_meta("saebom_melee_blade")
 		if i==2 and bom_pose.is_valid():bom_pose.call(actor,float(u.age) if u.move=="chain" and u.hp>0 else -1.0)
 		if i==0:aim.anchor_spear_root(actor)
 		if silver_draw.is_valid() and i>=3:
@@ -732,6 +762,11 @@ func _draw_pose(dt:float)->void:
 	paint.self_modulate=ambient
 	paint.queue_redraw()
 	bars_paint.queue_redraw()
+	if is_instance_valid(cast_notice_paint) and not cast_notices.is_empty():
+		for caster in cast_notices.keys():
+			if units[caster].hp<=0 or elapsed-float(cast_notices[caster].at)>=CastHud.CAST_SECONDS:
+				cast_notices.erase(caster)
+		cast_notice_paint.queue_redraw()
 	if is_instance_valid(launch_dust_layer):
 		launch_dust_layer.self_modulate=ambient
 		launch_dust_layer.queue_redraw()
@@ -743,6 +778,16 @@ func _draw_launch_dust()->void:
 	for event in launch_dust_events:
 		launch_dust_draw.call(event.origin,elapsed-float(event.at),launch_dust_layer)
 
+func _paint_cast_notices()->void:
+	for i in cast_notices:
+		var u:=units[i]
+		if u.hp<=0:continue
+		var notice:Dictionary=cast_notices[i]
+		var point:=aim.bone_point(u.actor,"head")
+		# Squad health bars are painted; keep the notice above both the projected head and the bar.
+		point.y=minf(point.y,float(u.feet.y)-76.0)
+		cast_notice_style.draw_cast_notice(cast_notice_paint,point,null,notice.icon,notice.linked,elapsed-float(notice.at))
+
 func _paint_bars()->void:
 	for u in units:
 		if u.hp<=0:continue
@@ -752,14 +797,21 @@ func _paint_bars()->void:
 		bars_paint.draw_rect(Rect2(at+Vector2.ONE,Vector2(44.0*float(u.hp)/MAX_HP,3)),Color("68c8ff") if u.id!="forest" else Color("ff8176"))
 
 func _paint()->void:
+	if units.size()>2 and units[2].hp>0:Knife.draw_blade(paint,units[2].actor.preview)
+	for ev in knife_events:Knife.draw_event(paint,int(ev.beat),ev.point,ev.feet,elapsed-float(ev.at))
 	if not uram_ordinary_wave.is_empty():
 		var p:float=(elapsed-float(uram_ordinary_wave.at))/float(uram_ordinary_wave.span)
 		UramCounterWave.draw(paint,uram_ordinary_wave.from,_deer_tip(units[int(uram_ordinary_wave.to)]),p)
 	if not uram_wave_pop.is_empty():
 		UramCounterWave.draw_pop(paint,uram_wave_pop.point,elapsed-float(uram_wave_pop.at))
+	BasicRope.draw_impact(paint,basic_rope_glow,basic_rope_hit,elapsed-basic_rope_hit_at)
 	var bom_active:=false
 	for m in missiles:
 		var drawn:Vector2=m.rendered if m.paired_presentation else m.point
+		if bool(m.get("basic_rope",false)):
+			bom_active=true
+			BasicRope.draw_stone(paint,basic_rope_glow,drawn,elapsed-float(m.launched_at),true)
+			continue
 		if weapon_draw.is_valid() and m.from==2:
 			bom_active=true
 			if bom_trail_draw.is_valid() and m.kind=="skill":
@@ -773,7 +825,12 @@ func _paint()->void:
 			var u:=units[2]
 			var after_release:bool=u.move in ["attack","skill"] and u.contact<0.0
 			var hands_empty:bool=bom_pose.is_valid() and u.move=="chain" and u.age>=.10 and u.age<2.24
-			if not hands_empty and not (u.move=="attack" and bool(u.get("bom_shove",false))) and not (u.move=="skill" and bool(u.get("bom_near_skill",false))):weapon_draw.call(u.actor,Vector2.INF,after_release,paint)
+			if not hands_empty and not u.actor.preview.has_meta("saebom_melee_blade") and not (u.move=="attack" and bool(u.get("bom_shove",false))) and not (u.move=="skill" and bool(u.get("bom_near_skill",false))):
+				if u.move in ["skill","chain"]:weapon_draw.call(u.actor,Vector2.INF,after_release,paint)
+				elif not bool(u.get("basic_rope_empty",false)):
+					var view:HybridCharacter=u.actor.preview
+					var point:=BasicRope.stone_world(view)
+					if point.is_finite():BasicRope.draw_stone(paint,basic_rope_glow,view.position+(view.display.position+view.camera.unproject_position(point)*view.display.scale)*view.scale,0.)
 	if heavy_windup.is_valid() and units.size()>1 and units[1].move=="skill" and float(units[1].contact)>0:
 		var view:HybridCharacter=units[1].actor.preview
 		var club:MeshInstance3D=view.club
@@ -812,7 +869,6 @@ func _paint()->void:
 func _uses_close_basic_pose(u:Dictionary,j:int)->bool:
 	if not local_melee_polish or j<3 or j>=units.size() or u.move!="attack" or not bool(u.get("bom_shove",false)):
 		return false
-	if saebom_distance_drill!="near":return false
 	var sk:Skeleton3D=units[j].actor.preview.skeleton
 	if not is_instance_valid(sk):return false
 	for joint in ["front_upper.R","trunk","head","neck"]:
@@ -851,6 +907,11 @@ func _pose_ranged_release(u:Dictionary)->void:
 	skeleton.force_update_all_bone_transforms()
 
 func _sync_ranged_held_stone(u:Dictionary)->void:
+	if u.move not in ["skill","chain"] and not bool(u.get("bom_shove",false)):
+		if bool(u.get("basic_rope_empty",false)) and bool(u.get("basic_rope_windup",false)) and u.move=="attack" and float(u.contact)>0. and float(u.age)>.125:
+			u.basic_rope_empty=false
+		BasicRope.set_loaded(u.actor.preview,not bool(u.get("basic_rope_empty",false)))
+		return
 	if saebom_distance_drill!="far":return
 	var view:HybridCharacter=u.actor.preview
 	var stone:MeshInstance3D=u.get("ranged_held_mesh",null)
