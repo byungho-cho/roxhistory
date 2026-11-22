@@ -1,18 +1,20 @@
 extends WorldAnimal
-## Native adult-boar presentation behind the existing ordinary encounter actor API.
+## Native adult-boar or forest-deer presentation with ordinary encounter actor API.
 ## The screen retains its rules and positions; this actor only poses actual art and exposes live bones.
 
 const Prey := preload("res://scripts/hunt_production_prey_profile.gd")
+## Set before add_child. Adult remains the default for existing call sites.
+var native_species := "adult"
 var native: Prey.WildlifeRig
 var native_phase := "idle"
 var native_elapsed := 0.
 var externally_driven := false
 
 func _ready() -> void:
-	native = Prey.create("adult", self)
+	native = Prey.create(native_species, self)
 	if native == null:
 		return
-	native.name = "NativeAdultBoar"
+	native.name = "NativeAdultBoar" if native_species == "adult" else "NativeForestDeer"
 	native.set_process(false)
 	native.set_physics_process(false)
 	native.position = Vector2.ZERO
@@ -67,3 +69,20 @@ func native_muzzle() -> Vector3:
 
 func native_markers() -> Dictionary:
 	return Prey.markers(native)
+
+## Profile-specific contact capsule bones; enclosing radius is encounter-owned.
+func native_body_bones() -> PackedStringArray:
+	match native_species:
+		"adult": return PackedStringArray(["trunk", "head"])
+		"forest": return PackedStringArray(["trunk", "neck"])
+	return PackedStringArray()
+
+func native_body_points() -> Dictionary:
+	if not is_native_ready():return {}
+	var keys := native_body_bones()
+	if keys.size()!=2:return {}
+	rig.force_update_all_bone_transforms()
+	var a := Prey.bone_world(native,keys[0])
+	var b := Prey.bone_world(native,keys[1])
+	if not a.is_finite() or not b.is_finite() or a.distance_squared_to(b)<=0.000001:return {}
+	return {"a":a,"b":b}

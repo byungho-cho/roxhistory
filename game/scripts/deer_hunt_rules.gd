@@ -112,6 +112,54 @@ func use_skill(skill: String) -> bool:
 	queue_attack(SKILLS[skill].damage,index)
 	return true
 
+# Manual chain input owns its own valid tap/SP reservation; ordinary scheduling stays separate.
+func can_reserve_manual(index: int, cost: int) -> bool:
+	return outcome.is_empty() and index >= 0 and index < party_hp.size() and party_hp[index] > 0 and cost > 0 and orbs(index) >= cost
+
+
+func reserve_manual(index: int, cost: int) -> bool:
+	if not can_reserve_manual(index,cost):
+		return false
+	charges[index] = maxf(0.0, charges[index] - cost)
+	return true
+
+
+func can_execute_manual() -> bool:
+	return outcome.is_empty() and action_lock <= 0.0 and pending_damage == 0 and not pending_counter and not rally_cast_pending
+
+
+func can_use_frontline_skill(index: int, cost: int) -> bool:
+	return can_execute_manual() and can_reserve_manual(index,cost) and (basic_lock <= 0.0 if index == 0 else orb_lock <= 0.0)
+
+
+func start_frontline_paid(index: int, damage: int, lock_seconds: float) -> bool:
+	if not can_execute_manual() or index < 0 or index >= party_hp.size() or party_hp[index] <= 0 or damage <= 0:
+		return false
+	action_lock = maxf(POSE_SECONDS,lock_seconds)
+	if index == 0:
+		basic_lock = BASIC_INTERVAL
+	else:
+		orb_lock = 1.0
+	queue_attack(damage,index)
+	return true
+
+
+func start_rally_paid() -> bool:
+	if not can_execute_manual() or party_hp[SAEBOM] <= 0:
+		return false
+	action_lock = POSE_SECONDS
+	orb_lock = 1.0
+	rally_cast_pending = true
+	return true
+
+
+func resolve_guard() -> bool:
+	if not pending_counter or not outcome.is_empty():
+		return false
+	pending_counter = false
+	return true
+
+
 func can_start_rally() -> bool:
 	return (
 		outcome.is_empty() and party_hp[SAEBOM] > 0 and orbs(SAEBOM) >= RALLY_COST
@@ -166,7 +214,7 @@ func advance_rally_clock(delta: float) -> void:
 				rally_remaining[index] = 0.0
 
 
-func advance(delta: float, tick_rally := true) -> String:
+func advance(delta: float, tick_rally := true, prefer_manual := false) -> String:
 	if not outcome.is_empty():
 		return ""
 	if tick_rally:
@@ -177,6 +225,8 @@ func advance(delta: float, tick_rally := true) -> String:
 	basic_lock = maxf(0.0, basic_lock - delta)
 	orb_lock = maxf(0.0, orb_lock - delta)
 	exchange_clock = minf(AUTO_INTERVAL, exchange_clock + delta)
+	if prefer_manual:
+		return ""
 	var queued := reserved_skill
 	if auto_enabled and use_skill(queued):
 		if auto_enabled:
