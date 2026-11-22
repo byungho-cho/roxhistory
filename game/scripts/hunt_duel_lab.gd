@@ -36,6 +36,8 @@ const FIRST_BASIC := [.23,.38]
 const BASIC_CADENCE := [3.05,3.43]
 const BASIC_MAX_TRAVEL := 16.0
 const SP_COST := {"skill":2,"chain":3}
+const UramCounterWave=preload("res://scripts/duel_uram_counter_wave.gd")
+const URAM_GROUND_THUMP=preload("res://assets/audio/uram-2sp-weight/uram-ground-thump.wav")
 const SoundPath := "res://assets/audio/hunt-duel-lab/"
 const URAM_PARRY_SOUND := preload("res://assets/audio/lab-uram-res009/parry-c.mp3")
 const URAM_GUARD_OPEN := .03
@@ -56,6 +58,9 @@ var local_version_stamp:Label
 var local_bottom_hud_shift:=0.0
 
 
+func _play_ranged_drill_stone_contact(enemy:String)->void:
+	_sound(SoundNames.get(enemy,"deer")+"_hit")
+
 func _toggle_local_formation(distance_drill:String="")->void:
 	if is_instance_valid(local_formation):
 		_close_local_formation()
@@ -66,15 +71,17 @@ func _toggle_local_formation(distance_drill:String="")->void:
 	local_formation.setup(_draw_animal_launch_dust if wild_takeoff_dust else Callable(), _draw_uram_gong if uram_gong_test else Callable(), _draw_local_uram_contact if local_all_effects else Callable(), _draw_local_uram_windup if local_all_effects else Callable(), _draw_squad_authored if local_full_squad_effects else Callable(), _draw_silver_deer if local_squad_silver else Callable(), _draw_deer_impact if local_squad_silver else Callable(), _project_preview_ring if local_world_ring else Callable(), _draw_local_weapon_glow if local_shared_ranged else Callable(), 2.04 if local_melee_polish else (1.84 if local_shared_ranged else 1.15), _draw_bom_hit if local_saebom_latest else Callable(), _draw_bom_trail if local_saebom_latest else Callable(), _draw_bom_wings if local_saebom_latest else Callable(), _draw_bom_ally if local_saebom_latest else Callable(), _pose_bom_cast if local_saebom_latest else Callable(), local_melee_polish)
 	if local_melee_polish:
 		local_formation.configure_spotlight(_draw_local_parry_floor,_draw_local_parry_flash,_draw_parry_stars,LOCAL_PARRY_SLOW,.50)
-		local_formation.configure_uram_ground(_draw_squad_uram_ground)
+		local_formation.configure_uram_ground(_draw_squad_uram_ground,_play_uram_ground_thump)
 		local_formation.parry_spotlight_started.connect(_squad_spotlight_started)
 	if not distance_drill.is_empty():
 		local_formation.configure_saebom_distance_drill(distance_drill)
+		if distance_drill=="far":local_formation.ranged_alignment_contact=_play_ranged_drill_stone_contact
 	local_formation.set_input_paused(paused)
 	if local_melee_polish:local_formation.place_bottom_hud(local_bottom_hud_shift)
 	for audio in audio_pool:audio.stop()
 	field.hide()
 	skill_hud.hide()
+	if local_melee_polish:LocalBomBadge.sync_field(arena,Vector2.ZERO,0.0)
 	cast_notice_layer.hide()
 	for holder in overhead:holder.panel.hide()
 	for hud in local_formation.huds:
@@ -82,7 +89,7 @@ func _toggle_local_formation(distance_drill:String="")->void:
 		touch_buttons.append(hud.chain_button)
 	local_formation_button.text="1:1"
 	if distance_drill=="far":
-		local_formation_banner.text="\uC6D0\uAC70\uB9AC  \uC2DC\uD5D8  /  \uC6B0\uB78C HP 22%"
+		local_formation_banner.text="\uC6D0\uAC70\uB9AC  \uC2DC\uD5D8  /  \uC6B0\uB78C HP 50%"
 	elif distance_drill=="near":
 		local_formation_banner.text="\uADFC\uAC70\uB9AC  \uC2DC\uD5D8  /  \uC0C8\uBD04 vs \uAF43\uC0AC\uC2B4"
 	else:
@@ -222,6 +229,9 @@ var local_parry_sheets:Array[Texture2D]=[]
 var local_parry_thump:AudioStreamPlayer
 var local_parry_caption:Label
 var local_guard_action:=-1
+var ordinary_counter_target:Actor
+var ordinary_counter_spent:=false
+var ordinary_counter_wave:Dictionary={}
 var fx: Array[Dictionary] = []
 var controls: Dictionary = {}
 var timer: Label
@@ -541,11 +551,13 @@ func _setup_ui() -> void:
 	for i in 2:
 		var header:=HeadHUD.create_compact(arena,i==0);overhead.append(header);name_labels.append(header.label);bars.append(header.bar)
 	skill_hud=SkillHUD.new();skill_hud.position=Vector2(447,437);arena.add_child(skill_hud);skill_hud.enable_duel_ready_feedback()
-	if local_melee_polish:skill_hud.place_local_combat_hud(480.0)
+	if local_melee_polish:
+		skill_hud.enable_portrait_damage_feedback()
+		skill_hud.place_local_combat_hud(480.0)
 	skill_hud.requested.connect(_try_player);skill_button=skill_hud.portrait_button;chain_button=skill_hud.chain_button
 	touch_buttons.append(chain_button);touch_buttons.append(skill_button)
 	if wild_takeoff_dust or "--duel-local-test=25" in OS.get_cmdline_user_args() or "--duel-local-test=24" in OS.get_cmdline_user_args() or "--duel-local-test=23" in OS.get_cmdline_user_args() or "--duel-local-test=21" in OS.get_cmdline_user_args():
-		var test_stamp:=_label("TEST 48" if local_melee_polish else "TEST 34" if local_saebom_latest else "TEST 33" if local_shared_ranged else "TEST 32" if local_world_ring else "TEST 31" if local_squad_silver else "TEST 30" if local_full_squad_effects else "TEST 29" if local_all_effects else "TEST 28" if uram_generic_gong_test else "TEST 27" if uram_gong_test else "TEST 26" if wild_takeoff_dust else "TEST 25" if "--duel-local-test=25" in OS.get_cmdline_user_args() else "TEST 24" if "--duel-local-test=24" in OS.get_cmdline_user_args() else "TEST 23" if "--duel-local-test=23" in OS.get_cmdline_user_args() else "TEST 21",Rect2(846,509,94,24),13)
+		var test_stamp:=_label("0.2.294" if local_melee_polish else "TEST 34" if local_saebom_latest else "TEST 33" if local_shared_ranged else "TEST 32" if local_world_ring else "TEST 31" if local_squad_silver else "TEST 30" if local_full_squad_effects else "TEST 29" if local_all_effects else "TEST 28" if uram_generic_gong_test else "TEST 27" if uram_gong_test else "TEST 26" if wild_takeoff_dust else "TEST 25" if "--duel-local-test=25" in OS.get_cmdline_user_args() else "TEST 24" if "--duel-local-test=24" in OS.get_cmdline_user_args() else "TEST 23" if "--duel-local-test=23" in OS.get_cmdline_user_args() else "TEST 21",Rect2(846,509,94,24),13)
 		test_stamp.add_theme_color_override("font_shadow_color",Color.BLACK)
 		test_stamp.add_theme_constant_override("shadow_offset_y",1)
 		test_stamp.mouse_filter=Control.MOUSE_FILTER_IGNORE
@@ -735,6 +747,7 @@ func reset_round(after_fade:=false) -> void:
 	if is_instance_valid(local_parry_thump):local_parry_thump.stop()
 	local_parry_focus=Vector2.ZERO
 	local_guard_action=-1
+	_clear_ordinary_counter()
 	if is_instance_valid(local_parry_caption):local_parry_caption.hide()
 	ground.self_modulate=Color.WHITE
 	han_chain_light.queue_redraw()
@@ -805,7 +818,6 @@ func reset_round(after_fade:=false) -> void:
 	_refresh()
 
 func _refresh(delta := 0.0) -> void:
-	if local_melee_polish:LocalBomBadge.sync(skill_hud,local_bom_rally_until-rules.elapsed if rules.ally_id=="saebom" and rules.hp[0]>0 else 0.0)
 	timer.text = rules.elapsed_label()
 	presentation.update_hp(rules.hp,delta)
 	for i in 2:
@@ -819,6 +831,10 @@ func _refresh(delta := 0.0) -> void:
 	name_labels[0].text=ModelTest.NAMES[rules.ally_id]
 	name_labels[1].text="꽃사슴" if rules.enemy_id=="forest" else "큰 멧돼지"
 	_update_head_hud(delta)
+	if local_melee_polish:
+		var hp_panel:Control=overhead[0].panel
+		var anchor:=hp_panel.position+Vector2(hp_panel.size.x*.5,-12.)
+		LocalBomBadge.sync_field(arena,anchor,local_bom_rally_until-rules.elapsed if rules.ally_id=="saebom" and rules.hp[0]>0 else 0.0)
 	_advance_ground_wave(delta)
 	ready_light_layer.queue_redraw()
 	deer_skill_light_layer.queue_redraw()
@@ -888,9 +904,13 @@ func _try_player(key: String) -> void:
 	if key=="skill" and _local_ram_busy():return
 	if not SP_COST.has(key) or not _can_request() or not rules.spend(int(SP_COST[key])):
 		return
-	cast_notice={"key":key,"at":visual_clock,"icon":skill_hud.chain_art.texture if key=="chain" else skill_hud.badge_art.texture}
+	if local_melee_polish and key=="chain" and rules.ally_id=="saebom":cast_notice.clear()
+	else:cast_notice={"key":key,"at":visual_clock,"icon":skill_hud.chain_art.texture if key=="chain" else skill_hud.badge_art.texture}
 	cast_from=_position(0)
 	contact_at[0]=-1.0 # Cancel the interrupted automatic contact; never land it twice.
+	if key=="chain" and local_melee_polish and _uram_duel() and is_instance_valid(shared_world):
+		_clear_ordinary_counter()
+		ordinary_counter_target=b
 	if key=="chain" and _uram_deer_close() and is_instance_valid(shared_world):
 		# Plant the current stance when the player braces, not a prior hit slide.
 		shared_world.knockback[0]=Vector3.ZERO
@@ -950,7 +970,8 @@ func _ally_color() -> Color:
 	return Color({"hangyeol":"#8bd7ff","uram":"#ef781e","saebom":"#ffe073"}[a.key])
 
 func _sound(key: String) -> void:
-	if key=="uram_parry":sounds[key]=URAM_PARRY_SOUND
+	if key=="uram_ground_thump":sounds[key]=URAM_GROUND_THUMP
+	elif key=="uram_parry":sounds[key]=URAM_PARRY_SOUND
 	if not sounds.has(key):
 		var path := SoundPath+key+".wav"
 		sounds[key] = load(path) if ResourceLoader.exists(path) else null
@@ -970,6 +991,9 @@ func _sound(key: String) -> void:
 
 func _uram_parry(contact:Dictionary)->void:
 	if not uram_guard_active():return
+	# Successful timed collision owns the existing guarded counter, not the
+	# ordinary guaranteed-contact lane, and remains the only combo opener.
+	_clear_ordinary_counter()
 	var point:=shared_world.project(contact.point)
 	if _uram_deer_close():
 		local_parry_clock=0.
@@ -1001,6 +1025,10 @@ func _land(side: int, key: String,contact:Dictionary={}) -> void:
 	if contact.get("kind","")=="shield":
 		_uram_parry(contact)
 		return
+	if side==0 and key=="counter" and ordinary_counter_target!=null:
+		if ordinary_counter_spent or ordinary_counter_target!=b or rules.hp[1]<=0:return
+		ordinary_counter_spent=true
+		ordinary_counter_wave.clear()
 	var defender := 1-side
 	var impact_point := _position(defender)-Vector2(0,33)
 	if is_instance_valid(shared_world):impact_point=shared_world.project(contact.point)
@@ -1123,7 +1151,7 @@ func _land(side: int, key: String,contact:Dictionary={}) -> void:
 	if rules.damage(defender,amount):
 		_die(defender)
 		return
-	if _uram_deer_close() and side==0 and key=="counter" and local_parry_clock<0.:
+	if local_melee_polish and _uram_duel() and side==0 and key=="counter" and ordinary_counter_target!=null and ordinary_counter_spent:
 		# Charged shield strike, not parry: only actual strike contact interrupts.
 		if motion[1]=="skill" and not shared_world.consumed[1]:
 			shared_world.consumed[1]=true
@@ -1135,6 +1163,40 @@ func _land(side: int, key: String,contact:Dictionary={}) -> void:
 	# Do not cut off a concurrently committed attack for a cosmetic reaction.
 	if motion[defender] == "idle" or (defender==1 and motion[defender]=="walk" and is_instance_valid(shared_world)):
 		_react(defender,"hit")
+
+func _clear_ordinary_counter()->void:
+	ordinary_counter_target=null
+	ordinary_counter_spent=false
+	ordinary_counter_wave.clear()
+
+func _ordinary_counter_live()->bool:
+	return ordinary_counter_target!=null and ordinary_counter_target==b and not ordinary_counter_spent and rules.living()
+
+func _counter_world_tip()->Vector3:
+	var hurt:=shared_world.hurt_capsule(1)
+	return (Vector3(hurt.a)+Vector3(hurt.b))*.5
+
+func _advance_ordinary_counter()->void:
+	if ordinary_counter_target==null or ordinary_counter_spent:return
+	if not _ordinary_counter_live():
+		_clear_ordinary_counter()
+		return
+	if motion[0]!="counter":return
+	if ordinary_counter_wave.is_empty():
+		# Let the original authored physical counter have the first chance.
+		# After its final real contact edge, use one visible target-locked wake.
+		if age[0]<.60:return
+		var shield:MeshInstance3D=a.preview.shield
+		var muzzle:Vector2=shared_world.project(shield.global_position)
+		var target:Vector2=shared_world.project(_counter_world_tip())
+		ordinary_counter_wave={"from":muzzle,"start":rules.elapsed,"span":UramCounterWave.duration(muzzle,target)}
+		return
+	var t:=rules.elapsed-float(ordinary_counter_wave.start)
+	if t+1e-6<float(ordinary_counter_wave.span):return
+	var target:=_counter_world_tip()
+	var normal:Vector3=shared_world.bodies[0].position.direction_to(shared_world.bodies[1].position)
+	_flash(shared_world.project(target),"uram_counter_outreach_hit",Color.WHITE,.23)
+	_land(0,"counter",{"kind":"body","point":target,"normal":normal,"local_outreach":true})
 
 func _react(side: int, key: String) -> void:
 	var actor := a if side==0 else b
@@ -1223,7 +1285,7 @@ func advance(delta: float) -> void:
 			_show_squad_spotlight_caption(local_formation.spotlight_clock)
 		if local_melee_polish:
 			var caster:Dictionary=local_formation.units[2]
-			LocalBomBadge.sync(local_formation.huds[2],float(caster.rally)-local_formation.elapsed if caster.hp>0 else 0.0)
+			LocalBomBadge.sync_field(local_formation,Vector2(caster.feet)-Vector2(0,88.),float(caster.rally)-local_formation.elapsed if caster.hp>0 else 0.0)
 		var secs:=int(local_formation.elapsed)
 		timer.text="%02d:%02d"%[secs/60,secs%60]
 		return
@@ -1439,6 +1501,7 @@ func _advance_shared(delta:float)->void:
 			_sound("bom_skill" if shared_world.projectile_releases[-1].motion=="skill" else "bom_basic")
 		if _silver_deer_active():_sample_deer_wake()
 		for event in events:_land(int(event.side),event.motion,event)
+		_advance_ordinary_counter()
 		if execute_at>=0 and age[1]>=execute_at:
 			_sound(SoundNames[b.key]+"_skill");execute_at=-1
 		for side in 2:
@@ -1454,8 +1517,9 @@ func _advance_shared(delta:float)->void:
 			elif side==1 and motion[1]=="walk":
 				if shared_world.deer_return_offset().length()<.005 or age[1]>=1.2:
 					_react(1,"idle")
-			elif motion[side] not in ["idle","death"] and age[side]>=actor.duration:
-				if _uram_deer_close() and side==0 and motion[0]=="chain":
+			elif motion[side] not in ["idle","death"] and age[side]>=actor.duration+_uram_floor_recovery(side):
+				if side==0 and motion[0]=="counter" and _ordinary_counter_live():continue
+				if side==0 and motion[0]=="chain" and (_uram_deer_close() or _ordinary_counter_live()):
 					local_guard_action=-1
 					_act(0,"counter")
 				elif _uram_deer_close() and side==0 and motion[0] in ["attack","skill"] and rules.living() and motion[1]!="skill" and shared_world.uram_attack_return_offset().length()>.10:
@@ -2183,6 +2247,11 @@ func _draw_uram_club_skill_contact(effect:Dictionary,p:float)->void:
 	_soft_light(feet,Vector2(152,35),Color("ed8b39"),after*.41)
 
 func _draw_effects() -> void:
+	if _ordinary_counter_live() and not ordinary_counter_wave.is_empty():
+		var p:float=(rules.elapsed-float(ordinary_counter_wave.start))/float(ordinary_counter_wave.span)
+		UramCounterWave.draw(effects_layer,ordinary_counter_wave.from,shared_world.project(_counter_world_tip()),p)
+	for impact in fx:
+		if impact.name=="uram_counter_outreach_hit":UramCounterWave.draw_pop(effects_layer,impact.center,visual_clock-float(impact.at))
 	if _prototype_duel() or _uram_duel() or _saebom_duel():
 		if _uram_duel() and is_instance_valid(shared_world):_draw_uram_exchange()
 		if _saebom_duel() and is_instance_valid(shared_world):_draw_sling_exchange()
@@ -2437,6 +2506,14 @@ func _local_club_tip()->Vector2:
 	var tip:=club.to_global(Vector3(club.get_aabb().end.x*.89,0,0))
 	return view.position+(view.display.position+view.camera.unproject_position(tip)*view.display.scale)*view.scale
 
+func _uram_floor_recovery(side:int)->float:
+	if side==0 and _uram_duel() and local_melee_polish and motion[0]=="skill" and shared_world.uram_floor_emitted:
+		return SharedWorld.URAM_FLOOR_HOLD
+	return 0.
+
+func _play_uram_ground_thump()->void:
+	_sound("uram_ground_thump")
+
 func _uram_ground_contact(world_origin:Vector3,target:Vector3)->void:
 	var origin:=shared_world.project(world_origin)
 	var finish:=shared_world.project(target*Vector3(1,0,1))
@@ -2444,11 +2521,11 @@ func _uram_ground_contact(world_origin:Vector3,target:Vector3)->void:
 	# Ground projection supplies exact direction/scale; the visual aftershock
 	# never supplies damage or a new target.
 	fx[-1]["end"]=origin+(finish-origin).limit_length(126.0)
-	_sound("uram_skill")
+	_play_uram_ground_thump()
 
 func _draw_squad_uram_ground(origin:Vector2,finish:Vector2,t:float,layer:Node2D)->void:
 	_soft_light(origin,Vector2.ONE,Color.WHITE,.001,layer)
-	LocalUramHeavy.draw_ground_wave(layer,contact_glow,origin,finish,t,SharedWorld.URAM_FLOOR_TRAVEL)
+	LocalUramHeavy.draw_ground_wave(layer,contact_glow,origin,finish,t,SharedWorld.URAM_FLOOR_TRAVEL,false)
 
 func _draw_local_uram_windup(tip:Vector2,p:float,layer:Node2D)->void:
 	_soft_light(tip,Vector2.ONE,Color.WHITE,.001,layer)
@@ -2500,7 +2577,7 @@ func _draw_local_uram_floor()->void:
 		var forward:Vector2
 		if effect.name=="uram_ground_wave":
 			_soft_light(effect.center,Vector2.ONE,Color.WHITE,.001,location_layer)
-			LocalUramHeavy.draw_ground_wave(location_layer,contact_glow,effect.center,effect.end,visual_clock-float(effect.at),SharedWorld.URAM_FLOOR_TRAVEL)
+			LocalUramHeavy.draw_ground_wave(location_layer,contact_glow,effect.center,effect.end,visual_clock-float(effect.at),SharedWorld.URAM_FLOOR_TRAVEL,false)
 			continue
 		elif effect.name=="local_uram_2p":forward=effect.forward
 		elif effect.name=="uram_shield_contact" and _uram_deer_close():

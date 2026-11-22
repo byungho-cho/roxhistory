@@ -6,6 +6,7 @@ const Actor = preload("res://scripts/model_test_actor.gd")
 const Hunt = preload("res://scripts/deer_hunt_screen.gd")
 const Presenter = preload("res://scripts/duel_motion_presenter.gd")
 const HUD = preload("res://scripts/duel_skill_hud.gd")
+const UramCounterWave=preload("res://scripts/duel_uram_counter_wave.gd")
 const Head = preload("res://scripts/battle_head_hud.gd")
 const HEROES := ["hangyeol","uram","saebom"]
 const HERO_SLOTS := [0,5,3]
@@ -14,10 +15,12 @@ const MAX_HP := 100
 const STEP := 1.0/120.0
 const SaebomMelee=preload("res://scripts/duel_shared_world.gd")
 const CLOSE_2SP_HIT_PHASES:=[.225,.40,.645,.855]
-const CLOSE_2SP_DAMAGE:=[5,5,6,11]
+const CLOSE_2SP_FINAL_DAMAGE:=27
+const CloseBasicPose=preload("res://scripts/duel_saebom_close_basic_pose.gd")
 const NEAR_SAE_2SP=preload("res://assets/ui/saebom-melee-test47/near-2sp.png")
 var local_melee_polish:=false
 var saebom_distance_drill:=""
+var ranged_alignment_contact:=Callable()
 var units:Array[Dictionary]=[]
 var huds:Array=[]
 var missiles:Array[Dictionary]=[]
@@ -53,7 +56,10 @@ const URAM_GUARD_LATEST:=.07
 const URAM_BORDER_LEAD:=.50
 const URAM_BORDER_RATE:=3.0
 var uram_ground_draw:=Callable()
+var uram_ground_sound:=Callable()
 var uram_ground_events:Array[Dictionary]=[]
+var uram_ordinary_wave:Dictionary={}
+var uram_wave_pop:Dictionary={}
 var uram_ground_layer:Node2D
 var input_paused:=false
 var hud_parent:Control
@@ -125,7 +131,9 @@ func setup(dust_draw:Callable=Callable(),gong:Callable=Callable(), heavy:Callabl
 	for i in 3:
 		var hud:=HUD.new();hud.position=Vector2(359+88*i,437);hud_parent.add_child(hud)
 		hud.enable_duel_ready_feedback();hud.reset(HEROES[i])
-		if local_melee_polish:hud.place_local_combat_hud(480.+128.*float(i-1))
+		if local_melee_polish:
+			hud.enable_portrait_damage_feedback()
+			hud.place_local_combat_hud(480.+128.*float(i-1))
 		hud.requested.connect(_request.bind(i))
 		huds.append(hud)
 	_draw_pose(0.0)
@@ -138,8 +146,9 @@ func configure_spotlight(dust:Callable,flash:Callable,stars:Callable,duration:fl
 	parry_front=Node2D.new();parry_front.z_index=602;add_child(parry_front)
 	parry_front.draw.connect(_paint_parry_front)
 
-func configure_uram_ground(draw_wave:Callable)->void:
+func configure_uram_ground(draw_wave:Callable,thump:Callable=Callable())->void:
 	uram_ground_draw=draw_wave
+	uram_ground_sound=thump
 	uram_ground_layer=Node2D.new()
 	add_child(uram_ground_layer);move_child(uram_ground_layer,0)
 	uram_ground_layer.draw.connect(_paint_uram_ground)
@@ -156,6 +165,9 @@ func _pose_uram_ground(u:Dictionary,actor)->void:
 	var axis:=Vector3(sin(heading),0.,cos(heading))
 	var clock:float=u.age
 	var sk:Skeleton3D=view.skeleton
+	var visible_at:=SaebomMelee.uram_floor_visible_age(clock,float(u.get("floor_impact_age",-1.)),actor.duration)
+	if absf(visible_at-clock)>.00001:actor.sample(visible_at,false)
+	SaebomMelee.weight_uram_floor_pose(view,visible_at)
 	var pins:Dictionary=u.get("floor_pins",{})
 	var inverse:=sk.global_transform.affine_inverse()
 	for joint in pins:
@@ -163,11 +175,13 @@ func _pose_uram_ground(u:Dictionary,actor)->void:
 		sk.force_update_all_bone_transforms()
 	view.update_equipment()
 	var ground_y:float=u.get("floor_y",view.pivot.global_position.y)
-	SaebomMelee.aim_uram_floor_club(view,axis,clock,ground_y)
+	SaebomMelee.aim_uram_floor_club(view,axis,visible_at,ground_y)
 	var tip:Vector3=view.club.to_global(Vector3(view.club.get_aabb().end.x*.85,0.,0.))
-	if clock<SaebomMelee.URAM_FLOOR_CONTACT or float(u.get("floor_cast_at",-1.))>=0. or tip.y>ground_y+.075:return
+	if clock<SaebomMelee.URAM_FLOOR_CONTACT or float(u.get("floor_cast_at",-1.))>=0.:return
 	u.floor_cast_at=elapsed
-	tip.y=ground_y
+	u.floor_impact_age=clock
+	if uram_ground_sound.is_valid():uram_ground_sound.call()
+	tip=SaebomMelee.uram_ground_screen_mark(view.camera,tip,ground_y)
 	var floor_mark:=view.position+(view.display.position+view.camera.unproject_position(tip)*view.display.scale)*view.scale
 	# Preserve the legacy single target/range rule in _resolve. Draw direction
 	# from the grounded club only, not a second impact flash at the receiver.
@@ -212,11 +226,13 @@ func configure_saebom_distance_drill(mode:String)->void:
 		var u:=units[i]
 		var included:=i in [2,3] or (far and i==1)
 		u.home=points[i];u.feet=points[i]
-		u.hp=(22 if i==1 else MAX_HP) if included else 0
+		u.hp=(roundi(MAX_HP*.5) if i==1 else MAX_HP) if included else 0
 		u.actor.preview.visible=included
 		u.actor.death_effect.hide()
 		_play(u,"idle")
-		if i<3:huds[i].visible=included
+		if i<3:
+			huds[i].visible=included
+			huds[i].clear_portrait_damage_feedback()
 	_update_saebom_range()
 	_draw_pose(0.)
 
@@ -311,7 +327,8 @@ func _begin(i:int,key:String,target:int)->void:
 			u.guarded=false
 			u.contact=minf(URAM_GUARD_EARLIEST,dur)
 		elif key=="counter":u.contact=minf(.46,dur)
-	if i==1 and key=="skill" and uram_ground_draw.is_valid():u["floor_cast_at"]=-1.0
+	if i==1 and key=="skill" and uram_ground_draw.is_valid():
+		u["floor_cast_at"]=-1.0;u["floor_impact_age"]=-1.0
 	if i>=3 and key=="skill":
 		u.contact=float(u.actor.preview.length("req046_skill_anticipation"))+.14
 	if i==2 and key!="chain":u.contact=dur*.61
@@ -328,7 +345,9 @@ func _begin(i:int,key:String,target:int)->void:
 		u.bom_origin=u.feet
 		var away:Vector2=u.feet-units[target].feet
 		u.bom_dir=away.normalized()
-		if u.bom_shove:u.contact=dur*.48
+		if u.bom_shove:
+			u.contact=dur*.48
+			u["close_basic_edge"]=Vector2.INF
 	u.next=elapsed+maxf(dur+.28,1.26)
 
 func _gap(i:int)->float:
@@ -383,7 +402,8 @@ func _step(dt:float)->void:
 			if u.contact>=0 and u.age>=u.contact:
 				u.contact=-1.0
 				_resolve(i)
-			if u.age>=u.actor.duration:_play(u,"idle")
+			var extra:=SaebomMelee.URAM_FLOOR_HOLD if i==1 and u.move=="skill" and float(u.get("floor_cast_at",-1.))>=0. else 0.
+			if u.age>=u.actor.duration+extra and not (i==1 and u.move=="counter" and not uram_ordinary_wave.is_empty()):_play(u,"idle")
 			continue
 		if u.move=="hit":
 			if u.age>=u.actor.duration:_play(u,"idle")
@@ -395,6 +415,7 @@ func _step(dt:float)->void:
 			_begin(i,"skill" if i>=3 and int(elapsed*1.45+i)%4==0 else "attack",target)
 		elif u.move!="idle":_play(u,"idle")
 	_update_projectiles(dt)
+	_advance_uram_ordinary_wave()
 	for index in squad_stuns.keys():
 		if elapsed-float(squad_stuns[index])>=1.15:squad_stuns.erase(index)
 	for k in range(launch_dust_events.size()-1,-1,-1):
@@ -437,14 +458,14 @@ func _resolve(i:int)->void:
 			_begin(i,"counter",j)
 		return
 	if local_melee_polish and i==1 and u.move=="counter":
-		if u.feet.distance_to(units[j].feet)>76.0:
-			_miss(i,j,"counter")
-			return
-		_damage(i,j,18,"counter")
-		if int(units[j].hp)>0:
-			_play(units[j],"hit")
-			units[j].next=maxf(float(units[j].next),elapsed+1.15)
-			squad_stuns[j]=elapsed
+		if u.feet.distance_to(units[j].feet)<=76.0:
+			_finish_uram_ordinary_counter(j)
+		else:
+			var view:HybridCharacter=u.actor.preview
+			var shield:Node3D=view.shield
+			var origin:=view.position+(view.display.position+view.camera.unproject_position(shield.global_position)*view.display.scale)*view.scale
+			var destination:=_deer_tip(units[j])
+			uram_ordinary_wave={"to":j,"locked":units[j].actor,"from":origin,"at":elapsed,"span":UramCounterWave.duration(origin,destination)}
 		return
 	if i==2 and not saebom_distance_drill.is_empty():
 		if u.move=="skill" and bool(u.get("bom_near_skill",false)):
@@ -452,8 +473,8 @@ func _resolve(i:int)->void:
 			u.bom_strike+=1
 			if hit_index+1<CLOSE_2SP_HIT_PHASES.size():
 				u.contact=float(u.actor.duration)*float(CLOSE_2SP_HIT_PHASES[hit_index+1])
-			var base:int=CLOSE_2SP_DAMAGE[hit_index]
-			_resolve_saebom_near(i,j,roundi(float(base)*1.2) if u.rally>elapsed else base,hit_index+1)
+			var amount:=roundi(float(CLOSE_2SP_FINAL_DAMAGE)*1.2) if u.rally>elapsed else CLOSE_2SP_FINAL_DAMAGE
+			_resolve_saebom_near(i,j,amount,hit_index+1)
 			return
 	var damage:=14 if u.move=="attack" else 27 if u.move=="skill" else 38
 	if i>=3:damage=11 if u.move=="attack" else 23
@@ -462,20 +483,55 @@ func _resolve(i:int)->void:
 	var finish:Vector2=units[j].feet-Vector2(0,25)
 	if i==2 and not (u.move=="attack" and bool(u.get("bom_shove",false))):
 		if start.distance_to(finish)>149.0:_miss(i,j,"projectile");return
+		var paired_presentation:=saebom_distance_drill=="far"
+		if paired_presentation:_pose_ranged_release(u)
 		var jewel:=_sling_stone(u)
-		var release:=jewel if bom_trail_draw.is_valid() and jewel.distance_to(start)<65.0 else start
+		var release:=jewel if paired_presentation or (bom_trail_draw.is_valid() and jewel.distance_to(start)<65.0) else start
 		# Original simulation uses start/destination; only drawn trail begins at the rig stone.
-		missiles.append({"from":i,"target":j,"point":start,"destination":finish,"damage":damage,"kind":u.move,"trace":PackedVector2Array([release]),"origin":start})
+		missiles.append({"from":i,"target":j,"point":start,"destination":finish,"damage":damage,"kind":u.move,"trace":PackedVector2Array([release]),"origin":start,"paired_presentation":paired_presentation,"release":release,"rendered":release})
 		return
 	var range_px:=80.0 if i==2 and u.move=="attack" and bool(u.get("bom_shove",false)) else _gap(i)+8.0+(14.0 if u.move!="attack" else 0.0)
 	if u.feet.distance_to(units[j].feet)>range_px:_miss(i,j,u.move);return
+	if i==2 and _uses_close_basic_pose(u,j):
+		# Capture the receiver pose before damage initializes the native hit clip.
+		var target:Dictionary=units[j]
+		var ball:=CloseBasicPose.sample(u,target,.48)
+		target["close_basic_impulse"]=ball.strike_axis
+		var receiver:Skeleton3D=target.actor.preview.skeleton
+		target["close_basic_neck_pose"]=receiver.get_bone_pose_rotation(receiver.find_bone("neck"))
+		target["close_basic_head_pose"]=receiver.get_bone_pose_rotation(receiver.find_bone("head"))
 	_damage(i,j,damage,u.move)
+
+func _finish_uram_ordinary_counter(j:int)->void:
+	if j<3 or j>=units.size() or units[j].hp<=0:return
+	_damage(1,j,18,"counter")
+	if int(units[j].hp)>0:
+		_play(units[j],"hit")
+		units[j].next=maxf(float(units[j].next),elapsed+1.15)
+		squad_stuns[j]=elapsed
+
+func _advance_uram_ordinary_wave()->void:
+	if uram_ordinary_wave.is_empty():return
+	var to:int=uram_ordinary_wave.to
+	if to<3 or to>=units.size() or units[to].hp<=0 or units[to].actor!=uram_ordinary_wave.locked or units[1].hp<=0:
+		uram_ordinary_wave.clear()
+		return
+	if elapsed-float(uram_ordinary_wave.at)+1e-6<float(uram_ordinary_wave.span):return
+	uram_wave_pop={"at":elapsed,"point":_deer_tip(units[to])}
+	uram_ordinary_wave.clear()
+	_finish_uram_ordinary_counter(to)
 
 func _resolve_saebom_near(i:int,j:int,amount:int,variant:int)->void:
 	var u:=units[i]
 	var v:=units[j]
 	var name:="saebom_melee_2sp_%d"%variant
-	# Each authored impact tests its own live target range; no projectile/bonus reach.
+	# First three beats still read visually. Only the existing fourth phase
+	# can resolve the one aggregate damage event. An interruption before it
+	# clears the action through _play, so no earlier damage can leak through.
+	if variant<CLOSE_2SP_HIT_PHASES.size():
+		if v.hp>0 and u.feet.distance_to(v.feet)<=72.:
+			glints.append({"at":elapsed,"point":v.feet-Vector2(0,23),"tint":Color("ffc971")})
+		return
 	if v.hp<=0 or u.feet.distance_to(v.feet)>72.:
 		_miss(i,j,name)
 		return
@@ -484,14 +540,14 @@ func _resolve_saebom_near(i:int,j:int,amount:int,variant:int)->void:
 func _miss(i:int,j:int,key:String)->void:
 	hits.append({"from":i,"target":j,"type":key,"result":"miss"})
 
-func _damage(i:int,j:int,amount:int,key:String)->void:
+func _damage(i:int,j:int,amount:int,key:String,stone_impact:=Vector2.INF)->void:
 	var target:=units[j]
 	if target.hp<=0:return
 	if saebom_distance_drill=="far" and i==1:
 		# The tank still performs its genuine attack/contact, but this drill
 		# isolates Saebom's damage and lets the enemy defeat Uram normally.
 		hits.append({"from":i,"target":j,"type":key,"result":"drill_visual_only","hp":target.hp})
-		glints.append({"at":elapsed,"point":target.feet-Vector2(0,23),"tint":Color("ffc971")})
+		glints.append({"at":elapsed,"point":target.feet-Vector2(0,23) if stone_impact==Vector2.INF else stone_impact,"tint":Color("ffc971")})
 		return
 	if j==1 and target.move=="chain" and target.age>URAM_GUARD_LATEST and target.age<minf(URAM_GUARD_EARLIEST,target.actor.duration) and (not local_melee_polish or (not bool(target.get("guarded",false)) and int(target.get("guard_source",-1))==i)):
 		if local_melee_polish:target.guarded=true
@@ -523,7 +579,7 @@ func _damage(i:int,j:int,amount:int,key:String)->void:
 	if bom_hit_draw.is_valid() and i==2 and key=="skill":
 		var feet:Vector2=target.feet
 		var from:Vector2=units[i].feet
-		group_bom_hits.append({"at":elapsed,"point":feet-Vector2(0,25),"forward":from.direction_to(feet)})
+		group_bom_hits.append({"at":elapsed,"point":feet-Vector2(0,25) if stone_impact==Vector2.INF else stone_impact,"forward":from.direction_to(feet)})
 	elif silver_impact.is_valid() and i>=3 and key=="skill":
 		var ground:Vector2=target.feet
 		silver_hits.append({"at":elapsed,"center":ground-Vector2(0,23),"floor_point":ground,"unit":i})
@@ -537,8 +593,8 @@ func _damage(i:int,j:int,amount:int,key:String)->void:
 		var from:Vector2=units[i].feet
 		var ground:Vector2=target.feet
 		heavy_events.append({"at":elapsed,"point":ground-Vector2(0,23),"ground":ground,"forward":from.direction_to(ground)})
-	else:
-		glints.append({"at":elapsed,"point":target.feet-Vector2(0,23),"tint":Color("ffc971") if i<3 else Color("f0ffe8")})
+	elif not (i==2 and key=="attack" and _uses_close_basic_pose(units[i],j)):
+		glints.append({"at":elapsed,"point":target.feet-Vector2(0,23) if stone_impact==Vector2.INF else stone_impact,"tint":Color("ffc971") if i<3 else Color("f0ffe8")})
 	if target.hp<=0:_play(target,"death")
 	elif target.move in ["idle","run","walk"]:_play(target,"hit")
 
@@ -546,14 +602,26 @@ func _update_projectiles(dt:float)->void:
 	for index in range(missiles.size()-1,-1,-1):
 		var m:=missiles[index]
 		m.point=m.point.move_toward(m.destination,340.0*dt)
+		var paired:bool=m.paired_presentation
+		if paired:
+			var destination:Vector2=m.destination
+			var origin:Vector2=m.origin
+			var now:Vector2=m.point
+			var ratio:=1.-now.distance_to(destination)/maxf(.001,origin.distance_to(destination))
+			var target_now:Dictionary=units[m.target]
+			var visible_aim:=_ranged_impact_anchor(target_now,destination) if target_now.hp>0 and destination.distance_to(target_now.feet-Vector2(0,25))<=19.0 else destination
+			m.rendered=Vector2(m.release).lerp(visible_aim,clampf(ratio,0.,1.))
+		var drawn:Vector2=m.rendered if paired else m.point
 		if bom_trail_draw.is_valid() and m.kind=="skill":
 			var trace:PackedVector2Array=m.trace
-			if trace[-1].distance_squared_to(m.point)>.28:trace.append(m.point)
+			if trace[-1].distance_squared_to(drawn)>.28:trace.append(drawn)
 			while trace.size()>16:trace.remove_at(0)
 			m.trace=trace
 		if m.point.distance_squared_to(m.destination)>.01:continue
 		var u:=units[m.target]
-		if u.hp>0 and m.destination.distance_to(u.feet-Vector2(0,25))<=19.0:_damage(m.from,m.target,m.damage,m.kind)
+		if u.hp>0 and m.destination.distance_to(u.feet-Vector2(0,25))<=19.0:
+			_damage(m.from,m.target,m.damage,m.kind,drawn if paired else Vector2.INF)
+			if paired and ranged_alignment_contact.is_valid():ranged_alignment_contact.call(String(u.id))
 		else:_miss(m.from,m.target,m.kind)
 		missiles.remove_at(index)
 
@@ -613,13 +681,35 @@ func _draw_pose(dt:float)->void:
 				var d:Vector2=units[j].feet-u.feet
 				var heading:=_ground_heading(actor.preview.camera,d)
 				actor.preview.pivot.rotation.y=heading-float(spear_forward_bias.get(u.move,0.0)) if i==0 else heading
-		actor.sample(u.age,false)
+		var show_basic:=i==2 and _uses_close_basic_pose(u,int(u.victim))
+		if not show_basic:actor.sample(_ranged_visible_age(u) if i==2 else float(u.age),false)
+		if i>=3 and u.move=="hit" and u.has("close_basic_impulse"):
+			var away:Vector2=u.close_basic_impulse
+			var ride:=smoothstep(0.,.07,u.age)*(1.0-smoothstep(.10,.39,u.age))
+			actor.preview.position+=away*6.1*ride
+			# During the brief separation the head stays in its pre-impact
+			# alignment. Stock hit timing, reactions and damage do not change.
+			var receiver:Skeleton3D=actor.preview.skeleton
+			var keep:=1.-smoothstep(.085,.235,u.age)
+			var neck:=receiver.find_bone("neck")
+			var head:=receiver.find_bone("head")
+			receiver.set_bone_pose_rotation(neck,receiver.get_bone_pose_rotation(neck).slerp(u.close_basic_neck_pose,keep))
+			receiver.set_bone_pose_rotation(head,receiver.get_bone_pose_rotation(head).slerp(u.close_basic_head_pose,keep))
+			receiver.force_update_all_bone_transforms()
+		if i>=3 and u.move!="hit":u.erase("close_basic_impulse")
 		if i==1 and u.move=="skill" and uram_ground_draw.is_valid():_pose_uram_ground(u,actor)
 		if i==2 and u.move=="skill" and float(u.get("bom_hop",0.))>0.:SaebomMelee.saebom_hop_pose(actor,float(u.age)/maxf(.01,float(actor.duration)),float(u.bom_hop)/24.)
 		if i==2 and u.move=="skill" and bool(u.get("bom_near_skill",false)):
 			_sample_stock_close_2sp(actor,float(u.age)/maxf(.01,float(actor.duration)))
 		elif i==2 and u.move=="attack" and bool(u.get("bom_shove",false)):
-			SaebomMelee.saebom_shove_pose(actor,float(u.age)/maxf(.01,float(actor.duration)))
+			if show_basic:
+				var target:Dictionary=units[int(u.victim)]
+				var p:=clampf(float(u.age)/maxf(.01,float(actor.duration)),0.,1.)
+				if p<.43 or not is_finite((u.get("close_basic_edge",Vector2.INF) as Vector2).x):
+					u.close_basic_edge=CloseBasicPose.shoulder(target,u.feet)
+				CloseBasicPose.sample(u,target,p)
+				actor.preview.viewport.render_target_update_mode=SubViewport.UPDATE_ONCE
+			else:SaebomMelee.saebom_shove_pose(actor,float(u.age)/maxf(.01,float(actor.duration)))
 		if i==2 and bom_pose.is_valid():bom_pose.call(actor,float(u.age) if u.move=="chain" and u.hp>0 else -1.0)
 		if i==0:aim.anchor_spear_root(actor)
 		if silver_draw.is_valid() and i>=3:
@@ -630,6 +720,8 @@ func _draw_pose(dt:float)->void:
 				if wake.is_empty() or tip.distance_squared_to(wake[-1].tip)>2.0:
 					wake.append({"at":elapsed,"foot":u.feet,"tip":tip})
 				if wake.size()>20:wake.pop_front()
+
+	_sync_ranged_held_stone(units[2])
 	for i in huds.size():
 		var u:=units[i]
 		huds[i].chain_border_speed=URAM_BORDER_RATE if i==1 and local_melee_polish and not input_paused and not ended and _squad_guard_candidate(URAM_BORDER_LEAD)>=0 else 1.0
@@ -660,15 +752,21 @@ func _paint_bars()->void:
 		bars_paint.draw_rect(Rect2(at+Vector2.ONE,Vector2(44.0*float(u.hp)/MAX_HP,3)),Color("68c8ff") if u.id!="forest" else Color("ff8176"))
 
 func _paint()->void:
+	if not uram_ordinary_wave.is_empty():
+		var p:float=(elapsed-float(uram_ordinary_wave.at))/float(uram_ordinary_wave.span)
+		UramCounterWave.draw(paint,uram_ordinary_wave.from,_deer_tip(units[int(uram_ordinary_wave.to)]),p)
+	if not uram_wave_pop.is_empty():
+		UramCounterWave.draw_pop(paint,uram_wave_pop.point,elapsed-float(uram_wave_pop.at))
 	var bom_active:=false
 	for m in missiles:
+		var drawn:Vector2=m.rendered if m.paired_presentation else m.point
 		if weapon_draw.is_valid() and m.from==2:
 			bom_active=true
 			if bom_trail_draw.is_valid() and m.kind=="skill":
 				bom_trail_draw.call(m.trace,1.0,paint)
 				continue
-			weapon_draw.call(units[2].actor,m.point,false,paint)
-		paint.draw_circle(m.point,3.0,Color("ffdf9c"))
+			weapon_draw.call(units[2].actor,drawn,false,paint)
+		paint.draw_circle(drawn,3.0,Color("ffdf9c"))
 	if weapon_draw.is_valid():
 		if units[1].hp>0:weapon_draw.call(units[1].actor,Vector2.INF,false,paint)
 		if units[2].hp>0 and not bom_active:
@@ -709,15 +807,17 @@ func _paint()->void:
 		heavy_draw.call(event.point,event.ground,event.forward,elapsed-float(event.at),paint)
 	for gong in gong_events:
 		gong_draw.call(gong.point,gong.forward,elapsed-float(gong.at),paint)
-	for spark in glints:
-		var t:=clampf((elapsed-float(spark.at))/.45,0,1)
-		var tint:Color=spark.tint
-		paint.draw_arc(spark.point,lerpf(4,20,t),0,TAU,20,Color(tint,(1.0-t)*.88),2.0,true)
 
 
-
-
-
+func _uses_close_basic_pose(u:Dictionary,j:int)->bool:
+	if not local_melee_polish or j<3 or j>=units.size() or u.move!="attack" or not bool(u.get("bom_shove",false)):
+		return false
+	if saebom_distance_drill!="near":return false
+	var sk:Skeleton3D=units[j].actor.preview.skeleton
+	if not is_instance_valid(sk):return false
+	for joint in ["front_upper.R","trunk","head","neck"]:
+		if sk.find_bone(joint)<0:return false
+	return true
 
 func _deer_tip(u:Dictionary)->Vector2:
 	var view:HybridCharacter=u.actor.preview
@@ -729,6 +829,50 @@ func _deer_tip(u:Dictionary)->Vector2:
 
 
 
+
+func _ranged_visible_age(u:Dictionary)->float:
+	var age:float=u.age
+	if saebom_distance_drill!="far" or u.move not in ["attack","skill"] or bool(u.get("bom_shove",false)) or bool(u.get("bom_near_skill",false)):
+		return age
+	var duration:float=u.actor.duration
+	var launch:=duration*.61
+	var authored:=SaebomMelee.sling_release_seconds(String(u.move))
+	if launch<=.001 or authored<=.001 or authored>=duration-.001:return age
+	# Keep combat timing. Reach the already-authored throw pose at the original squad launch tick.
+	if age<=launch:return age/launch*authored
+	return lerpf(authored,duration,clampf((age-launch)/(duration-launch),0.,1.))
+
+func _pose_ranged_release(u:Dictionary)->void:
+	var actor=u.actor
+	var view:HybridCharacter=actor.preview
+	# Only correct native launch presentation; original timed release event remains.
+	actor.sample(_ranged_visible_age(u),false)
+	var skeleton:Skeleton3D=view.skeleton
+	skeleton.force_update_all_bone_transforms()
+
+func _sync_ranged_held_stone(u:Dictionary)->void:
+	if saebom_distance_drill!="far":return
+	var view:HybridCharacter=u.actor.preview
+	var stone:MeshInstance3D=u.get("ranged_held_mesh",null)
+	if not is_instance_valid(stone):
+		for model in view.pivot.find_children("*","MeshInstance3D",true,false):
+			var label:=String(model.name).to_lower()
+			if "large stone" in label or "large_stone" in label:
+				stone=model
+				u.ranged_held_mesh=stone
+				u.ranged_held_visible=stone.visible
+				break
+	if is_instance_valid(stone):
+		var after_shot:bool=u.move in ["attack","skill"] and u.contact<0. and not u.get("bom_shove",false) and not u.get("bom_near_skill",false)
+		stone.visible=bool(u.ranged_held_visible) and not after_shot
+
+func _ranged_impact_anchor(u:Dictionary,fallback:Vector2)->Vector2:
+	var view:HybridCharacter=u.actor.preview
+	var sk:Skeleton3D=view.skeleton
+	var joint:=sk.find_bone("trunk")
+	if joint<0:return fallback
+	var p:=sk.to_global(sk.get_bone_global_pose(joint).origin)
+	return view.position+(view.display.position+view.camera.unproject_position(p)*view.display.scale)*view.scale
 
 func _sling_stone(u:Dictionary)->Vector2:
 	var v:HybridCharacter=u.actor.preview

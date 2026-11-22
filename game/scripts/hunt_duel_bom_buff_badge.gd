@@ -44,3 +44,29 @@ static func sync(hud:Control,remaining:float)->void:
  if art!=null:(badge.get_node("Icon") as TextureRect).texture=art.texture
  (badge.get_node("Seconds") as Label).text=str(clampi(ceili(remaining),1,5))
  badge.show()
+
+static func sync_field(parent:Node,anchor:Vector2,remaining:float)->void:
+ var label:=parent.get_node_or_null("SaebomBuffFieldTimer") as Label
+ if remaining<=0.:
+  if label!=null:label.hide()
+  return
+ if label==null:
+  label=Label.new()
+  label.name="SaebomBuffFieldTimer"
+  label.mouse_filter=Control.MOUSE_FILTER_IGNORE
+  label.z_index=620
+  label.size=Vector2(28.,26.)
+  label.scale=Vector2.ONE*.5
+  label.modulate.a=.8
+  label.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
+  label.vertical_alignment=VERTICAL_ALIGNMENT_CENTER
+  label.add_theme_font_size_override("font_size",23)
+  label.add_theme_color_override("font_color",Color("fff7dd"))
+  label.add_theme_color_override("font_outline_color",Color("302115"))
+  label.add_theme_constant_override("outline_size",4)
+  parent.add_child(label)
+  label.resized.connect(func():label.pivot_offset=label.size*.5)
+  label.pivot_offset=label.size*.5
+ label.text=str(clampi(ceili(remaining),1,5))
+ label.position=anchor-label.size*.5
+ label.show()

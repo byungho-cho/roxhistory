@@ -99,10 +99,78 @@ func _rounded_glow(parent:Node,rect:Rect2,colors:Array,radius:float)->TextureRec
 	return Art.picture(mask,_glow(colors),Rect2(Vector2.ZERO,rect.size))
 func _glow(colors:Array)->GradientTexture2D:
 	var texture:=GradientTexture2D.new();texture.width=96;texture.height=96;texture.fill=GradientTexture2D.FILL_RADIAL;texture.fill_from=Vector2(.5,.5);texture.fill_to=Vector2(1,.5);texture.gradient=Gradient.new();texture.gradient.offsets=PackedFloat32Array([0,.58,1]);texture.gradient.colors=PackedColorArray(colors);return texture
+var portrait_feedback_enabled:=false
+var portrait_feedback_last_hp:=-1
+var portrait_feedback_age:=0.0
+var portrait_feedback_dead:=false
+var portrait_feedback_material:ShaderMaterial
+var portrait_hurt_textures:Dictionary={}
+const PORTRAIT_WOUND_SECONDS:=1.20
+
+func enable_portrait_damage_feedback()->void:
+	if portrait_feedback_enabled:return
+	portrait_feedback_enabled=true
+	var shader:=Shader.new()
+	shader.code="""shader_type canvas_item;
+	uniform float wound = 0.0;
+	uniform bool defeated = false;
+	uniform bool has_hurt_art = false;
+	uniform sampler2D hurt_art : source_color, filter_linear;
+	void fragment(){
+		vec4 original=COLOR;
+		if(!defeated && has_hurt_art && wound>0.0){
+			vec4 hurt=texture(hurt_art,UV);
+			float blended_alpha=mix(original.a,hurt.a,wound);
+			original=vec4(mix(original.rgb*original.a,hurt.rgb*hurt.a,wound)/max(.001,blended_alpha),blended_alpha);
+		}
+		vec3 rgb=original.rgb;
+		float luma=dot(rgb, vec3(.2126,.7152,.0722));
+		if(defeated){ rgb=mix(rgb, vec3(luma),.94)*.57; }
+		COLOR=vec4(rgb,original.a);
+	}"""
+	portrait_feedback_material=ShaderMaterial.new()
+	portrait_feedback_material.shader=shader
+	portrait.material=portrait_feedback_material
+	_load_portrait_hurt_art(character)
+
+func clear_portrait_damage_feedback()->void:
+	portrait_feedback_last_hp=-1
+	portrait_feedback_age=0.
+	portrait_feedback_dead=false
+	if portrait_feedback_enabled:
+		portrait_feedback_material.set_shader_parameter("wound",0.0)
+		portrait_feedback_material.set_shader_parameter("defeated",false)
+
+func _sync_portrait_damage_feedback(health:int,living:bool,delta:float)->void:
+	if not portrait_feedback_enabled:return
+	portrait_feedback_age=maxf(0.,portrait_feedback_age-maxf(0.,delta))
+	portrait_feedback_dead=not living or health<=0
+	if portrait_feedback_dead:portrait_feedback_age=0.
+	elif portrait_feedback_last_hp>health:portrait_feedback_age=PORTRAIT_WOUND_SECONDS
+	portrait_feedback_last_hp=health
+	var wound:=smoothstep(0.,.47,portrait_feedback_age)
+	portrait_feedback_material.set_shader_parameter("wound",wound)
+	portrait_feedback_material.set_shader_parameter("defeated",portrait_feedback_dead)
+
+
+func _load_portrait_hurt_art(id:String)->void:
+	if not portrait_feedback_enabled:return
+	if not portrait_hurt_textures.has(id):
+		var path:="res://assets/ui/test55-portraits/"+id+"-hurt.png"
+		if ResourceLoader.exists(path,"Texture2D"):
+			portrait_hurt_textures[id]=ResourceLoader.load(path,"Texture2D")
+		elif FileAccess.file_exists(path):
+			var input_image:=Image.load_from_file(path)
+			if not input_image.is_empty():portrait_hurt_textures[id]=ImageTexture.create_from_image(input_image)
+	var hurt:Texture2D=portrait_hurt_textures.get(id)
+	portrait_feedback_material.set_shader_parameter("has_hurt_art",hurt!=null)
+	if hurt!=null:portrait_feedback_material.set_shader_parameter("hurt_art",hurt)
+
 func reset(id:String)->void:
 	character=id;normal_ready=false;chain_ready=false;normal_age=0;chain_age=0;phase=0;normal_entries=0;chain_entries=0
 	near_mode=false
 	orb_light_progress.assign([1.0,0.0,0.0])
+	_load_portrait_hurt_art(id)
 	portrait.texture=PORTRAITS[id];badge_art.texture=ORDINARY[id];chain_art.texture=LINKED[id];names.text={"hangyeol":"한결","uram":"우람","saebom":"새봄"}[id]
 	# Figma's88% figure width enlarged20%, with its real aspect and lower edge pinned.
 	portrait.size=Vector2(69.696,69.696*portrait.texture.get_height()/portrait.texture.get_width())
@@ -112,6 +180,7 @@ func reset(id:String)->void:
 	var ordinary_colors:Array=[Color("469d9b"),Color("1a575b"),Color("112b32")] if id=="uram" else [Color("7ed9e3"),Color("236b7b"),Color("102e37")] if id=="saebom" else [Color("8ef1be"),Color("2b7955"),Color("0d2a22")]
 	badge_glow.texture=_glow(ordinary_colors)
 	sync(1,100,100,true,true,0)
+	clear_portrait_damage_feedback()
 var chain_border_speed:=1.0
 var chain_border_age:=0.0
 
@@ -127,14 +196,15 @@ func sync(sp:float,health:int,max_health:int,living:bool,input_available:bool,de
 	var t:=clampf(phase/.32,0.0,1.0)
 	var angle:=sin(t*TAU*2.0)*(1.0-t) if linked and chain_age>=3 and phase<.32 else 0.0
 	chain_foreground.rotation=deg_to_rad(7.2)*angle
-	portrait.modulate=Color.WHITE if health>0 else Color(.35,.35,.35,.85);hp.max_value=max_health;hp.value=health
+	portrait.modulate=Color.WHITE if portrait_feedback_enabled or health>0 else Color(.35,.35,.35,.85);hp.max_value=max_health;hp.value=health
+	_sync_portrait_damage_feedback(health,living,delta)
 	for i in 3:
 		var filled:=living and i<floori(sp+.000001)
 		if not duel_ready_feedback or orb_lights.size()!=3:
 			orbs[i].texture=ORB_FULL if filled else ORB_EMPTY
 			continue
 		orbs[i].texture=ORB_EMPTY
-		orb_light_progress[i]=move_toward(orb_light_progress[i],1.0 if filled else 0.0,delta/(.22 if filled else .14))
+		orb_light_progress[i]=0.0 if portrait_feedback_enabled and not living else move_toward(orb_light_progress[i],1.0 if filled else 0.0,delta/(.22 if filled else .14))
 		var light:=orb_lights[i]
 		light.visible=orb_light_progress[i]>.001
 		light.material.set_shader_parameter("fill_amount",orb_light_progress[i])

@@ -20,7 +20,8 @@ var originals:Array=[]
 var facing:=[0.0,0.0]
 var aim_bias:=[0.0,0.0]
 var aim_by_motion:Dictionary={}
-const URAM_FLOOR_CONTACT:=.84
+const URAM_FLOOR_CONTACT:=.85
+const URAM_FLOOR_HOLD:=.70
 const URAM_FLOOR_TRAVEL:=.16
 var uram_floor_trace_advance:=0.0
 var uram_floor_original_tip:=Vector3.ZERO
@@ -448,8 +449,20 @@ func render_poses(lab,delta:float)->Array:
 				if local_melee_polish and key=="skill":_keep_uram_feet_anchored(sk)
 				p.update_equipment()
 				if local_melee_polish and key=="skill":
+					# Preserve the v293 sweep from the original sampled animation.
 					uram_floor_original_tip=weapon_point(0)
-					aim_uram_floor_club(p,toward.normalized(),sample_age)
+					var visible_at:=uram_floor_visible_age(sample_age,uram_floor_emit_age,actor.duration)
+					if absf(visible_at-sample_age)>.00001:
+						var settled_pivot:Transform3D=p.pivot.transform
+						actor.sample(visible_at,false)
+						p.pivot.transform=settled_pivot
+						var visible_root:=sk.get_bone_pose_position(root)
+						visible_root.x=rest.x;visible_root.z=rest.z
+						sk.set_bone_pose_position(root,visible_root)
+					weight_uram_floor_pose(p,visible_at)
+					_keep_uram_feet_anchored(sk)
+					p.update_equipment()
+					aim_uram_floor_club(p,toward.normalized(),visible_at)
 				if local_melee_polish and not uram_entry_shield_revealed:
 					# Entrants are still travelling toward the ring slots. Reveal
 					# the now-posed forearm shield only on actual face-off, once.
@@ -747,10 +760,10 @@ func step(lab,delta:float,prior_han_age:float=-1.0)->Array[Dictionary]:
 				if planted and side==0:uram_floor_hit=event
 				else:events.append(event);contacts.append(event)
 		previous_weapon[side]=now
-	if planted and lab.age[0]>=URAM_FLOOR_CONTACT and not uram_floor_emitted and weapon_point(0).y<=.075:
+	if planted and lab.age[0]>=URAM_FLOOR_CONTACT and not uram_floor_emitted:
 		uram_floor_emitted=true
 		uram_floor_emit_age=lab.age[0]
-		lab._uram_ground_contact(weapon_point(0)*Vector3(1,0,1),bodies[1].position)
+		lab._uram_ground_contact(uram_ground_screen_mark(camera,weapon_point(0),0.),bodies[1].position)
 	if planted and not uram_floor_hit.is_empty() and uram_floor_emitted and lab.age[0]>=uram_floor_emit_age+URAM_FLOOR_TRAVEL:
 		var event:=uram_floor_hit.duplicate()
 		uram_floor_hit.clear()
@@ -862,21 +875,57 @@ func _aim_uram_forest_guard(sk:Skeleton3D,toward:Vector3,age:float,armed:bool)->
 			sk.set_bone_global_pose(joint,pivot)
 			sk.force_update_all_bone_transforms()
 
+static func uram_floor_visible_age(age:float,contact:float,duration:float)->float:
+	if contact<0. or age<=contact:return age
+	var since:=age-contact
+	if since<=URAM_FLOOR_HOLD:return contact
+	var rest:=maxf(.001,duration-contact)
+	var resume:=smoothstep(0.,1.,clampf((since-URAM_FLOOR_HOLD)/rest,0.,1.))
+	return contact+rest*resume
+
+static func uram_ground_screen_mark(cam:Camera3D,tip:Vector3,ground_y:float)->Vector3:
+	# Orthographic stage: cast through a point just underneath the apparent
+	# club tip, not directly down from the raised club at its physical x/z.
+	var p:=cam.unproject_position(tip)+Vector2(0.,8.)
+	var origin:=cam.project_ray_origin(p)
+	var ray:=cam.project_ray_normal(p)
+	if absf(ray.y)<.001:return Vector3(tip.x,ground_y,tip.z)
+	return origin+ray*((ground_y-origin.y)/ray.y)
+
+static func weight_uram_floor_pose(p,age:float)->void:
+	# A small shoulder and upper-body compression: no root movement or foot offsets.
+	var lead:=smoothstep(.58,.80,age)*(1.-smoothstep(.85,1.14,age))
+	var press:=smoothstep(.74,URAM_FLOOR_CONTACT,age)*(1.-smoothstep(.89,1.19,age))
+	var sk:Skeleton3D=p.skeleton
+	var torso:=sk.find_bone("spine")
+	if torso>=0:
+		sk.set_bone_pose_rotation(torso,sk.get_bone_pose_rotation(torso)*Quaternion(Vector3.RIGHT,.095*lead+.035*press))
+		sk.set_bone_pose_position(torso,sk.get_bone_pose_position(torso)+Vector3(0.,-.023,0.)*press)
+	var shoulder:=sk.find_bone("upper.R")
+	if shoulder>=0:
+		sk.set_bone_pose_rotation(shoulder,sk.get_bone_pose_rotation(shoulder)*Quaternion(Vector3.RIGHT,.07*press))
+	sk.force_update_all_bone_transforms()
+
 static func aim_uram_floor_club(p,axis:Vector3,age:float,ground_y:=0.0)->void:
-	var amount:=smoothstep(URAM_FLOOR_CONTACT-.038,URAM_FLOOR_CONTACT,age)*(1.-smoothstep(URAM_FLOOR_CONTACT+.085,URAM_FLOOR_CONTACT+.43,age))
+	var amount:=smoothstep(URAM_FLOOR_CONTACT-.10,URAM_FLOOR_CONTACT,age)*(1.-smoothstep(URAM_FLOOR_CONTACT+.085,URAM_FLOOR_CONTACT+.43,age))
 	if amount<=.001 or axis.length_squared()<.1:return
 	var sk:Skeleton3D=p.skeleton
-	var club:MeshInstance3D=p.club
-	var grip:Vector3=sk.global_transform*sk.get_bone_global_pose(p.hand_bone)*p.grip_in_hand
-	var tip:Vector3=club.to_global(Vector3(club.get_aabb().end.x*.85,0,0))
-	var rel:=tip-grip
-	var arm:=maxf(.08,rel.length())
-	var down:=minf(grip.y-ground_y-.015,arm*.995)
-	var target:Vector3=axis*sqrt(maxf(.002,arm*arm-down*down))-Vector3.UP*down
-	if rel.length_squared()<.005 or target.length_squared()<.005:return
-	var turn:=Basis(Quaternion.IDENTITY.slerp(Quaternion(rel.normalized(),target.normalized()),amount))
-	var tr:=club.global_transform
-	club.global_transform=Transform3D(turn*tr.basis,grip+turn*(tr.origin-grip))
+	var hand:=sk.global_transform*sk.get_bone_global_pose(p.hand_bone)
+	var grip:Vector3=hand*p.grip_in_hand
+	var rel:Vector3=hand*p.tip_in_hand-grip
+	if rel.length_squared()<.005:return
+	var length:=.99
+	var down:=minf(maxf(.0,grip.y-ground_y-.015)*.50,length*.62)
+	var target:Vector3=axis*sqrt(maxf(.002,length*length-down*down))-Vector3.UP*down
+	var rotate:=Basis(Quaternion.IDENTITY.slerp(Quaternion(rel.normalized(),target.normalized()),amount))
+	# Pose the hand around the measured wrapped handle before attaching the prop.
+	# A single grip transform controls both the knuckles and the club every frame.
+	var basis:=rotate*hand.basis
+	var posed:=Transform3D(basis,grip-basis*p.grip_in_hand)
+	sk.set_bone_global_pose(p.hand_bone,sk.global_transform.affine_inverse()*posed)
+	sk.force_update_all_bone_transforms()
+	p.update_equipment()
+
 
 func _aim_uram_club(age:float)->void:
 	# Late aim lowers the fully visible club around its grip, not the hurt volume.

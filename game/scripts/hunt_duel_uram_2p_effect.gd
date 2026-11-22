@@ -95,7 +95,7 @@ static func draw_readable_floor(layer:CanvasItem, texture:Texture2D, origin:Vect
 
 ## TEST48: the old orange light rides the same low, weighted front as the
 ## dust. It starts on the actual club's ground projection, never on a foe.
-static func draw_ground_wave(layer:CanvasItem, texture:Texture2D, origin:Vector2, finish:Vector2, age:float, travel:float)->void:
+static func draw_ground_wave(layer:CanvasItem, texture:Texture2D, origin:Vector2, finish:Vector2, age:float, travel:float, orange_bands:=true)->void:
  if age<0. or age>1.04:return
  var delta:=finish-origin
  var forward:=delta.normalized() if delta.length_squared()>.001 else Vector2.RIGHT
@@ -119,6 +119,7 @@ static func draw_ground_wave(layer:CanvasItem, texture:Texture2D, origin:Vector2
    var grit:=smoothstep(0.,.027,age)*(1.-smoothstep(.11,.36,age))
    var grit_p:=p-forward*float(j%4)*2.-Vector2(0,(3.+float(j%3)*3.)*sin(age/.36*PI))
    layer.draw_line(grit_p-forward*4.,grit_p,Color("d6a26d",grit*.82),1.8,true)
+ if not orange_bands:return
  for band in 2:
   var time:=age-float(band)*.069
   var phase:=clampf(time/maxf(.01,travel),0.,1.)
