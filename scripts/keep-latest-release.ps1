@@ -63,6 +63,8 @@ foreach ($release in $releases) {
     foreach ($asset in $release.assets) {
         if ($asset.state -ne 'uploaded' -or $asset.id -in $keep.ids) { continue }
         if ($release.tag_name -ceq $protectedApkTag -and $asset.name -ceq $protectedApkName) { continue }
+        # The Android 295 full-install baseline is reached by direct link, not the global APK catalog.
+        if ($release.tag_name -ceq 'v0.2.295' -and $asset.name -ceq 'Roxhistory_0.2.295.apk') { continue }
         if ($asset.name -notmatch '^Roxhistory[_-](\d+\.\d+\.\d+).*\.(apk|exe)$') { continue }
         # A newer release may still be uploading its second platform. Never delete it.
         if ([version]$Matches[1] -gt $keep.version) { continue }

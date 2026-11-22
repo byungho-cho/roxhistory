@@ -80,6 +80,17 @@ try {
     $stopped=$false
     try { & $script -Apply -ConfirmDelete | Out-Null } catch { $stopped=$true }
     if (-not $stopped -or $global:retentionDeleted.Count) { throw 'Unknown policy did not stop cleanup safely.' }
+    $global:retentionChannelPayload.reason='compatible_pck_available'
+    $global:retentionDeleted.Clear()
+    $global:retentionReleases+=Release 8 'v0.2.295'
+    $global:retentionReleases+=Release 9 'v0.2.296'
+    $global:retentionAssets[8]=@((Asset 81 'Roxhistory_0.2.295.apk'))
+    $global:retentionAssets[9]=@((Asset 91 'Roxhistory_0.2.296.apk'),(Asset 92 'Roxhistory_0.2.296.exe'))
+    & $script -Apply -ConfirmDelete | Out-Null
+    if ($global:retentionDeleted -contains 81 -or $global:retentionDeleted -contains 91 -or $global:retentionDeleted -contains 92 -or $global:retentionDeleted.Count -lt 1) {
+        throw 'Direct 295 installer and newest complete pair did not both survive explicitly authorized mock rotation.'
+    }
+    Write-Output 'Manual baseline retention check passed: direct v0.2.295 APK remains after a subsequent complete pair.'
     Write-Output 'Retention checks passed: pagination, dry run, latest pair, newer incomplete release, drafts, PCK test assets, source assets, concurrent removal, and no complete pair.'
     Write-Output 'APK-policy checks passed: required native target retained, patch-only latest pair retained, unknown policy rejected.'
 } finally {
