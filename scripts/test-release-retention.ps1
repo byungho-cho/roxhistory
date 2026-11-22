@@ -45,15 +45,23 @@ try {
     if ($global:retentionDeleted.Count) { throw 'Dry run deleted assets.' }
     $global:retentionReadCount=0
     & $script -Apply | Out-Null
+    if ($global:retentionDeleted.Count) { throw 'Legacy -Apply unexpectedly deleted assets.' }
+    $env:GITHUB_ACTIONS='true'
+    $global:retentionReadCount=0
+    & $script -Apply -ConfirmDelete | Out-Null
+    if ($global:retentionDeleted.Count) { throw 'GitHub Actions unexpectedly deleted assets.' }
+    [Environment]::SetEnvironmentVariable('GITHUB_ACTIONS',$null,'Process')
+    $global:retentionReadCount=0
+    & $script -Apply -ConfirmDelete | Out-Null
     if (($global:retentionDeleted -join ',') -ne '11,12') { throw 'Cleanup did not preserve the latest pair, newer partial upload, draft, PCK test, and non-binary files.' }
     $global:retentionDeleted.Clear(); $global:retentionMissingPair=$true; $global:retentionReadCount=0
     $stopped=$false
-    try { & $script -Apply | Out-Null } catch { $stopped=$true }
+    try { & $script -Apply -ConfirmDelete | Out-Null } catch { $stopped=$true }
     if (-not $stopped -or $global:retentionDeleted.Count) { throw 'Cleanup failed to stop when latest pair disappeared.' }
     $global:retentionMissingPair=$false; $global:retentionReadCount=0
     $global:retentionAssets[2]=@((Asset 21 'Roxhistory_0.1.59.apk'))
     $global:retentionAssets[1]=@((Asset 11 'RoxHistory-0.1.58-cloud-test.apk'))
-    & $script -Apply | Out-Null
+    & $script -Apply -ConfirmDelete | Out-Null
     if ($global:retentionDeleted.Count) { throw 'Cleanup deleted files without any complete pair.' }
     $global:retentionAssets[1]=@((Asset 11 'Roxhistory_0.1.58.apk'),(Asset 12 'Roxhistory_0.1.58.exe'))
     $global:retentionAssets[2]=@((Asset 21 'Roxhistory_0.1.59.apk'),(Asset 22 'Roxhistory_0.1.59.exe'))
@@ -61,16 +69,16 @@ try {
     $global:retentionAssets[7]=@((Asset 71 'apk-latest.json'))
     $global:retentionChannelPayload=@{schema=1;kind='apk';version='0.1.58';tag='v0.1.58';file='Roxhistory_0.1.58.apk'}
     $global:retentionReadCount=0
-    & $script -Apply | Out-Null
+    & $script -Apply -ConfirmDelete | Out-Null
     if (($global:retentionDeleted -join ',') -ne '12') { throw 'Required native APK target was not preserved.' }
     $global:retentionDeleted.Clear();$global:retentionReadCount=0
     $global:retentionChannelPayload=@{schema=1;kind='apk';package='com.roxhistory.demo';version='0.1.59';update_available=$false;reason='compatible_pck_available';patch_base='0.2.174';patch_runtime='godot-4.5.1-android-pck-2'}
-    & $script -Apply | Out-Null
+    & $script -Apply -ConfirmDelete | Out-Null
     if (($global:retentionDeleted -join ',') -ne '11,12') { throw 'Patch-only policy did not retain only the latest complete pair.' }
     $global:retentionDeleted.Clear();$global:retentionReadCount=0
     $global:retentionChannelPayload.reason='unknown'
     $stopped=$false
-    try { & $script -Apply | Out-Null } catch { $stopped=$true }
+    try { & $script -Apply -ConfirmDelete | Out-Null } catch { $stopped=$true }
     if (-not $stopped -or $global:retentionDeleted.Count) { throw 'Unknown policy did not stop cleanup safely.' }
     Write-Output 'Retention checks passed: pagination, dry run, latest pair, newer incomplete release, drafts, PCK test assets, source assets, concurrent removal, and no complete pair.'
     Write-Output 'APK-policy checks passed: required native target retained, patch-only latest pair retained, unknown policy rejected.'

@@ -1,6 +1,12 @@
 [CmdletBinding()]
-param([string]$Repository = 'byungho-cho/roxhistory', [switch]$Apply)
+param([string]$Repository = 'byungho-cho/roxhistory', [switch]$Apply, [switch]$ConfirmDelete)
 $ErrorActionPreference = 'Stop'
+# A historical tag may still invoke -Apply from an old workflow file. GitHub
+# Actions must remain audit-only, and local deletion requires explicit intent.
+$canDelete = $Apply -and $ConfirmDelete -and $env:GITHUB_ACTIONS -ne 'true'
+if ($Apply -and -not $canDelete) {
+    Write-Output 'Audit only: deletion requires explicit local -Apply -ConfirmDelete and is disabled in GitHub Actions.'
+}
 function Api([string]$endpoint) {
     $json = & gh api $endpoint --paginate --slurp
     if ($LASTEXITCODE -ne 0) { throw 'GitHub release inventory failed. Nothing will be removed.' }
@@ -60,8 +66,8 @@ foreach ($release in $releases) {
         if ($asset.name -notmatch '^Roxhistory[_-](\d+\.\d+\.\d+).*\.(apk|exe)$') { continue }
         # A newer release may still be uploading its second platform. Never delete it.
         if ([version]$Matches[1] -gt $keep.version) { continue }
-        Write-Output "$(if($Apply){'Remove'}else{'Would remove'}): $($release.tag_name)/$($asset.name)"
-        if ($Apply) {
+        Write-Output "$(if($canDelete){'Remove'}else{'Would remove'}): $($release.tag_name)/$($asset.name)"
+        if ($canDelete) {
             $deleteResponse = & gh api --method DELETE "repos/$Repository/releases/assets/$($asset.id)" 2>&1
             # A release event and local publish can reach the same asset concurrently.
             if ($LASTEXITCODE -ne 0 -and ($deleteResponse -join "`n") -notmatch 'HTTP 404|"status"\s*:\s*"?404') {
