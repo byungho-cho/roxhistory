@@ -1027,7 +1027,7 @@ func preload_intro_assets() -> void:
 		var paths: Array[String] = ["res://assets/characters/meshy01/hero.glb"]
 		for path in WorldAnimal.MODELS.values():paths.append(path)
 		for path in paths:
-			if ResourceLoader.load_threaded_request(path,"PackedScene")==OK:
+			if ResourceLoader.load_threaded_request(path)==OK:
 				intro_preload_paths.append(path)
 		intro_preload_total = intro_preload_paths.size()
 	for index in range(intro_preload_paths.size()-1,-1,-1):
@@ -2398,6 +2398,7 @@ func open_hunt() -> void:
 
 func warm_hunt_resources()->void:
 	var paths:Array=[HybridCharacter.MESHY_HUNT_MODEL,"res://assets/characters/residents/roxhistory-hunter-male-combat-v2-preview.glb",WorldAnimal.MODELS.deer,HUNT_PREY_PROFILE.model_path("forest")]
+	paths.append_array(preload("res://scripts/hunt_readiness_art.gd").warm_paths())
 	var prey:=HUNT_PREY_PROFILE.encounter_species(hunt_stage,int(model.state.get("hunt_cleared",0)),HUNT_STAGE5_ADULT_CANDIDATE)
 	if prey=="adult":paths.append(HUNT_PREY_PROFILE.model_path("adult"))
 	for path:String in paths:
@@ -2436,6 +2437,7 @@ func prepare_selected_hunt() -> void:
 	var paths := [HybridCharacter.MESHY_HUNT_MODEL, "res://assets/characters/residents/roxhistory-hunter-male-combat-v2-preview.glb", WorldAnimal.MODELS.deer, HUNT_PREY_PROFILE.model_path("forest")]
 	if not adult_path.is_empty() and ResourceLoader.exists(adult_path, "PackedScene"):
 		paths.append(adult_path)
+	paths.append_array(preload("res://scripts/hunt_readiness_art.gd").warm_paths())
 	var pending: Array[String] = []
 	var warmed: Array[Resource] = []
 	for path: String in paths:

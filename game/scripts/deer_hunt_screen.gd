@@ -2,13 +2,17 @@ extends Control
 
 signal preparation_ready
 
+const BranchVS:=preload("res://scripts/hunt_branch_vs.gd")
 const ReadinessArt:=preload("res://scripts/hunt_readiness_art.gd")
-var branch_video:VideoStreamPlayer
+var branch_video:BranchVS
 var prep_tags:Array[Control]=[]
 var chapter_one_solo:=false
 var branch_header:Control
 var vs_ally:TextureRect
 var vs_enemy:TextureRect
+var vs_ally_name:Label
+var vs_enemy_name:Label
+var vs_name_rules:Array[ColorRect]=[]
 const Timing := preload("res://scripts/motion_timing.gd")
 const ShieldWave := preload("res://scripts/duel_uram_counter_wave.gd")
 const UramCombined := preload("res://scripts/hunt_uram_3sp_combined.gd")
@@ -314,6 +318,11 @@ func fit_layout() -> void:
 	header_left.position = start+margin-Vector2(3,0)
 	header_right.position = Vector2(end.x-DESIGN.x-margin.x+3,start.y+margin.y-3)
 	power_header.position = Vector2(480,start.y+margin.y)
+	var sky:=power_header.get_node_or_null("PowerSkyBackdrop") as Control
+	if sky:
+		sky.position=Vector2(start.x-480,-margin.y)
+		sky.size=Vector2(end.x-start.x,134.222)
+	if is_instance_valid(branch_video):branch_video.fit_background(Rect2(start,end-start))
 	battle_header.position = Vector2(-45,start.y+margin.y-4)
 	roster_home = Vector2(start.x+margin.x,(start.y+end.y-330)*.5)
 	footer_left_home = Vector2(start.x+margin.x-3,end.y-DESIGN.y-margin.y+2)
@@ -333,10 +342,25 @@ func build_arrival() -> void:
 	vs_layer.z_index = 4
 	match_vs = MATCH.versus(vs_layer,VS_CENTER,156)
 	match_vs.root.hide()
-	branch_video=ReadinessArt.branch(vs_layer,Rect2(365,125,230,210),true)
+	branch_video=BranchVS.new()
+	vs_layer.add_child(branch_video)
 	branch_video.hide()
-	vs_ally=app.picture(vs_layer,hunter_portrait(selected_hunter),Rect2(140,90,180,190))
-	vs_enemy=app.picture(vs_layer,_portrait_for_prey(),Rect2(635,75,180,210))
+	vs_ally=app.picture(vs_layer,_prep_hunter_portrait(selected_hunter),Rect2(100.5,117.5,285,275))
+	vs_ally.stretch_mode=TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	vs_enemy=app.picture(vs_layer,_vs_prey_portrait(),Rect2(536,53.5,380,329))
+	vs_enemy.stretch_mode=TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	vs_enemy.material=ReadinessArt.vs_portrait_material(vs_enemy.texture,false)
+	vs_ally_name=caption(vs_layer,"",Rect2(145,398,180,35),23,Color("fae4bc"))
+	vs_enemy_name=caption(vs_layer,"",Rect2(637,398,180,35),23,Color("fae4bc"))
+	vs_ally_name.hide();vs_enemy_name.hide()
+	for name_label in [vs_ally_name,vs_enemy_name]:
+		name_label.add_theme_color_override("font_outline_color",Color("261b14"))
+		name_label.add_theme_constant_override("outline_size",1)
+	for x in [191,683]:
+		var rule:=ColorRect.new()
+		rule.color=Color("bc8652");rule.mouse_filter=Control.MOUSE_FILTER_IGNORE
+		rule.position=Vector2(x,398);rule.size=Vector2(88,1)
+		vs_layer.add_child(rule);rule.hide();vs_name_rules.append(rule)
 	vs_ally.hide();vs_enemy.hide()
 	impact_atlas = AtlasTexture.new()
 	impact_atlas.atlas = preload(PREP_ART+"impact-soft.png")
@@ -370,18 +394,27 @@ func advance_arrival(delta: float) -> void:
 func entry_ease(progress: float) -> float:
 	return Tween.interpolate_value(0.0,1.0,progress,1.0,Tween.TRANS_BACK,Tween.EASE_OUT)
 
-func animate_battle_vs(_before: float, time: float) -> void:
-	match_vs.root.hide()
-	match_impact.hide()
+func animate_battle_vs(before: float, time: float) -> void:
+	match_vs.root.hide();match_impact.hide()
 	var active:=time<VS_SETTLED
-	branch_video.visible=active and time>.50
-	branch_video.paused=not app.application_active
+	branch_video.visible=active
+	branch_video.present(time)
+	var q:=BranchVS.authored_ease((time-.19)/.49)
+	var ending:=BranchVS.exit_amount(time)
 	vs_ally.visible=active;vs_enemy.visible=active
-	vs_ally.texture=hunter_portrait(selected_hunter)
-	var fade:=smoothstep(0.,.40,time)*(1.-smoothstep(6.45,VS_SETTLED,time))
-	for item in [branch_video,vs_ally,vs_enemy]:item.modulate.a=fade
+	vs_ally.texture=_prep_hunter_portrait(selected_hunter)
+	vs_ally.position.x=243.-177.*(1.-q)-36.*(1.-ending)-vs_ally.size.x*.5
+	vs_enemy.position.x=726.+175.*(1.-q)+36.*(1.-ending)-vs_enemy.size.x*.5
+	vs_ally.modulate.a=q*ending;vs_enemy.modulate.a=q*ending
+	vs_ally_name.text=["한결","우람","새봄"][selected_hunter]
+	vs_enemy_name.text="큰 멧돼지" if _prey_is_adult() else "꽃사슴"
+	for name_label in [vs_ally_name,vs_enemy_name]:
+		name_label.visible=active
+		name_label.modulate.a=BranchVS.authored_ease((time-.77)/.2)*ending
+	for rule in vs_name_rules:
+		rule.visible=active;rule.modulate.a=BranchVS.authored_ease((time-.77)/.2)*ending
 	header_spears.visible=not active
-	if _before<VS_CONTACT and time>=VS_CONTACT:hunt_audio.cue("S11",2)
+	if before<VS_CONTACT and time>=VS_CONTACT:hunt_audio.cue("S11",2)
 
 
 func show_match_impact(elapsed: float) -> void:
@@ -461,20 +494,24 @@ func _portrait_for_prey() -> Texture2D:
 
 func build_power_comparison() -> void:
 	ReadinessArt.sky(power_header)
-	prep_ally_portrait = app.picture(power_header,hunter_portrait(selected_hunter),Rect2(-230,-1,96,101))
+	prep_ally_portrait = app.picture(power_header,_prep_hunter_portrait(selected_hunter),Rect2(-262.22,-1.11,113.07,92.44))
+	prep_ally_portrait.material=ReadinessArt.portrait_fade()
 	# Reflect the actual runtime actor, including a safe asset fallback.
-	app.picture(power_header,_portrait_for_prey(),Rect2(150,-4,96,107))
-	header_spears = ReadinessArt.branch(power_header,Rect2(-29,7,58,53),false)
+	app.picture(power_header,load(ReadinessArt.ART+"power/Deer-HUD-alpha.png") if not _prey_is_adult() else _portrait_for_prey(),Rect2(112.89,-18,117.33,130.03))
+	header_spears = ReadinessArt.branch(power_header,Rect2(-30.22,27.33,60.44,30.22),false)
 	prep_ally_portrait.stretch_mode=TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	prep_ally_name=caption(power_header,["한결","우람","새봄"][selected_hunter],Rect2(-160,14,120,22),15,Color.WHITE)
-	var prey_name:=caption(power_header,"큰 멧돼지" if _prey_is_adult() else "꽃사슴",Rect2(45,14,120,22),15,Color.WHITE)
+	prep_ally_name=caption(power_header,["한결","우람","새봄"][selected_hunter],Rect2(-140.44,10,120,24),17,Color.WHITE)
+	var prey_name:=caption(power_header,"큰 멧돼지" if _prey_is_adult() else "꽃사슴",Rect2(35,10,106.33,24),17,Color.WHITE)
+	prep_ally_name.horizontal_alignment=HORIZONTAL_ALIGNMENT_LEFT
+	prey_name.horizontal_alignment=HORIZONTAL_ALIGNMENT_RIGHT
 	for name_label in [prep_ally_name,prey_name]:
 		name_label.add_theme_constant_override("outline_size",2)
 		name_label.add_theme_color_override("font_outline_color",Color("263b4c"))
 	# Keep the existing display-only rating formula; no stored rating or damage changes.
 	var ratings := [rules.hunter_hp*int(RULES.SKILLS.thrust.damage),rules.deer_max_hp*RULES.COUNTER_DAMAGE]
 	for i in ratings.size():
-		var number := caption(power_header,MATCH.format_power(ratings[i]),Rect2(-160+205*i,39,120,30),21,Color("9fdaff") if i==0 else Color("ffac98"))
+		var number := caption(power_header,MATCH.format_power(ratings[i]),Rect2(-143.11+157.44*i,28,130,40),28,Color("9fdaff") if i==0 else Color("ffac98"))
+		number.horizontal_alignment=HORIZONTAL_ALIGNMENT_LEFT if i==0 else HORIZONTAL_ALIGNMENT_RIGHT
 		number.add_theme_color_override("font_outline_color",Color("35200e"))
 		number.add_theme_constant_override("outline_size",3)
 
@@ -501,7 +538,7 @@ func select_hunter(index: int) -> void:
 	for i in portrait_frames.size():
 		style_portrait(portrait_frames[i],i==index)
 	if prep_ally_portrait:
-		prep_ally_portrait.texture = hunter_portrait(index)
+		prep_ally_portrait.texture = _prep_hunter_portrait(index)
 		prep_ally_name.text=["한결","우람","새봄"][index]
 	if duel_ally_portrait:
 		duel_ally_portrait.texture = hunter_portrait(index)
@@ -511,7 +548,7 @@ func build_duel_header() -> void:
 	header_left = layer(header)
 	header_right = layer(header)
 	location_brush = app.picture(header_left,NAME_BRUSH,Rect2(3,0,220,56))
-	location_caption = caption(location_brush,"숲 가장자리",Rect2(44,0,163,56),21)
+	location_caption = caption(location_brush,"%d장 · %s"%[int(app.hunt_stage)/6+1,"초원" if int(app.hunt_stage)<6 else "숲"],Rect2(44,0,163,56),21)
 	exit_button = make_button(header_left,"",Rect2(3,4,48,48),request_exit)
 	exit_button.name = "ExitHunt"
 	clear_button_art(exit_button)
@@ -593,12 +630,12 @@ func build_combat() -> void:
 	prey_hp.max_value=rules.deer_max_hp
 
 func build_level(marker: Control, ally: bool, role:String="") -> void:
-	var brush:TextureRect=app.picture(marker,NAME_BRUSH,Rect2(0,-3,40,8))
-	brush.modulate.a=.85
+	var brush:TextureRect=app.picture(marker,load(ReadinessArt.ART+"brush/lv-brush-"+("ally" if ally else "enemy")+"-up3.png"),Rect2(-30,-12,60,25))
+	brush.modulate.a=1.0
 	var badge:=Panel.new()
 	badge.mouse_filter=Control.MOUSE_FILTER_IGNORE
 	marker.add_child(badge)
-	badge.position=Vector2(-18,-7)
+	badge.position=Vector2(-26,-9)
 	badge.size=Vector2(19,19)
 	var skin:=StyleBoxFlat.new()
 	skin.bg_color=Color("202020")
@@ -606,7 +643,7 @@ func build_level(marker: Control, ally: bool, role:String="") -> void:
 	badge.add_theme_stylebox_override("panel",skin)
 	var glyph:TextureRect=app.picture(badge,ReadinessArt.role_texture(role if not role.is_empty() else "ally-melee" if ally else "enemy-melee"),Rect2(0,0,19,19))
 	glyph.material=ReadinessArt.role_material()
-	var label:=caption(marker,"Lv.1",Rect2(3,-6,32,16),11,Color.WHITE)
+	var label:=caption(marker,"Lv.1",Rect2(-4,-9,33,19),11,Color.WHITE)
 	label.add_theme_constant_override("outline_size",3)
 	label.add_theme_color_override("font_outline_color",Color.BLACK)
 
@@ -967,6 +1004,8 @@ func start_combat() -> void:
 	battle_music_started = true
 	app.sync_audio()
 	transition_elapsed = 0.0
+	vs_ally.texture=_prep_hunter_portrait(selected_hunter)
+	vs_ally.material=ReadinessArt.vs_portrait_material(vs_ally.texture,true)
 	branch_video.play()
 	header_spears.hide()
 	preparation.mouse_behavior_recursive = Control.MOUSE_BEHAVIOR_DISABLED
@@ -2209,7 +2248,7 @@ func update_actors(delta: float) -> void:
 	var transform:=combat_controls.get_global_transform().affine_inverse()*battlefield.get_global_transform()
 	for hunter in hunters:points.append(transform*(hunter.position+Vector2(0,-63)))
 	points.append(transform*(prey_visual_anchor+Vector2(0,-deer.world_height*deer.scale.y-15)))
-	NativeHud.sync_heads(head_headers,points,transform*Rect2(8,70,944,350),NativeHud.HP_FADE_SECONDS if arrival_finished and approach>=1.0 else -INF)
+	NativeHud.sync_heads(head_headers,points,transform*Rect2(8,70,944,350),NativeHud.HP_FADE_SECONDS if arrival_finished and (transition_elapsed>=0.0 or running) else -INF)
 	for i in prep_tags.size():
 		var tag:=prep_tags[i]
 		var actor=hunters[i] if i<3 else deer
@@ -2410,4 +2449,15 @@ func show_result() -> void:
 func _exit_tree()->void:
 	if is_instance_valid(branch_video):
 		branch_video.stop()
-		branch_video.stream=null
+
+
+func _prep_hunter_portrait(index:int)->Texture2D:
+	return load(ReadinessArt.ART+"power/han-static.png") if index==0 else hunter_portrait(index)
+func _vs_prey_portrait()->Texture2D:
+	if _prey_is_adult():return _portrait_for_prey()
+	var source:=load(ReadinessArt.ART+"vs/Deer-Bust-Extended.png") as Texture2D
+	var used:=source.get_image().get_used_rect()
+	var rect:=Rect2(used)
+	var fitted_height:=minf(410.,380.*rect.size.y/rect.size.x)
+	rect.size.y*=minf(1.,329./fitted_height)
+	return crop(source,rect)

@@ -1,10 +1,9 @@
 Hunt readiness/result review assets — 2026-11-24
-Source: shared-handoff/shared-dev/20261124-hunt-readiness-and-results-manual/references
-All 15 supplied SHA256 entries were verified before conversion.
-AUTO-0/1 and X2-0/1 are byte-for-byte copies of the supplied approved assets.
-Han success/failure .ogv: source Field-Only MP4, Theora quality 8, no audio, original timing and color; first/last PNGs from the same approved sources.
-branch-vs.ogv: ONLY the central common effect cropped at (365,125,230,210) from the 960x540, 6.9s reference, Theora quality 9, no audio. Portraits, names and full reference background are not played back as a fixed battle preset.
-Plate: source crop at 0.45s; unlit branch: source crop at 0.65s. A shader isolates timber color and bright flames; runtime portraits and values remain separate.
-No preview UI was baked into a result video. Runtime buttons, stage and saved progression text are independent controls.
-The two intro WAVs use the approved PR70 assets from commit e503254 only; no other PR changes were copied wholesale.
-Seven role PNG originals were subsequently supplied at common-assets/ui/role-badges and copied byte-for-byte. SHA256SUMS.txt records them; runtime sizing is 19px with a 4px rounded mask. Han=ally-melee, Uram=ally-tank, Saebom=ally-ranged, current prey=enemy-melee. Other approved roles remain available without introducing new characters.
+Sources: shared-handoff/shared-dev/20261124-hunt-readiness-and-results-manual/references and shared-dev/common-assets.
+Initial handoff SHA256 entries were verified before conversion. The manual was subsequently extended by its owner; common asset manifest was independently verified after that update.
+AUTO-0/1, X2-0/1, all seven 376x376 role badges, the 60x25 level brush assets, static HUD portraits/sky/clouds, and the separate V/S PNG originals are byte-for-byte source copies.
+Static HUD positioning and opacity masks follow the source 1080x559 SVG, adapted into the game's 960x540 layout. Sample numbers are never baked into game UI.
+Han success/failure .ogv: approved Field-Only MP4, Theora quality 8, no audio, original timing/color. First/last PNGs come from those same sources. Preview UI is not in the movie.
+VS runtime: hunt_branch_vs.gd ports the 6.9s make27.py sequence with the supplied unlit V/S, background plates and actual roster portraits. Burning front, charred grain, flames, short-lived original orange fire sparks, two edge ember caps, and animated mist are native runtime presentation, not a fixed Han/deer video. No lightning or new ash layer.
+Source-role mapping: Han=ally-melee, Uram=ally-tank, Saebom=ally-ranged, current prey=enemy-melee. Other supplied roles remain available without introducing characters.
+Intro WAVs use only the approved PR70 assets from e503254; the PR was not merged wholesale. S26 is removed from successful results only; S27, monster death and the original VS cue remain.
