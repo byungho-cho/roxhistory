@@ -703,7 +703,6 @@ func _select(key: String, enemy: bool) -> void:
 		rules.enemy_id = key
 	else:
 		rules.ally_id = key
-	if local_melee_polish and rules.ally_id == "uram":uram_combined.prepare()
 	reset_round()
 
 func _prepare_authored_frames()->void:
@@ -745,6 +744,7 @@ func _draw_authored_frames(origin:Vector2,elapsed:float,screen_size:float)->void
 	effects_layer.draw_texture_rect(authored_frames[frame_index],Rect2(origin-anchor,Vector2.ONE*screen_size),false)
 
 func reset_round(after_fade:=false) -> void:
+	if local_melee_polish and rules.ally_id == "uram":uram_combined.prepare()
 	uram_short_counter_fan.clear()
 	ordinary_knife_fx.clear()
 	if is_instance_valid(local_formation):
@@ -1341,7 +1341,7 @@ func _start_uram_short_counter_fan(shield:Vector2, parried:=false)->void:
 	var axis:=ground.direction_to(dest)
 	if axis.is_zero_approx():return
 	var reach:=UramCounterWave.fan_range(ground,dest,true)
-	var combined := not parried and uram_combined.prepare()
+	var combined := not parried and uram_combined.frames.size() == UramCombined.FRAME_COUNT
 	uram_short_counter_fan={"from":shield,"ground":ground,"axis":axis,"reach":reach,"at":visual_clock,"span":UramCombined.SECONDS if combined else UramCounterWave.FIELD_SECONDS,"combined":combined}
 
 func _draw_uram_field_ground()->void:

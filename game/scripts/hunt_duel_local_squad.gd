@@ -113,7 +113,7 @@ var launch_dust_events:Array[Dictionary]=[]
 
 func setup(dust_draw:Callable=Callable(),gong:Callable=Callable(), heavy:Callable=Callable(), windup:Callable=Callable(),authored:Callable=Callable(),silver:Callable=Callable(),impact:Callable=Callable(),ring_projection:Callable=Callable(),weapon:Callable=Callable(),heavy_seconds:=1.15,bom_hit:Callable=Callable(),bom_trail:Callable=Callable(),bom_wings:Callable=Callable(),bom_ally:Callable=Callable(),bom_pose_hook:Callable=Callable(),melee_polish:=false)->void:
 	local_melee_polish=melee_polish
-	if local_melee_polish:uram_combined.prepare()
+	uram_combined.prepare() # The squad includes Uram; retain textures for this encounter.
 	bom_hit_draw=bom_hit
 	bom_trail_draw=bom_trail
 	bom_wings_draw=bom_wings
@@ -727,7 +727,7 @@ func _start_uram_short_fan(primary:int,shield:Vector2,parried:=false)->void:
 	var forward:=origin.direction_to(destination)
 	if forward.is_zero_approx():forward=Vector2.RIGHT
 	var reach:=UramCounterWave.fan_range(origin,destination,true)
-	var combined := not parried and uram_combined.prepare()
+	var combined := not parried and uram_combined.frames.size() == UramCombined.FRAME_COUNT
 	uram_short_fans.append({"ground":origin,"from":shield,"axis":forward,"reach":reach,"at":elapsed,"span":UramCombined.SECONDS if combined else UramCounterWave.FIELD_SECONDS,"combined":combined})
 
 func _apply_uram_field_hit(exclude_primary:int)->void:

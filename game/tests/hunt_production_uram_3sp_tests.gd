@@ -21,6 +21,7 @@ func prepare(stage:int):
   ck("real hunt opened",false)
   return null
  var hunt:Control=app.hunt
+ ck("normal encounter already holds all 59 frames before transition/cast",hunt.uram_nonparry_art_ready and hunt.uram_combined.frames.size()==59)
  hunt.set_process(false)
  hunt.arrival_finished=true
  hunt.transition_elapsed=-1.0

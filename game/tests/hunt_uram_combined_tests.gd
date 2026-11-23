@@ -21,6 +21,7 @@ func run() -> void:
 	var squad := Squad.new()
 	root.add_child(squad)
 	squad.setup()
+	check(squad.uram_combined.frames.size() == 59, "squad opened with all frames already loaded")
 	squad._start_uram_short_fan(3,Vector2(601,252))
 	squad._start_uram_short_fan(3,Vector2(602,253),true)
 	check(squad.uram_short_fans[0].combined and squad.uram_short_fans[0].span == Art.SECONDS, "squad ordinary renders one new effect")
@@ -39,6 +40,7 @@ func run() -> void:
 	await process_frame
 	lab._select("uram",false)
 	lab._select("forest",true)
+	check(lab.uram_combined.frames.size() == 59, "solo Uram selection has all frames before combat")
 	lab._start_uram_short_counter_fan(Vector2(601,252))
 	check(lab.uram_short_counter_fan.get("combined",false), "solo ordinary uses approved texture")
 	lab._start_uram_short_counter_fan(Vector2(602,253),true)
