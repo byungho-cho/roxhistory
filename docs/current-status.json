@@ -1,5 +1,17 @@
 {
   "currentAndroidPatch": {
+    "version": "0.2.300",
+    "source": "69df1602975a5f540d932755669cafa4124ae9e1",
+    "release": "https://github.com/byungho-cho/roxhistory/releases/tag/v0.2.300",
+    "installBaseApk": "0.2.295",
+    "deltaFrom299Bytes": 276824,
+    "cumulativeFrom295Bytes": 1665276,
+    "gameplaySuitesPassed": 15,
+    "stockUpdaterMountedAndSaved": true,
+    "physicalAndroidVerified": false,
+    "windowsReleaseChanged": false
+  },
+  "previousAndroidPatch": {
     "verifiedAt": "2026-11-23T16:34:05+09:00",
     "version": "0.2.299",
     "source": "576825167bb228385acdb65a2e55fdcc49227fd4",

@@ -1,5 +1,7 @@
 # RoxHistory 문서 안내
 
+2026-11-23 KST: [현재 개발 현황](current-status.md)과 [Android 0.2.300 릴리스](https://github.com/byungho-cho/roxhistory/releases/tag/v0.2.300)에서 최신 사냥 배포를 확인한다.
+
 2026-11-23 KST: 배포·사냥·인트로 현행은 [현재 개발 현황](current-status.md)을 먼저 확인한다. 아래 2026-11-09 기록은 과거 기획·개발 참고용이다.
 
 2026-11-09 KST. 확인한 main은 **0.1.70 / 31e90c55**입니다. 신규 기획 확정과 실제 구현은 구분합니다. 최신 퀘스트·주민·곡식 소비 변경은 아래 현행 기획을 따릅니다.
