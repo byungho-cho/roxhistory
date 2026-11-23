@@ -380,6 +380,7 @@ func animate_battle_vs(_before: float, time: float) -> void:
 	var fade:=smoothstep(0.,.40,time)*(1.-smoothstep(6.45,VS_SETTLED,time))
 	for item in [branch_video,vs_ally,vs_enemy]:item.modulate.a=fade
 	header_spears.visible=not active
+	if _before<VS_CONTACT and time>=VS_CONTACT:hunt_audio.cue("S11",2)
 
 
 func show_match_impact(elapsed: float) -> void:
