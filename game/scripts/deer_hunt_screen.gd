@@ -4,6 +4,11 @@ signal preparation_ready
 
 const Timing := preload("res://scripts/motion_timing.gd")
 const ShieldWave := preload("res://scripts/duel_uram_counter_wave.gd")
+const UramCombined := preload("res://scripts/hunt_uram_3sp_combined.gd")
+var uram_combined := UramCombined.new()
+var uram_nonparry_art_ready := false
+var uram_last_field_ordinary := false
+
 const URAM_FIELD_CAST := "uram_shield_field"
 const URAM_FIELD_CONTACT := .46
 const URAM_FIELD_POSE := .79
@@ -1117,6 +1122,7 @@ func _draw_native_weapon_and_notices(dest:Node2D) -> void:
 
 func _setup_native_hunt_art(actor_group:Node2D) -> void:
 	manual_art_ready = manual_front_fx.prepare()
+	uram_nonparry_art_ready = uram_combined.prepare()
 	battle_vfx_under = Node2D.new()
 	battle_vfx_front = Node2D.new()
 	battlefield.add_child(battle_vfx_under)
@@ -1208,7 +1214,9 @@ func _draw_normal_hunt_art(front:bool) -> void:
 		var position2:Vector2 = effect.pos
 		match effect.kind:
 			URAM_FIELD_CAST:
-				ShieldWave.draw_fan(dest,position2,effect.floor,effect.axis,float(effect.reach),float(effect.age)/ShieldWave.FIELD_SECONDS,front,not front)
+				if uram_nonparry_art_ready and bool(effect.get("ordinary", false)):
+					if not front:uram_combined.draw(dest,position2,effect.axis,float(effect.age))
+				else:ShieldWave.draw_fan(dest,position2,effect.floor,effect.axis,float(effect.reach),float(effect.age)/ShieldWave.FIELD_SECONDS,front,not front)
 			"gong":
 				if front:
 					manual_front_fx.draw_uram_gong(dest,prey_art.soft,position2,effect.axis,effect.age,1.0)
@@ -1320,7 +1328,8 @@ func _land_uram_field(ordinary:bool, origin:Vector2) -> void:
 		return
 	var foot:Vector2 = hunters[1].position
 	var axis := foot.direction_to(deer.position)
-	manual_effects.append({"kind":URAM_FIELD_CAST,"age":0.0,"pos":origin,"floor":foot,"axis":axis,
+	uram_last_field_ordinary = ordinary
+	manual_effects.append({"kind":URAM_FIELD_CAST,"age":0.0,"pos":origin,"floor":foot,"axis":axis,"ordinary":ordinary,
 		"reach":ShieldWave.fan_range(foot,deer.position,true)})
 	hit_damage = amount
 	hit_age = 0.
@@ -2299,7 +2308,11 @@ func _finish_visual_ready() -> bool:
 				age = stone_hit_age
 	if span > 0.0:
 		deer.modulate.a=1.0-smoothstep(maxf(.16,span-.5),span,age)
-		var visual_end := maxf(span, 1.30) if pose == ManualHunt.HAN_SPEAR_3 and manual_art_ready else span
+		var visual_end := span
+		if pose == ManualHunt.HAN_SPEAR_3 and manual_art_ready:
+			visual_end = maxf(span, 1.30)
+		elif hit_kind == URAM_FIELD_CAST and uram_nonparry_art_ready and uram_last_field_ordinary:
+			visual_end = UramCombined.SECONDS
 		return not impact_pending and age>=visual_end
 	return not impact_pending
 

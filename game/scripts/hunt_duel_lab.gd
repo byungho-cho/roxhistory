@@ -246,6 +246,8 @@ var local_parry_caption:Label
 var local_guard_action:=-1
 var ordinary_counter_target:Actor
 var ordinary_counter_spent:=false
+const UramCombined := preload("res://scripts/hunt_uram_3sp_combined.gd")
+var uram_combined := UramCombined.new()
 var uram_short_counter_fan:Dictionary={}
 var ordinary_counter_wave:Dictionary={}
 var fx: Array[Dictionary] = []
@@ -701,6 +703,7 @@ func _select(key: String, enemy: bool) -> void:
 		rules.enemy_id = key
 	else:
 		rules.ally_id = key
+	if local_melee_polish and rules.ally_id == "uram":uram_combined.prepare()
 	reset_round()
 
 func _prepare_authored_frames()->void:
@@ -1100,7 +1103,7 @@ func _uram_parry(contact:Dictionary)->void:
 	# ordinary guaranteed-contact lane, and remains the only combo opener.
 	_clear_ordinary_counter()
 	var point:=shared_world.project(contact.point)
-	if local_melee_polish:_start_uram_short_counter_fan(point)
+	if local_melee_polish:_start_uram_short_counter_fan(point, true)
 	if _uram_deer_close():
 		local_parry_clock=0.
 		local_parry_focus=shared_world.project(Vector3(contact.point.x,0.,contact.point.z))
@@ -1332,19 +1335,22 @@ func _counter_world_tip()->Vector3:
 	var hurt:=shared_world.hurt_capsule(1)
 	return (Vector3(hurt.a)+Vector3(hurt.b))*.5
 
-func _start_uram_short_counter_fan(shield:Vector2)->void:
+func _start_uram_short_counter_fan(shield:Vector2, parried:=false)->void:
 	var ground:Vector2=shared_world.body_screen(0)
 	var dest:Vector2=shared_world.body_screen(1)
 	var axis:=ground.direction_to(dest)
 	if axis.is_zero_approx():return
 	var reach:=UramCounterWave.fan_range(ground,dest,true)
-	uram_short_counter_fan={"from":shield,"ground":ground,"axis":axis,"reach":reach,"at":visual_clock,"span":UramCounterWave.FIELD_SECONDS}
+	var combined := not parried and uram_combined.prepare()
+	uram_short_counter_fan={"from":shield,"ground":ground,"axis":axis,"reach":reach,"at":visual_clock,"span":UramCombined.SECONDS if combined else UramCounterWave.FIELD_SECONDS,"combined":combined}
 
 func _draw_uram_field_ground()->void:
 	if uram_short_counter_fan.is_empty():return
 	var fan:=uram_short_counter_fan
 	var progress:float=(visual_clock-float(fan.at))/float(fan.span)
-	if progress<1.:UramCounterWave.draw_fan(location_layer,fan.from,fan.ground,fan.axis,fan.reach,progress,false,true)
+	if bool(fan.get("combined", false)):
+		uram_combined.draw(location_layer,fan.from,fan.axis,visual_clock-float(fan.at))
+	elif progress<1.:UramCounterWave.draw_fan(location_layer,fan.from,fan.ground,fan.axis,fan.reach,progress,false,true)
 
 func _advance_ordinary_counter()->void:
 	if ordinary_counter_target==null or ordinary_counter_spent:return
@@ -2488,7 +2494,7 @@ func _draw_effects() -> void:
 	if not uram_short_counter_fan.is_empty():
 		var fan:=uram_short_counter_fan
 		var progress:float=(visual_clock-float(fan.at))/float(fan.span)
-		if progress<1.:UramCounterWave.draw_fan(effects_layer,fan.from,fan.ground,fan.axis,fan.reach,progress,true,false)
+		if progress<1. and not bool(fan.get("combined", false)):UramCounterWave.draw_fan(effects_layer,fan.from,fan.ground,fan.axis,fan.reach,progress,true,false)
 	for impact in fx:
 		if impact.name=="uram_counter_outreach_hit":UramCounterWave.draw_pop(effects_layer,impact.center,visual_clock-float(impact.at))
 	if _prototype_duel() or _uram_duel() or _saebom_duel():

@@ -70,6 +70,8 @@ var uram_ground_draw:=Callable()
 var uram_ground_sound:=Callable()
 var uram_ground_events:Array[Dictionary]=[]
 var uram_ordinary_wave:Dictionary={}
+const UramCombined := preload("res://scripts/hunt_uram_3sp_combined.gd")
+var uram_combined := UramCombined.new()
 var uram_short_fans:Array[Dictionary]=[]
 const URAM_SPLASH_DAMAGE:=9
 const URAM_STUN_SECONDS:=1.15
@@ -111,6 +113,7 @@ var launch_dust_events:Array[Dictionary]=[]
 
 func setup(dust_draw:Callable=Callable(),gong:Callable=Callable(), heavy:Callable=Callable(), windup:Callable=Callable(),authored:Callable=Callable(),silver:Callable=Callable(),impact:Callable=Callable(),ring_projection:Callable=Callable(),weapon:Callable=Callable(),heavy_seconds:=1.15,bom_hit:Callable=Callable(),bom_trail:Callable=Callable(),bom_wings:Callable=Callable(),bom_ally:Callable=Callable(),bom_pose_hook:Callable=Callable(),melee_polish:=false)->void:
 	local_melee_polish=melee_polish
+	if local_melee_polish:uram_combined.prepare()
 	bom_hit_draw=bom_hit
 	bom_trail_draw=bom_trail
 	bom_wings_draw=bom_wings
@@ -190,7 +193,9 @@ func configure_uram_ground(draw_wave:Callable,thump:Callable=Callable())->void:
 
 func _paint_uram_ground()->void:
 	for fan in uram_short_fans:
-		UramCounterWave.draw_fan(uram_ground_layer,fan.from,fan.ground,fan.axis,fan.reach,(elapsed-float(fan.at))/float(fan.span),false,true)
+		if bool(fan.get("combined", false)):
+			uram_combined.draw(uram_ground_layer,fan.from,fan.axis,elapsed-float(fan.at))
+		else:UramCounterWave.draw_fan(uram_ground_layer,fan.from,fan.ground,fan.axis,fan.reach,(elapsed-float(fan.at))/float(fan.span),false,true)
 	for event in uram_ground_events:
 		uram_ground_draw.call(event.origin,event.end,elapsed-float(event.at),uram_ground_layer)
 
@@ -716,13 +721,14 @@ func _uram_shield_origin()->Vector2:
 	if not is_instance_valid(view.shield):return (u.feet as Vector2)-Vector2(0.,25.)
 	return view.position+(view.display.position+view.camera.unproject_position(view.shield.global_position)*view.display.scale)*view.scale
 
-func _start_uram_short_fan(primary:int,shield:Vector2)->void:
+func _start_uram_short_fan(primary:int,shield:Vector2,parried:=false)->void:
 	var origin:Vector2=units[1].feet
 	var destination:Vector2=units[primary].feet
 	var forward:=origin.direction_to(destination)
 	if forward.is_zero_approx():forward=Vector2.RIGHT
 	var reach:=UramCounterWave.fan_range(origin,destination,true)
-	uram_short_fans.append({"ground":origin,"from":shield,"axis":forward,"reach":reach,"at":elapsed,"span":UramCounterWave.FIELD_SECONDS})
+	var combined := not parried and uram_combined.prepare()
+	uram_short_fans.append({"ground":origin,"from":shield,"axis":forward,"reach":reach,"at":elapsed,"span":UramCombined.SECONDS if combined else UramCounterWave.FIELD_SECONDS,"combined":combined})
 
 func _apply_uram_field_hit(exclude_primary:int)->void:
 	# The shield wave is battlefield-wide. Neither the visual axis nor the
@@ -738,8 +744,10 @@ func _apply_uram_field_hit(exclude_primary:int)->void:
 			squad_stuns[j]=elapsed
 
 func _advance_uram_short_fans()->void:
-	while not uram_short_fans.is_empty() and elapsed-float(uram_short_fans[0].at)>=UramCounterWave.FIELD_SECONDS:
-		uram_short_fans.pop_front()
+	for i in range(uram_short_fans.size()-1,-1,-1):
+		var fan := uram_short_fans[i]
+		if elapsed-float(fan.at)>=float(fan.span):
+			uram_short_fans.remove_at(i)
 
 func _resolve_saebom_near(i:int,j:int,amount:int,beat:int)->void:
 	var u:=units[i]
@@ -793,7 +801,7 @@ func _damage(i:int,j:int,amount:int,key:String,stone_impact:=Vector2.INF)->void:
 			if is_instance_valid(shield):
 				var view:HybridCharacter=target.actor.preview
 				point=view.position+(view.display.position+view.camera.unproject_position(shield.global_position)*view.display.scale)*view.scale
-			if local_melee_polish and i>=3:_start_uram_short_fan(i,point)
+			if local_melee_polish and i>=3:_start_uram_short_fan(i,point,true)
 			if parry_dust.is_valid():_spotlight_parry(i,j,point)
 			elif gong_draw.is_valid():
 				var base:Vector2=target.feet
@@ -1032,7 +1040,7 @@ func _paint()->void:
 	if units.size()>2 and units[2].hp>0:Knife.draw_blade(paint,units[2].actor.preview)
 	for ev in knife_events:Knife.draw_event(paint,int(ev.beat),ev.point,ev.feet,elapsed-float(ev.at))
 	for fan in uram_short_fans:
-		UramCounterWave.draw_fan(paint,fan.from,fan.ground,fan.axis,fan.reach,(elapsed-float(fan.at))/float(fan.span),true,false)
+		if not bool(fan.get("combined", false)):UramCounterWave.draw_fan(paint,fan.from,fan.ground,fan.axis,fan.reach,(elapsed-float(fan.at))/float(fan.span),true,false)
 	if not uram_wave_pop.is_empty():
 		UramCounterWave.draw_pop(paint,uram_wave_pop.point,elapsed-float(uram_wave_pop.at))
 	BasicRope.draw_impact(paint,basic_rope_glow,basic_rope_hit,elapsed-basic_rope_hit_at)

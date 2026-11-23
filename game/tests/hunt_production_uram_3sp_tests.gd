@@ -91,7 +91,9 @@ func scenario(mode:String,stage:int)->void:
   if mode in ["miss","late"]:ck(mode+" preserves enemy's 2 damage",h.rules.party_hp[1]==ours-Rules.COUNTER_DAMAGE)
   if mode=="other":ck("attack targeting another hero lands unaltered",h.rules.party_hp[0]==hp0-Rules.COUNTER_DAMAGE)
  ck(mode+" hits sole prey 18 once and applies nominal 1.15s stun",result[0]==1 and initial-h.rules.deer_hp==18 and result[1]>=1.13 and result[1]<=1.15)
- ck(mode+" only one B3 visual event",h.manual_effects.filter(func(e):return e.kind==h.URAM_FIELD_CAST).size()==1)
+ var events:Array=h.manual_effects.filter(func(e):return e.kind==h.URAM_FIELD_CAST)
+ ck(mode+" only one B3 visual event",events.size()==1)
+ ck(mode+" verified 192 art enabled only for ordinary cast",events.size()==1 and bool(events[0].ordinary)==(mode!="guard") and h.uram_nonparry_art_ready)
 func run()->void:
  root.size=Vector2i(960,540)
  app=load("res://scenes/main.tscn").instantiate()
