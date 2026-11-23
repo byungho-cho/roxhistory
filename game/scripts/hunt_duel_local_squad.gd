@@ -24,7 +24,6 @@ const STEP := 1.0/120.0
 const SaebomMelee=preload("res://scripts/duel_shared_world.gd")
 const Knife=preload("res://scripts/duel_saebom_stone_knife.gd")
 var knife_events:Array[Dictionary]=[]
-const CLOSE_2SP_FINAL_DAMAGE:=27
 const HAN_3SP_SPLASH_FRACTION:=.60
 const NEAR_SAE_2SP=preload("res://assets/ui/saebom-melee/stone-knife-2sp.png")
 var local_melee_polish:=false
@@ -620,7 +619,7 @@ func _resolve(i:int)->void:
 		if beat>=Knife.contacts.size():return
 		u.bom_strike=beat+1
 		if beat+1<Knife.contacts.size():u.contact=Knife.contacts[beat+1]
-		var amount:=roundi(float(CLOSE_2SP_FINAL_DAMAGE)*1.2) if u.rally>elapsed else CLOSE_2SP_FINAL_DAMAGE
+		var amount:=Knife.damage_at(beat,u.rally>elapsed)
 		_resolve_saebom_near(i,j,amount,beat)
 		return
 	var damage:=RallyCloud.SQUAD_BASE if u.move=="attack" else 27 if u.move=="skill" else 38
@@ -729,7 +728,13 @@ func _resolve_saebom_near(i:int,j:int,amount:int,beat:int)->void:
 		return
 	var edge:=Knife.shoulder(v,u.feet)+Vector2(0.,[-2.,3.,-1.,0.][beat])
 	knife_events.append({"at":elapsed,"point":edge,"feet":v.feet,"beat":beat})
-	if final:_damage(i,j,amount,"saebom_melee_2sp_4",edge)
+	if final:
+		_damage(i,j,amount,"saebom_melee_2sp_4",edge)
+		return
+	# Preserve the early arc-only motion response, while committing actual HP.
+	_subtract_hp_and_show(j,amount)
+	hits.append({"from":i,"target":j,"type":"saebom_melee_2sp_%d"%(beat+1),"result":"hit","hp":v.hp})
+	if v.hp<=0:_play(v,"death")
 
 func _miss(i:int,j:int,key:String)->void:
 	hits.append({"from":i,"target":j,"type":key,"result":"miss"})

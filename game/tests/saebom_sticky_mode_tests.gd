@@ -73,7 +73,7 @@ func run()->void:
 	for i in Knife.contacts.size():
 		u.contact=-1.
 		q._resolve(2)
-		ck(int(deer.hp)==(hp if i<3 else hp-27),"squad knife beat %d has approved damage semantics"%(i+1))
+		ck(int(deer.hp)==(hp-[5,10,16,27][i]),"squad knife beat %d has approved damage semantics"%(i+1))
 	ck(q.missiles.size()==old_flights,"knife 2SP does not add a sling stone")
 	deer.hp=0
 	q.saebom_distance_drill="" # Exercise normal squad retargeting, not the drill's single-deer rule.

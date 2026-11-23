@@ -1133,7 +1133,13 @@ func _land(side: int, key: String,contact:Dictionary={}) -> void:
 	if knife:
 		if motion[0]!="skill" or not shared_world.knife_skill_active(motion[0]) or int(contact.action)!=int(shared_world.action_id[0]):return
 		ordinary_knife_fx.append({"at":visual_clock,"point":shared_world.project(contact.point),"feet":shared_world.body_screen(1),"beat":int(contact.beat)})
-		if int(contact.beat)<3:return
+		if int(contact.beat)<MeleeKnife.BEAT_DAMAGE.size()-1:
+			# The first three blows use their existing arcs and no extra hit-stun,
+			# root shove or heavy reaction. They can still genuinely defeat prey.
+			if hp_reveal_at<0:hp_reveal_at=visual_clock
+			var early_damage:=MeleeKnife.damage_at(int(contact.beat),rules.elapsed<local_bom_rally_until)
+			if rules.damage(1,early_damage):_die(1)
+			return
 	if side==0 and key=="counter" and ordinary_counter_target!=null:
 		if ordinary_counter_spent or ordinary_counter_target!=b or rules.hp[1]<=0:return
 		ordinary_counter_spent=true
@@ -1259,7 +1265,9 @@ func _land(side: int, key: String,contact:Dictionary={}) -> void:
 		if not _prototype_duel() and not _uram_duel() and not _saebom_duel() and not uram_deer_inbound:_flash(impact_point,"hit",tone,.21)
 	if hp_reveal_at<0:hp_reveal_at=visual_clock
 	var amount:int=38 if key=="chain" else 18 if _uram_duel() and key=="counter" else 27 if skill else RallyCloud.SOLO_BASE if side==0 else 13
-	if local_melee_polish and side==0 and a.key=="saebom" and rules.elapsed<local_bom_rally_until:
+	if knife:
+		amount=MeleeKnife.damage_at(int(contact.beat),rules.elapsed<local_bom_rally_until)
+	elif local_melee_polish and side==0 and a.key=="saebom" and rules.elapsed<local_bom_rally_until:
 		amount=roundi(float(amount)*1.2)
 	if key!="attack":
 		var receiver=a if defender==0 else b
