@@ -136,7 +136,7 @@ func _draw_embers(layer:Node2D)->void:
 	if clock<=1.45:return
 	for j in EMBERS.size():
 		var p:Vector2=EMBERS[j]
-		var v:=minf(1.,(clock-1.45)*2.)*(.60+.40*pow(sin(clock*3.1+j),2.))*maxf(0.,1.-(clock-2.30)*.20)
+		var v:=minf(1.,(clock-1.45)*2.)*(.60+.40*pow(sin(clock*3.1+j),2.))*clampf((2.28-clock)/.24,0.,1.)
 		var line:=PackedVector2Array([p+Vector2(-5,1),p+Vector2(-1,-1),p+Vector2(1,1),p+Vector2(5,-1)])
 		layer.draw_polyline(line,Color(1.,138./255.,52./255.,minf(1.,v*1.25)),3.,true)
 	if clock<=2.04:return
