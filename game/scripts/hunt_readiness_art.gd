@@ -89,7 +89,7 @@ void vertex(){tint=COLOR;}
 void fragment(){
  vec4 pixel=texture(TEXTURE,UV);
  vec2 p=(UV-source_rect.xy)/source_rect.zw;
- float q=pow(left?1.-p.x:p.x,1.28)*(1.-.43*p.y)*.12;
+ float q=pow(clamp(left?1.-p.x:p.x,0.,1.),1.28)*(1.-.43*p.y)*.12;
  vec3 shift=left?vec3(-80.,92.,148.):vec3(122.,45.,-30.);
  pixel.rgb=clamp(pixel.rgb+shift/255.*q,vec3(0.),vec3(1.));
  if(!left)pixel.a*=clamp((1.-p.y)/(63./329.),0.,1.);
