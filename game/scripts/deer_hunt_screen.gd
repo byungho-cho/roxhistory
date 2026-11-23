@@ -2331,7 +2331,8 @@ func show_result() -> void:
 	if rules.outcome == "win":
 		app.record_hunt_win()
 		hunt_audio.cue("monster_death",4)
-	hunt_audio.cue("S26" if rules.outcome=="win" else "S27",4)
+	else:
+		hunt_audio.cue("S27",4)
 	rules.set_auto(false)
 	update_toggles()
 	running = false
