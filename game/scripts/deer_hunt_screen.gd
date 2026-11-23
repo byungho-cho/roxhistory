@@ -2131,7 +2131,7 @@ func update_actors(delta: float) -> void:
 			var travel := previous_position.distance_to(hunter.position)
 			hunt_stride_phases[i] = fposmod(hunt_stride_phases[i]+travel/maxf(1.0,42.0*hunter.scale.x)*TAU,TAU)
 		var approach_phase := hunt_stride_phases[i] if approaching else pose_clock*12.0
-		var facing := han_chain_facing if native_manual and side_han_jump else hunter.position.direction_to(deer.position) if approach >= 1.0 else hunter.position.direction_to(deer.position) if transition_elapsed<0.0 else arrival_heading
+		var facing := han_chain_facing if native_manual and side_han_jump else hunter.position.direction_to(deer.position) if approach >= 1.0 else hunter.position.direction_to(deer.position) if approach<=0.0 else arrival_heading
 		if i != RULES.SAEBOM:
 			var motion := ""
 			if use_guard_pose or use_field_pose: motion = "counter"
@@ -2194,7 +2194,7 @@ func update_actors(delta: float) -> void:
 	deer.walking = 1.0 if transition_elapsed>=0 and approach>0.0 and approach<1.0 else (movement_beat if running and (charge or basic_recoil>0.0) else 0.0)
 	if deer_close_travel: deer.walking = maxf(deer.walking,.74)
 	deer.heading = lerp_angle(-PI*.34,-PI*.35,approach)
-	if transition_elapsed<0.0 and not running:
+	if approach<=0.0 and not running:
 		var toward:Vector2=deer.position.direction_to(hunters[selected_hunter].position)
 		deer.heading=atan2(toward.x,toward.y)
 	deer.gait_phase = pose_clock*14
