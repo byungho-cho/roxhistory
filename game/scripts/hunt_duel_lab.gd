@@ -1240,6 +1240,8 @@ func _land(side: int, key: String,contact:Dictionary={}) -> void:
 		return
 	# Do not cut off a concurrently committed attack for a cosmetic reaction.
 	if motion[defender] == "idle" or (defender==1 and motion[defender]=="walk" and is_instance_valid(shared_world)):
+		if defender==0 and key=="skill" and motion[defender]=="idle" and _uram_deer_close() and is_instance_valid(shared_world):
+			shared_world.capture_uram_ram_hit_pose()
 		_react(defender,"hit")
 
 func _clear_ordinary_counter()->void:
@@ -1528,6 +1530,7 @@ func _render_actors(delta:=0.0)->void:
 func _advance_shared(delta:float)->void:
 	# Render rate-independent continuous body/weapon integration. No timer can
 	# call _land on this path: only a swept 3D hurt-volume contact can do so.
+	shared_world.restore_uram_ram_display()
 	while delta>.0000001:
 		var wall:=minf(delta,SharedWorld.FIXED_STEP);delta-=wall
 		var rate:=1.0
@@ -1619,6 +1622,7 @@ func _advance_shared(delta:float)->void:
 				else:
 					animal_attack_count+=1;_act(1,"skill" if animal_attack_count%3==0 else "attack")
 		_render_actors(dt);_refresh(dt)
+	shared_world.present_uram_ram_hit_pose(motion[0],age[0])
 	effects_layer.queue_redraw()
 
 func _flash(center: Vector2, key: String, tint: Color, duration: float) -> void:
@@ -1645,13 +1649,20 @@ func _location_ring(side:int)->PackedVector2Array:
 	if not is_instance_valid(shared_world):
 		center+=(preview.display.position+preview.camera.unproject_position(Vector3.ZERO)*preview.display.scale)*preview.scale
 		if local_world_ring:return _project_preview_ring(preview,center)
+	var origin:=Vector3.ZERO
+	if is_instance_valid(shared_world):
+		origin=shared_world.bodies[side].position
+		if side==0 and a.key=="uram":
+			# Preserve the floor plane, but use the rendered boots instead of
+			# the collision pelvis to keep the ring under the same-frame pose.
+			origin=(shared_world.bone_world(side,"foot.L")+shared_world.bone_world(side,"foot.R"))*.5
+			origin.y=0.
+		if local_world_ring:origin.y=0.0
 	for j in 41:
 		var angle:=TAU*float(j)/40.0
 		var unit:=Vector2.from_angle(angle)
 		if is_instance_valid(shared_world):
 			var radius:=.64
-			var origin:Vector3=shared_world.bodies[side].position
-			if local_world_ring:origin.y=0.0
 			path.append(shared_world.project(origin+Vector3(unit.x*radius,.025,unit.y*radius)))
 		else:
 			var span:=Vector2(24,9)

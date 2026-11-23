@@ -698,7 +698,7 @@ func _draw_pose(dt:float)->void:
 		actor.preview.position=u.feet
 		actor.preview.z_index=int(u.feet.y)
 		u.ring.position=u.feet;u.ring.visible=u.hp>0
-		if ring_project.is_valid() and u.hp>0:
+		if ring_project.is_valid() and u.hp>0 and i!=1:
 			u.ring.position=Vector2.ZERO
 			u.ring.points=ring_project.call(actor.preview,u.feet)
 		if u.move!="death":
@@ -724,6 +724,17 @@ func _draw_pose(dt:float)->void:
 			receiver.force_update_all_bone_transforms()
 		if i>=3 and u.move!="hit":u.erase("close_basic_impulse")
 		if i==1 and u.move=="skill" and uram_ground_draw.is_valid():_pose_uram_ground(u,actor)
+		if i==1 and ring_project.is_valid() and u.hp>0:
+			# Sample the visual boots after this frame's final stance/skill pose.
+			var view:HybridCharacter=actor.preview
+			var sk:Skeleton3D=view.skeleton
+			var l:=sk.find_bone("foot.L")
+			var r:=sk.find_bone("foot.R")
+			var ground:=sk.to_global((sk.get_bone_global_pose(l).origin+sk.get_bone_global_pose(r).origin)*.5)
+			ground.y=0.
+			var canvas_center:=view.position+(view.display.position+view.camera.unproject_position(ground)*view.display.scale)*view.scale
+			u.ring.position=Vector2.ZERO
+			u.ring.points=ring_project.call(view,canvas_center)
 		if i==2 and u.move=="skill" and float(u.get("bom_hop",0.))>0.:SaebomMelee.saebom_hop_pose(actor,float(u.age)/maxf(.01,float(actor.duration)),float(u.bom_hop)/24.)
 		if i==2 and u.hp>0 and u.move=="skill" and bool(u.get("bom_near_skill",false)) and int(u.victim)>=0:
 			Knife.sample_skill(u,units[int(u.victim)],float(u.age))

@@ -142,6 +142,8 @@ func _calibrate_weapon_axis()->void:
 	actor.play("idle");actors[1].play("idle")
 
 func reset()->void:
+	restore_uram_ram_display()
+	uram_ram_visual_anchors.clear()
 	uram_planted_feet.clear()
 	forest_input_pending=false
 	forest_guard_close_brace=false
@@ -862,6 +864,47 @@ func _capture_uram_feet()->void:
 		# Keep the captured pose of the whole planted leg, in parent-to-child order.
 		for joint in [thigh,knee,foot]:
 			if joint>=0:uram_planted_feet[joint]=sk.global_transform*sk.get_bone_global_pose(joint)
+
+## The hit clip releases the planted legs; hold only their planar display
+## correction briefly. Contact sweeps never use this transient display pose.
+const URAM_RAM_FEET_RELEASE := .10
+var uram_ram_visual_anchors:Dictionary={}
+var uram_ram_visual_restore:Dictionary={}
+var uram_ram_hit_origin:=Vector3.ZERO
+
+func capture_uram_ram_hit_pose()->void:
+	if not uram_forest_pair or uram_planted_feet.is_empty():return
+	uram_ram_visual_anchors=uram_planted_feet.duplicate()
+	uram_ram_hit_origin=bodies[0].position
+
+func restore_uram_ram_display()->void:
+	if uram_ram_visual_restore.is_empty():return
+	var sk:Skeleton3D=actors[0].preview.skeleton
+	for joint in uram_ram_visual_restore:
+		sk.set_bone_pose_position(joint,uram_ram_visual_restore[joint])
+	sk.force_update_all_bone_transforms()
+	uram_ram_visual_restore.clear()
+
+func present_uram_ram_hit_pose(key:String,age:float)->void:
+	if uram_ram_visual_anchors.is_empty():return
+	if key!="hit" or age>=URAM_RAM_FEET_RELEASE:
+		uram_ram_visual_anchors.clear()
+		return
+	var sk:Skeleton3D=actors[0].preview.skeleton
+	var weight:=1.0-smoothstep(0.0,URAM_RAM_FEET_RELEASE,age)
+	var drift:=bodies[0].position-uram_ram_hit_origin
+	drift.y=0.0
+	var targets:Dictionary={}
+	for joint in uram_ram_visual_anchors:
+		var current:Transform3D=sk.global_transform*sk.get_bone_global_pose(joint)
+		var goal:Vector3=uram_ram_visual_anchors[joint].origin+drift
+		current.origin.x=lerpf(current.origin.x,goal.x,weight)
+		current.origin.z=lerpf(current.origin.z,goal.z,weight)
+		targets[joint]=sk.global_transform.affine_inverse()*current
+		uram_ram_visual_restore[joint]=sk.get_bone_pose_position(joint)
+	for joint in targets:
+		sk.set_bone_global_pose(joint,targets[joint])
+	sk.force_update_all_bone_transforms()
 
 func _keep_uram_feet_anchored(sk:Skeleton3D)->void:
 	var inv:=sk.global_transform.affine_inverse()
