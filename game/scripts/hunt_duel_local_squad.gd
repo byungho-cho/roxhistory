@@ -6,6 +6,7 @@ var basic_rope_hit:=Vector2.INF
 var basic_rope_hit_at:=-INF
 
 signal parry_spotlight_started
+signal uram_ordinary_impact
 
 const Actor = preload("res://scripts/model_test_actor.gd")
 const Hunt = preload("res://scripts/deer_hunt_screen.gd")
@@ -24,6 +25,7 @@ const SaebomMelee=preload("res://scripts/duel_shared_world.gd")
 const Knife=preload("res://scripts/duel_saebom_stone_knife.gd")
 var knife_events:Array[Dictionary]=[]
 const CLOSE_2SP_FINAL_DAMAGE:=27
+const HAN_3SP_SPLASH_FRACTION:=.60
 const NEAR_SAE_2SP=preload("res://assets/ui/saebom-melee/stone-knife-2sp.png")
 var local_melee_polish:=false
 var saebom_distance_drill:=""
@@ -39,6 +41,9 @@ var ring_project:Callable
 var weapon_draw:Callable
 var bom_hit_draw:Callable
 var bom_trail_draw:Callable
+const RallyCloud := preload("res://scripts/saebom_rally_cloud.gd")
+var bom_cloud_origin:=Vector2.INF
+var bom_cloud_at:=-INF
 var bom_wings_draw:Callable
 var bom_ally_draw:Callable
 var bom_pose:Callable
@@ -66,6 +71,9 @@ var uram_ground_draw:=Callable()
 var uram_ground_sound:=Callable()
 var uram_ground_events:Array[Dictionary]=[]
 var uram_ordinary_wave:Dictionary={}
+var uram_short_fans:Array[Dictionary]=[]
+const URAM_SPLASH_DAMAGE:=9
+const URAM_STUN_SECONDS:=1.15
 var uram_wave_pop:Dictionary={}
 var uram_ground_layer:Node2D
 var input_paused:=false
@@ -73,6 +81,7 @@ var hud_parent:Control
 var paint:Node2D
 var bars_paint:Node2D
 var cast_notice_paint:Node2D
+var damage_numbers := preload("res://scripts/hunt_damage_numbers.gd").new()
 var cast_notice_style:RefCounted
 var cast_notices:Dictionary={}
 var parry_front:Node2D
@@ -122,6 +131,8 @@ func setup(dust_draw:Callable=Callable(),gong:Callable=Callable(), heavy:Callabl
 	paint.draw.connect(_paint)
 	bars_paint=Node2D.new();bars_paint.z_index=601;add_child(bars_paint)
 	bars_paint.draw.connect(_paint_bars)
+	damage_numbers.z_index = 604
+	add_child(damage_numbers)
 	if local_melee_polish:
 		cast_notice_style=CastHud.new(CastArt.new())
 		cast_notice_paint=Node2D.new()
@@ -171,6 +182,8 @@ func configure_uram_ground(draw_wave:Callable,thump:Callable=Callable())->void:
 	uram_ground_layer.draw.connect(_paint_uram_ground)
 
 func _paint_uram_ground()->void:
+	for fan in uram_short_fans:
+		UramCounterWave.draw_fan(uram_ground_layer,fan.from,fan.ground,fan.axis,fan.reach,(elapsed-float(fan.at))/float(fan.span),false,true)
 	for event in uram_ground_events:
 		uram_ground_draw.call(event.origin,event.end,elapsed-float(event.at),uram_ground_layer)
 
@@ -228,7 +241,7 @@ func _paint_parry_front()->void:
 	if spotlight_clock>=0.:
 		parry_light.call(spotlight_contact,spotlight_forward,spotlight_clock,parry_front)
 		var attacker:=units[spotlight_attacker]
-		if int(attacker.hp)>0:
+		if int(attacker.hp)>0 and squad_stuns.has(spotlight_attacker):
 			parry_stars.call(_deer_tip(attacker)-Vector2(6.,25.),clampf(spotlight_clock/2.25,0.,1.),parry_front)
 	for index in squad_stuns:
 		if index!=spotlight_attacker and int(units[index].hp)>0:
@@ -236,6 +249,7 @@ func _paint_parry_front()->void:
 
 func configure_saebom_distance_drill(mode:String)->void:
 	# Preset only: all points, hits, death and target movement still use the squad rules.
+	damage_numbers.clear()
 	saebom_distance_drill=mode
 	var far:=mode=="far"
 	var points:=[Vector2.ZERO,Vector2(526,260),Vector2(452,301) if far else Vector2(486,272),Vector2(576,231) if far else Vector2(529,251),Vector2.ZERO,Vector2.ZERO]
@@ -414,6 +428,7 @@ func _step(dt:float)->void:
 	for i in units.size():
 		var u:=units[i];u.age+=dt
 		if ended or u.hp<=0:continue
+		if float(u.get("uram_splash_stun_until",0.))>elapsed:continue
 		if i<3:u.sp=minf(3.0,u.sp+dt/3.1)
 		var target:=_target(i)
 		if target<0:continue
@@ -449,6 +464,7 @@ func _step(dt:float)->void:
 	_update_projectiles(dt)
 	while not knife_events.is_empty() and elapsed-float(knife_events[0].at)>Knife.ECHO_SECONDS:knife_events.pop_front()
 	_advance_uram_ordinary_wave()
+	_advance_uram_short_fans()
 	for index in squad_stuns.keys():
 		if elapsed-float(squad_stuns[index])>=1.15:squad_stuns.erase(index)
 	for k in range(launch_dust_events.size()-1,-1,-1):
@@ -475,9 +491,8 @@ func _step(dt:float)->void:
 
 func _resolve(i:int)->void:
 	var u:=units[i];var j:int=u.victim
-	if j<0 or units[j].hp<=0:return
 	if i==2 and u.move=="chain":
-		# Existing animation is a cheer: grant temporary team power, not a pretend hit.
+		if int(u.hp)<=0 or _target(i)<0:return
 		for k in 3:
 			if units[k].hp>0 and (not local_melee_polish or units[k].feet.distance_to(u.feet)<=190.0):
 				units[k].rally=elapsed+(5.0 if local_melee_polish else 4.0)
@@ -485,19 +500,32 @@ func _resolve(i:int)->void:
 					group_bom_ally_events.append({"at":elapsed,"unit":k})
 		if not authored_draw.is_valid():glints.append({"at":elapsed,"point":u.feet-Vector2(0,20),"tint":Color("ffc971")})
 		hits.append({"from":i,"target":-1,"type":"rally","result":"support"})
+		bom_cloud_origin=u.feet;bom_cloud_at=elapsed
+		for target_index in range(3,units.size()):
+			var target:=units[target_index]
+			if int(target.hp)<=0:continue
+			var wind:=RallyCloud.accrue(int(target.get("bom_cloud_fifths",0)),RallyCloud.SQUAD_BASE)
+			target.bom_cloud_fifths=wind.y
+			_subtract_hp_and_show(target_index,wind.x)
+			hits.append({"from":i,"target":target_index,"type":"rally_cloud","result":"hit","hp":target.hp})
+			if int(target.hp)==0:_play(target,"death")
 		return
+	if j<0:return
+	if units[j].hp<=0 and not (local_melee_polish and i==1 and u.move=="counter"):return
 	if i==1 and u.move=="chain":
 		if local_melee_polish and not bool(u.get("guarded",false)):
 			_begin(i,"counter",j)
 		return
 	if local_melee_polish and i==1 and u.move=="counter":
 		if u.feet.distance_to(units[j].feet)<=76.0:
+			_start_uram_short_fan(j,_uram_shield_origin())
 			_finish_uram_ordinary_counter(j)
 		else:
 			var view:HybridCharacter=u.actor.preview
 			var shield:Node3D=view.shield
 			var origin:=view.position+(view.display.position+view.camera.unproject_position(shield.global_position)*view.display.scale)*view.scale
 			var destination:=_deer_tip(units[j])
+			_start_uram_short_fan(j,origin)
 			uram_ordinary_wave={"to":j,"locked":units[j].actor,"from":origin,"at":elapsed,"span":UramCounterWave.duration(origin,destination)}
 		return
 	if i==2 and u.move=="skill" and bool(u.get("bom_near_skill",false)):
@@ -508,7 +536,7 @@ func _resolve(i:int)->void:
 		var amount:=roundi(float(CLOSE_2SP_FINAL_DAMAGE)*1.2) if u.rally>elapsed else CLOSE_2SP_FINAL_DAMAGE
 		_resolve_saebom_near(i,j,amount,beat)
 		return
-	var damage:=14 if u.move=="attack" else 27 if u.move=="skill" else 38
+	var damage:=RallyCloud.SQUAD_BASE if u.move=="attack" else 27 if u.move=="skill" else 38
 	if i>=3:damage=11 if u.move=="attack" else 23
 	if u.rally>elapsed:damage=roundi(damage*(1.20 if local_melee_polish else 1.25))
 	var start:Vector2=u.feet-Vector2(0,30)
@@ -539,26 +567,71 @@ func _resolve(i:int)->void:
 		var receiver:Skeleton3D=target.actor.preview.skeleton
 		target["close_basic_neck_pose"]=receiver.get_bone_pose_rotation(receiver.find_bone("neck"))
 		target["close_basic_head_pose"]=receiver.get_bone_pose_rotation(receiver.find_bone("head"))
+	# Han 3SP hits all living foes once from the existing ground-impact beat.
+	# Preserve a miss, the locked target's full damage, and the ordinary hunt's ordered combo.
+	var han_splash:bool=i==0 and u.move=="chain"
 	_damage(i,j,damage,u.move)
+	if han_splash:
+		var splash_damage:=roundi(damage*HAN_3SP_SPLASH_FRACTION)
+		for nearby in range(3,units.size()):
+			if nearby==j or int(units[nearby].hp)<=0:continue
+			_damage(i,nearby,splash_damage,"han_chain_splash")
 
 func _finish_uram_ordinary_counter(j:int)->void:
-	if j<3 or j>=units.size() or units[j].hp<=0:return
+	uram_ordinary_impact.emit()
+	if j<3 or j>=units.size() or units[j].hp<=0:
+		_apply_uram_field_hit(-1)
+		return
 	_damage(1,j,18,"counter")
 	if int(units[j].hp)>0:
 		_play(units[j],"hit")
 		units[j].next=maxf(float(units[j].next),elapsed+1.15)
 		squad_stuns[j]=elapsed
+		units[j].uram_splash_stun_until=elapsed+URAM_STUN_SECONDS
+	_apply_uram_field_hit(j)
 
 func _advance_uram_ordinary_wave()->void:
 	if uram_ordinary_wave.is_empty():return
 	var to:int=uram_ordinary_wave.to
-	if to<3 or to>=units.size() or units[to].hp<=0 or units[to].actor!=uram_ordinary_wave.locked or units[1].hp<=0:
+	if units[1].hp<=0:
 		uram_ordinary_wave.clear()
 		return
 	if elapsed-float(uram_ordinary_wave.at)+1e-6<float(uram_ordinary_wave.span):return
-	uram_wave_pop={"at":elapsed,"point":_deer_tip(units[to])}
+	var primary_valid:bool=to>=3 and to<units.size() and units[to].hp>0 and units[to].actor==uram_ordinary_wave.locked
+	if primary_valid:uram_wave_pop={"at":elapsed,"point":_deer_tip(units[to])}
 	uram_ordinary_wave.clear()
-	_finish_uram_ordinary_counter(to)
+	_finish_uram_ordinary_counter(to if primary_valid else -1)
+
+func _uram_shield_origin()->Vector2:
+	var u:=units[1]
+	var view:HybridCharacter=u.actor.preview
+	if not is_instance_valid(view.shield):return (u.feet as Vector2)-Vector2(0.,25.)
+	return view.position+(view.display.position+view.camera.unproject_position(view.shield.global_position)*view.display.scale)*view.scale
+
+func _start_uram_short_fan(primary:int,shield:Vector2)->void:
+	var origin:Vector2=units[1].feet
+	var destination:Vector2=units[primary].feet
+	var forward:=origin.direction_to(destination)
+	if forward.is_zero_approx():forward=Vector2.RIGHT
+	var reach:=UramCounterWave.fan_range(origin,destination,true)
+	uram_short_fans.append({"ground":origin,"from":shield,"axis":forward,"reach":reach,"at":elapsed,"span":UramCounterWave.FIELD_SECONDS})
+
+func _apply_uram_field_hit(exclude_primary:int)->void:
+	# The shield wave is battlefield-wide. Neither the visual axis nor the
+	# distance to Uram/primary filters or delays any secondary damage/stun.
+	for j in range(3,units.size()):
+		var recipient:=units[j]
+		if j==exclude_primary or recipient.hp<=0:continue
+		_damage(1,j,URAM_SPLASH_DAMAGE,"counter_splash")
+		if int(recipient.hp)>0:
+			_play(recipient,"hit")
+			recipient.next=maxf(float(recipient.next),elapsed+URAM_STUN_SECONDS)
+			recipient.uram_splash_stun_until=elapsed+URAM_STUN_SECONDS
+			squad_stuns[j]=elapsed
+
+func _advance_uram_short_fans()->void:
+	while not uram_short_fans.is_empty() and elapsed-float(uram_short_fans[0].at)>=UramCounterWave.FIELD_SECONDS:
+		uram_short_fans.pop_front()
 
 func _resolve_saebom_near(i:int,j:int,amount:int,beat:int)->void:
 	var u:=units[i]
@@ -573,6 +646,17 @@ func _resolve_saebom_near(i:int,j:int,amount:int,beat:int)->void:
 
 func _miss(i:int,j:int,key:String)->void:
 	hits.append({"from":i,"target":j,"type":key,"result":"miss"})
+
+func _subtract_hp_and_show(j:int,amount:int)->void:
+	var target:=units[j]
+	var hp_before := int(target.hp)
+	target.hp=maxi(0,hp_before-amount)
+	var anchor := aim.bone_point(target.actor,"head")
+	anchor.y = minf(anchor.y,float(target.feet.y)-76.0)
+	anchor.x = float(target.feet.x)
+	damage_numbers.show_loss(j,hp_before,int(target.hp),anchor-Vector2(0,9),j<3)
+
+const OrdinaryHitAccent = preload("res://scripts/hunt_ordinary_hit_accent.gd")
 
 func _damage(i:int,j:int,amount:int,key:String,stone_impact:=Vector2.INF)->void:
 	var target:=units[j]
@@ -595,6 +679,7 @@ func _damage(i:int,j:int,amount:int,key:String,stone_impact:=Vector2.INF)->void:
 			if is_instance_valid(shield):
 				var view:HybridCharacter=target.actor.preview
 				point=view.position+(view.display.position+view.camera.unproject_position(shield.global_position)*view.display.scale)*view.scale
+			if local_melee_polish and i>=3:_start_uram_short_fan(i,point)
 			if parry_dust.is_valid():_spotlight_parry(i,j,point)
 			elif gong_draw.is_valid():
 				var base:Vector2=target.feet
@@ -602,13 +687,17 @@ func _damage(i:int,j:int,amount:int,key:String,stone_impact:=Vector2.INF)->void:
 				gong_events.append({"at":elapsed,"point":point,"forward":base.direction_to(incoming)})
 		if not parry_dust.is_valid() and not gong_draw.is_valid():
 			glints.append({"at":elapsed,"point":target.feet-Vector2(0,25),"tint":Color("65e4cf")})
-		if units[i].hp>0 and target.feet.distance_to(units[i].feet)<76.0:
+		var counter_primary:bool=units[i].hp>0 and target.feet.distance_to(units[i].feet)<76.0
+		if counter_primary:
 			_damage(j,i,18,"counter")
 			if local_melee_polish and int(units[i].hp)>0:
 				_play(units[i],"hit")
-				units[i].next=maxf(float(units[i].next),elapsed+1.15)
+				units[i].next=maxf(float(units[i].next),elapsed+URAM_STUN_SECONDS)
+				units[i].uram_splash_stun_until=elapsed+URAM_STUN_SECONDS
+				squad_stuns[i]=elapsed
+		if local_melee_polish and new_guard and i>=3:_apply_uram_field_hit(i if counter_primary else -1)
 		return
-	target.hp=maxi(0,int(target.hp)-amount)
+	_subtract_hp_and_show(j,amount)
 	hits.append({"from":i,"target":j,"type":key,"result":"hit","hp":target.hp})
 	if bom_hit_draw.is_valid() and i==2 and key=="skill":
 		var feet:Vector2=target.feet
@@ -627,10 +716,15 @@ func _damage(i:int,j:int,amount:int,key:String,stone_impact:=Vector2.INF)->void:
 		var from:Vector2=units[i].feet
 		var ground:Vector2=target.feet
 		heavy_events.append({"at":elapsed,"point":ground-Vector2(0,23),"ground":ground,"forward":from.direction_to(ground)})
-	elif not (i==2 and (key=="saebom_melee_2sp_4" or (key=="attack" and _uses_close_basic_pose(units[i],j)))):
+	elif key!="han_chain_splash" and not (i==2 and (key=="saebom_melee_2sp_4" or (key=="attack" and _uses_close_basic_pose(units[i],j)))):
 		glints.append({"at":elapsed,"point":target.feet-Vector2(0,23) if stone_impact==Vector2.INF else stone_impact,"tint":Color("ffc971") if i<3 else Color("f0ffe8")})
 	if target.hp<=0:_play(target,"death")
-	elif target.move in ["idle","run","walk"]:_play(target,"hit")
+	else:
+		var resting:bool=target.move in ["idle","run","walk"]
+		target.ordinary_resting_hit=resting and key=="attack"
+		if key=="attack":OrdinaryHitAccent.on_hit(target.actor.preview.skeleton,elapsed,resting)
+		else:OrdinaryHitAccent.clear(target.actor.preview.skeleton)
+		if resting:_play(target,"hit")
 
 func _update_projectiles(dt:float)->void:
 	for index in range(missiles.size()-1,-1,-1):
@@ -753,6 +847,7 @@ func _draw_pose(dt:float)->void:
 			elif actor.preview.has_meta("saebom_melee_blade"):actor.preview.remove_meta("saebom_melee_blade")
 		if i==2 and bom_pose.is_valid():bom_pose.call(actor,float(u.age) if u.move=="chain" and u.hp>0 else -1.0)
 		if i==0:aim.anchor_spear_root(actor)
+		OrdinaryHitAccent.display(actor.preview.skeleton,elapsed,u.hp>0,bool(u.get("ordinary_resting_hit",false)) and u.move=="hit",elapsed-float(u.age))
 		if silver_draw.is_valid() and i>=3:
 			var wake:Array=deer_wakes[i-3]
 			while not wake.is_empty() and elapsed-float(wake[0].at)>.53:wake.pop_front()
@@ -810,12 +905,12 @@ func _paint_bars()->void:
 func _paint()->void:
 	if units.size()>2 and units[2].hp>0:Knife.draw_blade(paint,units[2].actor.preview)
 	for ev in knife_events:Knife.draw_event(paint,int(ev.beat),ev.point,ev.feet,elapsed-float(ev.at))
-	if not uram_ordinary_wave.is_empty():
-		var p:float=(elapsed-float(uram_ordinary_wave.at))/float(uram_ordinary_wave.span)
-		UramCounterWave.draw(paint,uram_ordinary_wave.from,_deer_tip(units[int(uram_ordinary_wave.to)]),p)
+	for fan in uram_short_fans:
+		UramCounterWave.draw_fan(paint,fan.from,fan.ground,fan.axis,fan.reach,(elapsed-float(fan.at))/float(fan.span),true,false)
 	if not uram_wave_pop.is_empty():
 		UramCounterWave.draw_pop(paint,uram_wave_pop.point,elapsed-float(uram_wave_pop.at))
 	BasicRope.draw_impact(paint,basic_rope_glow,basic_rope_hit,elapsed-basic_rope_hit_at)
+	RallyCloud.draw(paint,bom_cloud_origin,elapsed-bom_cloud_at)
 	var bom_active:=false
 	for m in missiles:
 		var drawn:Vector2=m.rendered if m.paired_presentation else m.point

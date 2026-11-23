@@ -78,6 +78,7 @@ func _toggle_local_formation(distance_drill:String="")->void:
 		local_formation.configure_spotlight(_draw_local_parry_floor,_draw_local_parry_flash,_draw_parry_stars,LOCAL_PARRY_SLOW,.50)
 		local_formation.configure_uram_ground(_draw_squad_uram_ground,_play_uram_ground_thump)
 		local_formation.parry_spotlight_started.connect(_squad_spotlight_started)
+		local_formation.uram_ordinary_impact.connect(_sound.bind("uram_basic"))
 	if not distance_drill.is_empty():
 		local_formation.configure_saebom_distance_drill(distance_drill)
 		if distance_drill=="far":local_formation.ranged_alignment_contact=_play_ranged_drill_stone_contact
@@ -127,6 +128,7 @@ func _close_local_formation()->void:
 
 var arena := Control.new()
 var field := Control.new()
+var damage_numbers := preload("res://scripts/hunt_damage_numbers.gd").new()
 var ground: TextureRect
 # Reuse the campaign battle camera implementation, without adding its scene or rules to the tree.
 var battle_camera := Hunt.new()
@@ -195,6 +197,10 @@ const Saebom2Vfx=preload("res://scripts/hunt_duel_saebom_2p_effect.gd")
 const Saebom3Vfx=preload("res://scripts/hunt_duel_saebom_3p_effect.gd")
 var bom_style:=Saebom3Vfx.new()
 var local_melee_polish:=false
+const RallyCloud := preload("res://scripts/saebom_rally_cloud.gd")
+var local_bom_cloud_at:=-INF
+var local_bom_cloud_origin:=Vector2.INF
+var local_bom_cloud_fifths:=0
 var local_bom_rally_at:=-INF
 var local_bom_rally_until:=-INF
 var local_saebom_latest:=false
@@ -236,6 +242,7 @@ var local_parry_caption:Label
 var local_guard_action:=-1
 var ordinary_counter_target:Actor
 var ordinary_counter_spent:=false
+var uram_short_counter_fan:Dictionary={}
 var ordinary_counter_wave:Dictionary={}
 var fx: Array[Dictionary] = []
 var controls: Dictionary = {}
@@ -353,6 +360,9 @@ func _ready() -> void:
 	arena.mouse_filter=MOUSE_FILTER_IGNORE
 	field.mouse_filter=MOUSE_FILTER_IGNORE
 	arena.add_child(field)
+	damage_numbers.z_index = 12
+	field.add_child(damage_numbers)
+	rules.hp_lost.connect(_show_duel_hp_loss)
 	ground=HuntArt.picture(self,Hunt.CLEARING,Rect2())
 	ground.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	ground.stretch_mode=TextureRect.STRETCH_KEEP_ASPECT_COVERED
@@ -372,6 +382,7 @@ func _ready() -> void:
 	location_layer.draw.connect(_draw_saebom_aurora)
 	location_layer.draw.connect(_draw_location_rings)
 	location_layer.draw.connect(_draw_local_uram_floor)
+	location_layer.draw.connect(_draw_uram_field_ground)
 	field.add_child(effects_layer)
 	effects_layer.z_index = 10
 	effects_layer.draw.connect(_draw_effects)
@@ -727,6 +738,7 @@ func _draw_authored_frames(origin:Vector2,elapsed:float,screen_size:float)->void
 	effects_layer.draw_texture_rect(authored_frames[frame_index],Rect2(origin-anchor,Vector2.ONE*screen_size),false)
 
 func reset_round(after_fade:=false) -> void:
+	uram_short_counter_fan.clear()
 	ordinary_knife_fx.clear()
 	if is_instance_valid(local_formation):
 		var mode:String=local_formation.saebom_distance_drill
@@ -738,6 +750,7 @@ func reset_round(after_fade:=false) -> void:
 	deer_wake.clear()
 	bom_path.clear();bom_path_end=-INF;bom_path_action=-1
 	local_bom_rally_at=-INF;local_bom_rally_until=-INF
+	local_bom_cloud_at=-INF;local_bom_cloud_origin=Vector2.INF;local_bom_cloud_fifths=0
 	if local_saebom_latest:bom_style.restore_sling()
 	deer_dust_at=-INF
 	deer_dust_world=Vector3.ZERO
@@ -758,6 +771,7 @@ func reset_round(after_fade:=false) -> void:
 	ground.self_modulate=Color.WHITE
 	han_chain_light.queue_redraw()
 	touch_pointer=-1;touch_target=null
+	damage_numbers.clear()
 	rules.reset(rules.ally_id,rules.enemy_id)
 	_prepare_authored_frames()
 	for item in audio_pool:
@@ -849,6 +863,15 @@ func _refresh(delta := 0.0) -> void:
 		controls[key].set_pressed_no_signal(chosen)
 		selection_frames[key].visible=chosen
 	_sync_local_distance_buttons()
+
+func _show_duel_hp_loss(side:int,before:int,after:int)->void:
+	if a==null or b==null:return
+	var anchor := presentation.bone_point(a,"head") if side==0 else _position(1)-Vector2(0,54)
+	if side==1 and is_instance_valid(shared_world):
+		var height := 1.65 if _uram_duel() else 2.02
+		var depth := .56 if _uram_duel() else .48
+		anchor=shared_world.project(shared_world.bodies[1].position+Vector3.UP*height-shared_world.direction*depth)
+	damage_numbers.show_loss(side,before,after,anchor-Vector2(0,20),side==0)
 
 func _update_head_hud(delta:float)->void:
 	if a==null or b==null:return
@@ -976,6 +999,7 @@ func _try_player(key: String) -> void:
 		return
 	if local_melee_polish and key=="chain" and rules.ally_id=="saebom":cast_notice={"key":key,"at":rules.elapsed,"icon":skill_hud.chain_art.texture,"bom_buff":true}
 	else:cast_notice={"key":key,"at":visual_clock,"icon":skill_hud.chain_art.texture if key=="chain" else skill_hud.badge_art.texture}
+	if _uram_deer_close() and is_instance_valid(shared_world):shared_world.restore_uram_outgoing_display()
 	cast_from=_position(0)
 	contact_at[0]=-1.0 # Cancel the interrupted automatic contact; never land it twice.
 	if key=="chain" and local_melee_polish and _uram_duel() and is_instance_valid(shared_world):
@@ -1065,6 +1089,7 @@ func _uram_parry(contact:Dictionary)->void:
 	# ordinary guaranteed-contact lane, and remains the only combo opener.
 	_clear_ordinary_counter()
 	var point:=shared_world.project(contact.point)
+	if local_melee_polish:_start_uram_short_counter_fan(point)
 	if _uram_deer_close():
 		local_parry_clock=0.
 		local_parry_focus=shared_world.project(Vector3(contact.point.x,0.,contact.point.z))
@@ -1088,6 +1113,9 @@ func _uram_parry(contact:Dictionary)->void:
 		_flash(point,"uram_deer_stun",Color.WHITE,1.15)
 	_act(0,"counter")
 
+const OrdinaryHitAccent = preload("res://scripts/hunt_ordinary_hit_accent.gd")
+var ordinary_resting_hit:=[false,false]
+
 func _land(side: int, key: String,contact:Dictionary={}) -> void:
 	if approach_active or not rules.living():
 		return
@@ -1103,6 +1131,7 @@ func _land(side: int, key: String,contact:Dictionary={}) -> void:
 	if side==0 and key=="counter" and ordinary_counter_target!=null:
 		if ordinary_counter_spent or ordinary_counter_target!=b or rules.hp[1]<=0:return
 		ordinary_counter_spent=true
+		if ordinary_counter_wave.is_empty():_start_uram_short_counter_fan(shared_world.project(a.preview.shield.global_position))
 		ordinary_counter_wave.clear()
 	var defender := 1-side
 	var impact_point := _position(defender)-Vector2(0,33)
@@ -1223,9 +1252,13 @@ func _land(side: int, key: String,contact:Dictionary={}) -> void:
 			else:_sound("deer_hit")
 		if not _prototype_duel() and not _uram_duel() and not _saebom_duel() and not uram_deer_inbound:_flash(impact_point,"hit",tone,.21)
 	if hp_reveal_at<0:hp_reveal_at=visual_clock
-	var amount:int=38 if key=="chain" else 18 if _uram_duel() and key=="counter" else 27 if skill else 11 if side==0 else 13
+	var amount:int=38 if key=="chain" else 18 if _uram_duel() and key=="counter" else 27 if skill else RallyCloud.SOLO_BASE if side==0 else 13
 	if local_melee_polish and side==0 and a.key=="saebom" and rules.elapsed<local_bom_rally_until:
 		amount=roundi(float(amount)*1.2)
+	if key!="attack":
+		var receiver=a if defender==0 else b
+		OrdinaryHitAccent.clear(receiver.preview.skeleton)
+		ordinary_resting_hit[defender]=false
 	if rules.damage(defender,amount):
 		_die(defender)
 		return
@@ -1238,6 +1271,17 @@ func _land(side: int, key: String,contact:Dictionary={}) -> void:
 		_react(1,"hit")
 		_flash(impact_point,"uram_deer_stun",Color.WHITE,1.15)
 		return
+	var existing_uram_intake:=_uram_deer_close() and is_instance_valid(shared_world) and defender==0
+	ordinary_resting_hit[defender]=key=="attack" and not existing_uram_intake and (motion[defender]=="idle" or (defender==1 and motion[defender]=="walk" and is_instance_valid(shared_world)))
+	if key=="attack" and not existing_uram_intake:
+		var receiver=a if defender==0 else b
+		OrdinaryHitAccent.on_hit(receiver.preview.skeleton,visual_clock,ordinary_resting_hit[defender])
+	if _uram_deer_close() and is_instance_valid(shared_world):
+		if side==0 and key=="attack":shared_world.mark_uram_outgoing_contact(visual_clock)
+		elif side==1:
+			var traded:bool=shared_world.maybe_mark_uram_trade(visual_clock,motion[0],age[0])
+			if not traded and motion[0] in ["idle","walk"]:
+				shared_world.mark_uram_intake(visual_clock,key=="attack")
 	# Do not cut off a concurrently committed attack for a cosmetic reaction.
 	if motion[defender] == "idle" or (defender==1 and motion[defender]=="walk" and is_instance_valid(shared_world)):
 		if defender==0 and key=="skill" and motion[defender]=="idle" and _uram_deer_close() and is_instance_valid(shared_world):
@@ -1256,6 +1300,20 @@ func _counter_world_tip()->Vector3:
 	var hurt:=shared_world.hurt_capsule(1)
 	return (Vector3(hurt.a)+Vector3(hurt.b))*.5
 
+func _start_uram_short_counter_fan(shield:Vector2)->void:
+	var ground:Vector2=shared_world.body_screen(0)
+	var dest:Vector2=shared_world.body_screen(1)
+	var axis:=ground.direction_to(dest)
+	if axis.is_zero_approx():return
+	var reach:=UramCounterWave.fan_range(ground,dest,true)
+	uram_short_counter_fan={"from":shield,"ground":ground,"axis":axis,"reach":reach,"at":visual_clock,"span":UramCounterWave.FIELD_SECONDS}
+
+func _draw_uram_field_ground()->void:
+	if uram_short_counter_fan.is_empty():return
+	var fan:=uram_short_counter_fan
+	var progress:float=(visual_clock-float(fan.at))/float(fan.span)
+	if progress<1.:UramCounterWave.draw_fan(location_layer,fan.from,fan.ground,fan.axis,fan.reach,progress,false,true)
+
 func _advance_ordinary_counter()->void:
 	if ordinary_counter_target==null or ordinary_counter_spent:return
 	if not _ordinary_counter_live():
@@ -1269,6 +1327,7 @@ func _advance_ordinary_counter()->void:
 		var shield:MeshInstance3D=a.preview.shield
 		var muzzle:Vector2=shared_world.project(shield.global_position)
 		var target:Vector2=shared_world.project(_counter_world_tip())
+		_start_uram_short_counter_fan(muzzle)
 		ordinary_counter_wave={"from":muzzle,"start":rules.elapsed,"span":UramCounterWave.duration(muzzle,target)}
 		return
 	var t:=rules.elapsed-float(ordinary_counter_wave.start)
@@ -1279,6 +1338,10 @@ func _advance_ordinary_counter()->void:
 	_land(0,"counter",{"kind":"body","point":target,"normal":normal,"local_outreach":true})
 
 func _react(side: int, key: String) -> void:
+	if side==0 and _uram_deer_close() and is_instance_valid(shared_world):
+		shared_world.mark_uram_outgoing_recovery(motion[0],key,visual_clock)
+	if side==0 and key=="idle" and motion[0]=="hit" and _uram_deer_close() and is_instance_valid(shared_world):
+		shared_world.mark_uram_intake_recovery(visual_clock)
 	var actor := a if side==0 else b
 	motion[side] = key
 	age[side] = 0.0
@@ -1450,6 +1513,11 @@ func _start_battle_camera()->void:
 	camera_base_scale=field.scale;camera_base_position=field.position
 
 func _render_actors(delta:=0.0)->void:
+	if is_instance_valid(a) and is_instance_valid(b):
+		for i in 2:
+			var actor=a if i==0 else b
+			if is_instance_valid(actor.preview):
+				OrdinaryHitAccent.display(actor.preview.skeleton,visual_clock,rules.hp[i]>0,ordinary_resting_hit[i] and motion[i]=="hit",visual_clock-float(age[i]))
 	# Repaint on pose placement, including entrance frames which skip HUD refresh.
 	location_layer.queue_redraw()
 	if is_instance_valid(shared_world):
@@ -1530,6 +1598,9 @@ func _render_actors(delta:=0.0)->void:
 func _advance_shared(delta:float)->void:
 	# Render rate-independent continuous body/weapon integration. No timer can
 	# call _land on this path: only a swept 3D hurt-volume contact can do so.
+	shared_world.capture_uram_visible_return(motion[0])
+	shared_world.restore_uram_outgoing_display()
+	shared_world.restore_uram_intake_display()
 	shared_world.restore_uram_ram_display()
 	while delta>.0000001:
 		var wall:=minf(delta,SharedWorld.FIXED_STEP);delta-=wall
@@ -1572,7 +1643,7 @@ func _advance_shared(delta:float)->void:
 				deer_dust_world=shared_world.bodies[1].position
 				deer_dust_at=visual_clock
 		if local_melee_polish and is_finite(local_bom_rally_at) and rules.elapsed>=local_bom_rally_at:
-			if rules.hp[0]>0 and motion[0]=="chain":local_bom_rally_until=rules.elapsed+5.0
+			if rules.living() and motion[0]=="chain":_release_bom_cloud()
 			local_bom_rally_at=-INF
 		var events:=shared_world.step(self,dt,prior_han_age)
 		if local_saebom_latest and _saebom_duel():_sample_local_bom_path(events)
@@ -1623,7 +1694,16 @@ func _advance_shared(delta:float)->void:
 					animal_attack_count+=1;_act(1,"skill" if animal_attack_count%3==0 else "attack")
 		_render_actors(dt);_refresh(dt)
 	shared_world.present_uram_ram_hit_pose(motion[0],age[0])
+	if _uram_deer_close():
+		if DisplayServer.get_name()=="headless":_present_uram_intake_overlay(shared_world,visual_clock,motion[0],age[0])
+		else:_present_uram_intake_overlay.call_deferred(shared_world,visual_clock,motion[0],age[0])
 	effects_layer.queue_redraw()
+
+func _present_uram_intake_overlay(world,stamp:float,key:String,pose_age:float)->void:
+	if not is_instance_valid(world) or world!=shared_world:return
+	world.present_uram_intake(stamp,key)
+	world.present_uram_outgoing(stamp,key,pose_age)
+	location_layer.queue_redraw()
 
 func _flash(center: Vector2, key: String, tint: Color, duration: float) -> void:
 	fx.append({"center":center,"name":key,"color":tint,"duration":duration,"at":visual_clock})
@@ -2350,9 +2430,10 @@ func _draw_uram_club_skill_contact(effect:Dictionary,p:float)->void:
 	_soft_light(feet,Vector2(152,35),Color("ed8b39"),after*.41)
 
 func _draw_effects() -> void:
-	if _ordinary_counter_live() and not ordinary_counter_wave.is_empty():
-		var p:float=(rules.elapsed-float(ordinary_counter_wave.start))/float(ordinary_counter_wave.span)
-		UramCounterWave.draw(effects_layer,ordinary_counter_wave.from,shared_world.project(_counter_world_tip()),p)
+	if not uram_short_counter_fan.is_empty():
+		var fan:=uram_short_counter_fan
+		var progress:float=(visual_clock-float(fan.at))/float(fan.span)
+		if progress<1.:UramCounterWave.draw_fan(effects_layer,fan.from,fan.ground,fan.axis,fan.reach,progress,true,false)
 	for impact in fx:
 		if impact.name=="uram_counter_outreach_hit":UramCounterWave.draw_pop(effects_layer,impact.center,visual_clock-float(impact.at))
 	if _prototype_duel() or _uram_duel() or _saebom_duel():
@@ -2464,7 +2545,15 @@ func _saebom_aurora_active()->bool:
 func _saebom_cheer_age()->float:
 	return float(age[0])*SAEBOM_CHEER_NATIVE_SECONDS/maxf(.01,a.duration)
 
+func _release_bom_cloud()->void:
+	local_bom_rally_until=rules.elapsed+5.0
+	local_bom_cloud_origin=_position(0);local_bom_cloud_at=visual_clock
+	var wind:=RallyCloud.accrue(local_bom_cloud_fifths,RallyCloud.SOLO_BASE)
+	local_bom_cloud_fifths=wind.y
+	if rules.damage(1,wind.x):_die(1)
+
 func _draw_saebom_aurora()->void:
+	RallyCloud.draw(location_layer,local_bom_cloud_origin,visual_clock-local_bom_cloud_at)
 	if local_saebom_latest and a!=null and a.key=="saebom":
 		if motion[0]=="chain" and rules.hp[0]>0:_draw_bom_wings(_position(0),age[0],location_layer)
 		return

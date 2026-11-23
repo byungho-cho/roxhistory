@@ -153,7 +153,7 @@ func try_guard(stage:int)->void:
   saw_visual = saw_visual or (hunt.rally_art.active and hunt.rally_art.age>=.96 and hunt.rally_art.recipients.has(Rules.SAEBOM))
  print("CHAIN_OUTCOME "+pair+" ordered Rally=",saw_rally," visual=",saw_visual," Han=",saw_han," HP=",before_stone,"->",hunt.rules.deer_hp)
  check(pair+" ordered chain executes actual rally, wings and intended Han finisher",saw_rally and saw_han and saw_visual)
- check(pair+" ordered actual rear finisher contact deals boosted nine",hunt.rules.deer_hp==before_stone-9 and hunt.han_chain_travel.length()>0.0)
+ check(pair+" ordered actual rear finisher contact deals compounded ten",hunt.rules.deer_hp==before_stone-10 and hunt.han_chain_travel.length()>0.0)
 
 func try_late_or_timeout(stage:int, mode:String)->void:
  var hunt=await prepare(stage,1)
@@ -181,7 +181,7 @@ func try_late_or_timeout(stage:int, mode:String)->void:
     hunt._process(1.0/60.0)
     saw_wings=saw_wings or (hunt.rally_art.active and hunt.rally_art.age>=.96 and hunt.rally_art.recipients.has(Rules.SAEBOM))
    check("Second window: real rally applied and wings appeared; skill buff still active",saw_wings and hunt.rules.rally_remaining[Rules.SAEBOM]>0.0)
-   check("Second window: expired Han click rejected without spending or auto-strike",not hunt.chain_window.active() and hunt.manual_pending.is_empty() and not (await click_button(han.chain_button,true)) and hunt.rules.orbs(0)==3 and hunt.rules.deer_hp==hunt.rules.deer_max_hp)
+   check("Second window: expired Han click rejected without spending or auto-strike",not hunt.chain_window.active() and hunt.manual_pending.is_empty() and not (await click_button(han.chain_button,true)) and hunt.rules.orbs(0)==3 and hunt.rules.deer_hp==hunt.rules.deer_max_hp-Rules.URAM_SHIELD_COUNTER_DAMAGE)
    return
   hunt.speed=2.0
   hunt.rules.exchange_clock=-100.0
@@ -193,7 +193,15 @@ func try_late_or_timeout(stage:int, mode:String)->void:
   var fired:=false
   if mode=="late":fired=await click_button(hud.chain_button,true)
   for i in range(21):hunt._process(1.0/60.0)
-  check(mode+" stage "+str(stage)+" input does not block/suppress genuine incoming damage",not fired and hunt.last_guard_contact.is_empty() and hunt.rules.party_hp[1]==hp-2 and hunt.rules.orbs(1)==3)
+  check(mode+" stage "+str(stage)+" input preserves genuine incoming damage",hunt.last_guard_contact.is_empty() and hunt.rules.party_hp[1]==hp-2)
+  if mode=="late":
+   var before:int=hunt.rules.deer_hp
+   check("Late tap consumes three without creating ordered guard/chain",fired and hunt.rules.orbs(1)==0 and not hunt.chain_window.active())
+   hunt.rules.exchange_clock=-100.0
+   for i in range(75):hunt._process(1.0/60.0)
+   check("Late paid follow-up strikes prey exactly once",hunt.rules.deer_hp==before-Rules.URAM_SHIELD_COUNTER_DAMAGE)
+  else:
+   check("Unpressed guard neither spends nor deals damage",not fired and hunt.rules.orbs(1)==3 and hunt.rules.deer_hp==hunt.rules.deer_max_hp)
 
 func try_front_finisher(stage:int)->void:
  var hunt=await prepare(stage,0)

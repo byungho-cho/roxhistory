@@ -1,4 +1,7 @@
 extends RefCounted
+
+signal hp_lost(victim: int, before: int, after: int)
+const PREY_VICTIM := 3
 ## Provisional encounter timing. The shared lock applies only to orb skills.
 const MAX_HP := 100
 const COUNTER_DAMAGE := 2
@@ -9,9 +12,13 @@ const PARTY_SKILLS := ["thrust", "strike", "team"]
 const BASIC_INTERVAL := 10.0 / 14.0
 const POSE_SECONDS := 0.52
 const SAEBOM := 2
+const URAM_SHIELD_COUNTER_DAMAGE := 18
+const URAM_SHIELD_COUNTER_STUN := 1.15
+var prey_stun_remaining := 0.0
 const RALLY_COST := 3
 const RALLY_SECONDS := 5.0
 const RALLY_RADIUS := 190.0
+const RallyCloud := preload("res://scripts/saebom_rally_cloud.gd")
 const AUTO_INTERVAL := 2.6
 const SKILLS := {
 	"thrust": {"label": "찌르기", "cost": 1, "damage": 8},
@@ -29,11 +36,14 @@ var deer_hp := MAX_HP
 var pending_damage := 0
 var pending_counter := false
 var rally_cast_pending := false
+var rally_cloud_fifths := 0
 var rally_remaining: Array[float] = [0.0, 0.0, 0.0]
 # Integer fifths, independent per recipient. A sequence of five 1-point
 # attacks really gains one damage instead of each attack rounding back to 1.
 # Only boosted attacks can consume the earned fraction, even after another cast.
 var rally_fifths: Array[int] = [0, 0, 0]
+# Preserve the old rally rounding sequence outside a confirmed finisher.
+var han_combo_hundredths := 0
 var next_attacker := 0
 var attacker := 0
 var outcome := ""
@@ -60,18 +70,28 @@ func queue_attack(damage: int, index: int) -> void:
 	attacker = index
 	pending_damage = damage
 
-func resolve_attack() -> void:
+func resolve_attack(ordered_han_finisher := false, contact_into_frame := 0.0) -> void:
 	var damage := pending_damage
 	pending_damage = 0
 	if damage > 0:
-		damage_deer(_rally_damage(damage, attacker))
+		if ordered_han_finisher and attacker == 0:
+			if party_hp[0] > 0 and rally_remaining[0] > maxf(0.0,contact_into_frame):
+				var scaled := damage * 132 + han_combo_hundredths
+				han_combo_hundredths = scaled % 100
+				damage = floori(float(scaled) / 100.0)
+			damage_deer(damage)
+		else:
+			damage_deer(_rally_damage(damage, attacker))
 	if pending_counter:
 		pending_counter = false
-		party_hp[attacker] = maxi(0, party_hp[attacker] - COUNTER_DAMAGE)
+		var before := party_hp[attacker]
+		party_hp[attacker] = maxi(0, before - COUNTER_DAMAGE)
+		if party_hp[attacker] < before:hp_lost.emit(attacker,before,party_hp[attacker])
 		if party_hp[attacker]==0:
 			charges[attacker]=0.0
 			rally_remaining[attacker]=0.0
 			rally_fifths[attacker]=0
+			if attacker==0:han_combo_hundredths=0
 			if auto_enabled:reserved_skill=next_auto_skill()
 		if hunter_hp == 0:
 			outcome = "loss"
@@ -160,6 +180,20 @@ func resolve_guard() -> bool:
 	return true
 
 
+func resolve_uram_shield_counter(ordinary:bool) -> int:
+	if deer_hp <= 0 or not outcome.is_empty() or party_hp[1] <= 0 or pending_counter:
+		return 0
+	if ordinary:
+		if attacker != 1 or pending_damage != URAM_SHIELD_COUNTER_DAMAGE:
+			return 0
+		pending_damage = 0
+	var before := deer_hp
+	damage_deer(URAM_SHIELD_COUNTER_DAMAGE)
+	if deer_hp > 0:
+		prey_stun_remaining = URAM_SHIELD_COUNTER_STUN
+	return before-deer_hp
+
+
 func can_start_rally() -> bool:
 	return (
 		outcome.is_empty() and party_hp[SAEBOM] > 0 and orbs(SAEBOM) >= RALLY_COST
@@ -189,6 +223,12 @@ func apply_rally(positions: Array[Vector2]) -> bool:
 		if party_hp[i] <= 0 or caster.distance_squared_to(positions[i]) > RALLY_RADIUS * RALLY_RADIUS:
 			continue
 		rally_remaining[i] = RALLY_SECONDS
+	# This encounter uses one-point unbuffed basics, including Saebom.
+	# Preserve exactly one fifth of that attack without touching the buff remainder.
+	if deer_hp > 0:
+		var wind := RallyCloud.accrue(rally_cloud_fifths,RallyCloud.ORDINARY_BASE)
+		rally_cloud_fifths=wind.y
+		if wind.x > 0:damage_deer(wind.x)
 	return true
 
 
@@ -201,7 +241,9 @@ func _rally_damage(damage: int, index: int) -> int:
 
 
 func damage_deer(amount: int) -> void:
-	deer_hp = maxi(0, deer_hp - amount)
+	var before := deer_hp
+	deer_hp = maxi(0, before - amount)
+	if deer_hp < before:hp_lost.emit(PREY_VICTIM,before,deer_hp)
 	if deer_hp == 0:
 		outcome = "win"
 		set_auto(false)
@@ -221,6 +263,7 @@ func advance(delta: float, tick_rally := true, prefer_manual := false) -> String
 		advance_rally_clock(delta)
 	for index in party_hp.size():
 		if party_hp[index]>0:charges[index]=minf(MAX_ORBS,charges[index]+delta/CHARGE_SECONDS[index])
+	prey_stun_remaining = maxf(0.0, prey_stun_remaining - delta)
 	action_lock = maxf(0.0, action_lock - delta)
 	basic_lock = maxf(0.0, basic_lock - delta)
 	orb_lock = maxf(0.0, orb_lock - delta)
@@ -234,12 +277,15 @@ func advance(delta: float, tick_rally := true, prefer_manual := false) -> String
 		return queued
 	if exchange_clock < AUTO_INTERVAL or action_lock > 0 or pending_damage > 0 or pending_counter or rally_cast_pending:
 		return ""
+	# Wait out a stun before scheduling a fresh enemy turn; never clear a pending hit.
+	if not hunter_turn and prey_stun_remaining > 0.0:
+		return ""
 	exchange_clock = 0.0
 	action_lock = POSE_SECONDS
 	hunter_turn = not hunter_turn
 	if not hunter_turn:
 		var index := living_from(next_attacker)
-		queue_attack(1,index)
+		queue_attack(RallyCloud.ORDINARY_BASE,index)
 		next_attacker = (index+1)%party_hp.size()
 		return "auto_thrust"
 	attacker = living_from(next_target)

@@ -114,11 +114,20 @@ func configure(left,right,center:Vector2,local_ranged_boar:=false,local_uram_for
 		p.viewport.size=Vector2i(2,2) # Adapter API stays valid without two unused large render targets.
 		p.set_meta("duel_world",self);p.set_meta("duel_side",i)
 		actor.death_effect.z_index=4
+	if uram_forest_pair:
+		# This lab already samples the authored clip explicitly on every
+		# simulation step. Prevent native auto-processing from replacing the
+		# final visual blend after the actor keys switch to walk or idle.
+		var driver:AnimationPlayer=actors[0].preview.animator
+		uram_previous_animator_mode=driver.callback_mode_process
 	if not uram_pair and not saebom_pair:_calibrate_weapon_axis()
 	if saebom_pair:_setup_projectile()
 	reset()
 
 func detach()->void:
+	if uram_previous_animator_mode>=0 and not actors.is_empty() and is_instance_valid(actors[0].preview):
+		actors[0].preview.animator.callback_mode_process=uram_previous_animator_mode
+		uram_previous_animator_mode=-1
 	_restore_sling_stone()
 	for i in actors.size():
 		var p=actors[i].preview
@@ -142,9 +151,15 @@ func _calibrate_weapon_axis()->void:
 	actor.play("idle");actors[1].play("idle")
 
 func reset()->void:
+	restore_uram_outgoing_display()
+	uram_out_started=-1.0;uram_out_snapshot.clear();uram_out_bridge.clear();uram_out_basic_return=false
+	uram_trade_last_strike=-INF;uram_trade_pending_hit=-INF;uram_trade_at=-INF;uram_trade_feet.clear()
+	restore_uram_intake_display()
+	uram_intake_age=-1.0;uram_return_age=-1.0;uram_return_pose.clear();uram_intake_seeds.clear();uram_last_drawn_hit.clear()
 	restore_uram_ram_display()
 	uram_ram_visual_anchors.clear()
 	uram_planted_feet.clear()
+	uram_displayed_feet.clear()
 	forest_input_pending=false
 	forest_guard_close_brace=false
 	uram_basic_anchor=false
@@ -375,6 +390,12 @@ func render_poses(lab,delta:float)->Array:
 	for side in 2:
 		var actor=actors[side];var key:String=lab.motion[side];var age:float=lab.age[side]
 		var p=actor.preview
+		if side==0 and uram_forest_pair:
+			# Only the ordinary club→return→idle presentation owns a manual
+			# mixer. Guard, charge intake, counter and other moves stay stock.
+			var manual:=key=="attack" or (key=="walk" and uram_out_basic_return) or (key=="idle" and uram_out_started>=0. and not uram_return_contact_pose.is_empty())
+			var callback:=AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_MANUAL if manual else uram_previous_animator_mode
+			if p.animator.callback_mode_process!=callback:p.animator.callback_mode_process=callback
 		if side<floor_bounce_lights.size():floor_bounce_lights[side].visible=key!="death"
 		if key=="death":
 			# Hold the pose from the lethal contact; only opacity changes.
@@ -905,6 +926,318 @@ func present_uram_ram_hit_pose(key:String,age:float)->void:
 	for joint in targets:
 		sk.set_bone_global_pose(joint,targets[joint])
 	sk.force_update_all_bone_transforms()
+
+# Overlay the visible rig after all combat work and unwind before the next sweep.
+# Never let this continuity correction enter the contact or sweep pose.
+var uram_intake_age := -1.0
+var uram_intake_ordinary := false
+var uram_intake_seeds:Dictionary={}
+var uram_displayed_feet:Dictionary={}
+var uram_return_age := -1.0
+var uram_return_pose:Dictionary={}
+var uram_last_drawn_hit:Dictionary={}
+var uram_last_drawn_hit_height:=0.0
+var uram_return_height:=0.0
+var uram_intake_restore_height:=INF
+var uram_intake_restore:Dictionary={}
+var uram_intake_props:Dictionary={}
+
+func mark_uram_intake(at:float,ordinary:bool)->void:
+	uram_intake_age=at
+	uram_intake_ordinary=ordinary
+	uram_return_age=-1.0
+	uram_return_pose.clear()
+	uram_intake_seeds.clear()
+	uram_last_drawn_hit.clear()
+	for label in ["foot.R","foot.L"]:
+		uram_intake_seeds[label]=uram_displayed_feet.get(label,bone_world(0,label)-bodies[0].position)
+
+func mark_uram_intake_recovery(at:float)->void:
+	if uram_intake_age<0.0:return
+	uram_return_pose=uram_last_drawn_hit.duplicate()
+	uram_return_height=uram_last_drawn_hit_height
+	uram_last_drawn_hit.clear()
+	uram_return_age=at
+
+func _save_uram_intake_pose(sk:Skeleton3D,joint:int)->void:
+	if not uram_intake_restore.has(joint):
+		uram_intake_restore[joint]=[sk.get_bone_pose_position(joint),sk.get_bone_pose_rotation(joint),sk.get_bone_pose_scale(joint)]
+
+func restore_uram_intake_display()->void:
+	if uram_intake_restore.is_empty():return
+	var p=actors[0].preview
+	if is_finite(uram_intake_restore_height):
+		p.pivot.position.y=uram_intake_restore_height
+		uram_intake_restore_height=INF
+	var sk:Skeleton3D=p.skeleton
+	for joint in uram_intake_restore:
+		var v:Array=uram_intake_restore[joint]
+		sk.set_bone_pose_position(joint,v[0])
+		sk.set_bone_pose_rotation(joint,v[1])
+		sk.set_bone_pose_scale(joint,v[2])
+	sk.force_update_all_bone_transforms()
+	for prop in uram_intake_props:
+		if is_instance_valid(prop):prop.global_transform=uram_intake_props[prop]
+	uram_intake_restore.clear()
+	uram_intake_props.clear()
+
+func present_uram_intake(at:float,key:String)->void:
+	for label in ["foot.R","foot.L"]:
+		uram_displayed_feet[label]=bone_world(0,label)-bodies[0].position
+	if uram_intake_age<0.0:return
+	if key not in ["walk","hit","idle"]:
+		uram_intake_age=-1.0;uram_return_age=-1.0;uram_return_pose.clear()
+		return
+	if key=="hit":
+		# The motion adapter can already sample idle during the transition
+		# substep, so take the last actual rendered hit rather than that pose.
+		var shown:Skeleton3D=actors[0].preview.skeleton
+		uram_last_drawn_hit_height=actors[0].preview.pivot.position.y
+		uram_last_drawn_hit.clear()
+		for joint in shown.get_bone_count():
+			uram_last_drawn_hit[joint]=[shown.get_bone_pose_position(joint),shown.get_bone_pose_rotation(joint)]
+	var since:=at-uram_intake_age
+	var weight:=smoothstep(0.0,.038,since)*(1.0-smoothstep(.08,.21,since)) if uram_intake_ordinary else 0.0
+	var recover:=1.0-smoothstep(0.0,.16,at-uram_return_age) if uram_return_age>=0.0 else 0.0
+	if weight<=.0001 and recover<=.0001:
+		if uram_return_age>=0.0 or since>.80:uram_intake_age=-1.0;uram_return_age=-1.0;uram_return_pose.clear()
+		return
+	var p=actors[0].preview
+	var sk:Skeleton3D=p.skeleton
+	var old_wrists:Dictionary={}
+	for entry in [[p.shield,"hand.L"],[p.club,"hand.R"]]:
+		var prop:MeshInstance3D=entry[0]
+		var wrist:=sk.find_bone(entry[1])
+		if not is_instance_valid(prop) or wrist<0:continue
+		uram_intake_props[prop]=prop.global_transform
+		old_wrists[prop]=[wrist,sk.global_transform*sk.get_bone_global_pose(wrist)]
+	if recover>.0001 and not uram_return_pose.is_empty():
+		uram_intake_restore_height=p.pivot.position.y
+		p.pivot.position.y=lerpf(p.pivot.position.y,uram_return_height,recover)
+		for joint in uram_return_pose:
+			_save_uram_intake_pose(sk,joint)
+			var from:Array=uram_return_pose[joint]
+			sk.set_bone_pose_position(joint,sk.get_bone_pose_position(joint).lerp(from[0],recover))
+			sk.set_bone_pose_rotation(joint,sk.get_bone_pose_rotation(joint).slerp(from[1],recover))
+	if weight>.0001:
+		var spine:=sk.find_bone("spine")
+		if spine>=0:
+			_save_uram_intake_pose(sk,spine)
+			var q:=sk.get_bone_pose_rotation(spine)
+			sk.set_bone_pose_rotation(spine,q*Quaternion(Vector3.RIGHT,-.105*weight))
+		sk.force_update_all_bone_transforms()
+		var inv:=sk.global_transform.affine_inverse()
+		for label in uram_intake_seeds:
+			var joint:=sk.find_bone(label)
+			if joint<0:continue
+			var now:=sk.global_transform*sk.get_bone_global_pose(joint)
+			var hold:Vector3=uram_intake_seeds[label]+bodies[0].position
+			now.origin.x=lerpf(now.origin.x,hold.x,weight)
+			now.origin.z=lerpf(now.origin.z,hold.z,weight)
+			_save_uram_intake_pose(sk,joint)
+			sk.set_bone_global_pose(joint,inv*now)
+	sk.force_update_all_bone_transforms()
+	for prop in old_wrists:
+		var original:Array=old_wrists[prop]
+		var wrist:=sk.global_transform*sk.get_bone_global_pose(original[0])
+		prop.global_transform=wrist*(original[1] as Transform3D).affine_inverse()*uram_intake_props[prop]
+
+# Uram's normal follow-through and its props are display-only. The swept
+# collision rig always gets the unmodified gameplay pose on the next substep.
+var uram_out_snapshot:Dictionary={}
+var uram_out_bridge:Dictionary={}
+var uram_out_restore:Dictionary={}
+var uram_out_props:Dictionary={}
+var uram_out_height:=0.0
+var uram_out_bridge_height:=0.0
+var uram_previous_animator_mode:=-1
+var uram_out_stock_position:=Vector3.INF
+var uram_last_drawn_return:Dictionary={}
+var uram_return_contact_pose:Dictionary={}
+
+func capture_uram_visible_return(key:String)->void:
+	uram_last_drawn_return.clear()
+	if not uram_forest_pair or key not in ["attack","walk"]:return
+	for joint in ["pelvis","foot.R","foot.L"]:
+		uram_last_drawn_return[joint]=bone_world(0,joint)-bodies[0].position
+var uram_out_started:=-1.0
+var uram_out_duration:=.14
+var uram_out_basic_return:=false
+var uram_trade_last_strike:=-INF
+var uram_trade_pending_hit:=-INF
+var uram_trade_at:=-INF
+var uram_trade_feet:Dictionary={}
+var uram_display_cuff:BoneAttachment3D
+var uram_display_shield:MeshInstance3D
+var uram_display_cuff_rest:=Transform3D.IDENTITY
+var uram_hidden_stock_shield:=false
+
+func _hide_uram_display_cuff()->void:
+	if is_instance_valid(uram_display_shield):uram_display_shield.hide()
+	if uram_hidden_stock_shield and not actors.is_empty() and is_instance_valid(actors[0].preview.shield):
+		actors[0].preview.shield.show()
+	uram_hidden_stock_shield=false
+
+func _seat_uram_display_cuff(p,weight:float,idle_seat:Vector3)->void:
+	var physical:MeshInstance3D=p.shield
+	if weight<=.0001 or not physical.visible:return
+	var sk:Skeleton3D=p.skeleton
+	var index:=sk.find_bone("forearm.L")
+	if index<0:return
+	var forearm:Transform3D=sk.global_transform*sk.get_bone_global_pose(index)
+	if not is_instance_valid(uram_display_cuff):
+		uram_display_cuff=BoneAttachment3D.new()
+		uram_display_cuff.bone_name="forearm.L"
+		sk.add_child(uram_display_cuff)
+		uram_display_shield=MeshInstance3D.new()
+		uram_display_shield.mesh=physical.mesh
+		uram_display_shield.cast_shadow=physical.cast_shadow
+		uram_display_cuff.add_child(uram_display_shield)
+		var n:Vector3=p.camera.global_basis.z.normalized()
+		var vx:=Vector3.UP.cross(n).normalized()
+		var center:=forearm.origin.lerp(bone_world(0,"hand.L"),.23)+n*.055
+		uram_display_cuff_rest=forearm.affine_inverse()*Transform3D(Basis(vx,n.cross(vx),n),center)
+	# The visible copy follows Skeleton3D bone updates; the original stays
+	# available to every collision query at its unchanged transform.
+	var current:=forearm.affine_inverse()*Transform3D(physical.global_basis,idle_seat)
+	var target:=uram_display_cuff_rest
+	uram_display_shield.transform=Transform3D(current.basis.orthonormalized().slerp(target.basis.orthonormalized(),weight).orthonormalized(),current.origin.lerp(target.origin,weight))
+	uram_display_cuff.on_skeleton_update()
+	physical.hide()
+	uram_hidden_stock_shield=true
+	uram_display_shield.show()
+
+func mark_uram_outgoing_contact(at:float)->void:
+	uram_trade_last_strike=at
+	if at-uram_trade_pending_hit<=.018:
+		_start_uram_trade_display(uram_trade_pending_hit)
+
+func maybe_mark_uram_trade(at:float,key:String,age:float)->bool:
+	var close_strike:=key=="attack" and age>=.23 and age<=.45
+	var early_return:=key=="walk" and uram_out_basic_return and age<=.17
+	if not close_strike and not early_return:return false
+	uram_trade_pending_hit=at
+	if at-uram_trade_last_strike<=(.19 if close_strike else .60):
+		_start_uram_trade_display(at)
+		return true
+	return false
+
+func _start_uram_trade_display(at:float)->void:
+	uram_trade_at=at
+	uram_trade_feet=uram_displayed_feet.duplicate()
+	# This one contact reaction has display priority over a backstep bridge.
+	uram_out_started=-1.0;uram_out_bridge.clear()
+
+func mark_uram_outgoing_recovery(from:String,to:String,at:float)->void:
+	var hit:bool=from=="attack" and to in ["walk","idle"] and consumed[0]
+	var returning:=from=="walk" and to=="idle" and uram_out_basic_return
+	if not hit and not returning:return
+	uram_out_basic_return=to=="walk"
+	if uram_out_snapshot.is_empty():return
+	uram_out_bridge=uram_out_snapshot.duplicate()
+	uram_out_bridge_height=uram_out_height
+	uram_return_contact_pose=uram_last_drawn_return.duplicate()
+	uram_out_started=at
+	uram_out_duration=.17 if to=="walk" else .14
+
+func restore_uram_outgoing_display()->void:
+	_hide_uram_display_cuff()
+	if uram_out_restore.is_empty() and uram_out_props.is_empty():return
+	var p=actors[0].preview
+	var sk:Skeleton3D=p.skeleton
+	if uram_out_stock_position.is_finite():
+		p.pivot.position=uram_out_stock_position
+		uram_out_stock_position=Vector3.INF
+	for joint in uram_out_restore:
+		var saved:Array=uram_out_restore[joint]
+		sk.set_bone_pose_position(joint,saved[0])
+		sk.set_bone_pose_rotation(joint,saved[1])
+	sk.force_update_all_bone_transforms()
+	for prop in uram_out_props:
+		if is_instance_valid(prop):prop.global_transform=uram_out_props[prop]
+	uram_out_restore.clear()
+	uram_out_props.clear()
+
+func present_uram_outgoing(at:float,key:String,age:float)->void:
+	if not uram_forest_pair:return
+	var p=actors[0].preview
+	var sk:Skeleton3D=p.skeleton
+	if key not in ["attack","walk","idle","run"] or (not uram_intake_restore.is_empty() and key!="walk"):
+		if key not in ["walk","idle"]:
+			uram_out_started=-1.0;uram_out_bridge.clear()
+			uram_out_basic_return=false
+		return
+	var trade_age:=at-uram_trade_at
+	var trade_weight:=smoothstep(0.0,.047,trade_age)*(1.0-smoothstep(.08,.21,trade_age))
+	if uram_out_started>=0.0 and key in ["walk","idle"] and uram_intake_restore.is_empty() and trade_weight<=.0001:
+		var carry:=1.0-smoothstep(0.0,uram_out_duration,at-uram_out_started)
+		if carry>.0001:
+			uram_out_stock_position=p.pivot.position
+			p.pivot.position.y=lerpf(p.pivot.position.y,uram_out_bridge_height,carry)
+			for joint in uram_out_bridge:
+				var from:Array=uram_out_bridge[joint]
+				var position:=sk.get_bone_pose_position(joint)
+				var rotation:=sk.get_bone_pose_rotation(joint)
+				uram_out_restore[joint]=[position,rotation]
+				sk.set_bone_pose_position(joint,position.lerp(from[0],carry))
+				sk.set_bone_pose_rotation(joint,rotation.slerp(from[1],carry))
+			if uram_return_contact_pose.has("pelvis"):
+				# Old joint blend was local; it lost the previous rendered rig's
+				# solved position when the native animation switched. Maintain
+				# the visible continuity relative to the unchanged physics body.
+				sk.force_update_all_bone_transforms()
+				var target:Vector3=bodies[0].position+uram_return_contact_pose.pelvis
+				var offset:=((target-bone_world(0,"pelvis"))*carry).limit_length(.65)
+				p.pivot.global_position+=offset
+				sk.force_update_all_bone_transforms()
+				for label in ["foot.R","foot.L"]:
+					if not uram_return_contact_pose.has(label):continue
+					var index:=sk.find_bone(label)
+					if index<0:continue
+					var transform:=sk.get_bone_global_pose(index)
+					var goal:Vector3=sk.to_local(bodies[0].position+uram_return_contact_pose[label])
+					transform.origin=transform.origin.lerp(goal,carry*.88)
+					sk.set_bone_global_pose(index,transform)
+		else:
+			uram_out_started=-1.0;uram_out_bridge.clear()
+	if trade_weight>.0001:
+		# Just the head and shoulder receive the impact. Preserve the committed
+		# strike and its clock, while keeping an extra footstep out of the pose.
+		for entry in [["spine",.075],["head",.105]]:
+			var joint:=sk.find_bone(entry[0])
+			if joint<0:continue
+			var q:=sk.get_bone_pose_rotation(joint)
+			uram_out_restore[joint]=[sk.get_bone_pose_position(joint),q]
+			sk.set_bone_pose_rotation(joint,q*Quaternion(Vector3.RIGHT,-float(entry[1])*trade_weight))
+		sk.force_update_all_bone_transforms()
+		for label in uram_trade_feet:
+			var joint:=sk.find_bone(label)
+			if joint<0:continue
+			var source:=sk.get_bone_global_pose(joint)
+			var anchor:Vector3=sk.to_local(bodies[0].position+uram_trade_feet[label])
+			uram_out_restore[joint]=[sk.get_bone_pose_position(joint),sk.get_bone_pose_rotation(joint)]
+			source.origin.x=lerpf(source.origin.x,anchor.x,trade_weight)
+			source.origin.z=lerpf(source.origin.z,anchor.z,trade_weight)
+			sk.set_bone_global_pose(joint,source)
+	for prop in [p.club,p.shield]:
+		if is_instance_valid(prop):uram_out_props[prop]=prop.global_transform
+	sk.force_update_all_bone_transforms()
+	# Reuse the authored grip and full normalization after the final bone evaluation.
+	p.update_equipment()
+	if is_instance_valid(p.shield):
+		var wrist:=bone_world(0,"hand.L")
+		var forearm:=bone_world(0,"forearm.L")
+		var inward:Vector3=(bone_world(0,"spine")-wrist).normalized()
+		var weight:float=smoothstep(.03,.105,age) if key=="attack" else (1.0-smoothstep(.10,.23,age) if key=="walk" else 0.0)
+		var idle_seat:Vector3=wrist.lerp(forearm,.28)+inward*.12+p.shield.global_basis.z.normalized()*.035
+		p.shield.global_position=idle_seat
+		_seat_uram_display_cuff(p,weight,idle_seat)
+	if key=="attack":_aim_uram_club(age)
+	if key in ["attack","walk"]:
+		uram_out_height=p.pivot.position.y
+		uram_out_snapshot.clear()
+		for joint in sk.get_bone_count():
+			uram_out_snapshot[joint]=[sk.get_bone_pose_position(joint),sk.get_bone_pose_rotation(joint)]
 
 func _keep_uram_feet_anchored(sk:Skeleton3D)->void:
 	var inv:=sk.global_transform.affine_inverse()

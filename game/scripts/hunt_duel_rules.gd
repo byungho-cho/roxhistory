@@ -1,4 +1,6 @@
 extends RefCounted
+
+signal hp_lost(side: int, before: int, after: int)
 ## Isolated encounter state, never writes campaign rewards, save data, or experience.
 const MAX_SP := 3.0
 const REVIVE_SECONDS := 1.0
@@ -54,7 +56,9 @@ func spend(cost: int) -> bool:
 func damage(side: int, amount: int) -> bool:
 	if not living() or amount <= 0:
 		return false
-	hp[side] = maxi(0, hp[side] - amount)
+	var before := hp[side]
+	hp[side] = maxi(0, before - amount)
+	if hp[side] < before:hp_lost.emit(side,before,hp[side])
 	if hp[side] > 0:
 		return false
 	revive_at[side] = elapsed + REVIVE_SECONDS
