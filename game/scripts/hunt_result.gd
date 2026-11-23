@@ -8,6 +8,13 @@ var won: bool
 var frame_art: AtlasTexture
 var elapsed := 0.0
 var leaving := false
+var use_han_field := false
+var result_video:VideoStreamPlayer
+var result_last:TextureRect
+var result_first:TextureRect
+var video_finished:=false
+const FIELD_ART := "res://assets/ui/hunt-readiness/"
+
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
@@ -34,12 +41,19 @@ func _ready() -> void:
 	layout.add_child(rule)
 	rule.position = Vector2(62,185)
 	rule.size = Vector2(57,3)
+	if won:
+		var advanced:=int(app.model.state.get("hunt_cleared",0))>int(app.hunt_stage)
+		write(layout,"진행 보상 · 다음 단계 해금" if advanced else "진행 저장 상태를 확인해 주세요.",Rect2(62,210,420,28),19,Color("fff0d0"))
 	if not won:
 		write(layout,"전력을 정비하고 다시 도전하세요.",Rect2(62,210,390,21),17,Color("fff0d0"))
 		followup(layout,"전투력 향상",239,"icon-spear.png")
 		followup(layout,"모집",304,"icon-horn.png")
 	result_button(layout,"마을로",62,false,func(): app.show_screen("play"))
 	result_button(layout,"사냥터 선택" if won else "다시 준비",246,true,app.close_hunt if won else app.retry_hunt)
+	if use_han_field and build_field_video(layout):
+		shade.color=Color("3d3c28")
+		set_process(true)
+		return
 	var prefix := ART + ("hunt-result-success" if won else "hunt-result-failure")
 	var art: TextureRect = app.picture(layout,load(prefix+"-fallback.png"),Rect2(562,74,319,425))
 	art.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
@@ -55,7 +69,8 @@ func _ready() -> void:
 			set_process(true)
 
 func fit(layout: Control) -> void:
-	var factor := minf((size.x-app.safe.x*2)/960.0,(size.y-app.safe.y*2)/540.0)
+	var inset:Vector2=app.safe
+	var factor := minf((size.x-inset.x*2)/960.0,(size.y-inset.y*2)/540.0)
 	layout.scale = Vector2.ONE * maxf(.01,factor)
 	layout.position = (size-layout.size*layout.scale)*.5
 
@@ -100,7 +115,41 @@ func followup(parent: Control, value: String, y: float, icon: String) -> void:
 	app.picture(row,preload("res://assets/ui/hunt-result/chevron-right.svg"),Rect2(354,18,20,20))
 
 func _process(delta: float) -> void:
+	if is_instance_valid(result_video):
+		result_video.paused=not app.application_active
+		if result_video.is_playing() and result_video.stream_position>.03:result_first.hide()
+		return
 	if not app.application_active: return
 	elapsed = fposmod(elapsed+delta,2.0)
 	var frame := int(elapsed*18)
 	frame_art.region.position = Vector2((frame%6)*CELL.x,(frame/6)*CELL.y)
+
+func build_field_video(layout:Control)->bool:
+	var prefix:=FIELD_ART+"han-"+("success" if won else "failure")
+	var stream:=load(prefix+".ogv") as VideoStream
+	if stream==null:return false
+	result_last=app.picture(layout,load(prefix+"-last.png"),Rect2(0,0,960,540))
+	layout.move_child(result_last,0)
+	result_video=VideoStreamPlayer.new()
+	result_video.name="ConfirmedResultMotion"
+	result_video.stream=stream
+	result_video.expand=true
+	result_video.size=Vector2(960,540)
+	result_video.loop=false
+	result_video.volume_db=-80.0
+	result_video.mouse_filter=Control.MOUSE_FILTER_IGNORE
+	layout.add_child(result_video)
+	layout.move_child(result_video,1)
+	result_first=app.picture(layout,load(prefix+"-first.png"),Rect2(0,0,960,540))
+	layout.move_child(result_first,2)
+	result_video.finished.connect(func():
+		video_finished=true
+		result_video.hide()
+		result_first.hide())
+	result_video.play()
+	return true
+
+func _exit_tree()->void:
+	if is_instance_valid(result_video):
+		result_video.stop()
+		result_video.stream=null

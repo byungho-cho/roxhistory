@@ -40,6 +40,10 @@ const INTRO_BGM_PATHS := ["res://assets/audio/d0070/intro-bgm-01.wav","res://ass
 const INTRO_SFX_PATH := "res://assets/audio/d0070/intro-sfx.wav"
 var hunt: HUNT_SCREEN
 var hunt_preparing := false
+var hunt_warm_paths:Dictionary={}
+var hunt_warmed:Array[Resource]=[]
+var hunt_loading:Control
+
 var hunt_preparation_cancelled := false
 var intro_music: Array[AudioStreamPlayer] = []
 var intro_audio: IntroStems
@@ -2392,6 +2396,30 @@ func open_hunt() -> void:
 	hunt_prey_id = "forest"
 	show_screen("hunt_select")
 
+func warm_hunt_resources()->void:
+	var paths:Array=[HybridCharacter.MESHY_HUNT_MODEL,"res://assets/characters/residents/roxhistory-hunter-male-combat-v2-preview.glb",WorldAnimal.MODELS.deer,HUNT_PREY_PROFILE.model_path("forest")]
+	var prey:=HUNT_PREY_PROFILE.encounter_species(hunt_stage,int(model.state.get("hunt_cleared",0)),HUNT_STAGE5_ADULT_CANDIDATE)
+	if prey=="adult":paths.append(HUNT_PREY_PROFILE.model_path("adult"))
+	for path:String in paths:
+		if not hunt_warm_paths.has(path) and ResourceLoader.exists(path):
+			if ResourceLoader.load_threaded_request(path)==OK:hunt_warm_paths[path]=true
+
+func show_hunt_loading()->void:
+	if is_instance_valid(hunt_loading):return
+	var shade:=ColorRect.new()
+	shade.name="HuntResourceWait"
+	shade.color=Color(0,0,0,.72)
+	stage.add_child(shade)
+	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	shade.mouse_filter=Control.MOUSE_FILTER_STOP
+	hunt_loading=shade
+	var icon:=picture(shade,preload("res://assets/ui/d0020/hourglass-teal-amber-illustrated.png"),Rect2(-24,-24,48,48))
+	icon.set_anchors_preset(Control.PRESET_CENTER)
+
+func close_hunt_loading()->void:
+	if is_instance_valid(hunt_loading):hunt_loading.queue_free()
+	hunt_loading=null
+
 func prepare_selected_hunt() -> void:
 	var cleared := int(model.state.get("hunt_cleared", 0))
 	if screen != "hunt_select" or hunt_preparing or modal or hunt_stage < 0 or hunt_stage >= HUNT_SELECTION.TOTAL_STAGES or hunt_stage > cleared:
@@ -2404,21 +2432,37 @@ func prepare_selected_hunt() -> void:
 	hunt_preparing = true
 	hunt_preparation_cancelled = false
 	audio.cue("action_click")
-	toast("사냥터 준비 중…")
+	warm_hunt_resources()
 	var paths := [HybridCharacter.MESHY_HUNT_MODEL, "res://assets/characters/residents/roxhistory-hunter-male-combat-v2-preview.glb", WorldAnimal.MODELS.deer, HUNT_PREY_PROFILE.model_path("forest")]
 	if not adult_path.is_empty() and ResourceLoader.exists(adult_path, "PackedScene"):
 		paths.append(adult_path)
 	var pending: Array[String] = []
 	var warmed: Array[Resource] = []
 	for path: String in paths:
-		if ResourceLoader.load_threaded_request(path,"PackedScene")==OK:pending.append(path)
-	while not pending.is_empty():
+		if hunt_warm_paths.get(path) is Resource:
+			var cached:Resource=hunt_warm_paths[path]
+			warmed.append(cached)
+			if path==adult_path:adult_ready=cached is PackedScene and (cached as PackedScene).can_instantiate()
+			continue
+		if hunt_warm_paths.has(path) or ResourceLoader.load_threaded_request(path,"PackedScene")==OK:pending.append(path)
+	# Loaded warmup resources enter without a waiting frame or text overlay.
+	for index in range(pending.size()-1,-1,-1):
+		var path:=pending[index]
+		if ResourceLoader.load_threaded_get_status(path)==ResourceLoader.THREAD_LOAD_LOADED:
+			var loaded:=ResourceLoader.load_threaded_get(path)
+			hunt_warm_paths[path]=loaded
+			warmed.append(loaded)
+			if path==adult_path:adult_ready=loaded is PackedScene and (loaded as PackedScene).can_instantiate()
+			pending.remove_at(index)
+	if not pending.is_empty():show_hunt_loading()
+	while not pending.is_empty() and not hunt_preparation_cancelled:
 		await get_tree().process_frame
 		for index in range(pending.size()-1,-1,-1):
 			var path := pending[index]
 			match ResourceLoader.load_threaded_get_status(path):
 				ResourceLoader.THREAD_LOAD_LOADED:
 					var loaded := ResourceLoader.load_threaded_get(path)
+					hunt_warm_paths[path]=loaded
 					warmed.append(loaded)
 					if path == adult_path:
 						adult_ready = loaded is PackedScene and (loaded as PackedScene).can_instantiate()
@@ -2427,6 +2471,8 @@ func prepare_selected_hunt() -> void:
 					pending.remove_at(index)
 	while not application_active and not hunt_preparation_cancelled:
 		await get_tree().process_frame
+	close_hunt_loading()
+	hunt_warmed=warmed
 	hunt_preparing = false
 	if not hunt_preparation_cancelled and screen=="hunt_select" and not modal and not world_map_open and selected_stage == hunt_stage and selected_stage <= int(model.state.get("hunt_cleared", 0)):
 		hunt_prey_id = "adult" if adult_ready else "forest"

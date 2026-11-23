@@ -16,6 +16,9 @@ func check(label:String,ok:bool)->void:
   push_error(label)
 
 func prepare(stage:int, front:int):
+ # Chapter one is now an explicitly skill-free Han encounter.
+ # Keep this skill/guard regression fixture on the unchanged later chapter.
+ stage=stage+6 if stage<6 else stage
  if app.screen=="hunt":
   app.close_hunt()
  if app.modal:app.close_modal()

@@ -101,6 +101,7 @@ var idle_extent := Vector2(281,176)
 var idle_fps := 24.0
 
 func _ready() -> void:
+	app.warm_hunt_resources()
 	mouse_filter=Control.MOUSE_FILTER_STOP
 	clip_contents=true
 	chapter=int(app.hunt_stage)/STAGES_PER_CHAPTER
@@ -457,6 +458,7 @@ func add_stage(slot: int) -> void:
 func choose(stage_id: int) -> void:
 	if stage_id<0 or stage_id>=TOTAL_STAGES or stage_id>progress():return
 	app.hunt_stage=stage_id
+	app.warm_hunt_resources()
 	draw_page()
 
 func change_chapter(direction: int) -> void:

@@ -41,15 +41,15 @@ func run():
  var settled:Vector2=actor.position
  var w:Dictionary=stage5._deer_stone_capsule()
  check("adult stroke uses actual trunk/head body capsule",not w.is_empty() and w.a.distance_to(w.b)>.05)
- var before_hp:int=stage5.rules.party_hp[Rules.SAEBOM]
+ var before_hp:int=stage5.rules.party_hp[0]
  stage5.rules.hunter_turn=false
- stage5.rules.next_target=Rules.SAEBOM
+ stage5.rules.next_target=0
  stage5.rules.exchange_clock=Rules.AUTO_INTERVAL
  stage5._process(.04)
  stage5._process(.18)
  check("real scheduled charge samples native windup",stage5.pose=="counter" and actor.native_phase=="charge" and actor.native_elapsed>0.0)
  stage5._process(.17)
- check("charge hits existing 2 HP and advances native release",stage5.rules.party_hp[Rules.SAEBOM]==before_hp-2 and actor.native_elapsed>=stage5.adult_markers.charge_release and actor.position.distance_to(settled)>1.0)
+ check("charge hits existing 2 HP and advances native release",stage5.rules.party_hp[0]==before_hp-2 and actor.native_elapsed>=stage5.adult_markers.charge_release and actor.position.distance_to(settled)>1.0)
  for frame in range(15): stage5._process(1.0/60.0)
  var before_stone:int=stage5.rules.deer_hp
  stage5.rules.charges[Rules.SAEBOM]=3.0
@@ -57,7 +57,7 @@ func run():
  for frame in range(80):
   stage5._process(1.0/60.0)
   if stage5.stone_last_result in ["hit","miss"]:break
- check("Saebom real 2SP body contact still applies existing 58",stage5.stone_last_result=="hit" and stage5.rules.deer_hp==before_stone-58)
+ check("chapter-one inactive Saebom cannot consume SP or deal skill damage",stage5.rules.deer_hp==before_stone and stage5.stone_last_result!="hit" and not stage5.rules.can_reserve_manual(2,2))
  var before_money:=[app.model.state.wood,app.model.state.stone,app.model.state.tokens,app.model.state.get("diamonds",0)]
  app.retry_hunt()
  await process_frame

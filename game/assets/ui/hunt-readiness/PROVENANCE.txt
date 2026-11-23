@@ -1,0 +1,10 @@
+Hunt readiness/result review assets — 2026-11-24
+Source: shared-handoff/shared-dev/20261124-hunt-readiness-and-results-manual/references
+All 15 supplied SHA256 entries were verified before conversion.
+AUTO-0/1 and X2-0/1 are byte-for-byte copies of the supplied approved assets.
+Han success/failure .ogv: source Field-Only MP4, Theora quality 8, no audio, original timing and color; first/last PNGs from the same approved sources.
+branch-vs.ogv: ONLY the central common effect cropped at (365,125,230,210) from the 960x540, 6.9s reference, Theora quality 9, no audio. Portraits, names and full reference background are not played back as a fixed battle preset.
+Plate: source crop at 0.45s; unlit branch: source crop at 0.65s. A shader isolates timber color and bright flames; runtime portraits and values remain separate.
+No preview UI was baked into a result video. Runtime buttons, stage and saved progression text are independent controls.
+The two intro WAVs use the approved PR70 assets from commit e503254 only; no other PR changes were copied wholesale.
+The handoff contains flattened role badge references but no separate seven-role originals. Current chapter-one roles use existing spear/deer icons pending the requested originals.

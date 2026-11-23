@@ -53,7 +53,7 @@ func test_winning_tail() -> void:
 		hunt._process(1.0/60.)
 		if hunt.rules.outcome=="win" and hunt.hit_age<.60 and not hunt.result_shown: held=true
 		if hunt.result_shown:break
-	check("Native finish retained full tail, then once ordinary result",held and hunt.result_shown and hunt.hit_age>=1.19 and app.model.state.hunt_cleared==5)
+	check("Native finish retained full tail, then once ordinary result",held and hunt.result_shown and hunt.hit_age>=1.19 and app.model.state.hunt_cleared==app.hunt_stage+1)
 
 func run()->void:
 	app=load("res://scenes/main.tscn").instantiate()
@@ -67,3 +67,4 @@ func run()->void:
 	await process_frame
 	print("Ordinary close+finisher gate: ",checks," checks; ",failures," failures")
 	quit(int(failures!=0))
+

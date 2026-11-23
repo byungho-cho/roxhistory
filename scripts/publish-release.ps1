@@ -1,6 +1,7 @@
 [CmdletBinding()]
-param([string]$Repository = 'byungho-cho/roxhistory', [string]$ReleaseNotesPath, [string]$OutputDirectory, [switch]$AndroidOnly)
+param([string]$Repository = 'byungho-cho/roxhistory', [string]$ReleaseNotesPath, [string]$OutputDirectory, [switch]$AndroidOnly, [switch]$ReviewOnly)
 $ErrorActionPreference = 'Stop'
+$latestOption = if ($ReviewOnly) { @('-f','make_latest=false') } else { @() }
 $repo = Split-Path $PSScriptRoot -Parent
 $output = if ($OutputDirectory) { $OutputDirectory } else { Join-Path $repo 'build' }
 $manifest = Get-Content -Raw (Join-Path $output 'release-manifest.json') | ConvertFrom-Json
@@ -23,7 +24,7 @@ if ($LASTEXITCODE -ne 0 -or $head -ne $manifest.commit) { throw 'Rebuild the req
 if (& git -C $repo status --porcelain) { throw 'Commit source and release tooling before building and publishing.' }
 & gh auth status --hostname github.com *> $null
 if ($LASTEXITCODE -ne 0) { throw 'GitHub CLI login is required for release uploads.' }
-$tag = "v$version"
+$tag = if ($ReviewOnly) { "review-v$version-$($manifest.commit.Substring(0,7))" } else { "v$version" }
 $allReleasesText = & gh api "repos/$Repository/releases?per_page=100" --paginate --slurp
 if ($LASTEXITCODE -ne 0) { throw 'Cannot list releases.' }
 $allReleases = @(foreach ($page in (ConvertFrom-Json ($allReleasesText -join "`n"))) { foreach ($item in $page) { $item } })
@@ -43,7 +44,7 @@ if ($ReleaseNotesPath) {
     Get-Content -Raw -LiteralPath $ReleaseNotesPath | Add-Content -LiteralPath $notes -Encoding utf8
 }
 if (-not $exists) {
-    $created = & gh api --method POST "repos/$Repository/releases" -f "tag_name=$tag" -f "target_commitish=$($manifest.commit)" -f "name=RoxHistory $version" -F "body=@$notes" -F draft=true -F prerelease=true
+    $created = & gh api --method POST "repos/$Repository/releases" -f "tag_name=$tag" -f "target_commitish=$($manifest.commit)" -f "name=RoxHistory $version$(if ($ReviewOnly) { ' review build' })" -F "body=@$notes" -F draft=true -F prerelease=true @latestOption
     if ($LASTEXITCODE -ne 0) { throw 'Release creation failed.' }
     $matchingReleases = @((ConvertFrom-Json ($created -join "`n")))
 }
@@ -87,7 +88,7 @@ foreach ($entry in $manifest.files) {
     $asset = @($assets | Where-Object name -CEQ $entry.name)
     if ($asset.Count -ne 1 -or $asset[0].state -ne 'uploaded' -or $asset[0].size -ne $entry.size -or $asset[0].digest -ne "sha256:$($entry.sha256)") { throw 'Uploaded asset checksum verification failed. No cleanup performed.' }
 }
-& gh api --method PATCH "repos/$Repository/releases/$($release.id)" -F draft=false -F prerelease=true -F "body=@$notes" --silent
+& gh api --method PATCH "repos/$Repository/releases/$($release.id)" -F draft=false -F prerelease=true @latestOption -F "body=@$notes" --silent
 if ($LASTEXITCODE -ne 0) { throw 'Publishing failed. No cleanup performed.' }
 $tagCommit = & gh api "repos/$Repository/commits/$tag" --jq '.sha'
 if ($LASTEXITCODE -ne 0 -or $tagCommit -ne $manifest.commit) { throw 'Published tag verification failed. No cleanup performed.' }

@@ -26,6 +26,8 @@ const SKILLS := {
 	"team": {"label": "협동", "cost": 2, "damage": 58},
 }
 
+var skills_enabled:=true
+
 var charges: Array[float] = [0.0, 0.0, 0.0]
 var party_hp: Array[int] = [34, 33, 33]
 var hunter_hp: int:
@@ -105,6 +107,7 @@ func set_auto(enabled: bool) -> void:
 	reserved_skill = next_auto_skill() if auto_enabled else ""
 
 func next_auto_skill() -> String:
+	if not skills_enabled:return ""
 	var options: Array[String] = []
 	if party_hp[1]>0:options.append("strike")
 	if party_hp[2]>0 and (party_hp[0]>0 or party_hp[1]>0):options.append("team")
@@ -112,6 +115,7 @@ func next_auto_skill() -> String:
 	return "" if options.is_empty() else options[rng.randi_range(0,options.size()-1)]
 
 func can_use(skill: String) -> bool:
+	if not skills_enabled:return false
 	if not SKILLS.has(skill) or not outcome.is_empty() or action_lock > 0 or pending_damage > 0 or pending_counter or rally_cast_pending:
 		return false
 	var index := PARTY_SKILLS.find(skill)
@@ -134,7 +138,7 @@ func use_skill(skill: String) -> bool:
 
 # Manual chain input owns its own valid tap/SP reservation; ordinary scheduling stays separate.
 func can_reserve_manual(index: int, cost: int) -> bool:
-	return outcome.is_empty() and index >= 0 and index < party_hp.size() and party_hp[index] > 0 and cost > 0 and orbs(index) >= cost
+	return skills_enabled and outcome.is_empty() and index >= 0 and index < party_hp.size() and party_hp[index] > 0 and cost > 0 and orbs(index) >= cost
 
 
 func reserve_manual(index: int, cost: int) -> bool:
@@ -145,7 +149,7 @@ func reserve_manual(index: int, cost: int) -> bool:
 
 
 func can_execute_manual() -> bool:
-	return outcome.is_empty() and action_lock <= 0.0 and pending_damage == 0 and not pending_counter and not rally_cast_pending
+	return skills_enabled and outcome.is_empty() and action_lock <= 0.0 and pending_damage == 0 and not pending_counter and not rally_cast_pending
 
 
 func can_use_frontline_skill(index: int, cost: int) -> bool:
@@ -196,7 +200,7 @@ func resolve_uram_shield_counter(ordinary:bool) -> int:
 
 func can_start_rally() -> bool:
 	return (
-		outcome.is_empty() and party_hp[SAEBOM] > 0 and orbs(SAEBOM) >= RALLY_COST
+		skills_enabled and outcome.is_empty() and party_hp[SAEBOM] > 0 and orbs(SAEBOM) >= RALLY_COST
 		and action_lock <= 0.0 and orb_lock <= 0.0
 		and pending_damage == 0 and not pending_counter and not rally_cast_pending
 	)
@@ -262,7 +266,7 @@ func advance(delta: float, tick_rally := true, prefer_manual := false) -> String
 	if tick_rally:
 		advance_rally_clock(delta)
 	for index in party_hp.size():
-		if party_hp[index]>0:charges[index]=minf(MAX_ORBS,charges[index]+delta/CHARGE_SECONDS[index])
+		if skills_enabled and party_hp[index]>0:charges[index]=minf(MAX_ORBS,charges[index]+delta/CHARGE_SECONDS[index])
 	prey_stun_remaining = maxf(0.0, prey_stun_remaining - delta)
 	action_lock = maxf(0.0, action_lock - delta)
 	basic_lock = maxf(0.0, basic_lock - delta)
