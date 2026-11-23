@@ -1,4 +1,17 @@
 {
+  "currentAndroidPatch": {
+    "verifiedAt": "2026-11-23T16:34:05+09:00",
+    "version": "0.2.299",
+    "source": "576825167bb228385acdb65a2e55fdcc49227fd4",
+    "release": "https://github.com/byungho-cho/roxhistory/releases/tag/v0.2.299",
+    "installBaseApk": "0.2.295",
+    "deltaFrom298Bytes": 259736,
+    "cumulativeFrom295Bytes": 1664572,
+    "stockUpdaterMountedAndSaved": true,
+    "physicalAndroidVerified": false,
+    "windowsReleaseChanged": false
+  },
+  "legacySnapshot": "The remaining fields preserve the historical November 5, 2026 snapshot and are not current Android release metadata.",
   "updatedAt": "2026-11-05",
   "timezone": "Asia/Seoul",
   "sourceMain": "9c31e7827e88c9db8e8293239583dcd4bb8ceb1e",
