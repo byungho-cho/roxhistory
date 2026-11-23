@@ -59,3 +59,22 @@ void fragment(){
 """
  var material:=ShaderMaterial.new();material.shader=shader;sky.material=material
  return sky
+
+
+const ROLES:=["ally-melee","ally-ranged","ally-healer","ally-shaman","ally-tank","enemy-melee","enemy-ranged"]
+static func role_texture(role:String)->Texture2D:
+ if role not in ROLES:return null
+ return load(ART+"role-badges/role-"+role+".png")
+static func role_material()->ShaderMaterial:
+ var shader:=Shader.new()
+ shader.code="""
+shader_type canvas_item;
+void fragment(){
+ vec2 p=abs((UV-.5)*19.)-vec2(5.5);
+ float distance=length(max(p,vec2(0.)))+min(max(p.x,p.y),0.)-4.;
+ COLOR=texture(TEXTURE,UV)*COLOR;
+ COLOR.a*=1.-smoothstep(-.4,.4,distance);
+}
+"""
+ var material:=ShaderMaterial.new();material.shader=shader
+ return material

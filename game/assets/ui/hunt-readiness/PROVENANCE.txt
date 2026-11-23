@@ -7,4 +7,4 @@ branch-vs.ogv: ONLY the central common effect cropped at (365,125,230,210) from 
 Plate: source crop at 0.45s; unlit branch: source crop at 0.65s. A shader isolates timber color and bright flames; runtime portraits and values remain separate.
 No preview UI was baked into a result video. Runtime buttons, stage and saved progression text are independent controls.
 The two intro WAVs use the approved PR70 assets from commit e503254 only; no other PR changes were copied wholesale.
-The handoff contains flattened role badge references but no separate seven-role originals. Current chapter-one roles use existing spear/deer icons pending the requested originals.
+Seven role PNG originals were subsequently supplied at common-assets/ui/role-badges and copied byte-for-byte. SHA256SUMS.txt records them; runtime sizing is 19px with a 4px rounded mask. Han=ally-melee, Uram=ally-tank, Saebom=ally-ranged, current prey=enemy-melee. Other approved roles remain available without introducing new characters.

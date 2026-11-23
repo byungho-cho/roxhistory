@@ -278,7 +278,7 @@ func _ready() -> void:
 	build_duel_header()
 	for i in 4:
 		var tag:=layer(battlefield)
-		build_level(tag,i<3)
+		build_level(tag,i<3,["ally-melee","ally-tank","ally-ranged","enemy-melee"][i])
 		prep_tags.append(tag)
 	update_combat_ui()
 	resized.connect(fit_layout)
@@ -583,7 +583,7 @@ func build_combat() -> void:
 	prey_hp=enemy.bar
 	prey_hp.max_value=rules.deer_max_hp
 
-func build_level(marker: Control, ally: bool) -> void:
+func build_level(marker: Control, ally: bool, role:String="") -> void:
 	var brush:TextureRect=app.picture(marker,NAME_BRUSH,Rect2(0,-3,40,8))
 	brush.modulate.a=.85
 	var badge:=Panel.new()
@@ -595,7 +595,8 @@ func build_level(marker: Control, ally: bool) -> void:
 	skin.bg_color=Color("202020")
 	skin.set_corner_radius_all(4)
 	badge.add_theme_stylebox_override("panel",skin)
-	app.picture(badge,preload("res://assets/ui/hunting-match/png/power/stone-spear.png") if ally else preload("res://assets/ui/hunting-match/png/power/deer-head.png"),Rect2(2,2,15,15))
+	var glyph:TextureRect=app.picture(badge,ReadinessArt.role_texture(role if not role.is_empty() else "ally-melee" if ally else "enemy-melee"),Rect2(0,0,19,19))
+	glyph.material=ReadinessArt.role_material()
 	var label:=caption(marker,"Lv.1",Rect2(3,-6,32,16),11,Color.WHITE)
 	label.add_theme_constant_override("outline_size",3)
 	label.add_theme_color_override("font_outline_color",Color.BLACK)

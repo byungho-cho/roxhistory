@@ -18,6 +18,9 @@ func wait_hunt():
   await process_frame
  await process_frame
 func run():
+ for role in preload("res://scripts/hunt_readiness_art.gd").ROLES:
+  var texture:Texture2D=preload("res://scripts/hunt_readiness_art.gd").role_texture(role)
+  ck(texture!=null and texture.get_size()==Vector2(376,376),"approved role asset available: "+role)
  app=load("res://scenes/main.tscn").instantiate();root.add_child(app);await process_frame
  app.model.start_new({},true);app.model.state.hunt_cleared=6
  app.hunt_stage=5;app.show_screen("hunt_select")
