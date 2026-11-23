@@ -61,6 +61,13 @@ func run():
  await process_frame
  ck(not is_instance_valid(fallback.result_video) and fallback.find_children("*","Button",true,false).size()==2,"video read failure retains both live result buttons")
  fallback.queue_free();await process_frame
+ app.close_hunt();await process_frame
+ app.hunt_stage=0;app.prepare_selected_hunt();await wait_hunt()
+ app.hunt.set_process(false);app.hunt.rules.outcome="win";app.hunt.show_result();await process_frame
+ var replay_ok:=false
+ for label in app.hunt.find_children("*","Label",true,false):
+  if label.text=="이미 완료한 사냥입니다.":replay_ok=true
+ ck(replay_ok and app.model.state.hunt_cleared==6,"replayed chapter-one win never claims a new unlock or changes progress")
  print("cold wait observed=",cold_wait_observed)
  FileAccess.open("D:/workspace/roxhistory/build/hunt-readiness-results/main-checks.json",FileAccess.WRITE).store_string(JSON.stringify({"checks":checks,"cold_wait_observed":cold_wait_observed},"  "))
  app.queue_free();await process_frame;await process_frame

@@ -2427,6 +2427,7 @@ func show_result() -> void:
 	manual_pending.clear()
 	manual_ordered_han_finisher = false
 	uram_field_reserved = false
+	var previous_progress:=int(app.model.state.get("hunt_cleared",0))
 	if rules.outcome == "win":
 		app.record_hunt_win()
 		hunt_audio.cue("monster_death",4)
@@ -2443,6 +2444,7 @@ func show_result() -> void:
 	result.app = app
 	result.won = rules.outcome == "win"
 	result.use_han_field=chapter_one_solo
+	result.progression_advanced=int(app.model.state.get("hunt_cleared",0))>previous_progress
 	add_child(result)
 	result.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 
