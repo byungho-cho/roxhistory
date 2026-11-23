@@ -845,7 +845,6 @@ func _refresh(delta := 0.0) -> void:
 		bars[i].value = presentation.hp[i]
 	skill_hud.chain_border_speed=URAM_BORDER_RATE if _local_guard_pre_cue() else 1.0
 	if local_melee_polish and is_instance_valid(shared_world) and shared_world.saebom_pair:
-		if motion[0] in ["idle","walk","run","hit"]:shared_world.update_knife_latch()
 		skill_hud.set_saebom_distance_icon(shared_world.bom_near_skill if motion[0]=="skill" else shared_world.bom_shove if motion[0]=="attack" else shared_world.bom_close,MeleeKnifeIcon)
 	skill_hud.sync(rules.sp,rules.hp[0],rules.full_hp(0),rules.living(),_can_request(),delta)
 	skill_hud.hp.value=presentation.hp[0]
@@ -997,8 +996,6 @@ func _try_player(key: String) -> void:
 	if key=="skill" and _local_ram_busy():return
 	if not SP_COST.has(key) or not _can_request() or not rules.spend(int(SP_COST[key])):
 		return
-	if local_melee_polish and key=="chain" and rules.ally_id=="saebom":cast_notice={"key":key,"at":rules.elapsed,"icon":skill_hud.chain_art.texture,"bom_buff":true}
-	else:cast_notice={"key":key,"at":visual_clock,"icon":skill_hud.chain_art.texture if key=="chain" else skill_hud.badge_art.texture}
 	if _uram_deer_close() and is_instance_valid(shared_world):shared_world.restore_uram_outgoing_display()
 	cast_from=_position(0)
 	contact_at[0]=-1.0 # Cancel the interrupted automatic contact; never land it twice.
@@ -1011,10 +1008,18 @@ func _try_player(key: String) -> void:
 		local_guard_action=shared_world.action_id[1] if honest_guard else -1
 		if honest_guard:shared_world.capture_forest_shield_input_face()
 	_act(0,"counter" if key=="chain" and _uram_deer_close() and not honest_guard else key)
+	if local_melee_polish and key=="chain" and rules.ally_id=="saebom":cast_notice={"key":key,"at":rules.elapsed,"icon":skill_hud.chain_art.texture,"bom_buff":true}
+	else:
+		var icon:Texture2D=skill_hud.chain_art.texture if key=="chain" else skill_hud.badge_art.texture
+		if key=="skill" and local_melee_polish and is_instance_valid(shared_world) and shared_world.saebom_pair:
+			skill_hud.set_saebom_distance_icon(shared_world.bom_near_skill,MeleeKnifeIcon)
+			icon=skill_hud.badge_art.texture
+		cast_notice={"key":key,"at":visual_clock,"icon":icon}
 	_render_actors()
 	_refresh() # Consume SP and hide readiness in the same input frame.
 
 func _act(side: int, key: String) -> void:
+	if side==0 and is_instance_valid(shared_world):shared_world.update_knife_latch(motion[0])
 	var actor := a if side == 0 else b
 	motion[side] = key
 	age[side] = 0.0
@@ -1513,6 +1518,7 @@ func _start_battle_camera()->void:
 	camera_base_scale=field.scale;camera_base_position=field.position
 
 func _render_actors(delta:=0.0)->void:
+	if is_instance_valid(shared_world):shared_world.update_knife_latch(motion[0])
 	if is_instance_valid(a) and is_instance_valid(b):
 		for i in 2:
 			var actor=a if i==0 else b
@@ -1521,7 +1527,12 @@ func _render_actors(delta:=0.0)->void:
 	# Repaint on pose placement, including entrance frames which skip HUD refresh.
 	location_layer.queue_redraw()
 	if is_instance_valid(shared_world):
-		if delta==0:shared_world.render_poses(self,0)
+		var saebom_pose_mismatch:=false
+		if shared_world.saebom_pair and local_melee_polish:
+			var key:String=motion[0]
+			var blade_expected:bool=shared_world.bom_shove if key=="attack" else shared_world.bom_near_skill if key=="skill" else shared_world.bom_close and key in ["idle","walk","run","hit"]
+			saebom_pose_mismatch=blade_expected!=a.preview.has_meta("saebom_melee_blade")
+		if delta==0 or saebom_pose_mismatch:shared_world.render_poses(self,0)
 		a.preview.position=_position(0);b.preview.position=_position(1)
 		if local_saebom_latest and a.key=="saebom":_pose_bom_cast(a,float(age[0]) if motion[0]=="chain" and rules.hp[0]>0 else -1.0)
 		a.place_effect();b.place_effect()
@@ -1658,6 +1669,9 @@ func _advance_shared(delta:float)->void:
 			var actor:=a if side==0 else b
 			if _uram_deer_close() and motion[side]=="run":
 				if shared_world.local_basic_in_range(side):_react(side,"idle")
+			elif _saebom_duel() and side==0 and shared_world.bom_close and motion[0]=="run":
+				if shared_world.bodies[0].position.distance_to(shared_world.bodies[1].position)<=SharedWorld.SAEBOM_MELEE_GAP:
+					_react(0,"idle")
 			elif _saebom_duel() and side==1 and motion[1]=="run":
 				if shared_world.bodies[0].position.distance_to(shared_world.bodies[1].position)<=SharedWorld.SAEBOM_DEER_APPROACH_GAP+.006:
 					animal_attack_count+=1;_act(1,"skill" if animal_attack_count%3==0 else "attack")
@@ -1686,6 +1700,8 @@ func _advance_shared(delta:float)->void:
 			if motion[0]=="idle" and rules.elapsed>=next_attack[0] and not (_local_ram_busy() or deer_ram_due):
 				if _uram_deer_close() and not shared_world.local_basic_in_range(0):
 					if shared_world.local_basic_too_far(0):_react(0,"run")
+				elif _saebom_duel() and shared_world.bom_close and shared_world.bodies[0].position.distance_to(shared_world.bodies[1].position)>SharedWorld.SAEBOM_MELEE_GAP:
+					_react(0,"run")
 				else:_act(0,"attack")
 			if motion[1]=="idle" and rules.elapsed>=next_attack[1] and not (deer_ram_due and motion[0]!="idle"):
 				if (_saebom_duel() and shared_world.bodies[0].position.distance_to(shared_world.bodies[1].position)>SharedWorld.SAEBOM_DEER_APPROACH_GAP+.006) or (_uram_deer_close() and not deer_ram_due and not shared_world.local_basic_in_range(1)):

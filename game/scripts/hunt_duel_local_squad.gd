@@ -251,6 +251,7 @@ func configure_saebom_distance_drill(mode:String)->void:
 	# Preset only: all points, hits, death and target movement still use the squad rules.
 	damage_numbers.clear()
 	saebom_distance_drill=mode
+	units[2].bom_close=false
 	var far:=mode=="far"
 	var points:=[Vector2.ZERO,Vector2(526,260),Vector2(452,301) if far else Vector2(486,272),Vector2(576,231) if far else Vector2(529,251),Vector2.ZERO,Vector2.ZERO]
 	for i in units.size():
@@ -279,8 +280,14 @@ func _update_saebom_range()->void:
 	if u.move in ["attack","skill","chain"]:
 		huds[2].set_saebom_distance_icon(bool(u.get("bom_shove",false)) if u.move=="attack" else bool(u.get("bom_near_skill",false)) if u.move=="skill" else bool(u.get("bom_close",false)),NEAR_SAE_2SP)
 		return
-	u.bom_close=SaebomMelee.saebom_close_at(u.feet.distance_to(units[target].feet),bool(u.get("bom_close",false)),65.,80.)
-	huds[2].set_saebom_distance_icon(u.bom_close,NEAR_SAE_2SP)
+	_sample_saebom_mode(u,target)
+	huds[2].set_saebom_distance_icon(bool(u.get("bom_close",false)),NEAR_SAE_2SP)
+
+const SAEBOM_MELEE_ENTER := 65.0
+
+func _sample_saebom_mode(u:Dictionary,target:int)->void:
+	if bool(u.get("bom_close",false)) or SaebomMelee.saebom_mode_locked(String(u.move)):return
+	u.bom_close=(u.feet as Vector2).distance_to(units[target].feet)<=SAEBOM_MELEE_ENTER
 
 func set_input_paused(value:bool)->void:
 	input_paused=value
@@ -293,6 +300,8 @@ func grant_sp()->void:
 
 func _play(u:Dictionary,key:String)->void:
 	u.actor.play(key);u.move=key;u.age=0.0;u.contact=-1.0
+	if u.id=="saebom" and key not in ["attack","skill"]:
+		u.bom_shove=false;u.bom_near_skill=false
 
 func _free_to_cast(i:int)->bool:
 	return not input_paused and not ended and units[i].hp>0 and units[i].move in ["idle","run","walk","attack","hit"]
@@ -316,6 +325,9 @@ func _request(key:String,i:int)->void:
 		_begin(i,"chain" if guard_index>=0 else "counter",target)
 		units[i].guard_source=guard_index
 	else:_begin(i,key,target)
+	if i==2 and key=="skill":
+		_update_saebom_range()
+		if cast_notices.has(i):cast_notices[i].icon=huds[2].badge_art.texture
 	_draw_pose(0.0)
 
 func _squad_guard_candidate(lead:=0.0)->int:
@@ -347,6 +359,7 @@ func _target(i:int)->int:
 
 func _begin(i:int,key:String,target:int)->void:
 	var u:=units[i]
+	if i==2 and local_melee_polish and target>=0:_sample_saebom_mode(u,target)
 	if i==1 and key=="skill" and uram_ground_draw.is_valid():
 		var view:HybridCharacter=u.actor.preview
 		var sk:Skeleton3D=view.skeleton
@@ -376,7 +389,6 @@ func _begin(i:int,key:String,target:int)->void:
 	if i==2 and key!="chain":u.contact=dur*.61
 	if i==2 and local_melee_polish and target>=0:
 		var gap:float=u.feet.distance_to(units[target].feet)
-		u.bom_close=SaebomMelee.saebom_close_at(gap,bool(u.get("bom_close",false)),65.,80.)
 		u.bom_shove=key=="attack" and u.bom_close
 		u.bom_hop=clampf(82.-gap,0.,24.) if key=="skill" and u.bom_close else 0.
 		u.bom_near_skill=key=="skill" and u.bom_close
@@ -397,7 +409,7 @@ func _begin(i:int,key:String,target:int)->void:
 	u.next=elapsed+maxf(dur+.28,1.26)
 
 func _gap(i:int)->float:
-	return 124.0 if i==2 else 59.0 if i==0 else 49.0
+	return (59.0 if bool(units[2].get("bom_close",false)) else 124.0) if i==2 else 59.0 if i==0 else 49.0
 
 func _approach(i:int,target:Vector2,dt:float)->void:
 	var u:=units[i]
@@ -782,6 +794,7 @@ func _calibrate_han()->void:
 	_play(units[0],"idle")
 
 func _draw_pose(dt:float)->void:
+	_update_saebom_range()
 	var ambient:=Color.WHITE.lerp(Color.BLACK,spotlight_dim())
 	for i in units.size():
 		var u:=units[i];var actor=u.actor
@@ -840,8 +853,10 @@ func _draw_pose(dt:float)->void:
 					u.close_basic_edge=Knife.shoulder(target,u.feet)
 				Knife.show_basic(u,target,p)
 				actor.preview.viewport.render_target_update_mode=SubViewport.UPDATE_ONCE
-			else:SaebomMelee.saebom_shove_pose(actor,float(u.age)/maxf(.01,float(actor.duration)))
-		if i==2 and not show_basic and not (u.move=="skill" and bool(u.get("bom_near_skill",false))):
+			else:
+				SaebomMelee.saebom_shove_pose(actor,float(u.age)/maxf(.01,float(actor.duration)))
+				Knife.blade(actor.preview,Vector2.ZERO,0.,0.)
+		if i==2 and not (u.move=="attack" and bool(u.get("bom_shove",false))) and not (u.move=="skill" and bool(u.get("bom_near_skill",false))):
 			if u.hp>0 and bool(u.get("bom_close",false)) and u.move in ["idle","walk","run","hit"]:
 				Knife.blade(actor.preview,Vector2.ZERO,0.,0.)
 			elif actor.preview.has_meta("saebom_melee_blade"):actor.preview.remove_meta("saebom_melee_blade")

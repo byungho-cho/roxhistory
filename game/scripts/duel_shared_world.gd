@@ -194,7 +194,6 @@ func begin_action(side:int,key:String)->void:
 			if key=="chain" and uram_planted_feet.is_empty():_capture_uram_feet()
 			elif key not in ["chain","counter","skill"]:uram_planted_feet.clear()
 	if side==0 and saebom_pair and local_melee_polish:
-		update_knife_latch()
 		bom_shove=key=="attack" and bom_close
 		bom_near_skill=key=="skill" and bom_close
 		knife_beat=0
@@ -207,9 +206,16 @@ func begin_action(side:int,key:String)->void:
 	previous_hurt[side]=hurt_capsule(1-side)
 	if side==0 and aim_by_motion.has(key):aim_bias[0]=aim_by_motion[key]
 
-func update_knife_latch()->void:
-	if not saebom_pair or not local_melee_polish:return
-	bom_close=saebom_close_at(bodies[0].position.distance_to(bodies[1].position),bom_close,1.52,1.82)
+const SAEBOM_MELEE_GAP := 1.52
+
+func update_knife_latch(motion:String="idle")->void:
+	if not saebom_pair or not local_melee_polish or bom_close or saebom_mode_locked(motion):return
+	# Once she draws the knife, only an encounter reset re-equips the sling.
+	var offset:Vector3=bodies[1].position-bodies[0].position
+	bom_close=Vector2(offset.x,offset.z).length()<=SAEBOM_MELEE_GAP
+
+static func saebom_mode_locked(motion:String)->bool:
+	return motion in ["attack","skill","chain","death"]
 
 func _knife_unit(side:int)->Dictionary:
 	return {"actor":actors[side],"feet":body_screen(side)}
@@ -618,6 +624,9 @@ func step(lab,delta:float,prior_han_age:float=-1.0)->Array[Dictionary]:
 				desired[side]-=toward*minf(1.66*delta,LOCAL_BASIC_READY_MIN-distance)
 			else:
 				desired[side]+=toward*minf(2.35*delta,maxf(0.,distance-LOCAL_BASIC_START[side]))
+		elif saebom_pair and side==0 and bom_close and key=="run" and lab.rules.living():
+			# A latched melee fighter walks back into reach rather than shooting again.
+			desired[side]+=toward*minf(2.9*delta,maxf(0.,distance-(SAEBOM_MELEE_GAP-.05)))
 		elif saebom_pair and side==1 and key=="run" and lab.rules.living():
 			# Use native run until the deer reaches its own actual attack range.
 			desired[side]+=toward*minf(2.9*delta,maxf(0,distance-SAEBOM_DEER_APPROACH_GAP))
@@ -1353,8 +1362,6 @@ const Knife=preload("res://scripts/duel_saebom_stone_knife.gd")
 var bom_hop:=0.
 var bom_prev:=0.
 var bom_dir:=Vector3.ZERO
-static func saebom_close_at(gap:float,latched:bool,enter:float,leave:float)->bool:
-	return gap<=(leave if latched else enter)
 static func saebom_hop_envelope(p:float)->float:
 	return smoothstep(0.,.26,p)*(1.-smoothstep(.79,1.,p))
 static func saebom_hop_pose(actor,p:float,strength:float)->void:
