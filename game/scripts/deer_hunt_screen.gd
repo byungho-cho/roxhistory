@@ -183,6 +183,7 @@ var approach := 0.0
 var ally_hud: Control
 var enemy_hud: Control
 var duel_ally_portrait: TextureRect
+var prep_ally_name:Label
 var prep_ally_portrait: TextureRect
 var battle_header: Control
 var location_brush: TextureRect
@@ -460,14 +461,20 @@ func _portrait_for_prey() -> Texture2D:
 
 func build_power_comparison() -> void:
 	ReadinessArt.sky(power_header)
-	prep_ally_portrait = app.picture(power_header,hunter_portrait(selected_hunter),Rect2(-101,15,52,52))
+	prep_ally_portrait = app.picture(power_header,hunter_portrait(selected_hunter),Rect2(-230,-1,96,101))
 	# Reflect the actual runtime actor, including a safe asset fallback.
-	app.picture(power_header,_portrait_for_prey(),Rect2(50,8,50,66))
+	app.picture(power_header,_portrait_for_prey(),Rect2(150,-4,96,107))
 	header_spears = ReadinessArt.branch(power_header,Rect2(-29,7,58,53),false)
-	# There is no stored rating. Read the real HP and basic damage for a display-only comparison.
+	prep_ally_portrait.stretch_mode=TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	prep_ally_name=caption(power_header,["한결","우람","새봄"][selected_hunter],Rect2(-160,14,120,22),15,Color.WHITE)
+	var prey_name:=caption(power_header,"큰 멧돼지" if _prey_is_adult() else "꽃사슴",Rect2(45,14,120,22),15,Color.WHITE)
+	for name_label in [prep_ally_name,prey_name]:
+		name_label.add_theme_constant_override("outline_size",2)
+		name_label.add_theme_color_override("font_outline_color",Color("263b4c"))
+	# Keep the existing display-only rating formula; no stored rating or damage changes.
 	var ratings := [rules.hunter_hp*int(RULES.SKILLS.thrust.damage),rules.deer_max_hp*RULES.COUNTER_DAMAGE]
 	for i in ratings.size():
-		var number := caption(power_header,MATCH.format_power(ratings[i]),Rect2(-130+150*i,55,110,25),21,Color("9fdaff") if i==0 else Color("ffac98"))
+		var number := caption(power_header,MATCH.format_power(ratings[i]),Rect2(-160+205*i,39,120,30),21,Color("9fdaff") if i==0 else Color("ffac98"))
 		number.add_theme_color_override("font_outline_color",Color("35200e"))
 		number.add_theme_constant_override("outline_size",3)
 
@@ -495,6 +502,7 @@ func select_hunter(index: int) -> void:
 		style_portrait(portrait_frames[i],i==index)
 	if prep_ally_portrait:
 		prep_ally_portrait.texture = hunter_portrait(index)
+		prep_ally_name.text=["한결","우람","새봄"][index]
 	if duel_ally_portrait:
 		duel_ally_portrait.texture = hunter_portrait(index)
 

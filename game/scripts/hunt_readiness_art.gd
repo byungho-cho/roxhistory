@@ -46,7 +46,7 @@ static func sky(parent:Control)->Control:
  var sky:=ColorRect.new()
  parent.add_child(sky)
  sky.mouse_filter=Control.MOUSE_FILTER_IGNORE
- sky.position=Vector2(-960,0);sky.size=Vector2(2880,130)
+ sky.position=Vector2(-960,0);sky.size=Vector2(2880,110)
  var shader:=Shader.new()
  shader.code="""
 shader_type canvas_item;
@@ -54,7 +54,7 @@ varying vec4 item_tint;
 void vertex(){item_tint=COLOR;}
 void fragment(){
  float y=UV.y;
- float fade=1.-smoothstep(.50,1.,y);
+ float fade=1.-smoothstep(.86,1.,y);
  vec3 blue=mix(vec3(.23,.43,.65),vec3(.91,.94,.92),smoothstep(.0,1.,y));
  float alpha=mix(.10,.50,y)*fade;
  float cloud=exp(-pow((y-.64)*5.,2.))*pow(.5+.5*sin(UV.x*18.+sin(UV.x*41.)),2.);
