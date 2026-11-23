@@ -357,12 +357,14 @@ func _target(i:int)->int:
 		if i<3:return 3 if units[3].hp>0 else -1
 		if units[1].hp>0:return 1
 		return 2 if units[2].hp>0 else -1
-	# Preserve the opening lane until its target falls, then reacquire the nearest living opponent.
-	var initial:=[3,4,5,0,1,2]
+	if i>=3:
+		return _local_enemy_target(i)
+	# Allied targeting keeps its original opening lane and nearest fallback.
+	var initial:=[3,4,5]
 	if units[initial[i]].hp>0:return initial[i]
 	var best:=-1
 	var nearest:=INF
-	for j in range(3 if i<3 else 0,6 if i<3 else 3):
+	for j in range(3,units.size()):
 		if units[j].hp<=0:continue
 		var d:float=units[i].feet.distance_squared_to(units[j].feet)
 		if d<nearest:nearest=d;best=j
@@ -422,6 +424,65 @@ func _begin(i:int,key:String,target:int)->void:
 func _gap(i:int)->float:
 	return (59.0 if bool(units[2].get("bom_close",false)) else 124.0) if i==2 else 59.0 if i==0 else 49.0
 
+const AGGRO_ROLE_RADIUS := 98.0 # Twice the existing 49 px enemy basic standoff.
+const AGGRO_MIN_DISTANCE := .01
+const AGGRO_ROLE_WEIGHTS := {"uram":1.2,"hangyeol":1.1,"saebom":1.0}
+const AGGRO_SLOT_GAP := 48.0
+
+func _within_uram_aggro(i:int)->bool:
+	return units[1].hp>0 and (units[i].feet as Vector2).distance_to(units[1].feet)<=AGGRO_ROLE_RADIUS
+
+func _local_enemy_target(i:int)->int:
+	var feet:Vector2=units[i].feet
+	var best:=-1
+	var highest:=-INF
+	for ally in [1,0,2]:
+		var candidate:=units[ally]
+		if candidate.hp<=0:continue
+		var distance:=feet.distance_to(candidate.feet)
+		var weight:=float(AGGRO_ROLE_WEIGHTS.get(candidate.id,1.)) if distance<=AGGRO_ROLE_RADIUS else 1.
+		var score:=weight/maxf(AGGRO_MIN_DISTANCE,distance)
+		if score>highest:
+			best=ally
+			highest=score
+	return best
+
+const AGGRO_CLEARANCE := 34.0
+
+func _enemy_slot(i:int,target:int)->Vector2:
+	# Hold three fixed lanes on the enemy-facing side. The upper and lower
+	# spawn lanes approach each flank without crossing the middle route.
+	var angle:float=[.96,0.,-.96][i-3]
+	return (units[target].feet as Vector2)+Vector2.RIGHT.rotated(angle)*AGGRO_SLOT_GAP
+
+func _enemy_slot_ready(i:int,target:int)->bool:
+	var feet:Vector2=units[i].feet
+	return feet.distance_to(units[target].feet)<=_gap(i)+2. and feet.distance_to(_enemy_slot(i,target))<=12.
+
+func _approach_enemy_slot(i:int,target:int,dt:float)->void:
+	var u:=units[i]
+	var feet:Vector2=u.feet
+	var delta:=_enemy_slot(i,target)-feet
+	var step:=minf(104.*dt,delta.length())
+	var forward:=delta.normalized()
+	# Take the direct step if it fits; if blocked, skirt the blocker. Prefer
+	# the flank's outside so two deer do not both choose the middle gap.
+	var outside:=1. if i==3 else -1.
+	for angle in [0.,.55*outside,-.55*outside,1.05*outside,-1.05*outside,1.55*outside,-1.55*outside,1.9*outside,-1.9*outside]:
+		var candidate:=feet+forward.rotated(angle)*step
+		var clear:=true
+		for j in units.size():
+			if j==i or units[j].hp<=0:continue
+			var other:Vector2=units[j].feet
+			# If an allied step put the bodies close, permit only separation.
+			var minimum:=minf(AGGRO_CLEARANCE,feet.distance_to(other))
+			if candidate.distance_to(other)<minimum-.001:
+				clear=false
+				break
+		if clear:
+			u.feet=candidate
+			return
+
 func _approach(i:int,target:Vector2,dt:float)->void:
 	var u:=units[i]
 	var delta:Vector2=target-u.feet
@@ -478,9 +539,12 @@ func _step(dt:float)->void:
 		if u.move=="hit":
 			if u.age>=u.actor.duration:_play(u,"idle")
 			continue
-		if ours.distance_to(theirs)>_gap(i)+2.0:
+		var ordinary_enemy:=i>=3 and saebom_distance_drill.is_empty()
+		var formation_aggro:=ordinary_enemy and target==1 and _within_uram_aggro(i)
+		if (not _enemy_slot_ready(i,target) if formation_aggro else ours.distance_to(theirs)>_gap(i)+2.0):
 			if u.move!="run":_play(u,"run")
-			_approach(i,theirs,dt)
+			if formation_aggro:_approach_enemy_slot(i,target,dt)
+			else:_approach(i,theirs,dt)
 		elif elapsed>=u.next:
 			_begin(i,"skill" if i>=3 and int(elapsed*1.45+i)%4==0 else "attack",target)
 		elif u.move!="idle":_play(u,"idle")
