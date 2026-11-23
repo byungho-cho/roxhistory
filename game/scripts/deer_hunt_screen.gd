@@ -1143,7 +1143,7 @@ func _update_native_hunt_art(elapsed:float,previous_pose_clock:float) -> void:
 		feet.append(hunters[i].position)
 		living.append(rules.party_hp[i] > 0)
 	var rally_before:float = rally_art.age
-	rally_art.tick(elapsed,feet,living)
+	rally_art.tick(elapsed,feet,living,rules.rally_remaining)
 	if rally_art.active and rally_before<.62 and rally_art.age>=.62:
 		_start_camera_accent("rally",hunters[RULES.SAEBOM].position)
 	for i in range(manual_effects.size()-1,-1,-1):

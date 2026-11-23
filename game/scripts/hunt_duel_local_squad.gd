@@ -43,6 +43,9 @@ var bom_trail_draw:Callable
 const RallyCloud := preload("res://scripts/saebom_rally_cloud.gd")
 var bom_cloud_origin:=Vector2.INF
 var bom_cloud_at:=-INF
+const RallySilver := preload("res://scripts/saebom_rally_silver_vfx.gd")
+var rally_silver_back:Node2D
+var rally_silver_cast_at:=-INF
 var bom_wings_draw:Callable
 var bom_ally_draw:Callable
 var bom_pose:Callable
@@ -137,6 +140,10 @@ func setup(dust_draw:Callable=Callable(),gong:Callable=Callable(), heavy:Callabl
 	han_ground_layer = Node2D.new()
 	add_child(han_ground_layer)
 	han_ground_layer.draw.connect(_draw_han_ground)
+	if local_melee_polish:RallySilver.prepare()
+	rally_silver_back=Node2D.new()
+	add_child(rally_silver_back)
+	rally_silver_back.draw.connect(_paint_rally_silver_wings)
 	paint=Node2D.new();paint.z_index=600;add_child(paint)
 	paint.draw.connect(_paint)
 	bars_paint=Node2D.new();bars_paint.z_index=601;add_child(bars_paint)
@@ -325,6 +332,7 @@ func grant_sp()->void:
 
 func _play(u:Dictionary,key:String)->void:
 	u.actor.play(key);u.move=key;u.age=0.0;u.contact=-1.0
+	if local_melee_polish and u.id=="saebom" and key=="chain":rally_silver_cast_at=elapsed
 	if u.id=="saebom" and key not in ["attack","skill"]:
 		u.bom_shove=false;u.bom_near_skill=false
 
@@ -600,7 +608,7 @@ func _resolve(i:int)->void:
 		for k in 3:
 			if units[k].hp>0 and (not local_melee_polish or units[k].feet.distance_to(u.feet)<=190.0):
 				units[k].rally=elapsed+(5.0 if local_melee_polish else 4.0)
-				if k!=i and bom_ally_draw.is_valid() and units[k].feet.distance_to(u.feet)<=190.0:
+				if not local_melee_polish and k!=i and bom_ally_draw.is_valid() and units[k].feet.distance_to(u.feet)<=190.0:
 					group_bom_ally_events.append({"at":elapsed,"unit":k})
 		if not authored_draw.is_valid():glints.append({"at":elapsed,"point":u.feet-Vector2(0,20),"tint":Color("ffc971")})
 		hits.append({"from":i,"target":-1,"type":"rally","result":"support"})
@@ -1000,6 +1008,8 @@ func _draw_pose(dt:float)->void:
 		uram_ground_layer.queue_redraw()
 	paint.self_modulate=ambient
 	han_ground_layer.queue_redraw()
+	rally_silver_back.z_index=int(units[2].feet.y)-1
+	rally_silver_back.queue_redraw()
 	paint.queue_redraw()
 	bars_paint.queue_redraw()
 	if is_instance_valid(cast_notice_paint) and not cast_notices.is_empty():
@@ -1036,7 +1046,16 @@ func _paint_bars()->void:
 		bars_paint.draw_rect(back,Color("211f23"))
 		bars_paint.draw_rect(Rect2(at+Vector2.ONE,Vector2(44.0*float(u.hp)/MAX_HP,3)),Color("68c8ff") if u.id!="forest" else Color("ff8176"))
 
+func _paint_rally_silver_wings()->void:
+	if local_melee_polish and units.size()>2 and units[2].hp>0:
+		RallySilver.wings(rally_silver_back,units[2].feet,elapsed-rally_silver_cast_at)
+
 func _paint()->void:
+	if local_melee_polish:
+		for i in mini(3,units.size()):
+			var u:=units[i]
+			if u.hp>0 and float(u.rally)>elapsed:
+				RallySilver.aura(paint,u.feet,float(u.rally)-elapsed,5.0)
 	if units.size()>2 and units[2].hp>0:Knife.draw_blade(paint,units[2].actor.preview)
 	for ev in knife_events:Knife.draw_event(paint,int(ev.beat),ev.point,ev.feet,elapsed-float(ev.at))
 	for fan in uram_short_fans:
@@ -1081,16 +1100,15 @@ func _paint()->void:
 	if authored_draw.is_valid():
 		for event in authored_events:
 			authored_draw.call(event.tag,event.point,event.forward,elapsed-float(event.at),paint)
-		if units.size()>2 and units[2].move=="chain" and units[2].hp>0:
+	if not local_melee_polish:
+		if authored_draw.is_valid() and units.size()>2 and units[2].move=="chain" and units[2].hp>0:
 			var bom:=units[2]
-			if bom_wings_draw.is_valid():
-				bom_wings_draw.call(bom.feet,float(bom.age),paint)
-
+			if bom_wings_draw.is_valid():bom_wings_draw.call(bom.feet,float(bom.age),paint)
 			else:authored_draw.call("saebom_chain",bom.feet,Vector2.ZERO,float(bom.age)*3.5/maxf(.01,float(bom.actor.duration)),paint)
-	if bom_ally_draw.is_valid():
-		for ev in group_bom_ally_events:
-			var ally:=units[int(ev.unit)]
-			if ally.hp>0:bom_ally_draw.call(ally.feet,.96+elapsed-float(ev.at),paint)
+		if bom_ally_draw.is_valid():
+			for ev in group_bom_ally_events:
+				var ally:=units[int(ev.unit)]
+				if ally.hp>0:bom_ally_draw.call(ally.feet,.96+elapsed-float(ev.at),paint)
 	if bom_hit_draw.is_valid():
 		for hit in group_bom_hits:bom_hit_draw.call(hit.point,hit.forward,elapsed-float(hit.at),paint)
 	if silver_draw.is_valid():

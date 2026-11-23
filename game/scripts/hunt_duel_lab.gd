@@ -205,6 +205,8 @@ const RallyCloud := preload("res://scripts/saebom_rally_cloud.gd")
 var local_bom_cloud_at:=-INF
 var local_bom_cloud_origin:=Vector2.INF
 var local_bom_cloud_fifths:=0
+const RallySilver := preload("res://scripts/saebom_rally_silver_vfx.gd")
+var local_bom_silver_cast_at:=-INF
 var local_bom_rally_at:=-INF
 var local_bom_rally_until:=-INF
 var local_saebom_latest:=false
@@ -323,7 +325,9 @@ var touch_buttons: Array[Button] = []
 
 func _ready() -> void:
 	local_melee_polish=show_final_test35 or "--duel-local-test=35" in OS.get_cmdline_user_args()
-	if local_melee_polish:_load_approved_parry_asset()
+	if local_melee_polish:
+		_load_approved_parry_asset()
+		RallySilver.prepare()
 	if local_melee_polish and "--duel-start-boar" in OS.get_cmdline_user_args():rules.enemy_id="adult"
 	local_saebom_latest=local_melee_polish or "--duel-local-test=34" in OS.get_cmdline_user_args()
 	local_shared_ranged=local_saebom_latest or "--duel-local-test=33" in OS.get_cmdline_user_args()
@@ -756,7 +760,7 @@ func reset_round(after_fade:=false) -> void:
 	deer_hud_anchor=Vector2.INF
 	deer_wake.clear()
 	bom_path.clear();bom_path_end=-INF;bom_path_action=-1
-	local_bom_rally_at=-INF;local_bom_rally_until=-INF
+	local_bom_silver_cast_at=-INF;local_bom_rally_at=-INF;local_bom_rally_until=-INF
 	local_bom_cloud_at=-INF;local_bom_cloud_origin=Vector2.INF;local_bom_cloud_fifths=0
 	if local_saebom_latest:bom_style.restore_sling()
 	deer_dust_at=-INF
@@ -1039,6 +1043,7 @@ func _act(side: int, key: String) -> void:
 	if is_instance_valid(shared_world):shared_world.begin_action(side,key)
 	if local_melee_polish and side==0 and key=="chain" and actor.key=="saebom":
 		local_bom_rally_at=rules.elapsed+.96
+		local_bom_silver_cast_at=rules.elapsed
 	if side==0 and key=="chain" and _saebom_aurora_active():
 		saebom_aurora_origin=_position(0)
 	if _prototype_duel() and is_instance_valid(shared_world) and side==0 and key=="chain" and not _uram_deer_close():accent.chain_started(duration)
@@ -2616,7 +2621,11 @@ func _release_bom_cloud()->void:
 func _draw_saebom_aurora()->void:
 	RallyCloud.draw(location_layer,local_bom_cloud_origin,visual_clock-local_bom_cloud_at)
 	if local_saebom_latest and a!=null and a.key=="saebom":
-		if motion[0]=="chain" and rules.hp[0]>0:_draw_bom_wings(_position(0),age[0],location_layer)
+		if rules.hp[0]>0:
+			if local_melee_polish:
+				RallySilver.wings(location_layer,_position(0),rules.elapsed-local_bom_silver_cast_at)
+				RallySilver.aura(location_layer,_position(0),local_bom_rally_until-rules.elapsed,5.0)
+			elif motion[0]=="chain":_draw_bom_wings(_position(0),age[0],location_layer)
 		return
 	if not _saebom_aurora_active() or motion[0]!="chain" or rules.hp[0]<=0:return
 	if saebom_hop:
