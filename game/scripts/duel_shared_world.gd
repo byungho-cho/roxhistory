@@ -114,7 +114,7 @@ func configure(left,right,center:Vector2,local_ranged_boar:=false,local_uram_for
 		p.viewport.size=Vector2i(2,2) # Adapter API stays valid without two unused large render targets.
 		p.set_meta("duel_world",self);p.set_meta("duel_side",i)
 		actor.death_effect.z_index=4
-	if uram_forest_pair:
+	if uram_pair:
 		# This lab already samples the authored clip explicitly on every
 		# simulation step. Prevent native auto-processing from replacing the
 		# final visual blend after the actor keys switch to walk or idle.
@@ -436,10 +436,12 @@ func render_poses(lab,delta:float)->Array:
 	for side in 2:
 		var actor=actors[side];var key:String=lab.motion[side];var age:float=lab.age[side]
 		var p=actor.preview
-		if side==0 and uram_forest_pair:
-			# Only the ordinary club→return→idle presentation owns a manual
-			# mixer. Guard, charge intake, counter and other moves stay stock.
-			var manual:=key=="attack" or (key=="walk" and uram_out_basic_return) or (key=="idle" and uram_out_started>=0. and not uram_return_contact_pose.is_empty())
+		if side==0 and uram_pair:
+			# The shared world explicitly samples the run-in clip at each step.
+			# Keep the engine from writing the unrooted gait over that displayed pose.
+			var manual:bool=lab.approach_active and key=="run"
+			if uram_forest_pair:
+				manual=manual or key=="attack" or (key=="walk" and uram_out_basic_return) or (key=="idle" and uram_out_started>=0. and not uram_return_contact_pose.is_empty())
 			var callback:=AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_MANUAL if manual else uram_previous_animator_mode
 			if p.animator.callback_mode_process!=callback:p.animator.callback_mode_process=callback
 		if side<floor_bounce_lights.size():floor_bounce_lights[side].visible=key!="death"
