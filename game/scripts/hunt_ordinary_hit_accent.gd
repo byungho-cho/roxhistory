@@ -6,8 +6,10 @@ var blend:=0.
 var substitute:=false
 var stance:Array=[]
 var joints:PackedInt32Array
+var shoulders:PackedInt32Array
+var charge_flinch:=false
 
-static func on_hit(rig:Skeleton3D,at:float,can_substitute:bool)->void:
+static func on_hit(rig:Skeleton3D,at:float,can_substitute:bool,with_shoulders:=false)->void:
 	if not is_instance_valid(rig):return
 	var accent=rig.get_node_or_null("OrdinaryHitAccent")
 	if not is_instance_valid(accent):
@@ -16,6 +18,7 @@ static func on_hit(rig:Skeleton3D,at:float,can_substitute:bool)->void:
 		accent.active=false
 		rig.add_child(accent)
 	accent.stamp=at
+	accent.charge_flinch=with_shoulders
 	accent.substitute=false
 	if can_substitute:
 		accent.stance.clear()
@@ -50,10 +53,14 @@ static func display(rig:Skeleton3D,now:float,alive:bool,resting_hit:bool,hit_sta
 
 func _skeleton_changed(_old:Skeleton3D,new:Skeleton3D)->void:
 	joints.clear()
+	shoulders.clear()
 	if not is_instance_valid(new):return
 	for label in ["head","neck"]:
 		var joint:=new.find_bone(label)
 		if joint>=0:joints.append(joint)
+	for label in ["upper.L","upper.R"]:
+		var joint:=new.find_bone(label)
+		if joint>=0:shoulders.append(joint)
 
 func _process_modification_with_delta(_delta:float)->void:
 	var rig:=get_skeleton()
@@ -66,4 +73,9 @@ func _process_modification_with_delta(_delta:float)->void:
 	for i in joints.size():
 		var joint:=joints[i]
 		var tilt:=Vector3(-.065,.009,.039) if i==0 else Vector3(-.025,0.,.014)
-		rig.set_bone_pose_rotation(joint,rig.get_bone_pose_rotation(joint)*Quaternion.from_euler(tilt*blend))
+		rig.set_bone_pose_rotation(joint,rig.get_bone_pose_rotation(joint)*Quaternion.from_euler(tilt*blend*(1.55 if charge_flinch else 1.)))
+	if charge_flinch:
+		for i in shoulders.size():
+			var joint:=shoulders[i]
+			var shoulder:=Vector3(-.105,0.,.065 if i==0 else -.065)
+			rig.set_bone_pose_rotation(joint,rig.get_bone_pose_rotation(joint)*Quaternion.from_euler(shoulder*blend))

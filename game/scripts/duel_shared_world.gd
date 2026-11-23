@@ -155,6 +155,8 @@ func reset()->void:
 	uram_out_started=-1.0;uram_out_snapshot.clear();uram_out_bridge.clear();uram_out_basic_return=false
 	uram_trade_last_strike=-INF;uram_trade_pending_hit=-INF;uram_trade_at=-INF;uram_trade_feet.clear()
 	restore_uram_intake_display()
+	restore_saebom_deer_stop()
+	saebom_deer_stop_action=-1
 	uram_intake_age=-1.0;uram_return_age=-1.0;uram_return_pose.clear();uram_intake_seeds.clear();uram_last_drawn_hit.clear()
 	restore_uram_ram_display()
 	uram_ram_visual_anchors.clear()
@@ -207,6 +209,37 @@ func begin_action(side:int,key:String)->void:
 	if side==0 and aim_by_motion.has(key):aim_bias[0]=aim_by_motion[key]
 
 const SAEBOM_MELEE_GAP := 1.52
+
+var saebom_deer_stop_action := -1
+var saebom_deer_display_pivot := Vector3.INF
+
+func restore_saebom_deer_stop()->void:
+	if not saebom_deer_display_pivot.is_finite():return
+	if actors.size()>1 and is_instance_valid(actors[1].preview):
+		actors[1].preview.pivot.position=saebom_deer_display_pivot
+	saebom_deer_display_pivot=Vector3.INF
+
+func mark_saebom_deer_stop()->void:
+	saebom_deer_stop_action=action_id[1]
+
+func present_saebom_deer_stop(key:String)->void:
+	if not local_melee_polish or not saebom_pair or actors[1].key!="forest" or key!="skill" or saebom_deer_stop_action!=action_id[1]:return
+	restore_saebom_deer_stop()
+	var out:Vector3=bodies[1].position-bodies[0].position
+	out.y=0.
+	if out.length_squared()<.01:return
+	out=out.normalized()
+	var body:=hurt_capsule(0)
+	var chest:Vector3=(body.a+body.b)*.5
+	# Ground anchors already stop. Brake only the additional animated muzzle
+	# intrusion, after the existing sweep has accepted its one hit.
+	var gap:float=(weapon_point(1)-chest).dot(out)
+	var excess:=maxf(0.,float(body.radius)+.045-gap)
+	if excess<=.0001:return
+	var pivot:Node3D=actors[1].preview.pivot
+	saebom_deer_display_pivot=pivot.position
+	pivot.global_position+=out*excess
+	actors[1].preview.skeleton.force_update_all_bone_transforms()
 
 var saebom_melee_pending:=false
 var saebom_switch_hit_until:=-INF
@@ -398,6 +431,7 @@ func _rig_alpha(side:int,fade:float)->void:
 	actors[side].preview.pivot.visible=fade>.02
 
 func render_poses(lab,delta:float)->Array:
+	restore_saebom_deer_stop()
 	var root_motion:Array=[]
 	for side in 2:
 		var actor=actors[side];var key:String=lab.motion[side];var age:float=lab.age[side]
@@ -604,6 +638,7 @@ func deer_return_offset()->Vector3:
 	return direction*maxf(0,remaining)
 
 func step(lab,delta:float,prior_han_age:float=-1.0)->Array[Dictionary]:
+	restore_saebom_deer_stop()
 	var old_hurt:=[hurt_capsule(0),hurt_capsule(1)]
 	var old_weapon:=[weapon_point(0),weapon_point(1)]
 	var old_floor_tip:=uram_floor_original_tip

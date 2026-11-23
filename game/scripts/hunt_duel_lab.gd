@@ -1016,6 +1016,7 @@ func _try_player(key: String) -> void:
 			icon=skill_hud.badge_art.texture
 		cast_notice={"key":key,"at":visual_clock,"icon":icon}
 	_render_actors()
+	if is_instance_valid(shared_world):shared_world.present_saebom_deer_stop(motion[1])
 	_refresh() # Consume SP and hide readiness in the same input frame.
 
 func _act(side: int, key: String) -> void:
@@ -1266,6 +1267,8 @@ func _land(side: int, key: String,contact:Dictionary={}) -> void:
 		ordinary_resting_hit[defender]=false
 	var hp_before:=rules.hp[defender]
 	var defeated:=rules.damage(defender,amount)
+	var saebom_charge_hit:=defender==0 and key=="skill" and rules.hp[0]<hp_before and local_melee_polish and is_instance_valid(shared_world) and shared_world.saebom_pair and b.key=="forest"
+	if saebom_charge_hit:shared_world.mark_saebom_deer_stop()
 	var saebom_switch_hit:=false
 	if defender==0 and rules.hp[0]<hp_before and local_melee_polish and is_instance_valid(shared_world) and shared_world.saebom_pair and not shared_world.bom_close:
 		shared_world.remember_saebom_proximity()
@@ -1284,10 +1287,10 @@ func _land(side: int, key: String,contact:Dictionary={}) -> void:
 		_flash(impact_point,"uram_deer_stun",Color.WHITE,1.15)
 		return
 	var existing_uram_intake:=_uram_deer_close() and is_instance_valid(shared_world) and defender==0
-	ordinary_resting_hit[defender]=(key=="attack" or saebom_switch_hit) and not existing_uram_intake and (motion[defender]=="idle" or (defender==1 and motion[defender]=="walk" and is_instance_valid(shared_world)))
-	if (key=="attack" or saebom_switch_hit) and not existing_uram_intake:
+	ordinary_resting_hit[defender]=(key=="attack" or saebom_switch_hit or saebom_charge_hit) and not existing_uram_intake and (motion[defender]=="idle" or (defender==1 and motion[defender]=="walk" and is_instance_valid(shared_world)))
+	if (key=="attack" or saebom_switch_hit or saebom_charge_hit) and not existing_uram_intake:
 		var receiver=a if defender==0 else b
-		OrdinaryHitAccent.on_hit(receiver.preview.skeleton,visual_clock,ordinary_resting_hit[defender])
+		OrdinaryHitAccent.on_hit(receiver.preview.skeleton,visual_clock,ordinary_resting_hit[defender],saebom_charge_hit)
 	if _uram_deer_close() and is_instance_valid(shared_world):
 		if side==0 and key=="attack":shared_world.mark_uram_outgoing_contact(visual_clock)
 		elif side==1:
@@ -1724,6 +1727,7 @@ func _advance_shared(delta:float)->void:
 				else:
 					animal_attack_count+=1;_act(1,"skill" if animal_attack_count%3==0 else "attack")
 		_render_actors(dt);_refresh(dt)
+	shared_world.present_saebom_deer_stop(motion[1])
 	shared_world.present_uram_ram_hit_pose(motion[0],age[0])
 	if _uram_deer_close():
 		if DisplayServer.get_name()=="headless":_present_uram_intake_overlay(shared_world,visual_clock,motion[0],age[0])
