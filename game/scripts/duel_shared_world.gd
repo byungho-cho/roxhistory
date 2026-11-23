@@ -165,7 +165,7 @@ func reset()->void:
 	uram_basic_anchor=false
 	uram_entry_shield_revealed=false
 	if local_melee_polish and uram_pair:actors[0].preview.shield.hide()
-	bom_close=false;bom_shove=false;bom_near_skill=false;knife_beat=0;bom_hop=0.;bom_prev=0.
+	bom_close=false;saebom_melee_pending=false;saebom_switch_hit_until=-INF;bom_shove=false;bom_near_skill=false;knife_beat=0;bom_hop=0.;bom_prev=0.
 	basic_rope_empty=false
 	_end_projectile();projectile_releases.clear();_restore_sling_stone()
 	contacts.clear();body_contacts=0;max_body_penetration=0;deer_spear_reaction=false
@@ -208,14 +208,20 @@ func begin_action(side:int,key:String)->void:
 
 const SAEBOM_MELEE_GAP := 1.52
 
-func update_knife_latch(motion:String="idle")->void:
-	if not saebom_pair or not local_melee_polish or bom_close or saebom_mode_locked(motion):return
-	# Once she draws the knife, only an encounter reset re-equips the sling.
-	var offset:Vector3=bodies[1].position-bodies[0].position
-	bom_close=Vector2(offset.x,offset.z).length()<=SAEBOM_MELEE_GAP
+var saebom_melee_pending:=false
+var saebom_switch_hit_until:=-INF
 
-static func saebom_mode_locked(motion:String)->bool:
-	return motion in ["attack","skill","chain","death"]
+func remember_saebom_proximity()->void:
+	if saebom_melee_pending:return
+	var offset:Vector3=bodies[1].position-bodies[0].position
+	saebom_melee_pending=Vector2(offset.x,offset.z).length()<=SAEBOM_MELEE_GAP
+
+func update_knife_latch(motion:String, now:float, incoming:bool)->void:
+	if not saebom_pair or not local_melee_polish or bom_close or motion=="death":return
+	remember_saebom_proximity()
+	# Keep a real near encounter queued, even if the deer retreats during the flinch.
+	if saebom_melee_pending and not incoming and now>=saebom_switch_hit_until and motion in ["idle","walk","run"]:
+		bom_close=true
 
 func _knife_unit(side:int)->Dictionary:
 	return {"actor":actors[side],"feet":body_screen(side)}

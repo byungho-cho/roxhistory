@@ -252,6 +252,8 @@ func configure_saebom_distance_drill(mode:String)->void:
 	damage_numbers.clear()
 	saebom_distance_drill=mode
 	units[2].bom_close=false
+	units[2].saebom_melee_pending=false
+	units[2].saebom_switch_hit_until=-INF
 	var far:=mode=="far"
 	var points:=[Vector2.ZERO,Vector2(526,260),Vector2(452,301) if far else Vector2(486,272),Vector2(576,231) if far else Vector2(529,251),Vector2.ZERO,Vector2.ZERO]
 	for i in units.size():
@@ -277,17 +279,26 @@ func _update_saebom_range()->void:
 	var target:=_target(2)
 	if target<0:return
 	var u:=units[2]
+	_sample_saebom_mode(u,target)
 	if u.move in ["attack","skill","chain"]:
 		huds[2].set_saebom_distance_icon(bool(u.get("bom_shove",false)) if u.move=="attack" else bool(u.get("bom_near_skill",false)) if u.move=="skill" else bool(u.get("bom_close",false)),NEAR_SAE_2SP)
 		return
-	_sample_saebom_mode(u,target)
 	huds[2].set_saebom_distance_icon(bool(u.get("bom_close",false)),NEAR_SAE_2SP)
 
 const SAEBOM_MELEE_ENTER := 65.0
 
+func _remember_saebom_proximity(u:Dictionary,target:int)->void:
+	if not bool(u.get("saebom_melee_pending",false)) and target>=3 and target<units.size():
+		u.saebom_melee_pending=(u.feet as Vector2).distance_to(units[target].feet)<=SAEBOM_MELEE_ENTER
+
 func _sample_saebom_mode(u:Dictionary,target:int)->void:
-	if bool(u.get("bom_close",false)) or SaebomMelee.saebom_mode_locked(String(u.move)):return
-	u.bom_close=(u.feet as Vector2).distance_to(units[target].feet)<=SAEBOM_MELEE_ENTER
+	if bool(u.get("bom_close",false)) or u.move=="death":return
+	_remember_saebom_proximity(u,target)
+	if not bool(u.get("saebom_melee_pending",false)) or float(u.get("saebom_switch_hit_until",-INF))>elapsed or u.move not in ["idle","walk","run"]:return
+	for j in range(3,units.size()):
+		var foe:=units[j]
+		if foe.hp>0 and foe.victim==2 and foe.move in ["attack","skill"] and foe.contact>=0.:return
+	u.bom_close=true
 
 func set_input_paused(value:bool)->void:
 	input_paused=value
@@ -709,7 +720,13 @@ func _damage(i:int,j:int,amount:int,key:String,stone_impact:=Vector2.INF)->void:
 				squad_stuns[i]=elapsed
 		if local_melee_polish and new_guard and i>=3:_apply_uram_field_hit(i if counter_primary else -1)
 		return
+	var hp_before:=int(target.hp)
 	_subtract_hp_and_show(j,amount)
+	var saebom_switch_hit:=false
+	if j==2 and target.hp<hp_before and local_melee_polish and not bool(target.get("bom_close",false)):
+		_remember_saebom_proximity(target,_target(2))
+		target.saebom_switch_hit_until=elapsed+OrdinaryHitAccent.END
+		saebom_switch_hit=bool(target.get("saebom_melee_pending",false))
 	hits.append({"from":i,"target":j,"type":key,"result":"hit","hp":target.hp})
 	if bom_hit_draw.is_valid() and i==2 and key=="skill":
 		var feet:Vector2=target.feet
@@ -733,8 +750,8 @@ func _damage(i:int,j:int,amount:int,key:String,stone_impact:=Vector2.INF)->void:
 	if target.hp<=0:_play(target,"death")
 	else:
 		var resting:bool=target.move in ["idle","run","walk"]
-		target.ordinary_resting_hit=resting and key=="attack"
-		if key=="attack":OrdinaryHitAccent.on_hit(target.actor.preview.skeleton,elapsed,resting)
+		target.ordinary_resting_hit=resting and (key=="attack" or saebom_switch_hit)
+		if key=="attack" or saebom_switch_hit:OrdinaryHitAccent.on_hit(target.actor.preview.skeleton,elapsed,resting)
 		else:OrdinaryHitAccent.clear(target.actor.preview.skeleton)
 		if resting:_play(target,"hit")
 

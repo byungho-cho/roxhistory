@@ -1019,7 +1019,7 @@ func _try_player(key: String) -> void:
 	_refresh() # Consume SP and hide readiness in the same input frame.
 
 func _act(side: int, key: String) -> void:
-	if side==0 and is_instance_valid(shared_world):shared_world.update_knife_latch(motion[0])
+	if side==0:_sync_saebom_knife_latch()
 	var actor := a if side == 0 else b
 	motion[side] = key
 	age[side] = 0.0
@@ -1264,7 +1264,14 @@ func _land(side: int, key: String,contact:Dictionary={}) -> void:
 		var receiver=a if defender==0 else b
 		OrdinaryHitAccent.clear(receiver.preview.skeleton)
 		ordinary_resting_hit[defender]=false
-	if rules.damage(defender,amount):
+	var hp_before:=rules.hp[defender]
+	var defeated:=rules.damage(defender,amount)
+	var saebom_switch_hit:=false
+	if defender==0 and rules.hp[0]<hp_before and local_melee_polish and is_instance_valid(shared_world) and shared_world.saebom_pair and not shared_world.bom_close:
+		shared_world.remember_saebom_proximity()
+		shared_world.saebom_switch_hit_until=visual_clock+OrdinaryHitAccent.END
+		saebom_switch_hit=shared_world.saebom_melee_pending
+	if defeated:
 		_die(defender)
 		return
 	if local_melee_polish and _uram_duel() and side==0 and key=="counter" and ordinary_counter_target!=null and ordinary_counter_spent:
@@ -1277,8 +1284,8 @@ func _land(side: int, key: String,contact:Dictionary={}) -> void:
 		_flash(impact_point,"uram_deer_stun",Color.WHITE,1.15)
 		return
 	var existing_uram_intake:=_uram_deer_close() and is_instance_valid(shared_world) and defender==0
-	ordinary_resting_hit[defender]=key=="attack" and not existing_uram_intake and (motion[defender]=="idle" or (defender==1 and motion[defender]=="walk" and is_instance_valid(shared_world)))
-	if key=="attack" and not existing_uram_intake:
+	ordinary_resting_hit[defender]=(key=="attack" or saebom_switch_hit) and not existing_uram_intake and (motion[defender]=="idle" or (defender==1 and motion[defender]=="walk" and is_instance_valid(shared_world)))
+	if (key=="attack" or saebom_switch_hit) and not existing_uram_intake:
 		var receiver=a if defender==0 else b
 		OrdinaryHitAccent.on_hit(receiver.preview.skeleton,visual_clock,ordinary_resting_hit[defender])
 	if _uram_deer_close() and is_instance_valid(shared_world):
@@ -1517,8 +1524,16 @@ func _start_battle_camera()->void:
 		battle_camera.update_camera(1.0/60.0)
 	camera_base_scale=field.scale;camera_base_position=field.position
 
+func _sync_saebom_knife_latch()->void:
+	if not is_instance_valid(shared_world) or not local_melee_polish or not shared_world.saebom_pair:return
+	var threat:String=motion[1]
+	# A warning without a strike never starts the post-hit hold. A genuine miss
+	# unlocks as soon as the same swept-contact window has closed.
+	var incoming:bool=not shared_world.consumed[1] and ((threat=="attack" and age[1]<=b.duration*.70) or (threat=="skill" and age[1]<=b.duration*.94))
+	shared_world.update_knife_latch(motion[0],visual_clock,incoming)
+
 func _render_actors(delta:=0.0)->void:
-	if is_instance_valid(shared_world):shared_world.update_knife_latch(motion[0])
+	_sync_saebom_knife_latch()
 	if is_instance_valid(a) and is_instance_valid(b):
 		for i in 2:
 			var actor=a if i==0 else b
