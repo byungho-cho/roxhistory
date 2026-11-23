@@ -253,7 +253,9 @@ func update_knife_latch(motion:String, now:float, incoming:bool)->void:
 	if not saebom_pair or not local_melee_polish or bom_close or motion=="death":return
 	remember_saebom_proximity()
 	# Keep a real near encounter queued, even if the deer retreats during the flinch.
-	if saebom_melee_pending and not incoming and now>=saebom_switch_hit_until and motion in ["idle","walk","run"]:
+	# Returning to idle does not end a released shot. Keep sling presentation
+	# until the locked stone hits or naturally expires (including a miss).
+	if saebom_melee_pending and projectile.is_empty() and not incoming and now>=saebom_switch_hit_until and motion in ["idle","walk","run"]:
 		bom_close=true
 
 func _knife_unit(side:int)->Dictionary:

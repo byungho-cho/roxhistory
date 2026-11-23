@@ -294,6 +294,8 @@ func _sample_saebom_mode(u:Dictionary,target:int)->void:
 	if bool(u.get("bom_close",false)) or u.move=="death":return
 	_remember_saebom_proximity(u,target)
 	if not bool(u.get("saebom_melee_pending",false)) or float(u.get("saebom_switch_hit_until",-INF))>elapsed or u.move not in ["idle","walk","run"]:return
+	for stone in missiles:
+		if int(stone.from)==2:return # A released sling shot may outlast its caster pose.
 	for j in range(3,units.size()):
 		var foe:=units[j]
 		if foe.hp>0 and foe.victim==2 and foe.move in ["attack","skill"] and foe.contact>=0.:return
