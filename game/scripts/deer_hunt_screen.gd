@@ -3,6 +3,9 @@ extends Control
 signal preparation_ready
 
 const Timing := preload("res://scripts/motion_timing.gd")
+const StartPlacement := preload("res://scripts/hunt_start_placement.gd")
+var battle_slots:Array[Vector2]=[]
+var prey_stride_phase:=0.0
 const ShieldWave := preload("res://scripts/duel_uram_counter_wave.gd")
 const UramCombined := preload("res://scripts/hunt_uram_3sp_combined.gd")
 var uram_combined := UramCombined.new()
@@ -933,6 +936,8 @@ func start_combat() -> void:
 	pan_pointer = -2
 	touch_points.clear()
 	pan = Vector2.ZERO
+	battle_slots=StartPlacement.plan(ALLY_CELLS,assigned_cells,FORMATION_CENTER,HUNTER_BATTLE_CENTER,DEER_SLOT)
+	prey_stride_phase=0.0
 	battle_music_started = true
 	app.sync_audio()
 	transition_elapsed = 0.0
@@ -2047,6 +2052,8 @@ func update_actors(delta: float) -> void:
 		deer.camera.position.y = lerpf(7.0,6.65,approach)
 		deer.camera.look_at(Vector3(0,1,0))
 		deer.update_geometry()
+	var approaching := transition_elapsed>=0.0 and approach>0.0 and approach<1.0
+	var planned:=battle_slots if battle_slots.size()==hunters.size() else StartPlacement.plan(ALLY_CELLS,assigned_cells,FORMATION_CENTER,HUNTER_BATTLE_CENTER,DEER_SLOT)
 	var movement_beat := sin(clampf(pose_clock/RULES.POSE_SECONDS,0,1)*PI)
 	var basic_attack := pose in ["thrust","auto_thrust"]
 	for i in hunters.size():
@@ -2058,10 +2065,11 @@ func update_actors(delta: float) -> void:
 		var attack := running and pose_clock<RULES.POSE_SECONDS and pose in ["thrust","auto_thrust","strike","team"] and i == rules.attacker
 		var dodge := running and pose=="counter" and pose_clock<RULES.POSE_SECONDS and i == rules.attacker
 		var placed: Vector2 = ALLY_CELLS[assigned_cells[i]]
-		var battle_target := HUNTER_BATTLE_CENTER+(placed-FORMATION_CENTER)*.62
+		var battle_target:Vector2 = planned[i]
 		var base := placed.lerp(battle_target,approach)
 		hunter.scale = Vector2.ONE*lerpf(.60,.56,approach)*(1.0 if i == RULES.SAEBOM else FRONTLINE_VISUAL_SCALE)
-		var lunge := 42 if basic_attack else 24
+		var lunge:float = 42.0 if basic_attack else 24.0
+		if pose=="auto_thrust":lunge=StartPlacement.ordinary_lunge(base,DEER_SLOT,lunge)
 		var assisting := running and pose == "team" and pose_clock < RULES.POSE_SECONDS and not attack and rules.party_hp[i]>0
 		var attack_direction := base.direction_to(DEER_SLOT)
 		var previous_position := hunter.position
@@ -2072,18 +2080,20 @@ func update_actors(delta: float) -> void:
 		if native_manual and not side_han_jump: shift = 34.0
 		if dodge and not use_guard_pose: shift = -18.0
 		hunter.position = base + attack_direction*shift*movement_beat
+		if (attack and pose=="auto_thrust" and i!=RULES.SAEBOM) or (dodge and not use_guard_pose):
+			hunter.position=StartPlacement.clear_motion(base,hunter.position,planned,i)
 		if native_manual and not side_han_jump and not _prey_is_adult():
 			hunter.position.y -= (17.0 if i == 0 else 13.0)*sin(PI*clampf(pose_clock/_manual_duration(pose),0.,1.))
 		if native_manual and side_han_jump:
 			var travel_beat:=smoothstep(.05,.52,pose_clock)*(1.0-smoothstep(.64,.96,pose_clock))
 			hunter.position+=han_chain_travel*travel_beat
 		var arrival_heading := Vector2(1,.55).lerp(Vector2(1,.28),approach)
-		var approaching := transition_elapsed >= 0.0 and approach > 0.0 and approach < 1.0
 		var close_phase := clampf(pose_clock / RULES.POSE_SECONDS, 0.0, 1.0)
 		if approaching:
 			var travel := previous_position.distance_to(hunter.position)
 			hunt_stride_phases[i] = fposmod(hunt_stride_phases[i]+travel/maxf(1.0,42.0*hunter.scale.x)*TAU,TAU)
 		var approach_phase := hunt_stride_phases[i] if approaching else pose_clock*12.0
+		if approaching and previous_position.distance_squared_to(hunter.position)>.0001:arrival_heading=previous_position.direction_to(hunter.position)
 		var facing := han_chain_facing if native_manual and side_han_jump else hunter.position.direction_to(deer.position) if approach >= 1.0 else arrival_heading
 		if i != RULES.SAEBOM:
 			var motion := ""
@@ -2123,7 +2133,15 @@ func update_actors(delta: float) -> void:
 		hunter_field_bars[i].get_parent().visible = approach>=1.0
 	var charge := running and pose=="counter"
 	var deer_motion := Vector2(-29,-8) if charge else Vector2.ZERO if basic_attack or rules.prey_stun_remaining>0.0 else Vector2(23,-8)
+	if charge:
+		var target:Vector2=hunters[rules.attacker].position
+		deer_motion=DEER_SLOT.direction_to(target)*StartPlacement.ordinary_lunge(DEER_SLOT,target,60.0)
+	var previous_prey_position:Vector2=deer.position
 	deer.position = ENEMY_CELLS[4].lerp(DEER_SLOT,approach)+(deer_motion*movement_beat if running else Vector2.ZERO)
+	if charge:
+		var occupied:Array=[]
+		for hunter in hunters:occupied.append(hunter.position)
+		deer.position=StartPlacement.clear_motion(DEER_SLOT,deer.position,occupied,rules.attacker)
 	var deer_close_travel := false
 	if running and bom_prey_pocket.is_finite():
 		var close_progress := smoothstep(.06,.70,pose_clock/RULES.POSE_SECONDS) if charge and rules.attacker == RULES.SAEBOM else 1.0
@@ -2146,7 +2164,8 @@ func update_actors(delta: float) -> void:
 	deer.walking = 1.0 if transition_elapsed>=0 and approach>0.0 and approach<1.0 else (movement_beat if running and (charge or basic_recoil>0.0) else 0.0)
 	if deer_close_travel: deer.walking = maxf(deer.walking,.74)
 	deer.heading = lerp_angle(-PI*.34,-PI*.35,approach)
-	deer.gait_phase = pose_clock*14
+	if approaching:prey_stride_phase+=previous_prey_position.distance_to(deer.position)/maxf(1.0,42.0*deer.scale.x)*TAU
+	deer.gait_phase = prey_stride_phase if approaching else pose_clock*14
 	deer.clock += delta
 	if deer is NativeBoar: _pose_adult_boar(deer,charge)
 	else: deer.animate_rig(delta)
@@ -2253,7 +2272,7 @@ func _pose_adult_boar(adult:NativeBoar, charge:bool) -> void:
 	elif basic_recoil>0.0:
 		adult.sample_native_phase("hit", (1.0-basic_recoil/BASIC_RECOIL_TIME)*float(adult_markers.hit))
 	elif deer.walking>.20:
-		adult.sample_native_phase("approach",fposmod(deer.clock,float(adult_markers.approach)))
+		adult.sample_native_phase("approach",fposmod(prey_stride_phase/TAU*float(adult_markers.approach) if transition_elapsed>=0 else deer.clock,float(adult_markers.approach)))
 	else:
 		adult.sample_native_phase("idle",fposmod(deer.clock,float(adult_markers.idle)))
 
