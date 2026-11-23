@@ -167,6 +167,10 @@ var han_authored_size:=192
 var han_radial:=true
 var han_radial_frames:Array[Texture2D]=[]
 const HAN_RADIAL_EXTENT:=Vector2(557,201)
+const HanGround = preload("res://scripts/hunt_han_3sp_ground.gd")
+var han_ground := HanGround.new()
+var han_ground_anchor := Vector2.INF
+var han_ground_at := -INF
 var han_2sp_enabled:=true
 var han_2sp_frames:Array[Texture2D]=[]
 const HAN_2SP_COUNT:=11
@@ -426,7 +430,7 @@ func _ready() -> void:
 		var stem:="res://assets/effects/d0071-chain/han_chain_impact_%02d.png"%i
 		var half:="res://assets/effects/duel-3sp-authored/hangyeol/192/han_chain_impact_%02d.png"%i
 		chain_impact_frames.append(load(half if han_authored_size==192 and ResourceLoader.exists(half) else stem))
-	if han_radial:
+	if not han_ground.prepare() and han_radial:
 		for i in 21:
 			var folder:="duel-3sp-polished" if authored_polished else "duel-3sp-directional"
 			var radial:="res://assets/effects/%s/hangyeol/192/han_3sp_radial_%02d.png"%[folder,i]
@@ -804,6 +808,7 @@ func reset_round(after_fade:=false) -> void:
 	approach_active = _prototype_duel() or _uram_duel() or _saebom_duel() or _han_boar_latest() or _uram_deer_close()
 	next_attack = FIRST_BASIC.duplicate() if (_prototype_duel() or _uram_duel() or _saebom_duel()) else [0.4,1.6]
 	animal_attack_count = 0
+	han_ground_anchor = Vector2.INF
 	fx.clear()
 	tip_trail.clear()
 	a.play("idle")
@@ -1162,6 +1167,8 @@ func _land(side: int, key: String,contact:Dictionary={}) -> void:
 			var floor_point:=shared_world.project(floor_contact)
 			_flash(impact_point,"han_chain_impact",Color.WHITE,HAN_CHAIN_IMPACT_SECONDS)
 			fx[-1]["floor_point"]=floor_point
+			han_ground_anchor = floor_point
+			han_ground_at = visual_clock
 			# The authored descending stroke persists briefly through the exact hit,
 			# instead of disappearing in the frame where the impact art starts.
 			var wake_start:=impact_point
@@ -1198,6 +1205,8 @@ func _land(side: int, key: String,contact:Dictionary={}) -> void:
 			_flash(impact_point,"han_chain_impact",Color.WHITE,HAN_CHAIN_IMPACT_SECONDS)
 			fx[-1]["floor_point"]=_position(1)
 			fx[-1]["wake_start"]=presentation.spear_point(a)
+			han_ground_anchor = _position(1)
+			han_ground_at = visual_clock
 			if _han_boar_latest():
 				for mark in tip_trail:
 					if mark.distance_to(impact_point)>15.0:
@@ -2211,16 +2220,19 @@ func _chain_ray(from:Vector2,to:Vector2,width:float,strength:float)->void:
 			han_chain_light.draw_polygon(PackedVector2Array([a0,b0,b1,a1]),PackedColorArray([c0,c1,Color(c1,0),Color(c0,0)]))
 
 func _draw_han_radial()->void:
-	if not (_prototype_duel() or _han_boar_latest()) or han_radial_frames.size()!=21:return
+	if not (_prototype_duel() or _han_fallback()):return
 	for effect in fx:
 		if effect.name!="han_chain_impact":continue
 		var elapsed:=visual_clock-float(effect.at)
 		if elapsed<0 or elapsed>=HAN_CHAIN_IMPACT_SECONDS:continue
 		var center:Vector2=effect.floor_point
-		var idx:=clampi(floori(elapsed*30.0),0,han_radial_frames.size()-1)
 		var after:=smoothstep(.015,.075,elapsed)*(1.0-smoothstep(.17,.63,elapsed))
 		_soft_light(center,Vector2(175,55),Color("238cff"),after*.46,location_layer)
-		location_layer.draw_texture_rect(han_radial_frames[idx],Rect2(center-HAN_RADIAL_EXTENT*.5,HAN_RADIAL_EXTENT),false)
+		if han_ground.frames.is_empty() and han_radial_frames.size() == 21:
+			var idx:=clampi(floori(elapsed*30.0),0,han_radial_frames.size()-1)
+			location_layer.draw_texture_rect(han_radial_frames[idx],Rect2(center-HAN_RADIAL_EXTENT*.5,HAN_RADIAL_EXTENT),false)
+	if han_ground_anchor.is_finite():
+		han_ground.draw(location_layer, han_ground_anchor, visual_clock - han_ground_at)
 
 func _draw_han_charge_gather(foot:Vector2,tip:Vector2,phase:float)->void:
 	var peak:=smoothstep(.07,.19,phase)*(1.0-smoothstep(.43,.54,phase))
@@ -2249,7 +2261,7 @@ func _draw_han_chain_light()->void:
 		var hand:=presentation.bone_point(a,"hand.R")
 		var tip:=presentation.spear_point(a)
 		var charge:=power*(1.0-smoothstep(.22,.39,phase))
-		if han_radial_frames.size()==21:_draw_han_charge_gather(foot,tip,phase)
+		if han_radial_frames.size()==21 or not han_ground.frames.is_empty():_draw_han_charge_gather(foot,tip,phase)
 		_soft_light(foot,Vector2(111,40),Color("1ba3ff"),charge*.76,han_chain_light)
 		_soft_light(foot,Vector2(49,19),Color("b8f3ff"),charge*.66,han_chain_light)
 		for i in 5:
@@ -2280,7 +2292,7 @@ func _draw_han_chain_light()->void:
 			var floor_point:Vector2=effect.floor_point
 			var wave_alpha:=smoothstep(.01,.095,elapsed)*(1.0-smoothstep(.20,.52,elapsed))
 			var wave_size:=Vector2(58,18).lerp(Vector2(143,48),clampf(elapsed/.52,0,1))
-			if han_radial_frames.size()!=21:
+			if han_radial_frames.size()!=21 and han_ground.frames.is_empty():
 				han_chain_light.draw_texture_rect(Hunt.GROUND_PULSE,Rect2(floor_point-wave_size*.5,wave_size),false,Color("6ac7ff",wave_alpha*.67))
 			_soft_light(center,Vector2(93,70),Color("36afff"),peak*.85,han_chain_light)
 			_soft_light(center,Vector2(28,24),Color("f2fcff"),peak,han_chain_light)

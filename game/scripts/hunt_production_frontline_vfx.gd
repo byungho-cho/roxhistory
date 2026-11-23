@@ -3,6 +3,8 @@ extends RefCounted
 const UramHeavy=preload("res://scripts/hunt_duel_uram_2p_effect.gd")
 const HAN_SKILL_SECONDS:=11./30.
 const HAN_CHAIN_SECONDS:=.70
+const HanGround = preload("res://scripts/hunt_han_3sp_ground.gd")
+var han_ground := HanGround.new()
 const HAN_RADIAL_EXTENT:=Vector2(557.,201.)
 const HAN_SKILL_ORIGIN:=Vector2(90.,117.)
 const HAN_SKILL_SIZE:=288.
@@ -11,9 +13,10 @@ var han_chain:Array[Texture2D]=[]
 var han_radial:Array[Texture2D]=[]
 
 func prepare()->bool:
- if han_skill.size()==11 and han_chain.size()==21 and han_radial.size()==21:return true
+ if han_skill.size()==11 and han_chain.size()==21 and han_ground.frames.size()==HanGround.FRAME_COUNT:return true
  han_skill=_load_frames("res://assets/effects/duel-2sp-authored/han_2sp_impact_%02d.png",11)
  han_chain=_load_frames("res://assets/effects/duel-3sp-authored/hangyeol/192/han_chain_impact_%02d.png",21)
+ if han_ground.prepare():return han_skill.size()==11 and han_chain.size()==21
  han_radial=_load_frames("res://assets/effects/duel-3sp-polished/hangyeol/192/han_3sp_radial_%02d.png",21)
  return han_skill.size()==11 and han_chain.size()==21 and han_radial.size()==21
 
@@ -88,10 +91,12 @@ func draw_han_chain_cast(layer:CanvasItem,tex:Texture2D,foot:Vector2,chest:Vecto
   _ray(layer,tex,prev,tip,18.*scale0,descent)
 
 func draw_han_chain_ground(layer:CanvasItem,tex:Texture2D,floor_point:Vector2,age:float,scale0:=1.)->void:
- if age<0. or age>=HAN_CHAIN_SECONDS:return
+ if age<0. or age>=HanGround.DURATION:return
  var after:=smoothstep(.015,.075,age)*(1.-smoothstep(.17,.63,age))
  _light(layer,tex,floor_point,Vector2(175,55)*scale0,Color("238cff"),after*.46)
- if han_radial.size()==21:
+ if not han_ground.frames.is_empty():
+  han_ground.draw(layer,floor_point,age,scale0)
+ elif age<HAN_CHAIN_SECONDS and han_radial.size()==21:
   var extent:=HAN_RADIAL_EXTENT*scale0
   layer.draw_texture_rect(_frame(han_radial,age),Rect2(floor_point-extent*.5,extent),false)
 

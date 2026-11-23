@@ -2299,7 +2299,8 @@ func _finish_visual_ready() -> bool:
 				age = stone_hit_age
 	if span > 0.0:
 		deer.modulate.a=1.0-smoothstep(maxf(.16,span-.5),span,age)
-		return not impact_pending and age>=span
+		var visual_end := maxf(span, 1.30) if pose == ManualHunt.HAN_SPEAR_3 and manual_art_ready else span
+		return not impact_pending and age>=visual_end
 	return not impact_pending
 
 

@@ -77,6 +77,10 @@ var uram_wave_pop:Dictionary={}
 var uram_ground_layer:Node2D
 var input_paused:=false
 var hud_parent:Control
+const HanGround = preload("res://scripts/hunt_han_3sp_ground.gd")
+var han_ground := HanGround.new()
+var han_ground_layer: Node2D
+var han_ground_events: Array[Dictionary] = []
 var paint:Node2D
 var bars_paint:Node2D
 var cast_notice_paint:Node2D
@@ -126,6 +130,10 @@ func setup(dust_draw:Callable=Callable(),gong:Callable=Callable(), heavy:Callabl
 		launch_dust_layer=Node2D.new()
 		add_child(launch_dust_layer)
 		launch_dust_layer.draw.connect(_draw_launch_dust)
+	han_ground.prepare()
+	han_ground_layer = Node2D.new()
+	add_child(han_ground_layer)
+	han_ground_layer.draw.connect(_draw_han_ground)
 	paint=Node2D.new();paint.z_index=600;add_child(paint)
 	paint.draw.connect(_paint)
 	bars_paint=Node2D.new();bars_paint.z_index=601;add_child(bars_paint)
@@ -563,6 +571,9 @@ func _step(dt:float)->void:
 		if elapsed-float(group_bom_hits[k].at)>=1.24:group_bom_hits.remove_at(k)
 	for k in range(silver_hits.size()-1,-1,-1):
 		if elapsed-float(silver_hits[k].at)>=.67:silver_hits.remove_at(k)
+	for k in range(han_ground_events.size()-1,-1,-1):
+		if elapsed - float(han_ground_events[k].at) >= HanGround.DURATION:
+			han_ground_events.remove_at(k)
 	for k in range(authored_events.size()-1,-1,-1):
 		if elapsed-float(authored_events[k].at)>=1.20:authored_events.remove_at(k)
 	for k in range(uram_ground_events.size()-1,-1,-1):
@@ -597,6 +608,23 @@ func _resolve(i:int)->void:
 			_subtract_hp_and_show(target_index,wind.x)
 			hits.append({"from":i,"target":target_index,"type":"rally_cloud","result":"hit","hp":target.hp})
 			if int(target.hp)==0:_play(target,"death")
+		return
+	# The ground strike reaches all living enemies on the existing contact beat.
+	if i == 0 and u.move == "chain":
+		var amount := 38
+		if u.rally > elapsed:
+			amount = roundi(amount * (1.20 if local_melee_polish else 1.25))
+		var primary_alive := j >= 3 and j < units.size() and int(units[j].hp) > 0
+		if primary_alive:
+			_damage(0, j, amount, "chain")
+		else:
+			# A defeated target cannot redirect the full hit to another lane.
+			var floor_point: Vector2 = units[j].feet if j >= 3 and j < units.size() else u.feet
+			han_ground_events.append({"at":elapsed, "floor":floor_point})
+		var splash := roundi(amount * HAN_3SP_SPLASH_FRACTION)
+		for enemy in range(3, units.size()):
+			if enemy != j and int(units[enemy].hp) > 0:
+				_damage(0, enemy, splash, "han_chain_splash")
 		return
 	if j<0:return
 	if units[j].hp<=0 and not (local_melee_polish and i==1 and u.move=="counter"):return
@@ -655,15 +683,7 @@ func _resolve(i:int)->void:
 		var receiver:Skeleton3D=target.actor.preview.skeleton
 		target["close_basic_neck_pose"]=receiver.get_bone_pose_rotation(receiver.find_bone("neck"))
 		target["close_basic_head_pose"]=receiver.get_bone_pose_rotation(receiver.find_bone("head"))
-	# Han 3SP hits all living foes once from the existing ground-impact beat.
-	# Preserve a miss, the locked target's full damage, and the ordinary hunt's ordered combo.
-	var han_splash:bool=i==0 and u.move=="chain"
 	_damage(i,j,damage,u.move)
-	if han_splash:
-		var splash_damage:=roundi(damage*HAN_3SP_SPLASH_FRACTION)
-		for nearby in range(3,units.size()):
-			if nearby==j or int(units[nearby].hp)<=0:continue
-			_damage(i,nearby,splash_damage,"han_chain_splash")
 
 func _finish_uram_ordinary_counter(j:int)->void:
 	uram_ordinary_impact.emit()
@@ -799,6 +819,8 @@ func _damage(i:int,j:int,amount:int,key:String,stone_impact:=Vector2.INF)->void:
 		target.saebom_switch_hit_until=elapsed+OrdinaryHitAccent.END
 		saebom_switch_hit=bool(target.get("saebom_melee_pending",false))
 	hits.append({"from":i,"target":j,"type":key,"result":"hit","hp":target.hp})
+	if i == 0 and key == "chain":
+		han_ground_events.append({"at":elapsed,"floor":target.feet})
 	if bom_hit_draw.is_valid() and i==2 and key=="skill":
 		var feet:Vector2=target.feet
 		var from:Vector2=units[i].feet
@@ -969,6 +991,7 @@ func _draw_pose(dt:float)->void:
 		uram_ground_layer.self_modulate=ambient
 		uram_ground_layer.queue_redraw()
 	paint.self_modulate=ambient
+	han_ground_layer.queue_redraw()
 	paint.queue_redraw()
 	bars_paint.queue_redraw()
 	if is_instance_valid(cast_notice_paint) and not cast_notices.is_empty():
@@ -1151,3 +1174,7 @@ func _sling_stone(u:Dictionary)->Vector2:
 	if idx<0:return u.feet-Vector2(0,30)
 	var p:=sk.to_global(sk.get_bone_global_pose(idx).origin)
 	return v.position+(v.display.position+v.camera.unproject_position(p)*v.display.scale)*v.scale
+
+func _draw_han_ground() -> void:
+	for event in han_ground_events:
+		han_ground.draw(han_ground_layer, event.floor, elapsed - float(event.at))
