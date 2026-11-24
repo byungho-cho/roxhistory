@@ -68,6 +68,25 @@ func run()->void:
  ck(ordered.dismiss_story_entry() and ordered.units[2].feet.distance_to(preset[2])>=36.0 and ordered.units[2].feet.distance_to(preset[2])<54.0,"reserved seat occupied: late ally takes nearby clear spot")
  ordered.queue_free()
  await process_frame
+ var reform=make(3)
+ reform._begin(0,"skill",3)
+ reform.units[0].sp=0.0
+ reform._begin(3,"attack",0)
+ reform.units[3].hp=79
+ reform.units[4].hp=0
+ var dead_feet:Vector2=reform.units[4].feet
+ var before:float=reform.elapsed
+ var before_hp:int=reform.units[0].hp
+ var han_contact:float=reform.units[0].contact
+ reform.story_entry_clock=2.5
+ ck(reform.dismiss_story_entry(),"manual guide dismissal reforms chapter 1-3")
+ ck(reform.units[0].move=="skill" and reform.units[0].contact==han_contact and reform.units[0].sp==0.0 and reform.units[0].hp==before_hp and reform.elapsed==before,"preserves Han's paid action, HP, SP and battle clock")
+ ck(reform.units[3].victim==-1 and reform.units[3].contact<0.0 and reform.units[3].hp==79 and reform._target(3)==1,"clears only pending old basic, preserves deer HP and redirects living prey")
+ ck(reform.units[4].hp==0 and reform.units[4].feet==dead_feet and not reform.story_uram_opening_targets.has(4),"dead prey neither moves nor returns")
+ reform.units[1].hp=0
+ ck(reform._target(3)==0,"if Uram is no longer alive, normal living-target rules apply")
+ reform.queue_free()
+ await process_frame
  var lab=make(0,false)
  ck(lab.story_encounter.is_empty() and lab.units.size()==6 and lab.units[3].id=="forest" and lab.units[0].hp==100,"legacy laboratory defaults unchanged")
  lab.queue_free()

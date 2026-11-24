@@ -28,6 +28,8 @@ var story_join_slot := -1
 var story_allied_placement := PackedVector2Array()
 var story_entry_clock := 0.0
 var story_entry_done := false
+# Chapter 1-3's reinforcing tank owns only each living deer's next basic.
+var story_uram_opening_targets: Dictionary = {}
 var story_first_charge_resolved := false
 var story_auto_parry_used := false
 var story_taught_parry := false
@@ -470,6 +472,7 @@ func _target(i:int)->int:
 		if units[1].hp>0:return 1
 		return 2 if units[2].hp>0 else -1
 	if i>=3:
+		if story_uram_opening_targets.has(i) and units[1].hp>0:return 1
 		if i == 3 and _story_teaching_first_charge():
 			return 1
 		return _local_enemy_target(i)
@@ -504,6 +507,7 @@ func _begin(i:int,key:String,target:int)->void:
 		u["floor_y"]=view.pivot.global_position.y
 	_play(u,key)
 	u.victim=target
+	if key=="attack" and target==1:story_uram_opening_targets.erase(i)
 	var dur:float=u.actor.duration
 	u.contact=dur*.54
 	if local_melee_polish and i==1:
@@ -667,6 +671,27 @@ func _tick_story_entry(real_delta:float)->bool:
 	story_entry_clock=minf(story_entry_clock+maxf(0.0,real_delta),STORY_JOIN_SECONDS+STORY_CUTIN_SECONDS)
 	return story_entry_active()
 
+func _story_reform_uram_frontline()->void:
+	var han:Dictionary=units[0]
+	var center:Vector2=han.feet if han.hp>0 else units[1].feet
+	center=Vector2(clampf(center.x,160.,755.),clampf(center.y,155.,375.))
+	var tank:=center+Vector2(22.,5.)
+	units[1].feet=tank
+	if han.hp>0:han.feet=center-Vector2(19.,7.)
+	story_uram_opening_targets.clear()
+	for i in range(3,units.size()):
+		var deer:=units[i]
+		if deer.hp<=0:continue
+		var angle:float=[.96,0.,-.96][i-3]
+		deer.feet=tank+Vector2.RIGHT.rotated(angle)*60.
+		story_uram_opening_targets[i]=true
+		# A pre-join wind-up aimed at Han cannot execute from the new line.
+		# Only a living enemy's unlanded basic is cleared; accepted allied
+		# moves, HP/SP, ready clocks and persistence are not recreated.
+		if deer.move=="attack" and deer.contact>=0.0:
+			_play(deer,"idle")
+			deer.victim=-1
+
 func dismiss_story_entry()->bool:
 	if not story_entry_active() or not story_outcome.is_empty():return false
 	var u:=units[story_join_slot]
@@ -679,6 +704,8 @@ func dismiss_story_entry()->bool:
 	_play(u,"idle")
 	for i in story_encounter.party.size():
 		huds[i].place_local_combat_hud(480.+128.*(float(i)-float(story_encounter.party.size()-1)*.5))
+	if int(story_encounter.number)==3 and story_join_slot==1:
+		_story_reform_uram_frontline()
 	huds[story_join_slot].show()
 	u.actor.preview.show()
 	_draw_pose(0.0)
