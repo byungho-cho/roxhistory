@@ -105,7 +105,7 @@ func _run()->void:
 	ck(is_instance_valid(motion) and motion.material is ShaderMaterial and motion.stream != null,"success uses foreground-only motion")
 	var details := get_button(h,"ResultDetails")
 	var actions := get_button(h,"ResultActions")
-	ck(is_instance_valid(details) and left.get_parent()==actions and motion.position.x<0.0 and motion.scale.x>0.0 and left.get_global_rect().position.x>root.get_visible_rect().get_center().x and root.get_visible_rect().encloses(next.get_global_rect()),"success motion is shifted left without mirroring; right-side buttons fit the viewport")
+	ck(is_instance_valid(details) and left.get_parent()==actions and is_equal_approx(motion.position.x,-378.0) and motion.scale.x>0.0 and left.get_global_rect().position.x>root.get_visible_rect().get_center().x and root.get_visible_rect().encloses(next.get_global_rect()),"victory actor starts 28px further left without mirroring; right-side buttons fit the viewport")
 	if do_movie:
 		await frames(55)
 		if fill:
@@ -129,7 +129,7 @@ func _run()->void:
 	motion = get_button(h,"ConfirmedResultMotion") as VideoStreamPlayer
 	ck(is_instance_valid(motion) and motion.material is ShaderMaterial and motion.stream != null,"failure uses foreground-only motion")
 	var retry := get_button(h,"ResultRetry")
-	ck(motion.position.x<0.0 and motion.scale.x>0.0 and retry.get_global_rect().position.x>root.get_visible_rect().get_center().x and root.get_visible_rect().encloses(retry.get_global_rect()),"failure uses the same left actor and right controls inside the safe layout")
+	ck(is_equal_approx(motion.position.x,-350.0) and motion.scale.x>0.0 and retry.get_global_rect().position.x>root.get_visible_rect().get_center().x and root.get_visible_rect().encloses(retry.get_global_rect()),"failure uses the same left actor and right controls inside the safe layout")
 	details = get_button(h, "ResultDetails")
 	actions = get_button(h, "ResultActions")
 	ck(details.position.y <= -24.0 and actions.position.y >= 34.0 and details.position.x == actions.position.x, "heading and cards use upper space, with CTAs in lower safe space")

@@ -9,6 +9,8 @@ const CTA_SECOND_X := CTA_FIRST_X + 184.0
 const CTA_WIDTH := 170.0
 const FAILURE_ROW_WIDTH := CTA_SECOND_X + CTA_WIDTH
 const ACTOR_FRAME := Rect2(-350, 0, 960, 540)
+const VICTORY_LEFT_SHIFT := 28.0
+const VICTORY_SWING_MARGIN_SHIFT := 50.0
 var app: Node
 var won: bool
 var stars := 0
@@ -202,7 +204,13 @@ func followup(parent: Control, value: String, y: float, icon: String) -> void:
 func _process(delta: float) -> void:
 	if is_instance_valid(result_video):
 		result_video.paused=not app.application_active
-		if result_video.is_playing() and result_video.stream_position>.03:result_first.hide()
+		if result_video.is_playing():
+			var t := result_video.stream_position
+			if t>.03:result_first.hide()
+			if won:
+				# Give the spear room at the widest four frames, then settle back left.
+				var swing_margin := smoothstep(.87,1.02,t) * (1.0 - smoothstep(1.26,1.43,t))
+				result_video.position.x = ACTOR_FRAME.position.x - VICTORY_LEFT_SHIFT + VICTORY_SWING_MARGIN_SHIFT * swing_margin
 		return
 	if not app.application_active: return
 	elapsed = fposmod(elapsed+delta,2.0)
@@ -213,15 +221,17 @@ func build_field_video(layout:Control)->bool:
 	var prefix:=FIELD_ART+"han-"+("success" if won else "failure")
 	var stream:=load(prefix+".ogv") as VideoStream
 	if stream==null:return false
-	result_last=app.picture(layout,load(prefix+"-last.png"),ACTOR_FRAME)
+	var frame := ACTOR_FRAME
+	if won:frame.position.x -= VICTORY_LEFT_SHIFT
+	result_last=app.picture(layout,load(prefix+"-last.png"),frame)
 	layout.move_child(result_last,0)
 	result_last.hide()
 	result_video=VideoStreamPlayer.new()
 	result_video.name="ConfirmedResultMotion"
 	result_video.stream=stream
 	result_video.expand=true
-	result_video.position=ACTOR_FRAME.position
-	result_video.size=ACTOR_FRAME.size
+	result_video.position=frame.position
+	result_video.size=frame.size
 	result_video.loop=false
 	result_video.volume_db=-80.0
 	result_video.mouse_filter=Control.MOUSE_FILTER_IGNORE
@@ -232,7 +242,7 @@ func build_field_video(layout:Control)->bool:
 	result_video.material = mask
 	layout.add_child(result_video)
 	layout.move_child(result_video,1)
-	result_first=app.picture(layout,load(prefix+"-first.png"),ACTOR_FRAME)
+	result_first=app.picture(layout,load(prefix+"-first.png"),frame)
 	layout.move_child(result_first,2)
 	result_video.finished.connect(func():
 		video_finished=true
