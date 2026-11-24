@@ -2871,6 +2871,8 @@ func update_actors(delta: float) -> void:
 	var head_prey := ENEMY_CELLS[4].lerp(DEER_SLOT,approach) if steady_first_hunt_heads else prey_visual_anchor
 	points.append(transform*(head_prey+Vector2(0,-deer.world_height*deer.scale.y-15)))
 	NativeHud.sync_heads(head_headers,points,transform*Rect2(8,70,944,350),NativeHud.HP_FADE_SECONDS if arrival_finished and (transition_elapsed>=0.0 or running) else -INF)
+	if first_hunt_end_age >= 0.0:
+		prey_hud.hide()
 	for i in prep_tags.size():
 		var tag:=prep_tags[i]
 		var actor=hunters[i] if i<3 else deer
@@ -3064,6 +3066,7 @@ func draw_stage() -> void:
 func _tick_first_hunt_drop(delta: float) -> void:
 	if first_hunt_end_age < 0.0:
 		first_hunt_end_age = 0.0
+		prey_hud.hide()
 		first_hunt_drop = FirstHuntDrop.new(false)
 		battlefield.add_child(first_hunt_drop)
 		first_hunt_drop.position = deer.position
