@@ -22,7 +22,7 @@ func check_stage(number:int)->void:
  var live_actor_ids:Array=[]
  for i in b.units.size():
   if b.units[i].hp>0:live_actor_ids.append(b.units[i].id)
- ck(live_actor_ids==(["hangyeol"] if number<3 else ["hangyeol","uram","saebom"])+data.prey,"actual live parties/species 1-"+str(number))
+ ck(live_actor_ids==(["hangyeol"] if number<=3 else ["hangyeol","uram"] if number==4 else ["hangyeol","uram","saebom"])+data.prey,"actual live parties/species 1-"+str(number))
  for j in range(3,b.units.size()):
   ck(b.units[j].actor.key==data.prey[j-3] and is_instance_valid(b.units[j].actor.preview.skeleton),"actual native wildlife rig "+data.prey[j-3])
  if number==3:
@@ -33,7 +33,7 @@ func check_stage(number:int)->void:
    for i in 3:
     if b.units[i].move=="attack":moved[i]=true
   print("1-3 battle elapsed ",b.elapsed," attack slots ",moved," prey HP ",b.units[3].hp," ",b.units[4].hp)
-  ck(moved.size()==3,"Han, Uram, Saebom all perform real attacks in 1-3")
+  ck(moved.has(0) and moved.has(1) and not moved.has(2),"Han and delayed Uram perform native attacks; Saebom never attacks in 1-3")
   ck(b.units[3].hp<100 and b.units[4].hp<100,"1-3 attacks reduce both independent prey health pools")
  if number==2:
   ck(not b.units[1].actor.preview.visible and not b.units[2].actor.preview.visible and not b.huds[1].visible and not b.huds[2].visible,"1-2 never renders inactive allies")

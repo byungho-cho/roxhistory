@@ -21,6 +21,13 @@ const HEROES := ["hangyeol","uram","saebom"]
 # Chapter One encounter before setup without routing to the lab screen.
 var story_encounter: Dictionary = {}
 var story_outcome := ""
+const STORY_JOIN_SECONDS := 2.5
+const STORY_RUN_SECONDS := 1.15
+var story_join_slot := -1
+var story_entry_clock := 0.0
+var story_entry_done := false
+var story_entry_origin := Vector2.ZERO
+var story_entry_end := Vector2.ZERO
 var story_first_charge_resolved := false
 var story_auto_parry_used := false
 var story_taught_parry := false
@@ -44,11 +51,16 @@ func configure_story_encounter(row: Dictionary) -> bool:
 	var stage_number := int(row.get("number", 0))
 	var party: Array = row.get("party", [])
 	var prey: Array = row.get("prey", [])
-	if stage_number < 2 or stage_number > 10 or party not in [["han"], ["han","uram","saebom"]] or prey.is_empty() or prey.size() > 3:
+	if stage_number < 2 or stage_number > 10 or party not in [["han"], ["han","uram"], ["han","uram","saebom"]] or prey.is_empty() or prey.size() > 3:
 		return false
 	for species: String in prey:
 		if species not in ["forest", "stag", "juvenile", "adult"]:
 			return false
+	var opening: Array = row.get("opening_party",party)
+	var joins: Array = row.get("story_join",[])
+	if opening.is_empty() or opening != party.slice(0,opening.size()) or joins != party.slice(opening.size()) or joins.size() > 1:
+		return false
+	if not joins.is_empty(): story_join_slot = opening.size()
 	story_encounter = row.duplicate(true)
 	return true
 
@@ -219,7 +231,7 @@ func setup(dust_draw:Callable=Callable(),gong:Callable=Callable(), heavy:Callabl
 		if not story_encounter.is_empty() and not ally and i - 3 >= story_encounter.prey.size():
 			break
 		var id:String=HEROES[i] if ally else "forest" if story_encounter.is_empty() else story_encounter.prey[i - 3]
-		var dormant: bool = not story_encounter.is_empty() and ally and i >= story_encounter.party.size()
+		var dormant: bool = not story_encounter.is_empty() and ally and i >= story_encounter.get("opening_party",story_encounter.party).size()
 		var home:Vector2
 		if ally:home=Hunt.HUNTER_BATTLE_CENTER+(Hunt.ALLY_CELLS[HERO_SLOTS[i]]-Hunt.FORMATION_CENTER)*.62
 		else:home=Hunt.DEER_SLOT+Vector2(111,-9)+(Hunt.ENEMY_CELLS[DEER_SLOTS[i-3]]-Hunt.ENEMY_CELLS[4])*.86
@@ -250,8 +262,11 @@ func setup(dust_draw:Callable=Callable(),gong:Callable=Callable(), heavy:Callabl
 		hud.requested.connect(_request.bind(i))
 		if not story_encounter.is_empty():
 			hud.visible = not bool(units[i].get("story_dormant", false))
-			if story_encounter.party.size() == 1 and i == 0:
-				hud.position.x = 447.
+			var visible_count: int = story_encounter.get("opening_party",story_encounter.party).size()
+			if story_encounter.party.size()==1 and i==0:
+				hud.position.x=447.
+			if story_join_slot>=0:
+				hud.place_local_combat_hud(480.+128.*(float(i)-float(visible_count-1)*.5))
 		huds.append(hud)
 	_draw_pose(0.0)
 
@@ -593,7 +608,7 @@ func _approach(i:int,target:Vector2,dt:float)->void:
 			intended=units[j].feet+diff.normalized()*34.0
 	u.feet=intended
 
-func tick(delta:float,paused:bool)->void:
+func tick(delta:float,paused:bool,real_delta:float=-1.0)->void:
 	if paused:return
 	acc+=minf(delta,.10)
 	if spotlight_clock>=0.:
@@ -602,7 +617,32 @@ func tick(delta:float,paused:bool)->void:
 			spotlight_clock=-1.;spotlight_attacker=-1;spotlight_defender=-1;combo_opener=-1
 	while acc>=STEP:
 		acc-=STEP;_step(STEP)
+	_tick_story_entry(delta if real_delta < 0.0 else real_delta)
 	_draw_pose(delta)
+
+func _tick_story_entry(real_delta:float)->void:
+	if story_join_slot < 0 or story_entry_done or ended or not story_outcome.is_empty():return
+	var previous:=story_entry_clock
+	story_entry_clock+=maxf(0.0,real_delta)
+	if story_entry_clock < STORY_JOIN_SECONDS:return
+	var u:=units[story_join_slot]
+	if previous < STORY_JOIN_SECONDS:
+		story_entry_origin=Vector2(-40.0,u.home.y+72.0)
+		story_entry_end=u.home+Vector2(-48.0,0.0) if story_join_slot==1 else u.home+Vector2(-59.0,9.0)
+		_play(u,"run")
+	var age:=story_entry_clock-STORY_JOIN_SECONDS
+	u.feet=story_entry_origin.lerp(story_entry_end,smoothstep(0.,STORY_RUN_SECONDS,age))
+	if age < STORY_RUN_SECONDS:return
+	story_entry_done=true
+	u.story_dormant=false
+	u.hp=u.max_hp
+	u.sp=_story_opening_charge(story_join_slot)
+	u.next=elapsed+.10
+	_play(u,"idle")
+	for i in story_encounter.party.size():
+		huds[i].place_local_combat_hud(480.+128.*(float(i)-float(story_encounter.party.size()-1)*.5))
+	huds[story_join_slot].show()
+	u.actor.preview.show()
 
 func _step(dt:float)->void:
 	if not story_outcome.is_empty():return
@@ -1026,8 +1066,14 @@ func _draw_pose(dt:float)->void:
 	for i in units.size():
 		var u:=units[i];var actor=u.actor
 		if bool(u.get("story_dormant", false)):
-			actor.preview.hide()
 			u.ring.hide()
+			actor.preview.hide()
+			if i==story_join_slot and not story_entry_done and story_entry_clock>=STORY_JOIN_SECONDS and story_outcome.is_empty():
+				actor.preview.show()
+				actor.preview.position=u.feet
+				actor.preview.z_index=int(u.feet.y)
+				actor.preview.pivot.rotation.y=_ground_heading(actor.preview.camera,story_entry_end-story_entry_origin)
+				actor.sample(story_entry_clock-STORY_JOIN_SECONDS,true)
 			continue
 		var isolated:=spotlight_attacker==i or spotlight_defender==i
 		var tint:=Color.WHITE if isolated else ambient

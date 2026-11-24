@@ -7,6 +7,7 @@ const ReadinessArt:=preload("res://scripts/hunt_readiness_art.gd")
 var branch_video:BranchVS
 var prep_tags:Array[Control]=[]
 var chapter_one_solo:=false
+var prep_ally_count := 3
 const ChapterOneCatalog := preload("res://scripts/hunt_chapter_one_catalog.gd")
 # Private proof only: do not make part of a release until every story route and
 # normal frontier behavior are verified.
@@ -240,8 +241,11 @@ func _ready() -> void:
 	rules.manual_only=stage_one_one
 	rules.first_hunt=stage_one_one and int(app.model.state.get("hunt_cleared",0))==0
 	if stage_one_one:rules.damage_multiplier=RULES.STAGE_1_1_DAMAGE_MULTIPLIER
-	if chapter_one_solo:
-		rules.party_hp=[RULES.PARTY_HP[0],0,0]
+	if chapter_one_solo: prep_ally_count = 1
+	if chapter_story_preview:
+		var row:=ChapterOneCatalog.encounter(chapter_story_number)
+		prep_ally_count=row.get("opening_party",row.party).size()
+	for i in range(prep_ally_count,3): rules.party_hp[i]=0
 	if rules.first_hunt:assigned_cells[0]=FIRST_HUNT_CENTER_SEAT
 	add_child(hunt_audio)
 	mouse_filter = Control.MOUSE_FILTER_STOP
@@ -537,9 +541,9 @@ func build_preparation() -> void:
 	var roster := plaque(roster_edge,Rect2(6,0,152,330),Color(0.20,0.17,0.13,.92),Color("a07d50"))
 	var ink := Color("49321e")
 	caption(roster,"출전 편성",Rect2(11,16,130,25),17,Color("eed9b4"))
-	caption(roster,"%d / %d"%[1 if chapter_one_solo else hunters.size(),1 if chapter_one_solo else RULES.PARTY_HP.size()],Rect2(31,42,90,21),15,Color("eed9b4"))
+	caption(roster,"%d / %d"%[prep_ally_count,prep_ally_count],Rect2(31,42,90,21),15,Color("eed9b4"))
 	for index in hunters.size():
-		if chapter_one_solo and index!=0:continue
+		if index>=prep_ally_count:continue
 		var card := make_button(roster,"",Rect2(28,65+82*index,95,77),select_hunter.bind(index))
 		clear_button_art(card)
 		card.name = "Hunter%d"%index
@@ -636,6 +640,7 @@ func style_portrait(frame: Panel, selected: bool) -> void:
 
 
 func select_hunter(index: int) -> void:
+	if index<0 or index>=prep_ally_count:return
 	if not arrival_finished or transition_elapsed>=0 or running:return
 	selected_hunter = index
 	hunt_audio.cue("S02")
@@ -723,7 +728,7 @@ func build_combat() -> void:
 	combat_controls = layer(combat)
 	for index in hunters.size():
 		var hud:=SkillHUD.new()
-		hud.position=Vector2(447. if chapter_one_solo and index==0 else 354.6+92.4*index,437)
+		hud.position=Vector2(447. if prep_ally_count==1 and index==0 else 354.6+92.4*index,437)
 		hud.chain_allowed=not stage_one_one
 		combat_controls.add_child(hud)
 		hud.reset(["hangyeol","uram","saebom"][index])
@@ -1074,7 +1079,7 @@ func handle_formation_pointer(event: InputEvent, global_coordinates: bool) -> bo
 	if drag_pointer==-2:
 		if not pressed:return false
 		for index in hunters.size():
-			if chapter_one_solo and index!=0:continue
+			if index>=prep_ally_count:continue
 			var feet: Vector2 = ALLY_CELLS[assigned_cells[index]]
 			if Rect2(feet-Vector2(22,53),Vector2(44,58)).has_point(at):
 				select_hunter(index)
@@ -1406,7 +1411,7 @@ func _draw_normal_hunt_art(front:bool) -> void:
 	if not combat_layout:
 		if not front:
 			for actor in hunters:
-				if chapter_one_solo and actor!=hunters[0]:continue
+				if hunters.find(actor)>=prep_ally_count:continue
 				prey_art.draw_ground_ring(battle_vfx_under,NativeHud.ground_rect(actor.camera,actor.position,lerpf(CELL_SIZE.x*.40*.62,23.,smoothstep(0.,.30,transition_elapsed)) if transition_elapsed>=0.0 else CELL_SIZE.x*.40*.62),true)
 			if chapter_prep_setup_ok:
 				for actor in chapter_prep_foes:
@@ -1865,6 +1870,9 @@ func _start_chapter_story_preview() -> void:
 	canvas.add_child(battle)
 	battle.setup(Callable(), Callable(), Callable(), Callable(), Callable(), Callable(), Callable(), Callable(), Callable(), 1.15, Callable(), Callable(), Callable(), Callable(), Callable(), true)
 	chapter_story_battle = battle
+	battlefield.queue_redraw()
+	for head in head_headers: head.panel.hide()
+	for tag in prep_tags: tag.hide()
 	battle.hud_parent.reparent(combat_controls, false)
 	for actor in hunters:
 		actor.hide()
@@ -1887,7 +1895,7 @@ func _process(delta: float) -> void:
 		return
 	if result_shown: return
 	if running and is_instance_valid(chapter_story_battle):
-		chapter_story_battle.tick(delta * speed, false)
+		chapter_story_battle.tick(delta * speed, false, delta)
 		var outcome: String = chapter_story_battle.story_outcome
 		if not outcome.is_empty():
 			for i in 3:
@@ -2302,7 +2310,7 @@ func update_combat_ui(delta := 0.0) -> void:
 	deer_health_text.text = str(rules.deer_hp)
 	for i in party_cards.size():
 		var hud: Control = party_cards[i].hud
-		hud.visible=not chapter_one_solo or i==0
+		hud.visible=i<prep_ally_count
 		hud.sync(rules.orbs(i),rules.party_hp[i],RULES.PARTY_HP[i],rules.party_hp[i]>0,_can_take_hunt_input() and (rules.can_use(RULES.PARTY_SKILLS[i]) if i == RULES.SAEBOM else rules.can_use_frontline_skill(i,2)),delta,_can_submit_manual_chain(i))
 
 const CAMERA_ACCENT_S := .54
@@ -2362,7 +2370,7 @@ func update_actors(delta: float) -> void:
 	var basic_attack := pose in ["thrust","auto_thrust"]
 	for i in hunters.size():
 		var hunter := hunters[i]
-		if chapter_one_solo and i!=0:
+		if i>=prep_ally_count:
 			hunter.hide()
 			hunter.viewport.render_target_update_mode=SubViewport.UPDATE_DISABLED
 			continue
@@ -2449,7 +2457,7 @@ func update_actors(delta: float) -> void:
 				BasicRope.set_loaded(hunter,not basic_rope_empty)
 		hunter.viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
 		hunter_markers[i].position = hunter.position+Vector2(0,-63)
-		hunter.visible=not chapter_one_solo or i==0
+		hunter.visible=i<prep_ally_count
 		hunter_markers[i].visible = arrival_finished and hunter.visible
 		hunter_field_bars[i].get_parent().visible = approach>=1.0
 	var charge := running and pose=="counter"
@@ -2499,7 +2507,7 @@ func update_actors(delta: float) -> void:
 		var tag:=prep_tags[i]
 		var actor=hunters[i] if i<3 else deer
 		tag.position=actor.position+Vector2(0,-63 if i<3 else -deer.world_height*deer.scale.y-15)
-		tag.visible=arrival_finished and transition_elapsed<0.0 and not running and (i==3 or not chapter_one_solo or i==0)
+		tag.visible=arrival_finished and transition_elapsed<0.0 and not running and (i==3 or i<prep_ally_count)
 	if chapter_one_solo:
 		for i in [1,2]:head_headers[i].panel.hide()
 	_sync_chapter_preparation_foes()

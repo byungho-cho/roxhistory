@@ -49,18 +49,21 @@ func run() -> void:
    var active:Array=[]
    for u in b.units:
     if u.hp>0:active.append(u.id)
-   ck(active==(["hangyeol"] if n==2 else ["hangyeol","uram","saebom"])+data.prey,"exact armed active roster 1-"+str(n))
+   ck(active==(["hangyeol"] if n in [2,3] else ["hangyeol","uram"] if n==4 else ["hangyeol","uram","saebom"])+data.prey,"exact armed active roster 1-"+str(n))
    if n==2:
     var untouched:int=b.units[4].hp
     b._subtract_hp_and_show(3,6)
     ck(b.units[3].hp==44 and b.units[4].hp==untouched and not b.huds[1].visible and not b.huds[2].visible,"1-2 two independent prey; only Han HUD")
-   if n==3:
+   if n in [3,4]:
     var moved:Dictionary={}
-    for f in range(180):
+    var slot:int=n-2
+    ck(b.story_join_slot==slot and b.units[slot].hp==0 and not b.huds[slot].visible,"pending ally has no combat presence")
+    for f in range(390):
      h._process(1./60.)
      for i in 3:
       if b.units[i].move=="attack":moved[i]=true
-    ck(moved.size()==3,"1-3 three actually fighting")
+    ck(b.story_entry_done and moved.has(slot) and b.huds[slot].visible,"reinforcement joins and attacks following a real delay")
+    if n==3: ck(not moved.has(2) and not b.huds[2].visible,"no Saebom in 1-3")
    # Force only result of seeded QA fight to test the public-facing save and CTA.
    for j in range(3,b.units.size()):b.units[j].hp=0
    h._process(.0167)

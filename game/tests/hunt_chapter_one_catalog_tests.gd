@@ -26,9 +26,11 @@ func run() -> void:
 	for i in range(10):
 		var stage := CATALOG.encounter(i + 1)
 		check(stage.prey == expected[i] and stage.prey.size() <= 3, "roster %s" % stage.key)
-		check(stage.party == (["han"] if i < 2 else ["han", "uram", "saebom"]), "party %s" % stage.key)
+		check(stage.party == (["han"] if i < 2 else ["han", "uram"] if i == 2 else ["han", "uram", "saebom"]), "party %s" % stage.key)
 		check(stage.base_meat == meat[i] and stage.seconds == (60 if i == 4 else 90 if i == 9 else 50), "reward/time %s" % stage.key)
 		best_meat += int(stage.base_meat) * 2
+	check(CATALOG.encounter(3).opening_party == ["han"] and CATALOG.encounter(3).story_join == ["uram"], "1-3 follows Han with Uram only")
+	check(CATALOG.encounter(4).opening_party == ["han", "uram"] and CATALOG.encounter(4).story_join == ["saebom"], "1-4 follows Han and Uram with Saebom")
 	check(best_meat == 880, "Figma base three-star total")
 	check(CATALOG.encounter(0).is_empty() and CATALOG.encounter(11).is_empty(), "invalid numbers aren't stages")
 	check(CATALOG.encounter(1).lesson == "han_manual_2sp" and CATALOG.encounter(1).first_clear_stars == 3, "shipped 1-1 override")
