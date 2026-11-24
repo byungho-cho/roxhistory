@@ -182,7 +182,7 @@ var pan_last := Vector2.ZERO
 var pan_start := Vector2.ZERO
 var pan_moved := false
 var touch_points := {}
-const BATTLE_SPEED := 1.5
+const BATTLE_SPEED := 1.0
 var speed := BATTLE_SPEED
 var auto_button: DemoButton
 var speed_button: DemoButton

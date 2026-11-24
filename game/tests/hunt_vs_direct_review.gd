@@ -137,7 +137,7 @@ func _run()->void:
 	ck(not prep_flash and not transition_gap,"no prep flash or unowned vs-to-live render frame")
 	ck(h.running and h.combat_layout and not h.branch_video.visible and h.combat.is_visible_in_tree() and is_equal_approx(h.combat.modulate.a,1.0) and is_equal_approx(h.approach,1.0),"first post-VS frame is fully dressed live combat")
 	ck(frame_count in [103,104,105] and played_flame,"VS 3.45 seconds with visible approved title or fallback")
-	ck(is_equal_approx(h.speed,1.5) and not h.battle_toggles_unlocked,"1-1 active 1.5x and X2 still locked")
+	ck(is_equal_approx(h.speed,1.0) and not h.battle_toggles_unlocked,"1-1 active 1x and X2 still locked")
 	var t:float=h.manual_combat_clock
 	var deer_fx:=false
 	var hit_seen:=false
@@ -145,7 +145,7 @@ func _run()->void:
 		await process_frame
 		deer_fx=deer_fx or not h.prey_dust.is_empty() or not h.prey_wake.is_empty() or h.prey_charge_progress>=0.0 or h.manual_effects.any(func(fx): return fx.kind=="prey_hit")
 		hit_seen=hit_seen or (h.hit_on_hunter and h.hit_damage>0)
-	ck(absf(h.manual_combat_clock-t-3.0)<.07, "two real seconds produce three live combat seconds")
+	ck(absf(h.manual_combat_clock-t-2.0)<.07, "two real seconds produce two live combat seconds")
 	for i in 110:
 		await process_frame
 		deer_fx=deer_fx or not h.prey_dust.is_empty() or not h.prey_wake.is_empty() or h.prey_charge_progress>=0.0 or h.manual_effects.any(func(fx): return fx.kind=="prey_hit")
@@ -208,11 +208,11 @@ func _run()->void:
 	if not do_movie:
 		await open(3,4)
 		h=scene
-		ck(h.battle_toggles_unlocked and h.speed==1.5,"1-4 default 1.5 and button unlocked")
+		ck(h.battle_toggles_unlocked and h.speed==1.0,"1-4 default 1x and button unlocked")
 		h.toggle_speed()
 		ck(h.speed==2.0,"X2 means exactly 2x, not 3x")
 		h.toggle_speed()
-		ck(h.speed==1.5,"turning X2 off restores default 1.5x")
+		ck(h.speed==1.0,"turning X2 off restores default 1x")
 		await force_outcome(h,"win")
 		await tap(get_button(h,"ResultStageSelect"))
 		await frames(8)
