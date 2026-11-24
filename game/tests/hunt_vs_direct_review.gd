@@ -230,4 +230,3 @@ func _run()->void:
 	await frames(6)
 	print("RESULT errors=",errors)
 	quit(errors)
-

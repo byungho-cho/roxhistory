@@ -2431,7 +2431,7 @@ func prepare_selected_hunt() -> void:
 		_prepare_hunt_stage(hunt_stage)
 
 func chapter_one_preview_enabled() -> bool:
-	return "--chapter-one-preview" in OS.get_cmdline_user_args()
+	return not ("--test-ui" in OS.get_cmdline_user_args() and "--legacy-hunt-regression" in OS.get_cmdline_user_args())
 
 
 func chapter_one_story_number(stage_id: int) -> int:
