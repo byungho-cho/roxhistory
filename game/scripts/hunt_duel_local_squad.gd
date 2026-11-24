@@ -12,6 +12,7 @@ signal story_deer_shove_impact
 
 const Actor = preload("res://scripts/model_test_actor.gd")
 const Hunt = preload("res://scripts/deer_hunt_screen.gd")
+const FrontlineActions = preload("res://scripts/hunt_production_frontline_actions.gd")
 const Presenter = preload("res://scripts/duel_motion_presenter.gd")
 const HUD = preload("res://scripts/duel_skill_hud.gd")
 const UramCounterWave=preload("res://scripts/duel_uram_counter_wave.gd")
@@ -561,7 +562,7 @@ func _begin(i:int,key:String,target:int)->void:
 	if i==2:
 		u.basic_rope_windup=key=="attack" and not bool(u.get("bom_shove",false))
 		if key in ["skill","chain"]:u.basic_rope_empty=false
-	u.next=elapsed+maxf(dur+.28,1.26)
+	u.next=elapsed+FrontlineActions.recurring_attack_period(dur)
 
 func _gap(i:int)->float:
 	return (59.0 if bool(units[2].get("bom_close",false)) else 124.0) if i==2 else 59.0 if i==0 else 49.0
@@ -1029,7 +1030,7 @@ func _resolve(i:int)->void:
 		var amount:=Knife.damage_at(beat,u.rally>elapsed)
 		_resolve_saebom_near(i,j,amount,beat)
 		return
-	var damage:=RallyCloud.SQUAD_BASE if u.move=="attack" else 27 if u.move=="skill" else 38
+	var damage:=RallyCloud.SQUAD_BASE if u.move=="attack" else FrontlineActions.HAN_STORY_2SP_DAMAGE if u.move=="skill" and i==0 else 27 if u.move=="skill" else 38
 	if i>=3:
 		damage=11 if u.move=="attack" else 23
 		# Keep the old production early counter damage. The lab numbers

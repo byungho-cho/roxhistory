@@ -29,9 +29,7 @@ const SKILLS := {
 var skills_enabled:=true
 var first_hunt := false
 var manual_only := false
-# Temporary 1-1 tuning affects only Han's committed attacks, never the prey.
-const STAGE_1_1_HAN_DAMAGE_MULTIPLIER := 2
-var han_damage_multiplier := 1
+var han_ordinary_damage := RallyCloud.ORDINARY_BASE
 
 var charges: Array[float] = [0.0, 0.0, 0.0]
 var party_hp: Array[int] = [34, 33, 33]
@@ -88,7 +86,7 @@ func resolve_attack(ordered_han_finisher := false, contact_into_frame := 0.0) ->
 				damage = floori(float(scaled) / 100.0)
 		else:
 			damage = _rally_damage(damage, attacker)
-		damage_deer(damage * han_damage_multiplier if attacker == 0 else damage)
+		damage_deer(damage)
 	if pending_counter:
 		pending_counter = false
 		_resolve_prey_damage(attacker)
@@ -305,7 +303,7 @@ func advance(delta: float, tick_rally := true, prefer_manual := false) -> String
 	hunter_turn = not hunter_turn
 	if not hunter_turn:
 		var index := living_from(next_attacker)
-		queue_attack(RallyCloud.ORDINARY_BASE,index)
+		queue_attack(han_ordinary_damage if index==0 else RallyCloud.ORDINARY_BASE,index)
 		next_attacker = (index+1)%party_hp.size()
 		return "auto_thrust"
 	attacker = living_from(next_target)

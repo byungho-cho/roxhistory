@@ -150,8 +150,6 @@ const FIRST_HUNT_HAN_STANDOFF := 51.0
 const FIRST_HUNT_BODY_CLEARANCE := 36.0
 const FIRST_HUNT_HAN_CONTACT_BEGIN := .17
 const FIRST_HUNT_HAN_CONTACT_END := .43
-const FIRST_HUNT_HAN_BASIC_PERIOD := 5.10
-const FIRST_HUNT_DEER_BASIC_PERIOD := 5.35
 var first_hunt_han_ready := .65
 var solo_deploy_clock := -1.0
 var solo_deploy_seconds := .80
@@ -277,7 +275,7 @@ func _ready() -> void:
 		var completed:Dictionary = app.chapter_one_story_completions()
 		rules.first_hunt = not bool(completed.get(ChapterOneCatalog.STAGE_KEYS[0],false))
 		rules.manual_only = rules.first_hunt
-		if rules.first_hunt:rules.han_damage_multiplier=RULES.STAGE_1_1_HAN_DAMAGE_MULTIPLIER
+		rules.han_ordinary_damage=RallyCloud.SQUAD_BASE
 		if not rules.first_hunt:
 			prep_ally_count = ChapterOneCatalog.replay_opening_party(completed,app.model.state.get(ChapterOneCatalog.RECRUITS_KEY,[])).size()
 			chapter_one_solo = prep_ally_count == 1
@@ -1854,7 +1852,9 @@ func _manual_duration(id: String) -> float:
 
 
 func _start_frontline_paid(index: int, id: String) -> bool:
-	var data := ManualHunt.describe(id,int(RULES.SKILLS[RULES.PARTY_SKILLS[index]].damage))
+	var legacy_damage:=int(RULES.SKILLS[RULES.PARTY_SKILLS[index]].damage)
+	if stage_one_one and id==ManualHunt.HAN_SPEAR_2:legacy_damage=ManualHunt.HAN_STORY_2SP_DAMAGE
+	var data := ManualHunt.describe(id,legacy_damage)
 	if data.is_empty() or not rules.start_frontline_paid(index,int(data.damage),_manual_duration(id)):
 		return false
 	play_pose(id)
@@ -1962,7 +1962,7 @@ func _tick_first_hunt_deer(elapsed:float) -> void:
 			rules.pending_damage=0
 		hunt_audio.cue("S21",2)
 	if manual_combat_clock+0.000001>=first_hunt_deer_ready and first_hunt_deer_age>=RULES.POSE_SECONDS and rules.prey_stun_remaining<=0. and rules.outcome.is_empty():
-		first_hunt_deer_ready=manual_combat_clock+FIRST_HUNT_DEER_BASIC_PERIOD
+		first_hunt_deer_ready=manual_combat_clock+ManualHunt.recurring_attack_period(float(adult_markers.get("basic",0.)))
 		first_hunt_deer_age=0.
 		first_hunt_deer_hit_pending=true
 
@@ -1972,9 +1972,9 @@ func _queue_first_hunt_han() -> void:
 		return
 	if manual_combat_clock<first_hunt_han_ready or not manual_pending.is_empty():
 		return
-	first_hunt_han_ready=manual_combat_clock+FIRST_HUNT_HAN_BASIC_PERIOD
+	first_hunt_han_ready=manual_combat_clock+ManualHunt.recurring_attack_period(hunters[0].clip_duration("basic"))
 	rules.action_lock=RULES.POSE_SECONDS
-	rules.queue_attack(RallyCloud.ORDINARY_BASE,0)
+	rules.queue_attack(rules.han_ordinary_damage,0)
 	play_pose("auto_thrust")
 
 

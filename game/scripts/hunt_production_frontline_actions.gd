@@ -2,6 +2,13 @@ extends RefCounted
 ## Player battle's manual frontline actions and single-contact forward shield window.
 ## All vectors/transforms passed to the guard must use the same collision space.
 
+# Normal Chapter One native tuning, shared by solo and squad paths.
+const HAN_STORY_2SP_DAMAGE := 27
+
+static func recurring_attack_period(clip_span:float) -> float:
+	return maxf(clip_span+.28,1.26)
+
+
 const HAN_SPEAR_2 := "han_spear_2"
 const HAN_SPEAR_3 := "han_spear_3"
 const URAM_CLUB_2 := "uram_club_2"
