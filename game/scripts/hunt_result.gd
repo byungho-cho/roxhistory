@@ -4,6 +4,9 @@ const ART := "res://assets/ui/hunt-result/"
 const CELL := Vector2i(388,516)
 const ATLAS_SIZE := Vector2i(2328,3096)
 const RESULT_COLUMN_X := 498.0
+const RESULT_TITLE_SAFE_Y := 80.0
+const RESULT_TITLE_GLYPH_Y := 97.0
+const STAGE_CONTEXT_FONT := 29
 const CTA_FIRST_X := 82.0
 const CTA_SECOND_X := CTA_FIRST_X + 184.0
 const CTA_WIDTH := 170.0
@@ -71,7 +74,7 @@ func _ready() -> void:
 		stage = story - 1
 	var region := "초원" if chapter == 0 else "숲"
 	var boss := story == 10 if story > 0 else stage == 5
-	stage_context = app.label(self,"%d장 · %s / %s" % [chapter+1,region,"보스" if boss else "%d단계" % (stage+1)],19,Color("fff0d0"))
+	stage_context = app.label(self,"%d장 · %s / %s" % [chapter+1,region,"보스" if boss else "%d단계" % (stage+1)],STAGE_CONTEXT_FONT,Color("fff0d0"))
 	stage_context.name = "ResultStageContext"
 	stage_context.size = Vector2(410,24)
 	stage_context.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
@@ -133,22 +136,24 @@ func fit(layout: Control) -> void:
 	layout.position = (size-layout.size*layout.scale)*.5
 	# Use some of the extra vertical space without scaling or moving the actor.
 	var extra_height := maxf(0.0, (size.y - inset.y*2.0) / layout.scale.y - layout.size.y)
-	result_details.position = Vector2(RESULT_COLUMN_X, -24.0 - minf(extra_height*.28, 58.0))
 	result_actions.position = Vector2(RESULT_COLUMN_X, 34.0 + minf(extra_height*.30, 60.0))
+	var safe_origin := Vector2.ZERO
+	var top_left := inset
+	if OS.has_feature("android"):
+		var area := DisplayServer.get_display_safe_area()
+		var physical := Vector2(DisplayServer.screen_get_size())
+		safe_origin = (Vector2(area.position)*size/physical).clamp(Vector2.ZERO,size) if physical.x>0 and physical.y>0 and area.has_area() else inset
+		top_left = safe_origin
+	var glyph_top := safe_origin.y + RESULT_TITLE_SAFE_Y
+	result_details.position = Vector2(RESULT_COLUMN_X,(glyph_top-layout.position.y)/layout.scale.y-RESULT_TITLE_GLYPH_Y)
 	if is_instance_valid(village_back):
-		var top_left := inset
-		if OS.has_feature("android"):
-			var area := DisplayServer.get_display_safe_area()
-			var physical := Vector2(DisplayServer.screen_get_size())
-			if physical.x>0 and physical.y>0 and area.has_area():
-				top_left = (Vector2(area.position)*size/physical).clamp(Vector2.ZERO,size)
 		var control_scale := maxf(.65,factor)
 		village_back.position = top_left + Vector2(14,12)*control_scale
 		village_back.size = Vector2.ONE * 52.0 * control_scale
 		village_back_icon.position = Vector2.ONE * 4.0 * control_scale
 		village_back_icon.size = Vector2.ONE * 44.0 * control_scale
 		stage_context.scale = Vector2.ONE * control_scale
-		stage_context.position = village_back.position + Vector2(56,(52.0-stage_context.size.y)*.5) * control_scale
+		stage_context.position = village_back.position + Vector2(69,(52.0-stage_context.size.y)*.5) * control_scale
 
 func write(parent: Control, value: String, rect: Rect2, font_size: int, color: Color) -> void:
 	var label: Label = app.label(parent,value,font_size,color)

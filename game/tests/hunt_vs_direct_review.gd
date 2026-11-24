@@ -96,7 +96,7 @@ func _run()->void:
 	ck(is_instance_valid(left) and is_instance_valid(next) and is_instance_valid(back),"win exposes selector, next and village back")
 	var context := get_button(h, "ResultStageContext")
 	var local_gap := context.get_global_rect().position.x-back.get_global_rect().end.x
-	ck(local_gap>0.0 and local_gap<8.0 and absf(context.get_global_rect().get_center().y-back.get_global_rect().get_center().y)<1.0 and context.mouse_filter==Control.MOUSE_FILTER_IGNORE,"chapter label vertically aligns beside the village back arrow without covering its touch area")
+	ck(local_gap>12.0 and local_gap<23.0 and context.get_theme_font_size("font_size")==29 and absf(context.get_global_rect().get_center().y-back.get_global_rect().get_center().y)<1.0 and context.mouse_filter==Control.MOUSE_FILTER_IGNORE,"chapter label vertically aligns beside the village back arrow without covering its touch area")
 	var fill:=get_button(h,"ResultViewportBackdrop")
 	ck(is_instance_valid(fill) and fill.get_global_rect().size.is_equal_approx(root.get_visible_rect().size),"transparent shade covers the real battlefield viewport")
 	var shade := fill as ColorRect
@@ -132,7 +132,7 @@ func _run()->void:
 	ck(is_equal_approx(motion.position.x,-350.0) and motion.scale.x>0.0 and retry.get_global_rect().position.x>root.get_visible_rect().get_center().x and root.get_visible_rect().encloses(retry.get_global_rect()),"failure uses the same left actor and right controls inside the safe layout")
 	details = get_button(h, "ResultDetails")
 	actions = get_button(h, "ResultActions")
-	ck(details.position.y <= -24.0 and actions.position.y >= 34.0 and details.position.x == actions.position.x, "heading and cards use upper space, with CTAs in lower safe space")
+	ck(absf(details.get_global_rect().position.y+97.0*details.get_parent().scale.y-80.0)<1.0 and actions.position.y >= 34.0 and details.position.x == actions.position.x, "heading and cards use upper space, with CTAs in lower safe space")
 	var failures := details.find_children("ResultFailureHint*", "Panel", false, false)
 	ck(failures.size() == 2 and failures.all(func(row): return absf(row.get_global_rect().end.x-retry.get_global_rect().end.x)<0.5), "both failure cards share the right action edge")
 	if do_movie:
