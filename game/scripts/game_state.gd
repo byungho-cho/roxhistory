@@ -242,7 +242,7 @@ func finish_loaded_jobs()->void:
 	OwnedBuildingUpgrades.finish(self)
 	if debug_fast_build and state.get("fast_build_mode","")!="fixed5":set_debug_fast_build(true)
 
-## Called while preparing the same save transaction that marks hunt progression.
+## Spend the resource and record growth in one save transaction.
 func feed_hero(id: String) -> Dictionary:
 	if busy: return {}
 	var progress := HeroGrowth.after_feed(state, id, hero_growth_rules)
@@ -258,6 +258,7 @@ func feed_hero(id: String) -> Dictionary:
 	return {"before": previous, "after": progress} if saved else {}
 
 
+## Called while preparing the same save transaction that marks hunt progression.
 func credit_hunt_meat(next: Dictionary, amount: int) -> int:
 	var previous := int(next.get("meat",0))
 	var granted := clampi(amount,0,BuildingRules.MAX_RESOURCE-previous)
