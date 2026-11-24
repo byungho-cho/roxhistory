@@ -7,6 +7,7 @@ const ReadinessArt:=preload("res://scripts/hunt_readiness_art.gd")
 var branch_video:BranchVS
 var prep_tags:Array[Control]=[]
 var chapter_one_solo:=false
+var chapter_story_encounter: Dictionary = {}
 var prep_ally_count := 3
 var story_cutin: CharacterGuide
 var story_cutin_pointer:=-2
@@ -279,8 +280,12 @@ func _ready() -> void:
 			chapter_one_solo = prep_ally_count == 1
 			battle_toggles_unlocked = ChapterOneCatalog.is_unlocked(4,completed)
 	if chapter_story_preview:
-		var row:=ChapterOneCatalog.encounter(chapter_story_number)
-		prep_ally_count=row.get("opening_party",row.party).size()
+		var completed:Dictionary=app.chapter_one_story_completions()
+		chapter_story_encounter=ChapterOneCatalog.playable_encounter(chapter_story_number,completed,app.model.state.get(ChapterOneCatalog.RECRUITS_KEY,[]))
+		prep_ally_count=chapter_story_encounter.get("opening_party",chapter_story_encounter.party).size()
+		if bool(chapter_story_encounter.get("free_replay",false)):
+			chapter_one_solo=prep_ally_count==1
+			battle_toggles_unlocked=ChapterOneCatalog.is_unlocked(4,completed)
 	for i in range(prep_ally_count,3): rules.party_hp[i]=0
 	_restore_hunt_formation()
 	add_child(hunt_audio)
@@ -2186,8 +2191,7 @@ func _start_chapter_story_preview() -> void:
 		push_error("Chapter One story backend unavailable")
 		return
 	var battle = backend.new()
-	var encounter := ChapterOneCatalog.encounter(chapter_story_number)
-	encounter.first_visit = app.chapter_one_story_completions().get(encounter.key, false) != true
+	var encounter:=chapter_story_encounter
 	if not battle.configure_story_encounter(encounter):
 		battle.free()
 		push_error("Chapter One story roster was rejected")

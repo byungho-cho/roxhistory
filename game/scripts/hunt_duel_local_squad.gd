@@ -89,6 +89,8 @@ func story_allows(i: int, move: String) -> bool:
 	if story_encounter.is_empty():
 		return true
 	var number := int(story_encounter.number)
+	if bool(story_encounter.get("free_replay",false)):
+		return move in ["skill","chain"] and i>=0 and i<3 and units[i].hp>0
 	if move == "skill":
 		if _story_teaching_first_charge():
 			return false
@@ -1378,7 +1380,7 @@ func _draw_pose(dt:float)->void:
 		if story_encounter.is_empty():
 			huds[i].sync(u.sp,u.hp,MAX_HP,u.hp>0,_free_to_cast(i),dt)
 		else:
-			huds[i].chain_allowed = int(story_encounter.number) >= 6 or (int(story_encounter.number) == 5 and i == 1)
+			huds[i].chain_allowed = bool(story_encounter.get("free_replay",false)) or int(story_encounter.number) >= 6 or (int(story_encounter.number) == 5 and i == 1)
 			var skill_allowed := story_allows(i, "skill")
 			huds[i].sync(u.sp, u.hp, u.max_hp, u.hp > 0, _free_to_cast(i) and skill_allowed, dt, _free_to_cast(i) and story_allows(i, "chain"))
 			if not skill_allowed:

@@ -83,6 +83,20 @@ static func replay_opening_party(completed: Dictionary, retained: Variant = []) 
 	return party
 
 
+## First attempts retain the authored encounter. Only a recorded clear
+## changes these two tutorials into a normal hunt with the owned roster.
+static func playable_encounter(number: int, completed: Dictionary, retained: Variant = []) -> Dictionary:
+	var row:=encounter(number)
+	if row.is_empty():return row
+	row.first_visit=completed.get(row.key,false)!=true
+	if number in [2,3] and not row.first_visit:
+		var owned:=replay_opening_party(completed,retained)
+		row.party=owned
+		row.opening_party=owned.duplicate()
+		row.erase("story_join")
+		row.free_replay=true
+	return row
+
 static func next_number(completed: Dictionary) -> int:
 	for number in range(1, STAGE_KEYS.size() + 1):
 		if completed.get(STAGE_KEYS[number - 1], false) != true:
