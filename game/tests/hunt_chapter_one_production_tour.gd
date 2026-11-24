@@ -140,8 +140,16 @@ func run() -> void:
      ck(first_enemy_attacks.get(3,-1)==1 and first_enemy_attacks.get(4,-1)==1 and b.story_uram_opening_targets.is_empty(),"both opening attacks really commit to Uram, then normal targets")
      ck(not moved.has(2) and not b.huds[2].visible,"no Saebom in 1-3")
    # Force only result of seeded QA fight to test the public-facing save and CTA.
-   for j in range(3,b.units.size()):b.units[j].hp=0
+   for j in range(3,b.units.size()):
+    if b.units[j].hp>0:b._damage(0,j,b.units[j].hp,"attack")
    h._process(.0167)
+   var battle_time:float=b.elapsed
+   var battle_hp:Array=b.units.map(func(unit):return unit.hp)
+   var last:int=b.last_defeated_prey
+   ck(not h.result_shown and last>=3 and b.victory_age==0.0,"last prey starts one victory hold 1-"+str(n))
+   for frame in 149:h._process(1./60.)
+   ck(not h.result_shown and b.elapsed==battle_time and b.units.map(func(unit):return unit.hp)==battle_hp and b.units[last].actor.death_effect.visible,"2.5s wall-clock hold, final drop and frozen rules 1-"+str(n))
+   h._process(1./60.+.000001)
    ck(h.result_shown and h.rules.outcome=="win","real result entered 1-"+str(n))
    if n<10:ck(app.next_hunt_stage_id()==Catalog.route_id(n+1),"next from result maps to "+str(n+1))
   ck(app.chapter_one_story_completions().get(Catalog.STAGE_KEYS[n-1],false)==true,"stable cleared stage 1-"+str(n))

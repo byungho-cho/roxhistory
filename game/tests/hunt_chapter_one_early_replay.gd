@@ -46,10 +46,13 @@ func carry(clear_count:int,persisted:Dictionary={}) -> void:
  app.model.state.erase("hunt_ch1_formation")
 func real_result(h,b,win:bool)->void:
  if win:
-  for i in range(3,b.units.size()):b.units[i].hp=0
+  for i in range(3,b.units.size()):
+   if b.units[i].hp>0:b._damage(0,i,b.units[i].hp,"attack")
  else:
   for i in 3:b.units[i].hp=0
  h._process(.0334)
+ if win:
+  for frame in 75:h._process(.0334)
  ck(h.result_shown and h.rules.outcome==("win" if win else "loss"),"actual result triggers "+("win" if win else "loss"))
 func suite(n:int,expected:Array,owned_toggles:bool)->void:
  var h=await ready_hunt(n)

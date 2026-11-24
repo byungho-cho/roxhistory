@@ -107,7 +107,9 @@ const HEAVY_HIT := preload(IMPACT_ART+"heavy-contact.svg")
 const GROUND_PULSE := preload(IMPACT_ART+"heavy-ground-pulse.svg")
 const ALLY_RING := preload(IMPACT_ART+"team-ally-ellipse.svg")
 const ENEMY_RING := preload(IMPACT_ART+"team-opponent-ellipse.svg")
-const FIRST_HUNT_RESULT_HOLD := 2.50
+const PREP_HAN_SCALE := .70
+const PREP_PREY_SCALE := .48
+const VICTORY_RESULT_HOLD := 2.50
 const FirstHuntDrop = preload("res://scripts/model_death_effect.gd")
 var first_hunt_end_age := -1.0
 var first_hunt_drop: Node2D
@@ -466,7 +468,7 @@ func _sync_chapter_preparation_foes() -> void:
 			actor.viewport.render_target_update_mode = SubViewport.UPDATE_DISABLED
 			continue
 		actor.position = ENEMY_CELLS[int(actor.get_meta("chapter_prep_slot"))]
-		actor.scale = Vector2.ONE * (.48 if chapter_one_solo else .60)
+		actor.scale = Vector2.ONE * PREP_PREY_SCALE
 		var facing: Vector2 = actor.position.direction_to(hunters[selected_hunter].position)
 		actor.heading = atan2(facing.x, facing.y)
 		actor.sample_native_phase("idle", fposmod(pose_clock + .29 * i, maxf(.01, actor.native.length(NativeBoar.Prey.clips(actor.native_species).idle))))
@@ -886,6 +888,7 @@ func _refresh_battle_countdown() -> void:
 
 
 func request_exit() -> void:
+	if not result_shown and rules.outcome == "win":return
 	pan_pointer = -2
 	clear_formation_drag()
 	if not app.application_active or exit_popup or result_shown:return
@@ -918,6 +921,7 @@ func pause_battle() -> void:
 
 
 func _open_battle_pause(with_cue:bool) -> void:
+	if not rules.outcome.is_empty():return
 	if not running or result_shown or exit_popup or app.modal:return
 	pan_pointer = -2
 	touch_points.clear()
@@ -1110,6 +1114,9 @@ func handle_vs_skip(event: InputEvent) -> bool:
 
 
 func _input(event: InputEvent) -> void:
+	if not result_shown and rules.outcome == "win":
+		get_viewport().set_input_as_handled()
+		return
 	if event is InputEventScreenTouch and event.canceled:
 		for control in [prep_sound_button,pause_button,pause_continue,pause_end]:
 			if is_instance_valid(control) and control.finger == event.index:
@@ -2216,7 +2223,10 @@ func _start_chapter_story_preview() -> void:
 		story_foot_placement.append(HUNTER_BATTLE_CENTER+(ALLY_CELLS[cell]-FORMATION_CENTER)*.62)
 	battle.story_allied_placement = story_foot_placement
 	canvas.add_child(battle)
-	battle.setup(Callable(), Callable(), Callable(), Callable(), Callable(), Callable(), Callable(), Callable(), Callable(), 1.15, Callable(), Callable(), Callable(), Callable(), Callable(), true)
+	battle.setup(prey_art.draw_dust, _draw_story_gong, _draw_story_uram_hit,
+		_draw_story_uram_windup, _draw_story_authored_hit, prey_art.draw_charge,
+		prey_art.draw_impact, Callable(), Callable(), 1.15, _draw_story_saebom_hit,
+		_draw_story_saebom_trail, Callable(), Callable(), Callable(), true)
 	chapter_story_battle = battle
 	battle.story_uram_entrance_impact.connect(func(): hunt_audio.cue("uram_parry",3))
 	battle.story_deer_shove_impact.connect(func(): hunt_audio.cue("S11",3))
@@ -2237,6 +2247,32 @@ func _start_chapter_story_preview() -> void:
 	prey_hud.hide()
 	battle_vfx_under.hide()
 	battle_vfx_front.hide()
+
+func _draw_story_gong(point: Vector2, direction: Vector2, age: float, layer: Node2D) -> void:
+	manual_front_fx.draw_uram_gong(layer,prey_art.soft,point,direction,age,1.0)
+
+
+func _draw_story_uram_hit(point: Vector2, ground: Vector2, direction: Vector2, age: float, layer: Node2D) -> void:
+	manual_front_fx.draw_uram_skill_hit(layer,prey_art.soft,point,ground,direction,age,1.0)
+
+
+func _draw_story_uram_windup(point: Vector2, progress: float, layer: Node2D) -> void:
+	manual_front_fx.draw_uram_skill_windup(layer,prey_art.soft,point,progress,1.0)
+
+
+func _draw_story_authored_hit(tag: String, point: Vector2, direction: Vector2, age: float, layer: Node2D) -> void:
+	match tag:
+		"han_skill": manual_front_fx.draw_han_skill_hit(layer,point,direction,age,.85)
+		"han_chain": manual_front_fx.draw_han_chain_hit(layer,prey_art.soft,point,point+Vector2(0,23),age,.85)
+
+
+func _draw_story_saebom_hit(point: Vector2, direction: Vector2, age: float, layer: Node2D) -> void:
+	StoneGold.draw_hit(layer,prey_art.soft,point,direction,age)
+
+
+func _draw_story_saebom_trail(points: PackedVector2Array, alpha: float, layer: Node2D) -> void:
+	StoneGold.draw_trail(layer,prey_art.soft,points,alpha)
+
 
 func _make_story_cutin(slot: int) -> void:
 	var character_art := load("res://assets/ui/village-guidance/guide-uram.png" if slot==1 else "res://assets/ui/village-guidance/guide-saebom.png") as Texture2D
@@ -2318,7 +2354,8 @@ func _tick_hunt_frame(delta: float) -> void:
 		if approach>=1.0:solo_deploy_clock=-1.0
 		return
 	if running and is_instance_valid(chapter_story_battle):
-		chapter_story_battle.tick(delta * speed, false, delta)
+		if chapter_story_battle.story_outcome.is_empty():
+			chapter_story_battle.tick(delta * speed, false, delta)
 		_refresh_battle_countdown()
 		_update_story_cutin()
 		var outcome: String = chapter_story_battle.story_outcome
@@ -2326,7 +2363,16 @@ func _tick_hunt_frame(delta: float) -> void:
 			for i in 3:
 				rules.party_hp[i] = chapter_story_battle.units[i].hp
 			rules.outcome = outcome
-			show_result()
+			if outcome == "win":
+				if chapter_story_battle.victory_age < 0.0:
+					pause_button.clear()
+					pause_button.hide()
+					hunt_audio.cue("monster_death",4)
+				chapter_story_battle.present_victory(delta)
+				if chapter_story_battle.victory_age >= VICTORY_RESULT_HOLD:
+					show_result()
+			else:
+				show_result()
 		return
 	if not arrival_finished:
 		advance_arrival(delta)
@@ -2829,7 +2875,9 @@ func update_actors(delta: float) -> void:
 			battle_target=solo_deploy_prey_end+lane*FIRST_HUNT_HAN_STANDOFF
 		var base := placed.lerp(battle_target,approach)
 		if i==0 and steady_first_hunt_heads: han_head_ground=base
-		hunter.scale = Vector2.ONE*(.70 if chapter_one_solo and i==0 else lerpf(.60,.56,approach))*(1.0 if i == RULES.SAEBOM else FRONTLINE_VISUAL_SCALE)
+		var preview_scale := PREP_HAN_SCALE if i == 0 and (chapter_story_number > 0 or chapter_one_solo) else .60
+		var actor_scale := PREP_HAN_SCALE if chapter_one_solo and i == 0 else lerpf(preview_scale,.56,approach)
+		hunter.scale = Vector2.ONE * actor_scale * (1.0 if i == RULES.SAEBOM else FRONTLINE_VISUAL_SCALE)
 		var lunge := 42 if basic_attack else 24
 		var assisting := running and pose == "team" and pose_clock < RULES.POSE_SECONDS and not attack and rules.party_hp[i]>0
 		var attack_direction := base.direction_to(DEER_SLOT)
@@ -2935,7 +2983,8 @@ func update_actors(delta: float) -> void:
 		deer.position += recoil
 		if pose=="auto_thrust" and hit_kind=="auto_thrust" and hit_damage>0 and not hit_on_hunter:
 			ordinary_prey_visual_offset=-recoil*.80
-	deer.scale = Vector2.ONE*(.48 if chapter_one_solo and not _prey_is_adult() else lerpf(.60,.63,approach))
+	var prey_start_scale := PREP_PREY_SCALE if chapter_story_number > 0 else .60
+	deer.scale = Vector2.ONE * (PREP_PREY_SCALE if chapter_one_solo and not _prey_is_adult() else lerpf(prey_start_scale,.63,approach))
 	# Sprite vertices only: keep transform, rig sample and physical sweep unchanged.
 	deer.display.offset=ordinary_prey_visual_offset/(deer.scale*deer.display.scale)
 	deer.walking = 1.0 if (transition_elapsed>=0 or solo_deploy_clock>=0.0) and approach>0.0 and approach<1.0 else (movement_beat if running and (charge or basic_recoil>0.0) else 0.0)
@@ -3182,6 +3231,8 @@ func _tick_first_hunt_drop(delta: float) -> void:
 	if first_hunt_end_age < 0.0:
 		first_hunt_end_age = 0.0
 		prey_hud.hide()
+		pause_button.clear()
+		pause_button.hide()
 		first_hunt_drop = FirstHuntDrop.new(false)
 		battlefield.add_child(first_hunt_drop)
 		first_hunt_drop.position = deer.position
@@ -3190,7 +3241,7 @@ func _tick_first_hunt_drop(delta: float) -> void:
 		first_hunt_end_age += delta
 	first_hunt_drop.sample(first_hunt_end_age)
 	deer.modulate.a = FirstHuntDrop.model_alpha(first_hunt_end_age)
-	if first_hunt_end_age >= FIRST_HUNT_RESULT_HOLD:
+	if first_hunt_end_age >= VICTORY_RESULT_HOLD:
 		show_result()
 
 
@@ -3241,7 +3292,8 @@ func show_result() -> void:
 		rules.outcome="loss"
 	if rules.outcome == "win":
 		app.record_hunt_win()
-		if first_hunt_end_age < 0.0: hunt_audio.cue("monster_death",4)
+		if first_hunt_end_age < 0.0 and (not is_instance_valid(chapter_story_battle) or chapter_story_battle.victory_age < 0.0):
+			hunt_audio.cue("monster_death",4)
 	else:
 		hunt_audio.cue("S27",4)
 	rules.set_auto(false)
@@ -3257,7 +3309,11 @@ func show_result() -> void:
 	result.app = app
 	result.won = rules.outcome == "win"
 	result.use_han_field=chapter_one_solo
-	result.stars=3 if stage_one_one and result.won and rules.hunter_hp>0 else 0
+	if result.won:
+		if stage_one_one:
+			result.stars = int(ChapterOneCatalog.encounter(1).first_clear_stars)
+		elif is_instance_valid(chapter_story_battle):
+			result.stars = ChapterOneCatalog.victory_stars(chapter_story_battle.elapsed,chapter_story_battle.story_encounter.seconds)
 	result.progression_advanced=app.chapter_one_story_completions()!=previous_story if chapter_story_preview else int(app.model.state.get("hunt_cleared",0))>previous_progress
 	add_child(result)
 	result.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)

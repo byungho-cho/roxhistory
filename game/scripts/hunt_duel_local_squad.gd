@@ -24,6 +24,10 @@ const HEROES := ["hangyeol","uram","saebom"]
 # Chapter One encounter before setup without routing to the lab screen.
 var story_encounter: Dictionary = {}
 var story_outcome := ""
+var victory_age := -1.0
+var last_defeated_prey := -1
+const DeathArt := preload("res://scripts/model_death_effect.gd")
+const BASIC_CONTACT := preload("res://assets/ui/hunt-impact/basic-contact.svg")
 const STORY_JOIN_SECONDS := 2.5
 const STORY_CUTIN_SECONDS := 1.42
 var story_join_slot := -1
@@ -652,6 +656,33 @@ func tick(delta:float,paused:bool,real_delta:float=-1.0)->void:
 		acc-=STEP;_step(STEP)
 	_draw_pose(delta)
 
+func present_victory(delta: float) -> void:
+	if story_outcome != "win":return
+	if victory_age < 0.0:
+		victory_age = 0.0
+		input_paused = true
+		if last_defeated_prey >= 3:
+			var defeated := units[last_defeated_prey]
+			defeated.actor.death_effect.position = defeated.feet
+			defeated.actor.death_effect.z_index = 599
+	else:
+		victory_age += delta
+	if last_defeated_prey >= 3:
+		var actor = units[last_defeated_prey].actor
+		actor.preview.modulate.a = DeathArt.model_alpha(victory_age)
+		actor.death_effect.sample(victory_age)
+	paint.queue_redraw()
+	bars_paint.queue_redraw()
+	han_ground_layer.queue_redraw()
+	rally_silver_back.queue_redraw()
+	if is_instance_valid(launch_dust_layer):launch_dust_layer.queue_redraw()
+	if is_instance_valid(cast_notice_paint):cast_notice_paint.queue_redraw()
+
+
+func _effect_clock() -> float:
+	return elapsed + maxf(0.0,victory_age)
+
+
 func story_entry_active()->bool:
 	return story_join_slot>=0 and not story_entry_done and not ended and story_deer_shove_clock<0.0 and story_entry_clock>=STORY_JOIN_SECONDS
 
@@ -1151,6 +1182,8 @@ func _subtract_hp_and_show(j:int,amount:int)->void:
 	var target:=units[j]
 	var hp_before := int(target.hp)
 	target.hp=maxi(0,hp_before-amount)
+	if j >= 3 and hp_before > 0 and target.hp == 0 and not story_encounter.is_empty():
+		last_defeated_prey = j
 	var anchor := aim.bone_point(target.actor,"head")
 	anchor.y = minf(anchor.y,float(target.feet.y)-76.0)
 	anchor.x = float(target.feet.x)
@@ -1199,6 +1232,10 @@ func _damage(i:int,j:int,amount:int,key:String,stone_impact:=Vector2.INF)->void:
 				squad_stuns[i]=elapsed
 		if local_melee_polish and new_guard and i>=3:_apply_uram_field_hit(i if counter_primary else -1)
 		return
+	var impact_point := stone_impact
+	if impact_point == Vector2.INF:
+		impact_point = target.feet-Vector2(0,23)
+		if not story_encounter.is_empty():impact_point = _ranged_impact_anchor(target,impact_point)
 	var hp_before:=int(target.hp)
 	_subtract_hp_and_show(j,amount)
 	var saebom_switch_hit:=false
@@ -1212,22 +1249,22 @@ func _damage(i:int,j:int,amount:int,key:String,stone_impact:=Vector2.INF)->void:
 	if bom_hit_draw.is_valid() and i==2 and key=="skill":
 		var feet:Vector2=target.feet
 		var from:Vector2=units[i].feet
-		group_bom_hits.append({"at":elapsed,"point":feet-Vector2(0,25) if stone_impact==Vector2.INF else stone_impact,"forward":from.direction_to(feet)})
+		group_bom_hits.append({"at":elapsed,"point":impact_point if not story_encounter.is_empty() else (feet-Vector2(0,25) if stone_impact==Vector2.INF else stone_impact),"forward":from.direction_to(feet)})
 	elif silver_impact.is_valid() and i>=3 and key=="skill":
 		var ground:Vector2=target.feet
-		silver_hits.append({"at":elapsed,"center":ground-Vector2(0,23),"floor_point":ground,"unit":i})
+		silver_hits.append({"at":elapsed,"center":impact_point,"floor_point":ground,"unit":i})
 	elif authored_draw.is_valid() and ((i==0 and key in ["skill","chain"]) or (i==2 and key=="skill")):
 		var base:Vector2=units[i].feet
 		var ground:Vector2=target.feet
 		var tag:="saebom_hit" if i==2 else "han_skill" if key=="skill" else "han_chain"
-		authored_events.append({"tag":tag,"at":elapsed,"point":ground-Vector2(0,23),"forward":base.direction_to(ground)})
+		authored_events.append({"tag":tag,"at":elapsed,"point":impact_point,"forward":base.direction_to(ground)})
 	elif uram_ground_draw.is_valid() and i==1 and key=="skill":pass
 	elif heavy_draw.is_valid() and i==1 and key=="skill":
 		var from:Vector2=units[i].feet
 		var ground:Vector2=target.feet
-		heavy_events.append({"at":elapsed,"point":ground-Vector2(0,23),"ground":ground,"forward":from.direction_to(ground)})
+		heavy_events.append({"at":elapsed,"point":impact_point,"ground":ground,"forward":from.direction_to(ground)})
 	elif key!="han_chain_splash" and not (i==2 and (key=="saebom_melee_2sp_4" or (key=="attack" and _uses_close_basic_pose(units[i],j)))):
-		glints.append({"at":elapsed,"point":target.feet-Vector2(0,23) if stone_impact==Vector2.INF else stone_impact,"tint":Color("ffc971") if i<3 else Color("f0ffe8")})
+		glints.append({"at":elapsed,"point":impact_point,"tint":Color("ffc971") if i<3 else Color("f0ffe8"),"rope":i==2 and key=="attack" and stone_impact.is_finite()})
 	if target.hp<=0:_play(target,"death")
 	else:
 		var resting:bool=target.move in ["idle","run","walk"]
@@ -1241,7 +1278,8 @@ func _update_projectiles(dt:float)->void:
 		var m:=missiles[index]
 		m.point=m.point.move_toward(m.destination,340.0*dt)
 		var paired:bool=m.paired_presentation
-		if paired:
+		var render_projected: bool = paired or (not story_encounter.is_empty() and bom_trail_draw.is_valid() and m.kind == "skill")
+		if render_projected:
 			var destination:Vector2=m.destination
 			var origin:Vector2=m.origin
 			var now:Vector2=m.point
@@ -1249,7 +1287,7 @@ func _update_projectiles(dt:float)->void:
 			var target_now:Dictionary=units[m.target]
 			var visible_aim:=_ranged_impact_anchor(target_now,destination) if target_now.hp>0 and destination.distance_to(target_now.feet-Vector2(0,25))<=19.0 else destination
 			m.rendered=Vector2(m.release).lerp(visible_aim,clampf(ratio,0.,1.))
-		var drawn:Vector2=m.rendered if paired else m.point
+		var drawn:Vector2=m.rendered if render_projected else m.point
 		if bom_trail_draw.is_valid() and m.kind=="skill":
 			var trace:PackedVector2Array=m.trace
 			if trace[-1].distance_squared_to(drawn)>.28:trace.append(drawn)
@@ -1258,7 +1296,7 @@ func _update_projectiles(dt:float)->void:
 		if m.point.distance_squared_to(m.destination)>.01:continue
 		var u:=units[m.target]
 		if u.hp>0 and m.destination.distance_to(u.feet-Vector2(0,25))<=19.0:
-			_damage(m.from,m.target,m.damage,m.kind,drawn if paired else Vector2.INF)
+			_damage(m.from,m.target,m.damage,m.kind,drawn if render_projected else Vector2.INF)
 			if bool(m.get("basic_rope",false)):
 				basic_rope_hit=drawn;basic_rope_hit_at=elapsed
 			if paired and ranged_alignment_contact.is_valid():ranged_alignment_contact.call(String(u.id))
@@ -1318,6 +1356,7 @@ func _draw_pose(dt:float)->void:
 				actor.preview.pivot.rotation.y=heading-float(spear_forward_bias.get(u.move,0.0)) if i==0 else heading
 		var show_basic:=i==2 and _uses_close_basic_pose(u,int(u.victim))
 		if not show_basic:actor.sample(_ranged_visible_age(u) if i==2 else float(u.age),false)
+		if i >= 3 and u.hp <= 0 and not story_encounter.is_empty():actor.death_effect.hide()
 		if i>=3 and u.move=="hit" and u.has("close_basic_impulse"):
 			var away:Vector2=u.close_basic_impulse
 			var ride:=smoothstep(0.,.07,u.age)*(1.0-smoothstep(.10,.39,u.age))
@@ -1410,7 +1449,7 @@ func _draw_pose(dt:float)->void:
 
 func _draw_launch_dust()->void:
 	for event in launch_dust_events:
-		launch_dust_draw.call(event.origin,elapsed-float(event.at),launch_dust_layer)
+		launch_dust_draw.call(event.origin,_effect_clock()-float(event.at),launch_dust_layer)
 
 func _paint_cast_notices()->void:
 	for i in cast_notices:
@@ -1420,7 +1459,7 @@ func _paint_cast_notices()->void:
 		var point:=aim.bone_point(u.actor,"head")
 		# Squad health bars are painted; keep the notice above both the projected head and the bar.
 		point.y=minf(point.y,float(u.feet.y)-76.0)
-		cast_notice_style.draw_cast_notice(cast_notice_paint,point,null,notice.icon,notice.linked,elapsed-float(notice.at))
+		cast_notice_style.draw_cast_notice(cast_notice_paint,point,null,notice.icon,notice.linked,_effect_clock()-float(notice.at))
 
 func _paint_bars()->void:
 	for i in units.size():
@@ -1434,28 +1473,37 @@ func _paint_bars()->void:
 
 func _paint_rally_silver_wings()->void:
 	if local_melee_polish and units.size()>2 and units[2].hp>0:
-		RallySilver.wings(rally_silver_back,units[2].feet,elapsed-rally_silver_cast_at)
+		RallySilver.wings(rally_silver_back,units[2].feet,_effect_clock()-rally_silver_cast_at)
 
 func _paint()->void:
+	if not story_encounter.is_empty():
+		for hit in glints:
+			if hit.get("rope",false):continue # The existing rope-impact chips own this hit.
+			var age := _effect_clock()-float(hit.at)
+			if age >= .30:continue
+			var tint: Color = hit.tint
+			tint.a = 1.0-smoothstep(.04,.30,age)
+			paint.draw_texture_rect(BASIC_CONTACT,Rect2(hit.point-Vector2(22,17),Vector2(44,34)),false,tint)
 	if local_melee_polish:
 		for i in mini(3,units.size()):
 			var u:=units[i]
-			if u.hp>0 and float(u.rally)>elapsed:
-				RallySilver.aura(paint,u.feet,float(u.rally)-elapsed,5.0)
+			if u.hp>0 and float(u.rally)>_effect_clock():
+				RallySilver.aura(paint,u.feet,float(u.rally)-_effect_clock(),5.0)
 	if units.size()>2 and units[2].hp>0:Knife.draw_blade(paint,units[2].actor.preview)
-	for ev in knife_events:Knife.draw_event(paint,int(ev.beat),ev.point,ev.feet,elapsed-float(ev.at))
+	for ev in knife_events:Knife.draw_event(paint,int(ev.beat),ev.point,ev.feet,_effect_clock()-float(ev.at))
 	for fan in uram_short_fans:
-		if not bool(fan.get("combined", false)):UramCounterWave.draw_fan(paint,fan.from,fan.ground,fan.axis,fan.reach,(elapsed-float(fan.at))/float(fan.span),true,false)
+		if not bool(fan.get("combined", false)):UramCounterWave.draw_fan(paint,fan.from,fan.ground,fan.axis,fan.reach,(_effect_clock()-float(fan.at))/float(fan.span),true,false)
 	if not uram_wave_pop.is_empty():
-		UramCounterWave.draw_pop(paint,uram_wave_pop.point,elapsed-float(uram_wave_pop.at))
-	BasicRope.draw_impact(paint,basic_rope_glow,basic_rope_hit,elapsed-basic_rope_hit_at)
-	RallyCloud.draw(paint,bom_cloud_origin,elapsed-bom_cloud_at)
+		UramCounterWave.draw_pop(paint,uram_wave_pop.point,_effect_clock()-float(uram_wave_pop.at))
+	BasicRope.draw_impact(paint,basic_rope_glow,basic_rope_hit,_effect_clock()-basic_rope_hit_at)
+	RallyCloud.draw(paint,bom_cloud_origin,_effect_clock()-bom_cloud_at)
 	var bom_active:=false
-	for m in missiles:
-		var drawn:Vector2=m.rendered if m.paired_presentation else m.point
+	for m in (missiles if victory_age < 0.0 else []):
+		var use_projected: bool = m.paired_presentation or (not story_encounter.is_empty() and bom_trail_draw.is_valid() and m.kind == "skill")
+		var drawn:Vector2=m.rendered if use_projected else m.point
 		if bool(m.get("basic_rope",false)):
 			bom_active=true
-			BasicRope.draw_stone(paint,basic_rope_glow,drawn,elapsed-float(m.launched_at),true)
+			BasicRope.draw_stone(paint,basic_rope_glow,drawn,_effect_clock()-float(m.launched_at),true)
 			continue
 		if weapon_draw.is_valid() and m.from==2:
 			bom_active=true
@@ -1476,7 +1524,7 @@ func _paint()->void:
 					var view:HybridCharacter=u.actor.preview
 					var point:=BasicRope.stone_world(view)
 					if point.is_finite():BasicRope.draw_stone(paint,basic_rope_glow,view.position+(view.display.position+view.camera.unproject_position(point)*view.display.scale)*view.scale,0.)
-	if heavy_windup.is_valid() and units.size()>1 and units[1].move=="skill" and float(units[1].contact)>0:
+	if victory_age < 0.0 and heavy_windup.is_valid() and units.size()>1 and units[1].move=="skill" and float(units[1].contact)>0:
 		var view:HybridCharacter=units[1].actor.preview
 		var club:MeshInstance3D=view.club
 		if is_instance_valid(club):
@@ -1485,7 +1533,7 @@ func _paint()->void:
 			heavy_windup.call(mark,clampf(float(units[1].age)/float(units[1].contact),0,1),paint)
 	if authored_draw.is_valid():
 		for event in authored_events:
-			authored_draw.call(event.tag,event.point,event.forward,elapsed-float(event.at),paint)
+			authored_draw.call(event.tag,event.point,event.forward,_effect_clock()-float(event.at),paint)
 	if not local_melee_polish:
 		if authored_draw.is_valid() and units.size()>2 and units[2].move=="chain" and units[2].hp>0:
 			var bom:=units[2]
@@ -1494,20 +1542,20 @@ func _paint()->void:
 		if bom_ally_draw.is_valid():
 			for ev in group_bom_ally_events:
 				var ally:=units[int(ev.unit)]
-				if ally.hp>0:bom_ally_draw.call(ally.feet,.96+elapsed-float(ev.at),paint)
+				if ally.hp>0:bom_ally_draw.call(ally.feet,.96+_effect_clock()-float(ev.at),paint)
 	if bom_hit_draw.is_valid():
-		for hit in group_bom_hits:bom_hit_draw.call(hit.point,hit.forward,elapsed-float(hit.at),paint)
+		for hit in group_bom_hits:bom_hit_draw.call(hit.point,hit.forward,_effect_clock()-float(hit.at),paint)
 	if silver_draw.is_valid():
 		for i in range(3,units.size()):
 			var u:=units[i]
 			var wind:=maxf(.01,float(u.actor.preview.length("req046_skill_anticipation")))
-			var progress:=clampf(float(u.age)/wind,0.0,1.0) if u.hp>0 and u.move=="skill" else -1.0
-			silver_draw.call(u.feet,_deer_tip(u),progress,float(u.contact)>=0.0,deer_wakes[i-3],elapsed,paint)
-		for event in silver_hits:silver_impact.call(event,clampf((elapsed-float(event.at))/.67,0,1),paint)
+			var progress:=clampf(float(u.age)/wind,0.0,1.0) if victory_age < 0.0 and u.hp>0 and u.move=="skill" else -1.0
+			silver_draw.call(u.feet,_deer_tip(u),progress,float(u.contact)>=0.0,deer_wakes[i-3],_effect_clock(),paint)
+		for event in silver_hits:silver_impact.call(event,clampf((_effect_clock()-float(event.at))/.67,0,1),paint)
 	for event in heavy_events:
-		heavy_draw.call(event.point,event.ground,event.forward,elapsed-float(event.at),paint)
+		heavy_draw.call(event.point,event.ground,event.forward,_effect_clock()-float(event.at),paint)
 	for gong in gong_events:
-		gong_draw.call(gong.point,gong.forward,elapsed-float(gong.at),paint)
+		gong_draw.call(gong.point,gong.forward,_effect_clock()-float(gong.at),paint)
 
 
 func _uses_close_basic_pose(u:Dictionary,j:int)->bool:
@@ -1589,4 +1637,4 @@ func _sling_stone(u:Dictionary)->Vector2:
 
 func _draw_han_ground() -> void:
 	for event in han_ground_events:
-		han_ground.draw(han_ground_layer, event.floor, elapsed - float(event.at))
+		han_ground.draw(han_ground_layer, event.floor, _effect_clock() - float(event.at))

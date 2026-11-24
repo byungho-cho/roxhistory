@@ -23,6 +23,7 @@ var star_labels: Array[Label] = []
 var star_elapsed := 0.0
 var paper_layer: Node2D
 var paper_motion := false
+var reduced_motion := false
 var frame_art: AtlasTexture
 var elapsed := 0.0
 var leaving := false
@@ -93,6 +94,7 @@ func _ready() -> void:
 		var replay:=int(app.model.state.get("hunt_cleared",0))>int(app.hunt_stage) and not progression_advanced
 		var message:=("다음 단계 해금" if story > 1 else "진행 보상 · 다음 단계 해금") if progression_advanced else "이미 완료한 사냥입니다." if replay else "진행 저장 상태를 확인해 주세요."
 		write(details,message,Rect2(0,173,420,28),19,Color("fff0d0"))
+	reduced_motion = app.reduced_ui_motion()
 	if won and stars>0:
 		for i in stars:
 			var star: Label = app.label(details,"★",36,accent)
@@ -100,14 +102,14 @@ func _ready() -> void:
 			star.size = Vector2(38,48)
 			star.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 			apply_text_shadow(star)
-			star.hide()
+			star.visible = reduced_motion
 			star_labels.append(star)
-		paper_motion = not OS.get_cmdline_user_args().has("--reduce-motion")
-		if paper_motion:
-			paper_layer = Node2D.new()
-			layout.add_child(paper_layer)
-			layout.move_child(paper_layer,0)
-			paper_layer.draw.connect(_draw_paper)
+	paper_motion = won and not reduced_motion
+	if paper_motion:
+		paper_layer = Node2D.new()
+		layout.add_child(paper_layer)
+		layout.move_child(paper_layer,0)
+		paper_layer.draw.connect(_draw_paper)
 	if not won:
 		write(details,"전력을 정비하고 다시 도전하세요.",Rect2(0,173,390,21),17,Color("fff0d0"))
 		followup(details,"전투력 향상",204,"icon-spear.png")
@@ -133,8 +135,8 @@ func _ready() -> void:
 	var prefix := ART + ("hunt-result-success" if won else "hunt-result-failure")
 	var art: TextureRect = app.picture(layout,load(prefix+"-fallback.png"),Rect2(82,74,319,425))
 	art.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
-	set_process(not star_labels.is_empty())
-	if not OS.get_cmdline_user_args().has("--reduce-motion"):
+	set_process(paper_motion or (not reduced_motion and not star_labels.is_empty()))
+	if not reduced_motion:
 		var texture := load(prefix+"-loop-atlas.png") as Texture2D
 		if texture and Vector2i(texture.get_size()) == ATLAS_SIZE:
 			frame_art = AtlasTexture.new()
@@ -243,7 +245,7 @@ func followup(parent: Control, value: String, y: float, icon: String) -> void:
 	app.picture(row,preload("res://assets/ui/hunt-result/chevron-right.svg"),Rect2(FAILURE_ROW_WIDTH-37,18,20,20))
 
 func _draw_paper() -> void:
-	var time := star_elapsed - STAR_REVEAL_START - (star_labels.size()-1)*STAR_REVEAL_STEP
+	var time := star_elapsed - STAR_REVEAL_START - maxi(0,star_labels.size()-1)*STAR_REVEAL_STEP
 	if time < 0.0: return
 	var colors: Array[Color] = [Color("cf3641"),Color("ef6643"),Color("ffb583"),Color("e9d7a9"),Color("2d89bb"),Color("60b3d7"),Color("3e9382"),Color("54a355"),Color("f5be45"),Color("ede0d4")]
 	var wave := floori(time / 2.75)
@@ -280,7 +282,7 @@ func _draw_paper() -> void:
 
 
 func _process(delta: float) -> void:
-	if app.application_active and not star_labels.is_empty():
+	if app.application_active and not reduced_motion and (paper_motion or not star_labels.is_empty()):
 		star_elapsed += delta
 		for i in star_labels.size():
 			star_labels[i].visible = star_elapsed >= STAR_REVEAL_START + STAR_REVEAL_STEP*i
@@ -302,12 +304,13 @@ func _process(delta: float) -> void:
 
 func build_field_video(layout:Control)->bool:
 	var prefix:=FIELD_ART+"han-"+("success" if won else "failure")
-	var stream:=load(prefix+".ogv") as VideoStream
-	if stream==null:return false
+	var stream := load(prefix+".ogv") as VideoStream if not reduced_motion else null
+	if not reduced_motion and stream==null:return false
 	var frame := ACTOR_FRAME
 	if won:frame.position.x -= VICTORY_LEFT_SHIFT
 	result_last=app.picture(layout,load(prefix+"-last.png"),frame)
 	layout.move_child(result_last,0)
+	if reduced_motion:return true
 	result_last.hide()
 	result_video=VideoStreamPlayer.new()
 	result_video.name="ConfirmedResultMotion"

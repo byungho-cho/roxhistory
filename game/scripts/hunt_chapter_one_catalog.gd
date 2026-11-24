@@ -43,6 +43,14 @@ static func encounter(number: int) -> Dictionary:
 	return row
 
 
+## S40420 / 3600:313: score by the fraction of the battle limit remaining.
+static func victory_stars(elapsed: float, limit: float) -> int:
+	if limit <= 0.0 or elapsed >= limit:return 0
+	if elapsed <= limit / 3.0:return 3
+	if elapsed <= limit / 2.0:return 2
+	return 1
+
+
 static func legacy_display_number(old_stage_id: int) -> int:
 	if old_stage_id < 0 or old_stage_id >= LEGACY_KEYS.size():
 		return 0
@@ -95,6 +103,10 @@ static func playable_encounter(number: int, completed: Dictionary, retained: Var
 		row.opening_party=owned.duplicate()
 		row.erase("story_join")
 		row.free_replay=true
+	elif number == 4 and not row.first_visit:
+		# The cleared stage already recruited Saebom. Begin in the saved formation.
+		row.opening_party = row.party.duplicate()
+		row.erase("story_join")
 	return row
 
 static func next_number(completed: Dictionary) -> int:
