@@ -74,6 +74,8 @@ func run()->void:
  reform._begin(3,"attack",0)
  reform.units[3].hp=79
  reform.units[4].hp=0
+ var impacts:Array[float]=[]
+ reform.story_uram_entrance_impact.connect(func():impacts.append(reform.elapsed))
  var dead_feet:Vector2=reform.units[4].feet
  var before:float=reform.elapsed
  var before_hp:int=reform.units[0].hp
@@ -83,6 +85,10 @@ func run()->void:
  ck(reform.units[0].move=="skill" and reform.units[0].contact==han_contact and reform.units[0].sp==0.0 and reform.units[0].hp==before_hp and reform.elapsed==before,"preserves Han's paid action, HP, SP and battle clock")
  ck(reform.units[3].victim==-1 and reform.units[3].contact<0.0 and reform.units[3].hp==79 and reform._target(3)==1,"clears only pending old basic, preserves deer HP and redirects living prey")
  ck(reform.units[4].hp==0 and reform.units[4].feet==dead_feet and not reform.story_uram_opening_targets.has(4),"dead prey neither moves nor returns")
+ for frame in 34:reform.tick(1./60.,false)
+ ck(impacts.size()==1 and impacts[0]==before and reform.elapsed==before and not reform._free_to_cast(0),"one shield cue; introduction keeps existing combat clock and skill input held for the whole beat")
+ for frame in 5:reform.tick(1./60.,false)
+ ck(reform.story_uram_entrance_clock<0.0 and reform.elapsed>before,"combat resumes its same clock after the short introduction")
  reform.units[1].hp=0
  ck(reform._target(3)==0,"if Uram is no longer alive, normal living-target rules apply")
  reform.queue_free()

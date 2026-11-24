@@ -2199,6 +2199,7 @@ func _start_chapter_story_preview() -> void:
 	canvas.add_child(battle)
 	battle.setup(Callable(), Callable(), Callable(), Callable(), Callable(), Callable(), Callable(), Callable(), Callable(), 1.15, Callable(), Callable(), Callable(), Callable(), Callable(), true)
 	chapter_story_battle = battle
+	battle.story_uram_entrance_impact.connect(func(): hunt_audio.cue("uram_parry",3))
 	if battle.story_join_slot >= 0: _make_story_cutin(battle.story_join_slot)
 	battlefield.queue_redraw()
 	for head in head_headers: head.panel.hide()

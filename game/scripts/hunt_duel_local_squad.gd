@@ -7,6 +7,7 @@ var basic_rope_hit_at:=-INF
 
 signal parry_spotlight_started
 signal uram_ordinary_impact
+signal story_uram_entrance_impact
 
 const Actor = preload("res://scripts/model_test_actor.gd")
 const Hunt = preload("res://scripts/deer_hunt_screen.gd")
@@ -30,6 +31,14 @@ var story_entry_clock := 0.0
 var story_entry_done := false
 # Chapter 1-3's reinforcing tank owns only each living deer's next basic.
 var story_uram_opening_targets: Dictionary = {}
+const STORY_URAM_LANDING := .22
+const STORY_URAM_ENTRANCE := .58
+const StoryFrontFx = preload("res://scripts/hunt_production_frontline_vfx.gd")
+var story_uram_entrance_clock := -1.0
+var story_uram_old_headings: Dictionary = {}
+var story_uram_dust_layer: Node2D
+var story_uram_entrance_front = StoryFrontFx.new()
+var story_uram_entrance_art: RefCounted
 var story_first_charge_resolved := false
 var story_auto_parry_used := false
 var story_taught_parry := false
@@ -187,6 +196,7 @@ var launch_dust_events:Array[Dictionary]=[]
 
 func setup(dust_draw:Callable=Callable(),gong:Callable=Callable(), heavy:Callable=Callable(), windup:Callable=Callable(),authored:Callable=Callable(),silver:Callable=Callable(),impact:Callable=Callable(),ring_projection:Callable=Callable(),weapon:Callable=Callable(),heavy_seconds:=1.15,bom_hit:Callable=Callable(),bom_trail:Callable=Callable(),bom_wings:Callable=Callable(),bom_ally:Callable=Callable(),bom_pose_hook:Callable=Callable(),melee_polish:=false)->void:
 	local_melee_polish=melee_polish
+	if not story_encounter.is_empty() and int(story_encounter.number)==3:story_uram_entrance_art=CastArt.new()
 	uram_combined.prepare() # The squad includes Uram; retain textures for this encounter.
 	bom_hit_draw=bom_hit
 	bom_trail_draw=bom_trail
@@ -429,7 +439,7 @@ func _play(u:Dictionary,key:String)->void:
 		u.bom_shove=false;u.bom_near_skill=false
 
 func _free_to_cast(i:int)->bool:
-	return not input_paused and not story_entry_active() and not ended and units[i].hp>0 and units[i].move in ["idle","run","walk","attack","hit"]
+	return not input_paused and not story_entry_active() and story_uram_entrance_clock<0.0 and not ended and units[i].hp>0 and units[i].move in ["idle","run","walk","attack","hit"]
 
 func _request(key:String,i:int)->void:
 	var cost:=2 if key=="skill" else 3
@@ -617,7 +627,8 @@ func _approach(i:int,target:Vector2,dt:float)->void:
 
 func tick(delta:float,paused:bool,real_delta:float=-1.0)->void:
 	if paused:return
-	if _tick_story_entry(delta if real_delta < 0.0 else real_delta):return
+	var wall_delta:=delta if real_delta<0.0 else real_delta
+	if _tick_story_entry(wall_delta) or _tick_story_uram_entrance(wall_delta):return
 	acc+=minf(delta,.10)
 	if spotlight_clock>=0.:
 		spotlight_clock+=maxf(0.,delta)
@@ -692,6 +703,51 @@ func _story_reform_uram_frontline()->void:
 			_play(deer,"idle")
 			deer.victim=-1
 
+func _start_story_uram_entrance()->void:
+	story_uram_entrance_clock=0.0
+	story_uram_old_headings.clear()
+	for i in story_uram_opening_targets:
+		story_uram_old_headings[i]=units[i].actor.preview.pivot.rotation.y
+	if not is_instance_valid(story_uram_dust_layer):
+		story_uram_dust_layer=Node2D.new()
+		story_uram_dust_layer.z_index=int(units[1].feet.y)+1
+		add_child(story_uram_dust_layer)
+		story_uram_dust_layer.draw.connect(_paint_story_uram_entrance)
+
+func _paint_story_uram_entrance()->void:
+	if story_uram_entrance_clock<STORY_URAM_LANDING:return
+	var age:=(story_uram_entrance_clock-STORY_URAM_LANDING)*5.7
+	story_uram_entrance_front.draw_uram_gong_dust(story_uram_dust_layer,story_uram_entrance_art.soft,units[1].feet+Vector2(9,3),age)
+
+func _pose_story_uram_entrance()->void:
+	var age:=story_uram_entrance_clock
+	var actor=units[1].actor
+	var floor:Vector2=units[1].feet
+	# Use the real shield-guard rig in a presentation pose, not a skill.
+	var reveal:=smoothstep(0.0,.12,age)
+	var blend_out:=smoothstep(.44,STORY_URAM_ENTRANCE,age)
+	if blend_out<1.0:
+		var clip_length:float=actor.span("guard")
+		actor.resident_sample("guard",lerpf(.04,.63,smoothstep(.04,STORY_URAM_LANDING,age))*clip_length)
+	actor.preview.position=floor+Vector2(0.,-8.*(1.-smoothstep(.05,STORY_URAM_LANDING,age)))
+	actor.preview.modulate.a=reveal
+	units[1].ring.modulate.a=reveal
+	for i in story_uram_old_headings:
+		var pivot:Node3D=units[i].actor.preview.pivot
+		pivot.rotation.y=lerp_angle(story_uram_old_headings[i],pivot.rotation.y,smoothstep(.20,.51,age))
+
+func _tick_story_uram_entrance(wall_delta:float)->bool:
+	if story_uram_entrance_clock<0.0:return false
+	var previous:=story_uram_entrance_clock
+	story_uram_entrance_clock=minf(STORY_URAM_ENTRANCE,previous+maxf(0.0,wall_delta))
+	if previous<STORY_URAM_LANDING and story_uram_entrance_clock>=STORY_URAM_LANDING:
+		story_uram_entrance_impact.emit()
+	_draw_pose(0.0)
+	if story_uram_entrance_clock<STORY_URAM_ENTRANCE:_pose_story_uram_entrance()
+	else:story_uram_entrance_clock=-1.0
+	story_uram_dust_layer.queue_redraw()
+	return true
+
 func dismiss_story_entry()->bool:
 	if not story_entry_active() or not story_outcome.is_empty():return false
 	var u:=units[story_join_slot]
@@ -706,9 +762,11 @@ func dismiss_story_entry()->bool:
 		huds[i].place_local_combat_hud(480.+128.*(float(i)-float(story_encounter.party.size()-1)*.5))
 	if int(story_encounter.number)==3 and story_join_slot==1:
 		_story_reform_uram_frontline()
+		_start_story_uram_entrance()
 	huds[story_join_slot].show()
 	u.actor.preview.show()
 	_draw_pose(0.0)
+	if story_uram_entrance_clock>=0.0:_pose_story_uram_entrance()
 	return true
 
 func _step(dt:float)->void:
