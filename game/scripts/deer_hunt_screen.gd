@@ -7,6 +7,7 @@ const ReadinessArt:=preload("res://scripts/hunt_readiness_art.gd")
 var branch_video:BranchVS
 var prep_tags:Array[Control]=[]
 var chapter_one_solo:=false
+var stage_one_one:=false
 var branch_header:Control
 var vs_ally:TextureRect
 var vs_enemy:TextureRect
@@ -219,11 +220,12 @@ var exit_button: DemoButton
 
 func _ready() -> void:
 	chapter_one_solo=int(app.hunt_stage)/6==0
-	rules.first_hunt=int(app.hunt_stage)==0 and int(app.model.state.get("hunt_cleared",0))==0
-	if int(app.hunt_stage)==0:rules.damage_multiplier=RULES.STAGE_1_1_DAMAGE_MULTIPLIER
+	stage_one_one=int(app.hunt_stage)==0
+	rules.manual_only=stage_one_one
+	rules.first_hunt=stage_one_one and int(app.model.state.get("hunt_cleared",0))==0
+	if stage_one_one:rules.damage_multiplier=RULES.STAGE_1_1_DAMAGE_MULTIPLIER
 	if chapter_one_solo:
 		rules.party_hp=[RULES.PARTY_HP[0],0,0]
-		rules.skills_enabled=rules.first_hunt
 	if rules.first_hunt:assigned_cells[0]=FIRST_HUNT_CENTER_SEAT
 	add_child(hunt_audio)
 	mouse_filter = Control.MOUSE_FILTER_STOP
@@ -618,18 +620,12 @@ func build_combat() -> void:
 	combat = layer()
 	combat.hide()
 	combat_controls = layer(combat)
-	if chapter_one_solo and not rules.first_hunt:
-		var portrait := app.picture(combat_controls,hunter_portrait(0),Rect2(447,452,66,66)) as TextureRect
-		portrait.name="SoloHanPortrait"
-		portrait.stretch_mode=TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	for index in hunters.size():
 		var hud:=SkillHUD.new()
-		hud.position=Vector2(354.6+92.4*index,437)
+		hud.position=Vector2(447. if chapter_one_solo and index==0 else 354.6+92.4*index,437)
+		hud.chain_allowed=not stage_one_one
 		combat_controls.add_child(hud)
 		hud.reset(["hangyeol","uram","saebom"][index])
-		if rules.first_hunt and index==0:
-			hud.position.x=447.
-			hud.chain_button.hide()
 		hud.enable_duel_ready_feedback()
 		hud.requested.connect(_on_party_skill_requested.bind(index))
 		party_cards.append({"hud":hud,"button":hud.chain_button,"portrait":hud.portrait,"charges":hud.orbs,"hp":hud.hp})
@@ -1329,7 +1325,7 @@ func _draw_normal_hunt_art(front:bool) -> void:
 
 
 func _can_take_hunt_input() -> bool:
-	return (not chapter_one_solo or rules.first_hunt) and running and not result_shown and exit_popup == null and not app.modal and app.application_active
+	return running and not result_shown and exit_popup == null and not app.modal and app.application_active
 
 
 func _uses_ordered_chain() -> bool:
@@ -1341,7 +1337,7 @@ func _guard_can_arm() -> bool:
 
 
 func _can_submit_manual_chain(index: int) -> bool:
-	if rules.first_hunt or not _can_take_hunt_input() or not rules.can_reserve_manual(index,3):
+	if stage_one_one or not _can_take_hunt_input() or not rules.can_reserve_manual(index,3):
 		return false
 	if index == 1:
 		if uram_field_reserved or (pose == URAM_FIELD_CAST and impact_pending):
@@ -1699,7 +1695,7 @@ func play_pose(id: String) -> void:
 		_mark_hunt_cast(rules.attacker,id == ManualHunt.HAN_SPEAR_3)
 	pose_clock = 0.0
 	if id == ManualHunt.HAN_SPEAR_3: _sample_han_chain_travel()
-	if rules.first_hunt and id == ManualHunt.HAN_SPEAR_2:_sample_first_hunt_travel()
+	if stage_one_one and id == ManualHunt.HAN_SPEAR_2:_sample_first_hunt_travel()
 	impact_pending = true
 	_update_saebom_prey_pocket(id)
 	_begin_saebom_close_action(id)
@@ -2121,7 +2117,7 @@ func update_combat_ui(delta := 0.0) -> void:
 	deer_health_text.text = str(rules.deer_hp)
 	for i in party_cards.size():
 		var hud: Control = party_cards[i].hud
-		hud.visible=not chapter_one_solo or (rules.first_hunt and i==0)
+		hud.visible=not chapter_one_solo or i==0
 		hud.sync(rules.orbs(i),rules.party_hp[i],RULES.PARTY_HP[i],rules.party_hp[i]>0,_can_take_hunt_input() and (rules.can_use(RULES.PARTY_SKILLS[i]) if i == RULES.SAEBOM else rules.can_use_frontline_skill(i,2)),delta,_can_submit_manual_chain(i))
 
 const CAMERA_ACCENT_S := .54
@@ -2187,7 +2183,7 @@ func update_actors(delta: float) -> void:
 			continue
 		var side_han_jump := i == 0 and running and pose in ["thrust",ManualHunt.HAN_SPEAR_3] and pose_clock < (JumpMotion.JUMP_SECONDS if pose == "thrust" else _manual_duration(pose))
 		var native_manual := running and i == rules.attacker and _is_native_manual(pose) and pose_clock < _manual_duration(pose)
-		var tutorial_lunge := i==0 and native_manual and rules.first_hunt and pose==ManualHunt.HAN_SPEAR_2
+		var tutorial_lunge := i==0 and native_manual and stage_one_one and pose==ManualHunt.HAN_SPEAR_2
 		var use_guard_pose := running and i == 1 and guard_active
 		var use_field_pose := running and i == 1 and pose == URAM_FIELD_CAST and pose_clock < URAM_FIELD_POSE
 		var attack := running and pose_clock<RULES.POSE_SECONDS and pose in ["thrust","auto_thrust","strike","team"] and i == rules.attacker
@@ -2272,7 +2268,7 @@ func update_actors(delta: float) -> void:
 		hunter_markers[i].visible = arrival_finished and hunter.visible
 		hunter_field_bars[i].get_parent().visible = approach>=1.0
 	var charge := running and pose=="counter"
-	var deer_motion := Vector2(-29,-8) if charge else Vector2.ZERO if basic_attack or (rules.first_hunt and pose==ManualHunt.HAN_SPEAR_2) or rules.prey_stun_remaining>0.0 else Vector2(23,-8)
+	var deer_motion := Vector2(-29,-8) if charge else Vector2.ZERO if basic_attack or (stage_one_one and pose==ManualHunt.HAN_SPEAR_2) or rules.prey_stun_remaining>0.0 else Vector2(23,-8)
 	deer.position = ENEMY_CELLS[4].lerp(DEER_SLOT,approach)+(deer_motion*movement_beat if running else Vector2.ZERO)
 	var deer_close_travel := false
 	if running and bom_prey_pocket.is_finite():

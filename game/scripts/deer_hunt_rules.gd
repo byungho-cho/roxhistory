@@ -28,6 +28,7 @@ const SKILLS := {
 
 var skills_enabled:=true
 var first_hunt := false
+var manual_only := false
 # Temporary 1-1 tuning, applied only to committed HP loss.
 const STAGE_1_1_DAMAGE_MULTIPLIER := 2
 var damage_multiplier := 1
@@ -111,7 +112,7 @@ func set_auto(enabled: bool) -> void:
 	reserved_skill = next_auto_skill() if auto_enabled else ""
 
 func next_auto_skill() -> String:
-	if first_hunt or not skills_enabled:return ""
+	if manual_only or not skills_enabled:return ""
 	var options: Array[String] = []
 	if party_hp[1]>0:options.append("strike")
 	if party_hp[2]>0 and (party_hp[0]>0 or party_hp[1]>0):options.append("team")

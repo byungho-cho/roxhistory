@@ -40,6 +40,7 @@ var hp:TextureProgressBar # Hidden compatibility state; HP is displayed overhead
 var sp_label:Label # Hidden: no separate SP text is drawn.
 var normal_ready:=false
 var chain_ready:=false
+var chain_allowed:=true
 var normal_age:=0.0
 var chain_age:=0.0
 var phase:=0.0
@@ -185,7 +186,7 @@ var chain_border_speed:=1.0
 var chain_border_age:=0.0
 
 func sync(sp:float,health:int,max_health:int,living:bool,input_available:bool,delta:float,chain_input_available:Variant=null)->void:
-	var ordinary:=living and sp+.000001>=normal_threshold;var linked:=living and sp+.000001>=chain_threshold
+	var ordinary:=living and sp+.000001>=normal_threshold;var linked:=chain_allowed and living and sp+.000001>=chain_threshold
 	if ordinary and not normal_ready:normal_age=0;normal_entries+=1
 	if linked and not chain_ready:chain_age=0;chain_border_age=0.;chain_entries+=1
 	chain_border_age=chain_border_age+delta*chain_border_speed if linked else 0.
