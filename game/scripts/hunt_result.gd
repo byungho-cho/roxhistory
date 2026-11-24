@@ -3,6 +3,10 @@ extends Control
 const ART := "res://assets/ui/hunt-result/"
 const CELL := Vector2i(388,516)
 const ATLAS_SIZE := Vector2i(2328,3096)
+const RESULT_COLUMN_X := 498.0
+const CTA_FIRST_X := 82.0
+const CTA_SECOND_X := CTA_FIRST_X + 184.0
+const ACTOR_FRAME := Rect2(-350, 0, 960, 540)
 var app: Node
 var won: bool
 var stars := 0
@@ -41,6 +45,11 @@ func _ready() -> void:
 	layout.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(layout)
 	layout.size = Vector2(960,540)
+	var details := Control.new()
+	details.name = "ResultDetails"
+	details.position.x = RESULT_COLUMN_X
+	details.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	layout.add_child(details)
 	resized.connect(fit.bind(layout))
 	fit(layout)
 	var chapter: int = app.hunt_stage / 6
@@ -51,25 +60,25 @@ func _ready() -> void:
 		stage = story - 1
 	var region := "초원" if chapter == 0 else "숲"
 	var boss := story == 10 if story > 0 else stage == 5
-	write(layout,"%d장 · %s / %s" % [chapter+1,region,"보스" if boss else "%d단계" % (stage+1)],Rect2(62,76,420,24),19,Color("fff0d0"))
+	write(details,"%d장 · %s / %s" % [chapter+1,region,"보스" if boss else "%d단계" % (stage+1)],Rect2(0,76,420,24),19,Color("fff0d0"))
 	var accent := Color("ffcf75") if won else Color("9dd5ff")
-	write(layout,"사냥 성공" if won else "사냥 실패",Rect2(60,105,430,70),62,accent)
+	write(details,"사냥 성공" if won else "사냥 실패",Rect2(-2,105,430,70),62,accent)
 	var rule := ColorRect.new()
 	rule.color = accent
 	rule.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	layout.add_child(rule)
-	rule.position = Vector2(62,185)
+	details.add_child(rule)
+	rule.position = Vector2(0,185)
 	rule.size = Vector2(57,3)
 	if won and use_han_field:
 		var replay:=int(app.model.state.get("hunt_cleared",0))>int(app.hunt_stage) and not progression_advanced
-		var message:="진행 보상 · 다음 단계 해금" if progression_advanced else "이미 완료한 사냥입니다." if replay else "진행 저장 상태를 확인해 주세요."
-		write(layout,message,Rect2(62,210,420,28),19,Color("fff0d0"))
+		var message:=("다음 단계 해금" if story > 1 else "진행 보상 · 다음 단계 해금") if progression_advanced else "이미 완료한 사냥입니다." if replay else "진행 저장 상태를 확인해 주세요."
+		write(details,message,Rect2(0,210,420,28),19,Color("fff0d0"))
 	if won and stars>0:
-		write(layout,"★".repeat(stars),Rect2(62,258,420,48),36,accent)
+		write(details,"★".repeat(stars),Rect2(0,258,420,48),36,accent)
 	if not won:
-		write(layout,"전력을 정비하고 다시 도전하세요.",Rect2(62,210,390,21),17,Color("fff0d0"))
-		followup(layout,"전투력 향상",239,"icon-spear.png")
-		followup(layout,"모집",304,"icon-horn.png")
+		write(details,"전력을 정비하고 다시 도전하세요.",Rect2(0,210,390,21),17,Color("fff0d0"))
+		followup(details,"전투력 향상",239,"icon-spear.png")
+		followup(details,"모집",304,"icon-horn.png")
 	village_back = app.button(self,"",func(): _leave(app.leave_hunt_result_to_village))
 	village_back.name = "ResultBackToVillage"
 	village_back.custom_minimum_size = Vector2.ZERO
@@ -79,17 +88,17 @@ func _ready() -> void:
 	village_back_icon = app.picture(village_back,preload("res://assets/ui/d0024/08-ui-back-button.png"),Rect2(4,4,44,44))
 	fit(layout)
 	if won:
-		result_button(layout,"사냥터 선택",62,false,app.close_hunt).name = "ResultStageSelect"
+		result_button(details,"사냥터 선택",CTA_FIRST_X,false,app.close_hunt).name = "ResultStageSelect"
 		if app.next_hunt_stage_id() >= 0:
-			result_button(layout,"다음 스테이지",246,true,app.prepare_next_hunt).name = "ResultNextStage"
+			result_button(details,"다음 스테이지",CTA_SECOND_X,true,app.prepare_next_hunt).name = "ResultNextStage"
 	else:
-		result_button(layout,"마을로",62,false,app.leave_hunt_result_to_village).name = "ResultLeave"
-		result_button(layout,"다시 준비",246,true,app.retry_hunt).name = "ResultRetry"
+		result_button(details,"마을로",CTA_FIRST_X,false,app.leave_hunt_result_to_village).name = "ResultLeave"
+		result_button(details,"다시 준비",CTA_SECOND_X,true,app.retry_hunt).name = "ResultRetry"
 	if use_han_field and build_field_video(layout):
 		set_process(true)
 		return
 	var prefix := ART + ("hunt-result-success" if won else "hunt-result-failure")
-	var art: TextureRect = app.picture(layout,load(prefix+"-fallback.png"),Rect2(562,74,319,425))
+	var art: TextureRect = app.picture(layout,load(prefix+"-fallback.png"),Rect2(82,74,319,425))
 	art.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	set_process(false)
 	if not OS.get_cmdline_user_args().has("--reduce-motion"):
@@ -163,7 +172,7 @@ func followup(parent: Control, value: String, y: float, icon: String) -> void:
 	skin.set_corner_radius_all(8)
 	row.add_theme_stylebox_override("panel",skin)
 	parent.add_child(row)
-	row.position = Vector2(62,y)
+	row.position = Vector2(0,y)
 	row.size = Vector2(391,56)
 	app.picture(row,load(ART+icon),Rect2(10,8,40,40))
 	write(row,value,Rect2(62,0,220,56),20,Color("cac6bd"))
@@ -184,14 +193,15 @@ func build_field_video(layout:Control)->bool:
 	var prefix:=FIELD_ART+"han-"+("success" if won else "failure")
 	var stream:=load(prefix+".ogv") as VideoStream
 	if stream==null:return false
-	result_last=app.picture(layout,load(prefix+"-last.png"),Rect2(0,0,960,540))
+	result_last=app.picture(layout,load(prefix+"-last.png"),ACTOR_FRAME)
 	layout.move_child(result_last,0)
 	result_last.hide()
 	result_video=VideoStreamPlayer.new()
 	result_video.name="ConfirmedResultMotion"
 	result_video.stream=stream
 	result_video.expand=true
-	result_video.size=Vector2(960,540)
+	result_video.position=ACTOR_FRAME.position
+	result_video.size=ACTOR_FRAME.size
 	result_video.loop=false
 	result_video.volume_db=-80.0
 	result_video.mouse_filter=Control.MOUSE_FILTER_IGNORE
@@ -202,7 +212,7 @@ func build_field_video(layout:Control)->bool:
 	result_video.material = mask
 	layout.add_child(result_video)
 	layout.move_child(result_video,1)
-	result_first=app.picture(layout,load(prefix+"-first.png"),Rect2(0,0,960,540))
+	result_first=app.picture(layout,load(prefix+"-first.png"),ACTOR_FRAME)
 	layout.move_child(result_first,2)
 	result_video.finished.connect(func():
 		video_finished=true

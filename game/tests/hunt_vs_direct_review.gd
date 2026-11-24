@@ -100,6 +100,8 @@ func _run()->void:
 	ck(h.ground.visible and h.ground.texture.resource_path.ends_with("/clearing-dirt.png") and h.ground.get_global_rect().grow(1.0).encloses(root.get_visible_rect()) and shade.color.a < 0.35 and not shade.get_child_count(),"original battlefield under a translucent shade; no extended scenery or cached plate")
 	var motion := get_button(h,"ConfirmedResultMotion") as VideoStreamPlayer
 	ck(is_instance_valid(motion) and motion.material is ShaderMaterial and motion.stream != null,"success uses foreground-only motion")
+	var details := get_button(h,"ResultDetails")
+	ck(is_instance_valid(details) and left.get_parent()==details and motion.position.x<0.0 and motion.scale.x>0.0 and left.get_global_rect().position.x>root.get_visible_rect().get_center().x and root.get_visible_rect().encloses(next.get_global_rect()),"success motion is shifted left without mirroring; right-side buttons fit the viewport")
 	if do_movie:
 		await frames(55)
 		if fill:
@@ -122,6 +124,8 @@ func _run()->void:
 	ck(get_button(h,"ResultNextStage")==null and get_button(h,"ResultRetry")!=null,"loss never offers next and preserves retry")
 	motion = get_button(h,"ConfirmedResultMotion") as VideoStreamPlayer
 	ck(is_instance_valid(motion) and motion.material is ShaderMaterial and motion.stream != null,"failure uses foreground-only motion")
+	var retry := get_button(h,"ResultRetry")
+	ck(motion.position.x<0.0 and motion.scale.x>0.0 and retry.get_global_rect().position.x>root.get_visible_rect().get_center().x and root.get_visible_rect().encloses(retry.get_global_rect()),"failure uses the same left actor and right controls inside the safe layout")
 	if do_movie:
 		await frames(58)
 		root.get_texture().get_image().save_png(OS.get_environment("APPDATA").path_join("RoxHistory-Hunt-Loss-4x3.png"))
