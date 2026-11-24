@@ -187,6 +187,13 @@ var speed := BATTLE_SPEED
 var auto_button: DemoButton
 var speed_button: DemoButton
 var exit_popup: Control
+var pause_button: DemoButton
+var battle_countdown: Label
+var pause_actions: Control
+var pause_continue: DemoButton
+var pause_end: DemoButton
+var pause_end_label: Label
+var pause_end_armed := false
 var exit_shade: ColorRect
 var camera_progress := -1.0
 var prey_hud: Control
@@ -385,7 +392,7 @@ func _fit_hunt_chrome(safe_area:Rect2)->void:
 	combat_controls.position = Vector2(0,end.y-DESIGN.y)
 	if combat_layout:
 		header_right.position = end-DESIGN
-	fit_exit_shade()
+	_fit_pause_chrome(safe_area,fit)
 
 
 func _build_chapter_preparation_foes(parent: Node2D) -> void:
@@ -708,6 +715,7 @@ func build_duel_header() -> void:
 		caption(brush,"Lv 1",Rect2(0,0,56,16),11)
 	auto_button = toggle_control(header_right,Rect2(857,3,48,48),"AUTO","auto",toggle_auto)
 	speed_button = toggle_control(header_right,Rect2(909,3,48,48),"X2","speed-2x",toggle_speed)
+	_build_pause_chrome()
 	update_toggles()
 
 func toggle_control(parent: Control, rect: Rect2, label: String, asset: String, action: Callable) -> DemoButton:
@@ -802,9 +810,64 @@ func open_preparation_sound() -> void:
 	app.show_sound_settings(app.close_modal)
 
 
+func _build_pause_chrome() -> void:
+	pause_button = make_button(self,"",Rect2(0,0,44,44),pause_battle)
+	pause_button.name = "HuntPause"
+	pause_button.tooltip_text = "일시정지"
+	pause_button.accessibility_name = "일시정지"
+	clear_button_art(pause_button)
+	pause_button.z_index = 2100
+	pause_button.draw.connect(_draw_pause_icon)
+	pause_button.hide()
+	battle_countdown = caption(self,"시간 제한 없음",Rect2(0,0,120,44),19,Color("fff0ca"))
+	battle_countdown.name = "HuntRemainingTime"
+	battle_countdown.accessibility_name = "남은 전투 시간"
+	battle_countdown.add_theme_constant_override("outline_size",5)
+	battle_countdown.add_theme_color_override("font_outline_color",Color("35231b"))
+	battle_countdown.z_index = 2100
+	battle_countdown.hide()
+
+
+func _draw_pause_icon() -> void:
+	var fill := StyleBoxFlat.new()
+	fill.bg_color = Color("311d15e8") if pause_button.is_pressed() else Color("2c2016bd")
+	fill.border_color = Color("c79753")
+	fill.set_border_width_all(2)
+	fill.set_corner_radius_all(8)
+	pause_button.draw_style_box(fill,Rect2(2,2,40,40))
+	for x in [15.,25.]:
+		pause_button.draw_rect(Rect2(x,13,4,18),Color("ffdf9b"))
+
+
+func _fit_pause_chrome(safe_area:Rect2, fit:float) -> void:
+	if is_instance_valid(pause_button):
+		var top_right := Vector2(safe_area.end.x,safe_area.position.y)
+		pause_button.position = top_right + Vector2(-54,10)*fit
+		pause_button.scale = Vector2.ONE*fit
+		battle_countdown.position = top_right + Vector2(-179,10)*fit
+		battle_countdown.scale = Vector2.ONE*fit
+	if is_instance_valid(pause_actions):
+		pause_actions.scale = Vector2.ONE*fit
+		pause_actions.position = size*.5
+	if is_instance_valid(exit_shade):
+		exit_shade.size = size
+
+
+func _refresh_battle_countdown() -> void:
+	if not running or not is_instance_valid(battle_countdown):return
+	var seconds := -1
+	if is_instance_valid(chapter_story_battle):
+		seconds = ceili(maxf(0.,float(chapter_story_battle.story_encounter.seconds)-float(chapter_story_battle.elapsed)-.00001))
+	var value := "%02d:%02d" % [seconds/60,seconds%60] if seconds>=0 else "시간 제한 없음"
+	if battle_countdown.text!=value:
+		battle_countdown.text=value
+		battle_countdown.add_theme_font_size_override("font_size",23 if seconds>=0 else 19)
+
+
 func request_exit() -> void:
 	pan_pointer = -2
 	clear_formation_drag()
+	if not app.application_active or exit_popup or result_shown:return
 	if not arrival_finished:
 		app.close_hunt()
 		return
@@ -812,42 +875,97 @@ func request_exit() -> void:
 	if app.modal:
 		app.close_modal()
 		return
-	if exit_popup:
-		resume_battle()
-		return
-	if result_shown:return
-	if not running and transition_elapsed < 0:
+	if not running:
 		app.close_hunt()
 		return
-	hunt_audio.cue("S07")
-	exit_popup = layer()
-	app.sync_audio()
+	pause_battle()
+
+
+func pause_for_background() -> void:
+	if is_instance_valid(exit_popup):
+		# Android can drop the release while inactive. Require a new, deliberate tap.
+		pause_continue.clear()
+		pause_end.clear()
+		_reset_pause_end()
+	else:
+		_open_battle_pause(false)
+
+
+func pause_battle() -> void:
+	if app.application_active:
+		_open_battle_pause(true)
+
+
+func _open_battle_pause(with_cue:bool) -> void:
+	if not running or result_shown or exit_popup or app.modal:return
+	pan_pointer = -2
+	touch_points.clear()
+	clear_formation_drag()
+	for control in [pause_button,exit_button,auto_button,speed_button]:
+		control.clear()
+	# A touch begun before the overlay must not activate an underlying skill.
+	for card in party_cards:card.hud.reset(card.hud.character)
+	if with_cue:hunt_audio.cue("S07")
+	exit_popup = Control.new()
+	exit_popup.name = "HuntPauseOverlay"
 	exit_popup.mouse_filter = Control.MOUSE_FILTER_STOP
+	exit_popup.z_index = 3000
+	add_child(exit_popup)
+	exit_popup.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	exit_shade = ColorRect.new()
-	exit_shade.color = Color(0,0,0,.6)
+	exit_shade.name = "BattlePauseDim"
+	exit_shade.color = Color(0,0,0,.33)
 	exit_shade.mouse_filter = Control.MOUSE_FILTER_STOP
 	exit_popup.add_child(exit_shade)
-	fit_exit_shade()
-	var panel: TextureRect = app.picture(exit_popup,preload("res://assets/ui/hunting-combat/png/popup/panel.png"),Rect2(261,186.5,438,167))
-	app.animate_popup(panel)
-	caption(panel,"전투를 종료할까요?",Rect2(0,24,438,48),25,Color("49321e"))
-	artwork_button(panel,Rect2(40,85,170,52),"종료","png/popup/exit-button-background.png",app.close_hunt).name = "ExitBattle"
-	artwork_button(panel,Rect2(227,85,170,52),"계속","png/popup/continue-button-background.png",resume_battle,Color("49321e")).name = "ContinueBattle"
-	# A touch that began before the popup must not activate an underlying skill.
-	for card in party_cards:card.hud.reset(card.hud.character)
+	pause_actions = Control.new()
+	pause_actions.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	exit_popup.add_child(pause_actions)
+	pause_actions.position = size*.5
+	pause_actions.scale = canvas.scale
+	exit_shade.size = size
+	pause_continue = artwork_button(pause_actions,Rect2(-98,-28,196,56),"계속하기","png/popup/continue-button-background.png",resume_battle,Color("49321e"))
+	pause_continue.name = "ContinueBattle"
+	pause_continue.accessibility_name = "계속하기"
+	pause_end = artwork_button(pause_actions,Rect2(-67,42,134,44),"전투 종료","png/popup/exit-button-background.png",_request_battle_end)
+	pause_end.name = "ExitBattle"
+	pause_end_label = pause_end.get_child(1) as Label
+	pause_end_label.add_theme_font_size_override("font_size",19)
+	_reset_pause_end()
+	_refresh_battle_countdown()
+	hunt_audio.update(app.application_active and app.settings.get_value("app","sound",true),true)
+	app.sync_audio()
 
-func fit_exit_shade() -> void:
-	if not is_instance_valid(exit_shade):return
-	exit_shade.position = -canvas.position/canvas.scale
-	exit_shade.size = size/canvas.scale
+
+func _reset_pause_end() -> void:
+	pause_end_armed = false
+	pause_end_label.text = "전투 종료"
+	pause_end.accessibility_name = pause_end_label.text
+
+
+func _request_battle_end() -> void:
+	if not is_instance_valid(exit_popup) or not app.application_active:return
+	if pause_end_armed:
+		app.close_hunt()
+		return
+	pause_end_armed = true
+	pause_end_label.text = "종료 확인"
+	pause_end.accessibility_name = pause_end_label.text
+
 
 func resume_battle() -> void:
-	hunt_audio.paused = false
-	hunt_audio.cue("S08")
-	app.stop_popup_openings(exit_popup)
+	if not is_instance_valid(exit_popup) or not app.application_active:return
 	exit_popup.hide()
 	exit_popup.queue_free()
 	exit_popup = null
+	exit_shade = null
+	pause_actions = null
+	pause_continue = null
+	pause_end = null
+	pause_end_label = null
+	hunt_audio.update(app.settings.get_value("app","sound",true),false)
+	hunt_audio.cue("S08")
+	app.sync_audio()
+
 
 func layer(parent: Control = null) -> Control:
 	var result := Control.new()
@@ -969,10 +1087,12 @@ func handle_vs_skip(event: InputEvent) -> bool:
 
 
 func _input(event: InputEvent) -> void:
-	if is_instance_valid(prep_sound_button) and event is InputEventScreenTouch and event.canceled and prep_sound_button.finger == event.index:
-		prep_sound_button.clear()
-		get_viewport().set_input_as_handled()
-		return
+	if event is InputEventScreenTouch and event.canceled:
+		for control in [prep_sound_button,pause_button,pause_continue,pause_end]:
+			if is_instance_valid(control) and control.finger == event.index:
+				control.clear()
+				get_viewport().set_input_as_handled()
+				return
 	if handle_vs_skip(event):
 		get_viewport().set_input_as_handled()
 		return
@@ -1239,6 +1359,10 @@ func finish_battle_transition() -> void:
 		first_hunt_deer_hit_pending = false
 	if chapter_story_preview:
 		_start_chapter_story_preview()
+	move_child(pause_button,-1)
+	pause_button.show()
+	battle_countdown.show()
+	_refresh_battle_countdown()
 	location_brush.hide()
 	for i in 2:
 		var control: DemoButton = [auto_button,speed_button][i]
@@ -2043,6 +2167,7 @@ func _tick_hunt_frame(delta: float) -> void:
 	if result_shown: return
 	if running and is_instance_valid(chapter_story_battle):
 		chapter_story_battle.tick(delta * speed, false, delta)
+		_refresh_battle_countdown()
 		_update_story_cutin()
 		var outcome: String = chapter_story_battle.story_outcome
 		if not outcome.is_empty():
@@ -2933,6 +3058,8 @@ func show_result() -> void:
 	rules.set_auto(false)
 	update_toggles()
 	running = false
+	pause_button.hide()
+	battle_countdown.hide()
 	canvas.hide()
 	for hunter in hunters: hunter.set_enabled(false)
 	deer.hide()

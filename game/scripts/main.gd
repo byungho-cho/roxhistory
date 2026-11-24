@@ -2729,6 +2729,8 @@ func _notification(what: int) -> void:
 		if gestures: gestures.clear()
 		if is_instance_valid(chrome): chrome.clear_effects()
 		application_active = false
+		if screen=="hunt" and is_instance_valid(hunt):
+			hunt.pause_for_background()
 		if title_reveal:title_reveal.pause()
 		if intro_cloud_tween and intro_cloud_tween.is_valid():intro_cloud_tween.pause()
 		if is_instance_valid(intro_player):intro_player.paused = true
