@@ -5,18 +5,18 @@ const APPROVED := {
 	"S07":"popup-open", "S08":"popup-close",
 	"S11":"vs-collision", "S12":"battle-start", "S16":"normal-hit", "S18":"heavy-hit",
 	"S20":"cooperative-attack", "S22":"deer-hurt", "S23":"orb-full", "S24":"skill-ready",
-	"S26":"victory", "S27":"hunt-failure",
+	"S27":"hunt-failure",
 }
 const APPROVED_ROOT := "res://assets/audio/d0004-approved/"
 const LEVELS := {
-	"S01":-20.0,"S02":-18.0,"S03":-20.0,"S04":-16.0,"S05":-18.0,"S06":-18.0,
+	"S02":-18.0,"S03":-20.0,"S04":-16.0,"S05":-18.0,"S06":-18.0,
 	"S07":-18.0,"S08":-18.0,"S09":-15.0,"S10":-17.0,"S11":-11.0,"S12":-12.0,
-	"S13":-26.0,"S14":-26.0,"S15":-15.0,"S16":-12.0,"S17":-14.0,"S18":-9.0,
-	"S19":-13.0,"S20":-10.0,"S21":-15.0,"S22":-18.0,"S23":-16.0,"S24":-16.0,
-	"S25":-20.0,"S26":-10.0,"S27":-12.0,
+	"S15":-15.0,"S16":-12.0,"S18":-9.0,
+	"S20":-10.0,"S21":-15.0,"S22":-18.0,"S23":-16.0,"S24":-16.0,
+	"S25":-20.0,"S27":-12.0,
 }
 
-const COMBAT_CUES := ["monster_death","S12","S13","S14","S15","S16","S17","S18","S19","S20","S21","S22","S23","S24","S25","S26","S27"]
+const COMBAT_CUES := ["monster_death","S12","S15","S16","S18","S20","S21","S22","S23","S24","S25","S27"]
 const HUNT_GAIN := 1.30
 const DUEL_SOUND_ROOT := "res://assets/audio/hunt-duel-lab/"
 const DUEL_CONTACT_CUES := ["han_basic","han_skill","han_chain","uram_basic","uram_skill","uram_chain","bom_basic","bom_skill","bom_chain","deer_basic","deer_skill","deer_hit","boar_basic","boar_skill","boar_hit","ally_hit","enemy_death"]
@@ -30,9 +30,6 @@ var enabled := false
 var paused := false
 
 func _ready() -> void:
-	for id in LEVELS:
-		var path := APPROVED_ROOT+str(APPROVED[id]) if APPROVED.has(id) else ROOT+str(id)
-		streams[id] = load(path+".wav")
 	for id in ["S02", "S03", "S04", "S05", "S06"]:
 		streams[id] = preload("res://assets/audio/d0001-approved/quest-click.wav")
 	streams["S07"] = preload("res://assets/audio/d0001-approved/popup-open.mp3")
@@ -43,6 +40,11 @@ func _ready() -> void:
 	streams["S15"] = preload("res://assets/audio/d0006-approved/spear-flight.mp3")
 	streams["S18"] = preload("res://assets/audio/d0006-approved/heavy-hit.mp3")
 	streams["monster_death"] = preload("res://assets/audio/d0006-approved/monster-death.mp3")
+	# Resolve replacements first so retired prototype WAVs are never loaded.
+	for id in LEVELS:
+		if not streams.has(id):
+			var path := APPROVED_ROOT+str(APPROVED[id]) if APPROVED.has(id) else ROOT+str(id)
+			streams[id] = load(path+".wav")
 	for id: String in DUEL_CONTACT_CUES:
 		streams[id] = load(DUEL_SOUND_ROOT+id+".wav")
 	for index in 6:
