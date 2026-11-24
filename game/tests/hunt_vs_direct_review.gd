@@ -95,12 +95,18 @@ func _run()->void:
 	var back:=get_button(h,"ResultBackToVillage")
 	ck(is_instance_valid(left) and is_instance_valid(next) and is_instance_valid(back),"win exposes selector, next and village back")
 	var fill:=get_button(h,"ResultViewportBackdrop")
-	ck(is_instance_valid(fill) and fill.get_global_rect().size.is_equal_approx(root.get_visible_rect().size),"result artwork covers actual viewport")
+	ck(is_instance_valid(fill) and fill.get_global_rect().size.is_equal_approx(root.get_visible_rect().size),"transparent shade covers the real battlefield viewport")
+	var shade := fill as ColorRect
+	ck(h.ground.visible and h.ground.texture.resource_path.ends_with("/clearing-dirt.png") and h.ground.get_global_rect().grow(1.0).encloses(root.get_visible_rect()) and shade.color.a < 0.35 and not shade.get_child_count(),"original battlefield under a translucent shade; no extended scenery or cached plate")
+	var motion := get_button(h,"ConfirmedResultMotion") as VideoStreamPlayer
+	ck(is_instance_valid(motion) and motion.material is ShaderMaterial and motion.stream != null,"success uses foreground-only motion")
 	if do_movie:
 		await frames(55)
 		if fill:
 			var im:=root.get_texture().get_image()
 			im.save_png(OS.get_environment("APPDATA").path_join("RoxHistory-Hunt-Result-4x3.png"))
+		await frames(42)
+		root.get_texture().get_image().save_png(OS.get_environment("APPDATA").path_join("RoxHistory-Hunt-Result-Final-4x3.png"))
 	var prior:int=app.hunt_stage
 	await tap(next)
 	var selector_flash:=false
@@ -114,6 +120,13 @@ func _run()->void:
 	h=app.hunt
 	await force_outcome(h,"loss")
 	ck(get_button(h,"ResultNextStage")==null and get_button(h,"ResultRetry")!=null,"loss never offers next and preserves retry")
+	motion = get_button(h,"ConfirmedResultMotion") as VideoStreamPlayer
+	ck(is_instance_valid(motion) and motion.material is ShaderMaterial and motion.stream != null,"failure uses foreground-only motion")
+	if do_movie:
+		await frames(58)
+		root.get_texture().get_image().save_png(OS.get_environment("APPDATA").path_join("RoxHistory-Hunt-Loss-4x3.png"))
+		await frames(43)
+		root.get_texture().get_image().save_png(OS.get_environment("APPDATA").path_join("RoxHistory-Hunt-Loss-Final-4x3.png"))
 	await tap(get_button(h,"ResultBackToVillage"))
 	await frames(8)
 	ck(app.screen=="play" and is_instance_valid(app.world) and app.world.visible,"upper left back returns to village on touch")

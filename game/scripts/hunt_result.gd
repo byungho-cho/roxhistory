@@ -18,22 +18,13 @@ var video_finished:=false
 var village_back: DemoButton
 var village_back_icon: TextureRect
 const FIELD_ART := "res://assets/ui/hunt-readiness/"
-const EDGE_BLEND := """
+const ACTOR_MASK := """
 shader_type canvas_item;
 void fragment() {
-	vec2 d = min(UV, vec2(1.0) - UV);
-	float feather = smoothstep(0.0, 0.04, d.x) * smoothstep(0.0, 0.07, d.y);
-	COLOR.a *= feather;
-}
-"""
-const COVER_ART := """
-shader_type canvas_item;
-uniform vec2 px;
-void fragment() {
-	vec4 base = texture(TEXTURE, UV) * 0.4;
-	base += (texture(TEXTURE, UV + vec2(px.x, 0.0)) + texture(TEXTURE, UV - vec2(px.x, 0.0))
-		+ texture(TEXTURE, UV + vec2(0.0, px.y)) + texture(TEXTURE, UV - vec2(0.0, px.y))) * 0.15;
-	COLOR = vec4(mix(vec3(0.11, 0.10, 0.075), base.rgb, 0.84), 1.0);
+	vec2 uv = UV * vec2(0.5, 1.0);
+	vec3 rgb = texture(TEXTURE, uv).rgb;
+	float matte = texture(TEXTURE, uv + vec2(0.5, 0.0)).r;
+	COLOR = vec4(rgb, smoothstep(0.025, 0.975, matte));
 }
 """
 
@@ -41,7 +32,8 @@ void fragment() {
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	var shade := ColorRect.new()
-	shade.color = Color(0.07,.06,.04,.67)
+	shade.name = "ResultViewportBackdrop"
+	shade.color = Color(0.06,.045,.03,.30)
 	add_child(shade)
 	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -94,7 +86,6 @@ func _ready() -> void:
 		result_button(layout,"마을로",62,false,app.leave_hunt_result_to_village).name = "ResultLeave"
 		result_button(layout,"다시 준비",246,true,app.retry_hunt).name = "ResultRetry"
 	if use_han_field and build_field_video(layout):
-		_extend_field_backdrop(shade, layout)
 		set_process(true)
 		return
 	var prefix := ART + ("hunt-result-success" if won else "hunt-result-failure")
@@ -195,6 +186,7 @@ func build_field_video(layout:Control)->bool:
 	if stream==null:return false
 	result_last=app.picture(layout,load(prefix+"-last.png"),Rect2(0,0,960,540))
 	layout.move_child(result_last,0)
+	result_last.hide()
 	result_video=VideoStreamPlayer.new()
 	result_video.name="ConfirmedResultMotion"
 	result_video.stream=stream
@@ -203,40 +195,22 @@ func build_field_video(layout:Control)->bool:
 	result_video.loop=false
 	result_video.volume_db=-80.0
 	result_video.mouse_filter=Control.MOUSE_FILTER_IGNORE
+	var shader := Shader.new()
+	shader.code = ACTOR_MASK
+	var mask := ShaderMaterial.new()
+	mask.shader = shader
+	result_video.material = mask
 	layout.add_child(result_video)
 	layout.move_child(result_video,1)
 	result_first=app.picture(layout,load(prefix+"-first.png"),Rect2(0,0,960,540))
 	layout.move_child(result_first,2)
 	result_video.finished.connect(func():
 		video_finished=true
+		result_last.show()
 		result_video.hide()
 		result_first.hide())
 	result_video.play()
 	return true
-
-# Extend scenery into aspect-ratio and touch-safe margins without scaling controls
-# or the character movie beyond its authored canvas.
-func _extend_field_backdrop(shade: ColorRect, layout: Control) -> void:
-	var curtain := TextureRect.new()
-	curtain.name = "ResultViewportBackdrop"
-	curtain.texture = result_last.texture
-	curtain.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	curtain.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	curtain.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	shade.add_child(curtain)
-	curtain.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	var cover_shader := Shader.new()
-	cover_shader.code = COVER_ART
-	var cover_material := ShaderMaterial.new()
-	cover_material.shader = cover_shader
-	cover_material.set_shader_parameter("px", Vector2(.012,.024))
-	curtain.material = cover_material
-	var feather_shader := Shader.new()
-	feather_shader.code = EDGE_BLEND
-	var feather := ShaderMaterial.new()
-	feather.shader = feather_shader
-	for plate: Control in [result_last, result_first, result_video]:
-		plate.material = feather
 
 func _exit_tree()->void:
 	if is_instance_valid(result_video):
