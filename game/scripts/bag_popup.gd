@@ -10,7 +10,7 @@ const RAIL_TOP := LIST_TOP + 8.0
 const RAIL_HEIGHT := 665.0
 const INK := Color("f8f6db")
 const ERA_ART := {"stone_age":preload("res://assets/ui/d0031/bag.png")}
-const ITEMS := [["wood","목재"],["stone","석재"],["grain","곡식"]]
+const ITEMS := [["wood","목재"],["stone","석재"],["grain","곡식"],["meat","고기"]]
 var app: Node
 var layout: Control
 var close_layer: Control

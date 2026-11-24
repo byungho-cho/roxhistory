@@ -160,6 +160,9 @@ const FIRST_DEER_VISIBLE_DELAY := .50
 var first_hunt_deer_ready := INF
 var first_hunt_deer_age := INF
 var first_hunt_deer_hit_pending := false
+var first_hunt_victory_pose:Array[Transform3D]=[]
+var first_hunt_victory_yaw:=0.0
+var first_hunt_victory_pivot:=Vector3.ZERO
 
 var app: Node
 var rules := RULES.new()
@@ -471,8 +474,7 @@ func _sync_chapter_preparation_foes() -> void:
 			continue
 		actor.position = ENEMY_CELLS[int(actor.get_meta("chapter_prep_slot"))]
 		actor.scale = Vector2.ONE * PREP_PREY_SCALE
-		var facing: Vector2 = actor.position.direction_to(hunters[selected_hunter].position)
-		actor.heading = atan2(facing.x, facing.y)
+		actor.heading = 0.0 # The readiness lineup faces the camera, not the selected ally.
 		actor.sample_native_phase("idle", fposmod(pose_clock + .29 * i, maxf(.01, actor.native.length(NativeBoar.Prey.clips(actor.native_species).idle))))
 		actor.viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
 		tag.position = actor.position + Vector2(0, -actor.world_height * actor.scale.y - 15)
@@ -552,7 +554,7 @@ func animate_battle_vs(before: float, elapsed: float) -> void:
 	vs_enemy.position.x=726.+175.*(1.-q)+36.*(1.-ending)-vs_enemy.size.x*.5
 	vs_ally.modulate.a=q*ending;vs_enemy.modulate.a=q*ending
 	vs_ally_name.text=["한결","우람","새봄"][selected_hunter]
-	vs_enemy_name.text="큰 멧돼지" if _prey_is_adult() else "꽃사슴"
+	vs_enemy_name.text=_presented_prey_name()
 	for name_label in [vs_ally_name,vs_enemy_name]:
 		name_label.visible=active
 		name_label.modulate.a=BranchVS.authored_ease((time-.77)/.2)*ending
@@ -635,19 +637,41 @@ func build_preparation_plaque() -> void:
 func _prey_is_adult() -> bool:
 	return deer is NativeBoar and deer.native_species == "adult"
 
+func _presented_prey_species() -> String:
+	if chapter_story_number>0:
+		var planned:Array=ChapterOneCatalog.encounter(chapter_story_number).get("prey",[])
+		if not planned.is_empty():return str(planned[0])
+	return ChapterOneCatalog.ADULT if _prey_is_adult() else ChapterOneCatalog.FLOWER
+
+
+func _presented_prey_is_boar() -> bool:
+	return _presented_prey_species() in [ChapterOneCatalog.JUVENILE,ChapterOneCatalog.ADULT]
+
+
+func _presented_prey_name() -> String:
+	match _presented_prey_species():
+		ChapterOneCatalog.JUVENILE:return "어린 수퇘지"
+		ChapterOneCatalog.ADULT:return "큰 멧돼지"
+		ChapterOneCatalog.STAG:return "수사슴"
+		_:return "꽃사슴"
+
+
 func _portrait_for_prey() -> Texture2D:
-	return APPROVED_BOAR if _prey_is_adult() else APPROVED_DEER
+	# Use the head only; the empty stage-shield below the approved art is not a portrait.
+	return crop(APPROVED_BOAR,Rect2(274,55,690,437)) if _presented_prey_is_boar() else APPROVED_DEER
 
 func build_power_comparison() -> void:
 	ReadinessArt.sky(power_header)
 	prep_ally_portrait = app.picture(power_header,_prep_hunter_portrait(selected_hunter),Rect2(-231.22,-1.11,113.07,92.44))
 	prep_ally_portrait.material=ReadinessArt.portrait_fade()
 	# Reflect the actual runtime actor, including a safe asset fallback.
-	app.picture(power_header,load(ReadinessArt.ART+"power/Deer-HUD-alpha.png") if not _prey_is_adult() else _portrait_for_prey(),Rect2(82.89,-18,117.33,130.03))
+	var prep_prey_portrait:=app.picture(power_header,load(ReadinessArt.ART+"power/Deer-HUD-alpha.png") if not _presented_prey_is_boar() else _portrait_for_prey(),Rect2(109.,-18.,110.,130.03) if _presented_prey_is_boar() else Rect2(82.89,-18,117.33,130.03)) as TextureRect
+	prep_prey_portrait.name="HuntEnemyReadinessPortrait"
+	if _presented_prey_is_boar():prep_prey_portrait.stretch_mode=TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	header_spears = ReadinessArt.branch(power_header,Rect2(-30.22,27.33,60.44,30.22),false)
 	prep_ally_portrait.stretch_mode=TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	prep_ally_name=caption(power_header,["한결","우람","새봄"][selected_hunter],Rect2(-109.44,10,120,24),17,Color.WHITE)
-	var prep_prey_title := "큰 멧돼지" if _prey_is_adult() else "꽃사슴"
+	var prep_prey_title := _presented_prey_name()
 	if chapter_story_preview:
 		var planned: Array = ChapterOneCatalog.encounter(chapter_story_number).prey
 		if planned.size() > 1:
@@ -663,7 +687,12 @@ func build_power_comparison() -> void:
 		name_label.add_theme_constant_override("outline_size",2)
 		name_label.add_theme_color_override("font_outline_color",Color("263b4c"))
 	# Keep the existing display-only rating formula; no stored rating or damage changes.
-	var ratings := [rules.hunter_hp*int(RULES.SKILLS.thrust.damage),rules.deer_max_hp*RULES.COUNTER_DAMAGE]
+	var prey_power:=rules.deer_max_hp*RULES.COUNTER_DAMAGE
+	if ChapterOneCatalog.prey_level(chapter_story_number)>1:
+		prey_power=0
+		for species:String in ChapterOneCatalog.encounter(chapter_story_number).prey:
+			prey_power+=int(ChapterOneCatalog.prey_stats(chapter_story_number,species).power)
+	var ratings := [rules.hunter_hp*int(RULES.SKILLS.thrust.damage),prey_power]
 	for i in ratings.size():
 		var number := caption(power_header,MATCH.format_power(ratings[i]),Rect2(-112.11+96.44*i,28,130,40),28,Color("9fdaff") if i==0 else Color("ffac98"))
 		number.horizontal_alignment=HORIZONTAL_ALIGNMENT_LEFT if i==0 else HORIZONTAL_ALIGNMENT_RIGHT
@@ -737,7 +766,7 @@ func build_duel_header() -> void:
 	for badge in [[ally_hud,321],[enemy_hud,730]]:
 		var brush: TextureRect = app.picture(badge[0],NAME_BRUSH,Rect2(badge[1]-28,57,56,16))
 		brush.modulate.a = .8
-		caption(brush,"Lv 1",Rect2(0,0,56,16),11)
+		caption(brush,"Lv %d"%(1 if badge[0]==ally_hud else ChapterOneCatalog.prey_level(chapter_story_number)),Rect2(0,0,56,16),11)
 	auto_button = toggle_control(header_right,Rect2(857,3,48,48),"AUTO","auto",toggle_auto)
 	_build_pause_chrome()
 	update_toggles()
@@ -807,7 +836,8 @@ func build_level(marker: Control, ally: bool, role:String="") -> void:
 	badge.add_theme_stylebox_override("panel",skin)
 	var glyph:TextureRect=app.picture(badge,ReadinessArt.role_texture(role if not role.is_empty() else "ally-melee" if ally else "enemy-melee"),Rect2(0,0,19,19))
 	glyph.material=ReadinessArt.role_material()
-	var label:=caption(marker,"Lv.1",Rect2(-4,-9,33,19),11,Color.WHITE)
+	var label:=caption(marker,"Lv.%d"%(1 if ally else ChapterOneCatalog.prey_level(chapter_story_number)),Rect2(-4,-9,38,19),11,Color.WHITE)
+	label.name="HuntLevelText"
 	label.add_theme_constant_override("outline_size",3)
 	label.add_theme_color_override("font_outline_color",Color.BLACK)
 
@@ -1751,6 +1781,8 @@ func _draw_normal_hunt_art(front:bool) -> void:
 			ManualHunt.URAM_CLUB_2:
 				if front:
 					manual_front_fx.draw_uram_skill_hit(dest,prey_art.soft,position2,effect.floor,effect.axis,effect.age,1.0)
+			"lab_deer_basic":
+				if front:native_hud.draw_lab_deer_basic(dest,position2,effect.age)
 			"prey_hit":
 				if front:
 					prey_art.draw_impact({"center":position2,"floor_point":effect.floor},clampf(effect.age/.56,0.0,1.0),dest)
@@ -1981,7 +2013,16 @@ func _tick_first_hunt_deer(elapsed:float) -> void:
 	first_hunt_deer_age+=elapsed
 	if first_hunt_deer_hit_pending and first_hunt_deer_age>=IMPACT_SECONDS:
 		first_hunt_deer_hit_pending=false
+		var old_hp:int=rules.party_hp[0]
 		rules.resolve_independent_prey_basic(0)
+		if rules.party_hp[0]<old_hp:
+			var han:=hunters[0]
+			var at:Vector2=han.position-Vector2(0,23)
+			var spine:int=han.skeleton.find_bone("spine")
+			if spine>=0:
+				var torso:Vector3=han.skeleton.to_global(han.skeleton.get_bone_global_pose(spine).origin)
+				at=battlefield.get_global_transform().affine_inverse()*han.display.to_global(han.camera.unproject_position(torso)+han.display.offset)
+			manual_effects.append({"kind":"lab_deer_basic","age":0.0,"pos":at,"floor":han.position})
 		# A lethal hit cancels an unlanded action, not an already-recorded hit.
 		if not rules.outcome.is_empty():
 			impact_pending=false
@@ -2467,6 +2508,9 @@ func _tick_hunt_frame(delta: float) -> void:
 		clear_formation_drag()
 		return
 	if result_shown: return
+	if first_hunt_end_age>=0.0:
+		_tick_first_hunt_drop(delta)
+		return
 	if solo_deploy_clock >= 0.0:
 		solo_deploy_clock += delta
 		approach = smoothstep(0.0,solo_deploy_seconds,solo_deploy_clock)
@@ -2611,6 +2655,7 @@ func _tick_hunt_frame(delta: float) -> void:
 		if not result_shown and not rules.outcome.is_empty():
 			if stage_one_one and rules.outcome == "win" and rules.hunter_hp > 0:
 				_tick_first_hunt_drop(delta)
+				return
 			elif _finish_visual_ready():
 				show_result()
 	if result_shown: return
@@ -3030,6 +3075,7 @@ func update_actors(delta: float) -> void:
 			hunt_stride_phases[i] = fposmod(hunt_stride_phases[i]+travel/maxf(1.0,42.0*hunter.scale.x)*TAU,TAU)
 		var approach_phase := hunt_stride_phases[i] if approaching else pose_clock*12.0
 		var facing := first_hunt_facing if tutorial_lunge else han_chain_facing if native_manual and side_han_jump else hunter.position.direction_to(deer.position) if approach >= 1.0 else hunter.position.direction_to(deer.position) if approach<=0.0 else arrival_heading
+		if not running and transition_elapsed<0.0:facing=Vector2.DOWN
 		if stage_han and running and solo_deploy_clock<0.0 and not native_manual and not side_han_jump:
 			# Compensate the authored spear angle in the split actor camera, not the body location.
 			facing=facing.rotated(-.36)
@@ -3112,8 +3158,10 @@ func update_actors(delta: float) -> void:
 	deer.walking = 1.0 if (transition_elapsed>=0 or solo_deploy_clock>=0.0) and approach>0.0 and approach<1.0 else (movement_beat if running and (charge or basic_recoil>0.0) else 0.0)
 	if deer_close_travel: deer.walking = maxf(deer.walking,.74)
 	deer.heading = lerp_angle(-PI*.34,-PI*.35,approach)
-	if (approach<=0.0 and not running) or (solo_deploy_clock>=0.0 and approach<1.0):
-		var toward:Vector2=deer.position.direction_to(hunters[selected_hunter].position) if approach<=0.0 else ENEMY_CELLS[4].direction_to(solo_deploy_prey_end)
+	if transition_elapsed<0.0 and not running:
+		deer.heading=0.0
+	elif solo_deploy_clock>=0.0 and approach<1.0:
+		var toward:Vector2=ENEMY_CELLS[4].direction_to(solo_deploy_prey_end)
 		deer.heading=lerp_angle(atan2(toward.x,toward.y),deer.heading,smoothstep(.76,1.,approach))
 	deer.gait_phase = solo_deploy_clock*14.0 if solo_deploy_clock>=0.0 else pose_clock*14.0
 	deer.clock += delta
@@ -3350,8 +3398,14 @@ func draw_stage() -> void:
 
 
 func _tick_first_hunt_drop(delta: float) -> void:
+	var han:=hunters[0]
 	if first_hunt_end_age < 0.0:
 		first_hunt_end_age = 0.0
+		first_hunt_victory_pose=NativeHud.snapshot_pose(han.skeleton)
+		first_hunt_victory_yaw=han.pivot.rotation.y
+		first_hunt_victory_pivot=han.pivot.position
+		touch_points.clear()
+		impact_pending=false
 		prey_hud.hide()
 		pause_button.clear()
 		pause_button.hide()
@@ -3363,6 +3417,15 @@ func _tick_first_hunt_drop(delta: float) -> void:
 		first_hunt_end_age += delta
 	first_hunt_drop.sample(first_hunt_end_age)
 	deer.modulate.a = FirstHuntDrop.model_alpha(first_hunt_end_age)
+	var progress:=smoothstep(0.0,NativeHud.VICTORY_IDLE_BLEND,first_hunt_end_age)
+	han.resident_sample("idle",han.clock+first_hunt_end_age)
+	if progress<1.0:NativeHud.blend_pose(han.skeleton,first_hunt_victory_pose,progress)
+	han.pivot.position=first_hunt_victory_pivot.lerp(han.pivot.position,progress)
+	han.pivot.rotation.y=lerp_angle(first_hunt_victory_yaw,0.0,progress)
+	han.viewport.render_target_update_mode=SubViewport.UPDATE_ONCE
+	hit_age+=delta
+	_update_native_hunt_art(delta,pose_clock)
+	battlefield.queue_redraw()
 	if first_hunt_end_age >= VICTORY_RESULT_HOLD:
 		show_result()
 
@@ -3412,8 +3475,14 @@ func show_result() -> void:
 	var previous_story: Dictionary = app.chapter_one_story_completions() if chapter_story_preview else {}
 	if rules.outcome == "win" and rules.hunter_hp<=0:
 		rules.outcome="loss"
+	var earned_stars:=3
+	var reward:Dictionary={}
 	if rules.outcome == "win":
-		app.record_hunt_win()
+		if stage_one_one:
+			earned_stars=int(ChapterOneCatalog.encounter(1).first_clear_stars)
+		elif is_instance_valid(chapter_story_battle):
+			earned_stars=ChapterOneCatalog.victory_stars(chapter_story_battle.elapsed,chapter_story_battle.story_encounter.seconds)
+		reward=app.record_hunt_win(earned_stars,self)
 		if first_hunt_end_age < 0.0 and (not is_instance_valid(chapter_story_battle) or chapter_story_battle.victory_age < 0.0):
 			hunt_audio.cue("enemy_death" if chapter_story_number>0 else "monster_death",4)
 	else:
@@ -3432,10 +3501,8 @@ func show_result() -> void:
 	result.won = rules.outcome == "win"
 	result.use_han_field=chapter_one_solo
 	if result.won:
-		if stage_one_one:
-			result.stars = int(ChapterOneCatalog.encounter(1).first_clear_stars)
-		elif is_instance_valid(chapter_story_battle):
-			result.stars = ChapterOneCatalog.victory_stars(chapter_story_battle.elapsed,chapter_story_battle.story_encounter.seconds)
+		result.stars=earned_stars
+		result.reward=reward
 	result.progression_advanced=app.chapter_one_story_completions()!=previous_story if chapter_story_preview else int(app.model.state.get("hunt_cleared",0))>previous_progress
 	add_child(result)
 	result.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -3448,7 +3515,7 @@ func _exit_tree()->void:
 func _prep_hunter_portrait(index:int)->Texture2D:
 	return load(ReadinessArt.ART+"power/han-static.png") if index==0 else hunter_portrait(index)
 func _vs_prey_portrait()->Texture2D:
-	if _prey_is_adult():return _portrait_for_prey()
+	if _presented_prey_is_boar():return _portrait_for_prey()
 	var source:=load(ReadinessArt.ART+"vs/Deer-Bust-Extended.png") as Texture2D
 	var used:=source.get_image().get_used_rect()
 	var rect:=Rect2(used)

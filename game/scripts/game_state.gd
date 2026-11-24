@@ -241,6 +241,15 @@ func finish_loaded_jobs()->void:
 	OwnedBuildingUpgrades.finish(self)
 	if debug_fast_build and state.get("fast_build_mode","")!="fixed5":set_debug_fast_build(true)
 
+## Called while preparing the same save transaction that marks hunt progression.
+func credit_hunt_meat(next: Dictionary, amount: int) -> int:
+	var previous := int(next.get("meat",0))
+	var granted := clampi(amount,0,BuildingRules.MAX_RESOURCE-previous)
+	if granted > 0:
+		next.meat = previous + granted
+	return granted
+
+
 func commit(next: Dictionary, reset: bool = false, farm_clock_keys: Array[String] = []) -> bool:
 	if not FirstQuests.valid(next):return false
 	FirstQuests.reconcile(next,not reset and not next.has("quests_done"))

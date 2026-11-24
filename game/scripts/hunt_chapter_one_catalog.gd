@@ -20,6 +20,8 @@ const STAGE_KEYS := ["ch1-01", "ch1-02", "ch1-03", "ch1-04", "ch1-05", "ch1-06",
 # after both old chapters, not the old Chapter 2's ids 6..11.
 const ROUTE_IDS := [0, 1, 2, 3, 4, 12, 13, 14, 15, 5]
 const LEGACY_KEYS := ["ch1-01", "ch1-02", "ch1-03", "ch1-04", "ch1-05", "ch1-10"]
+# Only the four agreed early stages change; the tutorial and later encounters keep their shipped baseline.
+const PREY_LEVELS := [1, 2, 3, 3, 5, 1, 1, 1, 1, 1]
 const ROWS := [
 	{"party": SOLO, "prey": [FLOWER], "enemy_skill": "none", "lesson": "han_manual_2sp", "rank": "normal", "seconds": 50, "base_meat": 10, "first_clear_stars": 3},
 	{"party": SOLO, "prey": [FLOWER, FLOWER], "enemy_skill": "none", "lesson": "han_ground_thrust", "rank": "normal", "seconds": 50, "base_meat": 20},
@@ -40,7 +42,24 @@ static func encounter(number: int) -> Dictionary:
 	var row: Dictionary = ROWS[number - 1].duplicate(true)
 	row.number = number
 	row.key = STAGE_KEYS[number - 1]
+	row.prey_level = prey_level(number)
 	return row
+
+
+## The temporary rule scales shipped Lv.1 HP, damage and displayed power independently.
+## Power is not the product of already-scaled stats (which would square the level).
+static func prey_level(number: int) -> int:
+	if number < 1 or number > PREY_LEVELS.size(): return 1
+	return PREY_LEVELS[number - 1]
+
+
+static func prey_stats(number: int, _species: String, base_hp: int = 100, base_attack: int = 2, base_skill: int = 23, base_power: int = 200) -> Dictionary:
+	return prey_stats_at_level(prey_level(number),base_hp,base_attack,base_skill,base_power)
+
+
+static func prey_stats_at_level(requested_level:int,base_hp:int=100,base_attack:int=2,base_skill:int=23,base_power:int=200)->Dictionary:
+	var level := clampi(requested_level,1,20)
+	return {"level": level, "hp": base_hp * level, "attack": base_attack * level, "skill": base_skill * level, "power": base_power * level}
 
 
 ## S40420 / 3600:313: score by the fraction of the battle limit remaining.

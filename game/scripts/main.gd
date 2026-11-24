@@ -2607,26 +2607,39 @@ func _prepare_hunt_stage(selected_stage: int) -> void:
 
 
 
-func record_hunt_win() -> void:
+var recorded_hunt_win_id := 0
+
+func record_hunt_win(stars: int = 0, battle: Node = null) -> Dictionary:
+	if battle != null:
+		if battle != hunt or battle.rules.outcome != "win" or battle.get_instance_id() == recorded_hunt_win_id:
+			return {}
 	var story := chapter_one_story_number(hunt_stage)
+	var next := model.state.duplicate(true)
+	var progress := false
+	var meat_awarded := 0
 	if story > 0:
 		var next_story := HUNT_CHAPTER_ONE.after_first_win(story, chapter_one_story_completions())
-		if next_story.is_empty():
-			return
-		var updated := model.state.duplicate(true)
-		var verified := hunt_recruitment_clears().duplicate()
-		verified[HUNT_CHAPTER_ONE.STAGE_KEYS[story-1]] = true
-		updated[HUNT_CHAPTER_ONE.CLEARS_KEY] = verified
-		updated.hunt_cleared = maxi(int(updated.get("hunt_cleared", 0)), HUNT_CHAPTER_ONE.legacy_prefix(next_story))
-		if not model.commit(updated):
-			toast("사냥 진행을 저장하지 못했습니다.")
-		return
-	if hunt_stage != int(model.state.get("hunt_cleared", 0)):
-		return
-	var next := model.state.duplicate(true)
-	next.hunt_cleared = hunt_stage + 1
-	if not model.commit(next):
-		toast("사냥 진행을 저장하지 못했습니다.")
+		if not next_story.is_empty():
+			var verified := hunt_recruitment_clears().duplicate()
+			verified[HUNT_CHAPTER_ONE.STAGE_KEYS[story-1]] = true
+			next[HUNT_CHAPTER_ONE.CLEARS_KEY] = verified
+			next.hunt_cleared = maxi(int(next.get("hunt_cleared", 0)), HUNT_CHAPTER_ONE.legacy_prefix(next_story))
+			progress = true
+		# S40420: same ordinary payout on first and repeat clears. Extra first-clear bonus remains TBD.
+		if battle != null and stars >= 1 and stars <= 3:
+			var base := int(HUNT_CHAPTER_ONE.encounter(story).get("base_meat",0))
+			var multipliers := [1.0,1.5,2.0]
+			meat_awarded = model.credit_hunt_meat(next, roundi(base * multipliers[stars-1]))
+	elif hunt_stage == int(model.state.get("hunt_cleared", 0)):
+		next.hunt_cleared = hunt_stage + 1
+		progress = true
+	if (progress or meat_awarded > 0) and not model.commit(next):
+		toast("사냥 결과를 저장하지 못했습니다.")
+		return {}
+	if battle != null:
+		recorded_hunt_win_id = battle.get_instance_id()
+	return {"meat":meat_awarded} if meat_awarded > 0 else {}
+
 
 func retry_hunt() -> void:
 	if screen != "hunt": return

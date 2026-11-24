@@ -12,6 +12,7 @@ signal story_deer_shove_impact
 
 const Actor = preload("res://scripts/model_test_actor.gd")
 const Hunt = preload("res://scripts/deer_hunt_screen.gd")
+const ChapterEnemyLevels = preload("res://scripts/hunt_chapter_one_catalog.gd")
 const FrontlineActions = preload("res://scripts/hunt_production_frontline_actions.gd")
 const Presenter = preload("res://scripts/duel_motion_presenter.gd")
 const HUD = preload("res://scripts/duel_skill_hud.gd")
@@ -25,6 +26,7 @@ const HEROES := ["hangyeol","uram","saebom"]
 var story_encounter: Dictionary = {}
 var story_outcome := ""
 var victory_age := -1.0
+var victory_allies:Dictionary={}
 var last_defeated_prey := -1
 signal story_contact_audio(cue: String, priority: int)
 const DeathArt := preload("res://scripts/model_death_effect.gd")
@@ -279,9 +281,15 @@ func setup(dust_draw:Callable=Callable(),gong:Callable=Callable(), heavy:Callabl
 		var u:Dictionary={"actor":actor,"id":id,"home":home,"feet":home,"hp":MAX_HP,"sp":1.0,"move":"idle","age":0.0,"next":.52+float(i%3)*.17,"contact":-1.0,"victim":-1,"ring":ring,"rally":0.0}
 		if not story_encounter.is_empty():
 			u.story_dormant = dormant
-			# Keep the previous ordinary encounter's total HP budget while
-			# splitting 1-2's two same-tier deer into independent targets.
-			u.max_hp = [34,33,33][i] if ally else (MAX_HP / 2 if int(story_encounter.number) == 2 else MAX_HP)
+			if ally:
+				u.max_hp=[34,33,33][i]
+			else:
+				var n:=int(story_encounter.number)
+				var stats:=ChapterEnemyLevels.prey_stats(n,id,MAX_HP,Hunt.RULES.COUNTER_DAMAGE if n<=6 else 11,23,MAX_HP*Hunt.RULES.COUNTER_DAMAGE)
+				u.max_hp=int(stats.hp)
+				u.level=int(stats.level)
+				u.basic_damage=int(stats.attack)
+				u.skill_damage=int(stats.skill)
 			u.hp = 0 if dormant else u.max_hp
 			u.sp = _story_opening_charge(i) if ally and not dormant else 0.0
 			if i == 2: u.bom_close = false
@@ -665,8 +673,24 @@ func present_victory(delta: float) -> void:
 	if victory_age < 0.0:
 		victory_age = 0.0
 		input_paused = true
+		for i in mini(3,units.size()):
+			var u:=units[i]
+			if u.hp<=0 or bool(u.get("story_dormant",false)):continue
+			var rig:Skeleton3D=u.actor.preview.skeleton
+			victory_allies[i]={"pose":CastHud.snapshot_pose(rig),"yaw":float(u.actor.preview.pivot.rotation.y),"pivot":u.actor.preview.pivot.position}
+			u.actor.play("idle")
 	else:
 		victory_age += delta
+	for i:int in victory_allies:
+		var u:=units[i]
+		var view:Node2D=u.actor.preview
+		var state:Dictionary=victory_allies[i]
+		var blend:=smoothstep(0.0,CastHud.VICTORY_IDLE_BLEND,victory_age)
+		u.actor.sample(victory_age,false)
+		if blend<1.0:CastHud.blend_pose(view.skeleton,state.pose,blend)
+		view.pivot.position=(state.pivot as Vector3).lerp(view.pivot.position,blend)
+		view.pivot.rotation.y=lerp_angle(float(state.yaw),0.0,blend)
+		view.viewport.render_target_update_mode=SubViewport.UPDATE_ONCE
 	for i in range(3,units.size()):
 		_present_story_prey_death(units[i])
 	paint.queue_redraw()
@@ -1071,11 +1095,7 @@ func _resolve(i:int)->void:
 		return
 	var damage:=RallyCloud.SQUAD_BASE if u.move=="attack" else FrontlineActions.HAN_STORY_2SP_DAMAGE if u.move=="skill" and i==0 else 27 if u.move=="skill" else 38
 	if i>=3:
-		damage=11 if u.move=="attack" else 23
-		# Keep the old production early counter damage. The lab numbers
-		# otherwise end 1-2 before its first genuine skill opportunity.
-		if not story_encounter.is_empty() and u.move == "attack" and int(story_encounter.number) <= 6:
-			damage = Hunt.RULES.COUNTER_DAMAGE
+		damage=int(u.get("basic_damage",11)) if u.move=="attack" else int(u.get("skill_damage",23))
 	if u.rally>elapsed:damage=roundi(damage*(1.20 if local_melee_polish else 1.25))
 	var start:Vector2=u.feet-Vector2(0,30)
 	var finish:Vector2=units[j].feet-Vector2(0,25)
@@ -1267,6 +1287,8 @@ func _damage(i:int,j:int,amount:int,key:String,stone_impact:=Vector2.INF)->void:
 		var feet:Vector2=target.feet
 		var from:Vector2=units[i].feet
 		group_bom_hits.append({"at":elapsed,"point":impact_point if not story_encounter.is_empty() else (feet-Vector2(0,25) if stone_impact==Vector2.INF else stone_impact),"forward":from.direction_to(feet)})
+	elif not story_encounter.is_empty() and i>=3 and key=="attack" and units[i].id in ["forest","stag"]:
+		glints.append({"at":elapsed,"point":impact_point,"lab_deer_basic":true})
 	elif silver_impact.is_valid() and i>=3 and key=="skill":
 		var ground:Vector2=target.feet
 		silver_hits.append({"at":elapsed,"center":impact_point,"floor_point":ground,"unit":i})
@@ -1502,6 +1524,9 @@ func _paint()->void:
 		for hit in glints:
 			if hit.get("rope",false):continue # The existing rope-impact chips own this hit.
 			var age := _effect_clock()-float(hit.at)
+			if hit.get("lab_deer_basic",false):
+				cast_notice_style.draw_lab_deer_basic(paint,hit.point,age)
+				continue
 			if age >= .30:continue
 			var tint: Color = hit.tint
 			tint.a = 1.0-smoothstep(.04,.30,age)

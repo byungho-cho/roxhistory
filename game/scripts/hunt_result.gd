@@ -17,6 +17,7 @@ const VICTORY_SWING_MARGIN_SHIFT := 50.0
 var app: Node
 var won: bool
 var stars := 0
+var reward: Dictionary = {}
 const STAR_REVEAL_START := .28
 const STAR_REVEAL_STEP := .28
 var star_labels: Array[Label] = []
@@ -104,6 +105,15 @@ func _ready() -> void:
 			apply_text_shadow(star)
 			star.visible = reduced_motion
 			star_labels.append(star)
+	if won and int(reward.get("meat",0)) > 0:
+		app.picture(details,DemoArt.icon("meat"),Rect2(0,267,35,35)).name = "HuntRewardMeatIcon"
+		var receipt: Label = app.label(details,"고기 +%d" % int(reward.meat),22,Color("fff0d0"))
+		receipt.name = "HuntRewardMeat"
+		receipt.position = Vector2(45,265)
+		receipt.size = Vector2(345,38)
+		receipt.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		receipt.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		apply_text_shadow(receipt)
 	paper_motion = won and not reduced_motion
 	if paper_motion:
 		paper_layer = Node2D.new()
@@ -129,7 +139,7 @@ func _ready() -> void:
 	else:
 		result_button(result_actions,"마을로",CTA_FIRST_X,false,app.leave_hunt_result_to_village).name = "ResultLeave"
 		result_button(result_actions,"다시 준비",CTA_SECOND_X,true,app.retry_hunt).name = "ResultRetry"
-	if use_han_field and build_field_video(layout):
+	if (won or use_han_field) and build_field_video(layout):
 		set_process(true)
 		return
 	if won:
@@ -307,13 +317,16 @@ func _process(delta: float) -> void:
 
 func build_field_video(layout:Control)->bool:
 	var prefix:=FIELD_ART+"han-"+("success" if won else "failure")
-	var stream := load(prefix+".ogv") as VideoStream if not reduced_motion else null
-	if not reduced_motion and stream==null:return false
+	var stream_path := prefix+".ogv"
+	var stream := load(stream_path) as VideoStream if not reduced_motion and ResourceLoader.exists(stream_path) else null
+	var final_art := load(prefix+"-last.png") as Texture2D
+	if final_art == null:return false
 	var frame := ACTOR_FRAME
 	if won:frame.position.x -= VICTORY_LEFT_SHIFT
-	result_last=app.picture(layout,load(prefix+"-last.png"),frame)
+	result_last=app.picture(layout,final_art,frame)
+	result_last.name="ConfirmedResultStill"
 	layout.move_child(result_last,0)
-	if reduced_motion:return true
+	if reduced_motion or stream==null:return true
 	result_last.hide()
 	result_video=VideoStreamPlayer.new()
 	result_video.name="ConfirmedResultMotion"

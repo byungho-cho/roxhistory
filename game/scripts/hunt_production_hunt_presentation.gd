@@ -16,6 +16,37 @@ func _init(prey_art: RefCounted) -> void:
 		style.set_corner_radius_all(4)
 		cast_frames.append(style)
 
+const VICTORY_IDLE_BLEND := .36
+
+
+static func snapshot_pose(rig:Skeleton3D)->Array[Transform3D]:
+	var out:Array[Transform3D]=[]
+	if is_instance_valid(rig):
+		for i in rig.get_bone_count():out.append(rig.get_bone_pose(i))
+	return out
+
+
+static func blend_pose(rig:Skeleton3D,from:Array[Transform3D],weight:float)->void:
+	if not is_instance_valid(rig):return
+	for i in mini(from.size(),rig.get_bone_count()):
+		rig.set_bone_pose(i,from[i].interpolate_with(rig.get_bone_pose(i),weight))
+	rig.force_update_all_bone_transforms()
+
+
+const LAB_DEER_BASIC_TEXTURE := preload("res://assets/ui/hunt-impact/basic-contact.svg")
+const LAB_DEER_BASIC_SECONDS := .16
+
+
+func draw_lab_deer_basic(layer:Node2D,at:Vector2,age:float)->void:
+	# Exact shared-world Han/deer normal hit from hunt_duel_lab.
+	if age<0.0 or age>=LAB_DEER_BASIC_SECONDS:return
+	var fade:=1.0-smoothstep(.05,1.0,age/LAB_DEER_BASIC_SECONDS)
+	var extent:=Vector2(22,19)*1.28
+	var tint:=Color("fff4df")
+	layer.draw_texture_rect(art.soft,Rect2(at-extent*.875,extent*1.75),false,Color(tint,fade*.65))
+	layer.draw_texture_rect(LAB_DEER_BASIC_TEXTURE,Rect2(at-extent*.5,extent),false,Color(tint,fade))
+
+
 static func create_head(parent: Node, ally: bool) -> Dictionary:
 	var entry := HeadHud.create_compact(parent,ally)
 	entry.panel.hide()

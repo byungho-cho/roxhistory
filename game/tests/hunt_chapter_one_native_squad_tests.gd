@@ -36,12 +36,12 @@ func check_stage(number:int)->void:
     if b.units[i].move=="attack":moved[i]=true
   print("1-3 battle elapsed ",b.elapsed," attack slots ",moved," prey HP ",b.units[3].hp," ",b.units[4].hp)
   ck(moved.has(0) and moved.has(1) and not moved.has(2),"Han and delayed Uram perform native attacks; Saebom never attacks in 1-3")
-  ck(b.units[3].hp<100 and b.units[4].hp<100,"1-3 attacks reduce both independent prey health pools")
+  ck(b.units[3].hp<b.units[3].max_hp and b.units[4].hp<b.units[4].max_hp,"1-3 attacks reduce both independent prey health pools")
  if number==2:
   ck(not b.units[1].actor.preview.visible and not b.units[2].actor.preview.visible and not b.huds[1].visible and not b.huds[2].visible,"1-2 never renders inactive allies")
   var hp:int=b.units[4].hp
   b._subtract_hp_and_show(3,12)
-  ck(b.units[3].hp==38 and b.units[4].hp==hp,"one flower deer takes damage without copying to second")
+  ck(b.units[3].hp==int(b.units[3].max_hp)-12 and b.units[4].hp==hp,"one flower deer takes damage without copying to second")
  if number==4:
   ck(b.story_allows(2,"skill") and not b._story_enemy_can_use_skill(b.units[3]),"1-4 Saebom skill and enemy basics only")
  if number==5:
