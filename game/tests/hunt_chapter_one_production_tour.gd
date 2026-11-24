@@ -94,10 +94,19 @@ func run() -> void:
     ck(h.story_cutin.visible and not b.story_entry_done,"backdrop and unmatched release cannot advance")
     touch_at(at,true)
     ck(h.story_cutin.visible and not b.story_entry_done,"touch down alone does not advance")
+    var prior_actors: Array[Vector2] = []
+    var reserved:Vector2 = b.units[slot].home
+    for unit in b.units:
+     if unit.hp>0:prior_actors.append(unit.feet)
+    var free_reserved:=prior_actors.all(func(feet):return reserved.distance_to(feet)>=36.0)
     touch_at(at,false)
     ck(not h.story_cutin.visible and b.story_entry_done and h.touch_points.is_empty(),"touch release inside guide dismisses with no click-through")
     seen_arrival=b.story_entry_done
-    max_snap_distance=(b.units[slot].feet as Vector2).distance_to(b.units[0].feet)
+    var entry_point:Vector2=b.units[slot].feet
+    max_snap_distance=entry_point.distance_to(b.units[0].feet)
+    var clear:=prior_actors.all(func(feet):return entry_point.distance_to(feet)>=34.0)
+    var placed:bool=b.story_allied_placement.size()==3
+    var lane_ok:bool=(entry_point.is_equal_approx(reserved) if free_reserved else entry_point.distance_to(reserved)<=88.1) if placed else max_snap_distance<100.0
     var hp_after:int=b.units[slot].hp
     var sp_after:float=b.units[slot].sp
     touch_at(at,false,8)
@@ -106,7 +115,7 @@ func run() -> void:
      h._process(1./60.)
      for i in 3:
       if b.units[i].move=="attack":moved[i]=true
-    ck(seen_arrival and max_snap_distance>=34.0 and max_snap_distance<100.0,"ally appears in an open spot beside Han")
+    ck(seen_arrival and clear and lane_ok,"ally appears at its assigned open cell or a clear alternate")
     ck(b.story_entry_done and moved.has(slot) and b.huds[slot].visible,"reinforcement joins and attacks following a real delay")
     if n==3: ck(not moved.has(2) and not b.huds[2].visible,"no Saebom in 1-3")
    # Force only result of seeded QA fight to test the public-facing save and CTA.
@@ -117,7 +126,7 @@ func run() -> void:
   ck(app.chapter_one_story_completions().get(Catalog.STAGE_KEYS[n-1],false)==true,"stable cleared stage 1-"+str(n))
   if n>=6 and n<=9:ck(app.model.state.hunt_cleared==5,"new fights must not overwrite old Ch2 ordinal")
  ck(app.model.state.hunt_cleared==6 and app.hunt_stage_is_unlocked(6),"chapter 2 first id 6 unlocks after canonical final 1-10")
- var reloaded:=GameState.new(SaveStore.new("user://"),true)
+ var reloaded:=GameState.new(app.model.store,true)
  ck(reloaded.state.get("hunt_cleared",-1)==6 and reloaded.state.get(Catalog.CLEARS_KEY,{}).size()==10,"disk persists ten distinct clears with unchanged legacy schema")
  app.model.state.hunt_cleared=12
  app.model.state.erase(Catalog.CLEARS_KEY)
