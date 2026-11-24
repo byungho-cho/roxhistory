@@ -2470,7 +2470,7 @@ func confirm_hunt_progress_reset(on_reset: Callable) -> void:
 func _reset_hunt_progress(on_reset: Callable) -> void:
 	if screen != "hunt_select" or hunt_preparing or not modal or model.state.is_empty():
 		return
-	var previous := chapter_one_story_completions()
+	var previous := hunt_recruitment_clears()
 	var retained: Variant = model.state.get("hunt_ch1_recruited", [])
 	var recruited: Array[String] = []
 	for hero: String in [HUNT_CHAPTER_ONE.ALLY_URAM, HUNT_CHAPTER_ONE.ALLY_SAEBOM]:
@@ -2502,6 +2502,12 @@ func chapter_one_preview_enabled() -> bool:
 
 func chapter_one_story_number(stage_id: int) -> int:
 	return HUNT_CHAPTER_ONE.story_number(stage_id) if chapter_one_preview_enabled() else 0
+
+
+func hunt_recruitment_clears() -> Dictionary:
+	# Legacy stage counters unlock navigation, not characters the player never recruited.
+	var raw: Variant = model.state.get(HUNT_CHAPTER_ONE.CLEARS_KEY, {})
+	return raw if raw is Dictionary else {}
 
 
 func chapter_one_story_completions() -> Dictionary:
@@ -2608,7 +2614,9 @@ func record_hunt_win() -> void:
 		if next_story.is_empty():
 			return
 		var updated := model.state.duplicate(true)
-		updated[HUNT_CHAPTER_ONE.CLEARS_KEY] = next_story
+		var verified := hunt_recruitment_clears().duplicate()
+		verified[HUNT_CHAPTER_ONE.STAGE_KEYS[story-1]] = true
+		updated[HUNT_CHAPTER_ONE.CLEARS_KEY] = verified
 		updated.hunt_cleared = maxi(int(updated.get("hunt_cleared", 0)), HUNT_CHAPTER_ONE.legacy_prefix(next_story))
 		if not model.commit(updated):
 			toast("사냥 진행을 저장하지 못했습니다.")

@@ -132,7 +132,10 @@ func _ready() -> void:
 	if use_han_field and build_field_video(layout):
 		set_process(true)
 		return
-	var prefix := ART + ("hunt-result-success" if won else "hunt-result-failure")
+	if won:
+		set_process(paper_motion or (not reduced_motion and not star_labels.is_empty()))
+		return
+	var prefix := ART + "hunt-result-failure"
 	var art: TextureRect = app.picture(layout,load(prefix+"-fallback.png"),Rect2(82,74,319,425))
 	art.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	set_process(paper_motion or (not reduced_motion and not star_labels.is_empty()))

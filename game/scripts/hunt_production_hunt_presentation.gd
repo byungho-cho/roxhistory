@@ -33,6 +33,27 @@ static func sync_heads(headers: Array, points: Array, bounds: Rect2, since_first
 		panel.modulate.a=alpha
 		panel.visible=alpha>.001
 
+## Project the planted model footprint from its final sampled bones, not the path target.
+static func visual_foot_center(actor: Node2D, animal: bool) -> Vector2:
+	if not is_instance_valid(actor):return Vector2.INF
+	var skeleton := actor.get("skeleton") as Skeleton3D
+	if skeleton == null: skeleton = actor.get("rig") as Skeleton3D
+	var display := actor.get("display") as Sprite2D
+	var camera := actor.get("camera") as Camera3D
+	if not is_instance_valid(skeleton) or not is_instance_valid(display) or not is_instance_valid(camera):return Vector2.INF
+	var feet := ["front_foot.R","front_foot.L","hind_foot.R","hind_foot.L"] if animal else ["foot.R","foot.L"]
+	var ground := Vector3.ZERO
+	var count := 0
+	for bone: String in feet:
+		var i: int = skeleton.find_bone(bone)
+		if i<0:continue
+		ground += skeleton.to_global(skeleton.get_bone_global_pose(i).origin)
+		count += 1
+	if count==0:return Vector2.INF
+	ground /= float(count)
+	ground.y=0.0
+	return display.to_global(camera.unproject_position(ground)+display.offset)
+
 ## Measure the native camera's floor ellipse about its ground origin, then fit a
 ## common radius. The camera is the actor's own subviewport camera, not main UI.
 static func ground_rect(camera: Camera3D, feet: Vector2, radius_px: float = 23.) -> Rect2:

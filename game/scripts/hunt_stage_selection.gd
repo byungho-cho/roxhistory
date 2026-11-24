@@ -504,7 +504,7 @@ func add_stage(slot: int) -> void:
 	var tile := action(footer,rect,choose.bind(stage_id) if real else Callable())
 	tile.name="HuntStage%d"%stage_id if real else "UnavailableSlot%d"%(slot+1)
 	tile.disabled=not unlocked
-	tile.hint_text="준비 중인 스테이지" if not real else "앞 사냥터를 완료하면 열립니다."
+	tile.hint_text="준비 중인 스테이지" if not real else ""
 	if boss:
 		# Anchor the red plate at the row center, leaving the boar above it.
 		var plate_center := Vector2(94,120)

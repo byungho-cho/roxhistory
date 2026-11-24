@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://criskhjpcxca1"
-path="res://.godot/imported/hunt-result-success-fallback.png-f860f1c872263928249698c0b3155c5e.ctex"
+uid="uid://bdvpyowjqp2bc"
+path="res://.godot/imported/hunt-uram-approved-front.png-336237d11437bc5993588be1305b5aa0.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/ui/hunt-result/hunt-result-success-fallback.png"
-dest_files=["res://.godot/imported/hunt-result-success-fallback.png-f860f1c872263928249698c0b3155c5e.ctex"]
+source_file="res://assets/ui/village-guidance/hunt-uram-approved-front.png"
+dest_files=["res://.godot/imported/hunt-uram-approved-front.png-336237d11437bc5993588be1305b5aa0.ctex"]
 
 [params]
 

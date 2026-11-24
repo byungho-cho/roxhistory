@@ -26,6 +26,7 @@ var story_encounter: Dictionary = {}
 var story_outcome := ""
 var victory_age := -1.0
 var last_defeated_prey := -1
+signal story_contact_audio(cue: String, priority: int)
 const DeathArt := preload("res://scripts/model_death_effect.gd")
 const BASIC_CONTACT := preload("res://assets/ui/hunt-impact/basic-contact.svg")
 const STORY_JOIN_SECONDS := 2.5
@@ -77,7 +78,7 @@ func configure_story_encounter(row: Dictionary) -> bool:
 	var stage_number := int(row.get("number", 0))
 	var party: Array = row.get("party", [])
 	var prey: Array = row.get("prey", [])
-	if stage_number < 2 or stage_number > 10 or party not in [["han"], ["han","uram"], ["han","uram","saebom"]] or prey.is_empty() or prey.size() > 3:
+	if stage_number < 1 or (stage_number == 1 and not bool(row.get("free_replay", false))) or stage_number > 10 or party not in [["han"], ["han","uram"], ["han","uram","saebom"]] or prey.is_empty() or prey.size() > 3:
 		return false
 	for species: String in prey:
 		if species not in ["forest", "stag", "juvenile", "adult"]:
@@ -135,6 +136,8 @@ var gong_draw:Callable
 var authored_draw:Callable
 var ring_project:Callable
 var weapon_draw:Callable
+var story_han_weapon_draw:Callable
+const StoryFoot = preload("res://scripts/hunt_production_hunt_presentation.gd")
 var bom_hit_draw:Callable
 var bom_trail_draw:Callable
 const RallyCloud := preload("res://scripts/saebom_rally_cloud.gd")
@@ -240,6 +243,7 @@ func setup(dust_draw:Callable=Callable(),gong:Callable=Callable(), heavy:Callabl
 	han_ground_layer.draw.connect(_draw_han_ground)
 	if local_melee_polish:RallySilver.prepare()
 	rally_silver_back=Node2D.new()
+	rally_silver_back.name="SaebomRallyWingForeground"
 	add_child(rally_silver_back)
 	rally_silver_back.draw.connect(_paint_rally_silver_wings)
 	paint=Node2D.new();paint.z_index=600;add_child(paint)
@@ -661,22 +665,26 @@ func present_victory(delta: float) -> void:
 	if victory_age < 0.0:
 		victory_age = 0.0
 		input_paused = true
-		if last_defeated_prey >= 3:
-			var defeated := units[last_defeated_prey]
-			defeated.actor.death_effect.position = defeated.feet
-			defeated.actor.death_effect.z_index = 599
 	else:
 		victory_age += delta
-	if last_defeated_prey >= 3:
-		var actor = units[last_defeated_prey].actor
-		actor.preview.modulate.a = DeathArt.model_alpha(victory_age)
-		actor.death_effect.sample(victory_age)
+	for i in range(3,units.size()):
+		_present_story_prey_death(units[i])
 	paint.queue_redraw()
 	bars_paint.queue_redraw()
 	han_ground_layer.queue_redraw()
 	rally_silver_back.queue_redraw()
 	if is_instance_valid(launch_dust_layer):launch_dust_layer.queue_redraw()
 	if is_instance_valid(cast_notice_paint):cast_notice_paint.queue_redraw()
+
+
+func _present_story_prey_death(u: Dictionary) -> void:
+	if not u.has("story_death_at"):return
+	var death_age := maxf(0.0,_effect_clock()-float(u.story_death_at))
+	var actor = u.actor
+	actor.preview.modulate.a = DeathArt.model_alpha(death_age)
+	actor.death_effect.position = u.story_death_point
+	actor.death_effect.z_index = 598
+	actor.death_effect.sample(death_age)
 
 
 func _effect_clock() -> float:
@@ -984,7 +992,7 @@ func _step(dt:float)->void:
 	var right:=_target(0)
 	ended=left<0 or right<0
 	if not story_encounter.is_empty():
-		if left < 0 or elapsed >= float(story_encounter.seconds):
+		if left < 0 or (int(story_encounter.number) != 1 and elapsed >= float(story_encounter.seconds)):
 			story_outcome = "loss"
 			ended = true
 		elif right < 0:
@@ -1184,6 +1192,9 @@ func _subtract_hp_and_show(j:int,amount:int)->void:
 	target.hp=maxi(0,hp_before-amount)
 	if j >= 3 and hp_before > 0 and target.hp == 0 and not story_encounter.is_empty():
 		last_defeated_prey = j
+		target.story_death_at = elapsed
+		target.story_death_point = target.feet
+		story_contact_audio.emit("enemy_death",4)
 	var anchor := aim.bone_point(target.actor,"head")
 	anchor.y = minf(anchor.y,float(target.feet.y)-76.0)
 	anchor.x = float(target.feet.x)
@@ -1244,6 +1255,12 @@ func _damage(i:int,j:int,amount:int,key:String,stone_impact:=Vector2.INF)->void:
 		target.saebom_switch_hit_until=elapsed+OrdinaryHitAccent.END
 		saebom_switch_hit=bool(target.get("saebom_melee_pending",false))
 	hits.append({"from":i,"target":j,"type":key,"result":"hit","hp":target.hp})
+	if not story_encounter.is_empty():
+		var source := ["han","uram","bom"][i] as String if i<3 else "boar" if units[i].id in ["juvenile","adult"] else "deer"
+		if key in ["attack","skill","chain"]:
+			story_contact_audio.emit(source+("_basic" if key=="attack" else "_"+key),2)
+		if target.hp>0:
+			story_contact_audio.emit("ally_hit" if j<3 else "boar_hit" if target.id in ["juvenile","adult"] else "deer_hit",1)
 	if i == 0 and key == "chain":
 		han_ground_events.append({"at":elapsed,"floor":target.feet})
 	if bom_hit_draw.is_valid() and i==2 and key=="skill":
@@ -1356,7 +1373,7 @@ func _draw_pose(dt:float)->void:
 				actor.preview.pivot.rotation.y=heading-float(spear_forward_bias.get(u.move,0.0)) if i==0 else heading
 		var show_basic:=i==2 and _uses_close_basic_pose(u,int(u.victim))
 		if not show_basic:actor.sample(_ranged_visible_age(u) if i==2 else float(u.age),false)
-		if i >= 3 and u.hp <= 0 and not story_encounter.is_empty():actor.death_effect.hide()
+		if i >= 3 and u.hp <= 0 and not story_encounter.is_empty():_present_story_prey_death(u)
 		if i>=3 and u.move=="hit" and u.has("close_basic_impulse"):
 			var away:Vector2=u.close_basic_impulse
 			var ride:=smoothstep(0.,.07,u.age)*(1.0-smoothstep(.10,.39,u.age))
@@ -1403,6 +1420,10 @@ func _draw_pose(dt:float)->void:
 			elif actor.preview.has_meta("saebom_melee_blade"):actor.preview.remove_meta("saebom_melee_blade")
 		if i==2 and bom_pose.is_valid():bom_pose.call(actor,float(u.age) if u.move=="chain" and u.hp>0 else -1.0)
 		if i==0:aim.anchor_spear_root(actor)
+		if not story_encounter.is_empty() and u.hp>0:
+			var view: HybridCharacter = actor.preview
+			var visual := StoryFoot.visual_foot_center(view,i>=3)
+			u.ring.position = to_local(visual) if visual.is_finite() else view.position
 		OrdinaryHitAccent.display(actor.preview.skeleton,elapsed,u.hp>0,bool(u.get("ordinary_resting_hit",false)) and u.move=="hit",elapsed-float(u.age))
 		if silver_draw.is_valid() and i>=3:
 			var wake:Array=deer_wakes[i-3]
@@ -1431,7 +1452,8 @@ func _draw_pose(dt:float)->void:
 		uram_ground_layer.queue_redraw()
 	paint.self_modulate=ambient
 	han_ground_layer.queue_redraw()
-	rally_silver_back.z_index=int(units[2].feet.y)-1
+	# Keep foreground wing feathers ahead of foes and behind HP/skill HUD.
+	rally_silver_back.z_index=int(units[2].feet.y)-1 if story_encounter.is_empty() else 599
 	rally_silver_back.queue_redraw()
 	paint.queue_redraw()
 	bars_paint.queue_redraw()
@@ -1484,6 +1506,10 @@ func _paint()->void:
 			var tint: Color = hit.tint
 			tint.a = 1.0-smoothstep(.04,.30,age)
 			paint.draw_texture_rect(BASIC_CONTACT,Rect2(hit.point-Vector2(22,17),Vector2(44,34)),false,tint)
+	if story_han_weapon_draw.is_valid() and not units.is_empty() and units[0].hp>0:
+		var han:=units[0]
+		var charge:=clampf(float(han.age)/float(han.contact),0.0,1.0) if han.move=="skill" and han.contact>0.0 else -1.0
+		story_han_weapon_draw.call(aim.spear_point(han.actor),aim.bone_point(han.actor,"hand.R"),han.feet,_effect_clock(),charge,paint)
 	if local_melee_polish:
 		for i in mini(3,units.size()):
 			var u:=units[i]

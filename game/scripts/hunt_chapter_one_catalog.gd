@@ -92,21 +92,18 @@ static func replay_opening_party(completed: Dictionary, retained: Variant = []) 
 
 
 ## First attempts retain the authored encounter. Only a recorded clear
-## changes these two tutorials into a normal hunt with the owned roster.
-static func playable_encounter(number: int, completed: Dictionary, retained: Variant = []) -> Dictionary:
+## changes these tutorials into a normal hunt with the owned roster.
+static func playable_encounter(number: int, completed: Dictionary, retained: Variant = [], verified_clears: Variant = null) -> Dictionary:
 	var row:=encounter(number)
 	if row.is_empty():return row
 	row.first_visit=completed.get(row.key,false)!=true
-	if number in [2,3] and not row.first_visit:
-		var owned:=replay_opening_party(completed,retained)
+	if number in [1,2,3,4] and not row.first_visit:
+		var clears: Dictionary = verified_clears if verified_clears is Dictionary else completed
+		var owned:=replay_opening_party(clears,retained)
 		row.party=owned
 		row.opening_party=owned.duplicate()
 		row.erase("story_join")
 		row.free_replay=true
-	elif number == 4 and not row.first_visit:
-		# The cleared stage already recruited Saebom. Begin in the saved formation.
-		row.opening_party = row.party.duplicate()
-		row.erase("story_join")
 	return row
 
 static func next_number(completed: Dictionary) -> int:

@@ -18,6 +18,8 @@ const LEVELS := {
 
 const COMBAT_CUES := ["monster_death","S12","S13","S14","S15","S16","S17","S18","S19","S20","S21","S22","S23","S24","S25","S26","S27"]
 const HUNT_GAIN := 1.30
+const DUEL_SOUND_ROOT := "res://assets/audio/hunt-duel-lab/"
+const DUEL_CONTACT_CUES := ["han_basic","han_skill","han_chain","uram_basic","uram_skill","uram_chain","bom_basic","bom_skill","bom_chain","deer_basic","deer_skill","deer_hit","boar_basic","boar_skill","boar_hit","ally_hit","enemy_death"]
 const HUNT_PRESENTATION_CUES := ["S09","S10","S11","boar_warning","uram_strike","uram_parry","uram_hurt"]
 
 var streams := {}
@@ -41,6 +43,8 @@ func _ready() -> void:
 	streams["S15"] = preload("res://assets/audio/d0006-approved/spear-flight.mp3")
 	streams["S18"] = preload("res://assets/audio/d0006-approved/heavy-hit.mp3")
 	streams["monster_death"] = preload("res://assets/audio/d0006-approved/monster-death.mp3")
+	for id: String in DUEL_CONTACT_CUES:
+		streams[id] = load(DUEL_SOUND_ROOT+id+".wav")
 	for index in 6:
 		var player := AudioStreamPlayer.new()
 		add_child(player)
@@ -68,7 +72,7 @@ func cue(id: String, priority := 1) -> void:
 	var now := Time.get_ticks_msec()
 	var gap := 420 if id == "S22" else 90
 	var cue_key: String = APPROVED.get(id,id)
-	if now-int(recent.get(cue_key,-1000))<gap:return
+	if id != "enemy_death" and now-int(recent.get(cue_key,-1000))<gap:return
 	if APPROVED.has(id) or id in ["S02", "S03", "S04", "S05", "S06"]:
 		for voice in pool:
 			if voice.playing and voice.stream == streams[id]:
@@ -86,9 +90,9 @@ func cue(id: String, priority := 1) -> void:
 	priorities[slot] = priority
 	var player := pool[slot]
 	player.stop()
-	player.bus = &"Combat" if id in COMBAT_CUES else &"SFX"
+	player.bus = &"Combat" if id in COMBAT_CUES or id in DUEL_CONTACT_CUES else &"SFX"
 	player.stream = streams[id]
-	player.volume_db = linear_to_db(.125) if id == "S09" else float(LEVELS.get(id, -12.0))
+	player.volume_db = 0.0 if id in DUEL_CONTACT_CUES else linear_to_db(.125) if id == "S09" else float(LEVELS.get(id, -12.0))
 	if id in COMBAT_CUES or id in HUNT_PRESENTATION_CUES:
 		player.volume_db += linear_to_db(HUNT_GAIN)
 	player.play()

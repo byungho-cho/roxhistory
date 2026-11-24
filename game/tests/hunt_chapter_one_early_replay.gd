@@ -46,6 +46,14 @@ func carry(clear_count:int,persisted:Dictionary={}) -> void:
  app.model.state.erase("hunt_ch1_formation")
 func real_result(h,b,win:bool)->void:
  if win:
+  if b.units.size()>4 and b.units[3].hp>0:
+   var first:Dictionary=b.units[3]
+   var cues:=[]
+   b.story_contact_audio.connect(func(cue:String,_priority:int):cues.append(cue))
+   b._damage(0,3,first.hp,"attack")
+   var before:float=b.elapsed
+   for f in 20:h._process(.0334)
+   ck(not h.result_shown and b.story_outcome.is_empty() and b.elapsed>before and first.actor.death_effect.visible and first.actor.death_effect.position==first.story_death_point and cues.count("enemy_death")==1,"intermediate prey death shows its own drop and exactly one approved cue without pausing combat")
   for i in range(3,b.units.size()):
    if b.units[i].hp>0:b._damage(0,i,b.units[i].hp,"attack")
  else:
@@ -64,6 +72,11 @@ func suite(n:int,expected:Array,owned_toggles:bool)->void:
   h.select_hunter(0)
   h.move_hunter(4)
   ck(h.assigned_cells[0]==4,"owned replay hero can use a non-default formation seat")
+ if n==1:
+  h.speed=2.0
+  h.update_toggles()
+  h.toggle_speed()
+  ck(h.speed==1.0 and not h.speed_button.visible and h.speed_button.disabled,"recruited 1-1 replay forces 1x and never exposes X2")
  var b=start(h)
  if not is_instance_valid(b):ck(false,"real native squad opens");return
  ck(active(b)==expected and b.story_join_slot==-1 and not is_instance_valid(h.story_cutin),"replay opens with all owned heroes and no recruitment/guide")
@@ -87,7 +100,7 @@ func suite(n:int,expected:Array,owned_toggles:bool)->void:
    ck(role_button.is_visible_in_tree() and not role_button.disabled,"owned replay hero "+str(i)+" has a ready 3SP HUD button")
    var role_at:=role_button.get_global_rect().get_center()
    touch(role_at,true);touch(role_at,false)
-   ck(b.units[i].sp==0.0 and b.units[i].move in ["chain","counter"],"owned replay hero "+str(i)+" casts through actual HUD")
+   ck(b.units[i].sp==0.0 and b.units[i].move in ["chain","counter"] and b.units[0].move=="chain","second hero "+str(i)+" starts through actual HUD while Han is casting")
   for i in range(expected.size(),3):
    ck(not b.huds[i].visible and not b.story_allows(i,"chain"),"unowned replay hero has no deployment or 3SP entry")
  if movie:
@@ -119,8 +132,12 @@ func run()->void:
   ck(b.story_join_slot==1 and not b.story_allows(0,"chain"),"1-3 loss retry still authored and not free replay")
   real_result(h,b,true)
   await suite(3,["hangyeol","uram"],true)
- carry(4)
+ if not movie:
+  carry(4)
+  await suite(2,["hangyeol"],true)
+ carry(4,{C.STAGE_KEYS[0]:true,C.STAGE_KEYS[1]:true,C.STAGE_KEYS[2]:true,C.STAGE_KEYS[3]:true})
  await suite(2,["hangyeol","uram","saebom"],true)
  await suite(3,["hangyeol","uram","saebom"],true)
+ if not movie:await suite(1,["hangyeol","uram","saebom"],true)
  print("EARLY REPLAY ",count," checks, ",errors," failures")
  quit(errors)

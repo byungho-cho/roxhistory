@@ -241,7 +241,6 @@ func set_saebom_distance_icon(close_mode:bool,skill:Texture2D)->void:
 	if near_mode!=close_mode:
 		near_mode=close_mode
 		badge_art.texture=skill if close_mode else ORDINARY.saebom
-		portrait_button.tooltip_text="2 SP · \uADFC\uAC70\uB9AC" if close_mode else "2 SP · \uC6D0\uAC70\uB9AC"
 
 func enable_duel_ready_feedback()->void:
 	duel_ready_feedback=true

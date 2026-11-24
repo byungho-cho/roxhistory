@@ -204,6 +204,7 @@ var battle_countdown: Label
 var pause_actions: Control
 var pause_continue: DemoButton
 var pause_end: DemoButton
+var pause_back: DemoButton
 var pause_end_label: Label
 var pause_end_armed := false
 var exit_shade: ColorRect
@@ -279,12 +280,14 @@ func _ready() -> void:
 		rules.manual_only = rules.first_hunt
 		rules.han_ordinary_damage=RallyCloud.SQUAD_BASE
 		if not rules.first_hunt:
-			prep_ally_count = ChapterOneCatalog.replay_opening_party(completed,app.model.state.get(ChapterOneCatalog.RECRUITS_KEY,[])).size()
+			prep_ally_count = ChapterOneCatalog.replay_opening_party(app.hunt_recruitment_clears(),app.model.state.get(ChapterOneCatalog.RECRUITS_KEY,[])).size()
 			chapter_one_solo = prep_ally_count == 1
+			# The squad engine owns independent casts; a solo 1-1 replay keeps its original duel.
+			chapter_story_preview = chapter_story_number == 1 and not chapter_one_solo
 			battle_toggles_unlocked = ChapterOneCatalog.is_unlocked(4,completed)
 	if chapter_story_preview:
 		var completed:Dictionary=app.chapter_one_story_completions()
-		chapter_story_encounter=ChapterOneCatalog.playable_encounter(chapter_story_number,completed,app.model.state.get(ChapterOneCatalog.RECRUITS_KEY,[]))
+		chapter_story_encounter=ChapterOneCatalog.playable_encounter(chapter_story_number,completed,app.model.state.get(ChapterOneCatalog.RECRUITS_KEY,[]),app.hunt_recruitment_clears())
 		prep_ally_count=chapter_story_encounter.get("opening_party",chapter_story_encounter.party).size()
 		if bool(chapter_story_encounter.get("free_replay",false)):
 			chapter_one_solo=prep_ally_count==1
@@ -757,7 +760,7 @@ func toggle_auto() -> void:
 	update_toggles()
 
 func toggle_speed() -> void:
-	if not battle_toggles_unlocked or exit_popup or app.modal or result_shown:return
+	if stage_one_one or not battle_toggles_unlocked or exit_popup or app.modal or result_shown:return
 	hunt_audio.cue("S06")
 	speed = BATTLE_SPEED if speed == 2.0 else 2.0
 	update_toggles()
@@ -765,11 +768,13 @@ func toggle_speed() -> void:
 func update_toggles() -> void:
 	if not battle_toggles_unlocked:
 		rules.set_auto(false)
+	if stage_one_one or not battle_toggles_unlocked:
 		speed=BATTLE_SPEED
 	for pair in [[auto_button,rules.auto_enabled],[speed_button,speed==2.0]]:
 		var button:Button=pair[0]
-		button.visible=battle_toggles_unlocked
-		button.disabled=not battle_toggles_unlocked
+		var enabled := battle_toggles_unlocked and (button != speed_button or not stage_one_one)
+		button.visible=enabled
+		button.disabled=not enabled
 		var icon:TextureRect=button.get_meta("toggle_icon")
 		icon.texture=load("res://assets/ui/hunt-readiness/%s-%d.png"%[button.get_meta("toggle_name"),int(pair[1])])
 		button.set_meta("active",pair[1])
@@ -787,6 +792,7 @@ func build_combat() -> void:
 		combat_controls.add_child(hud)
 		hud.reset(["hangyeol","uram","saebom"][index])
 		hud.enable_duel_ready_feedback()
+		hud.enable_portrait_damage_feedback()
 		hud.requested.connect(_on_party_skill_requested.bind(index))
 		party_cards.append({"hud":hud,"button":hud.chain_button,"portrait":hud.portrait,"charges":hud.orbs,"hp":hud.hp})
 		var head:=NativeHud.create_head(combat_controls,true)
@@ -871,7 +877,12 @@ func _fit_pause_chrome(safe_area:Rect2, fit:float) -> void:
 		battle_countdown.scale = Vector2.ONE*fit
 	if is_instance_valid(pause_actions):
 		pause_actions.scale = Vector2.ONE*fit
-		pause_actions.position = size*.5
+		var portrait := duel_ally_portrait.get_global_rect()
+		pause_actions.position = Vector2(clampf(portrait.position.x+140.0*fit,safe_area.position.x+140.0*fit,safe_area.end.x-140.0*fit),portrait.end.y+12.0*fit)
+		if is_instance_valid(pause_back):
+			var back_rect := exit_button.get_global_rect()
+			pause_back.position = back_rect.position
+			pause_back.scale = back_rect.size / 48.0
 	if is_instance_valid(exit_shade):
 		exit_shade.size = size
 
@@ -879,7 +890,7 @@ func _fit_pause_chrome(safe_area:Rect2, fit:float) -> void:
 func _refresh_battle_countdown() -> void:
 	if not running or not is_instance_valid(battle_countdown):return
 	var seconds := -1
-	if is_instance_valid(chapter_story_battle):
+	if chapter_story_number != 1 and is_instance_valid(chapter_story_battle):
 		seconds = ceili(maxf(0.,float(chapter_story_battle.story_encounter.seconds)-float(chapter_story_battle.elapsed)-.00001))
 	var value := "%02d:%02d" % [seconds/60,seconds%60] if seconds>=0 else "시간 제한 없음"
 	if battle_countdown.text!=value:
@@ -910,6 +921,7 @@ func pause_for_background() -> void:
 		# Android can drop the release while inactive. Require a new, deliberate tap.
 		pause_continue.clear()
 		pause_end.clear()
+		pause_back.clear()
 		_reset_pause_end()
 	else:
 		_open_battle_pause(false)
@@ -950,11 +962,18 @@ func _open_battle_pause(with_cue:bool) -> void:
 	pause_actions.position = size*.5
 	pause_actions.scale = canvas.scale
 	exit_shade.size = size
-	pause_continue = artwork_button(pause_actions,Rect2(-98,-28,196,56),"계속하기","png/popup/continue-button-background.png",resume_battle,Color("49321e"))
+	pause_continue = artwork_button(pause_actions,Rect2(6,0,134,44),"계속하기","png/popup/continue-button-background.png",resume_battle,Color("49321e"))
 	pause_continue.name = "ContinueBattle"
 	pause_continue.accessibility_name = "계속하기"
-	pause_end = artwork_button(pause_actions,Rect2(-67,42,134,44),"전투 종료","png/popup/exit-button-background.png",_request_battle_end)
+	(pause_continue.get_child(1) as Label).add_theme_font_size_override("font_size",19)
+	pause_end = artwork_button(pause_actions,Rect2(-140,0,134,44),"전투 종료","png/popup/exit-button-background.png",_request_battle_end)
 	pause_end.name = "ExitBattle"
+	pause_back = make_button(exit_popup,"",Rect2(0,0,48,48),_request_battle_end)
+	pause_back.name = "PauseBackToHuntSelect"
+	pause_back.accessibility_name = "전투 종료"
+	clear_button_art(pause_back)
+	app.picture(pause_back,preload(PREP_ART+"back-arrow-alpha.svg"),Rect2(0,0,48,48))
+	_fit_pause_chrome(Rect2(Vector2.ZERO,size),canvas.scale.x)
 	pause_end_label = pause_end.get_child(1) as Label
 	pause_end_label.add_theme_font_size_override("font_size",19)
 	_reset_pause_end()
@@ -988,6 +1007,7 @@ func resume_battle() -> void:
 	pause_actions = null
 	pause_continue = null
 	pause_end = null
+	pause_back = null
 	pause_end_label = null
 	hunt_audio.update(app.settings.get_value("app","sound",true),false)
 	hunt_audio.cue("S08")
@@ -1118,7 +1138,7 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 		return
 	if event is InputEventScreenTouch and event.canceled:
-		for control in [prep_sound_button,pause_button,pause_continue,pause_end]:
+		for control in [prep_sound_button,pause_button,pause_continue,pause_end,pause_back]:
 			if is_instance_valid(control) and control.finger == event.index:
 				control.clear()
 				get_viewport().set_input_as_handled()
@@ -1534,10 +1554,11 @@ func _mark_hunt_cast(index:int, linked:bool) -> void:
 
 func _field_ring(actor,index:int) -> Rect2:
 	# The phase-dependent camera is settled on start; invalidate at re-entry, not every redraw.
-	if ring_sizing.size() != 4 or approach<1.0:
-		var sized:=NativeHud.ground_rect(actor.camera,actor.position)
-		return sized
 	var center:Vector2 = actor.position + (ordinary_prey_visual_offset if actor == deer else Vector2.ZERO)
+	var visual := NativeHud.visual_foot_center(actor,actor==deer)
+	if visual.is_finite():center = battlefield.get_global_transform().affine_inverse()*visual
+	if ring_sizing.size() != 4 or approach<1.0:
+		return NativeHud.ground_rect(actor.camera,center)
 	return Rect2(center-ring_sizing[index]*.5,ring_sizing[index])
 
 
@@ -2227,9 +2248,11 @@ func _start_chapter_story_preview() -> void:
 		_draw_story_uram_windup, _draw_story_authored_hit, prey_art.draw_charge,
 		prey_art.draw_impact, Callable(), Callable(), 1.15, _draw_story_saebom_hit,
 		_draw_story_saebom_trail, Callable(), Callable(), Callable(), true)
+	battle.story_han_weapon_draw = _draw_story_han_weapon
 	chapter_story_battle = battle
 	battle.story_uram_entrance_impact.connect(func(): hunt_audio.cue("uram_parry",3))
 	battle.story_deer_shove_impact.connect(func(): hunt_audio.cue("S11",3))
+	battle.story_contact_audio.connect(hunt_audio.cue)
 	if battle.story_join_slot >= 0: _make_story_cutin(battle.story_join_slot)
 	battlefield.queue_redraw()
 	for head in head_headers: head.panel.hide()
@@ -2260,10 +2283,41 @@ func _draw_story_uram_windup(point: Vector2, progress: float, layer: Node2D) -> 
 	manual_front_fx.draw_uram_skill_windup(layer,prey_art.soft,point,progress,1.0)
 
 
+var story_lab_han_frames := {}
+
 func _draw_story_authored_hit(tag: String, point: Vector2, direction: Vector2, age: float, layer: Node2D) -> void:
-	match tag:
-		"han_skill": manual_front_fx.draw_han_skill_hit(layer,point,direction,age,.85)
-		"han_chain": manual_front_fx.draw_han_chain_hit(layer,prey_art.soft,point,point+Vector2(0,23),age,.85)
+	# Exact approved duel lab frame sequences, registration point and 30 fps cadence.
+	var count := 11 if tag=="han_skill" else 21
+	if tag not in ["han_skill","han_chain"] or age<0.0 or age>=count/30.0:return
+	var prefix := "res://assets/effects/duel-2sp-authored/han_2sp_impact_" if tag=="han_skill" else "res://assets/effects/duel-3sp-authored/hangyeol/192/han_chain_impact_"
+	var path := prefix+"%02d.png"%clampi(floori(age*30.0),0,count-1)
+	if not story_lab_han_frames.has(path):
+		story_lab_han_frames[path] = load(path) if ResourceLoader.exists(path) else null
+	var texture:Texture2D=story_lab_han_frames[path]
+	if texture==null:return
+	if tag=="han_skill":
+		layer.draw_set_transform(point,direction.angle()+.57)
+		layer.draw_texture_rect(texture,Rect2(-Vector2(90,117)*1.5,Vector2.ONE*288.0),false)
+		layer.draw_set_transform(Vector2.ZERO)
+	else:
+		layer.draw_texture_rect(texture,Rect2(point-Vector2(96,121.5),Vector2.ONE*192.0),false)
+
+
+func _draw_story_han_weapon(tip:Vector2, hand:Vector2, foot:Vector2, age:float, charge:float, layer:Node2D) -> void:
+	native_hud.draw_spear_glow(layer,tip,hand,age)
+	if charge>=0.0:
+		var power:=smoothstep(.03,.68,charge)
+		_story_soft_light(layer,foot+Vector2(0,2),Vector2(78,28),Color("319cfd"),power*.56)
+		_story_soft_light(layer,hand,Vector2(44,39),Color("4ac5ff"),power*.66)
+		for j in range(1,5):
+			var f:=float(j)/5.0
+			_story_soft_light(layer,hand.lerp(tip,f),Vector2(29,18),Color("8ce8ff"),power*(.20+f*.18))
+		_story_soft_light(layer,tip,Vector2(85,64),Color("56c6ff"),power*.96)
+		_story_soft_light(layer,tip,Vector2(35,31),Color("e3fbff"),power)
+
+
+func _story_soft_light(layer:Node2D, at:Vector2, extent:Vector2, tint:Color, alpha:float)->void:
+	layer.draw_texture_rect(prey_art.soft,Rect2(at-extent*.5,extent),false,Color(tint,alpha))
 
 
 func _draw_story_saebom_hit(point: Vector2, direction: Vector2, age: float, layer: Node2D) -> void:
@@ -2275,7 +2329,7 @@ func _draw_story_saebom_trail(points: PackedVector2Array, alpha: float, layer: N
 
 
 func _make_story_cutin(slot: int) -> void:
-	var character_art := load("res://assets/ui/village-guidance/guide-uram.png" if slot==1 else "res://assets/ui/village-guidance/guide-saebom.png") as Texture2D
+	var character_art := load("res://assets/ui/village-guidance/hunt-uram-approved-front.png" if slot==1 else "res://assets/ui/village-guidance/hunt-saebom-approved-front.png") as Texture2D
 	story_cutin=CharacterGuide.new(app,"우람" if slot==1 else "새봄","한결아, 내가 앞을 막을게!" if slot==1 else "한결아, 우람아! 뒤는 내가 맡을게!",character_art)
 	story_cutin.z_index=2000
 	story_cutin.hide()
@@ -2367,7 +2421,6 @@ func _tick_hunt_frame(delta: float) -> void:
 				if chapter_story_battle.victory_age < 0.0:
 					pause_button.clear()
 					pause_button.hide()
-					hunt_audio.cue("monster_death",4)
 				chapter_story_battle.present_victory(delta)
 				if chapter_story_battle.victory_age >= VICTORY_RESULT_HOLD:
 					show_result()
@@ -3236,7 +3289,7 @@ func _tick_first_hunt_drop(delta: float) -> void:
 		first_hunt_drop = FirstHuntDrop.new(false)
 		battlefield.add_child(first_hunt_drop)
 		first_hunt_drop.position = deer.position
-		hunt_audio.cue("monster_death", 4)
+		hunt_audio.cue("enemy_death", 4)
 	else:
 		first_hunt_end_age += delta
 	first_hunt_drop.sample(first_hunt_end_age)
@@ -3293,7 +3346,7 @@ func show_result() -> void:
 	if rules.outcome == "win":
 		app.record_hunt_win()
 		if first_hunt_end_age < 0.0 and (not is_instance_valid(chapter_story_battle) or chapter_story_battle.victory_age < 0.0):
-			hunt_audio.cue("monster_death",4)
+			hunt_audio.cue("enemy_death" if chapter_story_number>0 else "monster_death",4)
 	else:
 		hunt_audio.cue("S27",4)
 	rules.set_auto(false)
