@@ -265,15 +265,21 @@ func _ready() -> void:
 	chapter_one_solo = chapter_story_number <= 2 if chapter_story_preview else int(app.hunt_stage)/6==0
 	stage_one_one=int(app.hunt_stage)==0
 	battle_toggles_unlocked=int(app.hunt_stage)>=3
-	rules.manual_only=stage_one_one
-	rules.first_hunt=stage_one_one and int(app.model.state.get("hunt_cleared",0))==0
-	if stage_one_one:rules.damage_multiplier=RULES.STAGE_1_1_DAMAGE_MULTIPLIER
 	if chapter_one_solo: prep_ally_count = 1
+	if stage_one_one:
+		var completed:Dictionary = app.chapter_one_story_completions()
+		rules.first_hunt = not bool(completed.get(ChapterOneCatalog.STAGE_KEYS[0],false))
+		rules.manual_only = rules.first_hunt
+		if not rules.first_hunt:
+			prep_ally_count = ChapterOneCatalog.replay_opening_party(completed,app.model.state.get(ChapterOneCatalog.RECRUITS_KEY,[])).size()
+			chapter_one_solo = prep_ally_count == 1
+			battle_toggles_unlocked = ChapterOneCatalog.is_unlocked(4,completed)
+	if stage_one_one:rules.damage_multiplier=RULES.STAGE_1_1_DAMAGE_MULTIPLIER
 	if chapter_story_preview:
 		var row:=ChapterOneCatalog.encounter(chapter_story_number)
 		prep_ally_count=row.get("opening_party",row.party).size()
 	for i in range(prep_ally_count,3): rules.party_hp[i]=0
-	if rules.first_hunt:assigned_cells[0]=FIRST_HUNT_CENTER_SEAT
+	if stage_one_one:assigned_cells[0]=FIRST_HUNT_CENTER_SEAT
 	add_child(hunt_audio)
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	ground = app.picture(self,CLEARING,Rect2())
@@ -766,7 +772,7 @@ func build_combat() -> void:
 	for index in hunters.size():
 		var hud:=SkillHUD.new()
 		hud.position=Vector2(447. if prep_ally_count==1 and index==0 else 354.6+92.4*index,437)
-		hud.chain_allowed=not stage_one_one
+		hud.chain_allowed=not rules.first_hunt
 		combat_controls.add_child(hud)
 		hud.reset(["hangyeol","uram","saebom"][index])
 		hud.enable_duel_ready_feedback()
@@ -1662,7 +1668,7 @@ func _guard_can_arm() -> bool:
 
 
 func _can_submit_manual_chain(index: int) -> bool:
-	if stage_one_one or not _can_take_hunt_input() or not rules.can_reserve_manual(index,3):
+	if rules.first_hunt or not _can_take_hunt_input() or not rules.can_reserve_manual(index,3):
 		return false
 	if index == 1:
 		if uram_field_reserved or (pose == URAM_FIELD_CAST and impact_pending):
@@ -1857,7 +1863,7 @@ func _weapon_metric(index:int) -> Vector3:
 
 
 func _uses_independent_first_hunt() -> bool:
-	return stage_one_one and not _prey_is_adult()
+	return stage_one_one and prep_ally_count==1 and not _prey_is_adult()
 
 
 func _is_first_hunt_han_basic() -> bool:
@@ -2103,7 +2109,7 @@ func play_pose(id: String) -> void:
 		_mark_hunt_cast(rules.attacker,id == ManualHunt.HAN_SPEAR_3)
 	pose_clock = 0.0
 	if id == ManualHunt.HAN_SPEAR_3: _sample_han_chain_travel()
-	if stage_one_one and id == ManualHunt.HAN_SPEAR_2:_sample_first_hunt_travel()
+	if _uses_independent_first_hunt() and id == ManualHunt.HAN_SPEAR_2:_sample_first_hunt_travel()
 	impact_pending = true
 	_update_saebom_prey_pocket(id)
 	_begin_saebom_close_action(id)
@@ -2704,7 +2710,7 @@ func update_actors(delta: float) -> void:
 	if smooth_ordinary:movement_beat*=movement_beat
 	var basic_attack := pose in ["thrust","auto_thrust"]
 	# Heads track the sustained approach path; transient combat animation offsets never feed HUD positions.
-	var steady_first_hunt_heads := stage_one_one and not _prey_is_adult() and (running or transition_elapsed>=0.0)
+	var steady_first_hunt_heads := _uses_independent_first_hunt() and (running or transition_elapsed>=0.0)
 	var han_head_ground := Vector2.INF
 	for i in hunters.size():
 		var hunter := hunters[i]
@@ -2714,14 +2720,14 @@ func update_actors(delta: float) -> void:
 			continue
 		var side_han_jump := i == 0 and running and pose in ["thrust",ManualHunt.HAN_SPEAR_3] and pose_clock < (JumpMotion.JUMP_SECONDS if pose == "thrust" else _manual_duration(pose))
 		var native_manual := running and i == rules.attacker and _is_native_manual(pose) and pose_clock < _manual_duration(pose)
-		var tutorial_lunge := i==0 and native_manual and stage_one_one and pose==ManualHunt.HAN_SPEAR_2
+		var tutorial_lunge := i==0 and native_manual and _uses_independent_first_hunt() and pose==ManualHunt.HAN_SPEAR_2
 		var use_guard_pose := running and i == 1 and guard_active
 		var use_field_pose := running and i == 1 and pose == URAM_FIELD_CAST and pose_clock < URAM_FIELD_POSE
 		var attack := running and pose_clock<RULES.POSE_SECONDS and pose in ["thrust","auto_thrust","strike","team"] and i == rules.attacker
 		var dodge := running and pose=="counter" and pose_clock<RULES.POSE_SECONDS and i == rules.attacker
 		var placed: Vector2 = ALLY_CELLS[assigned_cells[i]]
 		var battle_target := HUNTER_BATTLE_CENTER+(placed-FORMATION_CENTER)*.62
-		var stage_han := i==0 and stage_one_one and not _prey_is_adult()
+		var stage_han := i==0 and _uses_independent_first_hunt()
 		if stage_han:
 			var lane := DEER_SLOT.direction_to(battle_target)
 			# Permit the approach lane but settle to a shared melee depth, like the duel field.
@@ -2814,7 +2820,7 @@ func update_actors(delta: float) -> void:
 	var independent_prey := _uses_independent_first_hunt()
 	var charge_clock := first_hunt_deer_age if independent_prey else pose_clock
 	var charge := running and (charge_clock<RULES.POSE_SECONDS if independent_prey else pose=="counter")
-	var deer_motion := Vector2(-29,-8) if charge else Vector2.ZERO if independent_prey or basic_attack or (stage_one_one and pose==ManualHunt.HAN_SPEAR_2) or rules.prey_stun_remaining>0.0 else Vector2(23,-8)
+	var deer_motion := Vector2(-29,-8) if charge else Vector2.ZERO if independent_prey or basic_attack or (_uses_independent_first_hunt() and pose==ManualHunt.HAN_SPEAR_2) or rules.prey_stun_remaining>0.0 else Vector2(23,-8)
 	if independent_prey:
 		deer_motion=Vector2.ZERO
 	deer.position = ENEMY_CELLS[4].lerp(DEER_SLOT,approach)+(deer_motion*movement_beat if running else Vector2.ZERO)
@@ -2846,7 +2852,7 @@ func update_actors(delta: float) -> void:
 	deer.gait_phase = pose_clock*14
 	deer.clock += delta
 	# During the short counter, keep the visible body separation even from a wide prep cell.
-	if running and stage_one_one and not _prey_is_adult() and deer.position.distance_to(hunters[0].position)<FIRST_HUNT_BODY_CLEARANCE:
+	if running and _uses_independent_first_hunt() and deer.position.distance_to(hunters[0].position)<FIRST_HUNT_BODY_CLEARANCE:
 		var separation:=hunters[0].position.direction_to(deer.position)
 		if separation.is_zero_approx():separation=Vector2.RIGHT
 		deer.position=hunters[0].position+separation*FIRST_HUNT_BODY_CLEARANCE

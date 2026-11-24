@@ -5,6 +5,7 @@ extends RefCounted
 ## Stable keys decouple slot order from the old six-encounter save counter.
 
 const CLEARS_KEY := "hunt_ch1_completed"
+const RECRUITS_KEY := "hunt_ch1_recruited"
 const ALLY_HAN := "han"
 const ALLY_URAM := "uram"
 const ALLY_SAEBOM := "saebom"
@@ -65,6 +66,21 @@ static func is_unlocked(number: int, completed: Dictionary) -> bool:
 	if number == 1 or completed.get(STAGE_KEYS[number - 1], false) == true:
 		return true
 	return completed.get(STAGE_KEYS[number - 2], false) == true
+
+
+## Story joiners become available for free replay only after the corresponding victory is saved.
+static func replay_opening_party(completed: Dictionary, retained: Variant = []) -> Array:
+	var recruited: Array = retained.duplicate() if retained is Array else []
+	for i in range(ROWS.size()):
+		if completed.get(STAGE_KEYS[i],false) == true:
+			recruited.append_array(ROWS[i].get("story_join",[]))
+	# Deployment/HUD slots are a roster prefix, and Saebom joins after Uram.
+	var party := SOLO.duplicate()
+	if ALLY_URAM in recruited:
+		party.append(ALLY_URAM)
+		if ALLY_SAEBOM in recruited:
+			party.append(ALLY_SAEBOM)
+	return party
 
 
 static func next_number(completed: Dictionary) -> int:
