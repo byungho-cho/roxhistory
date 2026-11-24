@@ -1,5 +1,6 @@
 extends Control
 ## Runtime port of the approved make27.py timing/geometry. No fixed roster or video preset.
+const AUTHORED_DURATION := 6.90
 const ART:="res://assets/ui/hunt-readiness/vs/"
 var paused:=false
 var playing:=false
@@ -139,17 +140,18 @@ func play()->void:
 func stop()->void:
 	playing=false
 	_release_title_pages()
-func is_playing()->bool:return playing and clock<6.9
+func is_playing()->bool:return playing and clock<AUTHORED_DURATION
 static func authored_ease(value:float)->float:return 1.-pow(1.-clampf(value,0.,1.),3.)
 static func exit_amount(time:float)->float:
 	var scene_time:=time if time<.61 else maxf(.61,time-1.5)
 	return 1.-authored_ease((scene_time-4.58)/.52)
-func present(time:float)->void:
+func present(time:float, cover_to_exit:bool=false)->void:
 	if paused or not is_instance_valid(background):return
 	clock=time
 	var scene_time:=time if time<.61 else maxf(.61,time-1.5)
 	var phase:=authored_ease((time-.12)/.42)*(1.-authored_ease((scene_time-4.68)/.53))
 	for layer in [background,sky_flow,mist_flow]:layer.modulate.a=phase
+	if cover_to_exit:background.modulate.a=1.0
 	for layer in [sky_flow,mist_flow]:layer.material.set_shader_parameter("clock",time)
 	var title:=authored_ease((time-.47)/.31)*exit_amount(time)
 	for letter in letters:

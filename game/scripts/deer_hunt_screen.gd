@@ -117,8 +117,10 @@ const CARD_TRACK := preload(CARD_ART+"hp-shell.png")
 const HEADS := preload(CARD_ART+"approved-three-heads-atlas.png")
 const VS_CENTER := Vector2(480,250)
 const VS_CONTACT := .63
-const VS_SETTLED := 6.90
-const TRANSITION_SECONDS := 9.25
+const VS_PLAYBACK_RATE := 2.0
+const VS_SECONDS := BranchVS.AUTHORED_DURATION / VS_PLAYBACK_RATE
+const VS_APPROACH_SECONDS := .65
+const TRANSITION_SECONDS := 9.25 # Retained for the standalone legacy duel lab.
 const HUNT_AUDIO := preload("res://scripts/hunt_audio.gd")
 const HUNTER_BATTLE_CENTER := Vector2(521,279)
 const FORMATION_CENTER := Vector2(473,325)
@@ -156,7 +158,8 @@ var pan_last := Vector2.ZERO
 var pan_start := Vector2.ZERO
 var pan_moved := false
 var touch_points := {}
-var speed := 1.0
+const BATTLE_SPEED := 1.5
+var speed := BATTLE_SPEED
 var auto_button: DemoButton
 var speed_button: DemoButton
 var exit_popup: Control
@@ -187,7 +190,6 @@ var start_pending:=false
 var hunt_audio = HUNT_AUDIO.new()
 var battle_music_started := false
 var impact_pending := false
-var last_step := -1
 var approach := 0.0
 var ally_hud: Control
 var enemy_hud: Control
@@ -412,11 +414,13 @@ func advance_arrival(delta: float) -> void:
 func entry_ease(progress: float) -> float:
 	return Tween.interpolate_value(0.0,1.0,progress,1.0,Tween.TRANS_BACK,Tween.EASE_OUT)
 
-func animate_battle_vs(before: float, time: float) -> void:
+func animate_battle_vs(before: float, elapsed: float) -> void:
 	match_vs.root.hide();match_impact.hide()
-	var active:=time<VS_SETTLED
-	branch_video.visible=active
-	branch_video.present(time)
+	var time := elapsed * VS_PLAYBACK_RATE
+	var active := elapsed < VS_SECONDS
+	branch_video.visible = active
+	if active:
+		branch_video.present(time, true)
 	var q:=BranchVS.authored_ease((time-.19)/.49)
 	var ending:=BranchVS.exit_amount(time)
 	vs_ally.visible=active;vs_enemy.visible=active
@@ -432,7 +436,7 @@ func animate_battle_vs(before: float, time: float) -> void:
 	for rule in vs_name_rules:
 		rule.visible=active;rule.modulate.a=BranchVS.authored_ease((time-.77)/.2)*ending
 	header_spears.visible=not active
-	if before<VS_CONTACT and time>=VS_CONTACT:hunt_audio.cue("S11",2)
+	if before*VS_PLAYBACK_RATE<VS_CONTACT and time>=VS_CONTACT:hunt_audio.cue("S11",2)
 
 
 func show_match_impact(elapsed: float) -> void:
@@ -614,13 +618,13 @@ func toggle_auto() -> void:
 func toggle_speed() -> void:
 	if not battle_toggles_unlocked or exit_popup or app.modal or result_shown:return
 	hunt_audio.cue("S06")
-	speed = 1.0 if speed == 2.0 else 2.0
+	speed = BATTLE_SPEED if speed == 2.0 else 2.0
 	update_toggles()
 
 func update_toggles() -> void:
 	if not battle_toggles_unlocked:
 		rules.set_auto(false)
-		speed=1.0
+		speed=BATTLE_SPEED
 	for pair in [[auto_button,rules.auto_enabled],[speed_button,speed==2.0]]:
 		var button:Button=pair[0]
 		button.visible=battle_toggles_unlocked
@@ -1032,41 +1036,26 @@ func start_combat() -> void:
 	vs_ally.texture=_prep_hunter_portrait(selected_hunter)
 	vs_ally.material=ReadinessArt.vs_portrait_material(vs_ally.texture,true)
 	branch_video.play()
+	animate_battle_vs(-1.0, 0.0)
 	header_spears.hide()
 	preparation.mouse_behavior_recursive = Control.MOUSE_BEHAVIOR_DISABLED
-	combat.show()
-	combat.modulate.a = 0.0
+	# The VS plate is a one-way cover; never return to formation during its exit.
+	preparation.hide()
+	placement_grid.hide()
+	combat.hide()
 	update_toggles()
 
 func advance_transition(delta: float) -> void:
 	var before := transition_elapsed
 	transition_elapsed += delta
 	animate_battle_vs(before,transition_elapsed)
-	var progress := clampf((transition_elapsed-VS_SETTLED)/maxf(.1,TRANSITION_SECONDS-VS_SETTLED),0,1)
-	approach = smoothstep(.06,.98,progress)
-	var step := floori(transition_elapsed*4.0)
-	if step!=last_step and approach>0.0 and approach<1.0:
-		last_step = step
-		if transition_elapsed > VS_CONTACT+.28:
-			hunt_audio.cue("S13",0)
-			hunt_audio.cue("S14",0)
-	var fade := 1.0-smoothstep(VS_SETTLED,VS_SETTLED+.50,transition_elapsed)
-	placement_grid.modulate.a = fade
-	preparation.modulate.a = fade
-	roster_edge.position.y = roster_home.y+18*(1.0-fade)
-	footer_left.position.y = footer_left_home.y+18*(1.0-fade)
-	footer_right.position.y = footer_right_home.y+18*(1.0-fade)
-	combat.modulate.a = smoothstep(VS_SETTLED,TRANSITION_SECONDS,transition_elapsed)
-	var header_progress := 1.0-fade
-	location_brush.position = Vector2(3,0).lerp(Vector2(3,3),header_progress)
-	location_brush.size = Vector2(220,56).lerp(Vector2(198,41),header_progress)
-	location_caption.position = Vector2(44,0).lerp(Vector2(21,0),header_progress)
-	location_caption.size = Vector2(163,56).lerp(Vector2(160,41),header_progress)
-	exit_button.position = Vector2(3,4).lerp(Vector2(3,3),header_progress)
-	if progress>=1.0:
+	var approach_start := VS_SECONDS - VS_APPROACH_SECONDS
+	approach = smoothstep(approach_start, VS_SECONDS, transition_elapsed)
+	if transition_elapsed >= VS_SECONDS:
 		transition_elapsed = -1.0
-		preparation.hide()
-		placement_grid.hide()
+		branch_video.stop()
+		combat.show()
+		combat.modulate.a = 1.0
 		combat_layout = true
 		running = true
 		location_brush.hide()
@@ -1250,7 +1239,7 @@ func _update_native_hunt_art(elapsed:float,previous_pose_clock:float) -> void:
 		prey_dust[i].age += elapsed
 		if prey_dust[i].age >= 2.5:
 			prey_dust.remove_at(i)
-	var charging := pose == "counter" and pose_clock <= RULES.POSE_SECONDS
+	var charging := _prey_is_adult() and pose == "counter" and pose_clock <= RULES.POSE_SECONDS
 	prey_charge_progress = -1.0
 	if charging:
 		var takeoff := _native_takeoff_clock()
@@ -1302,7 +1291,7 @@ func _draw_normal_hunt_art(front:bool) -> void:
 	if front:
 		_draw_native_weapon_and_notices(dest)
 		if rules.deer_hp > 0 and rules.prey_stun_remaining > 0.0:_draw_uram_prey_stun(dest)
-	if front and prey_fx_tip.is_finite():
+	if front and _prey_is_adult() and prey_fx_tip.is_finite():
 		prey_art.draw_charge(deer.position,prey_fx_tip,prey_charge_progress,pose == "counter" and pose_clock <= .29,prey_wake,manual_combat_clock,dest)
 	if front and pose == ManualHunt.URAM_CLUB_2 and pose_clock < .3:
 		var tip := _weapon_metric(1)
@@ -1729,7 +1718,7 @@ func _process(delta: float) -> void:
 	if not arrival_finished:
 		advance_arrival(delta)
 	settle_age+=delta
-	var elapsed := delta*speed
+	var elapsed := delta * (speed if running else 1.0)
 	var actors_sampled := false
 	var previous_pose_clock := pose_clock
 	var previous_manual_clock := manual_combat_clock
@@ -1804,7 +1793,7 @@ func _process(delta: float) -> void:
 			if pose=="team": hunt_audio.cue("S20",2)
 			if pose=="counter":
 				hunt_audio.cue("S21",2)
-				if hit_damage > 0:
+				if hit_damage > 0 and _prey_is_adult():
 					manual_effects.append({"kind":"prey_hit","age":0.0,"pos":hit_point,"floor":hunters[rules.attacker].position,"axis":Vector2.ZERO})
 			else:
 				basic_recoil = BASIC_RECOIL_TIME

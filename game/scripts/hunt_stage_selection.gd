@@ -460,6 +460,16 @@ func chapter_arrow(x: float, direction: int) -> void:
 	var picture: TextureRect=app.picture(arrow,ARROW,Rect2(9,9,24,24))
 	picture.flip_h=direction<0
 
+# Saved IDs are dense; displayed stages temporarily have unimplemented slots.
+static func are_adjacent_playable_slots(current: int, next: int) -> bool:
+	var chapter_size := STAGES_PER_CHAPTER
+	var current_slot := current % chapter_size
+	var next_slot := next % chapter_size
+	var current_display := 9 if current_slot == chapter_size - 1 else current_slot
+	var next_display := 9 if next_slot == chapter_size - 1 else next_slot
+	return next == current + 1 and (next_display == current_display + 1 or (current_display == 9 and next_display == 0))
+
+
 func add_stage(slot: int) -> void:
 	var boss := slot==9
 	var midboss := slot==4

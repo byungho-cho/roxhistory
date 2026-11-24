@@ -2396,10 +2396,10 @@ func open_hunt() -> void:
 	hunt_prey_id = "forest"
 	show_screen("hunt_select")
 
-func warm_hunt_resources()->void:
+func warm_hunt_resources(stage_id: int = -1)->void:
 	var paths:Array=[HybridCharacter.MESHY_HUNT_MODEL,"res://assets/characters/residents/roxhistory-hunter-male-combat-v2-preview.glb",WorldAnimal.MODELS.deer,HUNT_PREY_PROFILE.model_path("forest")]
 	paths.append_array(preload("res://scripts/hunt_readiness_art.gd").warm_paths())
-	var prey:=HUNT_PREY_PROFILE.encounter_species(hunt_stage,int(model.state.get("hunt_cleared",0)),HUNT_STAGE5_ADULT_CANDIDATE)
+	var prey:=HUNT_PREY_PROFILE.encounter_species(hunt_stage if stage_id < 0 else stage_id,int(model.state.get("hunt_cleared",0)),HUNT_STAGE5_ADULT_CANDIDATE)
 	if prey=="adult":paths.append(HUNT_PREY_PROFILE.model_path("adult"))
 	for path:String in paths:
 		if not hunt_warm_paths.has(path) and ResourceLoader.exists(path):
@@ -2422,18 +2422,44 @@ func close_hunt_loading()->void:
 	hunt_loading=null
 
 func prepare_selected_hunt() -> void:
+	if screen == "hunt_select":
+		_prepare_hunt_stage(hunt_stage)
+
+func next_hunt_stage_id() -> int:
+	if screen != "hunt" or not is_instance_valid(hunt) or not hunt.result_shown or hunt.rules.outcome != "win":
+		return -1
+	var next := hunt_stage + 1
+	if next >= HUNT_SELECTION.TOTAL_STAGES or next > int(model.state.get("hunt_cleared", 0)):
+		return -1
+	return next if HUNT_SELECTION.are_adjacent_playable_slots(hunt_stage, next) else -1
+
+func prepare_next_hunt() -> void:
+	var next := next_hunt_stage_id()
+	if next >= 0:
+		_prepare_hunt_stage(next)
+
+func leave_hunt_result_to_village() -> void:
+	if screen == "hunt":
+		hunt = null
+		hunt_prey_id = "forest"
+		if is_instance_valid(world):
+			show_screen("play")
+		else:
+			enter_game()
+
+func _prepare_hunt_stage(selected_stage: int) -> void:
+	var origin_screen := screen
+	var origin_stage := hunt_stage
 	var cleared := int(model.state.get("hunt_cleared", 0))
-	if screen != "hunt_select" or hunt_preparing or modal or hunt_stage < 0 or hunt_stage >= HUNT_SELECTION.TOTAL_STAGES or hunt_stage > cleared:
+	if hunt_preparing or modal or selected_stage < 0 or selected_stage >= HUNT_SELECTION.TOTAL_STAGES or selected_stage > cleared:
 		return
-	var selected_stage := hunt_stage
 	var requested_prey := HUNT_PREY_PROFILE.encounter_species(selected_stage, cleared, HUNT_STAGE5_ADULT_CANDIDATE)
 	var adult_path := HUNT_PREY_PROFILE.model_path("adult") if requested_prey == "adult" else ""
 	var adult_ready := false
-	hunt_prey_id = "forest"
 	hunt_preparing = true
 	hunt_preparation_cancelled = false
 	audio.cue("action_click")
-	warm_hunt_resources()
+	warm_hunt_resources(selected_stage)
 	var paths := [HybridCharacter.MESHY_HUNT_MODEL, "res://assets/characters/residents/roxhistory-hunter-male-combat-v2-preview.glb", WorldAnimal.MODELS.deer, HUNT_PREY_PROFILE.model_path("forest")]
 	if not adult_path.is_empty() and ResourceLoader.exists(adult_path, "PackedScene"):
 		paths.append(adult_path)
@@ -2476,7 +2502,8 @@ func prepare_selected_hunt() -> void:
 	close_hunt_loading()
 	hunt_warmed=warmed
 	hunt_preparing = false
-	if not hunt_preparation_cancelled and screen=="hunt_select" and not modal and not world_map_open and selected_stage == hunt_stage and selected_stage <= int(model.state.get("hunt_cleared", 0)):
+	if not hunt_preparation_cancelled and screen==origin_screen and not modal and not world_map_open and origin_stage == hunt_stage and selected_stage <= int(model.state.get("hunt_cleared", 0)):
+		hunt_stage = selected_stage
 		hunt_prey_id = "adult" if adult_ready else "forest"
 		toast_time = 0.0
 		show_screen("hunt")
