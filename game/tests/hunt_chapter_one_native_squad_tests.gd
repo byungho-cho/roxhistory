@@ -29,7 +29,7 @@ func check_stage(number:int)->void:
  if number==3:
   ck(b.story_allows(0,"skill") and b.story_allows(1,"skill") and not b.story_allows(2,"skill") and not b.story_allows(1,"chain"),"actual 1-3 controls gates")
   var moved:Dictionary={}
-  for frame in range(480):
+  for frame in range(900):
    b.tick(1./60.,false)
    if frame==300:ck(b.story_entry_active() and b.dismiss_story_entry() and not b.dismiss_story_entry(),"squad waits without timeout and accepts one dismissal")
    for i in 3:
@@ -87,7 +87,7 @@ func run()->void:
  ck(reform.units[4].hp==0 and reform.units[4].feet==dead_feet and not reform.story_uram_opening_targets.has(4),"dead prey neither moves nor returns")
  for frame in 34:reform.tick(1./60.,false)
  ck(impacts.size()==1 and impacts[0]==before and reform.elapsed==before and not reform._free_to_cast(0),"one shield cue; introduction keeps existing combat clock and skill input held for the whole beat")
- for frame in 20:reform.tick(1./60.,false)
+ for frame in 38:reform.tick(1./60.,false)
  ck(reform.story_uram_entrance_clock<0.0 and reform.elapsed>before,"combat resumes its same clock after the short introduction")
  reform.units[1].hp=0
  ck(reform._target(3)==0,"if Uram is no longer alive, normal living-target rules apply")
@@ -104,6 +104,15 @@ func run()->void:
  ck(rally.bom_cloud_at==-INF and not rally.units[2].has("story_arrival_rally") and rally.units[3].hp==enemy_hp[0] and rally.units[4].hp==enemy_hp[1] and rally.units[5].hp==enemy_hp[2] and not rally.dismiss_story_entry(),"scripted rally is support only, no cloud damage, no second arrival cast")
  rally.queue_free()
  await process_frame
+ var ramp=squad_script.new()
+ for fps:float in [30.,60.,120.]:
+  ramp.story_uram_resume_wall=0.0
+  var amount:=0.0
+  for frame in roundi(fps*2.5):
+   amount+=ramp._story_uram_resume_delta(1.5/fps,1./fps)
+  ck(is_equal_approx(amount,2.5125),"2.5s resume integration stable at "+str(fps)+" fps")
+ ck(is_equal_approx(ramp._story_uram_resume_delta(.1,.05),.1),"finished resume restores selected normal/x2 speed")
+ ramp.free()
  var lab=make(0,false)
  ck(lab.story_encounter.is_empty() and lab.units.size()==6 and lab.units[3].id=="forest" and lab.units[0].hp==100,"legacy laboratory defaults unchanged")
  lab.queue_free()

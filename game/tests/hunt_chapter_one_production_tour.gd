@@ -103,7 +103,7 @@ func run() -> void:
     for u in b.units:pre_join_feet.append(u.feet)
     touch_at(at,false)
     if n==3:
-     ck(b.units[0].feet==pre_join_feet[0] and is_equal_approx(b.units[1].feet.x-b.units[0].feet.x,38.) and b._target(3)==1 and b._target(4)==1,"1-3 only: actual guide release reforms living units to face Uram")
+     ck(b.units[3].feet==pre_join_feet[3] and b.units[4].feet==pre_join_feet[4] and b.units[0].feet==pre_join_feet[0] and is_equal_approx(b.units[1].feet.x-b.units[0].feet.x,33.5) and b._target(3)==1 and b._target(4)==1,"1-3 only: actual guide release reforms living units to face Uram")
     else:
      var unchanged:=true
      for i in [0,1,3,4,5]:unchanged=unchanged and b.units[i].feet==pre_join_feet[i]
@@ -120,8 +120,11 @@ func run() -> void:
     touch_at(at,false,8)
     ck(b.units[slot].hp==hp_after and b.units[slot].sp==sp_after,"later release cannot duplicate or recast entry")
     var first_enemy_attacks:Dictionary={}
-    for f in 285:
+    var same_deer_anchors:=true
+    for f in (540 if n==3 else 285):
      h._process(1./60.)
+     if n==3 and (b.story_uram_entrance_clock>=0.0 or b.story_uram_resume_wall>=0.0):
+      same_deer_anchors=same_deer_anchors and b.units[3].feet==pre_join_feet[3] and b.units[4].feet==pre_join_feet[4]
      if n==3:
       for i in [3,4]:
        if not first_enemy_attacks.has(i) and b.units[i].move=="attack" and b.units[i].contact>=0.0:first_enemy_attacks[i]=b.units[i].victim
@@ -133,6 +136,7 @@ func run() -> void:
      ck(seen_arrival and clear and lane_ok,"1-4: Saebom appears at assigned open cell or a clear alternate")
     ck(b.story_entry_done and moved.has(slot) and b.huds[slot].visible,"reinforcement joins and attacks following a real delay")
     if n==3:
+     ck(same_deer_anchors,"both deer stay at exact pre-guide positions through entrance and slow recovery")
      ck(first_enemy_attacks.get(3,-1)==1 and first_enemy_attacks.get(4,-1)==1 and b.story_uram_opening_targets.is_empty(),"both opening attacks really commit to Uram, then normal targets")
      ck(not moved.has(2) and not b.huds[2].visible,"no Saebom in 1-3")
    # Force only result of seeded QA fight to test the public-facing save and CTA.

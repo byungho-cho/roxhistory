@@ -33,7 +33,10 @@ var story_entry_done := false
 # Chapter 1-3's reinforcing tank owns only each living deer's next basic.
 var story_uram_opening_targets: Dictionary = {}
 const STORY_URAM_LANDING := .22
-const STORY_URAM_ENTRANCE := .82
+const STORY_URAM_ENTRANCE := 1.06 # Last .24s holds the posed frame before combat eases in again.
+const STORY_URAM_RESUME_SECONDS := 2.5
+const STORY_URAM_RESUME_START := .34
+var story_uram_resume_wall := -1.0
 var story_deer_shove_clock := -1.0
 var story_deer_shove_done := false
 var story_deer_shove_attacker := -1
@@ -636,6 +639,7 @@ func tick(delta:float,paused:bool,real_delta:float=-1.0)->void:
 	if paused:return
 	var wall_delta:=delta if real_delta<0.0 else real_delta
 	if _tick_story_deer_shove(wall_delta) or _tick_story_entry(wall_delta) or _tick_story_uram_entrance(wall_delta):return
+	delta=_story_uram_resume_delta(delta,wall_delta)
 	acc+=minf(delta,.10)
 	if spotlight_clock>=0.:
 		spotlight_clock+=maxf(0.,delta)
@@ -650,6 +654,20 @@ func story_entry_active()->bool:
 
 func story_entry_fraction()->float:
 	return clampf((story_entry_clock-STORY_JOIN_SECONDS)/STORY_CUTIN_SECONDS,0.0,1.0)
+
+func _story_uram_resume_delta(scaled_delta:float,wall_delta:float)->float:
+	if story_uram_resume_wall<0.0 or wall_delta<=0.0:return scaled_delta
+	var before:=story_uram_resume_wall
+	var after:=minf(STORY_URAM_RESUME_SECONDS,before+wall_delta)
+	# Integral average of smoothstep, independent of render rate. Any excess
+	# wall time in the finishing frame is simulated at the chosen normal speed.
+	var x0:=before/STORY_URAM_RESUME_SECONDS
+	var x1:=after/STORY_URAM_RESUME_SECONDS
+	var area:=STORY_URAM_RESUME_SECONDS*((x1*x1*x1-.5*x1*x1*x1*x1)-(x0*x0*x0-.5*x0*x0*x0*x0))
+	var consumed:=after-before
+	var weighted:=STORY_URAM_RESUME_START*consumed+(1.-STORY_URAM_RESUME_START)*area+(wall_delta-consumed)
+	story_uram_resume_wall=after if after<STORY_URAM_RESUME_SECONDS else -1.0
+	return scaled_delta*(weighted/wall_delta)
 
 func _story_position_clear(spot:Vector2)->bool:
 	for unit in units:
@@ -696,7 +714,7 @@ func _start_story_deer_shove()->bool:
 	var deer:=units[story_deer_shove_attacker]
 	story_deer_shove_clock=0.0
 	story_deer_shove_han=han.feet
-	story_deer_shove_han_end=Vector2(maxf(165.,story_deer_shove_han.x-102.),story_deer_shove_han.y+6.)
+	story_deer_shove_han_end=Vector2(maxf(165.,story_deer_shove_han.x-153.),story_deer_shove_han.y+6.)
 	story_deer_shove_deer=deer.feet
 	han.actor.play("hit")
 	deer.actor.play("attack")
@@ -738,14 +756,12 @@ func _story_reform_uram_frontline()->void:
 	var han:Dictionary=units[0]
 	var center:Vector2=han.feet if han.hp>0 else units[1].feet
 	center=Vector2(clampf(center.x,160.,755.),clampf(center.y,155.,375.))
-	var tank:=center+Vector2(38.,-4.)
+	var tank:=center+Vector2(33.5,-8.)
 	units[1].feet=tank
 	story_uram_opening_targets.clear()
 	for i in range(3,units.size()):
 		var deer:=units[i]
 		if deer.hp<=0:continue
-		var angle:float=[.96,0.,-.96][i-3]
-		deer.feet=tank+Vector2.RIGHT.rotated(angle)*60.
 		story_uram_opening_targets[i]=true
 		# A pre-join wind-up aimed at Han cannot execute from the new line.
 		# Only a living enemy's unlanded basic is cleared; accepted allied
@@ -769,6 +785,15 @@ func _paint_story_uram_entrance()->void:
 	if story_uram_entrance_clock<STORY_URAM_LANDING:return
 	var age:=(story_uram_entrance_clock-STORY_URAM_LANDING)*5.7
 	story_uram_entrance_front.draw_uram_gong_dust(story_uram_dust_layer,story_uram_entrance_art.soft,units[1].feet+Vector2(9,3),age)
+	# Reuse the existing counter wake between the settled shield and the
+	# unchanged live deer ground line; it is presentation-only here.
+	var fly:=story_uram_entrance_clock-STORY_URAM_LANDING
+	if fly<.20 and not story_uram_opening_targets.is_empty():
+		var center:=Vector2.ZERO
+		for i in story_uram_opening_targets:center+=units[i].feet
+		center/=float(story_uram_opening_targets.size())
+		var floor:Vector2=units[1].feet
+		UramCounterWave.draw(story_uram_dust_layer,floor+Vector2(16.,-3.),center,fly/.20)
 
 func _pose_story_uram_entrance()->void:
 	var age:=story_uram_entrance_clock
@@ -786,7 +811,7 @@ func _pose_story_uram_entrance()->void:
 	for i in story_uram_old_headings:
 		var pivot:Node3D=units[i].actor.preview.pivot
 		var face:=lerp_angle(story_uram_old_headings[i],pivot.rotation.y,smoothstep(.10,.33,age))
-		var spin:=smoothstep(STORY_URAM_LANDING,.76,age)*TAU*(1.0 if i==3 else -1.0)
+		var spin:=smoothstep(STORY_URAM_LANDING+.18,.87,age)*TAU*(1.0 if i==3 else -1.0)
 		pivot.rotation.y=face+spin
 
 func _tick_story_uram_entrance(wall_delta:float)->bool:
@@ -795,6 +820,8 @@ func _tick_story_uram_entrance(wall_delta:float)->bool:
 	story_uram_entrance_clock=minf(STORY_URAM_ENTRANCE,previous+maxf(0.0,wall_delta))
 	if previous<STORY_URAM_LANDING and story_uram_entrance_clock>=STORY_URAM_LANDING:
 		story_uram_entrance_impact.emit()
+	var wave_contact:=STORY_URAM_LANDING+.18
+	if previous<wave_contact and story_uram_entrance_clock>=wave_contact:
 		for i in story_uram_opening_targets:
 			var deer:=units[i]
 			if deer.hp<=0:continue
@@ -804,7 +831,9 @@ func _tick_story_uram_entrance(wall_delta:float)->bool:
 			squad_stuns[i]=elapsed
 	_draw_pose(0.0)
 	if story_uram_entrance_clock<STORY_URAM_ENTRANCE:_pose_story_uram_entrance()
-	else:story_uram_entrance_clock=-1.0
+	else:
+		story_uram_entrance_clock=-1.0
+		story_uram_resume_wall=0.0
 	story_uram_dust_layer.queue_redraw()
 	return true
 
@@ -869,6 +898,12 @@ func _step(dt:float)->void:
 			continue
 		if u.move=="hit":
 			if u.age>=u.actor.duration:_play(u,"idle")
+			continue
+		# The slow reveal holds the separation from the guide. Existing
+		# animations and timers advance slowly, but neither side closes
+		# the gap until the selected battle speed has been restored.
+		if story_uram_resume_wall>=0.0:
+			if u.move!="idle":_play(u,"idle")
 			continue
 		var ordinary_enemy:=i>=3 and saebom_distance_drill.is_empty()
 		var formation_aggro:=ordinary_enemy and target==1 and _within_uram_aggro(i)
