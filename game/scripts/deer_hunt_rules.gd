@@ -29,9 +29,9 @@ const SKILLS := {
 var skills_enabled:=true
 var first_hunt := false
 var manual_only := false
-# Temporary 1-1 tuning, applied only to committed HP loss.
-const STAGE_1_1_DAMAGE_MULTIPLIER := 2
-var damage_multiplier := 1
+# Temporary 1-1 tuning affects only Han's committed attacks, never the prey.
+const STAGE_1_1_HAN_DAMAGE_MULTIPLIER := 2
+var han_damage_multiplier := 1
 
 var charges: Array[float] = [0.0, 0.0, 0.0]
 var party_hp: Array[int] = [34, 33, 33]
@@ -86,9 +86,9 @@ func resolve_attack(ordered_han_finisher := false, contact_into_frame := 0.0) ->
 				var scaled := damage * 132 + han_combo_hundredths
 				han_combo_hundredths = scaled % 100
 				damage = floori(float(scaled) / 100.0)
-			damage_deer(damage)
 		else:
-			damage_deer(_rally_damage(damage, attacker))
+			damage = _rally_damage(damage, attacker)
+		damage_deer(damage * han_damage_multiplier if attacker == 0 else damage)
 	if pending_counter:
 		pending_counter = false
 		_resolve_prey_damage(attacker)
@@ -102,7 +102,7 @@ func resolve_independent_prey_basic(victim:int) -> void:
 
 func _resolve_prey_damage(victim:int) -> void:
 	var before := party_hp[victim]
-	party_hp[victim] = maxi(0, before - _battle_damage(COUNTER_DAMAGE))
+	party_hp[victim] = maxi(0, before - COUNTER_DAMAGE)
 	if party_hp[victim] < before:hp_lost.emit(victim,before,party_hp[victim])
 	if party_hp[victim]==0:
 		charges[victim]=0.0
@@ -259,12 +259,10 @@ func _rally_damage(damage: int, index: int) -> int:
 	return damage + floori(float(fifths) / 5.0)
 
 
-func _battle_damage(amount: int) -> int:
-	return amount * damage_multiplier
 
 func damage_deer(amount: int) -> void:
 	var before := deer_hp
-	deer_hp = maxi(0, before - _battle_damage(amount))
+	deer_hp = maxi(0, before - amount)
 	if deer_hp < before:hp_lost.emit(PREY_VICTIM,before,deer_hp)
 	if deer_hp == 0:
 		outcome = "win"

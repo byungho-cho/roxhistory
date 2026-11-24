@@ -273,11 +273,11 @@ func _ready() -> void:
 		var completed:Dictionary = app.chapter_one_story_completions()
 		rules.first_hunt = not bool(completed.get(ChapterOneCatalog.STAGE_KEYS[0],false))
 		rules.manual_only = rules.first_hunt
+		if rules.first_hunt:rules.han_damage_multiplier=RULES.STAGE_1_1_HAN_DAMAGE_MULTIPLIER
 		if not rules.first_hunt:
 			prep_ally_count = ChapterOneCatalog.replay_opening_party(completed,app.model.state.get(ChapterOneCatalog.RECRUITS_KEY,[])).size()
 			chapter_one_solo = prep_ally_count == 1
 			battle_toggles_unlocked = ChapterOneCatalog.is_unlocked(4,completed)
-	if stage_one_one:rules.damage_multiplier=RULES.STAGE_1_1_DAMAGE_MULTIPLIER
 	if chapter_story_preview:
 		var row:=ChapterOneCatalog.encounter(chapter_story_number)
 		prep_ally_count=row.get("opening_party",row.party).size()
