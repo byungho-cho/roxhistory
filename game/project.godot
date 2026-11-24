@@ -34,7 +34,7 @@ pointing/emulate_touch_from_mouse=false
 pointing/emulate_mouse_from_touch=false
 
 [roxhistory]
-distribution/full_apk_version="0.2.295"
+distribution/full_apk_version="0.2.307"
 
 inventory/capacity=64
 
