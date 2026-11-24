@@ -26,6 +26,13 @@ const DESIGN_SIZE:=Vector2(1200,675)
 const PANEL_RECT:=Rect2(149,433,978,190)
 const PANEL_FRAME:=Rect2(142,430,992,204)
 const TEXT_X:=357.0
+const CUTIN_BODY_MAGNIFICATION := 1.30
+const CUTIN_PANEL_EDGE_MASK = """
+shader_type canvas_item;
+void fragment() {
+	COLOR.a *= smoothstep(0.022, 0.083, UV.x);
+}
+"""
 var content := PANEL_FRAME.grow(-SharedPopupArt.INSET)
 var text_width := content.end.x-TEXT_X-44.0
 func _init(owner_app:Node,title:String,body:String,full_body:Texture2D=null)->void:
@@ -39,6 +46,13 @@ func _ready()->void:
 	panel_group=Control.new();panel_group.name="PanelGroup";panel_group.size=DESIGN_SIZE;panel_group.mouse_filter=Control.MOUSE_FILTER_IGNORE;layout.add_child(panel_group)
 	var panel:=picture(panel_group,preload("res://assets/ui/village-guidance/guide-panel.svg"),PANEL_FRAME)
 	panel.name="CreamPanel"
+	if timed_art:
+		# Tuck only this panel's left stroke under the foreground silhouette.
+		var shader:=Shader.new()
+		shader.code=CUTIN_PANEL_EDGE_MASK
+		var material:=ShaderMaterial.new()
+		material.shader=shader
+		panel.material=material
 	next_hint=picture(panel_group,preload("res://assets/ui/village-guidance/guide-next.svg"),Rect2(content.end-Vector2.ONE*32,Vector2.ONE*32))
 	next_hint.name="GuideAdvanceHint"
 	text_scroll=ScrollContainer.new();text_scroll.name="GuideText";text_scroll.position=Vector2(TEXT_X,content.position.y);text_scroll.size=Vector2(text_width,content.size.y);text_scroll.horizontal_scroll_mode=ScrollContainer.SCROLL_MODE_DISABLED;panel_group.add_child(text_scroll)
@@ -49,8 +63,8 @@ func _ready()->void:
 	if timed_art:
 		var tex_size:=timed_art.get_size()
 		var factor:=minf(185.0/tex_size.x,402.0/tex_size.y)
-		var fit:=tex_size*factor
-		art_rect=Rect2(Vector2(249.0-fit.x*.5,623.0-fit.y),fit)
+		var fit:=tex_size*factor*CUTIN_BODY_MAGNIFICATION
+		art_rect=Rect2(Vector2(196.0-fit.x*.5,623.0-fit.y),fit)
 		character=picture(layout,timed_art,art_rect)
 		character.name="GuideFullBody"
 		character.stretch_mode=TextureRect.STRETCH_KEEP_ASPECT_CENTERED
