@@ -21,6 +21,8 @@ var result_video:VideoStreamPlayer
 var result_last:TextureRect
 var result_first:TextureRect
 var video_finished:=false
+var result_details: Control
+var result_actions: Control
 var village_back: DemoButton
 var village_back_icon: TextureRect
 const FIELD_ART := "res://assets/ui/hunt-readiness/"
@@ -49,9 +51,13 @@ func _ready() -> void:
 	layout.size = Vector2(960,540)
 	var details := Control.new()
 	details.name = "ResultDetails"
-	details.position.x = RESULT_COLUMN_X
 	details.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	layout.add_child(details)
+	result_details = details
+	result_actions = Control.new()
+	result_actions.name = "ResultActions"
+	result_actions.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	layout.add_child(result_actions)
 	resized.connect(fit.bind(layout))
 	fit(layout)
 	var chapter: int = app.hunt_stage / 6
@@ -90,12 +96,12 @@ func _ready() -> void:
 	village_back_icon = app.picture(village_back,preload("res://assets/ui/d0024/08-ui-back-button.png"),Rect2(4,4,44,44))
 	fit(layout)
 	if won:
-		result_button(details,"사냥터 선택",CTA_FIRST_X,false,app.close_hunt).name = "ResultStageSelect"
+		result_button(result_actions,"사냥터 선택",CTA_FIRST_X,false,app.close_hunt).name = "ResultStageSelect"
 		if app.next_hunt_stage_id() >= 0:
-			result_button(details,"다음 스테이지",CTA_SECOND_X,true,app.prepare_next_hunt).name = "ResultNextStage"
+			result_button(result_actions,"다음 스테이지",CTA_SECOND_X,true,app.prepare_next_hunt).name = "ResultNextStage"
 	else:
-		result_button(details,"마을로",CTA_FIRST_X,false,app.leave_hunt_result_to_village).name = "ResultLeave"
-		result_button(details,"다시 준비",CTA_SECOND_X,true,app.retry_hunt).name = "ResultRetry"
+		result_button(result_actions,"마을로",CTA_FIRST_X,false,app.leave_hunt_result_to_village).name = "ResultLeave"
+		result_button(result_actions,"다시 준비",CTA_SECOND_X,true,app.retry_hunt).name = "ResultRetry"
 	if use_han_field and build_field_video(layout):
 		set_process(true)
 		return
@@ -118,6 +124,10 @@ func fit(layout: Control) -> void:
 	var factor := minf((size.x-inset.x*2)/960.0,(size.y-inset.y*2)/540.0)
 	layout.scale = Vector2.ONE * maxf(.01,factor)
 	layout.position = (size-layout.size*layout.scale)*.5
+	# Use some of the extra vertical space without scaling or moving the actor.
+	var extra_height := maxf(0.0, (size.y - inset.y*2.0) / layout.scale.y - layout.size.y)
+	result_details.position = Vector2(RESULT_COLUMN_X, -24.0 - minf(extra_height*.28, 58.0))
+	result_actions.position = Vector2(RESULT_COLUMN_X, 34.0 + minf(extra_height*.30, 60.0))
 	if is_instance_valid(village_back):
 		var top_left := inset
 		if OS.has_feature("android"):
