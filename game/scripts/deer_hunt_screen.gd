@@ -7,6 +7,11 @@ const ReadinessArt:=preload("res://scripts/hunt_readiness_art.gd")
 var branch_video:BranchVS
 var prep_tags:Array[Control]=[]
 var chapter_one_solo:=false
+const ChapterOneCatalog := preload("res://scripts/hunt_chapter_one_catalog.gd")
+# Private proof only: do not make part of a release until every story route and
+# normal frontier behavior are verified.
+var chapter_story_preview := false
+var chapter_story_battle
 var stage_one_one:=false
 var battle_toggles_unlocked:=false
 var branch_header:Control
@@ -222,7 +227,8 @@ var pose := ""
 var exit_button: DemoButton
 
 func _ready() -> void:
-	chapter_one_solo=int(app.hunt_stage)/6==0
+	chapter_story_preview = int(app.hunt_stage) == 2 and "--chapter-one-preview" in OS.get_cmdline_user_args()
+	chapter_one_solo=int(app.hunt_stage)/6==0 and not chapter_story_preview
 	stage_one_one=int(app.hunt_stage)==0
 	battle_toggles_unlocked=int(app.hunt_stage)>=3
 	rules.manual_only=stage_one_one
@@ -1058,6 +1064,8 @@ func advance_transition(delta: float) -> void:
 		combat.modulate.a = 1.0
 		combat_layout = true
 		running = true
+		if chapter_story_preview:
+			_start_chapter_story_preview()
 		location_brush.hide()
 		for i in 2:
 			var control: DemoButton = [auto_button,speed_button][i]
@@ -1708,6 +1716,35 @@ func play_pose(id: String) -> void:
 	match id:
 		"auto_thrust":hunt_audio.cue("S15",2)
 
+func _start_chapter_story_preview() -> void:
+	# The legacy squad shares this script's layout constants. Late load avoids
+	# introducing a parse-time dependency cycle in the original Hunt scene.
+	var backend: GDScript = load("res://scripts/hunt_duel_local_squad.gd")
+	if backend == null or not backend.can_instantiate():
+		push_error("Chapter One story backend unavailable")
+		return
+	var battle = backend.new()
+	if not battle.configure_story_encounter(ChapterOneCatalog.encounter(3)):
+		battle.free()
+		push_error("Chapter One story roster was rejected")
+		return
+	canvas.add_child(battle)
+	battle.setup(Callable(), Callable(), Callable(), Callable(), Callable(), Callable(), Callable(), Callable(), Callable(), 1.15, Callable(), Callable(), Callable(), Callable(), Callable(), true)
+	chapter_story_battle = battle
+	battle.hud_parent.reparent(combat_controls, false)
+	for actor in hunters:
+		actor.hide()
+		actor.set_enabled(false)
+	deer.hide()
+	deer.viewport.render_target_update_mode = SubViewport.UPDATE_DISABLED
+	for row in party_cards:
+		row.hud.hide()
+	for marker in hunter_markers:
+		marker.hide()
+	prey_hud.hide()
+	battle_vfx_under.hide()
+	battle_vfx_front.hide()
+
 func _process(delta: float) -> void:
 	if is_instance_valid(branch_video):branch_video.paused=not app.application_active or exit_popup!=null or app.modal
 	hunt_audio.update(app.application_active and app.settings.get_value("app","sound",true),exit_popup!=null or app.modal)
@@ -1715,6 +1752,16 @@ func _process(delta: float) -> void:
 		clear_formation_drag()
 		return
 	if result_shown: return
+	if running and is_instance_valid(chapter_story_battle):
+		chapter_story_battle.tick(delta * speed, false)
+		var outcome: String = chapter_story_battle.story_outcome
+		if not outcome.is_empty():
+			for i in 3:
+				rules.party_hp[i] = chapter_story_battle.units[i].hp
+			rules.outcome = outcome
+			# This opt-in candidate never writes progression or opens the result path.
+			running = false
+		return
 	if not arrival_finished:
 		advance_arrival(delta)
 	settle_age+=delta
@@ -1727,6 +1774,7 @@ func _process(delta: float) -> void:
 	hit_age += elapsed
 	if transition_elapsed>=0:
 		advance_transition(delta)
+		if is_instance_valid(chapter_story_battle): return
 	elif running and not result_shown:
 		var active_visual := delta/maxf(Engine.time_scale,.0001)
 		manual_input_clock += active_visual
