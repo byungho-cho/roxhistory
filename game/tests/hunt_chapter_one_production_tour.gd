@@ -71,7 +71,7 @@ func run() -> void:
     var seen_arrival:=false
     var frozen_hp:Array=[]
     var frozen_sp:Array=[]
-    for f in range(390):
+    for f in range(449 if n==3 else 390):
      h._process(1./60.)
      if b.story_entry_active():
       if frozen<0.0:
@@ -103,7 +103,7 @@ func run() -> void:
     for u in b.units:pre_join_feet.append(u.feet)
     touch_at(at,false)
     if n==3:
-     ck(b.units[0].feet.x<pre_join_feet[0].x and b.units[1].feet.x>b.units[0].feet.x and b._target(3)==1 and b._target(4)==1,"1-3 only: actual guide release reforms living units to face Uram")
+     ck(b.units[0].feet==pre_join_feet[0] and is_equal_approx(b.units[1].feet.x-b.units[0].feet.x,38.) and b._target(3)==1 and b._target(4)==1,"1-3 only: actual guide release reforms living units to face Uram")
     else:
      var unchanged:=true
      for i in [0,1,3,4,5]:unchanged=unchanged and b.units[i].feet==pre_join_feet[i]

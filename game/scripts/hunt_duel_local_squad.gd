@@ -8,6 +8,7 @@ var basic_rope_hit_at:=-INF
 signal parry_spotlight_started
 signal uram_ordinary_impact
 signal story_uram_entrance_impact
+signal story_deer_shove_impact
 
 const Actor = preload("res://scripts/model_test_actor.gd")
 const Hunt = preload("res://scripts/deer_hunt_screen.gd")
@@ -32,7 +33,13 @@ var story_entry_done := false
 # Chapter 1-3's reinforcing tank owns only each living deer's next basic.
 var story_uram_opening_targets: Dictionary = {}
 const STORY_URAM_LANDING := .22
-const STORY_URAM_ENTRANCE := .58
+const STORY_URAM_ENTRANCE := .82
+var story_deer_shove_clock := -1.0
+var story_deer_shove_done := false
+var story_deer_shove_attacker := -1
+var story_deer_shove_han := Vector2.ZERO
+var story_deer_shove_han_end := Vector2.ZERO
+var story_deer_shove_deer := Vector2.ZERO
 const StoryFrontFx = preload("res://scripts/hunt_production_frontline_vfx.gd")
 var story_uram_entrance_clock := -1.0
 var story_uram_old_headings: Dictionary = {}
@@ -439,7 +446,7 @@ func _play(u:Dictionary,key:String)->void:
 		u.bom_shove=false;u.bom_near_skill=false
 
 func _free_to_cast(i:int)->bool:
-	return not input_paused and not story_entry_active() and story_uram_entrance_clock<0.0 and not ended and units[i].hp>0 and units[i].move in ["idle","run","walk","attack","hit"]
+	return not input_paused and not story_entry_active() and story_deer_shove_clock<0.0 and story_uram_entrance_clock<0.0 and not ended and units[i].hp>0 and units[i].move in ["idle","run","walk","attack","hit"]
 
 func _request(key:String,i:int)->void:
 	var cost:=2 if key=="skill" else 3
@@ -628,7 +635,7 @@ func _approach(i:int,target:Vector2,dt:float)->void:
 func tick(delta:float,paused:bool,real_delta:float=-1.0)->void:
 	if paused:return
 	var wall_delta:=delta if real_delta<0.0 else real_delta
-	if _tick_story_entry(wall_delta) or _tick_story_uram_entrance(wall_delta):return
+	if _tick_story_deer_shove(wall_delta) or _tick_story_entry(wall_delta) or _tick_story_uram_entrance(wall_delta):return
 	acc+=minf(delta,.10)
 	if spotlight_clock>=0.:
 		spotlight_clock+=maxf(0.,delta)
@@ -639,7 +646,7 @@ func tick(delta:float,paused:bool,real_delta:float=-1.0)->void:
 	_draw_pose(delta)
 
 func story_entry_active()->bool:
-	return story_join_slot>=0 and not story_entry_done and not ended and story_entry_clock>=STORY_JOIN_SECONDS
+	return story_join_slot>=0 and not story_entry_done and not ended and story_deer_shove_clock<0.0 and story_entry_clock>=STORY_JOIN_SECONDS
 
 func story_entry_fraction()->float:
 	return clampf((story_entry_clock-STORY_JOIN_SECONDS)/STORY_CUTIN_SECONDS,0.0,1.0)
@@ -677,18 +684,62 @@ func _story_entry_spot()->Vector2:
 			best=spot
 	return best
 
+func _start_story_deer_shove()->bool:
+	story_deer_shove_done=true
+	if units[0].hp<=0:return false
+	for i in range(3,units.size()):
+		if units[i].hp>0:
+			story_deer_shove_attacker=i
+			break
+	if story_deer_shove_attacker<0:return false
+	var han:=units[0]
+	var deer:=units[story_deer_shove_attacker]
+	story_deer_shove_clock=0.0
+	story_deer_shove_han=han.feet
+	story_deer_shove_han_end=Vector2(maxf(165.,story_deer_shove_han.x-102.),story_deer_shove_han.y+6.)
+	story_deer_shove_deer=deer.feet
+	han.actor.play("hit")
+	deer.actor.play("attack")
+	return true
+
+func _tick_story_deer_shove(real_delta:float)->bool:
+	if story_deer_shove_clock<0.0:return false
+	var old:=story_deer_shove_clock
+	story_deer_shove_clock=minf(.97,old+maxf(0.,real_delta))
+	var t:=story_deer_shove_clock
+	var han:=units[0]
+	var deer:=units[story_deer_shove_attacker]
+	var away:=story_deer_shove_deer.direction_to(story_deer_shove_han)
+	deer.feet=story_deer_shove_deer+away*24.*smoothstep(.02,.29,t)*(1.-smoothstep(.38,.81,t))
+	han.feet=story_deer_shove_han.lerp(story_deer_shove_han_end,1.-pow(1.-smoothstep(.29,.73,t),1.45))
+	if old<.29 and t>=.29:story_deer_shove_impact.emit()
+	_draw_pose(0.0)
+	deer.actor.sample(lerpf(.03,.78,smoothstep(.01,.64,t))*deer.actor.duration,false)
+	if t>=.29:
+		han.actor.sample(minf(han.actor.duration-.015,(t-.29)*.72),false)
+		han.actor.preview.position+=Vector2(0.,-13.*sin(PI*clampf((t-.29)/.43,0.,1.)))
+	if t>=.97:
+		deer.feet=story_deer_shove_deer
+		deer.actor.play(deer.move)
+		han.actor.play(han.move)
+		han.feet=story_deer_shove_han_end
+		story_deer_shove_clock=-1.0
+		_draw_pose(0.)
+	return true
+
+
 func _tick_story_entry(real_delta:float)->bool:
 	if story_join_slot<0 or story_entry_done or ended or not story_outcome.is_empty():return false
 	story_entry_clock=minf(story_entry_clock+maxf(0.0,real_delta),STORY_JOIN_SECONDS+STORY_CUTIN_SECONDS)
+	if int(story_encounter.number)==3 and story_entry_clock>=STORY_JOIN_SECONDS and not story_deer_shove_done and _start_story_deer_shove():return true
 	return story_entry_active()
 
 func _story_reform_uram_frontline()->void:
 	var han:Dictionary=units[0]
 	var center:Vector2=han.feet if han.hp>0 else units[1].feet
 	center=Vector2(clampf(center.x,160.,755.),clampf(center.y,155.,375.))
-	var tank:=center+Vector2(22.,5.)
+	var tank:=center+Vector2(38.,-4.)
 	units[1].feet=tank
-	if han.hp>0:han.feet=center-Vector2(19.,7.)
 	story_uram_opening_targets.clear()
 	for i in range(3,units.size()):
 		var deer:=units[i]
@@ -734,7 +785,9 @@ func _pose_story_uram_entrance()->void:
 	units[1].ring.modulate.a=reveal
 	for i in story_uram_old_headings:
 		var pivot:Node3D=units[i].actor.preview.pivot
-		pivot.rotation.y=lerp_angle(story_uram_old_headings[i],pivot.rotation.y,smoothstep(.20,.51,age))
+		var face:=lerp_angle(story_uram_old_headings[i],pivot.rotation.y,smoothstep(.10,.33,age))
+		var spin:=smoothstep(STORY_URAM_LANDING,.76,age)*TAU*(1.0 if i==3 else -1.0)
+		pivot.rotation.y=face+spin
 
 func _tick_story_uram_entrance(wall_delta:float)->bool:
 	if story_uram_entrance_clock<0.0:return false
@@ -742,6 +795,13 @@ func _tick_story_uram_entrance(wall_delta:float)->bool:
 	story_uram_entrance_clock=minf(STORY_URAM_ENTRANCE,previous+maxf(0.0,wall_delta))
 	if previous<STORY_URAM_LANDING and story_uram_entrance_clock>=STORY_URAM_LANDING:
 		story_uram_entrance_impact.emit()
+		for i in story_uram_opening_targets:
+			var deer:=units[i]
+			if deer.hp<=0:continue
+			_play(deer,"hit")
+			deer.uram_splash_stun_until=elapsed+URAM_STUN_SECONDS
+			deer.next=maxf(float(deer.next),elapsed+URAM_STUN_SECONDS)
+			squad_stuns[i]=elapsed
 	_draw_pose(0.0)
 	if story_uram_entrance_clock<STORY_URAM_ENTRANCE:_pose_story_uram_entrance()
 	else:story_uram_entrance_clock=-1.0
@@ -767,6 +827,9 @@ func dismiss_story_entry()->bool:
 	u.actor.preview.show()
 	_draw_pose(0.0)
 	if story_uram_entrance_clock>=0.0:_pose_story_uram_entrance()
+	if int(story_encounter.number)==4 and story_join_slot==2:
+		u.story_arrival_rally=true
+		_begin(2,"chain",_target(2))
 	return true
 
 func _step(dt:float)->void:
@@ -864,13 +927,18 @@ func _resolve(i:int)->void:
 		story_first_charge_resolved = true
 	if i==2 and u.move=="chain":
 		if int(u.hp)<=0 or _target(i)<0:return
+		var arrival_support:=bool(u.get("story_arrival_rally",false))
 		for k in 3:
-			if units[k].hp>0 and (not local_melee_polish or units[k].feet.distance_to(u.feet)<=190.0):
+			if arrival_support and k==i:continue
+			if units[k].hp>0 and (arrival_support or not local_melee_polish or units[k].feet.distance_to(u.feet)<=190.0):
 				units[k].rally=elapsed+(5.0 if local_melee_polish else 4.0)
 				if not local_melee_polish and k!=i and bom_ally_draw.is_valid() and units[k].feet.distance_to(u.feet)<=190.0:
 					group_bom_ally_events.append({"at":elapsed,"unit":k})
 		if not authored_draw.is_valid():glints.append({"at":elapsed,"point":u.feet-Vector2(0,20),"tint":Color("ffc971")})
 		hits.append({"from":i,"target":-1,"type":"rally","result":"support"})
+		if arrival_support:
+			u.erase("story_arrival_rally")
+			return # Arrival support uses only the normal short buff, not the 3SP attack cloud.
 		bom_cloud_origin=u.feet;bom_cloud_at=elapsed
 		for target_index in range(3,units.size()):
 			var target:=units[target_index]

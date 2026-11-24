@@ -87,11 +87,22 @@ func run()->void:
  ck(reform.units[4].hp==0 and reform.units[4].feet==dead_feet and not reform.story_uram_opening_targets.has(4),"dead prey neither moves nor returns")
  for frame in 34:reform.tick(1./60.,false)
  ck(impacts.size()==1 and impacts[0]==before and reform.elapsed==before and not reform._free_to_cast(0),"one shield cue; introduction keeps existing combat clock and skill input held for the whole beat")
- for frame in 5:reform.tick(1./60.,false)
+ for frame in 20:reform.tick(1./60.,false)
  ck(reform.story_uram_entrance_clock<0.0 and reform.elapsed>before,"combat resumes its same clock after the short introduction")
  reform.units[1].hp=0
  ck(reform._target(3)==0,"if Uram is no longer alive, normal living-target rules apply")
+ ck(reform.units[3].uram_splash_stun_until==before+reform.URAM_STUN_SECONDS and not reform.units[4].has("uram_splash_stun_until"),"one existing timed stun on live roster, no stun on dead prey")
  reform.queue_free()
+ await process_frame
+ var rally=make(4,true,preset)
+ rally.story_entry_clock=2.50
+ ck(rally.dismiss_story_entry() and rally.units[2].move=="chain" and rally.units[2].sp==2.0,"1-4 automatically casts only once without spending its existing starting SP")
+ var enemy_hp:Array=[]
+ for i in range(3,rally.units.size()):enemy_hp.append(rally.units[i].hp)
+ rally._resolve(2)
+ ck(rally.units[0].rally==rally.elapsed+5.0 and rally.units[1].rally==rally.elapsed+5.0,"normal five-second rally applied to both front allies")
+ ck(rally.bom_cloud_at==-INF and not rally.units[2].has("story_arrival_rally") and rally.units[3].hp==enemy_hp[0] and rally.units[4].hp==enemy_hp[1] and rally.units[5].hp==enemy_hp[2] and not rally.dismiss_story_entry(),"scripted rally is support only, no cloud damage, no second arrival cast")
+ rally.queue_free()
  await process_frame
  var lab=make(0,false)
  ck(lab.story_encounter.is_empty() and lab.units.size()==6 and lab.units[3].id=="forest" and lab.units[0].hp==100,"legacy laboratory defaults unchanged")
