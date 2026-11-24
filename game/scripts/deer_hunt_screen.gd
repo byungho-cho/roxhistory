@@ -1556,7 +1556,10 @@ func _field_ring(actor,index:int) -> Rect2:
 	# The phase-dependent camera is settled on start; invalidate at re-entry, not every redraw.
 	var center:Vector2 = actor.position + (ordinary_prey_visual_offset if actor == deer else Vector2.ZERO)
 	var visual := NativeHud.visual_foot_center(actor,actor==deer)
-	if visual.is_finite():center = battlefield.get_global_transform().affine_inverse()*visual
+	if visual.is_finite():
+		var projected := battlefield.get_global_transform().affine_inverse()*visual
+		# A mismatched native viewport must not place the ring away from its actor.
+		if projected.distance_to(center)<32.0:center=projected
 	if ring_sizing.size() != 4 or approach<1.0:
 		return NativeHud.ground_rect(actor.camera,center)
 	return Rect2(center-ring_sizing[index]*.5,ring_sizing[index])
