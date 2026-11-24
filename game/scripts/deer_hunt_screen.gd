@@ -232,6 +232,7 @@ var ordinary_prey_visual_offset := Vector2.ZERO
 var actor_delta := 0.0
 var pose := ""
 var exit_button: DemoButton
+var prep_sound_button: DemoButton
 
 func _ready() -> void:
 	chapter_story_number = int(app.chapter_one_story_number(int(app.hunt_stage)))
@@ -483,6 +484,7 @@ func advance_arrival(delta: float) -> void:
 	footer_right.position.y = footer_right_home.y+18*(1.0-entry_ease(footer_progress))
 	if arrival_elapsed >= arrival_duration:
 		arrival_finished = true
+		prep_sound_button.show()
 		preparation.mouse_behavior_recursive = Control.MOUSE_BEHAVIOR_INHERITED
 		header.mouse_behavior_recursive = Control.MOUSE_BEHAVIOR_INHERITED
 		fit_layout()
@@ -657,6 +659,14 @@ func build_duel_header() -> void:
 	header = layer()
 	header_left = layer(header)
 	header_right = layer(header)
+	prep_sound_button = make_button(header_right,"",Rect2(912,0,48,48),open_preparation_sound)
+	prep_sound_button.name = "HuntPreparationSound"
+	prep_sound_button.tooltip_text = "소리 설정"
+	prep_sound_button.accessibility_name = prep_sound_button.tooltip_text
+	prep_sound_button.set_meta("semantic_text",prep_sound_button.tooltip_text)
+	clear_button_art(prep_sound_button)
+	app.picture(prep_sound_button,preload("res://assets/ui/review-v037/settings-figma.png"),Rect2(3,3,42,42))
+	prep_sound_button.hide()
 	location_brush = app.picture(header_left,NAME_BRUSH,Rect2(3,0,220,56))
 	var story_chapter := 1 if chapter_story_preview else int(app.hunt_stage)/6+1
 	location_caption = caption(location_brush,"%d장 · %s"%[story_chapter,"초원" if story_chapter==1 else "숲"],Rect2(44,0,163,56),21)
@@ -771,6 +781,14 @@ func artwork_button(parent: Control, rect: Rect2, label: String, asset: String, 
 	app.picture(button,load(ART+asset),Rect2(Vector2.ZERO,rect.size))
 	caption(button,label,Rect2(Vector2.ZERO,rect.size),24,ink)
 	return button
+
+func open_preparation_sound() -> void:
+	if not arrival_finished or not preparation.visible or start_pending or transition_elapsed>=0.0 or running or result_shown or exit_popup or app.modal or not app.application_active:return
+	clear_formation_drag()
+	pan_pointer = -2
+	touch_points.clear()
+	app.show_sound_settings(app.close_modal)
+
 
 func request_exit() -> void:
 	pan_pointer = -2
@@ -939,6 +957,10 @@ func handle_vs_skip(event: InputEvent) -> bool:
 
 
 func _input(event: InputEvent) -> void:
+	if is_instance_valid(prep_sound_button) and event is InputEventScreenTouch and event.canceled and prep_sound_button.finger == event.index:
+		prep_sound_button.clear()
+		get_viewport().set_input_as_handled()
+		return
 	if handle_vs_skip(event):
 		get_viewport().set_input_as_handled()
 		return
@@ -1173,6 +1195,7 @@ func start_combat() -> void:
 	preparation.mouse_behavior_recursive = Control.MOUSE_BEHAVIOR_DISABLED
 	# The VS plate is a one-way cover; never return to formation during its exit.
 	preparation.hide()
+	prep_sound_button.hide()
 	placement_grid.hide()
 	combat.hide()
 	update_toggles()

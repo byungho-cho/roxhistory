@@ -24,11 +24,11 @@ static func apply_channel(channel: Array, enabled: bool, level: float) -> void:
 		AudioServer.set_bus_mute(index, not enabled or level == 0)
 
 
-static func open(app: Node) -> void:
+static func open(app: Node, return_action := Callable()) -> void:
 	var scroll: ScrollContainer = app.show_modal("사운드 설정","",[
 		{"text":"확인","primary":true,"action":app.close_modal}],false,true,false,Vector2(610,495))
 	scroll.name = "SoundSettingsScroll"
-	preload("res://scripts/game_settings_menu.gd").detail_header(app,scroll,"SoundSettingsBack")
+	preload("res://scripts/game_settings_menu.gd").detail_header(app,scroll,"SoundSettingsBack",return_action)
 	var list := VBoxContainer.new()
 	list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	list.add_theme_constant_override("separation", 6)

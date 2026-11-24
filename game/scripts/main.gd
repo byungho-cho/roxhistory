@@ -2192,8 +2192,8 @@ func confirm_development_reset()->void:
 		{"text":"완전 초기화","action":full_reset}],false,true,false,Vector2.ZERO,true)
 	enable_settings_backdrop()
 
-func show_sound_settings() -> void:
-	SoundSettings.open(self)
+func show_sound_settings(return_action := Callable()) -> void:
+	SoundSettings.open(self, return_action)
 	enable_settings_backdrop()
 
 func set_audio_preference(key: String, value: Variant) -> bool:

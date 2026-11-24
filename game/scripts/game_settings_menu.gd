@@ -90,9 +90,10 @@ static func open(app: Node) -> void:
 	home.custom_minimum_size = Vector2(137, SharedPopupArt.WOOD_ACTION_HEIGHT)
 	SharedPopupArt.button_style(home,"wood","gold")
 
-static func detail_header(app: Node, scroll: ScrollContainer, back_id: String) -> void:
+static func detail_header(app: Node, scroll: ScrollContainer, back_id: String, return_action := Callable()) -> void:
+	var action: Callable = return_action if return_action.is_valid() else app.show_game_settings
 	var header: HBoxContainer = scroll.get_parent().get_node("ModalHeader")
-	var back: DemoButton = app.button(header,"",app.show_game_settings)
+	var back: DemoButton = app.button(header,"",action)
 	back.name=back_id
 	back.tooltip_text="뒤로가기"
 	back.custom_minimum_size=Vector2.ONE*48
@@ -105,8 +106,8 @@ static func detail_header(app: Node, scroll: ScrollContainer, back_id: String) -
 	header.move_child(back,0)
 	var close := header.get_node("ModalClose") as Button
 	if close.pressed.is_connected(app.close_modal): close.pressed.disconnect(app.close_modal)
-	close.pressed.connect(app.show_game_settings)
-	app.overlay.set_meta("back_action",app.show_game_settings)
+	close.pressed.connect(action)
+	app.overlay.set_meta("back_action",action)
 
 static func icon_button(app: Node, header: Control, texture: Texture2D, id: String, action: Callable, cue := "ui") -> void:
 	var control: DemoButton = app.button(header, "", action, false, "", cue)
