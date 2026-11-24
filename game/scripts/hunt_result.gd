@@ -79,14 +79,10 @@ func _ready() -> void:
 	stage_context.size = Vector2(410,24)
 	stage_context.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	stage_context.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	apply_text_shadow(stage_context)
 	var accent := Color("ffcf75") if won else Color("9dd5ff")
 	write(details,"사냥 성공" if won else "사냥 실패",Rect2(-2,77,430,70),62,accent)
-	var rule := ColorRect.new()
-	rule.color = accent
-	rule.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	details.add_child(rule)
-	rule.position = Vector2(0,153)
-	rule.size = Vector2(57,3)
+	add_title_rule(details,accent)
 	if won and use_han_field:
 		var replay:=int(app.model.state.get("hunt_cleared",0))>int(app.hunt_stage) and not progression_advanced
 		var message:=("다음 단계 해금" if story > 1 else "진행 보상 · 다음 단계 해금") if progression_advanced else "이미 완료한 사냥입니다." if replay else "진행 저장 상태를 확인해 주세요."
@@ -160,6 +156,27 @@ func write(parent: Control, value: String, rect: Rect2, font_size: int, color: C
 	label.position = rect.position
 	label.size = rect.size
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	apply_text_shadow(label)
+
+func apply_text_shadow(label: Label) -> void:
+	label.add_theme_color_override("font_shadow_color", Color(.12,.09,.045,.45))
+	label.add_theme_constant_override("shadow_offset_x",1)
+	label.add_theme_constant_override("shadow_offset_y",2)
+
+func add_title_rule(parent: Control, accent: Color) -> void:
+	var stops := Gradient.new()
+	stops.colors = PackedColorArray([Color(accent,.92),Color(accent,.58),Color(accent,0.0)])
+	stops.offsets = PackedFloat32Array([0.0,.32,1.0])
+	var gradient := GradientTexture2D.new()
+	gradient.gradient = stops
+	gradient.width = 108
+	gradient.height = 3
+	gradient.fill_to = Vector2.RIGHT
+	var rule := TextureRect.new()
+	rule.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	rule.texture = gradient
+	parent.add_child(rule)
+	rule.position = Vector2(0,161)
 
 func _leave(callback: Callable) -> void:
 	if leaving or app.hunt_preparing:
@@ -192,18 +209,18 @@ func followup(parent: Control, value: String, y: float, icon: String) -> void:
 	var row := Panel.new()
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var skin := StyleBoxFlat.new()
-	skin.bg_color = Color(.14,.16,.17,.83)
-	skin.border_color = Color(.67,.71,.74,.44)
+	skin.bg_color = Color(.125,.143,.148,.75)
+	skin.border_color = Color(.66,.79,.83,.37)
 	skin.set_border_width_all(1)
-	skin.set_corner_radius_all(8)
+	skin.set_corner_radius_all(10)
 	row.add_theme_stylebox_override("panel",skin)
 	parent.add_child(row)
 	row.position = Vector2(0,y)
 	row.name = "ResultFailureHint"
 	row.size = Vector2(FAILURE_ROW_WIDTH,56)
 	app.picture(row,load(ART+icon),Rect2(10,8,40,40))
-	write(row,value,Rect2(62,0,220,56),20,Color("cac6bd"))
-	write(row,"준비 중",Rect2(FAILURE_ROW_WIDTH-108,0,66,56),14,Color("cac6bd"))
+	write(row,value,Rect2(62,0,220,56),21,Color("eae6db"))
+	write(row,"준비 중",Rect2(FAILURE_ROW_WIDTH-108,0,66,56),15,Color("c2c9ca"))
 	app.picture(row,preload("res://assets/ui/hunt-result/chevron-right.svg"),Rect2(FAILURE_ROW_WIDTH-37,18,20,20))
 
 func _process(delta: float) -> void:
