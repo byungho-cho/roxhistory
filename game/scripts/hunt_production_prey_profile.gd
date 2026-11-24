@@ -4,7 +4,7 @@ extends RefCounted
 
 const Motion := preload("res://scripts/model_motion_profile.gd")
 const WildlifeRig := preload("res://scripts/wildlife_lab_preview.gd")
-const SPECIES := ["forest", "adult"]
+const SPECIES := ["forest", "stag", "juvenile", "adult"]
 const FIRST_CHAPTER_FINAL_STAGE := 5
 
 static func encounter_species(stage_id: int, cleared: int, candidate_enabled: bool) -> String:

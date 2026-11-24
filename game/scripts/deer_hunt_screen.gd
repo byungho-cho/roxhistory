@@ -13,6 +13,9 @@ const ChapterOneCatalog := preload("res://scripts/hunt_chapter_one_catalog.gd")
 var chapter_story_preview := false
 var chapter_story_number := 0
 var chapter_story_battle
+var chapter_prep_foes: Array[NativeBoar] = []
+var chapter_prep_foe_tags: Array[Control] = []
+var chapter_prep_setup_ok := false
 var stage_one_one:=false
 var battle_toggles_unlocked:=false
 var branch_header:Control
@@ -305,6 +308,8 @@ func _ready() -> void:
 		var tag:=layer(battlefield)
 		build_level(tag,i<3,["ally-melee","ally-tank","ally-ranged","enemy-melee"][i])
 		prep_tags.append(tag)
+	if chapter_story_preview:
+		_build_chapter_preparation_foes(actors)
 	update_combat_ui()
 	resized.connect(fit_layout)
 	fit_layout()
@@ -362,6 +367,64 @@ func _fit_hunt_chrome(safe_area:Rect2)->void:
 	if combat_layout:
 		header_right.position = end-DESIGN
 	fit_exit_shade()
+
+
+func _build_chapter_preparation_foes(parent: Node2D) -> void:
+	var species_list: Array = ChapterOneCatalog.encounter(chapter_story_number).prey
+	var seats: Array = [[4], [4, 2], [4, 0, 5]][species_list.size() - 1]
+	for i in species_list.size():
+		var species: String = species_list[i]
+		var actor: NativeBoar
+		if i == 0 and deer is NativeBoar and deer.native_species == species:
+			actor = deer
+		else:
+			actor = NativeBoar.new()
+			actor.native_species = species
+			actor.world_height = 90
+			actor.heading = -PI * .72
+			parent.add_child(actor)
+			if not actor.is_native_ready():
+				actor.queue_free()
+				for prior in chapter_prep_foes:
+					if prior != deer: prior.queue_free()
+				for prior in chapter_prep_foe_tags: prior.queue_free()
+				chapter_prep_foes.clear()
+				chapter_prep_foe_tags.clear()
+				push_error("Chapter One prep could not load its exact wildlife roster")
+				return
+			actor.set_physics_process(false)
+			actor.presentation_paused = true
+		actor.name = "ChapterPrepFoe%d" % i
+		actor.set_meta("chapter_prep_slot", int(seats[i]))
+		chapter_prep_foes.append(actor)
+		var tag := layer(battlefield)
+		tag.name = "ChapterPrepEnemyMelee%d" % i
+		build_level(tag, false, "enemy-melee")
+		chapter_prep_foe_tags.append(tag)
+	chapter_prep_setup_ok = true
+
+
+func _sync_chapter_preparation_foes() -> void:
+	if not chapter_prep_setup_ok: return
+	var preparing := transition_elapsed < 0.0 and not running and not is_instance_valid(chapter_story_battle) and not result_shown
+	deer.hide()
+	deer.viewport.render_target_update_mode = SubViewport.UPDATE_DISABLED
+	prep_tags[3].hide()
+	for i in chapter_prep_foes.size():
+		var actor := chapter_prep_foes[i]
+		var tag := chapter_prep_foe_tags[i]
+		actor.visible = preparing
+		tag.visible = preparing and arrival_finished
+		if not preparing:
+			actor.viewport.render_target_update_mode = SubViewport.UPDATE_DISABLED
+			continue
+		actor.position = ENEMY_CELLS[int(actor.get_meta("chapter_prep_slot"))]
+		actor.scale = Vector2.ONE * (.48 if chapter_one_solo else .60)
+		var facing: Vector2 = actor.position.direction_to(hunters[selected_hunter].position)
+		actor.heading = atan2(facing.x, facing.y)
+		actor.sample_native_phase("idle", fposmod(pose_clock + .29 * i, maxf(.01, actor.native.length(NativeBoar.Prey.clips(actor.native_species).idle))))
+		actor.viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
+		tag.position = actor.position + Vector2(0, -actor.world_height * actor.scale.y - 15)
 
 
 func build_arrival() -> void:
@@ -532,7 +595,16 @@ func build_power_comparison() -> void:
 	header_spears = ReadinessArt.branch(power_header,Rect2(-30.22,27.33,60.44,30.22),false)
 	prep_ally_portrait.stretch_mode=TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	prep_ally_name=caption(power_header,["한결","우람","새봄"][selected_hunter],Rect2(-109.44,10,120,24),17,Color.WHITE)
-	var prey_name:=caption(power_header,"큰 멧돼지" if _prey_is_adult() else "꽃사슴",Rect2(5,10,106.33,24),17,Color.WHITE)
+	var prep_prey_title := "큰 멧돼지" if _prey_is_adult() else "꽃사슴"
+	if chapter_story_preview:
+		var planned: Array = ChapterOneCatalog.encounter(chapter_story_number).prey
+		if planned.size() > 1:
+			prep_prey_title = "적 %d마리" % planned.size()
+		elif planned[0] == ChapterOneCatalog.JUVENILE:
+			prep_prey_title = "어린 수퇘지"
+	var prey_name:=caption(power_header,prep_prey_title,Rect2(5,10,106.33,24),17,Color.WHITE)
+	if chapter_story_preview:
+		prey_name.name = "ChapterPrepEnemyRosterCaption"
 	prep_ally_name.horizontal_alignment=HORIZONTAL_ALIGNMENT_LEFT
 	prey_name.horizontal_alignment=HORIZONTAL_ALIGNMENT_RIGHT
 	for name_label in [prep_ally_name,prey_name]:
@@ -1042,6 +1114,7 @@ func start_combat() -> void:
 	battle_music_started = true
 	app.sync_audio()
 	transition_elapsed = 0.0
+	_sync_chapter_preparation_foes()
 	vs_ally.texture=_prep_hunter_portrait(selected_hunter)
 	vs_ally.material=ReadinessArt.vs_portrait_material(vs_ally.texture,true)
 	branch_video.play()
@@ -1284,7 +1357,12 @@ func _draw_normal_hunt_art(front:bool) -> void:
 			for actor in hunters:
 				if chapter_one_solo and actor!=hunters[0]:continue
 				prey_art.draw_ground_ring(battle_vfx_under,NativeHud.ground_rect(actor.camera,actor.position,lerpf(CELL_SIZE.x*.40*.62,23.,smoothstep(0.,.30,transition_elapsed)) if transition_elapsed>=0.0 else CELL_SIZE.x*.40*.62),true)
-			prey_art.draw_ground_ring(battle_vfx_under,NativeHud.ground_rect(deer.camera,deer.position,lerpf(CELL_SIZE.x*.40*.62,23.,smoothstep(0.,.30,transition_elapsed)) if transition_elapsed>=0.0 else CELL_SIZE.x*.40*.62),false)
+			if chapter_prep_setup_ok:
+				for actor in chapter_prep_foes:
+					if actor.visible:
+						prey_art.draw_ground_ring(battle_vfx_under, NativeHud.ground_rect(actor.camera, actor.position, CELL_SIZE.x*.40*.62), false)
+			else:
+				prey_art.draw_ground_ring(battle_vfx_under,NativeHud.ground_rect(deer.camera,deer.position,lerpf(CELL_SIZE.x*.40*.62,23.,smoothstep(0.,.30,transition_elapsed)) if transition_elapsed>=0.0 else CELL_SIZE.x*.40*.62),false)
 		return
 	var dest := battle_vfx_front if front else battle_vfx_under
 	if not front:
@@ -2373,6 +2451,7 @@ func update_actors(delta: float) -> void:
 		tag.visible=arrival_finished and transition_elapsed<0.0 and not running and (i==3 or not chapter_one_solo or i==0)
 	if chapter_one_solo:
 		for i in [1,2]:head_headers[i].panel.hide()
+	_sync_chapter_preparation_foes()
 	battle_vfx_under.queue_redraw()
 	battle_vfx_front.queue_redraw()
 	hunter_bar.hide()
