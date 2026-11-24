@@ -126,6 +126,8 @@ func _run()->void:
 	ck(is_instance_valid(motion) and motion.material is ShaderMaterial and motion.stream != null,"failure uses foreground-only motion")
 	var retry := get_button(h,"ResultRetry")
 	ck(motion.position.x<0.0 and motion.scale.x>0.0 and retry.get_global_rect().position.x>root.get_visible_rect().get_center().x and root.get_visible_rect().encloses(retry.get_global_rect()),"failure uses the same left actor and right controls inside the safe layout")
+	var failures := retry.get_parent().find_children("ResultFailureHint*", "Panel", false, false)
+	ck(failures.size() == 2 and failures.all(func(row): return absf(row.get_global_rect().end.x-retry.get_global_rect().end.x)<0.5), "both failure cards share the right action edge")
 	if do_movie:
 		await frames(58)
 		root.get_texture().get_image().save_png(OS.get_environment("APPDATA").path_join("RoxHistory-Hunt-Loss-4x3.png"))

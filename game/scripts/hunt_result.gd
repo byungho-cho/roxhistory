@@ -6,6 +6,8 @@ const ATLAS_SIZE := Vector2i(2328,3096)
 const RESULT_COLUMN_X := 498.0
 const CTA_FIRST_X := 82.0
 const CTA_SECOND_X := CTA_FIRST_X + 184.0
+const CTA_WIDTH := 170.0
+const FAILURE_ROW_WIDTH := CTA_SECOND_X + CTA_WIDTH
 const ACTOR_FRAME := Rect2(-350, 0, 960, 540)
 var app: Node
 var won: bool
@@ -151,7 +153,7 @@ func result_button(parent: Control, value: String, x: float, primary: bool, call
 	var button: DemoButton = app.button(parent,value,func(): _leave(callback))
 	button.position = Vector2(x,427)
 	button.custom_minimum_size = Vector2.ZERO
-	button.size = Vector2(170,52)
+	button.size = Vector2(CTA_WIDTH,52)
 	for state in ["normal","hover","pressed","focus"]:
 		button.add_theme_stylebox_override(state,StyleBoxEmpty.new())
 	for key in ["font_color","font_hover_color","font_pressed_color"]:
@@ -173,11 +175,12 @@ func followup(parent: Control, value: String, y: float, icon: String) -> void:
 	row.add_theme_stylebox_override("panel",skin)
 	parent.add_child(row)
 	row.position = Vector2(0,y)
-	row.size = Vector2(391,56)
+	row.name = "ResultFailureHint"
+	row.size = Vector2(FAILURE_ROW_WIDTH,56)
 	app.picture(row,load(ART+icon),Rect2(10,8,40,40))
 	write(row,value,Rect2(62,0,220,56),20,Color("cac6bd"))
-	write(row,"준비 중",Rect2(283,0,66,56),14,Color("cac6bd"))
-	app.picture(row,preload("res://assets/ui/hunt-result/chevron-right.svg"),Rect2(354,18,20,20))
+	write(row,"준비 중",Rect2(FAILURE_ROW_WIDTH-108,0,66,56),14,Color("cac6bd"))
+	app.picture(row,preload("res://assets/ui/hunt-result/chevron-right.svg"),Rect2(FAILURE_ROW_WIDTH-37,18,20,20))
 
 func _process(delta: float) -> void:
 	if is_instance_valid(result_video):
