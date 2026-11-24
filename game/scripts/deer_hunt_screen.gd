@@ -8,10 +8,7 @@ var branch_video:BranchVS
 var prep_tags:Array[Control]=[]
 var chapter_one_solo:=false
 var prep_ally_count := 3
-var story_cutin: Control
-var story_cutin_portrait: TextureRect
-var story_cutin_speaker: Label
-var story_cutin_words: Label
+var story_cutin: CharacterGuide
 const ChapterOneCatalog := preload("res://scripts/hunt_chapter_one_catalog.gd")
 # Private proof only: do not make part of a release until every story route and
 # normal frontier behavior are verified.
@@ -1893,41 +1890,17 @@ func _start_chapter_story_preview() -> void:
 	battle_vfx_front.hide()
 
 func _make_story_cutin(slot: int) -> void:
-	story_cutin = layer(canvas)
-	story_cutin.z_index = 2000
-	story_cutin.size = DESIGN
-	story_cutin.mouse_filter = Control.MOUSE_FILTER_STOP
-	var shade := ColorRect.new()
-	shade.color = Color(0.051,0.073,0.081,.84)
-	shade.size = DESIGN
-	shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	story_cutin.add_child(shade)
-	var line_color := Color("e2bd84") if slot==1 else Color("e1e8df")
-	var rule := ColorRect.new()
-	rule.color = Color(line_color,.61)
-	rule.position = Vector2(254,382)
-	rule.size = Vector2(452,1)
-	rule.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	story_cutin.add_child(rule)
-	story_cutin_portrait = app.picture(story_cutin,hunter_portrait(slot),Rect2(354,77,252,252))
-	story_cutin_portrait.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	story_cutin_speaker = caption(story_cutin,"우람" if slot==1 else "새봄",Rect2(240,330,480,52),36,line_color)
-	story_cutin_words = caption(story_cutin,"한결아, 내가 앞을 막을게!" if slot==1 else "한결아, 우람아! 뒤는 내가 맡을게!",Rect2(95,392,770,72),34,Color("fff5df"))
+	var character_art := load("res://assets/ui/village-guidance/guide-uram.png" if slot==1 else "res://assets/ui/village-guidance/guide-saebom.png") as Texture2D
+	story_cutin=CharacterGuide.new(app,"우람" if slot==1 else "새봄","한결아, 내가 앞을 막을게!" if slot==1 else "한결아, 우람아! 뒤는 내가 맡을게!",character_art)
+	story_cutin.z_index=2000
 	story_cutin.hide()
+	add_child(story_cutin)
 
 func _update_story_cutin() -> void:
 	if not is_instance_valid(story_cutin):return
-	var active: bool = chapter_story_battle.story_entry_active()
-	story_cutin.visible = active
-	if not active:return
-	var p: float = chapter_story_battle.story_entry_fraction()
-	var appearing := smoothstep(0.,.15,p)
-	var leaving := 1.0-smoothstep(.86,1.,p)
-	story_cutin.modulate.a = maxf(.04,appearing)*leaving
-	story_cutin_portrait.position.x = lerpf(322.,354.,appearing)
-	story_cutin_portrait.position.y = lerpf(84.,75.,p)
-	story_cutin_speaker.modulate.a = smoothstep(.03,.18,p)
-	story_cutin_words.modulate.a = smoothstep(.04,.19,p)
+	var active:bool=chapter_story_battle.story_entry_active()
+	story_cutin.visible=active
+	if active:story_cutin.present_timed(chapter_story_battle.story_entry_fraction(),chapter_story_battle.STORY_CUTIN_SECONDS)
 
 func _process(delta: float) -> void:
 	if is_instance_valid(branch_video):branch_video.paused=not app.application_active or exit_popup!=null or app.modal

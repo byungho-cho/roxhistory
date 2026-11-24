@@ -7,6 +7,8 @@ var message:String
 var layout:Control
 var panel_group:Control
 var character:TextureRect
+var timed_art: Texture2D
+var art_rect := Rect2(-78,190,676,450.667)
 var age:=0.0
 var revealed := 0.0
 var next_hint: TextureRect
@@ -23,12 +25,11 @@ var text_fonts:Array[FontVariation]=[]
 const DESIGN_SIZE:=Vector2(1200,675)
 const PANEL_RECT:=Rect2(149,433,978,190)
 const PANEL_FRAME:=Rect2(142,430,992,204)
-const CHARACTER_RECT:=Rect2(-78,190,676,450.667)
 const TEXT_X:=357.0
 var content := PANEL_FRAME.grow(-SharedPopupArt.INSET)
 var text_width := content.end.x-TEXT_X-44.0
-func _init(owner_app:Node,title:String,body:String)->void:
-	app=owner_app;heading=title;message=body
+func _init(owner_app:Node,title:String,body:String,full_body:Texture2D=null)->void:
+	app=owner_app;heading=title;message=body;timed_art=full_body
 func picture(parent:Node,texture:Texture2D,rect:Rect2)->TextureRect:
 	var image:=TextureRect.new();image.texture=texture;image.expand_mode=TextureRect.EXPAND_IGNORE_SIZE
 	image.position=rect.position;image.size=rect.size;image.mouse_filter=Control.MOUSE_FILTER_IGNORE;parent.add_child(image);return image
@@ -45,20 +46,30 @@ func _ready()->void:
 	for item in [[heading,32],[message,27]]:
 		var text:=Label.new();text.theme=DemoArt.theme();text.text=item[0];
 		var font:=FontVariation.new();font.base_font=FigmaArt.NOTO;font.variation_opentype={TextServerManager.get_primary_interface().name_to_tag("wght"):700.0 if item[1]==32 else 400.0};text.add_theme_font_override("font",font);text.add_theme_font_size_override("font_size",item[1]);text.add_theme_color_override("font_color",Color("3d230f"));text.autowrap_mode=TextServer.AUTOWRAP_WORD_SMART;text.size_flags_horizontal=Control.SIZE_EXPAND_FILL;text.add_theme_constant_override("line_spacing",0);text_column.add_child(text);text_labels.append(text);text_fonts.append(font)
-	character=picture(layout,preload("res://assets/ui/village-guidance/guide-character-plaque.png"),CHARACTER_RECT);character.name="GuideCharacter";character.stretch_mode=TextureRect.STRETCH_KEEP_ASPECT_COVERED;character.clip_contents=true;character.pivot_offset=Vector2(234,425)
-	var speaker:Label=app.label(character,"길잡이",30,Color("fffdf3"))
-	speaker.position=Vector2(472,223);speaker.size=Vector2(94,38)
-	speaker.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
-	speaker.vertical_alignment=VERTICAL_ALIGNMENT_CENTER
+	if timed_art:
+		var tex_size:=timed_art.get_size()
+		var factor:=minf(185.0/tex_size.x,402.0/tex_size.y)
+		var fit:=tex_size*factor
+		art_rect=Rect2(Vector2(249.0-fit.x*.5,623.0-fit.y),fit)
+		character=picture(layout,timed_art,art_rect)
+		character.name="GuideFullBody"
+		character.stretch_mode=TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	else:
+		character=picture(layout,preload("res://assets/ui/village-guidance/guide-character-plaque.png"),art_rect);character.name="GuideCharacter";character.stretch_mode=TextureRect.STRETCH_KEEP_ASPECT_COVERED;character.clip_contents=true;character.pivot_offset=Vector2(234,425)
+		var speaker:Label=app.label(character,"길잡이",30,Color("fffdf3"))
+		speaker.position=Vector2(472,223);speaker.size=Vector2(94,38)
+		speaker.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
+		speaker.vertical_alignment=VERTICAL_ALIGNMENT_CENTER
 	begin_reveal()
 	panel_group.modulate.a=0;character.modulate.a=0
 	update_layout()
-	app.animate_popup(panel_group,PANEL_RECT.get_center())
+	if timed_art:set_process(false)
+	else:app.animate_popup(panel_group,PANEL_RECT.get_center())
 func update_layout()->void:
 	# Width-fit the design's transparent frame instead of inset fitting the whole
 	# 675px preview: its visible character starts at 202px, so wider phones can use
 	# the empty upper part without shrinking the messenger away from the left edge.
-	var factor:=minf(app.w/DESIGN_SIZE.x,(app.h-app.safe.y)/(DESIGN_SIZE.y-CHARACTER_RECT.position.y))
+	var factor:=minf(app.w/DESIGN_SIZE.x,(app.h-app.safe.y)/(DESIGN_SIZE.y-art_rect.position.y))
 	var bottom_inset:=maxf(0.0,app.safe.y-(DESIGN_SIZE.y-PANEL_RECT.end.y)*factor)
 	layout.scale=Vector2.ONE*factor
 	layout.position=Vector2((app.w-DESIGN_SIZE.x*factor)*.5,app.h-DESIGN_SIZE.y*factor-bottom_inset)
@@ -151,12 +162,26 @@ func handle_pointer(event:InputEvent)->bool:
 		if not cancelled and not press.dragged and press.start.distance_to(event.position)<=12:advance()
 	return true
 
+## Timed presentation reuses the actual U10400 panel, type and safe layout.
+## Its enclosing encounter owns pause, input lock and when this view is shown.
+func present_timed(progress:float, duration:float) -> void:
+	if not timed_art:return
+	update_layout()
+	var seconds:=progress*duration
+	var appearing:=smoothstep(0.,.18,seconds)
+	modulate.a=1.0-smoothstep(.89,1.0,progress)
+	panel_group.modulate.a=appearing
+	character.modulate.a=smoothstep(.05,.26,seconds)
+	character.position=art_rect.position+Vector2(-13.0*(1.0-appearing),0.0)
+	text_labels[1].visible_characters=mini(message.length(),maxi(0,floori((seconds-.10)*48.0)))
+	next_hint.hide()
+
 func _process(delta:float)->void:
 	age+=delta;update_layout()
 	panel_group.modulate.a=smoothstep(0,.22,age)
 	character.modulate.a=smoothstep(.22,.48,age)
-	character.position.x=CHARACTER_RECT.position.x-24*(1-smoothstep(.22,.55,age))
-	character.position.y=CHARACTER_RECT.position.y+sin(age*2.2)*3.0
+	character.position.x=art_rect.position.x-24*(1-smoothstep(.22,.55,age))
+	character.position.y=art_rect.position.y+sin(age*2.2)*3.0
 	if revealed < message.length():
 		var speed := float(ProjectSettings.get_setting("roxhistory/tutorial/characters_per_second", DEFAULT_CHARS_PER_SECOND))
 		revealed += maxf(1, speed) * delta
