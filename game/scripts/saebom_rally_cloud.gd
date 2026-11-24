@@ -13,6 +13,12 @@ static func accrue(previous_fifths: int, unbuffed_attack: int) -> Vector2i:
 	var fifths := previous_fifths + maxi(0, unbuffed_attack)
 	return Vector2i(floori(float(fifths) / DENOMINATOR), fifths % DENOMINATOR)
 
+# Carry the fraction between casts so small hits still deal their total damage.
+static func accrue_grown(previous: float, unbuffed_attack: int, multiplier: float) -> Vector2:
+	var raw := previous + unbuffed_attack * multiplier / DENOMINATOR
+	var damage := roundi(raw)
+	return Vector2(damage, raw - damage)
+
 static func draw(layer: CanvasItem, feet: Vector2, age: float) -> void:
 	if not feet.is_finite() or age <= 0.0 or age >= SPAN:
 		return

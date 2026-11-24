@@ -9,7 +9,6 @@ signal failed(message: String)
 var state: Dictionary = {}
 var store: SaveStore
 var busy := false
-var hero_growth_rules: Dictionary = HeroGrowth.RULES
 # Runtime-only target ownership. Never consume a charge until harvest commits.
 # Hero's queued and active work share an actor but have separate lifetime tokens.
 var gather_claims:Dictionary={}
@@ -245,7 +244,7 @@ func finish_loaded_jobs()->void:
 ## Spend the resource and record growth in one save transaction.
 func feed_hero(id: String) -> Dictionary:
 	if busy: return {}
-	var progress := HeroGrowth.after_feed(state, id, hero_growth_rules)
+	var progress := HeroGrowth.after_feed(state, id)
 	if progress.is_empty(): return {}
 	var previous := HeroGrowth.read(state, id)
 	var next := state.duplicate(true)

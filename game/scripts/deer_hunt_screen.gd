@@ -293,8 +293,8 @@ func _ready() -> void:
 			chapter_one_solo=prep_ally_count==1
 			battle_toggles_unlocked=ChapterOneCatalog.is_unlocked(4,completed)
 	for i in 3:
-		var growth := HeroGrowth.battle_overrides(app.model.state, HeroGrowth.HEROES[i], app.model.hero_growth_rules)
-		rules.apply_growth(i, growth)
+		var level: int = HeroGrowth.read(app.model.state, HeroGrowth.HEROES[i]).level
+		rules.apply_growth(i, HeroGrowth.multiplier(level))
 	for i in range(prep_ally_count,3): rules.party_hp[i]=0
 	_restore_hunt_formation()
 	add_child(hunt_audio)
@@ -1865,7 +1865,7 @@ func _execute_uram_field_reserve() -> bool:
 	if rules.party_hp[1] <= 0 or not rules.outcome.is_empty():
 		uram_field_reserved = false
 		return false
-	if not rules.start_frontline_paid(1,rules.hero_stat(1, "chain", RULES.URAM_SHIELD_COUNTER_DAMAGE),URAM_FIELD_POSE):
+	if not rules.start_frontline_paid(1,RULES.URAM_SHIELD_COUNTER_DAMAGE,URAM_FIELD_POSE):
 		return false
 	uram_field_reserved = false
 	play_pose(URAM_FIELD_CAST)
@@ -1913,7 +1913,6 @@ func _manual_duration(id: String) -> float:
 func _start_frontline_paid(index: int, id: String) -> bool:
 	var legacy_damage:=int(RULES.SKILLS[RULES.PARTY_SKILLS[index]].damage)
 	if stage_one_one and id==ManualHunt.HAN_SPEAR_2:legacy_damage=ManualHunt.HAN_STORY_2SP_DAMAGE
-	legacy_damage = rules.hero_stat(index, "chain" if id == ManualHunt.HAN_SPEAR_3 else "skill", legacy_damage)
 	var data := ManualHunt.describe(id,legacy_damage)
 	if data.is_empty() or not rules.start_frontline_paid(index,int(data.damage),_manual_duration(id)):
 		return false
@@ -2043,7 +2042,7 @@ func _queue_first_hunt_han() -> void:
 		return
 	first_hunt_han_ready=manual_combat_clock+ManualHunt.recurring_attack_period(hunters[0].clip_duration("basic"))
 	rules.action_lock=RULES.POSE_SECONDS
-	rules.queue_attack(rules.hero_stat(0, "attack", rules.han_ordinary_damage),0)
+	rules.queue_attack(rules.han_ordinary_damage,0)
 	play_pose("auto_thrust")
 
 
@@ -2296,7 +2295,7 @@ func _start_chapter_story_preview() -> void:
 	for cell in assigned_cells:
 		story_foot_placement.append(HUNTER_BATTLE_CENTER+(ALLY_CELLS[cell]-FORMATION_CENTER)*.62)
 	battle.story_allied_placement = story_foot_placement
-	battle.story_allied_stats = rules.growth_stats
+	battle.story_allied_growth = rules.party_growth
 	canvas.add_child(battle)
 	battle.setup(prey_art.draw_dust, _draw_story_gong, _draw_story_uram_hit,
 		_draw_story_uram_windup, _draw_story_authored_hit, prey_art.draw_charge,

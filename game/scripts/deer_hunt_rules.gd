@@ -34,7 +34,7 @@ var han_ordinary_damage := RallyCloud.ORDINARY_BASE
 var charges: Array[float] = [0.0, 0.0, 0.0]
 var party_hp: Array[int] = [34, 33, 33]
 var party_max_hp: Array[int] = [34, 33, 33]
-var growth_stats: Array[Dictionary] = [{}, {}, {}]
+var party_growth: Array[float] = [1.0, 1.0, 1.0]
 var hunter_hp: int:
 	get: return party_hp[0]+party_hp[1]+party_hp[2]
 var next_target := 0
@@ -44,6 +44,7 @@ var pending_damage := 0
 var pending_counter := false
 var rally_cast_pending := false
 var rally_cloud_fifths := 0
+var rally_cloud_growth_remainder := 0.0
 var rally_remaining: Array[float] = [0.0, 0.0, 0.0]
 # Integer fifths, independent per recipient. A sequence of five 1-point
 # attacks really gains one damage instead of each attack rounding back to 1.
@@ -63,13 +64,10 @@ var auto_enabled := false
 var reserved_skill := ""
 var rng := RandomNumberGenerator.new()
 
-func apply_growth(index: int, stats: Dictionary) -> void:
-	growth_stats[index] = stats
-	party_max_hp[index] = hero_stat(index, "hp", PARTY_HP[index])
+func apply_growth(index: int, multiplier: float) -> void:
+	party_growth[index] = multiplier
+	party_max_hp[index] = roundi(PARTY_HP[index] * multiplier)
 	party_hp[index] = party_max_hp[index]
-
-func hero_stat(index: int, key: String, fallback: int) -> int:
-	return int(growth_stats[index].get(key, fallback))
 
 func enable_motion_trial() -> void:
 	deer_max_hp = MAX_HP * 10
@@ -89,7 +87,14 @@ func resolve_attack(ordered_han_finisher := false, contact_into_frame := 0.0) ->
 	var damage := pending_damage
 	pending_damage = 0
 	if damage > 0:
-		if ordered_han_finisher and attacker == 0:
+		if party_growth[attacker] > 1.0:
+			var final_damage := damage * party_growth[attacker]
+			var ordered_han := ordered_han_finisher and attacker == 0
+			var remaining := maxf(0.0, contact_into_frame) if ordered_han else 0.0
+			if party_hp[attacker] > 0 and rally_remaining[attacker] > remaining:
+				final_damage *= 1.32 if ordered_han else 1.20
+			damage = roundi(final_damage)
+		elif ordered_han_finisher and attacker == 0:
 			if party_hp[0] > 0 and rally_remaining[0] > maxf(0.0,contact_into_frame):
 				var scaled := damage * 132 + han_combo_hundredths
 				han_combo_hundredths = scaled % 100
@@ -156,7 +161,7 @@ func use_skill(skill: String) -> bool:
 		basic_lock = BASIC_INTERVAL
 	else:
 		orb_lock = 1.0
-	queue_attack(hero_stat(index, "skill", SKILLS[skill].damage),index)
+	queue_attack(SKILLS[skill].damage,index)
 	return true
 
 # Manual chain input owns its own valid tap/SP reservation; ordinary scheduling stays separate.
@@ -211,11 +216,11 @@ func resolve_uram_shield_counter(ordinary:bool) -> int:
 	if deer_hp <= 0 or not outcome.is_empty() or party_hp[1] <= 0 or pending_counter:
 		return 0
 	if ordinary:
-		if attacker != 1 or pending_damage != hero_stat(1, "chain", URAM_SHIELD_COUNTER_DAMAGE):
+		if attacker != 1 or pending_damage != URAM_SHIELD_COUNTER_DAMAGE:
 			return 0
 		pending_damage = 0
 	var before := deer_hp
-	damage_deer(hero_stat(1, "chain", URAM_SHIELD_COUNTER_DAMAGE))
+	damage_deer(roundi(URAM_SHIELD_COUNTER_DAMAGE * party_growth[1]))
 	if deer_hp > 0:
 		prey_stun_remaining = URAM_SHIELD_COUNTER_STUN
 	return before-deer_hp
@@ -253,9 +258,16 @@ func apply_rally(positions: Array[Vector2]) -> bool:
 	# This encounter uses one-point unbuffed basics, including Saebom.
 	# Preserve exactly one fifth of that attack without touching the buff remainder.
 	if deer_hp > 0:
-		var wind := RallyCloud.accrue(rally_cloud_fifths,RallyCloud.ORDINARY_BASE)
-		rally_cloud_fifths=wind.y
-		if wind.x > 0:damage_deer(wind.x)
+		var damage: int
+		if party_growth[SAEBOM] > 1.0:
+			var grown := RallyCloud.accrue_grown(rally_cloud_growth_remainder, RallyCloud.ORDINARY_BASE, party_growth[SAEBOM])
+			rally_cloud_growth_remainder = grown.y
+			damage = int(grown.x)
+		else:
+			var wind := RallyCloud.accrue(rally_cloud_fifths, RallyCloud.ORDINARY_BASE)
+			rally_cloud_fifths = wind.y
+			damage = wind.x
+		if damage > 0: damage_deer(damage)
 	return true
 
 
@@ -313,7 +325,7 @@ func advance(delta: float, tick_rally := true, prefer_manual := false) -> String
 	hunter_turn = not hunter_turn
 	if not hunter_turn:
 		var index := living_from(next_attacker)
-		queue_attack(hero_stat(index, "attack", han_ordinary_damage if index==0 else RallyCloud.ORDINARY_BASE),index)
+		queue_attack(han_ordinary_damage if index==0 else RallyCloud.ORDINARY_BASE,index)
 		next_attacker = (index+1)%party_hp.size()
 		return "auto_thrust"
 	attacker = living_from(next_target)

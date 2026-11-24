@@ -119,6 +119,7 @@ func make_growth() -> void:
 	panel_at(frame, Rect2(5, 5, 414, 619), DARK, Color("76502f"), 5, 20)
 	picture(frame, "growth-wood-frame.png", Rect2(0, 0, 424, 629))
 	text_at(frame, "성장 미리보기", Rect2(35, 27, 230, 35), 25, Color("f7d499"), HORIZONTAL_ALIGNMENT_LEFT, true)
+	text_at(frame, "314 검수 가안", Rect2(244, 27, 149, 35), 17, Color("f7d499"), HORIZONTAL_ALIGNMENT_RIGHT)
 	level_text = text_at(frame, "", Rect2(34, 73, 230, 52), 38, GOLD, HORIZONTAL_ALIGNMENT_LEFT, true)
 	level_text.name = "LevelAndCap"
 	text_at(frame, "현재 경험치", Rect2(34, 138, 100, 29), 18)
@@ -199,7 +200,6 @@ func make_roster() -> void:
 
 func refresh() -> void:
 	var state: Dictionary = app.model.state
-	var rules: Dictionary = app.model.hero_growth_rules
 	owned.clear()
 	for i in roster.size():
 		var unlocked := HeroGrowth.owns(state, HeroGrowth.HEROES[i])
@@ -223,15 +223,15 @@ func refresh() -> void:
 
 	var id: String = HeroGrowth.HEROES[selected]
 	var progress := HeroGrowth.read(state, id)
-	var limit := HeroGrowth.cap(state, id, rules)
+	var limit := HeroGrowth.MAX_LEVEL
 	var has_next: bool = int(progress.level) < limit
-	var need := HeroGrowth.needed_at(id, progress.level, rules) if has_next else 0
-	var stats := HeroGrowth.stats_at(id, progress.level, rules)
-	var next_stats := HeroGrowth.stats_at(id, progress.level + 1, rules) if has_next else {}
-	level_text.text = "Lv. %d/%s" % [progress.level, str(limit) if limit > 0 else "—"]
+	var need := HeroGrowth.needed_at(progress.level) if has_next else 0
+	var stats := HeroGrowth.stats_at(id, progress.level)
+	var next_stats := HeroGrowth.stats_at(id, progress.level + 1) if has_next else {}
+	level_text.text = "Lv. %d/%d" % [progress.level, limit]
 	xp_text.text = "%d / %s XP" % [progress.xp, str(need) if need > 0 else "—"]
-	remaining_text.text = "%d XP 남음" % maxi(0, need - progress.xp) if need > 0 else "최대 레벨" if limit > 0 else "성장 준비 중"
-	var fraction := clampf(float(progress.xp) / need, 0.0, 1.0) if need > 0 else 1.0 if limit > 0 else 0.0
+	remaining_text.text = "%d XP 남음" % maxi(0, need - progress.xp) if need > 0 else "최대 레벨"
+	var fraction := clampf(float(progress.xp) / need, 0.0, 1.0) if need > 0 else 1.0
 	xp_fill.size.x = 351 * fraction
 	xp_fill.visible = fraction > 0.0
 	meat_text.text = "보유 %d" % int(state.get("meat", 0))
@@ -239,7 +239,7 @@ func refresh() -> void:
 		var key: String = HeroGrowth.STATS[i]
 		before_text[i].text = str(stats[key])
 		after_text[i].text = str(next_stats.get(key, "—"))
-	upgrade.disabled = not HeroGrowth.can_feed(state, id, rules)
+	upgrade.disabled = not HeroGrowth.can_feed(state, id)
 	upgrade.modulate.a = 0.62 if upgrade.disabled else 1.0
 
 	var hero: Array = DATA[selected]
@@ -345,10 +345,9 @@ func feed() -> void:
 		return
 	if result.after.level > result.before.level:
 		cancel_celebration()
-		var rules: Dictionary = app.model.hero_growth_rules
 		var id: String = HeroGrowth.HEROES[selected]
-		var from := HeroGrowth.stats_at(id, result.before.level, rules)
-		var to := HeroGrowth.stats_at(id, result.after.level, rules)
+		var from := HeroGrowth.stats_at(id, result.before.level)
+		var to := HeroGrowth.stats_at(id, result.after.level)
 		celebration_text.text = "Lv. %d 달성 · 체력 %+d · 공격 %+d · 스킬 %+d" % [result.after.level, to.hp - from.hp, to.attack - from.attack, to.skill - from.skill]
 		celebration_text.modulate.a = 1.0
 		celebration_text.pivot_offset = celebration_text.size * 0.5

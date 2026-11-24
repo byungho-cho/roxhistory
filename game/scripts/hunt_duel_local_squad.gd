@@ -24,7 +24,7 @@ const HEROES := ["hangyeol","uram","saebom"]
 # Empty is the existing lab mode. A production caller may supply the named
 # Chapter One encounter before setup without routing to the lab screen.
 var story_encounter: Dictionary = {}
-var story_allied_stats: Array[Dictionary] = [{}, {}, {}]
+var story_allied_growth: Array[float] = [1.0, 1.0, 1.0]
 var story_outcome := ""
 var victory_age := -1.0
 var victory_allies:Dictionary={}
@@ -283,7 +283,7 @@ func setup(dust_draw:Callable=Callable(),gong:Callable=Callable(), heavy:Callabl
 		if not story_encounter.is_empty():
 			u.story_dormant = dormant
 			if ally:
-				u.max_hp=int(story_allied_stats[i].get("hp", Hunt.RULES.PARTY_HP[i]))
+				u.max_hp=roundi(Hunt.RULES.PARTY_HP[i] * story_allied_growth[i])
 			else:
 				var n:=int(story_encounter.number)
 				var stats:=ChapterEnemyLevels.prey_stats(n,id,MAX_HP,Hunt.RULES.COUNTER_DAMAGE if n<=6 else 11,23,MAX_HP*Hunt.RULES.COUNTER_DAMAGE)
@@ -1045,17 +1045,25 @@ func _resolve(i:int)->void:
 		for target_index in range(3,units.size()):
 			var target:=units[target_index]
 			if int(target.hp)<=0:continue
-			var wind:=RallyCloud.accrue(int(target.get("bom_cloud_fifths",0)),RallyCloud.SQUAD_BASE)
-			target.bom_cloud_fifths=wind.y
-			_subtract_hp_and_show(target_index,wind.x)
+			var wind_damage: int
+			if story_allied_growth[2] > 1.0:
+				var grown := RallyCloud.accrue_grown(float(target.get("bom_cloud_growth_remainder", 0.0)), RallyCloud.SQUAD_BASE, story_allied_growth[2])
+				target.bom_cloud_growth_remainder = grown.y
+				wind_damage = int(grown.x)
+			else:
+				var wind := RallyCloud.accrue(int(target.get("bom_cloud_fifths", 0)), RallyCloud.SQUAD_BASE)
+				target.bom_cloud_fifths = wind.y
+				wind_damage = wind.x
+			_subtract_hp_and_show(target_index, wind_damage)
 			hits.append({"from":i,"target":target_index,"type":"rally_cloud","result":"hit","hp":target.hp})
 			if int(target.hp)==0:_play(target,"death")
 		return
 	# The ground strike reaches all living enemies on the existing contact beat.
 	if i == 0 and u.move == "chain":
-		var amount := _story_hero_stat(0, "chain", HeroGrowth.HAN_CHAIN_DAMAGE)
+		var power := HeroGrowth.HAN_CHAIN_DAMAGE * story_allied_growth[0]
 		if u.rally > elapsed:
-			amount = roundi(amount * (1.20 if local_melee_polish else 1.25))
+			power *= 1.20 if local_melee_polish else 1.25
+		var amount := roundi(power)
 		var primary_alive := j >= 3 and j < units.size() and int(units[j].hp) > 0
 		if primary_alive:
 			_damage(0, j, amount, "chain")
@@ -1063,7 +1071,8 @@ func _resolve(i:int)->void:
 			# A defeated target cannot redirect the full hit to another lane.
 			var floor_point: Vector2 = units[j].feet if j >= 3 and j < units.size() else u.feet
 			han_ground_events.append({"at":elapsed, "floor":floor_point})
-		var splash := roundi(amount * HAN_3SP_SPLASH_FRACTION)
+		# Lv. 1 keeps the original splash rule. Grown hits round only at contact.
+		var splash := roundi((power if story_allied_growth[0] > 1.0 else float(amount)) * HAN_3SP_SPLASH_FRACTION)
 		for enemy in range(3, units.size()):
 			if enemy != j and int(units[enemy].hp) > 0:
 				_damage(0, enemy, splash, "han_chain_splash")
@@ -1091,15 +1100,15 @@ func _resolve(i:int)->void:
 		if beat>=Knife.contacts.size():return
 		u.bom_strike=beat+1
 		if beat+1<Knife.contacts.size():u.contact=Knife.contacts[beat+1]
-		var amount:=Knife.damage_at(beat,u.rally>elapsed,_story_hero_stat(i, "skill", Knife.TOTAL_DAMAGE))
+		var amount:=Knife.damage_at(beat,u.rally>elapsed,story_allied_growth[i])
 		_resolve_saebom_near(i,j,amount,beat)
 		return
 	var damage:=RallyCloud.SQUAD_BASE if u.move=="attack" else FrontlineActions.HAN_STORY_2SP_DAMAGE if u.move=="skill" and i==0 else 27 if u.move=="skill" else 38
 	if i>=3:
 		damage=int(u.get("basic_damage",11)) if u.move=="attack" else int(u.get("skill_damage",23))
-	elif u.move in ["attack", "skill"]:
-		damage=_story_hero_stat(i, u.move, damage)
-	if u.rally>elapsed:damage=roundi(damage*(1.20 if local_melee_polish else 1.25))
+	var power := float(damage) * (story_allied_growth[i] if i < 3 else 1.0)
+	if u.rally > elapsed: power *= 1.20 if local_melee_polish else 1.25
+	damage = roundi(power)
 	var start:Vector2=u.feet-Vector2(0,30)
 	var finish:Vector2=units[j].feet-Vector2(0,25)
 	if i==2 and not (u.move=="attack" and bool(u.get("bom_shove",false))):
@@ -1135,7 +1144,7 @@ func _finish_uram_ordinary_counter(j:int)->void:
 	if j<3 or j>=units.size() or units[j].hp<=0:
 		_apply_uram_field_hit(-1)
 		return
-	_damage(1,j,_story_hero_stat(1, "chain", Hunt.RULES.URAM_SHIELD_COUNTER_DAMAGE),"counter")
+	_damage(1,j,roundi(Hunt.RULES.URAM_SHIELD_COUNTER_DAMAGE * story_allied_growth[1]),"counter")
 	if int(units[j].hp)>0:
 		_play(units[j],"hit")
 		units[j].next=maxf(float(units[j].next),elapsed+1.15)
@@ -1176,7 +1185,7 @@ func _apply_uram_field_hit(exclude_primary:int)->void:
 	for j in range(3,units.size()):
 		var recipient:=units[j]
 		if j==exclude_primary or recipient.hp<=0:continue
-		_damage(1,j,URAM_SPLASH_DAMAGE,"counter_splash")
+		_damage(1,j,roundi(URAM_SPLASH_DAMAGE * story_allied_growth[1]),"counter_splash")
 		if int(recipient.hp)>0:
 			_play(recipient,"hit")
 			recipient.next=maxf(float(recipient.next),elapsed+URAM_STUN_SECONDS)
@@ -1225,9 +1234,6 @@ func _subtract_hp_and_show(j:int,amount:int)->void:
 
 const OrdinaryHitAccent = preload("res://scripts/hunt_ordinary_hit_accent.gd")
 
-func _story_hero_stat(index: int, key: String, fallback: int) -> int:
-	return int(story_allied_stats[index].get(key, fallback))
-
 func _damage(i:int,j:int,amount:int,key:String,stone_impact:=Vector2.INF)->void:
 	var target:=units[j]
 	if target.hp<=0:return
@@ -1261,7 +1267,7 @@ func _damage(i:int,j:int,amount:int,key:String,stone_impact:=Vector2.INF)->void:
 			glints.append({"at":elapsed,"point":target.feet-Vector2(0,25),"tint":Color("65e4cf")})
 		var counter_primary:bool=units[i].hp>0 and target.feet.distance_to(units[i].feet)<76.0
 		if counter_primary:
-			_damage(j,i,_story_hero_stat(1, "chain", Hunt.RULES.URAM_SHIELD_COUNTER_DAMAGE),"counter")
+			_damage(j,i,roundi(Hunt.RULES.URAM_SHIELD_COUNTER_DAMAGE * story_allied_growth[1]),"counter")
 			if local_melee_polish and int(units[i].hp)>0:
 				_play(units[i],"hit")
 				units[i].next=maxf(float(units[i].next),elapsed+URAM_STUN_SECONDS)
