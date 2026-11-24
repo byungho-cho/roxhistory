@@ -94,6 +94,9 @@ func _run()->void:
 	var next:=get_button(h,"ResultNextStage")
 	var back:=get_button(h,"ResultBackToVillage")
 	ck(is_instance_valid(left) and is_instance_valid(next) and is_instance_valid(back),"win exposes selector, next and village back")
+	var context := get_button(h, "ResultStageContext")
+	var local_gap := context.get_global_rect().position.x-back.get_global_rect().end.x
+	ck(local_gap>0.0 and local_gap<8.0 and absf(context.get_global_rect().get_center().y-back.get_global_rect().get_center().y)<1.0 and context.mouse_filter==Control.MOUSE_FILTER_IGNORE,"chapter label vertically aligns beside the village back arrow without covering its touch area")
 	var fill:=get_button(h,"ResultViewportBackdrop")
 	ck(is_instance_valid(fill) and fill.get_global_rect().size.is_equal_approx(root.get_visible_rect().size),"transparent shade covers the real battlefield viewport")
 	var shade := fill as ColorRect

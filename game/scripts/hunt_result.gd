@@ -23,6 +23,7 @@ var result_first:TextureRect
 var video_finished:=false
 var result_details: Control
 var result_actions: Control
+var stage_context: Label
 var village_back: DemoButton
 var village_back_icon: TextureRect
 const FIELD_ART := "res://assets/ui/hunt-readiness/"
@@ -68,25 +69,29 @@ func _ready() -> void:
 		stage = story - 1
 	var region := "초원" if chapter == 0 else "숲"
 	var boss := story == 10 if story > 0 else stage == 5
-	write(details,"%d장 · %s / %s" % [chapter+1,region,"보스" if boss else "%d단계" % (stage+1)],Rect2(0,76,420,24),19,Color("fff0d0"))
+	stage_context = app.label(self,"%d장 · %s / %s" % [chapter+1,region,"보스" if boss else "%d단계" % (stage+1)],19,Color("fff0d0"))
+	stage_context.name = "ResultStageContext"
+	stage_context.size = Vector2(410,24)
+	stage_context.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	stage_context.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var accent := Color("ffcf75") if won else Color("9dd5ff")
-	write(details,"사냥 성공" if won else "사냥 실패",Rect2(-2,105,430,70),62,accent)
+	write(details,"사냥 성공" if won else "사냥 실패",Rect2(-2,77,430,70),62,accent)
 	var rule := ColorRect.new()
 	rule.color = accent
 	rule.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	details.add_child(rule)
-	rule.position = Vector2(0,185)
+	rule.position = Vector2(0,153)
 	rule.size = Vector2(57,3)
 	if won and use_han_field:
 		var replay:=int(app.model.state.get("hunt_cleared",0))>int(app.hunt_stage) and not progression_advanced
 		var message:=("다음 단계 해금" if story > 1 else "진행 보상 · 다음 단계 해금") if progression_advanced else "이미 완료한 사냥입니다." if replay else "진행 저장 상태를 확인해 주세요."
-		write(details,message,Rect2(0,210,420,28),19,Color("fff0d0"))
+		write(details,message,Rect2(0,173,420,28),19,Color("fff0d0"))
 	if won and stars>0:
-		write(details,"★".repeat(stars),Rect2(0,258,420,48),36,accent)
+		write(details,"★".repeat(stars),Rect2(0,214,420,48),36,accent)
 	if not won:
-		write(details,"전력을 정비하고 다시 도전하세요.",Rect2(0,210,390,21),17,Color("fff0d0"))
-		followup(details,"전투력 향상",239,"icon-spear.png")
-		followup(details,"모집",304,"icon-horn.png")
+		write(details,"전력을 정비하고 다시 도전하세요.",Rect2(0,173,390,21),17,Color("fff0d0"))
+		followup(details,"전투력 향상",204,"icon-spear.png")
+		followup(details,"모집",269,"icon-horn.png")
 	village_back = app.button(self,"",func(): _leave(app.leave_hunt_result_to_village))
 	village_back.name = "ResultBackToVillage"
 	village_back.custom_minimum_size = Vector2.ZERO
@@ -140,6 +145,8 @@ func fit(layout: Control) -> void:
 		village_back.size = Vector2.ONE * 52.0 * control_scale
 		village_back_icon.position = Vector2.ONE * 4.0 * control_scale
 		village_back_icon.size = Vector2.ONE * 44.0 * control_scale
+		stage_context.scale = Vector2.ONE * control_scale
+		stage_context.position = village_back.position + Vector2(56,(52.0-stage_context.size.y)*.5) * control_scale
 
 func write(parent: Control, value: String, rect: Rect2, font_size: int, color: Color) -> void:
 	var label: Label = app.label(parent,value,font_size,color)
