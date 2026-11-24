@@ -153,6 +153,9 @@ const FIRST_HUNT_HAN_CONTACT_END := .43
 const FIRST_HUNT_HAN_BASIC_PERIOD := 5.10
 const FIRST_HUNT_DEER_BASIC_PERIOD := 5.35
 var first_hunt_han_ready := .65
+var solo_deploy_clock := -1.0
+var solo_deploy_seconds := .80
+var solo_deploy_prey_end := DEER_SLOT
 const FIRST_DEER_VISIBLE_DELAY := .50
 var first_hunt_deer_ready := INF
 var first_hunt_deer_age := INF
@@ -1396,7 +1399,7 @@ func start_combat() -> void:
 	clear_formation_drag()
 	pan_pointer = -2
 	touch_points.clear()
-	pan = Vector2.ZERO
+	if not _uses_independent_first_hunt():pan = Vector2.ZERO
 	battle_music_started = true
 	app.sync_audio()
 	transition_elapsed = 0.0
@@ -1419,7 +1422,7 @@ func advance_transition(delta: float) -> void:
 	transition_elapsed += delta
 	animate_battle_vs(before,transition_elapsed)
 	var approach_start := VS_SECONDS - VS_APPROACH_SECONDS
-	approach = smoothstep(approach_start, VS_SECONDS, transition_elapsed)
+	approach = 0.0 if _uses_independent_first_hunt() else smoothstep(approach_start, VS_SECONDS, transition_elapsed)
 	if transition_elapsed >= VS_SECONDS:
 		finish_battle_transition()
 
@@ -1427,7 +1430,15 @@ func advance_transition(delta: float) -> void:
 func finish_battle_transition() -> void:
 	if transition_elapsed < 0.0 or running:
 		return
-	approach = 1.0
+	var solo := _uses_independent_first_hunt()
+	approach = 0.0 if solo else 1.0
+	if solo:
+		var han_start:Vector2 = ALLY_CELLS[assigned_cells[0]]
+		var prey_start:Vector2 = ENEMY_CELLS[4]
+		var closing := maxf(0.0,han_start.distance_to(prey_start)-FIRST_HUNT_HAN_STANDOFF)
+		solo_deploy_prey_end = prey_start.move_toward(han_start,minf(52.0,closing*.30))
+		solo_deploy_seconds = clampf(.55+closing/360.0,.7,1.05)
+		solo_deploy_clock = 0.0
 	transition_elapsed = -1.0
 	branch_video.stop()
 	combat.show()
@@ -1454,6 +1465,7 @@ func finish_battle_transition() -> void:
 		icon.size = control.size
 	update_toggles()
 	fit_layout()
+	if solo:update_actors(0.)
 
 
 const ManualHunt := preload("res://scripts/hunt_production_frontline_actions.gd")
@@ -1721,7 +1733,7 @@ func _draw_normal_hunt_art(front:bool) -> void:
 
 
 func _can_take_hunt_input() -> bool:
-	return running and not result_shown and exit_popup == null and not app.modal and app.application_active
+	return running and solo_deploy_clock < 0.0 and not result_shown and exit_popup == null and not app.modal and app.application_active
 
 
 func _uses_ordered_chain() -> bool:
@@ -2278,7 +2290,7 @@ func _handle_story_cutin_pointer(event:InputEvent)->bool:
 
 func _process(delta: float) -> void:
 	# Preserve deterministic contact steps on both 30 and 60 fps displays.
-	if running and _uses_independent_first_hunt() and delta>.018:
+	if running and solo_deploy_clock<0.0 and _uses_independent_first_hunt() and delta>.018:
 		var steps:=ceili(delta*60.)
 		for i in steps:
 			_tick_hunt_frame(delta/float(steps))
@@ -2293,6 +2305,13 @@ func _tick_hunt_frame(delta: float) -> void:
 		clear_formation_drag()
 		return
 	if result_shown: return
+	if solo_deploy_clock >= 0.0:
+		solo_deploy_clock += delta
+		approach = smoothstep(0.0,solo_deploy_seconds,solo_deploy_clock)
+		update_actors(delta)
+		update_camera(delta)
+		if approach>=1.0:solo_deploy_clock=-1.0
+		return
 	if running and is_instance_valid(chapter_story_battle):
 		chapter_story_battle.tick(delta * speed, false, delta)
 		_refresh_battle_countdown()
@@ -2802,7 +2821,7 @@ func update_actors(delta: float) -> void:
 			var lane := DEER_SLOT.direction_to(battle_target)
 			# Permit the approach lane but settle to a shared melee depth, like the duel field.
 			lane=Vector2(-1.,clampf(lane.y,-.11,.11)).normalized()
-			battle_target=DEER_SLOT+lane*FIRST_HUNT_HAN_STANDOFF
+			battle_target=solo_deploy_prey_end+lane*FIRST_HUNT_HAN_STANDOFF
 		var base := placed.lerp(battle_target,approach)
 		if i==0 and steady_first_hunt_heads: han_head_ground=base
 		hunter.scale = Vector2.ONE*(.70 if chapter_one_solo and i==0 else lerpf(.60,.56,approach))*(1.0 if i == RULES.SAEBOM else FRONTLINE_VISUAL_SCALE)
@@ -2828,14 +2847,15 @@ func update_actors(delta: float) -> void:
 			var travel_beat:=smoothstep(.05,.52,pose_clock)*(1.0-smoothstep(.64,.96,pose_clock))
 			hunter.position+=han_chain_travel*travel_beat
 		var arrival_heading := Vector2(1,.55).lerp(Vector2(1,.28),approach)
-		var approaching := transition_elapsed >= 0.0 and approach > 0.0 and approach < 1.0
+		if solo_deploy_clock>=0.0:arrival_heading=placed.direction_to(battle_target)
+		var approaching := (transition_elapsed >= 0.0 or solo_deploy_clock >= 0.0) and approach > 0.0 and approach < 1.0
 		var close_phase := clampf(pose_clock / RULES.POSE_SECONDS, 0.0, 1.0)
 		if approaching:
 			var travel := previous_position.distance_to(hunter.position)
 			hunt_stride_phases[i] = fposmod(hunt_stride_phases[i]+travel/maxf(1.0,42.0*hunter.scale.x)*TAU,TAU)
 		var approach_phase := hunt_stride_phases[i] if approaching else pose_clock*12.0
 		var facing := first_hunt_facing if tutorial_lunge else han_chain_facing if native_manual and side_han_jump else hunter.position.direction_to(deer.position) if approach >= 1.0 else hunter.position.direction_to(deer.position) if approach<=0.0 else arrival_heading
-		if stage_han and running and not native_manual and not side_han_jump:
+		if stage_han and running and solo_deploy_clock<0.0 and not native_manual and not side_han_jump:
 			# Compensate the authored spear angle in the split actor camera, not the body location.
 			facing=facing.rotated(-.36)
 		if i != RULES.SAEBOM:
@@ -2893,7 +2913,7 @@ func update_actors(delta: float) -> void:
 	var deer_motion := Vector2(-29,-8) if charge else Vector2.ZERO if independent_prey or basic_attack or (_uses_independent_first_hunt() and pose==ManualHunt.HAN_SPEAR_2) or rules.prey_stun_remaining>0.0 else Vector2(23,-8)
 	if independent_prey:
 		deer_motion=Vector2.ZERO
-	deer.position = ENEMY_CELLS[4].lerp(DEER_SLOT,approach)+(deer_motion*movement_beat if running else Vector2.ZERO)
+	deer.position = ENEMY_CELLS[4].lerp(solo_deploy_prey_end if independent_prey else DEER_SLOT,approach)+(deer_motion*movement_beat if running else Vector2.ZERO)
 	var deer_close_travel := false
 	if running and bom_prey_pocket.is_finite():
 		var close_progress := smoothstep(.06,.70,pose_clock/RULES.POSE_SECONDS) if charge and rules.attacker == RULES.SAEBOM else 1.0
@@ -2913,13 +2933,13 @@ func update_actors(delta: float) -> void:
 	deer.scale = Vector2.ONE*(.48 if chapter_one_solo and not _prey_is_adult() else lerpf(.60,.63,approach))
 	# Sprite vertices only: keep transform, rig sample and physical sweep unchanged.
 	deer.display.offset=ordinary_prey_visual_offset/(deer.scale*deer.display.scale)
-	deer.walking = 1.0 if transition_elapsed>=0 and approach>0.0 and approach<1.0 else (movement_beat if running and (charge or basic_recoil>0.0) else 0.0)
+	deer.walking = 1.0 if (transition_elapsed>=0 or solo_deploy_clock>=0.0) and approach>0.0 and approach<1.0 else (movement_beat if running and (charge or basic_recoil>0.0) else 0.0)
 	if deer_close_travel: deer.walking = maxf(deer.walking,.74)
 	deer.heading = lerp_angle(-PI*.34,-PI*.35,approach)
-	if approach<=0.0 and not running:
-		var toward:Vector2=deer.position.direction_to(hunters[selected_hunter].position)
-		deer.heading=atan2(toward.x,toward.y)
-	deer.gait_phase = pose_clock*14
+	if (approach<=0.0 and not running) or (solo_deploy_clock>=0.0 and approach<1.0):
+		var toward:Vector2=deer.position.direction_to(hunters[selected_hunter].position) if approach<=0.0 else ENEMY_CELLS[4].direction_to(solo_deploy_prey_end)
+		deer.heading=lerp_angle(atan2(toward.x,toward.y),deer.heading,smoothstep(.76,1.,approach))
+	deer.gait_phase = solo_deploy_clock*14.0 if solo_deploy_clock>=0.0 else pose_clock*14.0
 	deer.clock += delta
 	# During the short counter, keep the visible body separation even from a wide prep cell.
 	if running and _uses_independent_first_hunt() and deer.position.distance_to(hunters[0].position)<FIRST_HUNT_BODY_CLEARANCE:
@@ -2928,7 +2948,8 @@ func update_actors(delta: float) -> void:
 		deer.position=hunters[0].position+separation*FIRST_HUNT_BODY_CLEARANCE
 	if deer is NativeBoar:
 		if independent_prey:
-			if charge:_pose_planted_first_hunt_deer_basic(deer,charge_clock)
+			if solo_deploy_clock>=0.0:_pose_solo_deploy_deer(deer)
+			elif charge:_pose_planted_first_hunt_deer_basic(deer,charge_clock)
 			else:
 				_pose_first_hunt_deer(deer,false,charge_clock)
 				if is_instance_valid(deer.native):_plant_first_hunt_basic_root(deer.rig,deer.native.root_index)
@@ -2944,7 +2965,7 @@ func update_actors(delta: float) -> void:
 	for i in hunters.size():
 		var anchor := han_head_ground if i==0 and han_head_ground.is_finite() else hunters[i].position
 		points.append(transform*(anchor+Vector2(0,-63)))
-	var head_prey := ENEMY_CELLS[4].lerp(DEER_SLOT,approach) if steady_first_hunt_heads else prey_visual_anchor
+	var head_prey := ENEMY_CELLS[4].lerp(solo_deploy_prey_end,approach) if steady_first_hunt_heads else prey_visual_anchor
 	points.append(transform*(head_prey+Vector2(0,-deer.world_height*deer.scale.y-15)))
 	NativeHud.sync_heads(head_headers,points,transform*Rect2(8,70,944,350),NativeHud.HP_FADE_SECONDS if arrival_finished and (transition_elapsed>=0.0 or running) else -INF)
 	if first_hunt_end_age >= 0.0:
@@ -3067,6 +3088,19 @@ func _pose_planted_first_hunt_deer_basic(actor:NativeBoar,age:float) -> void:
 	actor.pivot.position.y=stationary_height
 	_blend_local_bones(actor.rig,idle,w)
 	_plant_first_hunt_basic_root(actor.rig,actor.native.root_index)
+
+
+func _pose_solo_deploy_deer(actor:NativeBoar)->void:
+	if adult_markers.is_empty():return
+	actor.sample_native_phase("idle",fposmod(actor.clock,float(adult_markers.idle)))
+	var walk_weight:=smoothstep(0.,.08,solo_deploy_clock)*(1.-smoothstep(solo_deploy_seconds-.12,solo_deploy_seconds,solo_deploy_clock))
+	if walk_weight>0.:
+		var rested:=_snapshot_local_bones(actor.rig)
+		var idle_height:=actor.pivot.position.y
+		actor.sample_native_phase("approach",fposmod(solo_deploy_clock,float(adult_markers.approach)))
+		actor.pivot.position.y=lerpf(idle_height,actor.pivot.position.y,walk_weight)
+		_blend_local_bones(actor.rig,rested,walk_weight)
+	if is_instance_valid(actor.native):_plant_first_hunt_basic_root(actor.rig,actor.native.root_index)
 
 
 func _pose_first_hunt_deer(actor:NativeBoar, charging:bool, charge_clock:float)->void:
