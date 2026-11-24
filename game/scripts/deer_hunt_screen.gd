@@ -206,8 +206,6 @@ var pause_actions: Control
 var pause_continue: DemoButton
 var pause_end: DemoButton
 var pause_back: DemoButton
-var pause_end_label: Label
-var pause_end_armed := false
 var exit_shade: ColorRect
 var camera_progress := -1.0
 var prey_hud: Control
@@ -858,6 +856,24 @@ func _draw_pause_icon() -> void:
 		pause_button.draw_rect(Rect2(x,13,4,18),Color("ffdf9b"))
 
 
+func _pause_bottom_hud_bounds() -> Rect2:
+	var cards:Array=[]
+	if is_instance_valid(chapter_story_battle):
+		cards.assign(chapter_story_battle.huds)
+	else:
+		for card in party_cards:
+			cards.append(card.hud)
+	var bounds := Rect2()
+	for hud in cards:
+		if not is_instance_valid(hud) or not hud.is_visible_in_tree():continue
+		for button:Control in [hud.portrait_button,hud.chain_button]:
+			if not is_instance_valid(button) or not button.is_visible_in_tree():continue
+			var area := button.get_global_rect()
+			if not area.has_area():continue
+			bounds = bounds.merge(area) if bounds.has_area() else area
+	return bounds
+
+
 func _fit_pause_chrome(safe_area:Rect2, fit:float) -> void:
 	if is_instance_valid(pause_button):
 		var top_right := Vector2(safe_area.end.x,safe_area.position.y)
@@ -867,8 +883,10 @@ func _fit_pause_chrome(safe_area:Rect2, fit:float) -> void:
 		battle_countdown.scale = Vector2.ONE*fit
 	if is_instance_valid(pause_actions):
 		pause_actions.scale = Vector2.ONE*fit
-		var portrait := duel_ally_portrait.get_global_rect()
-		pause_actions.position = Vector2(clampf(portrait.position.x+140.0*fit,safe_area.position.x+140.0*fit,safe_area.end.x-140.0*fit),portrait.end.y+12.0*fit)
+		var hud := _pause_bottom_hud_bounds()
+		var center_x := hud.get_center().x if hud.has_area() else safe_area.get_center().x
+		var top := hud.position.y if hud.has_area() else safe_area.end.y-88.0*fit
+		pause_actions.position = Vector2(clampf(center_x,safe_area.position.x+140.0*fit,safe_area.end.x-140.0*fit),maxf(safe_area.position.y+8.0*fit,top-52.0*fit))
 		if is_instance_valid(pause_back):
 			var back_rect := exit_button.get_global_rect()
 			pause_back.position = back_rect.position
@@ -912,7 +930,6 @@ func pause_for_background() -> void:
 		pause_continue.clear()
 		pause_end.clear()
 		pause_back.clear()
-		_reset_pause_end()
 	else:
 		_open_battle_pause(false)
 
@@ -964,28 +981,17 @@ func _open_battle_pause(with_cue:bool) -> void:
 	clear_button_art(pause_back)
 	app.picture(pause_back,preload(PREP_ART+"back-arrow-alpha.svg"),Rect2(0,0,48,48))
 	_fit_pause_chrome(Rect2(Vector2.ZERO,size),canvas.scale.x)
-	pause_end_label = pause_end.get_child(1) as Label
-	pause_end_label.add_theme_font_size_override("font_size",19)
-	_reset_pause_end()
+	var exit_label := pause_end.get_child(1) as Label
+	exit_label.add_theme_font_size_override("font_size",19)
+	pause_end.accessibility_name=exit_label.text
 	_refresh_battle_countdown()
 	hunt_audio.update(app.application_active and app.settings.get_value("app","sound",true),true)
 	app.sync_audio()
 
 
-func _reset_pause_end() -> void:
-	pause_end_armed = false
-	pause_end_label.text = "전투 종료"
-	pause_end.accessibility_name = pause_end_label.text
-
-
 func _request_battle_end() -> void:
 	if not is_instance_valid(exit_popup) or not app.application_active:return
-	if pause_end_armed:
-		app.close_hunt()
-		return
-	pause_end_armed = true
-	pause_end_label.text = "종료 확인"
-	pause_end.accessibility_name = pause_end_label.text
+	app.close_hunt()
 
 
 func resume_battle() -> void:
@@ -998,7 +1004,6 @@ func resume_battle() -> void:
 	pause_continue = null
 	pause_end = null
 	pause_back = null
-	pause_end_label = null
 	hunt_audio.update(app.settings.get_value("app","sound",true),false)
 	hunt_audio.cue("S08")
 	app.sync_audio()
