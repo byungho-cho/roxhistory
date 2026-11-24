@@ -71,8 +71,7 @@ func _ready() -> void:
 	streams["popup_close"] = preload("res://assets/audio/d0001-approved/popup-close.mp3")
 	streams["map_open"] = preload("res://assets/audio/d0001-approved/map-open.mp3")
 	streams["map_close"] = preload("res://assets/audio/d0001-approved/map-close.mp3")
-	for key in ["wood","stone","build","demolish"]:
-		streams["recorded_"+key]=load("res://assets/audio/recorded-actions-v001/"+key+"-hit.wav")
+	streams["recorded_wood"] = preload("res://assets/audio/recorded-actions-v001/wood-hit.wav")
 	streams["recorded_stone"] = preload("res://assets/audio/village-sfx-v02/stone-gather-v02.wav")
 	streams["recorded_demolish"] = preload("res://assets/audio/d0006-approved/demolition-b.mp3")
 	streams["recorded_build"] = preload("res://assets/audio/d0006-approved/construction-a.mp3")
