@@ -85,8 +85,33 @@ func _ready()->void:
 	hp=TextureProgressBar.new();hp.hide();add_child(hp);sp_label=Label.new();sp_label.hide();add_child(sp_label)
 	reset("hangyeol")
 
+# This project deliberately turns off mouse emulation from a native touch.
+# Keep each finger owned by the actual button and accept only an in-bounds release.
+class SkillInputButton extends Button:
+	var finger:=-1
+	var hit_extension:=Rect2()
+	func _has_point(at:Vector2)->bool:
+		return Rect2(Vector2.ZERO,size).has_point(at) or hit_extension.has_point(at)
+	func _gui_input(event:InputEvent)->void:
+		if event is InputEventScreenTouch:
+			if event.pressed and finger<0 and not disabled:
+				finger=event.index
+				set_pressed_no_signal(true)
+			elif not event.pressed and event.index==finger:
+				finger=-1
+				set_pressed_no_signal(false)
+				if not disabled and not event.is_canceled() and _has_point(event.position):pressed.emit()
+			accept_event()
+		elif event is InputEventScreenDrag and event.index==finger:
+			accept_event()
+
 func _button(parent:Node,rect:Rect2,action:String)->Button:
-	var b:=Button.new();b.position=rect.position;b.size=rect.size;b.focus_mode=Control.FOCUS_NONE;b.mouse_filter=MOUSE_FILTER_STOP;b.action_mode=BaseButton.ACTION_MODE_BUTTON_RELEASE
+	var b:=SkillInputButton.new()
+	if action=="skill":
+		# Lower-left tap region includes every visible pixel of the 2SP badge
+		# even where it extends outside the portrait.
+		b.hit_extension=Rect2(-12,34,48,43)
+	b.position=rect.position;b.size=rect.size;b.focus_mode=Control.FOCUS_NONE;b.mouse_filter=MOUSE_FILTER_STOP;b.action_mode=BaseButton.ACTION_MODE_BUTTON_RELEASE
 	for state in ["normal","hover","pressed","disabled","focus"]:b.add_theme_stylebox_override(state,StyleBoxEmpty.new())
 	b.pressed.connect(func():requested.emit(action));parent.add_child(b);return b
 func _panel(parent:Node,rect:Rect2,bg:Color,border:Color,radius:float,width:int)->Panel:

@@ -8,6 +8,7 @@ var branch_video:BranchVS
 var prep_tags:Array[Control]=[]
 var chapter_one_solo:=false
 var stage_one_one:=false
+var battle_toggles_unlocked:=false
 var branch_header:Control
 var vs_ally:TextureRect
 var vs_enemy:TextureRect
@@ -221,6 +222,7 @@ var exit_button: DemoButton
 func _ready() -> void:
 	chapter_one_solo=int(app.hunt_stage)/6==0
 	stage_one_one=int(app.hunt_stage)==0
+	battle_toggles_unlocked=int(app.hunt_stage)>=3
 	rules.manual_only=stage_one_one
 	rules.first_hunt=stage_one_one and int(app.model.state.get("hunt_cleared",0))==0
 	if stage_one_one:rules.damage_multiplier=RULES.STAGE_1_1_DAMAGE_MULTIPLIER
@@ -316,7 +318,12 @@ func fit_layout() -> void:
 		if physical.x>0 and physical.y>0 and area.has_area():
 			safe_start = (Vector2(area.position)*size/physical).clamp(Vector2.ZERO,size)
 			safe_end = (Vector2(area.end)*size/physical).clamp(safe_start,size)
-	var safe_size := safe_end-safe_start
+	_fit_hunt_chrome(Rect2(safe_start,safe_end-safe_start))
+
+func _fit_hunt_chrome(safe_area:Rect2)->void:
+	var safe_start:=safe_area.position
+	var safe_end:=safe_area.end
+	var safe_size:=safe_area.size
 	var fit := maxf(.1,minf(safe_size.x/DESIGN.x,safe_size.y/DESIGN.y))
 	canvas.scale = Vector2.ONE*fit
 	canvas.position = safe_start+(safe_size-DESIGN*fit)*.5
@@ -326,11 +333,14 @@ func fit_layout() -> void:
 	header_left.position = start+margin-Vector2(3,0)
 	header_right.position = Vector2(end.x-DESIGN.x-margin.x+3,start.y+margin.y-3)
 	power_header.position = Vector2(480,start.y+margin.y)
+	# The safe area belongs to interactive chrome, not scenery.
+	var full_start := -canvas.position/fit
+	var full_size := size/fit
 	var sky:=power_header.get_node_or_null("PowerSkyBackdrop") as Control
 	if sky:
-		sky.position=Vector2(start.x-480,-margin.y)
-		sky.size=Vector2(end.x-start.x,134.222)
-	if is_instance_valid(branch_video):branch_video.fit_background(Rect2(start,end-start))
+		sky.position=full_start-power_header.position
+		sky.size=Vector2(full_size.x,134.222+start.y-full_start.y)
+	if is_instance_valid(branch_video):branch_video.fit_background(Rect2(full_start,full_size))
 	battle_header.position = Vector2(-45,start.y+margin.y-4)
 	roster_home = Vector2(start.x+margin.x,(start.y+end.y-330)*.5)
 	footer_left_home = Vector2(start.x+margin.x-3,end.y-DESIGN.y-margin.y+2)
@@ -596,20 +606,25 @@ func toggle_control(parent: Control, rect: Rect2, label: String, asset: String, 
 	return button
 
 func toggle_auto() -> void:
-	if exit_popup or app.modal or result_shown:return
+	if not battle_toggles_unlocked or exit_popup or app.modal or result_shown:return
 	hunt_audio.cue("S06")
 	rules.set_auto(not rules.auto_enabled and transition_elapsed>=0 or running and not rules.auto_enabled)
 	update_toggles()
 
 func toggle_speed() -> void:
-	if exit_popup or app.modal or result_shown:return
+	if not battle_toggles_unlocked or exit_popup or app.modal or result_shown:return
 	hunt_audio.cue("S06")
 	speed = 1.0 if speed == 2.0 else 2.0
 	update_toggles()
 
 func update_toggles() -> void:
+	if not battle_toggles_unlocked:
+		rules.set_auto(false)
+		speed=1.0
 	for pair in [[auto_button,rules.auto_enabled],[speed_button,speed==2.0]]:
 		var button:Button=pair[0]
+		button.visible=battle_toggles_unlocked
+		button.disabled=not battle_toggles_unlocked
 		var icon:TextureRect=button.get_meta("toggle_icon")
 		icon.texture=load("res://assets/ui/hunt-readiness/%s-%d.png"%[button.get_meta("toggle_name"),int(pair[1])])
 		button.set_meta("active",pair[1])
