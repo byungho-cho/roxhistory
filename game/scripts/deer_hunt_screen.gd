@@ -104,6 +104,10 @@ const HEAVY_HIT := preload(IMPACT_ART+"heavy-contact.svg")
 const GROUND_PULSE := preload(IMPACT_ART+"heavy-ground-pulse.svg")
 const ALLY_RING := preload(IMPACT_ART+"team-ally-ellipse.svg")
 const ENEMY_RING := preload(IMPACT_ART+"team-opponent-ellipse.svg")
+const FIRST_HUNT_RESULT_HOLD := 2.50
+const FirstHuntDrop = preload("res://scripts/model_death_effect.gd")
+var first_hunt_end_age := -1.0
+var first_hunt_drop: Node2D
 var hit_age := 1.0
 var hit_kind := ""
 var hit_point := Vector2.ZERO
@@ -2336,7 +2340,11 @@ func _tick_hunt_frame(delta: float) -> void:
 		_execute_uram_field_reserve()
 	if running:
 		update_combat_ui(elapsed)
-		if not result_shown and not rules.outcome.is_empty() and _finish_visual_ready():show_result()
+		if not result_shown and not rules.outcome.is_empty():
+			if stage_one_one and rules.outcome == "win" and rules.hunter_hp > 0:
+				_tick_first_hunt_drop(delta)
+			elif _finish_visual_ready():
+				show_result()
 	if result_shown: return
 	if not actors_sampled:
 		actor_delta += elapsed
@@ -3053,6 +3061,21 @@ func draw_stage() -> void:
 		battlefield.draw_texture_rect(BASIC_HIT,Rect2(hit_point-Vector2(17,20),Vector2(44.5,34.5)),false,Color(1,1,1,fade))
 
 
+func _tick_first_hunt_drop(delta: float) -> void:
+	if first_hunt_end_age < 0.0:
+		first_hunt_end_age = 0.0
+		first_hunt_drop = FirstHuntDrop.new(false)
+		battlefield.add_child(first_hunt_drop)
+		first_hunt_drop.position = deer.position
+		hunt_audio.cue("monster_death", 4)
+	else:
+		first_hunt_end_age += delta
+	first_hunt_drop.sample(first_hunt_end_age)
+	deer.modulate.a = FirstHuntDrop.model_alpha(first_hunt_end_age)
+	if first_hunt_end_age >= FIRST_HUNT_RESULT_HOLD:
+		show_result()
+
+
 func _finish_visual_ready() -> bool:
 	if not impact_pending and pose == "thrust" and pose_clock < JumpMotion.JUMP_SECONDS:
 		return false
@@ -3100,7 +3123,7 @@ func show_result() -> void:
 		rules.outcome="loss"
 	if rules.outcome == "win":
 		app.record_hunt_win()
-		hunt_audio.cue("monster_death",4)
+		if first_hunt_end_age < 0.0: hunt_audio.cue("monster_death",4)
 	else:
 		hunt_audio.cue("S27",4)
 	rules.set_auto(false)
@@ -3116,7 +3139,7 @@ func show_result() -> void:
 	result.app = app
 	result.won = rules.outcome == "win"
 	result.use_han_field=chapter_one_solo
-	result.stars=3 if rules.first_hunt and result.won and rules.hunter_hp>0 else 0
+	result.stars=3 if stage_one_one and result.won and rules.hunter_hp>0 else 0
 	result.progression_advanced=app.chapter_one_story_completions()!=previous_story if chapter_story_preview else int(app.model.state.get("hunt_cleared",0))>previous_progress
 	add_child(result)
 	result.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)

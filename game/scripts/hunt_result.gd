@@ -17,6 +17,12 @@ const VICTORY_SWING_MARGIN_SHIFT := 50.0
 var app: Node
 var won: bool
 var stars := 0
+const STAR_REVEAL_START := .28
+const STAR_REVEAL_STEP := .28
+var star_labels: Array[Label] = []
+var star_elapsed := 0.0
+var paper_layer: Node2D
+var paper_motion := false
 var frame_art: AtlasTexture
 var elapsed := 0.0
 var leaving := false
@@ -88,7 +94,20 @@ func _ready() -> void:
 		var message:=("다음 단계 해금" if story > 1 else "진행 보상 · 다음 단계 해금") if progression_advanced else "이미 완료한 사냥입니다." if replay else "진행 저장 상태를 확인해 주세요."
 		write(details,message,Rect2(0,173,420,28),19,Color("fff0d0"))
 	if won and stars>0:
-		write(details,"★".repeat(stars),Rect2(0,214,420,48),36,accent)
+		for i in stars:
+			var star: Label = app.label(details,"★",36,accent)
+			star.position = Vector2(i*37,214)
+			star.size = Vector2(38,48)
+			star.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+			apply_text_shadow(star)
+			star.hide()
+			star_labels.append(star)
+		paper_motion = not OS.get_cmdline_user_args().has("--reduce-motion")
+		if paper_motion:
+			paper_layer = Node2D.new()
+			layout.add_child(paper_layer)
+			layout.move_child(paper_layer,0)
+			paper_layer.draw.connect(_draw_paper)
 	if not won:
 		write(details,"전력을 정비하고 다시 도전하세요.",Rect2(0,173,390,21),17,Color("fff0d0"))
 		followup(details,"전투력 향상",204,"icon-spear.png")
@@ -114,7 +133,7 @@ func _ready() -> void:
 	var prefix := ART + ("hunt-result-success" if won else "hunt-result-failure")
 	var art: TextureRect = app.picture(layout,load(prefix+"-fallback.png"),Rect2(82,74,319,425))
 	art.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
-	set_process(false)
+	set_process(not star_labels.is_empty())
 	if not OS.get_cmdline_user_args().has("--reduce-motion"):
 		var texture := load(prefix+"-loop-atlas.png") as Texture2D
 		if texture and Vector2i(texture.get_size()) == ATLAS_SIZE:
@@ -223,7 +242,49 @@ func followup(parent: Control, value: String, y: float, icon: String) -> void:
 	write(row,"준비 중",Rect2(FAILURE_ROW_WIDTH-108,0,66,56),15,Color("c2c9ca"))
 	app.picture(row,preload("res://assets/ui/hunt-result/chevron-right.svg"),Rect2(FAILURE_ROW_WIDTH-37,18,20,20))
 
+func _draw_paper() -> void:
+	var time := star_elapsed - STAR_REVEAL_START - (star_labels.size()-1)*STAR_REVEAL_STEP
+	if time < 0.0: return
+	var colors: Array[Color] = [Color("cf3641"),Color("ef6643"),Color("ffb583"),Color("e9d7a9"),Color("2d89bb"),Color("60b3d7"),Color("3e9382"),Color("54a355"),Color("f5be45"),Color("ede0d4")]
+	var wave := floori(time / 2.75)
+	for w in range(maxi(0,wave-1),wave+1):
+		var seed := RandomNumberGenerator.new()
+		seed.seed = 191 + 83*w
+		for j in (330 if w==0 else 190):
+			var side := j % 2
+			var center := Vector2(114,333) if side==0 else Vector2(898,300)
+			if w%2==1: center.y += 39.0 if side else -36.0
+			var angle := (-1.23 if side==0 else -2.02) + seed.randf_range(-1.19,1.19)
+			var force := seed.randf_range(192.0,690.0)
+			var life := seed.randf_range(2.1,3.8)
+			var radius := seed.randf_range(3.4,8.7)*(1.8 if j%5==0 else 1.0)
+			var phase := seed.randf()*TAU
+			var lag := seed.randf_range(0.0,.21)
+			var age := time-w*2.75-lag
+			if age <= 0.0 or age >= life: continue
+			var travel := (1.0-exp(-1.86*age))/1.86
+			var at := center + Vector2(cos(angle),sin(angle))*force*travel
+			at.x += 24.0*maxf(0.0,age-.22)*sin(age*2.7+phase)
+			at.y += (28.0+phase*4.0)*age*age
+			if not Rect2(0,0,960,540).has_point(at): continue
+			if Rect2(488,67,240,171).has_point(at) or Rect2(25,18,289,61).has_point(at) or Rect2(568,437,344,103).has_point(at): continue
+			var width := radius*(.19+.81*absf(cos(phase+age*7.3)))
+			var height := radius*.63
+			var twist := phase+age*3.1
+			var poly := PackedVector2Array()
+			for v: Vector2 in [Vector2(-width*.8,-height*.8),Vector2(width*.65,-height),Vector2(width,.1),Vector2(width*.28,height),Vector2(-width*.73,height*.46)]:
+				poly.append(at+v.rotated(twist))
+			var color := colors[j%colors.size()]
+			color.a = .94*minf(1,age/.1)*minf(1,(life-age)/.36)
+			paper_layer.draw_colored_polygon(poly,color)
+
+
 func _process(delta: float) -> void:
+	if app.application_active and not star_labels.is_empty():
+		star_elapsed += delta
+		for i in star_labels.size():
+			star_labels[i].visible = star_elapsed >= STAR_REVEAL_START + STAR_REVEAL_STEP*i
+		if paper_motion: paper_layer.queue_redraw()
 	if is_instance_valid(result_video):
 		result_video.paused=not app.application_active
 		if result_video.is_playing():
@@ -234,7 +295,7 @@ func _process(delta: float) -> void:
 				var swing_margin := smoothstep(.87,1.02,t) * (1.0 - smoothstep(1.26,1.43,t))
 				result_video.position.x = ACTOR_FRAME.position.x - VICTORY_LEFT_SHIFT + VICTORY_SWING_MARGIN_SHIFT * swing_margin
 		return
-	if not app.application_active: return
+	if not app.application_active or not is_instance_valid(frame_art): return
 	elapsed = fposmod(elapsed+delta,2.0)
 	var frame := int(elapsed*18)
 	frame_art.region.position = Vector2((frame%6)*CELL.x,(frame/6)*CELL.y)
