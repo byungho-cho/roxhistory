@@ -86,7 +86,9 @@ var head_headers:Array=[]
 const MATCH := preload("res://scripts/hunt_match_art.gd")
 const RULES := preload("res://scripts/deer_hunt_rules.gd")
 const DESIGN := Vector2(960,540)
-const FIRST_HUNT_CENTER_SEAT := 4
+const FORMATION_DEFAULT_CELLS: Array[int] = [3,5,0]
+const FORMATION_HERO_IDS: Array[String] = ["han","uram","saebom"]
+const FORMATION_SAVE_KEY := "hunt_formation_cells"
 const PREP_ACTION_Y := 472.0
 const PREP_ACTION_H := 65.0
 const CLEARING := preload("res://assets/ui/hunting-formation/clearing-dirt.png")
@@ -211,7 +213,8 @@ var combat: Control
 var combat_controls: Control
 var placement_grid: Control
 var portrait_frames: Array[Panel] = []
-var assigned_cells: Array[int] = [0,5,3]
+var assigned_cells: Array[int] = FORMATION_DEFAULT_CELLS.duplicate()
+var formation_changed := false
 var party_cards: Array[Dictionary] = []
 var selected_hunter := 0
 var drag_pointer := -2
@@ -279,7 +282,7 @@ func _ready() -> void:
 		var row:=ChapterOneCatalog.encounter(chapter_story_number)
 		prep_ally_count=row.get("opening_party",row.party).size()
 	for i in range(prep_ally_count,3): rules.party_hp[i]=0
-	if stage_one_one:assigned_cells[0]=FIRST_HUNT_CENTER_SEAT
+	_restore_hunt_formation()
 	add_child(hunt_audio)
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	ground = app.picture(self,CLEARING,Rect2())
@@ -1300,12 +1303,68 @@ func clear_formation_drag() -> void:
 	dragging = false
 
 
+func _restore_hunt_formation() -> void:
+	var raw:Variant = app.model.state.get(FORMATION_SAVE_KEY,{})
+	var saved:Dictionary = raw if raw is Dictionary else {}
+	assigned_cells = [-1,-1,-1]
+	var reserved: Array[int] = []
+	# Existing visible hunters keep their committed positions before defaults
+	# or a reserve recruit can claim remaining cells.
+	for i in range(prep_ally_count):
+		_restore_hunt_cell(i,saved,reserved)
+	for i in range(prep_ally_count):
+		if assigned_cells[i]<0:_choose_hunt_cell(i,reserved)
+	for i in range(prep_ally_count,FORMATION_HERO_IDS.size()):
+		_restore_hunt_cell(i,saved,reserved)
+		if assigned_cells[i]<0:_choose_hunt_cell(i,reserved)
+
+
+func _restore_hunt_cell(hero:int,saved:Dictionary,reserved:Array[int]) -> void:
+	var raw:Variant = saved.get(FORMATION_HERO_IDS[hero],-1)
+	# JSON numbers can be reloaded as floats. Reject fractions and unknown values.
+	if not (raw is int or raw is float) or not is_finite(float(raw)):
+		return
+	var cell := int(raw)
+	if float(cell)==float(raw) and cell>=0 and cell<ALLY_CELLS.size() and cell not in reserved:
+		assigned_cells[hero]=cell
+		reserved.append(cell)
+
+
+func _choose_hunt_cell(hero:int,reserved:Array[int]) -> void:
+	var preferred:Vector2 = ALLY_CELLS[FORMATION_DEFAULT_CELLS[hero]]
+	var best_distance:=INF
+	for cell in ALLY_CELLS.size():
+		if cell in reserved:
+			continue
+		var distance:float = preferred.distance_squared_to(ALLY_CELLS[cell])
+		if distance<best_distance:
+			assigned_cells[hero]=cell
+			best_distance=distance
+	reserved.append(assigned_cells[hero])
+
+
+func _persist_hunt_formation() -> bool:
+	if not formation_changed:
+		return true
+	var next:Dictionary = app.model.state.duplicate(true)
+	var raw:Variant = next.get(FORMATION_SAVE_KEY,{})
+	var saved:Dictionary = raw if raw is Dictionary else {}
+	for i in range(prep_ally_count):
+		saved[FORMATION_HERO_IDS[i]]=assigned_cells[i]
+	next[FORMATION_SAVE_KEY]=saved
+	if not app.model.commit(next):
+		return false
+	formation_changed=false
+	return true
+
+
 func move_hunter(index: int) -> void:
 	if index<0 or index>=ALLY_CELLS.size() or transition_elapsed>=0 or running:return
 	if index==assigned_cells[selected_hunter]:return
 	var occupying := assigned_cells.find(index)
 	if occupying>=0:assigned_cells[occupying] = assigned_cells[selected_hunter]
 	assigned_cells[selected_hunter] = index
+	formation_changed=true
 	hunt_audio.cue("S04")
 
 func _show_hunt_hp_loss(victim:int,before:int,after:int)->void:
@@ -1328,6 +1387,7 @@ func start_combat() -> void:
 		start_combat()
 		return
 	if not arrival_finished or running or transition_elapsed>=0 or not app.application_active or app.modal:return
+	if not _persist_hunt_formation():return
 	clear_formation_drag()
 	pan_pointer = -2
 	touch_points.clear()
@@ -2132,6 +2192,10 @@ func _start_chapter_story_preview() -> void:
 		battle.free()
 		push_error("Chapter One story roster was rejected")
 		return
+	var story_foot_placement := PackedVector2Array()
+	for cell in assigned_cells:
+		story_foot_placement.append(HUNTER_BATTLE_CENTER+(ALLY_CELLS[cell]-FORMATION_CENTER)*.62)
+	battle.story_allied_placement = story_foot_placement
 	canvas.add_child(battle)
 	battle.setup(Callable(), Callable(), Callable(), Callable(), Callable(), Callable(), Callable(), Callable(), Callable(), 1.15, Callable(), Callable(), Callable(), Callable(), Callable(), true)
 	chapter_story_battle = battle
