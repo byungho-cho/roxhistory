@@ -8,11 +8,12 @@ func ck(ok:bool,what:String)->void:
  checks+=1
  if not ok:failed+=1
  print(("PASS " if ok else "FAIL ")+what)
-func make(number:int,story:=true):
+func make(number:int,story:=true,placement:=PackedVector2Array()):
  var battle=squad_script.new()
  root.add_child(battle)
  if story:
   ck(battle.configure_story_encounter(catalog.encounter(number)),"configure canonical stage "+str(number))
+ battle.story_allied_placement=placement
  battle.setup(Callable(),Callable(),Callable(),Callable(),Callable(),Callable(),Callable(),Callable(),Callable(),1.15,Callable(),Callable(),Callable(),Callable(),Callable(),true)
  return battle
 func check_stage(number:int)->void:
@@ -54,6 +55,19 @@ func check_stage(number:int)->void:
 func run()->void:
  for number in [3,2,4,5,6,7,8,9,10]:
   await check_stage(number)
+ var preset:=PackedVector2Array([Vector2(515,250),Vector2(590,314),Vector2(396,356)])
+ var ordered=make(4,true,preset)
+ ck(ordered.units[0].feet==preset[0] and ordered.units[1].feet==preset[1] and ordered.units[2].home==preset[2],"native opening placement matches custom hero seats exactly")
+ ordered.story_entry_clock=2.5
+ ck(ordered.dismiss_story_entry() and ordered.units[2].feet==preset[2],"late Saebom uses assigned vacant rear seat")
+ ordered.queue_free()
+ await process_frame
+ ordered=make(4,true,preset)
+ ordered.units[1].feet=preset[2]
+ ordered.story_entry_clock=2.5
+ ck(ordered.dismiss_story_entry() and ordered.units[2].feet.distance_to(preset[2])>=36.0 and ordered.units[2].feet.distance_to(preset[2])<54.0,"reserved seat occupied: late ally takes nearby clear spot")
+ ordered.queue_free()
+ await process_frame
  var lab=make(0,false)
  ck(lab.story_encounter.is_empty() and lab.units.size()==6 and lab.units[3].id=="forest" and lab.units[0].hp==100,"legacy laboratory defaults unchanged")
  lab.queue_free()

@@ -24,6 +24,8 @@ var story_outcome := ""
 const STORY_JOIN_SECONDS := 2.5
 const STORY_CUTIN_SECONDS := 1.42
 var story_join_slot := -1
+# Already-mapped native ground positions, in Han / Uram / Saebom order.
+var story_allied_placement := PackedVector2Array()
 var story_entry_clock := 0.0
 var story_entry_done := false
 var story_first_charge_resolved := false
@@ -231,7 +233,10 @@ func setup(dust_draw:Callable=Callable(),gong:Callable=Callable(), heavy:Callabl
 		var id:String=HEROES[i] if ally else "forest" if story_encounter.is_empty() else story_encounter.prey[i - 3]
 		var dormant: bool = not story_encounter.is_empty() and ally and i >= story_encounter.get("opening_party",story_encounter.party).size()
 		var home:Vector2
-		if ally:home=Hunt.HUNTER_BATTLE_CENTER+(Hunt.ALLY_CELLS[HERO_SLOTS[i]]-Hunt.FORMATION_CENTER)*.62
+		if ally:
+			home=Hunt.HUNTER_BATTLE_CENTER+(Hunt.ALLY_CELLS[HERO_SLOTS[i]]-Hunt.FORMATION_CENTER)*.62
+			if not story_encounter.is_empty() and story_allied_placement.size()==3:
+				home=story_allied_placement[i]
 		else:home=Hunt.DEER_SLOT+Vector2(111,-9)+(Hunt.ENEMY_CELLS[DEER_SLOTS[i-3]]-Hunt.ENEMY_CELLS[4])*.86
 		var actor:=Actor.new();actor.create(self,id);actor.configure(true)
 		actor.preview.scale=Vector2.ONE*[.76588,1.08,.90,.82588,.82588,.82588][i]
@@ -624,6 +629,21 @@ func story_entry_active()->bool:
 func story_entry_fraction()->float:
 	return clampf((story_entry_clock-STORY_JOIN_SECONDS)/STORY_CUTIN_SECONDS,0.0,1.0)
 
+func _story_position_clear(spot:Vector2)->bool:
+	for unit in units:
+		if unit.hp>0 and spot.distance_squared_to(unit.feet)<36.0*36.0:return false
+	return true
+
+func _story_assigned_join_spot(preferred:Vector2)->Vector2:
+	if _story_position_clear(preferred):return preferred
+	# Preserve the assigned lane unless a moving active unit has occupied it.
+	# Search successively wider local rings, retaining preset placement otherwise.
+	for radius:float in [38.,52.,68.,88.]:
+		for i in 16:
+			var spot:=preferred+Vector2.from_angle(TAU*float(i)/16.+PI)*radius
+			if Rect2(40.,105.,880.,298.).has_point(spot) and _story_position_clear(spot):return spot
+	return _story_entry_spot()
+
 func _story_entry_spot()->Vector2:
 	var han:Vector2=units[0].feet
 	var offsets: Array = [Vector2(-26,31),Vector2(-39,-15),Vector2(-49,20),Vector2(-65,-16)] if story_join_slot==1 else [Vector2(-51,-19),Vector2(-52,28),Vector2(-75,-18),Vector2(-89,14)]
@@ -650,7 +670,7 @@ func _tick_story_entry(real_delta:float)->bool:
 func dismiss_story_entry()->bool:
 	if not story_entry_active() or not story_outcome.is_empty():return false
 	var u:=units[story_join_slot]
-	u.feet=_story_entry_spot()
+	u.feet=_story_assigned_join_spot(u.home) if story_allied_placement.size()==3 else _story_entry_spot()
 	story_entry_done=true
 	u.story_dormant=false
 	u.hp=u.max_hp
