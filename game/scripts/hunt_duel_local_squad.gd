@@ -22,12 +22,10 @@ const HEROES := ["hangyeol","uram","saebom"]
 var story_encounter: Dictionary = {}
 var story_outcome := ""
 const STORY_JOIN_SECONDS := 2.5
-const STORY_RUN_SECONDS := 1.15
+const STORY_CUTIN_SECONDS := 1.42
 var story_join_slot := -1
 var story_entry_clock := 0.0
 var story_entry_done := false
-var story_entry_origin := Vector2.ZERO
-var story_entry_end := Vector2.ZERO
 var story_first_charge_resolved := false
 var story_auto_parry_used := false
 var story_taught_parry := false
@@ -424,7 +422,7 @@ func _play(u:Dictionary,key:String)->void:
 		u.bom_shove=false;u.bom_near_skill=false
 
 func _free_to_cast(i:int)->bool:
-	return not input_paused and not ended and units[i].hp>0 and units[i].move in ["idle","run","walk","attack","hit"]
+	return not input_paused and not story_entry_active() and not ended and units[i].hp>0 and units[i].move in ["idle","run","walk","attack","hit"]
 
 func _request(key:String,i:int)->void:
 	var cost:=2 if key=="skill" else 3
@@ -610,6 +608,7 @@ func _approach(i:int,target:Vector2,dt:float)->void:
 
 func tick(delta:float,paused:bool,real_delta:float=-1.0)->void:
 	if paused:return
+	if _tick_story_entry(delta if real_delta < 0.0 else real_delta):return
 	acc+=minf(delta,.10)
 	if spotlight_clock>=0.:
 		spotlight_clock+=maxf(0.,delta)
@@ -617,22 +616,39 @@ func tick(delta:float,paused:bool,real_delta:float=-1.0)->void:
 			spotlight_clock=-1.;spotlight_attacker=-1;spotlight_defender=-1;combo_opener=-1
 	while acc>=STEP:
 		acc-=STEP;_step(STEP)
-	_tick_story_entry(delta if real_delta < 0.0 else real_delta)
 	_draw_pose(delta)
 
-func _tick_story_entry(real_delta:float)->void:
-	if story_join_slot < 0 or story_entry_done or ended or not story_outcome.is_empty():return
-	var previous:=story_entry_clock
+func story_entry_active()->bool:
+	return story_join_slot>=0 and not story_entry_done and not ended and story_entry_clock>=STORY_JOIN_SECONDS
+
+func story_entry_fraction()->float:
+	return clampf((story_entry_clock-STORY_JOIN_SECONDS)/STORY_CUTIN_SECONDS,0.0,1.0)
+
+func _story_entry_spot()->Vector2:
+	var han:Vector2=units[0].feet
+	var offsets: Array = [Vector2(-26,31),Vector2(-39,-15),Vector2(-49,20),Vector2(-65,-16)] if story_join_slot==1 else [Vector2(-51,-19),Vector2(-52,28),Vector2(-75,-18),Vector2(-89,14)]
+	var best:Vector2=han+offsets[0]
+	var best_clearance:=-1.0
+	for offset:Vector2 in offsets:
+		var spot:=han+offset
+		spot.x=clampf(spot.x,40.,920.)
+		spot.y=clampf(spot.y,105.,403.)
+		var clearance:=INF
+		for u in units:
+			if u.hp>0: clearance=minf(clearance,spot.distance_to(u.feet))
+		if clearance>=36.0:return spot
+		if clearance>best_clearance:
+			best_clearance=clearance
+			best=spot
+	return best
+
+func _tick_story_entry(real_delta:float)->bool:
+	if story_join_slot<0 or story_entry_done or ended or not story_outcome.is_empty():return false
 	story_entry_clock+=maxf(0.0,real_delta)
-	if story_entry_clock < STORY_JOIN_SECONDS:return
+	if not story_entry_active():return false
+	if story_entry_fraction()<1.0:return true
 	var u:=units[story_join_slot]
-	if previous < STORY_JOIN_SECONDS:
-		story_entry_origin=Vector2(-40.0,u.home.y+72.0)
-		story_entry_end=u.home+Vector2(-48.0,0.0) if story_join_slot==1 else u.home+Vector2(-59.0,9.0)
-		_play(u,"run")
-	var age:=story_entry_clock-STORY_JOIN_SECONDS
-	u.feet=story_entry_origin.lerp(story_entry_end,smoothstep(0.,STORY_RUN_SECONDS,age))
-	if age < STORY_RUN_SECONDS:return
+	u.feet=_story_entry_spot()
 	story_entry_done=true
 	u.story_dormant=false
 	u.hp=u.max_hp
@@ -643,6 +659,8 @@ func _tick_story_entry(real_delta:float)->void:
 		huds[i].place_local_combat_hud(480.+128.*(float(i)-float(story_encounter.party.size()-1)*.5))
 	huds[story_join_slot].show()
 	u.actor.preview.show()
+	_draw_pose(0.0)
+	return true
 
 func _step(dt:float)->void:
 	if not story_outcome.is_empty():return
@@ -1068,12 +1086,6 @@ func _draw_pose(dt:float)->void:
 		if bool(u.get("story_dormant", false)):
 			u.ring.hide()
 			actor.preview.hide()
-			if i==story_join_slot and not story_entry_done and story_entry_clock>=STORY_JOIN_SECONDS and story_outcome.is_empty():
-				actor.preview.show()
-				actor.preview.position=u.feet
-				actor.preview.z_index=int(u.feet.y)
-				actor.preview.pivot.rotation.y=_ground_heading(actor.preview.camera,story_entry_end-story_entry_origin)
-				actor.sample(story_entry_clock-STORY_JOIN_SECONDS,true)
 			continue
 		var isolated:=spotlight_attacker==i or spotlight_defender==i
 		var tint:=Color.WHITE if isolated else ambient

@@ -58,10 +58,26 @@ func run() -> void:
     var moved:Dictionary={}
     var slot:int=n-2
     ck(b.story_join_slot==slot and b.units[slot].hp==0 and not b.huds[slot].visible,"pending ally has no combat presence")
-    for f in range(390):
+    var frozen:float=-1.0
+    var real_start:float=-1.0
+    var paused_count:=0
+    var max_snap_distance:=0.0
+    var seen_arrival:=false
+    for f in range(435):
      h._process(1./60.)
+     if b.story_entry_active():
+      if frozen<0.0:
+       frozen=b.elapsed
+       real_start=b.story_entry_clock
+      if is_equal_approx(frozen,b.elapsed) and h.story_cutin.visible and b.units[slot].hp==0 and not b._free_to_cast(0):
+       paused_count+=1
+     elif b.story_entry_done and not seen_arrival:
+      seen_arrival=true
+      max_snap_distance=(b.units[slot].feet as Vector2).distance_to(b.units[0].feet)
      for i in 3:
       if b.units[i].move=="attack":moved[i]=true
+    ck(paused_count>=82 and paused_count<=88 and real_start>=2.48 and real_start<=2.53,"portrait overlays frozen battle at 2.5 real seconds")
+    ck(seen_arrival and max_snap_distance>=34.0 and max_snap_distance<100.0,"ally appears in an open spot beside Han")
     ck(b.story_entry_done and moved.has(slot) and b.huds[slot].visible,"reinforcement joins and attacks following a real delay")
     if n==3: ck(not moved.has(2) and not b.huds[2].visible,"no Saebom in 1-3")
    # Force only result of seeded QA fight to test the public-facing save and CTA.
