@@ -70,12 +70,17 @@ func skip_cases() -> void:
 		send_vs_pointer(at,true,mouse)
 		ck(h.branch_video.visible and not h.running,route+": skip waits for tap release")
 		send_vs_pointer(at,false,mouse)
-		ck(h.running and h.combat_layout and h.combat.is_visible_in_tree() and not h.branch_video.visible and not h.preparation.is_visible_in_tree() and not h.placement_grid.is_visible_in_tree() and h.approach==1.0,route+": release immediately reveals combat without returning to prep")
+		ck(h.running and h.combat_layout and h.combat.is_visible_in_tree() and not h.branch_video.visible and not h.preparation.is_visible_in_tree() and not h.placement_grid.is_visible_in_tree() and h.approach==0.0,route+": release immediately reveals the unadvanced live approach without returning to prep")
 		if not mouse:send_vs_pointer(extra,false,false,4)
 		ck(h.rules.charges[0]>=3.0 and h.vs_skip_presses.is_empty(),route+": skip is consumed and a simultaneous touch cannot re-launch combat")
 		var t:float=h.manual_combat_clock
 		await frames(4)
-		ck(h.running and h.manual_combat_clock>t,route+": first live combat frames advance normally")
+		var walking:bool=h.solo_deploy_clock>=0.0 and h.approach>0.0 and h.approach<1.0 and h.manual_combat_clock==t
+		for i in 90:
+			if h.solo_deploy_clock<0.0:break
+			await process_frame
+		await frames(4)
+		ck(walking and h.running and h.manual_combat_clock>t,route+": visible walk advances first; combat clock advances only after reaching contact")
 		if do_movie:
 			root.get_texture().get_image().save_png(OS.get_environment("APPDATA").path_join("RoxHistory-VS-Skip-"+route+"-after.png"))
 			await frames(28)
@@ -135,9 +140,12 @@ func _run()->void:
 		await process_frame
 	print("MEASURE start->live frames=",frame_count," wall at 30fps=",frame_count/30.0)
 	ck(not prep_flash and not transition_gap,"no prep flash or unowned vs-to-live render frame")
-	ck(h.running and h.combat_layout and not h.branch_video.visible and h.combat.is_visible_in_tree() and is_equal_approx(h.combat.modulate.a,1.0) and is_equal_approx(h.approach,1.0),"first post-VS frame is fully dressed live combat")
+	ck(h.running and h.combat_layout and not h.branch_video.visible and h.combat.is_visible_in_tree() and is_equal_approx(h.combat.modulate.a,1.0) and h.solo_deploy_clock>=0.0,"first post-VS frame begins actual live approach")
 	ck(frame_count in [103,104,105] and played_flame,"VS 3.45 seconds with visible approved title or fallback")
 	ck(is_equal_approx(h.speed,1.0) and not h.battle_toggles_unlocked,"1-1 active 1x and X2 still locked")
+	for i in 90:
+		if h.solo_deploy_clock<0.0:break
+		await process_frame
 	var t:float=h.manual_combat_clock
 	var deer_fx:=false
 	var hit_seen:=false

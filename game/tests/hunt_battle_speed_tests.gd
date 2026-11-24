@@ -54,6 +54,10 @@ func run()->void:
 	check(h.speed==1.0 and not h.speed_button.visible and h.speed_button.disabled,"1-1 opens at true 1x and X2 remains locked")
 	var started:=0.0
 	var deer_started:=0.0
+	# The visible approach is now part of the live scene, but not its combat clock.
+	for i in 90:
+		if h.solo_deploy_clock<0.0:break
+		await process_frame
 	var before:float=h.manual_combat_clock
 	var real_before:float=h.manual_input_clock
 	for i in 61:
