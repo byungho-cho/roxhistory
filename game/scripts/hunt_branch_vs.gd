@@ -11,11 +11,22 @@ var letters:Array[TextureRect]=[]
 var ember_layers:Array[Node2D]=[]
 var flame_layer:Node2D
 var glow:TextureRect
+const V31_DIR:=ART+"v31/"
+const V31_TIMELINE:="res://data/hunt-vs-v31-title-fx.json"
+var title_sprite:TextureRect
+var title_cut:=AtlasTexture.new()
+var title_frames:Array=[]
+var title_pages:Dictionary={}
+var title_requests:Dictionary={}
+var title_pivot:=Vector2.ZERO
+var title_fps:=30.
+var title_last_frame:=-1
 var bounds:=Rect2(0,0,960,540)
 const EMBERS:=[Vector2(41,46),Vector2(58,72),Vector2(72,85),Vector2(87,47),Vector2(125,40),Vector2(154,49),Vector2(143,70),Vector2(158,87),Vector2(123,92)]
 const BURN_SHADER:="""
 shader_type canvas_item;
 uniform float burn;
+uniform float warmth;
 varying vec4 tint;
 void vertex(){tint=COLOR;}
 void fragment(){
@@ -24,7 +35,9 @@ void fragment(){
  float front=clamp((p.y-(118.-108.*burn)+5.*sin(p.x*.076)+3.*sin(p.x*.185))/9.,0.,1.);
  float gray=dot(wood.rgb,vec3(.299,.587,.114))*.58;
  vec3 charred=vec3(gray+9./255.,gray+3./255.,gray);
- COLOR=vec4(mix(wood.rgb,charred,front),wood.a)*tint;
+ float bounce=warmth*exp(-pow((p.y-86.)/30.,2.))*(.72+.28*sin(p.x*.13+TIME*11.));
+  vec3 lit=mix(wood.rgb,charred,front)+vec3(.31,.13,.034)*bounce;
+  COLOR=vec4(lit,wood.a)*tint;
 }
 """
 func _ready()->void:
@@ -73,6 +86,20 @@ void fragment(){
 		ember.position=Vector2(-13,-18)
 		ember.draw.connect(_draw_embers.bind(ember));ember_layers.append(ember)
 	flame_layer=Node2D.new();add_child(flame_layer);flame_layer.draw.connect(_draw_flames)
+	var meta:Variant=JSON.parse_string(FileAccess.get_file_as_string(V31_TIMELINE))
+	if meta is Dictionary and meta.get("frames",[]) is Array and not meta.frames.is_empty():
+		title_frames=meta.frames
+		title_pivot=Vector2(meta.pivot_source_px[0],meta.pivot_source_px[1])
+		title_fps=float(meta.fps)
+		title_sprite=TextureRect.new()
+		title_sprite.name="ApprovedV31TitleAndFlame"
+		title_sprite.expand_mode=TextureRect.EXPAND_IGNORE_SIZE
+		title_sprite.mouse_filter=Control.MOUSE_FILTER_IGNORE
+		title_cut.filter_clip=true
+		title_sprite.texture=title_cut
+		title_sprite.hide()
+		add_child(title_sprite)
+		_request_title_page(0)
 	fit_background(bounds)
 	present(0.)
 func _flow(bottom:bool)->ColorRect:
@@ -111,6 +138,7 @@ func play()->void:
 	playing=true;clock=0.;present(0.)
 func stop()->void:
 	playing=false
+	_release_title_pages()
 func is_playing()->bool:return playing and clock<6.9
 static func authored_ease(value:float)->float:return 1.-pow(1.-clampf(value,0.,1.),3.)
 static func exit_amount(time:float)->float:
@@ -129,9 +157,78 @@ func present(time:float)->void:
 		letter.material.set_shader_parameter("burn",clampf((time-1.14)/.89,0.,1.))
 	var ft:=clampf((time-1.10)/1.18,0.,1.)
 	var strength:=minf(1.,ft*7.)*minf(1.,(1.-ft)*4.)
-	glow.modulate=Color(1.,124./255.,34./255.,163./255.*strength)
+	glow.modulate=Color(1.,124./255.,34./255.,163./255.*strength*.70)
+	var v31_ready:=_present_v31(time)
+	for letter in letters:
+		letter.visible=not v31_ready
+		letter.material.set_shader_parameter("warmth",strength)
+	glow.visible=not v31_ready
+	flame_layer.visible=not v31_ready
 	for ember in ember_layers:ember.queue_redraw()
 	flame_layer.queue_redraw()
+func _request_title_page(index:int)->void:
+	if index<0 or title_pages.has(index) or title_requests.has(index):return
+	var path:=V31_DIR+"title-fx-%d.png"%index
+	if ResourceLoader.exists(path,"Texture2D") and ResourceLoader.load_threaded_request(path,"Texture2D")==OK:
+		title_requests[index]=path
+
+func _title_page(index:int)->Texture2D:
+	if title_pages.has(index):return title_pages[index]
+	_request_title_page(index)
+	if not title_requests.has(index):return null
+	var path:String=title_requests[index]
+	var status:=ResourceLoader.load_threaded_get_status(path)
+	if status==ResourceLoader.THREAD_LOAD_IN_PROGRESS:return null
+	title_requests.erase(index)
+	if status!=ResourceLoader.THREAD_LOAD_LOADED:return null
+	var art:=ResourceLoader.load_threaded_get(path) as Texture2D
+	if is_instance_valid(art):title_pages[index]=art
+	return art
+
+func _release_title_pages()->void:
+	if not is_instance_valid(title_sprite):return
+	title_sprite.hide()
+	title_cut.atlas=null
+	title_last_frame=-1
+	title_pages.clear()
+	for index in title_requests.keys():
+		var path:String=title_requests[index]
+		if ResourceLoader.load_threaded_get_status(path)==ResourceLoader.THREAD_LOAD_LOADED:
+			ResourceLoader.load_threaded_get(path)
+			title_requests.erase(index)
+
+func _present_v31(time:float)->bool:
+	if not is_instance_valid(title_sprite):return false
+	var frame:=floori(time*title_fps+.00001)
+	if frame>=title_frames.size():
+		_release_title_pages()
+		return true
+	var data:Variant=title_frames[frame]
+	if data==null:
+		title_sprite.hide()
+		title_last_frame=-1
+		return true
+	var index:=int(data.atlas)
+	var tex:=_title_page(index)
+	if not is_instance_valid(tex):return title_sprite.visible
+	for key in title_pages.keys():
+		if key!=index and key!=index+1:title_pages.erase(key)
+	for n in range(frame+1,mini(frame+13,title_frames.size())):
+		var next:Variant=title_frames[n]
+		if next!=null and int(next.atlas)!=index:
+			_title_page(int(next.atlas))
+			break
+	if title_last_frame!=frame:
+		var r:Array=data.rect
+		var at:Array=data.offset
+		title_cut.atlas=tex
+		title_cut.region=Rect2(r[0],r[1],r[2],r[3])
+		title_sprite.position=title_pivot+Vector2(at[0],at[1])
+		title_sprite.size=title_cut.region.size
+		title_last_frame=frame
+	title_sprite.show()
+	return true
+
 func _draw_embers(layer:Node2D)->void:
 	if clock<=1.45:return
 	for j in EMBERS.size():
@@ -153,6 +250,14 @@ func _draw_embers(layer:Node2D)->void:
 		layer.draw_circle(line[6],1.4,Color(1.,120./255.,39./255.,v))
 func _draw_flames()->void:
 	var ft:=clampf((clock-1.10)/1.18,0.,1.)
+	var drift:=maxf(0.,clock-1.73)
+	if drift>0. and drift<4.4:
+		for j in 10:
+			var seed:=float(j)
+			var life:=clampf((drift-seed*.046)/.35,0.,1.)*(1.-smoothstep(2.2,4.4,drift))
+			var point:=Vector2(480.+(seed-4.5)*(12.+drift*4.)+8.*sin(seed*2.7+drift*3.),300.-(12.+fposmod(seed*5.3,17.))*drift)
+			flame_layer.draw_circle(point,3.2,Color(1.,.28,.05,.16*life))
+			flame_layer.draw_circle(point,1.35+fposmod(seed,3.)*.24,Color(1.,.66,.25,.92*life))
 	if ft<=0. or ft>=1.:return
 	var strength:=minf(1.,ft*7.)*minf(1.,(1.-ft)*4.)
 	var th:=160.*authored_ease(ft/.53)

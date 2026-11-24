@@ -27,6 +27,10 @@ const SKILLS := {
 }
 
 var skills_enabled:=true
+var first_hunt := false
+# Temporary 1-1 tuning, applied only to committed HP loss.
+const STAGE_1_1_DAMAGE_MULTIPLIER := 2
+var damage_multiplier := 1
 
 var charges: Array[float] = [0.0, 0.0, 0.0]
 var party_hp: Array[int] = [34, 33, 33]
@@ -87,7 +91,7 @@ func resolve_attack(ordered_han_finisher := false, contact_into_frame := 0.0) ->
 	if pending_counter:
 		pending_counter = false
 		var before := party_hp[attacker]
-		party_hp[attacker] = maxi(0, before - COUNTER_DAMAGE)
+		party_hp[attacker] = maxi(0, before - _battle_damage(COUNTER_DAMAGE))
 		if party_hp[attacker] < before:hp_lost.emit(attacker,before,party_hp[attacker])
 		if party_hp[attacker]==0:
 			charges[attacker]=0.0
@@ -107,7 +111,7 @@ func set_auto(enabled: bool) -> void:
 	reserved_skill = next_auto_skill() if auto_enabled else ""
 
 func next_auto_skill() -> String:
-	if not skills_enabled:return ""
+	if first_hunt or not skills_enabled:return ""
 	var options: Array[String] = []
 	if party_hp[1]>0:options.append("strike")
 	if party_hp[2]>0 and (party_hp[0]>0 or party_hp[1]>0):options.append("team")
@@ -244,9 +248,12 @@ func _rally_damage(damage: int, index: int) -> int:
 	return damage + floori(float(fifths) / 5.0)
 
 
+func _battle_damage(amount: int) -> int:
+	return amount * damage_multiplier
+
 func damage_deer(amount: int) -> void:
 	var before := deer_hp
-	deer_hp = maxi(0, before - amount)
+	deer_hp = maxi(0, before - _battle_damage(amount))
 	if deer_hp < before:hp_lost.emit(PREY_VICTIM,before,deer_hp)
 	if deer_hp == 0:
 		outcome = "win"

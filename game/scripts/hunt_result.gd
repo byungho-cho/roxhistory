@@ -5,6 +5,7 @@ const CELL := Vector2i(388,516)
 const ATLAS_SIZE := Vector2i(2328,3096)
 var app: Node
 var won: bool
+var stars := 0
 var frame_art: AtlasTexture
 var elapsed := 0.0
 var leaving := false
@@ -46,6 +47,8 @@ func _ready() -> void:
 		var replay:=int(app.model.state.get("hunt_cleared",0))>int(app.hunt_stage) and not progression_advanced
 		var message:="진행 보상 · 다음 단계 해금" if progression_advanced else "이미 완료한 사냥입니다." if replay else "진행 저장 상태를 확인해 주세요."
 		write(layout,message,Rect2(62,210,420,28),19,Color("fff0d0"))
+	if won and stars>0:
+		write(layout,"★".repeat(stars),Rect2(62,258,420,48),36,accent)
 	if not won:
 		write(layout,"전력을 정비하고 다시 도전하세요.",Rect2(62,210,390,21),17,Color("fff0d0"))
 		followup(layout,"전투력 향상",239,"icon-spear.png")

@@ -37,6 +37,8 @@ void fragment() {
 }
 """
 const STAGE_ROW_Y := 385.0
+const PREPARE_Y := 454.0
+const PREPARE_HEIGHT := 50.0
 const STAGE_ART_SCALE := 0.56
 const BOAR_DISPLAY_SCALE := .86
 const TITLE := preload(ART+"08-ui-title-plaque-660.png")
@@ -69,6 +71,9 @@ const SKINS := {
 var app: Node
 var page: Control
 var top_group: Control
+var corner_mist: ColorRect
+var top_rest_y := 0.0
+var footer_rest_y := 0.0
 var footer: Control
 var backdrop: TextureRect
 var camp_idle: VideoStreamPlayer
@@ -342,7 +347,7 @@ func move_group(group: Control, start: float, shift: float) -> void:
 	group.visible=elapsed>=start
 	var phase := clampf((elapsed-start)/.30,0,1)
 	group.modulate.a=smoothstep(0,.32,phase)
-	group.position.y=shift*(1.0-Tween.interpolate_value(0.0,1.0,phase,1.0,Tween.TRANS_BACK,Tween.EASE_OUT))
+	group.position.y=(top_rest_y if group==top_group else footer_rest_y)+shift*(1.0-Tween.interpolate_value(0.0,1.0,phase,1.0,Tween.TRANS_BACK,Tween.EASE_OUT))
 	group.mouse_behavior_recursive=Control.MOUSE_BEHAVIOR_ENABLED if phase>=.32 else Control.MOUSE_BEHAVIOR_DISABLED
 
 func progress() -> int:
@@ -353,6 +358,28 @@ func layer(parent: Control) -> Control:
 	group.mouse_filter=Control.MOUSE_FILTER_IGNORE
 	parent.add_child(group)
 	return group
+
+func _layout_corner_mist() -> void:
+	if not is_instance_valid(corner_mist):
+		corner_mist=ColorRect.new()
+		corner_mist.name="SelectorCornerMist"
+		corner_mist.mouse_filter=Control.MOUSE_FILTER_IGNORE
+		add_child(corner_mist)
+		var shader:=Shader.new()
+		shader.code="""
+shader_type canvas_item;
+void fragment(){
+	vec2 p=min(UV,vec2(1.)-UV)/vec2(.25,.25);
+	float cloud=clamp(1.-length(p),0.,1.);
+	float veil=.85+.15*sin(UV.x*31.+UV.y*19.);
+	COLOR=vec4(.85,.83,.75,.29*cloud*cloud*veil);
+}
+"""
+		var material:=ShaderMaterial.new()
+		material.shader=shader
+		corner_mist.material=material
+	corner_mist.size=size
+	move_child(corner_mist,-1)
 
 func draw_page() -> void:
 	if size.x<=0 or size.y<=0:return
@@ -370,6 +397,7 @@ func draw_page() -> void:
 	if is_instance_valid(page):
 		remove_child(page)
 		page.queue_free()
+	_layout_corner_mist()
 	page=layer(self)
 	var unit := minf(1.0,minf(size.x/DESIGN.x,size.y/DESIGN.y))
 	skip_hint.visible=not entry_finished
@@ -381,8 +409,26 @@ func draw_page() -> void:
 	page.position=(size-DESIGN*unit)*.5
 	top_group=layer(page)
 	footer=layer(page)
+	# Match the existing preparation title plank and visible gold button artwork.
+	# The preparatory scene retains its original layout, including its edge wash.
+	var safe_start:=Vector2.ZERO
+	var safe_end:=size
+	if OS.has_feature("android"):
+		var area:=DisplayServer.get_display_safe_area()
+		var physical:=Vector2(DisplayServer.screen_get_size())
+		if physical.x>0. and physical.y>0. and area.has_area():
+			safe_start=(Vector2(area.position)*size/physical).clamp(Vector2.ZERO,size)
+			safe_end=(Vector2(area.end)*size/physical).clamp(safe_start,size)
+	var safe_size:=safe_end-safe_start
+	var prep_fit:=maxf(.1,minf(safe_size.x/DESIGN.x,safe_size.y/DESIGN.y))
+	var prep_bar_top:=safe_start.y+10.*prep_fit
+	var prep_art_end:=safe_end.y-(540.+7.-472.-65.*(.18+.64))*prep_fit
+	top_rest_y=(prep_bar_top-page.position.y)/unit-12.
+	footer_rest_y=(prep_art_end-page.position.y)/unit-PREPARE_Y-PREPARE_HEIGHT
 	var crest := Rect2(315,12,330,65)
-	app.picture(top_group,plaque_art,crest).stretch_mode=TextureRect.STRETCH_SCALE
+	var title_plate:TextureRect=app.picture(top_group,plaque_art,crest)
+	title_plate.name="SelectorTitlePlate"
+	title_plate.stretch_mode=TextureRect.STRETCH_SCALE
 	var chapter_name := "%d장 · %s"%[chapter+1,CHAPTERS[chapter]]
 	var heading := title(top_group,chapter_name,Rect2(315,37.5,330,27),22)
 	var half_text := heading.get_theme_font("font").get_string_size(chapter_name,HORIZONTAL_ALIGNMENT_LEFT,-1,22).x*.5
@@ -401,7 +447,8 @@ func draw_page() -> void:
 	app.picture(footer,preload(STAGE_ART+"stage-connector@2x.png"),Rect2(132,STAGE_ROW_Y-3,702,6)).stretch_mode=TextureRect.STRETCH_SCALE
 	for slot in 10:
 		add_stage(slot)
-	var prepare := action(footer,Rect2(625,456,238,50),app.prepare_selected_hunt)
+	var prepare := action(footer,Rect2(625,PREPARE_Y,238,PREPARE_HEIGHT),app.prepare_selected_hunt)
+	prepare.name="PrepareHunt"
 	app.picture(prepare,preload(ART+"08-ui-prepare-gold-body.svg"),Rect2(Vector2.ZERO,prepare.size))
 	title(prepare,"사냥 준비",Rect2(Vector2.ZERO,prepare.size),24,Color("462b14"))
 	prepare.disabled=int(app.hunt_stage)/STAGES_PER_CHAPTER!=chapter or app.hunt_stage>progress()
