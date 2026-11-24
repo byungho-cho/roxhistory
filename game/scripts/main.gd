@@ -2605,10 +2605,8 @@ func go_back() -> void:
 		build_side.hide()
 	elif screen == "play":
 		show_modal("게임을 종료할까요?","진행은 기기에 저장됩니다.",[
-			{"text":"취소","action":close_modal},
-			{"text":"종료","action":func():
-				if is_instance_valid(world) and not model.save_position(world.player.position):return
-				get_tree().quit()}],false,true,false,Vector2.ZERO,true)
+			{"text":"시작 화면","action":_go_to_title_from_village},
+			{"text":"종료","action":save_and_quit_windows,"primary":true}],false,true,true,Vector2(424,230))
 	elif screen == "region": show_screen("title")
 	else:
 		show_modal("여정을 나갈까요?","앱을 종료합니다.",[{"text":"돌아가기","action":close_modal},{"text":"종료","action":func(): get_tree().quit()}],false,false,false,Vector2.ZERO,true)
@@ -2706,6 +2704,13 @@ func show_windows_idle_notice(message: String) -> void:
 		windows_idle_confirm = button(buttons,"확인",confirm_windows_idle_exit,true,"","")
 		windows_idle_confirm.custom_minimum_size = cancel.custom_minimum_size
 	if windows_idle_label.text != message: windows_idle_label.text = message
+
+func _go_to_title_from_village() -> void:
+	if is_instance_valid(world) and not model.save_position(world.player.position):
+		return
+	close_modal()
+	show_screen("title")
+
 
 func save_and_quit_windows() -> bool:
 	if is_instance_valid(world) and not model.save_position(world.player.position): return false
