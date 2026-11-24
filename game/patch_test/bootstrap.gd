@@ -1,9 +1,9 @@
 extends Control
 
-const BASE_VERSION := "0.2.307"
-const BASE_COMMIT := "b88b156cfccfde98ca4b86d22e0e2023c323eb61"
+const BASE_VERSION := "0.313.313"
+const BASE_COMMIT := "5f6f193e65063c4a32fca04d8f860615605e380c"
 const RUNTIME := "godot-4.5.1-android-pck-4"
-const RELEASE_ROOT := "https://github.com/byungho-cho/roxhistory/releases/download/android-patches-0.2.307/"
+const RELEASE_ROOT := "https://github.com/byungho-cho/roxhistory/releases/download/android-patches-0.313.313/"
 signal check_status_changed(value: String)
 signal manifest_check_failed_to_start
 var check_status := "":
@@ -15,7 +15,7 @@ var title_active := false
 var restart_pending := false
 const TRUST := preload("res://patch_test/patch_key.gd")
 
-var cache := "user://rox-patches-0.2.307/"
+var cache := "user://rox-patches-0.313.313/"
 var index := cache + "current.json"
 var shade:ColorRect
 var popup:CenterContainer
