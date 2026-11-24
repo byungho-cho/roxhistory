@@ -1466,6 +1466,7 @@ func finish_battle_transition() -> void:
 	if solo:
 		battlefield.queue_redraw()
 		update_actors(0.)
+		battle_vfx_under.queue_redraw()
 
 
 const ManualHunt := preload("res://scripts/hunt_production_frontline_actions.gd")
@@ -2312,6 +2313,8 @@ func _tick_hunt_frame(delta: float) -> void:
 		approach = smoothstep(0.0,solo_deploy_seconds,solo_deploy_clock)
 		update_actors(delta)
 		update_camera(delta)
+		# Ground rings follow the newly sampled feet even while combat is paused for entry.
+		battle_vfx_under.queue_redraw()
 		if approach>=1.0:solo_deploy_clock=-1.0
 		return
 	if running and is_instance_valid(chapter_story_battle):
