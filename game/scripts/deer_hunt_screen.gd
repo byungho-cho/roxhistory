@@ -2331,8 +2331,67 @@ func _draw_story_saebom_trail(points: PackedVector2Array, alpha: float, layer: N
 	StoneGold.draw_trail(layer,prey_art.soft,points,alpha)
 
 
+static var _hunt_cutin_textures: Dictionary = {}
+
+## Keep the approved source PNG intact. Only the hunt cut-in clears the
+## bright Figma ground connected to the edge; white paint inside stays.
+static func _hunt_cutin_art(path: String) -> Texture2D:
+	if _hunt_cutin_textures.has(path): return _hunt_cutin_textures[path]
+	var source := load(path) as Texture2D
+	if source == null: return null
+	var bitmap := source.get_image()
+	if bitmap == null or bitmap.is_empty(): return source
+	bitmap.convert(Image.FORMAT_RGBA8)
+	var data := bitmap.get_data()
+	var w := bitmap.get_width()
+	var h := bitmap.get_height()
+	var seen := PackedByteArray()
+	seen.resize(w*h)
+	var pending := PackedInt32Array()
+	for x in w:
+		pending.append(x)
+		pending.append((h-1)*w+x)
+	for y in h:
+		pending.append(y*w)
+		pending.append(y*w+w-1)
+	var uram := path.contains("uram")
+	# The original boot shadow closes this negative space off from the outside.
+	if uram and w == 470 and h == 622: pending.append(545*w+235)
+	var cursor := 0
+	while cursor < pending.size():
+		var p: int = pending[cursor]
+		cursor += 1
+		if seen[p] != 0: continue
+		seen[p] = 1
+		var c := 4*p
+		var r: int = data[c]
+		var g: int = data[c+1]
+		var b: int = data[c+2]
+		if data[c+3] > 0 and (r < 237 or g < 227 or b < 216 or r-g > 19 or g-b > 22): continue
+		data[c+3] = 0
+		var x: int = p % w
+		if x > 0: pending.append(p-1)
+		if x+1 < w: pending.append(p+1)
+		if p >= w: pending.append(p-w)
+		if p+w < w*h: pending.append(p+w)
+	# Fade the original pale contact shadow so it sits on the game ground.
+	var floor_y := floori(h*(.91 if uram else .962))
+	for y in range(floor_y,h):
+		for x in w:
+			var c := 4*(y*w+x)
+			var red: int = data[c]
+			var green: int = data[c+1]
+			var blue: int = data[c+2]
+			if data[c+3] > 0 and red >= 168 and green >= 126 and blue >= 108 and red-green < 51 and green-blue < 38:
+				var fade := lerpf(1.0,.12,smoothstep(float(floor_y),float(floor_y+13),float(y)))
+				data[c+3] = roundi(float(data[c+3])*fade)
+	var masked := Image.create_from_data(w,h,false,Image.FORMAT_RGBA8,data)
+	var clean := ImageTexture.create_from_image(masked)
+	_hunt_cutin_textures[path] = clean
+	return clean
+
 func _make_story_cutin(slot: int) -> void:
-	var character_art := load("res://assets/ui/village-guidance/hunt-uram-approved-front.png" if slot==1 else "res://assets/ui/village-guidance/hunt-saebom-approved-front.png") as Texture2D
+	var character_art := _hunt_cutin_art("res://assets/ui/village-guidance/hunt-uram-approved-front.png" if slot==1 else "res://assets/ui/village-guidance/hunt-saebom-approved-front.png")
 	story_cutin=CharacterGuide.new(app,"우람" if slot==1 else "새봄","한결아, 내가 앞을 막을게!" if slot==1 else "한결아, 우람아! 뒤는 내가 맡을게!",character_art)
 	story_cutin.z_index=2000
 	story_cutin.hide()
