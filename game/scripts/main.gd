@@ -2415,7 +2415,7 @@ func show_hunt_loading()->void:
 	shade.mouse_filter=Control.MOUSE_FILTER_STOP
 	hunt_loading=shade
 	var icon:=picture(shade,preload("res://assets/ui/d0020/hourglass-teal-amber-illustrated.png"),Rect2(-24,-24,48,48))
-	icon.set_anchors_preset(Control.PRESET_CENTER)
+	icon.set_anchors_and_offsets_preset(Control.PRESET_CENTER,Control.PRESET_MODE_KEEP_SIZE)
 
 func close_hunt_loading()->void:
 	if is_instance_valid(hunt_loading):hunt_loading.queue_free()

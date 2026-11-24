@@ -28,6 +28,7 @@ func run():
  cold_wait_observed=is_instance_valid(app.hunt_loading)
  if cold_wait_observed:
   ck(app.hunt_loading.get_child_count()==1,"loading overlay contains only one hourglass")
+  ck(app.hunt_loading.get_child(0).get_global_rect().get_center().distance_to(app.hunt_loading.get_global_rect().get_center())<1,"loading hourglass is centered in viewport")
  app.prepare_selected_hunt()
  await wait_hunt()
  ck(app.screen=="hunt" and app.hunt_prey_id=="adult","cold repeated prepare enters exactly one selected hunt")
