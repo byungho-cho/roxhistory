@@ -7,6 +7,10 @@ const GOLD := Color("ffd283")
 const DARK := Color(0.16, 0.14, 0.10, 0.82)
 const REPEAT_SECONDS := 0.25
 const NONE := -2
+const HERO_INTERACTION := Rect2(679, 100, 413, 560)
+const URAM_IDLE := preload("res://assets/ui/hero-level-up/uram-idle.ogv")
+const URAM_TAP := preload("res://assets/ui/hero-level-up/uram-tap.ogv")
+const URAM_VIDEO_SIZE := Vector2(1276, 720)
 const DATA := [
 	["한결", "han", "근접", "ally-melee", "han-spear-pose-reconstructed.png", "han-3sp-A.png"],
 	["우람", "uram", "방어", "ally-tank", "RoxHistory-Uram-Transparent.png", "uram-3sp.png"],
@@ -21,6 +25,9 @@ var board: Control
 var world_view: Control
 var active_scene: Control
 var active_background: TextureRect
+var uram_video: VideoStreamPlayer
+var uram_frame: TextureRect
+var uram_tap_active := false
 var outgoing_scene: Control
 var slide: Tween
 var celebration: Tween
@@ -88,6 +95,12 @@ func fit() -> void:
 	var viewport := Rect2(bleed, size / factor)
 	active_background.position = viewport.position
 	active_background.size = viewport.size
+	if is_instance_valid(uram_video):
+		var cover := maxf(viewport.size.x / URAM_VIDEO_SIZE.x, viewport.size.y / URAM_VIDEO_SIZE.y)
+		uram_video.size = URAM_VIDEO_SIZE * cover
+		uram_video.position = viewport.get_center() - uram_video.size * 0.5
+		uram_frame.position = uram_video.position
+		uram_frame.size = uram_video.size
 	if is_instance_valid(outgoing_scene):
 		var background := outgoing_scene.get_child(0) as TextureRect
 		background.position = viewport.position
@@ -105,6 +118,75 @@ func make_scene() -> void:
 	shadow.material = soft_edge
 	var pose := Rect2(749, 100, 344, 575) if selected == 0 else Rect2(716, 130, 372, 565)
 	picture(active_scene, str(DATA[selected][4]), pose)
+	if selected == 1:
+		make_uram_motion()
+
+func make_uram_motion() -> void:
+	uram_video = VideoStreamPlayer.new()
+	uram_video.name = "UramLevelUpMotion"
+	uram_video.expand = true
+	uram_video.volume_db = -80.0
+	uram_video.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	uram_video.finished.connect(_finish_uram_tap.bind(uram_video))
+	active_scene.add_child(uram_video)
+	uram_frame = TextureRect.new()
+	uram_frame.name = "UramTransitionFrame"
+	uram_frame.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	uram_frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	uram_frame.hide()
+	active_scene.add_child(uram_frame)
+	play_uram_motion(false)
+
+func play_uram_motion(tap: bool) -> void:
+	if not is_instance_valid(uram_video): return
+	var player := uram_video
+	freeze_uram_frame()
+	uram_tap_active = tap
+	player.stop()
+	player.stream = URAM_TAP if tap else URAM_IDLE
+	player.loop = not tap
+	player.hide()
+	player.play()
+	show_uram_when_ready(player)
+
+func show_uram_when_ready(player: VideoStreamPlayer) -> void:
+	# Keep the previous frame visible until the new stream has produced a frame.
+	while is_instance_valid(player) and player == uram_video:
+		if player.stream_position >= 2.0 / 24.0:
+			player.show()
+			uram_frame.hide()
+			uram_frame.texture = null
+			return
+		await get_tree().process_frame
+
+func freeze_uram_frame() -> void:
+	if not uram_video.visible: return
+	var video_texture := uram_video.get_video_texture()
+	if video_texture == null: return
+	var pixels := video_texture.get_image()
+	if pixels == null or pixels.is_empty(): return
+	uram_frame.texture = ImageTexture.create_from_image(pixels)
+	uram_frame.show()
+
+func _finish_uram_tap(player: VideoStreamPlayer) -> void:
+	_resume_uram_idle.call_deferred(player)
+
+func _resume_uram_idle(player: VideoStreamPlayer) -> void:
+	if player == uram_video and uram_tap_active:
+		play_uram_motion(false)
+
+func stop_uram_motion() -> void:
+	if is_instance_valid(uram_video):
+		freeze_uram_frame()
+		uram_video.stop()
+		uram_video.stream = null
+		uram_video.hide()
+	uram_video = null
+	uram_frame = null
+	uram_tap_active = false
+
+func _exit_tree() -> void:
+	stop_uram_motion()
 
 func make_header() -> void:
 	var back := action(board, Rect2(57, 55, 80, 80), "Back", app.go_back)
@@ -119,7 +201,7 @@ func make_growth() -> void:
 	panel_at(frame, Rect2(5, 5, 414, 619), DARK, Color("76502f"), 5, 20)
 	picture(frame, "growth-wood-frame.png", Rect2(0, 0, 424, 629))
 	text_at(frame, "성장 미리보기", Rect2(35, 27, 230, 35), 25, Color("f7d499"), HORIZONTAL_ALIGNMENT_LEFT, true)
-	text_at(frame, "314 검수 가안", Rect2(244, 27, 149, 35), 17, Color("f7d499"), HORIZONTAL_ALIGNMENT_RIGHT)
+	text_at(frame, "수치 검수 가안", Rect2(244, 27, 149, 35), 17, Color("f7d499"), HORIZONTAL_ALIGNMENT_RIGHT)
 	level_text = text_at(frame, "", Rect2(34, 73, 230, 52), 38, GOLD, HORIZONTAL_ALIGNMENT_LEFT, true)
 	level_text.name = "LevelAndCap"
 	text_at(frame, "현재 경험치", Rect2(34, 138, 100, 29), 18)
@@ -267,6 +349,8 @@ func cycle(direction: int) -> void:
 func choose(index: int, direction := 0) -> void:
 	if index == selected or index not in owned: return
 	stop_hold()
+	swipe = NONE
+	stop_uram_motion()
 	cancel_celebration()
 	if slide:
 		slide.kill()
@@ -308,7 +392,7 @@ func pointer(index: int, point: Vector2, pressed: bool) -> void:
 	elif not pressed and held == index:
 		stop_hold()
 		get_viewport().set_input_as_handled()
-	elif pressed and swipe == NONE and Rect2(679, 100, 413, 560).has_point(board.get_global_transform().affine_inverse() * point):
+	elif pressed and swipe == NONE and HERO_INTERACTION.has_point(board.get_global_transform().affine_inverse() * point):
 		swipe = index
 		swipe_start = point
 		get_viewport().set_input_as_handled()
@@ -317,6 +401,8 @@ func pointer(index: int, point: Vector2, pressed: bool) -> void:
 		var movement := (point - swipe_start) / board.scale.x
 		if absf(movement.x) > 70 and absf(movement.x) > absf(movement.y) * 1.2:
 			cycle(-signi(int(movement.x)))
+		elif movement.length() < 20.0 and selected == 1 and not uram_tap_active:
+			play_uram_motion(true)
 		get_viewport().set_input_as_handled()
 
 func _process(delta: float) -> void:
@@ -333,6 +419,9 @@ func _notification(what: int) -> void:
 	if what in [NOTIFICATION_APPLICATION_PAUSED, NOTIFICATION_APPLICATION_FOCUS_OUT, NOTIFICATION_EXIT_TREE]:
 		swipe = NONE
 		stop_hold()
+		if is_instance_valid(uram_video): uram_video.paused = true
+	elif what in [NOTIFICATION_APPLICATION_RESUMED, NOTIFICATION_APPLICATION_FOCUS_IN]:
+		if is_instance_valid(uram_video): uram_video.paused = false
 
 func stop_hold() -> void:
 	held = NONE
