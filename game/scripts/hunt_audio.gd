@@ -92,7 +92,7 @@ func cue(id: String, priority := 1) -> void:
 	player.stop()
 	player.bus = &"Combat" if id in COMBAT_CUES or id in DUEL_CONTACT_CUES else &"SFX"
 	player.stream = streams[id]
-	player.volume_db = 0.0 if id in DUEL_CONTACT_CUES else linear_to_db(.125) if id == "S09" else float(LEVELS.get(id, -12.0))
+	player.volume_db = -9.0 if id in DUEL_CONTACT_CUES else linear_to_db(.125) if id == "S09" else float(LEVELS.get(id, -12.0))
 	if id in COMBAT_CUES or id in HUNT_PRESENTATION_CUES:
 		player.volume_db += linear_to_db(HUNT_GAIN)
 	player.play()
