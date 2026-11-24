@@ -44,10 +44,8 @@ func run():
  first.advance_transition(first.TRANSITION_SECONDS);first.update_actors(0.)
  first.toggle_auto()
  ck(first.rules.auto_enabled and first.rules.reserved_skill=="" and first.auto_button.get_meta("toggle_icon").texture.resource_path.ends_with("AUTO-1.png"),"AUTO shows ON while solo skill reservation stays off")
- first.toggle_auto();first.toggle_speed()
- ck(not first.rules.auto_enabled and first.speed==2. and first.speed_button.get_meta("toggle_icon").texture.resource_path.ends_with("X2-1.png"),"AUTO OFF and X2 ON use approved state assets")
- first.toggle_speed()
- ck(first.speed==1. and first.speed_button.get_meta("toggle_icon").texture.resource_path.ends_with("X2-0.png"),"X2 returns to 1x and OFF artwork")
+ first.toggle_auto()
+ ck(not first.rules.auto_enabled and first.speed==1. and first.auto_button.get_meta("toggle_icon").texture.resource_path.ends_with("AUTO-0.png"),"AUTO OFF has approved artwork and battle stays fixed at 1x")
  app.close_hunt();await process_frame
  app.hunt_stage=5
  app.prepare_selected_hunt()

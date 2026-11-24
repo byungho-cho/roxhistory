@@ -52,7 +52,10 @@ static func visual_foot_center(actor: Node2D, animal: bool) -> Vector2:
 	if count==0:return Vector2.INF
 	ground /= float(count)
 	ground.y=0.0
-	return display.to_global(camera.unproject_position(ground)+display.offset)
+	var viewport_point := camera.unproject_position(ground)+display.offset
+	# Check the actual rendered texture, not distance to a scripted path node.
+	if not viewport_point.is_finite() or not display.get_rect().grow(1.0).has_point(viewport_point):return Vector2.INF
+	return display.to_global(viewport_point)
 
 ## Measure the native camera's floor ellipse about its ground origin, then fit a
 ## common radius. The camera is the actor's own subviewport camera, not main UI.

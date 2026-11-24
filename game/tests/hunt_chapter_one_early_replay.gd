@@ -75,8 +75,7 @@ func suite(n:int,expected:Array,owned_toggles:bool)->void:
  if n==1:
   h.speed=2.0
   h.update_toggles()
-  h.toggle_speed()
-  ck(h.speed==1.0 and not h.speed_button.visible and h.speed_button.disabled,"recruited 1-1 replay forces 1x and never exposes X2")
+  ck(h.speed==1.0 and h.auto_button.get_meta("toggle_name")== "AUTO","recruited 1-1 replay forces 1x; AUTO is the only toggle")
  var b=start(h)
  if not is_instance_valid(b):ck(false,"real native squad opens");return
  ck(active(b)==expected and b.story_join_slot==-1 and not is_instance_valid(h.story_cutin),"replay opens with all owned heroes and no recruitment/guide")
@@ -101,6 +100,19 @@ func suite(n:int,expected:Array,owned_toggles:bool)->void:
    var role_at:=role_button.get_global_rect().get_center()
    touch(role_at,true);touch(role_at,false)
    ck(b.units[i].sp==0.0 and b.units[i].move in ["chain","counter"] and b.units[0].move=="chain","second hero "+str(i)+" starts through actual HUD while Han is casting")
+  if expected.size()==3:
+   # Ready Uram's ordinary action while Han is still in his independently started 3SP.
+   var target:int=b._target(1)
+   b._begin(1,"attack",target)
+   b.units[1].sp=2.0
+   var clock:float=b.elapsed
+   var prey_hp:int=b.units[target].hp
+   b._draw_pose(0.)
+   var ready:Button=b.huds[1].portrait_button
+   var ready_at:=ready.get_global_rect().get_center()
+   ck(not ready.disabled and b.units[1].move=="attack","ready Uram 2SP during own basic and Han cast")
+   touch(ready_at,true);touch(ready_at,false)
+   ck(b.units[1].move=="skill" and b.units[1].age==0.0 and b.units[1].sp==0.0 and b.elapsed==clock and b.units[0].move=="chain" and b.units[target].hp==prey_hp,"real Uram 2SP touch replaces own unlanded basic with no wait for Han")
   for i in range(expected.size(),3):
    ck(not b.huds[i].visible and not b.story_allows(i,"chain"),"unowned replay hero has no deployment or 3SP entry")
  if movie:

@@ -216,11 +216,7 @@ func _run()->void:
 	if not do_movie:
 		await open(3,4)
 		h=scene
-		ck(h.battle_toggles_unlocked and h.speed==1.0,"1-4 default 1x and button unlocked")
-		h.toggle_speed()
-		ck(h.speed==2.0,"X2 means exactly 2x, not 3x")
-		h.toggle_speed()
-		ck(h.speed==1.0,"turning X2 off restores default 1x")
+		ck(h.battle_toggles_unlocked and h.speed==1.0,"1-4 fixed at 1x and AUTO still unlocked")
 		await force_outcome(h,"win")
 		await tap(get_button(h,"ResultStageSelect"))
 		await frames(8)

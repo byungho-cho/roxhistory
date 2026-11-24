@@ -511,24 +511,25 @@ func add_stage(slot: int) -> void:
 		var art_scale := diameter/116.0
 		app.picture(tile,BOSS,Rect2(extent*.5-plate_center*art_scale,BOSS.get_size()*art_scale))
 	else:
-		var skin: Texture2D = SKINS.midboss if midboss else SKINS.complete if done and not selected else SKINS.active if (selected or current) else SKINS.locked
+		var skin: Texture2D = SKINS.midboss if midboss else SKINS.complete if done else SKINS.active if (selected or current) else SKINS.locked
 		var shadow_offset := Vector2(5,1)*STAGE_ART_SCALE
 		app.picture(tile,skin,Rect2(-shadow_offset,skin.get_size()*.5*STAGE_ART_SCALE))
 	var has_caption := boss or midboss
-	if selected and not has_caption:
-		title(tile,str(slot+1),Rect2(Vector2.ZERO,extent),44)
+	if not has_caption and unlocked and not done:
+		title(tile,str(slot+1),Rect2(Vector2.ZERO,extent),38 if selected else 30)
 	else:
-		var number_center_y := (22.0 if boss else 15.0)*1.2
-		title(tile,str(slot+1),Rect2(0,number_center_y-14.0,diameter,28),24 if (selected or current) else 21)
+		var number_center_y := diameter*.40 if not has_caption else (22.0 if boss else 15.0)*1.2
+		title(tile,str(slot+1),Rect2(0,number_center_y-14.0,diameter,28),28 if selected else 23 if done else 21)
 	if has_caption:
 		title(tile,"최종 보스" if boss else "중간 보스",Rect2(0,diameter*.46*.95,diameter,14),10)
 	if done or not unlocked:
 		var marker: Texture2D=preload(ART+"08-ui-stage-check.svg") if done else preload(ART+"08-ui-padlock-gold.png")
 		var marker_y := diameter*.68 if has_caption else diameter*.60
-		var marker_size := 9.0 if selected and not has_caption else 13.0
-		if selected and not has_caption:
-			marker_y = diameter-marker_size-2.0
-		app.picture(tile,marker,Rect2((diameter-marker_size)*.5,marker_y,marker_size,marker_size))
+		var marker_size := 13.0
+		if done and not has_caption:
+			marker_y = diameter*.63
+		var state_icon:=app.picture(tile,marker,Rect2((diameter-marker_size)*.5,marker_y,marker_size,marker_size)) as TextureRect
+		state_icon.name = "StageClearCheck" if done else "StageLockedIcon"
 
 func choose(stage_id: int) -> void:
 	if not app.hunt_stage_is_unlocked(stage_id):return

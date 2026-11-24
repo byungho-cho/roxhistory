@@ -195,9 +195,10 @@ var pan_start := Vector2.ZERO
 var pan_moved := false
 var touch_points := {}
 const BATTLE_SPEED := 1.0
-var speed := BATTLE_SPEED
+var speed := BATTLE_SPEED:
+	set(_value):
+		speed=BATTLE_SPEED
 var auto_button: DemoButton
-var speed_button: DemoButton
 var exit_popup: Control
 var pause_button: DemoButton
 var battle_countdown: Label
@@ -740,7 +741,6 @@ func build_duel_header() -> void:
 		brush.modulate.a = .8
 		caption(brush,"Lv 1",Rect2(0,0,56,16),11)
 	auto_button = toggle_control(header_right,Rect2(857,3,48,48),"AUTO","auto",toggle_auto)
-	speed_button = toggle_control(header_right,Rect2(909,3,48,48),"X2","speed-2x",toggle_speed)
 	_build_pause_chrome()
 	update_toggles()
 
@@ -759,26 +759,16 @@ func toggle_auto() -> void:
 	rules.set_auto(not rules.auto_enabled and transition_elapsed>=0 or running and not rules.auto_enabled)
 	update_toggles()
 
-func toggle_speed() -> void:
-	if stage_one_one or not battle_toggles_unlocked or exit_popup or app.modal or result_shown:return
-	hunt_audio.cue("S06")
-	speed = BATTLE_SPEED if speed == 2.0 else 2.0
-	update_toggles()
-
 func update_toggles() -> void:
 	if not battle_toggles_unlocked:
 		rules.set_auto(false)
-	if stage_one_one or not battle_toggles_unlocked:
-		speed=BATTLE_SPEED
-	for pair in [[auto_button,rules.auto_enabled],[speed_button,speed==2.0]]:
-		var button:Button=pair[0]
-		var enabled := battle_toggles_unlocked and (button != speed_button or not stage_one_one)
-		button.visible=enabled
-		button.disabled=not enabled
-		var icon:TextureRect=button.get_meta("toggle_icon")
-		icon.texture=load("res://assets/ui/hunt-readiness/%s-%d.png"%[button.get_meta("toggle_name"),int(pair[1])])
-		button.set_meta("active",pair[1])
-		button.accessibility_description="%s %s"%[button.get_meta("toggle_name"),"ON" if pair[1] else "OFF"]
+	auto_button.visible=battle_toggles_unlocked
+	auto_button.disabled=not battle_toggles_unlocked
+	var active:bool=rules.auto_enabled
+	var icon:TextureRect=auto_button.get_meta("toggle_icon")
+	icon.texture=load("res://assets/ui/hunt-readiness/AUTO-%d.png"%int(active))
+	auto_button.set_meta("active",active)
+	auto_button.accessibility_description="AUTO %s"%("ON" if active else "OFF")
 
 
 func build_combat() -> void:
@@ -940,7 +930,7 @@ func _open_battle_pause(with_cue:bool) -> void:
 	clear_formation_drag()
 	story_cutin_pointer = -2
 	story_cutin_touch = Vector2.INF
-	for control in [pause_button,exit_button,auto_button,speed_button]:
+	for control in [pause_button,exit_button,auto_button]:
 		control.clear()
 	# A touch begun before the overlay must not activate an underlying skill.
 	for card in party_cards:card.hud.reset(card.hud.character)
@@ -1482,12 +1472,10 @@ func finish_battle_transition() -> void:
 	battle_countdown.show()
 	_refresh_battle_countdown()
 	location_brush.hide()
-	for i in 2:
-		var control: DemoButton = [auto_button,speed_button][i]
-		control.position = Vector2(890,420+57*i)
-		control.size = Vector2(50,50)
-		var icon := control.get_child(0) as TextureRect
-		icon.size = control.size
+	auto_button.position = Vector2(890,420)
+	auto_button.size = Vector2(50,50)
+	var auto_icon := auto_button.get_meta("toggle_icon") as TextureRect
+	auto_icon.size = auto_button.size
 	update_toggles()
 	fit_layout()
 	if solo:
@@ -1556,10 +1544,9 @@ func _field_ring(actor,index:int) -> Rect2:
 	# The phase-dependent camera is settled on start; invalidate at re-entry, not every redraw.
 	var center:Vector2 = actor.position + (ordinary_prey_visual_offset if actor == deer else Vector2.ZERO)
 	var visual := NativeHud.visual_foot_center(actor,actor==deer)
-	if visual.is_finite():
-		var projected := battlefield.get_global_transform().affine_inverse()*visual
-		# A mismatched native viewport must not place the ring away from its actor.
-		if projected.distance_to(center)<32.0:center=projected
+	# A walk clip can take the rendered feet well past the scripted origin.
+	# The final pose remains the source even during the approach.
+	if visual.is_finite():center=battlefield.get_global_transform().affine_inverse()*visual
 	if ring_sizing.size() != 4 or approach<1.0:
 		return NativeHud.ground_rect(actor.camera,center)
 	return Rect2(center-ring_sizing[index]*.5,ring_sizing[index])
@@ -1718,7 +1705,7 @@ func _draw_normal_hunt_art(front:bool) -> void:
 			if rules.party_hp[i] > 0:
 				var floor_rect := _field_ring(hunters[i],i)
 				prey_art.draw_ground_ring(dest,floor_rect,true)
-				var ready := _can_take_hunt_input() and (rules.can_use(RULES.PARTY_SKILLS[i]) if i == RULES.SAEBOM else rules.can_use_frontline_skill(i,2))
+				var ready := _can_take_hunt_input() and _can_hunt_2sp(i)
 				native_hud.draw_ready_ring(dest,floor_rect,3 if _can_submit_manual_chain(i) else 2 if ready else 0,ready_phase[i])
 		if rules.deer_hp > 0:
 			prey_art.draw_ground_ring(dest,_field_ring(deer,3),false)
@@ -2181,6 +2168,14 @@ func _is_native_manual(id:String) -> bool:
 	return id in [ManualHunt.HAN_SPEAR_2,ManualHunt.HAN_SPEAR_3,ManualHunt.URAM_CLUB_2]
 
 
+func _solo_han_basic_can_yield() -> bool:
+	return _uses_independent_first_hunt() and _is_first_hunt_han_basic() and rules.can_reserve_manual(0,2) and not rules.pending_counter and not rules.rally_cast_pending
+
+
+func _can_hunt_2sp(index:int) -> bool:
+	return rules.can_use(RULES.PARTY_SKILLS[index]) if index==RULES.SAEBOM else (index==0 and _solo_han_basic_can_yield()) or rules.can_use_frontline_skill(index,2)
+
+
 func _on_party_skill_requested(action: String, index: int) -> void:
 	if not _can_take_hunt_input():
 		return
@@ -2191,7 +2186,14 @@ func _on_party_skill_requested(action: String, index: int) -> void:
 		var previous_charge:float = rules.charges[index]
 		use_skill(RULES.PARTY_SKILLS[index],2)
 		if rules.charges[index]<previous_charge: _mark_hunt_cast(index,false)
-	elif rules.can_use_frontline_skill(index,2) and rules.reserve_manual(index,2):
+	elif _can_hunt_2sp(index) and rules.reserve_manual(index,2):
+		if index==0 and _is_first_hunt_han_basic():
+			# A manual cast replaces this actor's basic, never the independent prey action.
+			# Clear an unlanded basic; the next pose owns the only pending contact.
+			impact_pending=false
+			rules.pending_damage=0
+			rules.action_lock=0.0
+			rules.basic_lock=0.0
 		_start_frontline_paid(index,ManualHunt.HAN_SPEAR_2 if index == 0 else ManualHunt.URAM_CLUB_2)
 		update_combat_ui()
 
@@ -2208,7 +2210,7 @@ func use_skill(id: String, required_sp:int=3) -> void:
 func play_pose(id: String) -> void:
 	if _uses_independent_first_hunt() and not is_finite(first_hunt_deer_ready) and id in ["auto_thrust",ManualHunt.HAN_SPEAR_2]:
 		# This one-time lead-in is in screen seconds, not accelerated combat seconds.
-		first_hunt_deer_ready = manual_combat_clock+FIRST_DEER_VISIBLE_DELAY*speed
+		first_hunt_deer_ready = manual_combat_clock+FIRST_DEER_VISIBLE_DELAY
 	_reset_manual_contact()
 	pose = id
 	guard_prey_origin = Vector2.INF
@@ -2471,7 +2473,7 @@ func _tick_hunt_frame(delta: float) -> void:
 		return
 	if running and is_instance_valid(chapter_story_battle):
 		if chapter_story_battle.story_outcome.is_empty():
-			chapter_story_battle.tick(delta * speed, false, delta)
+			chapter_story_battle.tick(delta, false, delta)
 		_refresh_battle_countdown()
 		_update_story_cutin()
 		var outcome: String = chapter_story_battle.story_outcome
@@ -2492,7 +2494,7 @@ func _tick_hunt_frame(delta: float) -> void:
 	if not arrival_finished:
 		advance_arrival(delta)
 	settle_age+=delta
-	var elapsed := delta * (speed if running else 1.0)
+	var elapsed := delta
 	var actors_sampled := false
 	var previous_pose_clock := pose_clock
 	var previous_manual_clock := manual_combat_clock
@@ -2907,7 +2909,7 @@ func update_combat_ui(delta := 0.0) -> void:
 	for i in party_cards.size():
 		var hud: Control = party_cards[i].hud
 		hud.visible=i<prep_ally_count
-		hud.sync(rules.orbs(i),rules.party_hp[i],RULES.PARTY_HP[i],rules.party_hp[i]>0,_can_take_hunt_input() and (rules.can_use(RULES.PARTY_SKILLS[i]) if i == RULES.SAEBOM else rules.can_use_frontline_skill(i,2)),delta,_can_submit_manual_chain(i))
+		hud.sync(rules.orbs(i),rules.party_hp[i],RULES.PARTY_HP[i],rules.party_hp[i]>0,_can_take_hunt_input() and _can_hunt_2sp(i),delta,_can_submit_manual_chain(i))
 
 const CAMERA_ACCENT_S := .54
 const CAMERA_ACCENT_LOCK_S := .69
