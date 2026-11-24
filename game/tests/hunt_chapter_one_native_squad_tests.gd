@@ -39,7 +39,7 @@ func check_stage(number:int)->void:
   ck(not b.units[1].actor.preview.visible and not b.units[2].actor.preview.visible and not b.huds[1].visible and not b.huds[2].visible,"1-2 never renders inactive allies")
   var hp:int=b.units[4].hp
   b._subtract_hp_and_show(3,12)
-  ck(b.units[3].hp==88 and b.units[4].hp==hp,"one flower deer takes damage without copying to second")
+  ck(b.units[3].hp==38 and b.units[4].hp==hp,"one flower deer takes damage without copying to second")
  if number==4:
   ck(b.story_allows(2,"skill") and not b._story_enemy_can_use_skill(b.units[3]),"1-4 Saebom skill and enemy basics only")
  if number==5:

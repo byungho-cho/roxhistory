@@ -53,7 +53,7 @@ func run() -> void:
    if n==2:
     var untouched:int=b.units[4].hp
     b._subtract_hp_and_show(3,6)
-    ck(b.units[3].hp==94 and b.units[4].hp==untouched and not b.huds[1].visible and not b.huds[2].visible,"1-2 two independent prey; only Han HUD")
+    ck(b.units[3].hp==44 and b.units[4].hp==untouched and not b.huds[1].visible and not b.huds[2].visible,"1-2 two independent prey; only Han HUD")
    if n==3:
     var moved:Dictionary={}
     for f in range(180):

@@ -21,6 +21,22 @@ const HEROES := ["hangyeol","uram","saebom"]
 # Chapter One encounter before setup without routing to the lab screen.
 var story_encounter: Dictionary = {}
 var story_outcome := ""
+var story_first_charge_resolved := false
+var story_auto_parry_used := false
+var story_taught_parry := false
+
+func _story_teaching_first_charge() -> bool:
+	if story_encounter.is_empty() or story_first_charge_resolved or units.size() < 4:
+		return false
+	return int(story_encounter.number) in [5, 6] and bool(story_encounter.get("first_visit", true)) and units[1].hp > 0 and units[3].hp > 0
+
+func _story_opening_charge(i: int) -> float:
+	match int(story_encounter.number):
+		2: return 2.0 if i == 0 else 0.0
+		3: return 2.0 if i == 1 else 0.0
+		4: return 2.0 if i == 2 else 0.0
+		5, 6: return 3.0 if i == 1 and bool(story_encounter.get("first_visit", true)) else 0.0
+	return 0.0
 
 func configure_story_encounter(row: Dictionary) -> bool:
 	if not units.is_empty() or not story_encounter.is_empty():
@@ -41,6 +57,12 @@ func story_allows(i: int, move: String) -> bool:
 		return true
 	var number := int(story_encounter.number)
 	if move == "skill":
+		if _story_teaching_first_charge():
+			return false
+		if number == 2 and i == 0 and bool(story_encounter.get("first_visit", true)) and units.size() > 3:
+			var target := _target(i)
+			# Teach the existing range, don't change actual contact authority.
+			return target >= 0 and units[i].feet.distance_to(units[target].feet) <= _gap(i) + 8.0
 		return number >= [2, 3, 4][i]
 	if move != "chain":
 		return false
@@ -209,9 +231,11 @@ func setup(dust_draw:Callable=Callable(),gong:Callable=Callable(), heavy:Callabl
 		var u:Dictionary={"actor":actor,"id":id,"home":home,"feet":home,"hp":MAX_HP,"sp":1.0,"move":"idle","age":0.0,"next":.52+float(i%3)*.17,"contact":-1.0,"victim":-1,"ring":ring,"rally":0.0}
 		if not story_encounter.is_empty():
 			u.story_dormant = dormant
-			u.max_hp = [34,33,33][i] if ally else MAX_HP
+			# Keep the previous ordinary encounter's total HP budget while
+			# splitting 1-2's two same-tier deer into independent targets.
+			u.max_hp = [34,33,33][i] if ally else (MAX_HP / 2 if int(story_encounter.number) == 2 else MAX_HP)
 			u.hp = 0 if dormant else u.max_hp
-			u.sp = 0.0
+			u.sp = _story_opening_charge(i) if ally and not dormant else 0.0
 			if i == 2: u.bom_close = false
 		units.append(u)
 		_play(u,"idle")
@@ -428,7 +452,11 @@ func _target(i:int)->int:
 		if units[1].hp>0:return 1
 		return 2 if units[2].hp>0 else -1
 	if i>=3:
+		if i == 3 and _story_teaching_first_charge():
+			return 1
 		return _local_enemy_target(i)
+	if i == 1 and _story_teaching_first_charge():
+		return 3
 	# Allied targeting keeps its original opening lane and nearest fallback.
 	var initial:=[3,4,5]
 	if initial[i] < units.size() and units[initial[i]].hp > 0: return initial[i]
@@ -580,6 +608,10 @@ func _step(dt:float)->void:
 	if not story_outcome.is_empty():return
 	elapsed+=dt
 	_update_saebom_range()
+	if _story_teaching_first_charge() and int(story_encounter.number) == 6 and not story_auto_parry_used and _squad_guard_candidate() == 3:
+		var before: float = units[1].sp
+		_request("chain", 1)
+		story_auto_parry_used = units[1].sp < before
 	for i in units.size():
 		var u:=units[i];u.age+=dt
 		if ended or u.hp<=0:continue
@@ -617,7 +649,12 @@ func _step(dt:float)->void:
 			if formation_aggro:_approach_enemy_slot(i,target,dt)
 			else:_approach(i,theirs,dt)
 		elif elapsed>=u.next:
-			_begin(i,"skill" if i>=3 and _story_enemy_can_use_skill(u) and int(elapsed*1.45+i)%4==0 else "attack",target)
+			var teaching := _story_teaching_first_charge()
+			if teaching and i < 3:
+				if u.move != "idle": _play(u, "idle")
+				continue
+			var first_charge := teaching and i == 3
+			_begin(i,"skill" if first_charge or (i>=3 and _story_enemy_can_use_skill(u) and int(elapsed*1.45+i)%4==0) else "attack",target)
 		elif u.move!="idle":_play(u,"idle")
 	_update_projectiles(dt)
 	while not knife_events.is_empty() and elapsed-float(knife_events[0].at)>Knife.ECHO_SECONDS:knife_events.pop_front()
@@ -658,6 +695,8 @@ func _step(dt:float)->void:
 
 func _resolve(i:int)->void:
 	var u:=units[i];var j:int=u.victim
+	if i == 3 and u.move == "skill" and _story_teaching_first_charge():
+		story_first_charge_resolved = true
 	if i==2 and u.move=="chain":
 		if int(u.hp)<=0 or _target(i)<0:return
 		for k in 3:
@@ -721,7 +760,12 @@ func _resolve(i:int)->void:
 		_resolve_saebom_near(i,j,amount,beat)
 		return
 	var damage:=RallyCloud.SQUAD_BASE if u.move=="attack" else 27 if u.move=="skill" else 38
-	if i>=3:damage=11 if u.move=="attack" else 23
+	if i>=3:
+		damage=11 if u.move=="attack" else 23
+		# Keep the old production early counter damage. The lab numbers
+		# otherwise end 1-2 before its first genuine skill opportunity.
+		if not story_encounter.is_empty() and u.move == "attack" and int(story_encounter.number) <= 6:
+			damage = Hunt.RULES.COUNTER_DAMAGE
 	if u.rally>elapsed:damage=roundi(damage*(1.20 if local_melee_polish else 1.25))
 	var start:Vector2=u.feet-Vector2(0,30)
 	var finish:Vector2=units[j].feet-Vector2(0,25)
@@ -855,6 +899,8 @@ func _damage(i:int,j:int,amount:int,key:String,stone_impact:=Vector2.INF)->void:
 	if j==1 and target.move=="chain" and target.age>URAM_GUARD_LATEST and target.age<minf(URAM_GUARD_EARLIEST,target.actor.duration) and (not local_melee_polish or (not bool(target.get("guarded",false)) and int(target.get("guard_source",-1))==i)):
 		if local_melee_polish:target.guarded=true
 		hits.append({"from":i,"target":j,"type":key,"result":"parried"})
+		if not story_encounter.is_empty() and i == 3 and int(story_encounter.number) in [5, 6]:
+			story_taught_parry = true
 		var cast_at:=elapsed-float(target.age)
 		var new_guard:=absf(cast_at-last_gong_cast)>.03
 		if new_guard:
@@ -1065,7 +1111,11 @@ func _draw_pose(dt:float)->void:
 			huds[i].sync(u.sp,u.hp,MAX_HP,u.hp>0,_free_to_cast(i),dt)
 		else:
 			huds[i].chain_allowed = int(story_encounter.number) >= 6 or (int(story_encounter.number) == 5 and i == 1)
-			huds[i].sync(minf(u.sp, 1.99) if not story_allows(i, "skill") else u.sp, u.hp, u.max_hp, u.hp > 0, _free_to_cast(i) and story_allows(i, "skill"), dt, _free_to_cast(i) and story_allows(i, "chain"))
+			var skill_allowed := story_allows(i, "skill")
+			huds[i].sync(u.sp, u.hp, u.max_hp, u.hp > 0, _free_to_cast(i) and skill_allowed, dt, _free_to_cast(i) and story_allows(i, "chain"))
+			if not skill_allowed:
+				huds[i].badge.hide()
+				huds[i].warm_glow.hide()
 	if is_instance_valid(uram_ground_layer):
 		uram_ground_layer.self_modulate=ambient
 		uram_ground_layer.queue_redraw()

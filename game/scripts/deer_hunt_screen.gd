@@ -1727,7 +1727,9 @@ func _start_chapter_story_preview() -> void:
 		push_error("Chapter One story backend unavailable")
 		return
 	var battle = backend.new()
-	if not battle.configure_story_encounter(ChapterOneCatalog.encounter(chapter_story_number)):
+	var encounter := ChapterOneCatalog.encounter(chapter_story_number)
+	encounter.first_visit = app.chapter_one_story_completions().get(encounter.key, false) != true
+	if not battle.configure_story_encounter(encounter):
 		battle.free()
 		push_error("Chapter One story roster was rejected")
 		return
