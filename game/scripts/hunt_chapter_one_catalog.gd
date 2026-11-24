@@ -15,6 +15,9 @@ const ADULT := "adult"
 const SOLO := [ALLY_HAN]
 const TEAM := [ALLY_HAN, ALLY_URAM, ALLY_SAEBOM]
 const STAGE_KEYS := ["ch1-01", "ch1-02", "ch1-03", "ch1-04", "ch1-05", "ch1-06", "ch1-07", "ch1-08", "ch1-09", "ch1-10"]
+# Keep all existing runtime stage ids. New 1-6..1-9 occupy the unused ids
+# after both old chapters, not the old Chapter 2's ids 6..11.
+const ROUTE_IDS := [0, 1, 2, 3, 4, 12, 13, 14, 15, 5]
 const LEGACY_KEYS := ["ch1-01", "ch1-02", "ch1-03", "ch1-04", "ch1-05", "ch1-10"]
 const ROWS := [
 	{"party": SOLO, "prey": [FLOWER], "enemy_skill": "none", "lesson": "han_manual_2sp", "rank": "normal", "seconds": 50, "base_meat": 10, "first_clear_stars": 3},
@@ -69,3 +72,30 @@ static func next_number(completed: Dictionary) -> int:
 		if completed.get(STAGE_KEYS[number - 1], false) != true:
 			return number
 	return 0
+
+static func route_id(number: int) -> int:
+	return ROUTE_IDS[number - 1] if number >= 1 and number <= ROUTE_IDS.size() else -1
+
+
+static func story_number(route: int) -> int:
+	return ROUTE_IDS.find(route) + 1
+
+
+static func after_first_win(number: int, completed: Dictionary) -> Dictionary:
+	if not is_unlocked(number, completed):
+		return {}
+	var key: String = STAGE_KEYS[number - 1]
+	if completed.get(key, false) == true:
+		return {}
+	var next := completed.duplicate(true)
+	next[key] = true
+	return next
+
+
+static func legacy_prefix(completed: Dictionary) -> int:
+	var done := 0
+	for key: String in LEGACY_KEYS:
+		if completed.get(key, false) != true:
+			break
+		done += 1
+	return done

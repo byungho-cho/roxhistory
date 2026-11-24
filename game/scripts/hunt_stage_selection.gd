@@ -1,6 +1,7 @@
 extends Control
 ## Visual slots are separate from the six playable encounters in each saved chapter.
 const STAGES_PER_CHAPTER := 6
+const HUNT_CHAPTER_ONE := preload("res://scripts/hunt_chapter_one_catalog.gd")
 const CHAPTERS := ["초원","숲"]
 const TOTAL_STAGES := STAGES_PER_CHAPTER*2
 const ART := "res://assets/ui/d0024/"
@@ -109,7 +110,7 @@ func _ready() -> void:
 	app.warm_hunt_resources()
 	mouse_filter=Control.MOUSE_FILTER_STOP
 	clip_contents=true
-	chapter=int(app.hunt_stage)/STAGES_PER_CHAPTER
+	chapter=0 if int(app.chapter_one_story_number(int(app.hunt_stage))) > 0 else int(app.hunt_stage)/STAGES_PER_CHAPTER
 	plaque_art=IntegratedMenuArt.trimmed(TITLE,Rect2(TITLE.get_image().get_used_rect()))
 	backdrop=app.picture(self,CLEAN_FIELD if chapter==0 else FIELD,Rect2())
 	backdrop.stretch_mode=TextureRect.STRETCH_KEEP_ASPECT_COVERED
@@ -451,7 +452,7 @@ func draw_page() -> void:
 	prepare.name="PrepareHunt"
 	app.picture(prepare,preload(ART+"08-ui-prepare-gold-body.svg"),Rect2(Vector2.ZERO,prepare.size))
 	title(prepare,"사냥 준비",Rect2(Vector2.ZERO,prepare.size),24,Color("462b14"))
-	prepare.disabled=int(app.hunt_stage)/STAGES_PER_CHAPTER!=chapter or app.hunt_stage>progress()
+	prepare.disabled=(0 if int(app.chapter_one_story_number(int(app.hunt_stage))) > 0 else int(app.hunt_stage)/STAGES_PER_CHAPTER)!=chapter or not app.hunt_stage_is_unlocked(int(app.hunt_stage))
 	prepare.modulate.a=.62 if prepare.disabled else 1.0
 	update_groups()
 
@@ -473,12 +474,14 @@ static func are_adjacent_playable_slots(current: int, next: int) -> bool:
 func add_stage(slot: int) -> void:
 	var boss := slot==9
 	var midboss := slot==4
-	var real := slot<5 or boss
-	var stage_id := chapter*STAGES_PER_CHAPTER+(STAGES_PER_CHAPTER-1 if boss else slot)
-	var unlocked := real and stage_id<=progress()
-	var done := real and stage_id<progress()
+	var story := chapter == 0 and bool(app.chapter_one_preview_enabled())
+	var real := story or slot<5 or boss
+	var stage_id := HUNT_CHAPTER_ONE.route_id(slot+1) if story else chapter*STAGES_PER_CHAPTER+(STAGES_PER_CHAPTER-1 if boss else slot)
+	var unlocked := real and bool(app.hunt_stage_is_unlocked(stage_id))
+	var completed: Dictionary = app.chapter_one_story_completions() if story else {}
+	var done: bool = completed.get(HUNT_CHAPTER_ONE.STAGE_KEYS[slot], false) == true if story else real and stage_id<progress()
 	var selected: bool=real and stage_id==app.hunt_stage
-	var current := real and stage_id==progress()
+	var current := HUNT_CHAPTER_ONE.next_number(completed)==slot+1 if story else real and stage_id==progress()
 	var center := Vector2(132+78*slot,STAGE_ROW_Y)
 	var diameter := 78.0 if boss else (116.0 if midboss else 96.0)*STAGE_ART_SCALE
 	var extent := Vector2.ONE*diameter
@@ -513,7 +516,7 @@ func add_stage(slot: int) -> void:
 		app.picture(tile,marker,Rect2((diameter-marker_size)*.5,marker_y,marker_size,marker_size))
 
 func choose(stage_id: int) -> void:
-	if stage_id<0 or stage_id>=TOTAL_STAGES or stage_id>progress():return
+	if not app.hunt_stage_is_unlocked(stage_id):return
 	app.hunt_stage=stage_id
 	app.warm_hunt_resources()
 	draw_page()

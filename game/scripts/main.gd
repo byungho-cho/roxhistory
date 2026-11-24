@@ -29,6 +29,7 @@ var debug_shortcut:DemoButton
 var debug_shortcut_icon:TextureRect
 const HUNT_SELECTION := preload("res://scripts/hunt_stage_selection.gd")
 var hunt_stage := 0
+const HUNT_CHAPTER_ONE := preload("res://scripts/hunt_chapter_one_catalog.gd")
 # Candidate-only route: disable to restore original deer for every saved stage.
 const HUNT_STAGE5_ADULT_CANDIDATE := true
 const HUNT_PREY_PROFILE := preload("res://scripts/hunt_production_prey_profile.gd")
@@ -2393,6 +2394,10 @@ func open_hunt() -> void:
 	gestures.clear()
 	world.player.direction = Vector2.ZERO
 	hunt_stage = clampi(int(model.state.get("hunt_cleared",0)), 0, HUNT_SELECTION.TOTAL_STAGES - 1)
+	if chapter_one_preview_enabled() and int(model.state.get("hunt_cleared",0)) < HUNT_SELECTION.STAGES_PER_CHAPTER:
+		var next_story := HUNT_CHAPTER_ONE.next_number(chapter_one_story_completions())
+		if next_story > 0:
+			hunt_stage = HUNT_CHAPTER_ONE.route_id(next_story)
 	hunt_prey_id = "forest"
 	show_screen("hunt_select")
 
@@ -2425,9 +2430,33 @@ func prepare_selected_hunt() -> void:
 	if screen == "hunt_select":
 		_prepare_hunt_stage(hunt_stage)
 
+func chapter_one_preview_enabled() -> bool:
+	return "--chapter-one-preview" in OS.get_cmdline_user_args()
+
+
+func chapter_one_story_number(stage_id: int) -> int:
+	return HUNT_CHAPTER_ONE.story_number(stage_id) if chapter_one_preview_enabled() else 0
+
+
+func chapter_one_story_completions() -> Dictionary:
+	var raw: Variant = model.state.get(HUNT_CHAPTER_ONE.CLEARS_KEY, {})
+	return HUNT_CHAPTER_ONE.completion_view(int(model.state.get("hunt_cleared", 0)), raw if raw is Dictionary else {})
+
+
+func hunt_stage_is_unlocked(stage_id: int) -> bool:
+	var story := chapter_one_story_number(stage_id)
+	if story > 0:
+		return HUNT_CHAPTER_ONE.is_unlocked(story, chapter_one_story_completions())
+	return stage_id >= 0 and stage_id < HUNT_SELECTION.TOTAL_STAGES and stage_id <= int(model.state.get("hunt_cleared", 0))
+
+
 func next_hunt_stage_id() -> int:
 	if screen != "hunt" or not is_instance_valid(hunt) or not hunt.result_shown or hunt.rules.outcome != "win":
 		return -1
+	var story := chapter_one_story_number(hunt_stage)
+	if story > 0:
+		var next_story_id := HUNT_CHAPTER_ONE.route_id(story + 1)
+		return next_story_id if next_story_id >= 0 and hunt_stage_is_unlocked(next_story_id) else -1
 	var next := hunt_stage + 1
 	if next >= HUNT_SELECTION.TOTAL_STAGES or next > int(model.state.get("hunt_cleared", 0)):
 		return -1
@@ -2451,7 +2480,7 @@ func _prepare_hunt_stage(selected_stage: int) -> void:
 	var origin_screen := screen
 	var origin_stage := hunt_stage
 	var cleared := int(model.state.get("hunt_cleared", 0))
-	if hunt_preparing or modal or selected_stage < 0 or selected_stage >= HUNT_SELECTION.TOTAL_STAGES or selected_stage > cleared:
+	if hunt_preparing or modal or not hunt_stage_is_unlocked(selected_stage):
 		return
 	var requested_prey := HUNT_PREY_PROFILE.encounter_species(selected_stage, cleared, HUNT_STAGE5_ADULT_CANDIDATE)
 	var adult_path := HUNT_PREY_PROFILE.model_path("adult") if requested_prey == "adult" else ""
@@ -2502,7 +2531,7 @@ func _prepare_hunt_stage(selected_stage: int) -> void:
 	close_hunt_loading()
 	hunt_warmed=warmed
 	hunt_preparing = false
-	if not hunt_preparation_cancelled and screen==origin_screen and not modal and not world_map_open and origin_stage == hunt_stage and selected_stage <= int(model.state.get("hunt_cleared", 0)):
+	if not hunt_preparation_cancelled and screen==origin_screen and not modal and not world_map_open and origin_stage == hunt_stage and hunt_stage_is_unlocked(selected_stage):
 		hunt_stage = selected_stage
 		hunt_prey_id = "adult" if adult_ready else "forest"
 		toast_time = 0.0
@@ -2510,6 +2539,17 @@ func _prepare_hunt_stage(selected_stage: int) -> void:
 
 
 func record_hunt_win() -> void:
+	var story := chapter_one_story_number(hunt_stage)
+	if story > 0:
+		var next_story := HUNT_CHAPTER_ONE.after_first_win(story, chapter_one_story_completions())
+		if next_story.is_empty():
+			return
+		var updated := model.state.duplicate(true)
+		updated[HUNT_CHAPTER_ONE.CLEARS_KEY] = next_story
+		updated.hunt_cleared = maxi(int(updated.get("hunt_cleared", 0)), HUNT_CHAPTER_ONE.legacy_prefix(next_story))
+		if not model.commit(updated):
+			toast("사냥 진행을 저장하지 못했습니다.")
+		return
 	if hunt_stage != int(model.state.get("hunt_cleared", 0)):
 		return
 	var next := model.state.duplicate(true)

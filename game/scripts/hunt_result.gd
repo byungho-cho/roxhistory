@@ -53,8 +53,13 @@ func _ready() -> void:
 	fit(layout)
 	var chapter: int = app.hunt_stage / 6
 	var stage: int = app.hunt_stage % 6
+	var story := int(app.chapter_one_story_number(int(app.hunt_stage)))
+	if story > 0:
+		chapter = 0
+		stage = story - 1
 	var region := "초원" if chapter == 0 else "숲"
-	write(layout,"%d장 · %s / %s" % [chapter+1,region,"보스" if stage == 5 else "%d단계" % (stage+1)],Rect2(62,76,420,24),19,Color("fff0d0"))
+	var boss := story == 10 if story > 0 else stage == 5
+	write(layout,"%d장 · %s / %s" % [chapter+1,region,"보스" if boss else "%d단계" % (stage+1)],Rect2(62,76,420,24),19,Color("fff0d0"))
 	var accent := Color("ffcf75") if won else Color("9dd5ff")
 	write(layout,"사냥 성공" if won else "사냥 실패",Rect2(60,105,430,70),62,accent)
 	var rule := ColorRect.new()

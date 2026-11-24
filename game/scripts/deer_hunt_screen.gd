@@ -11,6 +11,7 @@ const ChapterOneCatalog := preload("res://scripts/hunt_chapter_one_catalog.gd")
 # Private proof only: do not make part of a release until every story route and
 # normal frontier behavior are verified.
 var chapter_story_preview := false
+var chapter_story_number := 0
 var chapter_story_battle
 var stage_one_one:=false
 var battle_toggles_unlocked:=false
@@ -227,8 +228,9 @@ var pose := ""
 var exit_button: DemoButton
 
 func _ready() -> void:
-	chapter_story_preview = int(app.hunt_stage) == 2 and "--chapter-one-preview" in OS.get_cmdline_user_args()
-	chapter_one_solo=int(app.hunt_stage)/6==0 and not chapter_story_preview
+	chapter_story_number = int(app.chapter_one_story_number(int(app.hunt_stage)))
+	chapter_story_preview = chapter_story_number >= 2
+	chapter_one_solo = chapter_story_number <= 2 if chapter_story_preview else int(app.hunt_stage)/6==0
 	stage_one_one=int(app.hunt_stage)==0
 	battle_toggles_unlocked=int(app.hunt_stage)>=3
 	rules.manual_only=stage_one_one
@@ -577,7 +579,8 @@ func build_duel_header() -> void:
 	header_left = layer(header)
 	header_right = layer(header)
 	location_brush = app.picture(header_left,NAME_BRUSH,Rect2(3,0,220,56))
-	location_caption = caption(location_brush,"%d장 · %s"%[int(app.hunt_stage)/6+1,"초원" if int(app.hunt_stage)<6 else "숲"],Rect2(44,0,163,56),21)
+	var story_chapter := 1 if chapter_story_preview else int(app.hunt_stage)/6+1
+	location_caption = caption(location_brush,"%d장 · %s"%[story_chapter,"초원" if story_chapter==1 else "숲"],Rect2(44,0,163,56),21)
 	exit_button = make_button(header_left,"",Rect2(3,4,48,48),request_exit)
 	exit_button.name = "ExitHunt"
 	clear_button_art(exit_button)
@@ -1724,7 +1727,7 @@ func _start_chapter_story_preview() -> void:
 		push_error("Chapter One story backend unavailable")
 		return
 	var battle = backend.new()
-	if not battle.configure_story_encounter(ChapterOneCatalog.encounter(3)):
+	if not battle.configure_story_encounter(ChapterOneCatalog.encounter(chapter_story_number)):
 		battle.free()
 		push_error("Chapter One story roster was rejected")
 		return
@@ -1759,8 +1762,7 @@ func _process(delta: float) -> void:
 			for i in 3:
 				rules.party_hp[i] = chapter_story_battle.units[i].hp
 			rules.outcome = outcome
-			# This opt-in candidate never writes progression or opens the result path.
-			running = false
+			show_result()
 		return
 	if not arrival_finished:
 		advance_arrival(delta)
@@ -2576,7 +2578,8 @@ func show_result() -> void:
 	manual_pending.clear()
 	manual_ordered_han_finisher = false
 	uram_field_reserved = false
-	var previous_progress:=int(app.model.state.get("hunt_cleared",0))
+	var previous_progress := int(app.model.state.get("hunt_cleared",0))
+	var previous_story: Dictionary = app.chapter_one_story_completions() if chapter_story_preview else {}
 	if rules.outcome == "win" and rules.hunter_hp<=0:
 		rules.outcome="loss"
 	if rules.outcome == "win":
@@ -2596,7 +2599,7 @@ func show_result() -> void:
 	result.won = rules.outcome == "win"
 	result.use_han_field=chapter_one_solo
 	result.stars=3 if rules.first_hunt and result.won and rules.hunter_hp>0 else 0
-	result.progression_advanced=int(app.model.state.get("hunt_cleared",0))>previous_progress
+	result.progression_advanced=app.chapter_one_story_completions()!=previous_story if chapter_story_preview else int(app.model.state.get("hunt_cleared",0))>previous_progress
 	add_child(result)
 	result.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 
