@@ -1463,7 +1463,9 @@ func finish_battle_transition() -> void:
 		icon.size = control.size
 	update_toggles()
 	fit_layout()
-	if solo:update_actors(0.)
+	if solo:
+		battlefield.queue_redraw()
+		update_actors(0.)
 
 
 const ManualHunt := preload("res://scripts/hunt_production_frontline_actions.gd")
