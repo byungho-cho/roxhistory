@@ -136,6 +136,18 @@ const HUNT_AUDIO := preload("res://scripts/hunt_audio.gd")
 const HUNTER_BATTLE_CENTER := Vector2(521,279)
 const FORMATION_CENTER := Vector2(473,325)
 const DEER_SLOT := Vector2(598,245)
+# Logical battlefield feet distances, independent of viewport or HUD scale.
+const FIRST_HUNT_HAN_STANDOFF := 51.0
+const FIRST_HUNT_BODY_CLEARANCE := 36.0
+const FIRST_HUNT_HAN_CONTACT_BEGIN := .17
+const FIRST_HUNT_HAN_CONTACT_END := .43
+const FIRST_HUNT_HAN_BASIC_PERIOD := 5.10
+const FIRST_HUNT_DEER_BASIC_PERIOD := 5.35
+var first_hunt_han_ready := .65
+const FIRST_DEER_VISIBLE_DELAY := .50
+var first_hunt_deer_ready := INF
+var first_hunt_deer_age := INF
+var first_hunt_deer_hit_pending := false
 
 var app: Node
 var rules := RULES.new()
@@ -1220,6 +1232,11 @@ func finish_battle_transition() -> void:
 	combat.modulate.a = 1.0
 	combat_layout = true
 	running = true
+	if _uses_independent_first_hunt():
+		first_hunt_han_ready = manual_combat_clock+.65
+		first_hunt_deer_ready = INF
+		first_hunt_deer_age = INF
+		first_hunt_deer_hit_pending = false
 	if chapter_story_preview:
 		_start_chapter_story_preview()
 	location_brush.hide()
@@ -1704,6 +1721,86 @@ func _weapon_metric(index:int) -> Vector3:
 	return Vector3.INF
 
 
+func _uses_independent_first_hunt() -> bool:
+	return stage_one_one and not _prey_is_adult()
+
+
+func _is_first_hunt_han_basic() -> bool:
+	return _uses_independent_first_hunt() and pose=="auto_thrust" and rules.attacker==0
+
+
+func _tick_first_hunt_deer(elapsed:float) -> void:
+	if not rules.outcome.is_empty() or rules.deer_hp<=0 or rules.party_hp[0]<=0:
+		first_hunt_deer_age=INF
+		first_hunt_deer_hit_pending=false
+		return
+	first_hunt_deer_age+=elapsed
+	if first_hunt_deer_hit_pending and first_hunt_deer_age>=IMPACT_SECONDS:
+		first_hunt_deer_hit_pending=false
+		rules.resolve_independent_prey_basic(0)
+		# A lethal hit cancels an unlanded action, not an already-recorded hit.
+		if not rules.outcome.is_empty():
+			impact_pending=false
+			rules.pending_damage=0
+		hunt_audio.cue("S21",2)
+	if manual_combat_clock+0.000001>=first_hunt_deer_ready and first_hunt_deer_age>=RULES.POSE_SECONDS and rules.prey_stun_remaining<=0. and rules.outcome.is_empty():
+		first_hunt_deer_ready=manual_combat_clock+FIRST_HUNT_DEER_BASIC_PERIOD
+		first_hunt_deer_age=0.
+		first_hunt_deer_hit_pending=true
+
+
+func _queue_first_hunt_han() -> void:
+	if not rules.outcome.is_empty() or rules.deer_hp<=0 or rules.party_hp[0]<=0 or impact_pending or rules.action_lock>0.:
+		return
+	if manual_combat_clock<first_hunt_han_ready or not manual_pending.is_empty():
+		return
+	first_hunt_han_ready=manual_combat_clock+FIRST_HUNT_HAN_BASIC_PERIOD
+	rules.action_lock=RULES.POSE_SECONDS
+	rules.queue_attack(RallyCloud.ORDINARY_BASE,0)
+	play_pose("auto_thrust")
+
+
+func _first_hunt_han_basic_step(prev_clock:float, elapsed:float) -> void:
+	var tip := _weapon_metric(0)
+	var cap := _deer_stone_capsule()
+	if pose_clock >= FIRST_HUNT_HAN_CONTACT_BEGIN and pose_clock <= FIRST_HUNT_HAN_CONTACT_END and tip.is_finite() and not cap.is_empty():
+		var prev := manual_tip_prev if manual_tip_prev.is_finite() and prev_clock>=FIRST_HUNT_HAN_CONTACT_BEGIN else tip
+		var delta_cap := Vector3.ZERO
+		if prev != tip and not manual_prey_prev.is_empty():
+			delta_cap = ((cap.a+cap.b)-(manual_prey_prev.a+manual_prey_prev.b))*.5
+		var contact := StoneContact.capsule_hit(prev+delta_cap,tip,cap.a,cap.b,float(cap.radius)+.035)
+		if is_finite(contact):
+			var hp := rules.deer_hp
+			rules.resolve_attack(false, elapsed*contact)
+			hit_damage=hp-rules.deer_hp
+			hit_age=0.
+			hit_kind="auto_thrust"
+			hit_on_hunter=false
+			hit_point=_stone_render_point(prev.lerp(tip,contact))
+			hit_origin=hit_point
+			basic_recoil=BASIC_RECOIL_TIME
+			hunt_audio.cue("S16",3)
+			hunt_audio.cue("S22",1)
+			impact_pending=false
+	if impact_pending and pose_clock >= FIRST_HUNT_HAN_CONTACT_END:
+		rules.pending_damage=0
+		impact_pending=false
+	manual_tip_prev=tip
+	manual_prey_prev=cap
+
+
+# Same X/Z extraction as SharedDuelWorld.render_poses. Vertical motion and
+# authored shoulder, wrist, neck and spear joints retain their action tracks.
+func _plant_first_hunt_basic_root(rig:Skeleton3D,root_index:int) -> void:
+	if not is_instance_valid(rig) or root_index<0:return
+	var authored:=rig.get_bone_pose_position(root_index)
+	var rest:=rig.get_bone_rest(root_index).origin
+	authored.x=rest.x
+	authored.z=rest.z
+	rig.set_bone_pose_position(root_index,authored)
+	rig.force_update_all_bone_transforms()
+
+
 func _manual_weapon_contact(elapsed := 0.0) -> void:
 	var p := pose_clock / _manual_duration(pose)
 	var tip := _weapon_metric(rules.attacker)
@@ -1857,6 +1954,9 @@ func use_skill(id: String, required_sp:int=3) -> void:
 	update_combat_ui()
 
 func play_pose(id: String) -> void:
+	if _uses_independent_first_hunt() and not is_finite(first_hunt_deer_ready) and id in ["auto_thrust",ManualHunt.HAN_SPEAR_2]:
+		# This one-time lead-in is in screen seconds, not accelerated combat seconds.
+		first_hunt_deer_ready = manual_combat_clock+FIRST_DEER_VISIBLE_DELAY*speed
 	_reset_manual_contact()
 	pose = id
 	guard_prey_origin = Vector2.INF
@@ -1926,6 +2026,15 @@ func _update_story_cutin() -> void:
 	if active:story_cutin.present_timed(chapter_story_battle.story_entry_fraction(),chapter_story_battle.STORY_CUTIN_SECONDS)
 
 func _process(delta: float) -> void:
+	# Preserve deterministic contact steps on both 30 and 60 fps displays.
+	if running and _uses_independent_first_hunt() and delta>.018:
+		var steps:=ceili(delta*60.)
+		for i in steps:
+			_tick_hunt_frame(delta/float(steps))
+	else:_tick_hunt_frame(delta)
+
+
+func _tick_hunt_frame(delta: float) -> void:
 	if is_instance_valid(branch_video):branch_video.paused=not app.application_active or exit_popup!=null or app.modal
 	hunt_audio.update(app.application_active and app.settings.get_value("app","sound",true),exit_popup!=null or app.modal)
 	if not app.application_active or exit_popup or app.modal:
@@ -1963,11 +2072,14 @@ func _process(delta: float) -> void:
 			_start_camera_accent("han_chain",hunters[0].position.lerp(deer.position,.52))
 		manual_combat_clock += elapsed
 		chain_window.advance(manual_input_clock)
-		if impact_pending and (pose == "counter" or _is_native_manual(pose)):
+		var han_basic_pending := impact_pending and _is_first_hunt_han_basic()
+		if han_basic_pending or (impact_pending and (pose == "counter" or _is_native_manual(pose))):
 			update_actors(actor_delta+elapsed)
 			actor_delta = 0.0
 			actors_sampled = true
-			if pose == "counter":
+			if han_basic_pending:
+				_first_hunt_han_basic_step(previous_pose_clock,elapsed)
+			elif pose == "counter":
 				_try_counter_guard(previous_manual_clock,manual_combat_clock,previous_pose_clock)
 			else:
 				_manual_weapon_contact(elapsed)
@@ -2000,7 +2112,7 @@ func _process(delta: float) -> void:
 			_land_uram_field(true,shield_mark)
 			impact_pending = false
 			hunt_audio.cue("S18",2)
-		if impact_pending and not sling_pending and not palm_pending and pose != URAM_FIELD_CAST and pose != "rally" and not _is_native_manual(pose) and pose_clock >= (JumpMotion.JUMP_CONTACT_SECONDS if pose=="thrust" else IMPACT_SECONDS):
+		if impact_pending and not han_basic_pending and not sling_pending and not palm_pending and pose != URAM_FIELD_CAST and pose != "rally" and not _is_native_manual(pose) and pose_clock >= (JumpMotion.JUMP_CONTACT_SECONDS if pose=="thrust" else IMPACT_SECONDS):
 			var before_hp := rules.hunter_hp if pose == "counter" else rules.deer_hp
 			rules.resolve_attack()
 			hit_damage = before_hp - (rules.hunter_hp if pose == "counter" else rules.deer_hp)
@@ -2028,7 +2140,9 @@ func _process(delta: float) -> void:
 				if pose=="auto_thrust":
 					hunt_audio.cue("S16",3)
 					hunt_audio.cue("S22",1)
-		var move := rules.advance(elapsed, false, not manual_pending.is_empty() or uram_field_reserved)
+		var independent := _uses_independent_first_hunt()
+		if independent:_tick_first_hunt_deer(elapsed)
+		var move := rules.advance(elapsed, false, independent or not manual_pending.is_empty() or uram_field_reserved)
 		if rally_releases:
 			var positions: Array[Vector2] = []
 			for hunter in hunters:
@@ -2045,6 +2159,7 @@ func _process(delta: float) -> void:
 			hunt_audio.cue("S20",2)
 		if not move.is_empty():play_pose(move)
 		_execute_reserved_followup()
+		if independent:_queue_first_hunt_han()
 		_execute_uram_field_reserve()
 	if running:
 		update_combat_ui(elapsed)
@@ -2404,9 +2519,12 @@ func update_actors(delta: float) -> void:
 		deer.camera.look_at(Vector3(0,1,0))
 		deer.update_geometry()
 	var movement_beat := sin(clampf(pose_clock/RULES.POSE_SECONDS,0,1)*PI)
-	var smooth_ordinary := rules.first_hunt and running and pose in ["auto_thrust","counter"]
+	var smooth_ordinary := running and ((rules.first_hunt and pose in ["auto_thrust","counter"]) or (_uses_independent_first_hunt() and pose=="auto_thrust"))
 	if smooth_ordinary:movement_beat*=movement_beat
 	var basic_attack := pose in ["thrust","auto_thrust"]
+	# Heads track the sustained approach path; transient combat animation offsets never feed HUD positions.
+	var steady_first_hunt_heads := stage_one_one and not _prey_is_adult() and (running or transition_elapsed>=0.0)
+	var han_head_ground := Vector2.INF
 	for i in hunters.size():
 		var hunter := hunters[i]
 		if i>=prep_ally_count:
@@ -2422,7 +2540,14 @@ func update_actors(delta: float) -> void:
 		var dodge := running and pose=="counter" and pose_clock<RULES.POSE_SECONDS and i == rules.attacker
 		var placed: Vector2 = ALLY_CELLS[assigned_cells[i]]
 		var battle_target := HUNTER_BATTLE_CENTER+(placed-FORMATION_CENTER)*.62
+		var stage_han := i==0 and stage_one_one and not _prey_is_adult()
+		if stage_han:
+			var lane := DEER_SLOT.direction_to(battle_target)
+			# Permit the approach lane but settle to a shared melee depth, like the duel field.
+			lane=Vector2(-1.,clampf(lane.y,-.11,.11)).normalized()
+			battle_target=DEER_SLOT+lane*FIRST_HUNT_HAN_STANDOFF
 		var base := placed.lerp(battle_target,approach)
+		if i==0 and steady_first_hunt_heads: han_head_ground=base
 		hunter.scale = Vector2.ONE*(.70 if chapter_one_solo and i==0 else lerpf(.60,.56,approach))*(1.0 if i == RULES.SAEBOM else FRONTLINE_VISUAL_SCALE)
 		var lunge := 42 if basic_attack else 24
 		var assisting := running and pose == "team" and pose_clock < RULES.POSE_SECONDS and not attack and rules.party_hp[i]>0
@@ -2430,7 +2555,7 @@ func update_actors(delta: float) -> void:
 		var previous_position := hunter.position
 		var shift := 0.0
 		if not side_han_jump and i != RULES.SAEBOM:
-			if attack: shift = lunge
+			if attack: shift = 0.0 if stage_han and pose=="auto_thrust" else lunge
 			elif assisting: shift = 10.0
 		if native_manual and not side_han_jump and not tutorial_lunge: shift = 34.0
 		if dodge and not use_guard_pose: shift = -18.0
@@ -2453,6 +2578,9 @@ func update_actors(delta: float) -> void:
 			hunt_stride_phases[i] = fposmod(hunt_stride_phases[i]+travel/maxf(1.0,42.0*hunter.scale.x)*TAU,TAU)
 		var approach_phase := hunt_stride_phases[i] if approaching else pose_clock*12.0
 		var facing := first_hunt_facing if tutorial_lunge else han_chain_facing if native_manual and side_han_jump else hunter.position.direction_to(deer.position) if approach >= 1.0 else hunter.position.direction_to(deer.position) if approach<=0.0 else arrival_heading
+		if stage_han and running and not native_manual and not side_han_jump:
+			# Compensate the authored spear angle in the split actor camera, not the body location.
+			facing=facing.rotated(-.36)
 		if i != RULES.SAEBOM:
 			var motion := ""
 			if use_guard_pose or use_field_pose: motion = "counter"
@@ -2476,6 +2604,8 @@ func update_actors(delta: float) -> void:
 					_blend_local_bones(rig,idle_pose,weight)
 				else:hunter.animate(delta,facing,approach_phase,approaching,motion,motion_time,false)
 			else:hunter.animate(delta,facing,approach_phase,approaching,motion,motion_time,false)
+			if stage_han and running and motion in ["basic",""] and hunter is Frontline.Han:
+				_plant_first_hunt_basic_root(hunter.skeleton,hunter.root_bone)
 		elif hunter is SaebomRig:
 			if pose == "team" and rules.attacker == RULES.SAEBOM and not bom_hop_offset.is_zero_approx():
 				hunter.position = _saebom_safe_position(base, base + bom_hop_offset * _saebom_hop_envelope(close_phase))
@@ -2495,12 +2625,17 @@ func update_actors(delta: float) -> void:
 				if attack and pose=="auto_thrust" and pose_clock>=BASIC_ROPE_LOAD and pose_clock<BASIC_ROPE_RELEASE:basic_rope_empty=false
 				BasicRope.set_loaded(hunter,not basic_rope_empty)
 		hunter.viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
-		hunter_markers[i].position = hunter.position+Vector2(0,-63)
+		if i!=0 or not steady_first_hunt_heads:
+			hunter_markers[i].position = hunter.position+Vector2(0,-63)
 		hunter.visible=i<prep_ally_count
 		hunter_markers[i].visible = arrival_finished and hunter.visible
 		hunter_field_bars[i].get_parent().visible = approach>=1.0
-	var charge := running and pose=="counter"
-	var deer_motion := Vector2(-29,-8) if charge else Vector2.ZERO if basic_attack or (stage_one_one and pose==ManualHunt.HAN_SPEAR_2) or rules.prey_stun_remaining>0.0 else Vector2(23,-8)
+	var independent_prey := _uses_independent_first_hunt()
+	var charge_clock := first_hunt_deer_age if independent_prey else pose_clock
+	var charge := running and (charge_clock<RULES.POSE_SECONDS if independent_prey else pose=="counter")
+	var deer_motion := Vector2(-29,-8) if charge else Vector2.ZERO if independent_prey or basic_attack or (stage_one_one and pose==ManualHunt.HAN_SPEAR_2) or rules.prey_stun_remaining>0.0 else Vector2(23,-8)
+	if independent_prey:
+		deer_motion=Vector2.ZERO
 	deer.position = ENEMY_CELLS[4].lerp(DEER_SLOT,approach)+(deer_motion*movement_beat if running else Vector2.ZERO)
 	var deer_close_travel := false
 	if running and bom_prey_pocket.is_finite():
@@ -2513,7 +2648,7 @@ func update_actors(delta: float) -> void:
 		deer_close_travel = leave > 0.0 and leave < 1.0
 		if leave >= 1.0: bom_prey_depart = Vector2.INF
 	ordinary_prey_visual_offset=Vector2.ZERO
-	if basic_recoil>0:
+	if basic_recoil>0 and not independent_prey:
 		var recoil := Vector2(13,-3)*basic_recoil/BASIC_RECOIL_TIME
 		deer.position += recoil
 		if pose=="auto_thrust" and hit_kind=="auto_thrust" and hit_damage>0 and not hit_on_hunter:
@@ -2529,8 +2664,18 @@ func update_actors(delta: float) -> void:
 		deer.heading=atan2(toward.x,toward.y)
 	deer.gait_phase = pose_clock*14
 	deer.clock += delta
+	# During the short counter, keep the visible body separation even from a wide prep cell.
+	if running and stage_one_one and not _prey_is_adult() and deer.position.distance_to(hunters[0].position)<FIRST_HUNT_BODY_CLEARANCE:
+		var separation:=hunters[0].position.direction_to(deer.position)
+		if separation.is_zero_approx():separation=Vector2.RIGHT
+		deer.position=hunters[0].position+separation*FIRST_HUNT_BODY_CLEARANCE
 	if deer is NativeBoar:
-		if smooth_ordinary:_pose_first_hunt_deer(deer,charge)
+		if independent_prey:
+			if charge:_pose_planted_first_hunt_deer_basic(deer,charge_clock)
+			else:
+				_pose_first_hunt_deer(deer,false,charge_clock)
+				if is_instance_valid(deer.native):_plant_first_hunt_basic_root(deer.rig,deer.native.root_index)
+		elif smooth_ordinary:_pose_first_hunt_deer(deer,charge,charge_clock)
 		else:_pose_adult_boar(deer,charge)
 	else: deer.animate_rig(delta)
 	if charge and rules.attacker == 1 and guard_prey_origin.is_finite(): _align_uram_guard()
@@ -2539,8 +2684,11 @@ func update_actors(delta: float) -> void:
 	prey_hud.visible = arrival_finished
 	var points:Array=[]
 	var transform:=combat_controls.get_global_transform().affine_inverse()*battlefield.get_global_transform()
-	for hunter in hunters:points.append(transform*(hunter.position+Vector2(0,-63)))
-	points.append(transform*(prey_visual_anchor+Vector2(0,-deer.world_height*deer.scale.y-15)))
+	for i in hunters.size():
+		var anchor := han_head_ground if i==0 and han_head_ground.is_finite() else hunters[i].position
+		points.append(transform*(anchor+Vector2(0,-63)))
+	var head_prey := ENEMY_CELLS[4].lerp(DEER_SLOT,approach) if steady_first_hunt_heads else prey_visual_anchor
+	points.append(transform*(head_prey+Vector2(0,-deer.world_height*deer.scale.y-15)))
 	NativeHud.sync_heads(head_headers,points,transform*Rect2(8,70,944,350),NativeHud.HP_FADE_SECONDS if arrival_finished and (transition_elapsed>=0.0 or running) else -INF)
 	for i in prep_tags.size():
 		var tag:=prep_tags[i]
@@ -2646,15 +2794,31 @@ func _blend_local_bones(rig:Skeleton3D, resting:Array[Transform3D], weight:float
 	for i in resting.size():rig.set_bone_pose(i,resting[i].interpolate_with(rig.get_bone_pose(i),weight))
 	rig.force_update_all_bone_transforms()
 
-func _pose_first_hunt_deer(actor:NativeBoar, charging:bool)->void:
+func _pose_planted_first_hunt_deer_basic(actor:NativeBoar,age:float) -> void:
+	if adult_markers.is_empty() or not is_instance_valid(actor.native):return
+	# Same native basic clip as the lab. Hold the hind-foot ground anchor;
+	# only native joint motion supplies the short head strike.
+	var duration:=float(adult_markers.basic)
+	var idle_time:=fposmod(actor.clock,float(adult_markers.idle))
+	actor.sample_native_phase("idle",idle_time)
+	var idle:=_snapshot_local_bones(actor.rig)
+	var stationary_height:=actor.pivot.position.y
+	actor.sample_native_phase("basic",duration*clampf(age/RULES.POSE_SECONDS,0.0,1.0))
+	var w:=smoothstep(0.,.095,age)*(1.-smoothstep(.37,RULES.POSE_SECONDS,age))
+	actor.pivot.position.y=stationary_height
+	_blend_local_bones(actor.rig,idle,w)
+	_plant_first_hunt_basic_root(actor.rig,actor.native.root_index)
+
+
+func _pose_first_hunt_deer(actor:NativeBoar, charging:bool, charge_clock:float)->void:
 	if adult_markers.is_empty():return
 	var action:=""
 	var frame:=0.
 	var weight:=0.
-	if charging and pose_clock<RULES.POSE_SECONDS:
+	if charging and charge_clock<RULES.POSE_SECONDS:
 		action="charge"
-		frame=_native_charge_elapsed(pose_clock)
-		weight=smoothstep(0.,.095,pose_clock)*(1.-smoothstep(.38,RULES.POSE_SECONDS,pose_clock))
+		frame=_native_charge_elapsed(charge_clock)
+		weight=smoothstep(0.,.095,charge_clock)*(1.-smoothstep(.38,RULES.POSE_SECONDS,charge_clock))
 	elif basic_recoil>0.:
 		action="hit"
 		var spent:=BASIC_RECOIL_TIME-basic_recoil

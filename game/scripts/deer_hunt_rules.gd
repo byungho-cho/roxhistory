@@ -91,18 +91,28 @@ func resolve_attack(ordered_han_finisher := false, contact_into_frame := 0.0) ->
 			damage_deer(_rally_damage(damage, attacker))
 	if pending_counter:
 		pending_counter = false
-		var before := party_hp[attacker]
-		party_hp[attacker] = maxi(0, before - _battle_damage(COUNTER_DAMAGE))
-		if party_hp[attacker] < before:hp_lost.emit(attacker,before,party_hp[attacker])
-		if party_hp[attacker]==0:
-			charges[attacker]=0.0
-			rally_remaining[attacker]=0.0
-			rally_fifths[attacker]=0
-			if attacker==0:han_combo_hundredths=0
-			if auto_enabled:reserved_skill=next_auto_skill()
-		if hunter_hp == 0:
-			outcome = "loss"
-			set_auto(false)
+		_resolve_prey_damage(attacker)
+
+
+# Stage 1-1 prey owns an independent action, not the shared pending Han action.
+func resolve_independent_prey_basic(victim:int) -> void:
+	if outcome.is_empty() and deer_hp>0 and victim in range(party_hp.size()) and party_hp[victim]>0:
+		_resolve_prey_damage(victim)
+
+
+func _resolve_prey_damage(victim:int) -> void:
+	var before := party_hp[victim]
+	party_hp[victim] = maxi(0, before - _battle_damage(COUNTER_DAMAGE))
+	if party_hp[victim] < before:hp_lost.emit(victim,before,party_hp[victim])
+	if party_hp[victim]==0:
+		charges[victim]=0.0
+		rally_remaining[victim]=0.0
+		rally_fifths[victim]=0
+		if victim==0:han_combo_hundredths=0
+		if auto_enabled:reserved_skill=next_auto_skill()
+	if hunter_hp == 0:
+		outcome = "loss"
+		set_auto(false)
 
 func orbs(index: int) -> int:
 	return mini(MAX_ORBS,floori(charges[index]+0.000001))
