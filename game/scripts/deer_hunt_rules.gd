@@ -33,6 +33,8 @@ var han_ordinary_damage := RallyCloud.ORDINARY_BASE
 
 var charges: Array[float] = [0.0, 0.0, 0.0]
 var party_hp: Array[int] = [34, 33, 33]
+var party_max_hp: Array[int] = [34, 33, 33]
+var growth_stats: Array[Dictionary] = [{}, {}, {}]
 var hunter_hp: int:
 	get: return party_hp[0]+party_hp[1]+party_hp[2]
 var next_target := 0
@@ -60,6 +62,14 @@ var action_lock := 0.0
 var auto_enabled := false
 var reserved_skill := ""
 var rng := RandomNumberGenerator.new()
+
+func apply_growth(index: int, stats: Dictionary) -> void:
+	growth_stats[index] = stats
+	party_max_hp[index] = hero_stat(index, "hp", PARTY_HP[index])
+	party_hp[index] = party_max_hp[index]
+
+func hero_stat(index: int, key: String, fallback: int) -> int:
+	return int(growth_stats[index].get(key, fallback))
 
 func enable_motion_trial() -> void:
 	deer_max_hp = MAX_HP * 10
@@ -146,7 +156,7 @@ func use_skill(skill: String) -> bool:
 		basic_lock = BASIC_INTERVAL
 	else:
 		orb_lock = 1.0
-	queue_attack(SKILLS[skill].damage,index)
+	queue_attack(hero_stat(index, "skill", SKILLS[skill].damage),index)
 	return true
 
 # Manual chain input owns its own valid tap/SP reservation; ordinary scheduling stays separate.
@@ -201,11 +211,11 @@ func resolve_uram_shield_counter(ordinary:bool) -> int:
 	if deer_hp <= 0 or not outcome.is_empty() or party_hp[1] <= 0 or pending_counter:
 		return 0
 	if ordinary:
-		if attacker != 1 or pending_damage != URAM_SHIELD_COUNTER_DAMAGE:
+		if attacker != 1 or pending_damage != hero_stat(1, "chain", URAM_SHIELD_COUNTER_DAMAGE):
 			return 0
 		pending_damage = 0
 	var before := deer_hp
-	damage_deer(URAM_SHIELD_COUNTER_DAMAGE)
+	damage_deer(hero_stat(1, "chain", URAM_SHIELD_COUNTER_DAMAGE))
 	if deer_hp > 0:
 		prey_stun_remaining = URAM_SHIELD_COUNTER_STUN
 	return before-deer_hp
@@ -303,7 +313,7 @@ func advance(delta: float, tick_rally := true, prefer_manual := false) -> String
 	hunter_turn = not hunter_turn
 	if not hunter_turn:
 		var index := living_from(next_attacker)
-		queue_attack(han_ordinary_damage if index==0 else RallyCloud.ORDINARY_BASE,index)
+		queue_attack(hero_stat(index, "attack", han_ordinary_damage if index==0 else RallyCloud.ORDINARY_BASE),index)
 		next_attacker = (index+1)%party_hp.size()
 		return "auto_thrust"
 	attacker = living_from(next_target)

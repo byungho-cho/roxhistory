@@ -130,6 +130,7 @@ var task_site := -1
 var gather_approach:=false
 var approach_elapsed:=0.0
 var application_active := true
+var hero_level_up
 var task_remaining := 0.0
 var task_total := 0.0
 var autosave := 0.0
@@ -256,9 +257,10 @@ func relayout() -> void:
 	if screen in ["hunt","intro"]:
 		rebuilding = false
 		return
-	if screen=="hunt_select":
+	if screen in ["hunt_select","hero_level_up"]:
 		update_window_layout()
 		refresh_viewport_metrics()
+		if screen == "hero_level_up" and is_instance_valid(hero_level_up): hero_level_up.fit()
 		rebuilding=false
 		return
 	var history_version: String = overlay.get_meta("update_history_version","") if is_instance_valid(overlay) else ""
@@ -345,7 +347,7 @@ func show_screen(next: String,spread_hud:=false) -> void:
 		if next != "play": world.feedback.clear_transients()
 		world.visible = screen == "play"
 		world.set_process_mode(Node.PROCESS_MODE_INHERIT if screen == "play" else Node.PROCESS_MODE_DISABLED)
-	if screen not in ["play","region","title","hunt","hunt_select","intro"]:
+	if screen not in ["play","region","title","hunt","hunt_select","intro","hero_level_up"]:
 		menu_background()
 	match screen:
 		"onboarding": onboarding()
@@ -354,6 +356,11 @@ func show_screen(next: String,spread_hud:=false) -> void:
 		"region": region_screen()
 		"chapter": ChapterSelection.new(self).open()
 		"play": await play_hud(spread_hud)
+		"hero_level_up":
+			hero_level_up = preload("res://scripts/hero_level_up_screen.gd").new()
+			hero_level_up.app = self
+			stage.add_child(hero_level_up)
+			hero_level_up.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 		"hunt_select":
 			var selection := HUNT_SELECTION.new()
 			selection.name="HuntStageSelection"
@@ -1349,6 +1356,15 @@ func play_hud(spread:=false) -> void:
 	stage.add_child(ConstructionProgress.new(self))
 	stage.add_child(ConstructionProgress.new(self,false,true))
 	family=FamilyArrival.new(self);stage.add_child(family)
+	var hero_entry := button(stage, "", open_hero_level_up)
+	hero_entry.name = "HeroLevelUpButton"
+	hero_entry.hint_text = "영웅 레벨업"
+	hero_entry.custom_minimum_size = Vector2.ZERO
+	hero_entry.position = safe - Vector2(4, 3)
+	hero_entry.size = Vector2(63, 69)
+	hero_entry.z_index = 31
+	for button_state in ["normal", "hover", "pressed", "focus"]:
+		hero_entry.add_theme_stylebox_override(button_state, StyleBoxEmpty.new())
 	var map_hit:=button(stage,"",recenter_map);map_hit.name="RecenterCamera";map_hit.custom_minimum_size=Vector2.ZERO;map_hit.position=chrome.minimap_hit_rect().position;map_hit.size=chrome.minimap_hit_rect().size
 	map_hit.hint_text="현재 위치로 지도 맞추기"
 	for state in ["normal","hover","pressed"]:map_hit.add_theme_stylebox_override(state,StyleBoxEmpty.new())
@@ -1373,6 +1389,14 @@ func play_hud(spread:=false) -> void:
 	world_map_open=false
 	update_hud()
 	intro_probe_step("hud_total",hud_started)
+
+func open_hero_level_up() -> void:
+	if screen != "play" or modal or world_map_open or village_entry_active(): return
+	if is_instance_valid(tutorial) and tutorial.active(): return
+	gestures.clear()
+	cancel_task()
+	world.player.direction = Vector2.ZERO
+	show_screen("hero_level_up")
 
 func toggle_world_map()->void:
 	if modal or map_transition_active:return
@@ -2683,7 +2707,7 @@ func go_back() -> void:
 			back.call()
 		else:
 			close_modal()
-	elif screen == "hunt_select":
+	elif screen in ["hunt_select","hero_level_up"]:
 		show_screen("play")
 	elif screen == "play" and is_instance_valid(build_side) and build_side.visible:
 		build_side.hide()

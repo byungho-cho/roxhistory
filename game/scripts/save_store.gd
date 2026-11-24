@@ -18,6 +18,7 @@ func valid(s: Variant) -> bool:
 	for k in ["wood","stone","tokens"]:
 		if not BuildingRules.valid_number(s[k],0,BuildingRules.MAX_RESOURCE,true):return false
 	if s.has("meat") and not BuildingRules.valid_number(s.meat,0,BuildingRules.MAX_RESOURCE,true):return false
+	if s.has(HeroGrowth.SAVE_KEY) and not HeroGrowth.valid_save(s[HeroGrowth.SAVE_KEY]):return false
 	for k in ["built","reward_claimed","intro_seen","family_joined","family_unlocked","tutorial_skipped","hq_can_be_absent","debug_fast_build","debug_show_boundary","debug_resource_refill","debug_unlimited_builders","debug_unlimited_buildings"]:
 		if s.has(k) and not s[k] is bool:return false
 	if not s.depleted is Dictionary or (s.reward_claimed and not s.built):return false

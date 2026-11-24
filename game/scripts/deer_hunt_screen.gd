@@ -292,6 +292,9 @@ func _ready() -> void:
 		if bool(chapter_story_encounter.get("free_replay",false)):
 			chapter_one_solo=prep_ally_count==1
 			battle_toggles_unlocked=ChapterOneCatalog.is_unlocked(4,completed)
+	for i in 3:
+		var growth := HeroGrowth.battle_overrides(app.model.state, HeroGrowth.HEROES[i], app.model.hero_growth_rules)
+		rules.apply_growth(i, growth)
 	for i in range(prep_ally_count,3): rules.party_hp[i]=0
 	_restore_hunt_formation()
 	add_child(hunt_audio)
@@ -358,7 +361,7 @@ func _ready() -> void:
 	build_duel_header()
 	for i in 4:
 		var tag:=layer(battlefield)
-		build_level(tag,i<3,["ally-melee","ally-tank","ally-ranged","enemy-melee"][i])
+		build_level(tag,i<3,["ally-melee","ally-tank","ally-ranged","enemy-melee"][i], i)
 		prep_tags.append(tag)
 	if chapter_story_preview:
 		_build_chapter_preparation_foes(actors)
@@ -764,7 +767,7 @@ func build_duel_header() -> void:
 	for badge in [[ally_hud,321],[enemy_hud,730]]:
 		var brush: TextureRect = app.picture(badge[0],NAME_BRUSH,Rect2(badge[1]-28,57,56,16))
 		brush.modulate.a = .8
-		caption(brush,"Lv %d"%(1 if badge[0]==ally_hud else ChapterOneCatalog.prey_level(chapter_story_number)),Rect2(0,0,56,16),11)
+		caption(brush,"Lv %d"%(HeroGrowth.read(app.model.state, ChapterOneCatalog.ALLY_HAN).level if badge[0]==ally_hud else ChapterOneCatalog.prey_level(chapter_story_number)),Rect2(0,0,56,16),11)
 	auto_button = toggle_control(header_right,Rect2(857,3,48,48),"AUTO","auto",toggle_auto)
 	_build_pause_chrome()
 	update_toggles()
@@ -820,7 +823,7 @@ func build_combat() -> void:
 	prey_hp=enemy.bar
 	prey_hp.max_value=rules.deer_max_hp
 
-func build_level(marker: Control, ally: bool, role:String="") -> void:
+func build_level(marker: Control, ally: bool, role:String="", index := 0) -> void:
 	var brush:TextureRect=app.picture(marker,load(ReadinessArt.ART+"brush/lv-brush-"+("ally" if ally else "enemy")+"-up3.png"),Rect2(-30,-12,60,25))
 	brush.modulate.a=1.0
 	var badge:=Panel.new()
@@ -834,7 +837,7 @@ func build_level(marker: Control, ally: bool, role:String="") -> void:
 	badge.add_theme_stylebox_override("panel",skin)
 	var glyph:TextureRect=app.picture(badge,ReadinessArt.role_texture(role if not role.is_empty() else "ally-melee" if ally else "enemy-melee"),Rect2(0,0,19,19))
 	glyph.material=ReadinessArt.role_material()
-	var label:=caption(marker,"Lv.%d"%(1 if ally else ChapterOneCatalog.prey_level(chapter_story_number)),Rect2(-4,-9,38,19),11,Color.WHITE)
+	var label:=caption(marker,"Lv.%d"%(HeroGrowth.read(app.model.state, HeroGrowth.HEROES[index]).level if ally else ChapterOneCatalog.prey_level(chapter_story_number)),Rect2(-4,-9,38,19),11,Color.WHITE)
 	label.name="HuntLevelText"
 	label.add_theme_constant_override("outline_size",3)
 	label.add_theme_color_override("font_outline_color",Color.BLACK)
@@ -1862,7 +1865,7 @@ func _execute_uram_field_reserve() -> bool:
 	if rules.party_hp[1] <= 0 or not rules.outcome.is_empty():
 		uram_field_reserved = false
 		return false
-	if not rules.start_frontline_paid(1,RULES.URAM_SHIELD_COUNTER_DAMAGE,URAM_FIELD_POSE):
+	if not rules.start_frontline_paid(1,rules.hero_stat(1, "chain", RULES.URAM_SHIELD_COUNTER_DAMAGE),URAM_FIELD_POSE):
 		return false
 	uram_field_reserved = false
 	play_pose(URAM_FIELD_CAST)
@@ -1910,6 +1913,7 @@ func _manual_duration(id: String) -> float:
 func _start_frontline_paid(index: int, id: String) -> bool:
 	var legacy_damage:=int(RULES.SKILLS[RULES.PARTY_SKILLS[index]].damage)
 	if stage_one_one and id==ManualHunt.HAN_SPEAR_2:legacy_damage=ManualHunt.HAN_STORY_2SP_DAMAGE
+	legacy_damage = rules.hero_stat(index, "chain" if id == ManualHunt.HAN_SPEAR_3 else "skill", legacy_damage)
 	var data := ManualHunt.describe(id,legacy_damage)
 	if data.is_empty() or not rules.start_frontline_paid(index,int(data.damage),_manual_duration(id)):
 		return false
@@ -2039,7 +2043,7 @@ func _queue_first_hunt_han() -> void:
 		return
 	first_hunt_han_ready=manual_combat_clock+ManualHunt.recurring_attack_period(hunters[0].clip_duration("basic"))
 	rules.action_lock=RULES.POSE_SECONDS
-	rules.queue_attack(rules.han_ordinary_damage,0)
+	rules.queue_attack(rules.hero_stat(0, "attack", rules.han_ordinary_damage),0)
 	play_pose("auto_thrust")
 
 
@@ -2292,6 +2296,7 @@ func _start_chapter_story_preview() -> void:
 	for cell in assigned_cells:
 		story_foot_placement.append(HUNTER_BATTLE_CENTER+(ALLY_CELLS[cell]-FORMATION_CENTER)*.62)
 	battle.story_allied_placement = story_foot_placement
+	battle.story_allied_stats = rules.growth_stats
 	canvas.add_child(battle)
 	battle.setup(prey_art.draw_dust, _draw_story_gong, _draw_story_uram_hit,
 		_draw_story_uram_windup, _draw_story_authored_hit, prey_art.draw_charge,
@@ -2950,14 +2955,14 @@ func update_combat_ui(delta := 0.0) -> void:
 	deer_bar.value = lerpf(deer_bar.value,rules.deer_hp,weight)
 	prey_hp.value = deer_bar.value
 	for i in hunter_field_bars.size():
-		hunter_field_bars[i].max_value = RULES.PARTY_HP[i]
+		hunter_field_bars[i].max_value = rules.party_max_hp[i]
 		hunter_field_bars[i].value = rules.party_hp[i]
 	hunter_health_text.text = str(rules.hunter_hp)
 	deer_health_text.text = str(rules.deer_hp)
 	for i in party_cards.size():
 		var hud: Control = party_cards[i].hud
 		hud.visible=i<prep_ally_count
-		hud.sync(rules.orbs(i),rules.party_hp[i],RULES.PARTY_HP[i],rules.party_hp[i]>0,_can_take_hunt_input() and _can_hunt_2sp(i),delta,_can_submit_manual_chain(i))
+		hud.sync(rules.orbs(i),rules.party_hp[i],rules.party_max_hp[i],rules.party_hp[i]>0,_can_take_hunt_input() and _can_hunt_2sp(i),delta,_can_submit_manual_chain(i))
 
 const CAMERA_ACCENT_S := .54
 const CAMERA_ACCENT_LOCK_S := .69

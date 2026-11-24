@@ -1,14 +1,15 @@
 extends RefCounted
 
 const BEAT_DAMAGE := [5,5,6,11]
+const TOTAL_DAMAGE := 27
 
-static func damage_at(beat:int,rallied:bool)->int:
+static func damage_at(beat:int,rallied:bool,total:=TOTAL_DAMAGE)->int:
  if beat<0 or beat>=BEAT_DAMAGE.size():return 0
- if not rallied:return BEAT_DAMAGE[beat]
  var previous:=0
  for i in beat:previous+=int(BEAT_DAMAGE[i])
- # Cumulative rounding reconciles the visible hits to 27 × 1.20 = 32.
- return roundi(float(previous+int(BEAT_DAMAGE[beat]))*1.2)-roundi(float(previous)*1.2)
+ # Preserve beat weights and round the running total so every contact sums to the displayed skill damage.
+ var multiplier := float(total) / TOTAL_DAMAGE * (1.2 if rallied else 1.0)
+ return roundi(float(previous+int(BEAT_DAMAGE[beat]))*multiplier)-roundi(float(previous)*multiplier)
 ## Deterministic poses and drawing for the approved close-range stone-knife presentation.
 ## The caller owns action interrupts, damage, and actual combat nodes.
 const times:Array[float]=[.67,.89,1.10,1.46]

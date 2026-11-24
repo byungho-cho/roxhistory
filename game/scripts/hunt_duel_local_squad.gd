@@ -24,6 +24,7 @@ const HEROES := ["hangyeol","uram","saebom"]
 # Empty is the existing lab mode. A production caller may supply the named
 # Chapter One encounter before setup without routing to the lab screen.
 var story_encounter: Dictionary = {}
+var story_allied_stats: Array[Dictionary] = [{}, {}, {}]
 var story_outcome := ""
 var victory_age := -1.0
 var victory_allies:Dictionary={}
@@ -282,7 +283,7 @@ func setup(dust_draw:Callable=Callable(),gong:Callable=Callable(), heavy:Callabl
 		if not story_encounter.is_empty():
 			u.story_dormant = dormant
 			if ally:
-				u.max_hp=[34,33,33][i]
+				u.max_hp=int(story_allied_stats[i].get("hp", Hunt.RULES.PARTY_HP[i]))
 			else:
 				var n:=int(story_encounter.number)
 				var stats:=ChapterEnemyLevels.prey_stats(n,id,MAX_HP,Hunt.RULES.COUNTER_DAMAGE if n<=6 else 11,23,MAX_HP*Hunt.RULES.COUNTER_DAMAGE)
@@ -1052,7 +1053,7 @@ func _resolve(i:int)->void:
 		return
 	# The ground strike reaches all living enemies on the existing contact beat.
 	if i == 0 and u.move == "chain":
-		var amount := 38
+		var amount := _story_hero_stat(0, "chain", HeroGrowth.HAN_CHAIN_DAMAGE)
 		if u.rally > elapsed:
 			amount = roundi(amount * (1.20 if local_melee_polish else 1.25))
 		var primary_alive := j >= 3 and j < units.size() and int(units[j].hp) > 0
@@ -1090,12 +1091,14 @@ func _resolve(i:int)->void:
 		if beat>=Knife.contacts.size():return
 		u.bom_strike=beat+1
 		if beat+1<Knife.contacts.size():u.contact=Knife.contacts[beat+1]
-		var amount:=Knife.damage_at(beat,u.rally>elapsed)
+		var amount:=Knife.damage_at(beat,u.rally>elapsed,_story_hero_stat(i, "skill", Knife.TOTAL_DAMAGE))
 		_resolve_saebom_near(i,j,amount,beat)
 		return
 	var damage:=RallyCloud.SQUAD_BASE if u.move=="attack" else FrontlineActions.HAN_STORY_2SP_DAMAGE if u.move=="skill" and i==0 else 27 if u.move=="skill" else 38
 	if i>=3:
 		damage=int(u.get("basic_damage",11)) if u.move=="attack" else int(u.get("skill_damage",23))
+	elif u.move in ["attack", "skill"]:
+		damage=_story_hero_stat(i, u.move, damage)
 	if u.rally>elapsed:damage=roundi(damage*(1.20 if local_melee_polish else 1.25))
 	var start:Vector2=u.feet-Vector2(0,30)
 	var finish:Vector2=units[j].feet-Vector2(0,25)
@@ -1132,7 +1135,7 @@ func _finish_uram_ordinary_counter(j:int)->void:
 	if j<3 or j>=units.size() or units[j].hp<=0:
 		_apply_uram_field_hit(-1)
 		return
-	_damage(1,j,18,"counter")
+	_damage(1,j,_story_hero_stat(1, "chain", Hunt.RULES.URAM_SHIELD_COUNTER_DAMAGE),"counter")
 	if int(units[j].hp)>0:
 		_play(units[j],"hit")
 		units[j].next=maxf(float(units[j].next),elapsed+1.15)
@@ -1222,6 +1225,9 @@ func _subtract_hp_and_show(j:int,amount:int)->void:
 
 const OrdinaryHitAccent = preload("res://scripts/hunt_ordinary_hit_accent.gd")
 
+func _story_hero_stat(index: int, key: String, fallback: int) -> int:
+	return int(story_allied_stats[index].get(key, fallback))
+
 func _damage(i:int,j:int,amount:int,key:String,stone_impact:=Vector2.INF)->void:
 	var target:=units[j]
 	if target.hp<=0:return
@@ -1255,7 +1261,7 @@ func _damage(i:int,j:int,amount:int,key:String,stone_impact:=Vector2.INF)->void:
 			glints.append({"at":elapsed,"point":target.feet-Vector2(0,25),"tint":Color("65e4cf")})
 		var counter_primary:bool=units[i].hp>0 and target.feet.distance_to(units[i].feet)<76.0
 		if counter_primary:
-			_damage(j,i,18,"counter")
+			_damage(j,i,_story_hero_stat(1, "chain", Hunt.RULES.URAM_SHIELD_COUNTER_DAMAGE),"counter")
 			if local_melee_polish and int(units[i].hp)>0:
 				_play(units[i],"hit")
 				units[i].next=maxf(float(units[i].next),elapsed+URAM_STUN_SECONDS)

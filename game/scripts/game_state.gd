@@ -9,6 +9,7 @@ signal failed(message: String)
 var state: Dictionary = {}
 var store: SaveStore
 var busy := false
+var hero_growth_rules: Dictionary = HeroGrowth.RULES
 # Runtime-only target ownership. Never consume a charge until harvest commits.
 # Hero's queued and active work share an actor but have separate lifetime tokens.
 var gather_claims:Dictionary={}
@@ -242,6 +243,21 @@ func finish_loaded_jobs()->void:
 	if debug_fast_build and state.get("fast_build_mode","")!="fixed5":set_debug_fast_build(true)
 
 ## Called while preparing the same save transaction that marks hunt progression.
+func feed_hero(id: String) -> Dictionary:
+	if busy: return {}
+	var progress := HeroGrowth.after_feed(state, id, hero_growth_rules)
+	if progress.is_empty(): return {}
+	var previous := HeroGrowth.read(state, id)
+	var next := state.duplicate(true)
+	next.meat = int(next.meat) - 1
+	if not next.has(HeroGrowth.SAVE_KEY): next[HeroGrowth.SAVE_KEY] = {}
+	next[HeroGrowth.SAVE_KEY][id] = progress
+	busy = true
+	var saved := commit(next)
+	busy = false
+	return {"before": previous, "after": progress} if saved else {}
+
+
 func credit_hunt_meat(next: Dictionary, amount: int) -> int:
 	var previous := int(next.get("meat",0))
 	var granted := clampi(amount,0,BuildingRules.MAX_RESOURCE-previous)
