@@ -466,6 +466,7 @@ func request_hunt_reset() -> void:
 
 func refresh_after_hunt_reset() -> void:
 	chapter = 0
+	app.warm_hunt_resources()
 	draw_page()
 	sync_camp_idle()
 
@@ -532,7 +533,7 @@ func add_stage(slot: int) -> void:
 func choose(stage_id: int) -> void:
 	if not app.hunt_stage_is_unlocked(stage_id):return
 	app.hunt_stage=stage_id
-	app.warm_hunt_resources()
+	app.warm_hunt_resources(stage_id)
 	draw_page()
 
 func change_chapter(direction: int) -> void:

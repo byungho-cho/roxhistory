@@ -51,12 +51,24 @@ void vertex(){tint=COLOR;}
 void fragment(){COLOR=texture(TEXTURE,UV)*tint;COLOR.a*=clamp((1.-UV.y)/.18,0.,1.);}
 """
  var material:=ShaderMaterial.new();material.shader=shader;return material
-const WARM_FILES:=["power/sky-original.png", "power/Side-Clouds-alpha.png", "power/han-static.png", "power/Deer-HUD-alpha.png", "vs/VS-Branch-Title.png", "vs/VS-Branch-V.png", "vs/VS-Branch-S.png", "vs/VS-Valley-Plate.png", "vs/VS-Teal-Amber-Plate.png", "vs/Deer-Bust-Extended.png", "brush/lv-brush-ally-up3.png", "brush/lv-brush-enemy-up3.png", "AUTO-0.png", "AUTO-1.png", "X2-0.png", "X2-1.png", "han-success.ogv", "han-failure.ogv", "han-success-first.png", "han-success-last.png", "han-failure-first.png", "han-failure-last.png"]
-static func warm_paths()->Array:
- var paths:Array=[]
- for name in WARM_FILES:paths.append(ART+name)
- for role in ROLES:paths.append(ART+"role-badges/role-"+role+".png")
+# Art created when the preparation screen is constructed, including the hidden VS plate.
+# Outcome OGVs/stills are not needed here.
+const PREPARATION_FILES := [
+ "power/sky-original.png","power/Side-Clouds-alpha.png","power/han-static.png",
+ "vs/VS-Branch-Title.png","vs/VS-Branch-V.png","vs/VS-Branch-S.png",
+ "vs/VS-Valley-Plate.png","vs/VS-Teal-Amber-Plate.png",
+ "brush/lv-brush-ally-up3.png","brush/lv-brush-enemy-up3.png",
+ "AUTO-0.png","AUTO-1.png","X2-0.png","X2-1.png",
+]
+static func preparation_paths(forest_lead: bool) -> PackedStringArray:
+ var paths := PackedStringArray()
+ for name: String in PREPARATION_FILES:paths.append(ART+name)
+ for role in ["ally-melee","ally-tank","ally-ranged","enemy-melee"]:
+  paths.append(ART+"role-badges/role-"+role+".png")
+ if forest_lead:paths.append_array(PackedStringArray([ART+"power/Deer-HUD-alpha.png",ART+"vs/Deer-Bust-Extended.png"]))
  return paths
+
+
 
 const ROLES:=["ally-melee","ally-ranged","ally-healer","ally-shaman","ally-tank","enemy-melee","enemy-ranged"]
 static func role_texture(role:String)->Texture2D:
