@@ -644,9 +644,11 @@ func _story_entry_spot()->Vector2:
 
 func _tick_story_entry(real_delta:float)->bool:
 	if story_join_slot<0 or story_entry_done or ended or not story_outcome.is_empty():return false
-	story_entry_clock+=maxf(0.0,real_delta)
-	if not story_entry_active():return false
-	if story_entry_fraction()<1.0:return true
+	story_entry_clock=minf(story_entry_clock+maxf(0.0,real_delta),STORY_JOIN_SECONDS+STORY_CUTIN_SECONDS)
+	return story_entry_active()
+
+func dismiss_story_entry()->bool:
+	if not story_entry_active() or not story_outcome.is_empty():return false
 	var u:=units[story_join_slot]
 	u.feet=_story_entry_spot()
 	story_entry_done=true

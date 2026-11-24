@@ -184,7 +184,7 @@ func present_timed(progress:float, duration:float) -> void:
 	update_layout()
 	var seconds:=progress*duration
 	var appearing:=smoothstep(0.,.18,seconds)
-	modulate.a=1.0-smoothstep(.89,1.0,progress)
+	modulate.a=1.0
 	panel_group.modulate.a=appearing
 	character.modulate.a=smoothstep(.05,.26,seconds)
 	# Translate only the full-body art, not the frame or its layout fit.
@@ -199,7 +199,7 @@ func present_timed(progress:float, duration:float) -> void:
 	var drop := clampf(bottom_cap-art_rect.end.y,0.0,CUTIN_BODY_DROP)
 	character.position=art_rect.position+Vector2(-13.0*(1.0-appearing),drop)
 	text_labels[1].visible_characters=mini(message.length(),maxi(0,floori((seconds-.10)*48.0)))
-	next_hint.hide()
+	next_hint.visible=text_labels[1].visible_characters>=message.length()
 
 func _process(delta:float)->void:
 	age+=delta;update_layout()

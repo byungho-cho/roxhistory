@@ -9,6 +9,8 @@ var prep_tags:Array[Control]=[]
 var chapter_one_solo:=false
 var prep_ally_count := 3
 var story_cutin: CharacterGuide
+var story_cutin_pointer:=-2
+var story_cutin_touch:=Vector2.INF
 const ChapterOneCatalog := preload("res://scripts/hunt_chapter_one_catalog.gd")
 # Private proof only: do not make part of a release until every story route and
 # normal frontier behavior are verified.
@@ -901,6 +903,8 @@ func _open_battle_pause(with_cue:bool) -> void:
 	pan_pointer = -2
 	touch_points.clear()
 	clear_formation_drag()
+	story_cutin_pointer = -2
+	story_cutin_touch = Vector2.INF
 	for control in [pause_button,exit_button,auto_button,speed_button]:
 		control.clear()
 	# A touch begun before the overlay must not activate an underlying skill.
@@ -1093,6 +1097,9 @@ func _input(event: InputEvent) -> void:
 				control.clear()
 				get_viewport().set_input_as_handled()
 				return
+	if _handle_story_cutin_pointer(event):
+		get_viewport().set_input_as_handled()
+		return
 	if handle_vs_skip(event):
 		get_viewport().set_input_as_handled()
 		return
@@ -2149,6 +2156,46 @@ func _update_story_cutin() -> void:
 	story_cutin.visible=active
 	if active:story_cutin.present_timed(chapter_story_battle.story_entry_fraction(),chapter_story_battle.STORY_CUTIN_SECONDS)
 
+func _handle_story_cutin_pointer(event:InputEvent)->bool:
+	if not is_instance_valid(story_cutin) or not story_cutin.visible:return false
+	if not app.application_active or exit_popup or app.modal:
+		story_cutin_pointer=-2
+		return false
+	var pointer:=-2
+	var down:=false
+	var motion:=false
+	if event is InputEventScreenTouch:
+		pointer=event.index
+		down=event.pressed
+	elif event is InputEventMouseButton and event.button_index==MOUSE_BUTTON_LEFT:
+		pointer=-1
+		down=event.pressed
+	elif event is InputEventScreenDrag or event is InputEventMouseMotion:
+		pointer=event.index if event is InputEventScreenDrag else -1
+		motion=true
+	else:
+		return event is InputEventMouse or event is InputEventGesture
+	# A guide tap must not consume the fixed HUD controls, or vice versa.
+	if pause_button.visible and ((down and pause_button.get_global_rect().has_point(event.position)) or (pointer>=0 and pause_button.finger==pointer) or (pointer==-1 and pause_button.is_pressed())):
+		return false
+	var card:=story_cutin.panel_group.get_node("CreamPanel") as TextureRect
+	var in_card:=card.get_global_rect().has_point(event.position)
+	if motion:
+		if pointer==story_cutin_pointer and (not in_card or story_cutin_touch.distance_to(event.position)>14.):
+			story_cutin_touch=Vector2.INF
+		return true
+	if down:
+		if in_card and not event.is_canceled() and story_cutin_pointer==-2:
+			story_cutin_pointer=pointer
+			story_cutin_touch=event.position
+	elif story_cutin_pointer==pointer:
+		story_cutin_pointer=-2
+		if in_card and not event.is_canceled() and story_cutin_touch.distance_to(event.position)<=14.:
+			chapter_story_battle.dismiss_story_entry()
+			_update_story_cutin()
+		story_cutin_touch=Vector2.INF
+	return true
+
 func _process(delta: float) -> void:
 	# Preserve deterministic contact steps on both 30 and 60 fps displays.
 	if running and _uses_independent_first_hunt() and delta>.018:
@@ -2162,6 +2209,7 @@ func _tick_hunt_frame(delta: float) -> void:
 	if is_instance_valid(branch_video):branch_video.paused=not app.application_active or exit_popup!=null or app.modal
 	hunt_audio.update(app.application_active and app.settings.get_value("app","sound",true),exit_popup!=null or app.modal)
 	if not app.application_active or exit_popup or app.modal:
+		story_cutin_pointer=-2
 		clear_formation_drag()
 		return
 	if result_shown: return

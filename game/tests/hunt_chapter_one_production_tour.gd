@@ -7,6 +7,11 @@ func ck(ok: bool, what: String) -> void:
  count += 1
  if not ok: failed += 1
  print(("PASS " if ok else "FAIL ") + what)
+func touch_at(at:Vector2,down:bool,key:int=0)->void:
+ var e:=InputEventScreenTouch.new()
+ e.index=key;e.position=at;e.pressed=down
+ root.push_input(e,true)
+
 func run() -> void:
  var safe:=OS.get_environment("APPDATA").replace("\\","/").to_lower()
  var expected:=OS.get_environment("ROX_STORY_TEST_PROFILE").replace("\\","/").to_lower()
@@ -64,23 +69,43 @@ func run() -> void:
     var paused_count:=0
     var max_snap_distance:=0.0
     var seen_arrival:=false
-    for f in range(435):
+    var frozen_hp:Array=[]
+    var frozen_sp:Array=[]
+    for f in range(390):
      h._process(1./60.)
      if b.story_entry_active():
       if frozen<0.0:
        frozen=b.elapsed
        real_start=b.story_entry_clock
+       for u in b.units:frozen_hp.append(u.hp);frozen_sp.append(u.sp)
        var guide:CharacterGuide=h.story_cutin
-       genuine_guide=guide.panel_group.has_node("CreamPanel") and guide.character.name=="GuideFullBody" and guide.character.texture.get_height()>guide.character.texture.get_width() and guide.character.get_global_rect().end.y<=app.h and not guide.next_hint.visible
+       genuine_guide=guide.panel_group.has_node("CreamPanel") and guide.character.name=="GuideFullBody" and guide.character.texture.get_height()>guide.character.texture.get_width() and guide.character.get_global_rect().end.y<=app.h
       if is_equal_approx(frozen,b.elapsed) and h.story_cutin.visible and b.units[slot].hp==0 and not b._free_to_cast(0):
        paused_count+=1
-     elif b.story_entry_done and not seen_arrival:
-      seen_arrival=true
-      max_snap_distance=(b.units[slot].feet as Vector2).distance_to(b.units[0].feet)
+    ck(genuine_guide,"uses the original guide panel and contained head-to-feet art")
+    ck(paused_count>=238 and paused_count<=243 and real_start>=2.48 and real_start<=2.53,"guide remains after four real seconds of frozen combat")
+    var same:=true
+    for i in b.units.size():same=same and b.units[i].hp==frozen_hp[i] and b.units[i].sp==frozen_sp[i]
+    ck(same and h.story_cutin.visible and h.story_cutin.next_hint.visible and not b.story_entry_done,"HP and SP unchanged, guide still waiting and shows advance")
+    var at:Vector2=h.story_cutin.panel_group.get_node("CreamPanel").get_global_rect().get_center()
+    var outside:=Vector2(30,52)
+    touch_at(outside,true);touch_at(outside,false)
+    touch_at(outside,true);touch_at(at,false)
+    ck(h.story_cutin.visible and not b.story_entry_done,"backdrop and unmatched release cannot advance")
+    touch_at(at,true)
+    ck(h.story_cutin.visible and not b.story_entry_done,"touch down alone does not advance")
+    touch_at(at,false)
+    ck(not h.story_cutin.visible and b.story_entry_done and h.touch_points.is_empty(),"touch release inside guide dismisses with no click-through")
+    seen_arrival=b.story_entry_done
+    max_snap_distance=(b.units[slot].feet as Vector2).distance_to(b.units[0].feet)
+    var hp_after:int=b.units[slot].hp
+    var sp_after:float=b.units[slot].sp
+    touch_at(at,false,8)
+    ck(b.units[slot].hp==hp_after and b.units[slot].sp==sp_after,"later release cannot duplicate or recast entry")
+    for f in 285:
+     h._process(1./60.)
      for i in 3:
       if b.units[i].move=="attack":moved[i]=true
-    ck(genuine_guide,"uses the original guide panel and contained head-to-feet art")
-    ck(paused_count>=82 and paused_count<=88 and real_start>=2.48 and real_start<=2.53,"portrait overlays frozen battle at 2.5 real seconds")
     ck(seen_arrival and max_snap_distance>=34.0 and max_snap_distance<100.0,"ally appears in an open spot beside Han")
     ck(b.story_entry_done and moved.has(slot) and b.huds[slot].visible,"reinforcement joins and attacks following a real delay")
     if n==3: ck(not moved.has(2) and not b.huds[2].visible,"no Saebom in 1-3")

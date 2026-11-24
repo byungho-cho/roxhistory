@@ -30,6 +30,7 @@ func check_stage(number:int)->void:
   var moved:Dictionary={}
   for frame in range(480):
    b.tick(1./60.,false)
+   if frame==300:ck(b.story_entry_active() and b.dismiss_story_entry() and not b.dismiss_story_entry(),"squad waits without timeout and accepts one dismissal")
    for i in 3:
     if b.units[i].move=="attack":moved[i]=true
   print("1-3 battle elapsed ",b.elapsed," attack slots ",moved," prey HP ",b.units[3].hp," ",b.units[4].hp)
