@@ -449,12 +449,26 @@ func draw_page() -> void:
 	for slot in 10:
 		add_stage(slot)
 	var prepare := action(footer,Rect2(625,PREPARE_Y,238,PREPARE_HEIGHT),app.prepare_selected_hunt)
+	var reset := action(footer,Rect2(22,PREPARE_Y+10,136,40),request_hunt_reset)
+	reset.name = "ResetHuntProgress"
+	app.picture(reset,preload(ART+"08-ui-rules-body.svg"),Rect2(Vector2.ZERO,reset.size))
+	title(reset,"사냥 초기화",Rect2(Vector2.ZERO,reset.size),16)
 	prepare.name="PrepareHunt"
 	app.picture(prepare,preload(ART+"08-ui-prepare-gold-body.svg"),Rect2(Vector2.ZERO,prepare.size))
 	title(prepare,"사냥 준비",Rect2(Vector2.ZERO,prepare.size),24,Color("462b14"))
 	prepare.disabled=(0 if int(app.chapter_one_story_number(int(app.hunt_stage))) > 0 else int(app.hunt_stage)/STAGES_PER_CHAPTER)!=chapter or not app.hunt_stage_is_unlocked(int(app.hunt_stage))
 	prepare.modulate.a=.62 if prepare.disabled else 1.0
 	update_groups()
+
+func request_hunt_reset() -> void:
+	app.confirm_hunt_progress_reset(refresh_after_hunt_reset)
+
+
+func refresh_after_hunt_reset() -> void:
+	chapter = 0
+	draw_page()
+	sync_camp_idle()
+
 
 func chapter_arrow(x: float, direction: int) -> void:
 	var arrow := action(top_group,Rect2(x-21,29.5,42,42),change_chapter.bind(direction))

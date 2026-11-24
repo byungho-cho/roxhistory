@@ -2426,6 +2426,41 @@ func close_hunt_loading()->void:
 	if is_instance_valid(hunt_loading):hunt_loading.queue_free()
 	hunt_loading=null
 
+# Temporary owner QA entry point. Never call the full save-reset path here.
+func confirm_hunt_progress_reset(on_reset: Callable) -> void:
+	if screen != "hunt_select" or hunt_preparing or modal or model.state.is_empty():
+		return
+	show_modal("사냥 진행을 초기화할까요?", "사냥 클리어와 획득 별, 열린 사냥 단계가 초기화되고 1-1부터 다시 시작합니다.\n마을·건물, 보유 영웅과 레벨·장비, 자원, 다른 설정은 그대로입니다.", [
+		{"text": "취소", "action": close_modal},
+		{"text": "사냥 초기화", "action": _reset_hunt_progress.bind(on_reset)},
+	], false, true, false, Vector2(620, 330))
+
+
+func _reset_hunt_progress(on_reset: Callable) -> void:
+	if screen != "hunt_select" or hunt_preparing or not modal or model.state.is_empty():
+		return
+	var previous := chapter_one_story_completions()
+	var retained: Variant = model.state.get("hunt_ch1_recruited", [])
+	var recruited: Array[String] = []
+	for hero: String in [HUNT_CHAPTER_ONE.ALLY_URAM, HUNT_CHAPTER_ONE.ALLY_SAEBOM]:
+		var join_key := "ch1-03" if hero == HUNT_CHAPTER_ONE.ALLY_URAM else "ch1-04"
+		if previous.get(join_key, false) or (retained is Array and hero in retained):
+			recruited.append(hero)
+	var next := model.state.duplicate(true)
+	if not recruited.is_empty():
+		next["hunt_ch1_recruited"] = recruited
+	next["hunt_cleared"] = 0
+	next[HUNT_CHAPTER_ONE.CLEARS_KEY] = {}
+	if not model.commit(next):
+		show_error("사냥 진행을 초기화하지 못했습니다.")
+		return
+	hunt_stage = HUNT_CHAPTER_ONE.route_id(1)
+	hunt_prey_id = "forest"
+	close_modal()
+	if on_reset.is_valid():
+		on_reset.call()
+
+
 func prepare_selected_hunt() -> void:
 	if screen == "hunt_select":
 		_prepare_hunt_stage(hunt_stage)
