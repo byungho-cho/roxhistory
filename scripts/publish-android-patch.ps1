@@ -7,6 +7,7 @@ param(
     [string]$JavaHome = $env:JAVA_HOME,
     [switch]$Publish,
     [switch]$InitializeChannel,
+    [string]$BaselinePinManifest,
     [string]$PreviousPack,
     [string]$PreviousManifest,
     [string]$PythonPath = 'python'
@@ -38,6 +39,22 @@ $payloadPath = Join-Path $directory "manifest-$version.json"
 $payload = [ordered]@{ base=$base; base_commit=$baseCommit; runtime=$runtime; version=$version; commit=$commit }
 if ($InitializeChannel) {
     $payload.patch_available = $false
+    if ($base -eq '0.313.313' -and !$BaselinePinManifest) { throw 'Provide the exact native APK reference pin to initialize this baseline.' }
+    if ($BaselinePinManifest) {
+        $pin = Get-Content -Raw -LiteralPath $BaselinePinManifest | ConvertFrom-Json
+        if ($pin.base -cne $base -or $pin.base_commit -cne $baseCommit -or $pin.runtime -cne $runtime -or
+            $pin.build_commit -notmatch '^[0-9a-f]{40}$' -or !$pin.apk_reference_every_payload_exact -or
+            $pin.reference_sha256 -cne (Get-FileHash -LiteralPath $ReferencePack).Hash.ToLowerInvariant() -or
+            $pin.reference_size -ne (Get-Item -LiteralPath $ReferencePack).Length) {
+            throw 'The baseline pin does not describe the exact tested APK reference.'
+        }
+        & git -C $GameRepo diff --quiet $pin.build_commit HEAD -- game
+        if ($LASTEXITCODE) { throw 'The native baseline resource tree differs from the actual APK build commit.' }
+        $payload.commit = $pin.build_commit
+        $payload.reference_file = [IO.Path]::GetFileName($ReferencePack)
+        $payload.reference_sha256 = $pin.reference_sha256
+        $payload.reference_size = $pin.reference_size
+    }
 } else {
     & $GodotPath --headless --path (Join-Path $GameRepo 'game') --export-patch Android $pack --patches (Resolve-Path $ReferencePack).Path *> (Join-Path $directory "export-$version.log")
     if ($LASTEXITCODE -ne 0) { throw 'PCK export failed.' }
