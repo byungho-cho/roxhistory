@@ -26,6 +26,61 @@ func tap(control:Control)->void:
 	event.pressed=false
 	root.push_input(event,true)
 	await process_frame
+func send_vs_pointer(at:Vector2, down:bool, mouse:bool, pointer:int=0) -> void:
+	if mouse:
+		var event := InputEventMouseButton.new()
+		event.button_index = MOUSE_BUTTON_LEFT
+		event.position = at
+		event.global_position = at
+		event.pressed = down
+		root.push_input(event,true)
+	else:
+		var event := InputEventScreenTouch.new()
+		event.index = pointer
+		event.position = at
+		event.pressed = down
+		root.push_input(event,true)
+
+func skip_cases() -> void:
+	for mouse in [true,false]:
+		await open(0,0)
+		var h = scene
+		if not is_instance_valid(h):
+			ck(false,"production hunt did not reach preparation")
+			return
+		var start := get_button(h,"StartBattle")
+		var start_pos := start.get_global_rect().get_center()
+		send_vs_pointer(start_pos,true,mouse)
+		await frames(1)
+		send_vs_pointer(start_pos,false,mouse)
+		await frames(2)
+		var route := "mouse" if mouse else "touch"
+		ck(h.branch_video.visible and h.transition_elapsed>=0 and not h.running and not h.preparation.visible,route+": original Start pointer only opens VS")
+		var at := root.get_visible_rect().get_center()
+		send_vs_pointer(at,false,mouse)
+		ck(not h.running and h.transition_elapsed>=0,route+": release without a VS press does not skip")
+		if do_movie:
+			await frames(18)
+			root.get_texture().get_image().save_png(OS.get_environment("APPDATA").path_join("RoxHistory-VS-Skip-"+route+"-before.png"))
+		var extra := Vector2(180,180)
+		if not mouse:send_vs_pointer(extra,true,false,4)
+		var skill:Control=h.party_cards[0].hud.portrait_button
+		at = skill.get_global_rect().get_center()
+		h.rules.charges[0] = 3.0
+		send_vs_pointer(at,true,mouse)
+		ck(h.branch_video.visible and not h.running,route+": skip waits for tap release")
+		send_vs_pointer(at,false,mouse)
+		ck(h.running and h.combat_layout and h.combat.is_visible_in_tree() and not h.branch_video.visible and not h.preparation.is_visible_in_tree() and not h.placement_grid.is_visible_in_tree() and h.approach==1.0,route+": release immediately reveals combat without returning to prep")
+		if not mouse:send_vs_pointer(extra,false,false,4)
+		ck(h.rules.charges[0]>=3.0 and h.vs_skip_presses.is_empty(),route+": skip is consumed and a simultaneous touch cannot re-launch combat")
+		var t:float=h.manual_combat_clock
+		await frames(4)
+		ck(h.running and h.manual_combat_clock>t,route+": first live combat frames advance normally")
+		if do_movie:
+			root.get_texture().get_image().save_png(OS.get_environment("APPDATA").path_join("RoxHistory-VS-Skip-"+route+"-after.png"))
+			await frames(28)
+
+
 func open(stage_id:int,cleared:int)->void:
 	app.model.state.hunt_cleared=cleared
 	app.hunt_stage=stage_id
@@ -52,6 +107,13 @@ func _run()->void:
 	app.model.start_new({},true)
 	await app.enter_game()
 	await frames(35)
+	if "--vs-skip" in OS.get_cmdline_user_args():
+		await skip_cases()
+		app.queue_free()
+		await frames(6)
+		print("RESULT skip errors=",errors)
+		quit(errors)
+		return
 	await open(0,0)
 	var h=scene
 	if not is_instance_valid(h):

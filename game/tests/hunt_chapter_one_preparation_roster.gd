@@ -9,6 +9,21 @@ func ck(ok: bool, message: String) -> void:
  if not ok: fail += 1
  print(("PASS " if ok else "FAIL ") + message)
 
+func send_pointer(at:Vector2, down:bool, mouse:bool, pointer:int=0) -> void:
+ if mouse:
+  var event:=InputEventMouseButton.new()
+  event.button_index=MOUSE_BUTTON_LEFT
+  event.position=at
+  event.global_position=at
+  event.pressed=down
+  root.push_input(event,true)
+ else:
+  var event:=InputEventScreenTouch.new()
+  event.index=pointer
+  event.position=at
+  event.pressed=down
+  root.push_input(event,true)
+
 func run() -> void:
  var p:=OS.get_environment("APPDATA").replace("\\","/").to_lower()
  if FileAccess.file_exists("user://save.json") or not p.contains("chapter-prep-roster") or not OS.get_user_data_dir().replace("\\","/").to_lower().begins_with(p+"/"):quit(90);return
@@ -53,6 +68,20 @@ func run() -> void:
   if n==1: continue
   h.start_combat()
   ck(h.branch_video.visible and not h.placement_grid.visible and h.chapter_prep_foes.all(func(item):return not item.visible),"same-frame lock and prep actors hidden when VS begins 1-"+str(n))
+  if n in [2,3]:
+   var mouse:bool=n==3
+   var at:=Vector2(450,240)
+   send_pointer(at,true,mouse)
+   send_pointer(at,true,false,5)
+   ck(h.branch_video.visible and not h.running and not is_instance_valid(h.chapter_story_battle),"VS press does not start battle before release 1-"+str(n))
+   send_pointer(at,false,mouse)
+   var first=h.chapter_story_battle
+   ck(is_instance_valid(first) and h.running and h.transition_elapsed<0.0 and not h.branch_video.visible and not h.preparation.visible,"same-frame direct combat after VS tap/click 1-"+str(n))
+   send_pointer(at,false,false,5)
+   ck(first==h.chapter_story_battle and h.vs_skip_presses.is_empty() and not h.result_shown,"held second pointer cannot restart or finish combat 1-"+str(n))
+  else:
+   for i in range(8):await process_frame
+   ck(h.branch_video.visible and not h.running and not is_instance_valid(h.chapter_story_battle),"no input leaves original VS running 1-"+str(n))
   for i in range(135):
    await process_frame
    if is_instance_valid(h.chapter_story_battle):break

@@ -144,6 +144,7 @@ var impact_atlas: AtlasTexture
 var arrival_duration: float
 var arrival_finished := false
 var arrival_skip_pointer := -2
+var vs_skip_presses: Dictionary = {}
 var match_vs: Dictionary
 var header_spears: Control
 var roster_home: Vector2
@@ -891,7 +892,50 @@ func handle_arrival_skip(event: InputEvent) -> bool:
 	return true
 
 
+func handle_vs_skip(event: InputEvent) -> bool:
+	var pointer := -2
+	var motion := false
+	if event is InputEventScreenTouch:
+		pointer = event.index
+	elif event is InputEventScreenDrag:
+		pointer = event.index
+		motion = true
+	elif event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
+		pointer = -1
+	elif event is InputEventMouseMotion:
+		pointer = -1
+		motion = true
+	if pointer == -2:
+		return false
+	var active: bool = transition_elapsed >= 0.0 and not running and not result_shown and app.application_active and not app.modal and exit_popup == null
+	if motion:
+		if not vs_skip_presses.has(pointer):
+			return false
+		var origin: Vector2 = vs_skip_presses[pointer]
+		if origin.distance_to(event.position) > 24.0:
+			vs_skip_presses[pointer] = Vector2.INF
+		return true
+	if event.is_pressed() and not event.is_canceled():
+		if not active:
+			return vs_skip_presses.has(pointer)
+		vs_skip_presses[pointer] = event.position
+		return true
+	if vs_skip_presses.has(pointer):
+		var origin: Vector2 = vs_skip_presses[pointer]
+		vs_skip_presses.erase(pointer)
+		if active and not event.is_canceled() and origin.distance_to(event.position) <= 24.0:
+			# Hide the cinematic without replaying cues for the skipped interval.
+			animate_battle_vs(VS_SECONDS, VS_SECONDS)
+			finish_battle_transition()
+		return true
+	# Consume a release crossing the prep/VS boundary, but never treat it as a new tap.
+	return active
+
+
 func _input(event: InputEvent) -> void:
+	if handle_vs_skip(event):
+		get_viewport().set_input_as_handled()
+		return
 	if result_shown: return
 	if handle_arrival_skip(event):
 		get_viewport().set_input_as_handled()
@@ -1134,23 +1178,30 @@ func advance_transition(delta: float) -> void:
 	var approach_start := VS_SECONDS - VS_APPROACH_SECONDS
 	approach = smoothstep(approach_start, VS_SECONDS, transition_elapsed)
 	if transition_elapsed >= VS_SECONDS:
-		transition_elapsed = -1.0
-		branch_video.stop()
-		combat.show()
-		combat.modulate.a = 1.0
-		combat_layout = true
-		running = true
-		if chapter_story_preview:
-			_start_chapter_story_preview()
-		location_brush.hide()
-		for i in 2:
-			var control: DemoButton = [auto_button,speed_button][i]
-			control.position = Vector2(890,420+57*i)
-			control.size = Vector2(50,50)
-			var icon := control.get_child(0) as TextureRect
-			icon.size = control.size
-		update_toggles()
-		fit_layout()
+		finish_battle_transition()
+
+
+func finish_battle_transition() -> void:
+	if transition_elapsed < 0.0 or running:
+		return
+	approach = 1.0
+	transition_elapsed = -1.0
+	branch_video.stop()
+	combat.show()
+	combat.modulate.a = 1.0
+	combat_layout = true
+	running = true
+	if chapter_story_preview:
+		_start_chapter_story_preview()
+	location_brush.hide()
+	for i in 2:
+		var control: DemoButton = [auto_button,speed_button][i]
+		control.position = Vector2(890,420+57*i)
+		control.size = Vector2(50,50)
+		var icon := control.get_child(0) as TextureRect
+		icon.size = control.size
+	update_toggles()
+	fit_layout()
 
 
 const ManualHunt := preload("res://scripts/hunt_production_frontline_actions.gd")
