@@ -17,6 +17,41 @@ const Head = preload("res://scripts/battle_head_hud.gd")
 const CastHud=preload("res://scripts/hunt_production_hunt_presentation.gd")
 const CastArt=preload("res://scripts/hunt_production_prey_effects.gd")
 const HEROES := ["hangyeol","uram","saebom"]
+# Empty is the existing lab mode. A production caller may supply the named
+# Chapter One encounter before setup without routing to the lab screen.
+var story_encounter: Dictionary = {}
+var story_outcome := ""
+
+func configure_story_encounter(row: Dictionary) -> bool:
+	if not units.is_empty() or not story_encounter.is_empty():
+		return false
+	var stage_number := int(row.get("number", 0))
+	var party: Array = row.get("party", [])
+	var prey: Array = row.get("prey", [])
+	if stage_number < 2 or stage_number > 10 or party not in [["han"], ["han","uram","saebom"]] or prey.is_empty() or prey.size() > 3:
+		return false
+	for species: String in prey:
+		if species not in ["forest", "stag", "juvenile", "adult"]:
+			return false
+	story_encounter = row.duplicate(true)
+	return true
+
+func story_allows(i: int, move: String) -> bool:
+	if story_encounter.is_empty():
+		return true
+	var number := int(story_encounter.number)
+	if move == "skill":
+		return number >= [2, 3, 4][i]
+	if move != "chain":
+		return false
+	if number == 5:
+		return i == 1 and _squad_guard_candidate() >= 0
+	return number >= 6
+
+func _story_enemy_can_use_skill(unit: Dictionary) -> bool:
+	if story_encounter.is_empty():
+		return true
+	return (story_encounter.enemy_skill == "juvenile_charge" and unit.id == "juvenile") or (story_encounter.enemy_skill == "adult_successive_charge" and unit.id == "adult")
 const HERO_SLOTS := [0,5,3]
 const DEER_SLOTS := [4,2,3]
 const MAX_HP := 100
@@ -159,7 +194,10 @@ func setup(dust_draw:Callable=Callable(),gong:Callable=Callable(), heavy:Callabl
 		cast_notice_paint.draw.connect(_paint_cast_notices)
 	for i in 6:
 		var ally:=i<3
-		var id:String=HEROES[i] if ally else "forest"
+		if not story_encounter.is_empty() and not ally and i - 3 >= story_encounter.prey.size():
+			break
+		var id:String=HEROES[i] if ally else "forest" if story_encounter.is_empty() else story_encounter.prey[i - 3]
+		var dormant: bool = not story_encounter.is_empty() and ally and i >= story_encounter.party.size()
 		var home:Vector2
 		if ally:home=Hunt.HUNTER_BATTLE_CENTER+(Hunt.ALLY_CELLS[HERO_SLOTS[i]]-Hunt.FORMATION_CENTER)*.62
 		else:home=Hunt.DEER_SLOT+Vector2(111,-9)+(Hunt.ENEMY_CELLS[DEER_SLOTS[i-3]]-Hunt.ENEMY_CELLS[4])*.86
@@ -169,6 +207,12 @@ func setup(dust_draw:Callable=Callable(),gong:Callable=Callable(), heavy:Callabl
 		for j in 41:ring.add_point(Vector2.from_angle(TAU*float(j)/40)*Vector2(22,8))
 		add_child(ring)
 		var u:Dictionary={"actor":actor,"id":id,"home":home,"feet":home,"hp":MAX_HP,"sp":1.0,"move":"idle","age":0.0,"next":.52+float(i%3)*.17,"contact":-1.0,"victim":-1,"ring":ring,"rally":0.0}
+		if not story_encounter.is_empty():
+			u.story_dormant = dormant
+			u.max_hp = [34,33,33][i] if ally else MAX_HP
+			u.hp = 0 if dormant else u.max_hp
+			u.sp = 0.0
+			if i == 2: u.bom_close = false
 		units.append(u)
 		_play(u,"idle")
 	_calibrate_han()
@@ -180,6 +224,10 @@ func setup(dust_draw:Callable=Callable(),gong:Callable=Callable(), heavy:Callabl
 			hud.enable_portrait_damage_feedback()
 			hud.place_local_combat_hud(480.+128.*float(i-1))
 		hud.requested.connect(_request.bind(i))
+		if not story_encounter.is_empty():
+			hud.visible = not bool(units[i].get("story_dormant", false))
+			if story_encounter.party.size() == 1 and i == 0:
+				hud.position.x = 447.
 		huds.append(hud)
 	_draw_pose(0.0)
 
@@ -341,7 +389,7 @@ func _free_to_cast(i:int)->bool:
 
 func _request(key:String,i:int)->void:
 	var cost:=2 if key=="skill" else 3
-	if not _free_to_cast(i) or units[i].sp+0.000001<float(cost):return
+	if not story_allows(i, key) or not _free_to_cast(i) or units[i].sp+0.000001<float(cost):return
 	var target:=_target(i)
 	if target<0:return
 	units[i].sp-=float(cost)
@@ -383,7 +431,7 @@ func _target(i:int)->int:
 		return _local_enemy_target(i)
 	# Allied targeting keeps its original opening lane and nearest fallback.
 	var initial:=[3,4,5]
-	if units[initial[i]].hp>0:return initial[i]
+	if initial[i] < units.size() and units[initial[i]].hp > 0: return initial[i]
 	var best:=-1
 	var nearest:=INF
 	for j in range(3,units.size()):
@@ -529,6 +577,7 @@ func tick(delta:float,paused:bool)->void:
 	_draw_pose(delta)
 
 func _step(dt:float)->void:
+	if not story_outcome.is_empty():return
 	elapsed+=dt
 	_update_saebom_range()
 	for i in units.size():
@@ -568,7 +617,7 @@ func _step(dt:float)->void:
 			if formation_aggro:_approach_enemy_slot(i,target,dt)
 			else:_approach(i,theirs,dt)
 		elif elapsed>=u.next:
-			_begin(i,"skill" if i>=3 and int(elapsed*1.45+i)%4==0 else "attack",target)
+			_begin(i,"skill" if i>=3 and _story_enemy_can_use_skill(u) and int(elapsed*1.45+i)%4==0 else "attack",target)
 		elif u.move!="idle":_play(u,"idle")
 	_update_projectiles(dt)
 	while not knife_events.is_empty() and elapsed-float(knife_events[0].at)>Knife.ECHO_SECONDS:knife_events.pop_front()
@@ -600,6 +649,12 @@ func _step(dt:float)->void:
 	var left:=_target(3)
 	var right:=_target(0)
 	ended=left<0 or right<0
+	if not story_encounter.is_empty():
+		if left < 0 or elapsed >= float(story_encounter.seconds):
+			story_outcome = "loss"
+			ended = true
+		elif right < 0:
+			story_outcome = "win"
 
 func _resolve(i:int)->void:
 	var u:=units[i];var j:int=u.victim
@@ -924,6 +979,10 @@ func _draw_pose(dt:float)->void:
 	var ambient:=Color.WHITE.lerp(Color.BLACK,spotlight_dim())
 	for i in units.size():
 		var u:=units[i];var actor=u.actor
+		if bool(u.get("story_dormant", false)):
+			actor.preview.hide()
+			u.ring.hide()
+			continue
 		var isolated:=spotlight_attacker==i or spotlight_defender==i
 		var tint:=Color.WHITE if isolated else ambient
 		actor.preview.modulate=tint
@@ -1002,7 +1061,11 @@ func _draw_pose(dt:float)->void:
 	for i in huds.size():
 		var u:=units[i]
 		huds[i].chain_border_speed=URAM_BORDER_RATE if i==1 and local_melee_polish and not input_paused and not ended and _squad_guard_candidate(URAM_BORDER_LEAD)>=0 else 1.0
-		huds[i].sync(u.sp,u.hp,MAX_HP,u.hp>0,_free_to_cast(i),dt)
+		if story_encounter.is_empty():
+			huds[i].sync(u.sp,u.hp,MAX_HP,u.hp>0,_free_to_cast(i),dt)
+		else:
+			huds[i].chain_allowed = int(story_encounter.number) >= 6 or (int(story_encounter.number) == 5 and i == 1)
+			huds[i].sync(minf(u.sp, 1.99) if not story_allows(i, "skill") else u.sp, u.hp, u.max_hp, u.hp > 0, _free_to_cast(i) and story_allows(i, "skill"), dt, _free_to_cast(i) and story_allows(i, "chain"))
 	if is_instance_valid(uram_ground_layer):
 		uram_ground_layer.self_modulate=ambient
 		uram_ground_layer.queue_redraw()
@@ -1039,12 +1102,14 @@ func _paint_cast_notices()->void:
 		cast_notice_style.draw_cast_notice(cast_notice_paint,point,null,notice.icon,notice.linked,elapsed-float(notice.at))
 
 func _paint_bars()->void:
-	for u in units:
+	for i in units.size():
+		var u := units[i]
 		if u.hp<=0:continue
 		var at:Vector2=u.feet-Vector2(23,76)
 		var back:=Rect2(at,Vector2(46,5))
 		bars_paint.draw_rect(back,Color("211f23"))
-		bars_paint.draw_rect(Rect2(at+Vector2.ONE,Vector2(44.0*float(u.hp)/MAX_HP,3)),Color("68c8ff") if u.id!="forest" else Color("ff8176"))
+		var color := Color("68c8ff") if (u.id != "forest" if story_encounter.is_empty() else i < 3) else Color("ff8176")
+		bars_paint.draw_rect(Rect2(at+Vector2.ONE,Vector2(44.0*float(u.hp)/float(u.get("max_hp", MAX_HP)),3)),color)
 
 func _paint_rally_silver_wings()->void:
 	if local_melee_polish and units.size()>2 and units[2].hp>0:
