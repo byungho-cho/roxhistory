@@ -8,6 +8,8 @@ var layout:Control
 var panel_group:Control
 var character:TextureRect
 var timed_art: Texture2D
+var timed_motion: VideoStreamPlayer
+var timed_motion_started := false
 var art_rect := Rect2(-78,190,676,450.667)
 var age:=0.0
 var revealed := 0.0
@@ -177,6 +179,44 @@ func handle_pointer(event:InputEvent)->bool:
 		if not cancelled and not press.dragged and press.start.distance_to(event.position)<=12:advance()
 	return true
 
+func attach_timed_motion(stream: VideoStream) -> void:
+	timed_motion = VideoStreamPlayer.new()
+	timed_motion.name = "UramJoinMotion"
+	timed_motion.stream = stream
+	timed_motion.buffering_msec = 0
+	timed_motion.volume_db = -80.0
+	timed_motion.expand = true
+	timed_motion.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var material := ShaderMaterial.new()
+	material.shader = preload("res://shaders/packed_alpha_cutin.gdshader")
+	timed_motion.material = material
+	timed_motion.hide()
+	layout.add_child(timed_motion)
+
+func play_timed_motion() -> void:
+	if not is_instance_valid(timed_motion): return
+	if not timed_motion_started:
+		timed_motion_started = true
+		timed_motion.play()
+	if not timed_motion.visible and timed_motion.stream_position >= 1.0 / 24.0:
+		timed_motion.show()
+		character.hide()
+	var side := character.size.y
+	timed_motion.position = Vector2(character.position.x + (character.size.x - side) * .5, character.position.y)
+	timed_motion.size = Vector2.ONE * side
+	timed_motion.modulate.a = character.modulate.a
+
+func pause_timed_motion(value: bool) -> void:
+	if is_instance_valid(timed_motion): timed_motion.paused = value
+
+func stop_timed_motion() -> void:
+	if not timed_motion_started or not is_instance_valid(timed_motion): return
+	timed_motion.hide()
+	timed_motion.stop()
+	timed_motion.stream = null
+	timed_motion.queue_free()
+	timed_motion = null
+
 ## Timed presentation reuses the actual U10400 panel, type and safe layout.
 ## Its enclosing encounter owns pause, input lock and when this view is shown.
 func present_timed(progress:float, duration:float) -> void:
@@ -198,6 +238,7 @@ func present_timed(progress:float, duration:float) -> void:
 	var bottom_cap := minf(DESIGN_SIZE.y,(safe_bottom-layout.position.y)/layout.scale.y)-4.0
 	var drop := clampf(bottom_cap-art_rect.end.y,0.0,CUTIN_BODY_DROP)
 	character.position=art_rect.position+Vector2(-13.0*(1.0-appearing),drop)
+	play_timed_motion()
 	text_labels[1].visible_characters=mini(message.length(),maxi(0,floori((seconds-.10)*48.0)))
 	next_hint.visible=text_labels[1].visible_characters>=message.length()
 

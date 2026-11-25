@@ -2446,12 +2446,15 @@ func _make_story_cutin(slot: int) -> void:
 	story_cutin.z_index=2000
 	story_cutin.hide()
 	add_child(story_cutin)
+	if slot == 1:
+		story_cutin.attach_timed_motion(preload("res://assets/ui/village-guidance/hunt-uram-entrance.ogv"))
 
 func _update_story_cutin() -> void:
 	if not is_instance_valid(story_cutin):return
 	var active:bool=chapter_story_battle.story_entry_active()
 	story_cutin.visible=active
 	if active:story_cutin.present_timed(chapter_story_battle.story_entry_fraction(),chapter_story_battle.STORY_CUTIN_SECONDS)
+	else: story_cutin.stop_timed_motion()
 
 func _handle_story_cutin_pointer(event:InputEvent)->bool:
 	if not is_instance_valid(story_cutin) or not story_cutin.visible:return false
@@ -2504,6 +2507,8 @@ func _process(delta: float) -> void:
 
 func _tick_hunt_frame(delta: float) -> void:
 	if is_instance_valid(branch_video):branch_video.paused=not app.application_active or exit_popup!=null or app.modal
+	if is_instance_valid(story_cutin):
+		story_cutin.pause_timed_motion(not app.application_active or exit_popup != null or app.modal)
 	hunt_audio.update(app.application_active and app.settings.get_value("app","sound",true),exit_popup!=null or app.modal)
 	if not app.application_active or exit_popup or app.modal:
 		story_cutin_pointer=-2
