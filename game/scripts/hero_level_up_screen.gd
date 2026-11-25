@@ -449,8 +449,6 @@ func make_header() -> void:
 func make_bag_button() -> void:
 	bag_button = action(board, Rect2(1542, 48, 80, 80), "HeroBagButton", app.inventory_summary)
 	bag_button.tooltip_text = "가방"
-	var rim := panel_at(bag_button, Rect2(4, 4, 72, 72), Color(0.16, 0.11, 0.05, 0.86), Color("d6a65a"), 2, 15)
-	rim.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	app.picture(bag_button, DemoArt.play_icon("bag"), Rect2(11, 11, 58, 58))
 
 func make_growth() -> void:
