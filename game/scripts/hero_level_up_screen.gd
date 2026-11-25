@@ -9,6 +9,7 @@ const REPEAT_SECONDS := 0.25
 const NONE := -2
 const HERO_INTERACTION := Rect2(679, 100, 413, 560)
 const SWIPE_SLOP := 20.0
+const SWIPE_PREVIEW_SLOP := 5.0
 const SWIPE_COMMIT := 70.0
 const MOTION_SIZE := Vector2(1280, 720)
 const PANEL_HEIGHT := 639.0
@@ -119,6 +120,13 @@ var held := NONE
 var swipe := NONE
 var swipe_start := Vector2.ZERO
 var swipe_moved := false
+var swipe_can_activate := false
+var roster_frame: NinePatchRect
+var roster_scroll: ScrollContainer
+var roster_touch := NONE
+var roster_touch_start := Vector2.ZERO
+var roster_scroll_start := 0
+var roster_dragging := false
 var swipe_follow_hero := true
 var swipe_scene_tween: Tween
 var valley_view: Control
@@ -126,11 +134,10 @@ var valley_terrain: TextureRect
 var valley_mist: TextureRect
 var valley_viewport := Rect2()
 var valley_camera := 0.0
+var valley_mist_phase := -1.0
 var valley_group := 0
 var valley_departing: TextureRect
 var valley_anim: Tween
-var gesture_tabs: Control
-var gesture_buttons: Array[Button] = []
 
 var repeats_in := REPEAT_SECONDS
 var bold := FontVariation.new()
@@ -151,7 +158,6 @@ func _ready() -> void:
 	make_valley()
 	make_scene()
 	make_header()
-	make_gesture_tabs()
 	make_growth()
 	make_hero_details()
 	make_roster()
@@ -175,10 +181,10 @@ func fit() -> void:
 	active_background.size = viewport.size
 	valley_viewport = viewport
 	fit_valley()
+	skills.position.y = clampf(viewport.end.y - 923.0, 0.0, 40.0) if selected == 4 else 0.0
 	var hud_margin := Vector2(maxf(57.0 * factor, safe.x), maxf(48.0 * factor, safe.y))
 	back_button.position = (hud_margin - board.position) / factor
 	screen_title.position = back_button.position + Vector2(96, (back_button.size.y - screen_title.size.y) * 0.5)
-	if is_instance_valid(gesture_tabs): gesture_tabs.position = Vector2(viewport.get_center().x - 106.0, back_button.position.y)
 	if is_instance_valid(hero_video):
 		fit_hero_motion(viewport)
 	if is_instance_valid(outgoing_scene):
@@ -264,12 +270,13 @@ func fit_valley() -> void:
 	valley_terrain.size = native * scale_fit
 	var step := minf(target_step, maxf(0.0, valley_terrain.size.x - area.size.x - 20.0) / span_slots)
 	var lead := (valley_terrain.size.x - area.size.x - step * span_slots) * 0.5
-	var x := (clampf(valley_camera - float(first), low, high) - low) * step
+	var x := clampf((valley_camera - float(first) - low) * step, -maxf(0.0, lead - 10.0) if first == 0 else 0.0, (high - low) * step + (maxf(0.0, lead - 10.0) if last == DATA.size() - 1 else 0.0))
 	valley_terrain.position = Vector2(-lead - x, (area.size.y - valley_terrain.size.y) * 0.5)
 	# Fog is common to every section. Do not reset its offset at a landscape change.
 	var mist_travel := area.size.x * 0.34
 	valley_mist.size = Vector2(area.size.x + mist_travel + 30.0, area.size.y * (370.0 / 720.0))
-	valley_mist.position = Vector2(-15.0 - mist_travel * valley_camera / maxf(1.0, float(DATA.size()-1)), area.size.y - valley_mist.size.y)
+	var phase := valley_mist_phase if valley_mist_phase >= 0.0 else clampf(valley_camera, 0.0, float(DATA.size()-1))
+	valley_mist.position = Vector2(-15.0 - mist_travel * phase / maxf(1.0, float(DATA.size()-1)), area.size.y - valley_mist.size.y)
 
 func clear_valley_departure() -> void:
 	if is_instance_valid(valley_departing):
@@ -293,7 +300,7 @@ func valley_group_for(index: int) -> int:
 
 
 func set_valley_camera(value: float) -> void:
-	valley_camera = clampf(value, 0.0, float(DATA.size() - 1))
+	valley_camera = value
 	fit_valley()
 
 func make_scene() -> void:
@@ -381,7 +388,7 @@ func play_valley_action(action: bool) -> void:
 
 func show_hero_when_ready(player: VideoStreamPlayer, generation: int) -> void:
 	while is_instance_valid(player) and player == hero_video and generation == motion_generation:
-		if player.stream_position >= 2.0 / 24.0:
+		if player.stream_position >= 1.0 / 24.0 and player.get_video_texture().get_width() > 0:
 			player.show()
 			hero_frame.hide()
 			hero_frame.texture = null
@@ -488,7 +495,8 @@ func make_hero_details() -> void:
 func make_roster() -> void:
 	var top := (DESIGN.y - PANEL_HEIGHT) * 0.5
 	panel_at(board, Rect2(1232, top + 5, 340, PANEL_HEIGHT - 10), Color(0.16, 0.14, 0.10, 0.78), Color("76502f"), 5, 20)
-	var frame := NinePatchRect.new()
+	roster_frame = NinePatchRect.new()
+	var frame := roster_frame
 	frame.texture = preload("res://assets/ui/hero-level-up/roster-wood-frame.png")
 	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	frame.draw_center = false
@@ -496,16 +504,19 @@ func make_roster() -> void:
 		frame.set_patch_margin(side, 48)
 	place(board, frame, Rect2(1227, top, 350, PANEL_HEIGHT))
 	frame.name = "HeroRosterFrame"
-	picture(board, "allied-heading.svg", Rect2(1259, top + 7, 28, 31))
-	text_at(board, "아군", Rect2(1297, top + 4, 124, 36), 26, Color("f6d38d"), HORIZONTAL_ALIGNMENT_LEFT, true)
-	var scroll := ScrollContainer.new()
+	picture(board, "allied-heading.svg", Rect2(1254, top + 16, 28, 31))
+	text_at(board, "아군", Rect2(1291, top + 13, 124, 36), 26, Color("f6d38d"), HORIZONTAL_ALIGNMENT_LEFT, true)
+	panel_at(board, Rect2(1252, top + 55, 300, 1), Color("a78e5a99"))
+	roster_scroll = ScrollContainer.new()
+	var scroll := roster_scroll
 	scroll.name = "HeroRoster"
+	scroll.clip_contents = true
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
-	place(board, scroll, Rect2(1248, top + 41, 314, PANEL_HEIGHT - 43))
+	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER
+	place(board, scroll, Rect2(1248, top + 64, 308, PANEL_HEIGHT - 83))
 	var content := Control.new()
 	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	content.custom_minimum_size = Vector2(312, 596)
+	content.custom_minimum_size = Vector2(308, 606)
 	scroll.add_child(content)
 	panel_at(content, Rect2(4, 394, 296, 2), Color("a78e5a99")).name = "HeroRosterDivider"
 	for i in DATA.size():
@@ -612,45 +623,6 @@ func refresh() -> void:
 	skill_value[1].modulate.a = skill_art[1].modulate.a
 	if upgrade.disabled: stop_hold()
 
-func make_gesture_tabs() -> void:
-	gesture_tabs = Control.new()
-	gesture_tabs.name = "GestureCompareTabs"
-	gesture_tabs.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	board.add_child(gesture_tabs)
-	for i in 2:
-		var button := action(gesture_tabs, Rect2(i * 109.0, 0, 103, 54), "GestureMode%d" % (i + 1), set_gesture_mode.bind(i == 1))
-		button.text = "%d안" % (i + 1)
-		button.add_theme_font_override("font", bold)
-		button.add_theme_font_size_override("font_size", 29)
-		button.add_theme_color_override("font_color", Color("fff5db"))
-		gesture_buttons.append(button)
-	refresh_gesture_tabs()
-
-func refresh_gesture_tabs() -> void:
-	for i in gesture_buttons.size():
-		var active := (i == 1) == swipe_follow_hero
-		var border := Color("ffd283") if active else Color("7a603b")
-		var fill := Color("795023") if active else Color("2c251bde")
-		for state in ["normal", "hover", "pressed"]:
-			gesture_buttons[i].add_theme_stylebox_override(state, style(fill, border, 3 if active else 2, 11))
-
-func set_gesture_mode(follow: bool) -> void:
-	if swipe_follow_hero == follow: return
-	reset_swipe()
-	if valley_anim: valley_anim.kill()
-	if slide: slide.kill()
-	if is_instance_valid(outgoing_scene): outgoing_scene.queue_free()
-	if is_instance_valid(active_scene):
-		stop_hero_motion()
-		active_scene.hide()
-		active_scene.queue_free()
-	swipe_follow_hero = follow
-	valley_group = valley_group_for(selected)
-	valley_camera = float(selected)
-	make_scene()
-	fit()
-	refresh_gesture_tabs()
-
 func cycle(direction: int, fixed_forest := false) -> void:
 	if navigable.size() < 2: return
 	var current := navigable.find(selected)
@@ -692,7 +664,18 @@ func choose(index: int, direction := 0, fixed_forest := false) -> void:
 	slide.tween_property(active_scene, "position:x", 0.0, 0.28)
 	slide.chain().tween_callback(departing.queue_free)
 
+func valley_wrapping(index: int, direction: int) -> bool:
+	return (direction < 0 and selected == navigable.front() and index == navigable.back()) or (direction > 0 and selected == navigable.back() and index == navigable.front())
+
+func valley_shift_target(index: int, direction: int) -> float:
+	return float(selected + direction) if valley_wrapping(index, direction) else float(index)
+
+func set_valley_mist_phase(value: float) -> void:
+	valley_mist_phase = value
+	fit_valley()
+
 func choose_valley(index: int, direction: int) -> void:
+	if valley_anim and valley_anim.is_running(): return
 	stop_hold()
 	swipe = NONE
 	swipe_moved = false
@@ -708,7 +691,7 @@ func choose_valley(index: int, direction: int) -> void:
 	var opacity := active_foreground.modulate.a
 	valley_anim = create_tween().set_parallel(true).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 	valley_anim.tween_method(func(t: float): present_swipe_actor(lerpf(initial, exit, t), lerpf(opacity, 0.0, t)), 0.0, 1.0, 0.14)
-	valley_anim.tween_method(set_valley_camera, valley_camera, lerpf(valley_camera, float(index), 0.55), 0.14)
+	valley_anim.tween_method(set_valley_camera, valley_camera, lerpf(valley_camera, valley_shift_target(index, sign_dir), 0.55), 0.14)
 	valley_anim.chain().tween_callback(finish_valley_switch.bind(index, sign_dir))
 
 func finish_valley_switch(index: int, direction: int) -> void:
@@ -717,6 +700,8 @@ func finish_valley_switch(index: int, direction: int) -> void:
 	active_scene.hide()
 	active_scene.queue_free()
 	cancel_celebration()
+	var wrapping := valley_wrapping(index, direction)
+	if wrapping: valley_mist_phase = clampf(valley_camera, 0.0, float(DATA.size()-1))
 	selected = index
 	var next_group := valley_group_for(selected)
 	if next_group != valley_group:
@@ -733,15 +718,16 @@ func finish_valley_switch(index: int, direction: int) -> void:
 	if is_instance_valid(valley_departing):
 		# The only region dissolve happens following a committed gesture, on an empty scene.
 		valley_anim.tween_property(valley_departing, "modulate:a", 0.0, 0.30)
+		if wrapping: valley_anim.parallel().tween_method(set_valley_mist_phase, valley_mist_phase, float(index), 0.30)
 		valley_anim.tween_callback(clear_valley_departure)
+	if wrapping: valley_anim.tween_callback(set_valley_mist_phase.bind(-1.0))
 	valley_anim.tween_method(animate_swipe_actor.bind(entry), 0.0, 1.0, 0.42)
 	valley_anim.parallel().tween_method(set_valley_camera, valley_camera, float(index), 0.42)
 
 func valley_neighbor(direction: int) -> int:
 	var current := navigable.find(selected)
-	var next := current + direction
-	if current < 0 or next < 0 or next >= navigable.size(): return -1
-	return navigable[next]
+	if current < 0 or navigable.size() < 2: return -1
+	return navigable[posmod(current + direction, navigable.size())]
 
 func valley_drag(movement: Vector2) -> void:
 	var direction := 1 if movement.x < 0 else -1
@@ -752,7 +738,7 @@ func valley_drag(movement: Vector2) -> void:
 		return
 	var w := maxf(1.0, valley_viewport.size.x)
 	var distance := clampf(absf(movement.x) / w, 0.0, 0.5)
-	set_valley_camera(lerpf(float(selected), float(target), 0.9 * minf(1.0, distance / 0.46)))
+	set_valley_camera(lerpf(float(selected), valley_shift_target(target, direction), 0.9 * minf(1.0, distance / 0.46)))
 	# The hero follows faster than the valley; the rest of the UI never moves.
 	present_swipe_actor(clampf(movement.x * 1.28, -w * 0.62, w * 0.62), 1.0 - smoothstep(0.22, 0.43, distance))
 
@@ -768,6 +754,7 @@ func cancel_valley_drag() -> void:
 func _input(event: InputEvent) -> void:
 	if not is_visible_in_tree() or not app.application_active: return
 	if event is InputEventScreenTouch:
+		if handle_roster_touch(event): return
 		if event.canceled:
 			if held == event.index: stop_hold()
 			if swipe == event.index:
@@ -780,11 +767,39 @@ func _input(event: InputEvent) -> void:
 			return
 		pointer(event.index, event.position, event.pressed)
 	elif event is InputEventScreenDrag:
+		if handle_roster_drag(event): return
 		pointer_drag(event.index, event.position)
 	elif event is InputEventMouseMotion and event.device != InputEvent.DEVICE_ID_EMULATION:
 		pointer_drag(-1, event.position)
 	elif event is InputEventMouseButton and event.device != InputEvent.DEVICE_ID_EMULATION and event.button_index == MOUSE_BUTTON_LEFT:
 		pointer(-1, event.position, event.pressed)
+
+func handle_roster_touch(event: InputEventScreenTouch) -> bool:
+	if event.pressed and roster_touch == NONE and roster_scroll.get_global_rect().has_point(event.position):
+		roster_touch = event.index
+		roster_touch_start = event.position
+		roster_scroll_start = roster_scroll.scroll_vertical
+		roster_dragging = false
+	elif not event.pressed and event.index == roster_touch:
+		var consumed := roster_dragging or event.canceled
+		roster_touch = NONE
+		roster_dragging = false
+		if consumed:
+			for card in roster: card.clear()
+			get_viewport().set_input_as_handled()
+		return consumed
+	return false
+
+func handle_roster_drag(event: InputEventScreenDrag) -> bool:
+	if event.index != roster_touch: return false
+	var delta := (event.position - roster_touch_start) / board.scale.x
+	if not roster_dragging and absf(delta.y) >= 14.0 and absf(delta.y) >= absf(delta.x):
+		roster_dragging = true
+		for card in roster: card.clear()
+	if not roster_dragging: return false
+	roster_scroll.scroll_vertical = roster_scroll_start - roundi(delta.y)
+	get_viewport().set_input_as_handled()
+	return true
 
 func pointer(index: int, point: Vector2, pressed: bool) -> void:
 	if pressed and upgrade.get_global_rect().has_point(point):
@@ -797,10 +812,11 @@ func pointer(index: int, point: Vector2, pressed: bool) -> void:
 	elif not pressed and held == index:
 		stop_hold()
 		get_viewport().set_input_as_handled()
-	elif pressed and swipe == NONE and HERO_INTERACTION.has_point(board.get_global_transform().affine_inverse() * point):
+	elif pressed and swipe == NONE and is_swipe_origin(point):
 		if swipe_follow_hero and valley_anim and valley_anim.is_running(): return
 		swipe = index
 		swipe_start = point
+		swipe_can_activate = HERO_INTERACTION.has_point(board.get_global_transform().affine_inverse() * point)
 		swipe_moved = false
 		get_viewport().set_input_as_handled()
 	elif not pressed and swipe == index:
@@ -813,7 +829,9 @@ func pointer(index: int, point: Vector2, pressed: bool) -> void:
 			var target := valley_neighbor(direction)
 			if target >= 0 and absf(movement.x) > maxf(SWIPE_COMMIT, valley_viewport.size.x * 0.09) and is_horizontal_swipe(movement):
 				choose(target, direction)
-			elif not was_drag and movement.length() < SWIPE_SLOP:
+			elif swipe_can_activate and not was_drag and movement.length() < SWIPE_SLOP:
+				set_valley_camera(float(selected))
+				present_swipe_actor(0.0, 1.0)
 				play_hero_motion(true)
 			else:
 				cancel_valley_drag()
@@ -822,9 +840,18 @@ func pointer(index: int, point: Vector2, pressed: bool) -> void:
 		reset_swipe()
 		if absf(movement.x) > SWIPE_COMMIT and is_horizontal_swipe(movement):
 			cycle(1 if movement.x < 0 else -1, swipe_follow_hero)
-		elif not was_drag and movement.length() < SWIPE_SLOP and is_instance_valid(hero_video):
+		elif swipe_can_activate and not was_drag and movement.length() < SWIPE_SLOP and is_instance_valid(hero_video):
 			play_hero_motion(true)
 		get_viewport().set_input_as_handled()
+
+func is_swipe_origin(point: Vector2) -> bool:
+	var local := board.get_global_transform().affine_inverse() * point
+	if not valley_viewport.has_point(local): return false
+	# Native scrolling and click targets must see the initial pointer event.
+	if roster_frame.get_global_rect().has_point(point): return false
+	for button in [back_button, previous, forward]:
+		if button.is_visible_in_tree() and button.get_global_rect().has_point(point): return false
+	return true
 
 func swipe_delta(point: Vector2) -> Vector2:
 	return (point - swipe_start) / board.scale.x
@@ -837,7 +864,7 @@ func pointer_drag(index: int, point: Vector2) -> void:
 	var movement := swipe_delta(point)
 	swipe_moved = swipe_moved or movement.length() >= SWIPE_SLOP
 	if swipe_follow_hero:
-		if movement.length() >= SWIPE_SLOP: valley_drag(movement)
+		if absf(movement.x) >= SWIPE_PREVIEW_SLOP: valley_drag(movement)
 		else:
 			set_valley_camera(float(selected))
 			present_swipe_actor(0.0, 1.0)
@@ -878,6 +905,7 @@ func clear_swipe_hint() -> void:
 		if swipe_scene_tween and swipe_scene_tween.is_running(): swipe_scene_tween.kill()
 		if valley_anim: valley_anim.kill()
 		clear_valley_departure()
+		valley_mist_phase = -1.0
 		set_valley_camera(float(selected))
 		present_swipe_actor(0.0, 1.0)
 	for arrow in [previous_arrow, forward_arrow]:
@@ -904,6 +932,9 @@ func _process(delta: float) -> void:
 func _notification(what: int) -> void:
 	if what in [NOTIFICATION_APPLICATION_PAUSED, NOTIFICATION_APPLICATION_FOCUS_OUT, NOTIFICATION_EXIT_TREE]:
 		reset_swipe()
+		roster_touch = NONE
+		roster_dragging = false
+		for card in roster: card.clear()
 		stop_hold()
 		if is_instance_valid(hero_video): hero_video.paused = true
 	elif what in [NOTIFICATION_APPLICATION_RESUMED, NOTIFICATION_APPLICATION_FOCUS_IN]:
