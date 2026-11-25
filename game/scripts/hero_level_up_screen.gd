@@ -14,6 +14,16 @@ const MOTION_SIZE := Vector2(1280, 720)
 const PANEL_HEIGHT := 639.0
 const GOLD_LOCK := preload("res://assets/ui/d0024/08-ui-padlock-gold.png")
 const FOLD_SHADER := preload("res://shaders/hero_landscape_feather.gdshader")
+const VALLEY_ART := ART + "valley/"
+const VALLEY_TERRAIN := preload("res://assets/ui/hero-level-up/valley/valley.jpg")
+const VALLEY_MIST := preload("res://assets/ui/hero-level-up/valley/mist.png")
+const VALLEY_PACKED_SHADER := preload("res://shaders/packed_alpha_cutin.gdshader")
+const VALLEY_SOURCE_SIZE := Vector2(1112, 834)
+const VALLEY_SPAN_RATIO := 366.0 / 960.0
+const HEROES_PER_PANORAMA := 3
+const VALLEY_PANORAMAS := [VALLEY_TERRAIN, preload("res://assets/ui/hero-level-up/valley/riverbend.jpg")]
+# x is the foot centre; y is the first-frame footline. Heights exclude the spear.
+const VALLEY_LAYOUT := [[552, 792, 728], [553, 748, 535], [550, 645, 507], [525, 735, 615], [553, 783, 679]]
 const MOTIONS := [
 	{
 		"idle": preload("res://assets/ui/hero-level-up/han-idle.ogv"),
@@ -111,6 +121,14 @@ var swipe_start := Vector2.ZERO
 var swipe_moved := false
 var swipe_follow_hero := false
 var swipe_scene_tween: Tween
+var valley_view: Control
+var valley_terrain: TextureRect
+var valley_mist: TextureRect
+var valley_viewport := Rect2()
+var valley_camera := 0.0
+var valley_group := 0
+var valley_departing: TextureRect
+var valley_anim: Tween
 var gesture_tabs: Control
 var gesture_buttons: Array[Button] = []
 
@@ -130,6 +148,7 @@ func _ready() -> void:
 	world_view.name = "MovingHeroScene"
 	world_view.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	board.add_child(world_view)
+	make_valley()
 	make_scene()
 	make_header()
 	make_gesture_tabs()
@@ -154,6 +173,8 @@ func fit() -> void:
 	var viewport := Rect2(bleed, size / factor)
 	active_background.position = viewport.position
 	active_background.size = viewport.size
+	valley_viewport = viewport
+	fit_valley()
 	var hud_margin := Vector2(maxf(57.0 * factor, safe.x), maxf(48.0 * factor, safe.y))
 	back_button.position = (hud_margin - board.position) / factor
 	screen_title.position = back_button.position + Vector2(96, (back_button.size.y - screen_title.size.y) * 0.5)
@@ -166,6 +187,18 @@ func fit() -> void:
 		background.size = viewport.size
 
 func fit_hero_motion(viewport: Rect2) -> void:
+	if swipe_follow_hero:
+		var a: Array = VALLEY_LAYOUT[selected]
+		var unit := viewport.size.y / MOTION_SIZE.y
+		var scale_to_stature := unit * 400.0 / float(a[2])
+		var feet := viewport.position + Vector2(viewport.size.x * 0.5, unit * (590.0 if selected == 0 else 550.0))
+		hero_video.size = VALLEY_SOURCE_SIZE * scale_to_stature
+		hero_video.position = feet - Vector2(a[0], a[1]) * scale_to_stature
+		hero_video.material = fold_material
+		hero_frame.material = fold_material
+		hero_frame.position = hero_video.position
+		hero_frame.size = hero_video.size
+		return
 	var fold_layout := viewport.size.aspect() <= 1.5
 	if fold_layout != fold_motion:
 		fold_motion = fold_layout
@@ -188,12 +221,88 @@ func fit_hero_motion(viewport: Rect2) -> void:
 	hero_frame.position = hero_video.position
 	hero_frame.size = hero_video.size
 
+func make_valley() -> void:
+	valley_view = Control.new()
+	valley_view.name = "ContinuousValleyViewport"
+	valley_view.clip_contents = true
+	valley_view.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	world_view.add_child(valley_view)
+	valley_terrain = TextureRect.new()
+	valley_terrain.name = "ContinuousValleyPanorama"
+	valley_terrain.texture = VALLEY_TERRAIN
+	valley_terrain.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	valley_terrain.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	valley_view.add_child(valley_terrain)
+	valley_mist = TextureRect.new()
+	valley_mist.name = "ContinuousValleyMist"
+	valley_mist.texture = VALLEY_MIST
+	valley_mist.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	valley_mist.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	valley_view.add_child(valley_mist)
+	valley_view.hide()
+
+func fit_valley() -> void:
+	if not is_instance_valid(valley_view): return
+	valley_view.visible = swipe_follow_hero
+	if not swipe_follow_hero: return
+	var area := valley_viewport
+	valley_view.position = area.position
+	valley_view.size = area.size
+	var first := valley_group * HEROES_PER_PANORAMA
+	var last := mini(first + HEROES_PER_PANORAMA - 1, DATA.size() - 1)
+	# Leave enough overscan to keep showing this section until release.
+	var low := -0.9 if first > 0 else 0.0
+	var high := float(last - first) + (0.9 if last < DATA.size() - 1 else 0.0)
+	var span_slots := maxf(1.0, high - low)
+	var scene_art := VALLEY_PANORAMAS[mini(valley_group, VALLEY_PANORAMAS.size()-1)] as Texture2D
+	if valley_terrain.texture != scene_art: valley_terrain.texture = scene_art
+	var native := scene_art.get_size()
+	var fit_ratio := maxf(area.size.y / native.y, area.size.x / native.x)
+	var target_step := area.size.x * VALLEY_SPAN_RATIO
+	var max_zoom := fit_ratio * (1.32 if valley_group == 0 else 1.24)
+	var scale_fit := minf(maxf(fit_ratio, (area.size.x + target_step * span_slots + 20.0) / native.x), max_zoom)
+	valley_terrain.size = native * scale_fit
+	var step := minf(target_step, maxf(0.0, valley_terrain.size.x - area.size.x - 20.0) / span_slots)
+	var lead := (valley_terrain.size.x - area.size.x - step * span_slots) * 0.5
+	var x := (clampf(valley_camera - float(first), low, high) - low) * step
+	valley_terrain.position = Vector2(-lead - x, (area.size.y - valley_terrain.size.y) * 0.5)
+	# Fog is common to every section. Do not reset its offset at a landscape change.
+	var mist_travel := area.size.x * 0.34
+	valley_mist.size = Vector2(area.size.x + mist_travel + 30.0, area.size.y * (370.0 / 720.0))
+	valley_mist.position = Vector2(-15.0 - mist_travel * valley_camera / maxf(1.0, float(DATA.size()-1)), area.size.y - valley_mist.size.y)
+
+func clear_valley_departure() -> void:
+	if is_instance_valid(valley_departing):
+		valley_departing.hide()
+		valley_departing.queue_free()
+	valley_departing = null
+
+func capture_valley_departure() -> void:
+	clear_valley_departure()
+	valley_departing = TextureRect.new()
+	valley_departing.texture = valley_terrain.texture
+	valley_departing.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	valley_departing.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	valley_view.add_child(valley_departing)
+	valley_view.move_child(valley_departing, valley_mist.get_index())
+	valley_departing.position = valley_terrain.position
+	valley_departing.size = valley_terrain.size
+
+func valley_group_for(index: int) -> int:
+	return floori(float(index) / HEROES_PER_PANORAMA)
+
+
+func set_valley_camera(value: float) -> void:
+	valley_camera = clampf(value, 0.0, float(DATA.size() - 1))
+	fit_valley()
+
 func make_scene() -> void:
 	active_scene = Control.new()
 	active_scene.name = "HeroAndLandscape"
 	active_scene.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	world_view.add_child(active_scene)
 	active_background = picture(active_scene, "background-landscape-reconstructed.png", Rect2(Vector2.ZERO, DESIGN), TextureRect.STRETCH_KEEP_ASPECT_COVERED)
+	active_background.visible = not swipe_follow_hero
 	active_foreground = Control.new()
 	active_foreground.name = "HeroForeground"
 	active_foreground.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -203,7 +312,7 @@ func make_scene() -> void:
 
 func make_hero_motion() -> void:
 	fold_material = ShaderMaterial.new()
-	fold_material.shader = FOLD_SHADER
+	fold_material.shader = VALLEY_PACKED_SHADER if swipe_follow_hero else FOLD_SHADER
 	fold_motion = size.y > 0 and size.aspect() <= 1.5
 	hero_video = VideoStreamPlayer.new()
 	hero_video.name = "HeroLevelUpMotion"
@@ -217,11 +326,23 @@ func make_hero_motion() -> void:
 	hero_frame.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	hero_frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	active_foreground.add_child(hero_frame)
-	play_hero_motion(true)
+	if swipe_follow_hero:
+		show_valley_start()
+	else:
+		play_hero_motion(true)
+
+func show_valley_start() -> void:
+	var id := str(DATA[selected][1])
+	hero_frame.texture = load(VALLEY_ART + id + "-start.png") as Texture2D
+	hero_frame.show()
+	hero_video.hide()
 
 func play_hero_motion(action: bool, mode_changed := false) -> void:
 	if not is_instance_valid(hero_video): return
 	var player := hero_video
+	if swipe_follow_hero:
+		play_valley_action(action)
+		return
 	var clips: Dictionary = MOTIONS[selected]
 	motion_generation += 1
 	if action or mode_changed:
@@ -236,6 +357,25 @@ func play_hero_motion(action: bool, mode_changed := false) -> void:
 		player.stream = stream
 	player.loop = not action
 	player.hide()
+	player.play()
+	show_hero_when_ready(player, motion_generation)
+
+func play_valley_action(action: bool) -> void:
+	var player := hero_video
+	motion_generation += 1
+	if not action:
+		# Preserve the approved end pose, including Uram's lowered shield.
+		freeze_hero_frame()
+		player.stop()
+		player.hide()
+		if not is_instance_valid(hero_frame.texture):
+			show_valley_start()
+		return
+	show_valley_start()
+	player.stop()
+	if not is_instance_valid(player.stream):
+		player.stream = load(VALLEY_ART + str(DATA[selected][1]) + "-action.ogv") as VideoStream
+	player.loop = false
 	player.play()
 	show_hero_when_ready(player, motion_generation)
 
@@ -497,7 +637,18 @@ func refresh_gesture_tabs() -> void:
 func set_gesture_mode(follow: bool) -> void:
 	if swipe_follow_hero == follow: return
 	reset_swipe()
+	if valley_anim: valley_anim.kill()
+	if slide: slide.kill()
+	if is_instance_valid(outgoing_scene): outgoing_scene.queue_free()
+	if is_instance_valid(active_scene):
+		stop_hero_motion()
+		active_scene.hide()
+		active_scene.queue_free()
 	swipe_follow_hero = follow
+	valley_group = valley_group_for(selected)
+	valley_camera = float(selected)
+	make_scene()
+	fit()
 	refresh_gesture_tabs()
 
 func cycle(direction: int, fixed_forest := false) -> void:
@@ -507,6 +658,9 @@ func cycle(direction: int, fixed_forest := false) -> void:
 
 func choose(index: int, direction := 0, fixed_forest := false) -> void:
 	if index == selected or index not in navigable: return
+	if swipe_follow_hero:
+		choose_valley(index, direction)
+		return
 	stop_hold()
 	reset_swipe()
 	stop_hero_motion()
@@ -538,12 +692,91 @@ func choose(index: int, direction := 0, fixed_forest := false) -> void:
 	slide.tween_property(active_scene, "position:x", 0.0, 0.28)
 	slide.chain().tween_callback(departing.queue_free)
 
+func choose_valley(index: int, direction: int) -> void:
+	stop_hold()
+	swipe = NONE
+	swipe_moved = false
+	if valley_anim: valley_anim.kill()
+	clear_valley_departure()
+	var sign_dir := signi(index - selected) if direction == 0 else direction
+	if not is_instance_valid(active_foreground) or not active_foreground.visible:
+		finish_valley_switch(index, sign_dir)
+		return
+	# A brief exit also handles fast swipes, arrows, and direct roster selection.
+	var exit := active_foreground.position.x - sign_dir * valley_viewport.size.x * 0.15
+	var initial := active_foreground.position.x
+	var opacity := active_foreground.modulate.a
+	valley_anim = create_tween().set_parallel(true).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	valley_anim.tween_method(func(t: float): present_swipe_actor(lerpf(initial, exit, t), lerpf(opacity, 0.0, t)), 0.0, 1.0, 0.14)
+	valley_anim.tween_method(set_valley_camera, valley_camera, lerpf(valley_camera, float(index), 0.55), 0.14)
+	valley_anim.chain().tween_callback(finish_valley_switch.bind(index, sign_dir))
+
+func finish_valley_switch(index: int, direction: int) -> void:
+	# There is only one hero node. The old one is hidden before the new one exists.
+	stop_hero_motion()
+	active_scene.hide()
+	active_scene.queue_free()
+	cancel_celebration()
+	selected = index
+	var next_group := valley_group_for(selected)
+	if next_group != valley_group:
+		# Old hero is gone; change sections before revealing the next hero.
+		capture_valley_departure()
+		valley_group = next_group
+		valley_camera = float(index) - float(direction) * 0.10
+	make_scene()
+	fit()
+	refresh()
+	var entry := direction * valley_viewport.size.x * 0.21
+	present_swipe_actor(entry, 0.0)
+	valley_anim = create_tween().set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	if is_instance_valid(valley_departing):
+		# The only region dissolve happens following a committed gesture, on an empty scene.
+		valley_anim.tween_property(valley_departing, "modulate:a", 0.0, 0.30)
+		valley_anim.tween_callback(clear_valley_departure)
+	valley_anim.tween_method(animate_swipe_actor.bind(entry), 0.0, 1.0, 0.42)
+	valley_anim.parallel().tween_method(set_valley_camera, valley_camera, float(index), 0.42)
+
+func valley_neighbor(direction: int) -> int:
+	var current := navigable.find(selected)
+	var next := current + direction
+	if current < 0 or next < 0 or next >= navigable.size(): return -1
+	return navigable[next]
+
+func valley_drag(movement: Vector2) -> void:
+	var direction := 1 if movement.x < 0 else -1
+	var target := valley_neighbor(direction)
+	if not is_horizontal_swipe(movement) or target < 0:
+		set_valley_camera(float(selected))
+		present_swipe_actor(0.0, 1.0)
+		return
+	var w := maxf(1.0, valley_viewport.size.x)
+	var distance := clampf(absf(movement.x) / w, 0.0, 0.5)
+	set_valley_camera(lerpf(float(selected), float(target), 0.9 * minf(1.0, distance / 0.46)))
+	# The hero follows faster than the valley; the rest of the UI never moves.
+	present_swipe_actor(clampf(movement.x * 1.28, -w * 0.62, w * 0.62), 1.0 - smoothstep(0.22, 0.43, distance))
+
+func cancel_valley_drag() -> void:
+	if valley_anim: valley_anim.kill()
+	if not is_instance_valid(active_foreground): return
+	var initial := active_foreground.position.x
+	var opacity := active_foreground.modulate.a
+	valley_anim = create_tween().set_parallel(true).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	valley_anim.tween_method(func(t: float): present_swipe_actor(lerpf(initial, 0.0, t), lerpf(opacity, 1.0, t)), 0.0, 1.0, 0.24)
+	valley_anim.tween_method(set_valley_camera, valley_camera, float(selected), 0.24)
+
 func _input(event: InputEvent) -> void:
 	if not is_visible_in_tree() or not app.application_active: return
 	if event is InputEventScreenTouch:
 		if event.canceled:
 			if held == event.index: stop_hold()
-			if swipe == event.index: reset_swipe()
+			if swipe == event.index:
+				if swipe_follow_hero:
+					swipe = NONE
+					swipe_moved = false
+					cancel_valley_drag()
+				else:
+					reset_swipe()
 			return
 		pointer(event.index, event.position, event.pressed)
 	elif event is InputEventScreenDrag:
@@ -565,6 +798,7 @@ func pointer(index: int, point: Vector2, pressed: bool) -> void:
 		stop_hold()
 		get_viewport().set_input_as_handled()
 	elif pressed and swipe == NONE and HERO_INTERACTION.has_point(board.get_global_transform().affine_inverse() * point):
+		if swipe_follow_hero and valley_anim and valley_anim.is_running(): return
 		swipe = index
 		swipe_start = point
 		swipe_moved = false
@@ -572,6 +806,19 @@ func pointer(index: int, point: Vector2, pressed: bool) -> void:
 	elif not pressed and swipe == index:
 		var movement := swipe_delta(point)
 		var was_drag := swipe_moved
+		if swipe_follow_hero:
+			swipe = NONE
+			swipe_moved = false
+			var direction := 1 if movement.x < 0 else -1
+			var target := valley_neighbor(direction)
+			if target >= 0 and absf(movement.x) > maxf(SWIPE_COMMIT, valley_viewport.size.x * 0.09) and is_horizontal_swipe(movement):
+				choose(target, direction)
+			elif not was_drag and movement.length() < SWIPE_SLOP:
+				play_hero_motion(true)
+			else:
+				cancel_valley_drag()
+			get_viewport().set_input_as_handled()
+			return
 		reset_swipe()
 		if absf(movement.x) > SWIPE_COMMIT and is_horizontal_swipe(movement):
 			cycle(1 if movement.x < 0 else -1, swipe_follow_hero)
@@ -589,6 +836,13 @@ func pointer_drag(index: int, point: Vector2) -> void:
 	if swipe != index: return
 	var movement := swipe_delta(point)
 	swipe_moved = swipe_moved or movement.length() >= SWIPE_SLOP
+	if swipe_follow_hero:
+		if movement.length() >= SWIPE_SLOP: valley_drag(movement)
+		else:
+			set_valley_camera(float(selected))
+			present_swipe_actor(0.0, 1.0)
+		get_viewport().set_input_as_handled()
+		return
 	clear_swipe_hint()
 	if navigable.size() > 1 and absf(movement.x) > SWIPE_SLOP and is_horizontal_swipe(movement):
 		var direction := 1 if movement.x < 0 else -1
@@ -612,7 +866,7 @@ func present_swipe_actor(offset: float, opacity: float) -> void:
 	if not is_instance_valid(active_foreground): return
 	active_foreground.position.x = offset
 	active_foreground.modulate.a = opacity
-	if is_instance_valid(fold_material):
+	if not swipe_follow_hero and is_instance_valid(fold_material):
 		fold_material.set_shader_parameter("drag_opacity",opacity)
 	active_foreground.visible = opacity > 0.001
 
@@ -622,6 +876,9 @@ func animate_swipe_actor(progress: float, start_x: float) -> void:
 func clear_swipe_hint() -> void:
 	if swipe_follow_hero:
 		if swipe_scene_tween and swipe_scene_tween.is_running(): swipe_scene_tween.kill()
+		if valley_anim: valley_anim.kill()
+		clear_valley_departure()
+		set_valley_camera(float(selected))
 		present_swipe_actor(0.0, 1.0)
 	for arrow in [previous_arrow, forward_arrow]:
 		if is_instance_valid(arrow):
