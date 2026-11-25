@@ -20,11 +20,12 @@ const STAGE_KEYS := ["ch1-01", "ch1-02", "ch1-03", "ch1-04", "ch1-05", "ch1-06",
 # after both old chapters, not the old Chapter 2's ids 6..11.
 const ROUTE_IDS := [0, 1, 2, 3, 4, 12, 13, 14, 15, 5]
 const LEGACY_KEYS := ["ch1-01", "ch1-02", "ch1-03", "ch1-04", "ch1-05", "ch1-10"]
-# Only the four agreed early stages change; the tutorial and later encounters keep their shipped baseline.
-const PREY_LEVELS := [1, 2, 3, 3, 5, 1, 1, 1, 1, 1]
+# Chapter 1 prey progression in display order, independent of runtime route IDs.
+const PREY_LEVELS := [1, 1, 1, 2, 2, 3, 3, 4, 4, 5]
+const SQUAD_PREY_BASIC := 11
 const ROWS := [
 	{"party": SOLO, "prey": [FLOWER], "enemy_skill": "none", "lesson": "han_manual_2sp", "rank": "normal", "seconds": 50, "base_meat": 10, "first_clear_stars": 3},
-	{"party": SOLO, "prey": [FLOWER, FLOWER], "enemy_skill": "none", "lesson": "han_ground_thrust", "rank": "normal", "seconds": 50, "base_meat": 20},
+	{"party": SOLO, "prey": [STAG], "enemy_skill": "none", "lesson": "han_ground_thrust", "rank": "normal", "seconds": 50, "base_meat": 20},
 	{"party": [ALLY_HAN, ALLY_URAM], "opening_party": SOLO, "prey": [STAG, FLOWER], "enemy_skill": "none", "lesson": "uram_club", "rank": "normal", "seconds": 50, "base_meat": 30, "story_join": [ALLY_URAM]},
 	{"party": TEAM, "opening_party": [ALLY_HAN, ALLY_URAM], "story_join": [ALLY_SAEBOM], "prey": [STAG, FLOWER, FLOWER], "enemy_skill": "none", "lesson": "saebom_sling", "rank": "normal", "seconds": 50, "base_meat": 40},
 	{"party": TEAM, "prey": [JUVENILE], "enemy_skill": "juvenile_charge", "lesson": "uram_parry_only", "rank": "midboss", "seconds": 60, "base_meat": 30},
@@ -46,20 +47,37 @@ static func encounter(number: int) -> Dictionary:
 	return row
 
 
-## The temporary rule scales shipped Lv.1 HP, damage and displayed power independently.
+## Trial: all enemy combat stats rise by 10% of their Lv.1 value per level.
 ## Power is not the product of already-scaled stats (which would square the level).
 static func prey_level(number: int) -> int:
 	if number < 1 or number > PREY_LEVELS.size(): return 1
 	return PREY_LEVELS[number - 1]
 
 
-static func prey_stats(number: int, _species: String, base_hp: int = 100, base_attack: int = 2, base_skill: int = 23, base_power: int = 200) -> Dictionary:
-	return prey_stats_at_level(prey_level(number),base_hp,base_attack,base_skill,base_power)
+static func prey_base_attack(number: int, species: String) -> int:
+	match species:
+		FLOWER: return 3
+		STAG: return 4
+		JUVENILE: return 7 if encounter(number).get("rank") == "midboss" else 5
+		ADULT: return 10
+	return 3
 
 
-static func prey_stats_at_level(requested_level:int,base_hp:int=100,base_attack:int=2,base_skill:int=23,base_power:int=200)->Dictionary:
+static func prey_stats(number: int, species: String, base_hp: int = 100, base_attack: int = -1, base_skill: int = 23, base_power: int = -1) -> Dictionary:
+	var attack := prey_base_attack(number,species) if base_attack < 0 else base_attack
+	return prey_stats_at_level(prey_level(number),base_hp,attack,base_skill,base_hp*attack if base_power < 0 else base_power)
+
+
+static func shared_damage(total: int, count: int, rank: int) -> int:
+	if total <= 0 or count <= 0 or rank < 0 or rank >= count:
+		return 0
+	return floori(float(total) / count) + int(rank < (total % count))
+
+
+static func prey_stats_at_level(requested_level:int,base_hp:int=100,base_attack:int=3,base_skill:int=23,base_power:int=300)->Dictionary:
 	var level := clampi(requested_level,1,20)
-	return {"level": level, "hp": base_hp * level, "attack": base_attack * level, "skill": base_skill * level, "power": base_power * level}
+	var multiplier := (9.0 + level) / 10.0
+	return {"level": level, "hp": roundi(base_hp * multiplier), "attack": roundi(base_attack * multiplier), "skill": roundi(base_skill * multiplier), "power": roundi(base_power * multiplier)}
 
 
 ## S40420 / 3600:313: score by the fraction of the battle limit remaining.

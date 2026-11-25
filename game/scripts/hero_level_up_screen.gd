@@ -35,7 +35,7 @@ const MOTIONS := [
 		"idle": preload("res://assets/ui/hero-level-up/gahui-idle.ogv"),
 		"action": preload("res://assets/ui/hero-level-up/gahui-action.ogv"),
 		"poster": preload("res://assets/ui/hero-level-up/gahui-action-start.webp"),
-		"size": Vector2(1280, 720), "anchor": Vector2(630, 495), "stature": 315.0,
+		"size": Vector2(960, 960), "anchor": Vector2(451, 812), "stature": 674.0,
 	},
 	{
 		"idle": preload("res://assets/ui/hero-level-up/bau-idle.ogv"),

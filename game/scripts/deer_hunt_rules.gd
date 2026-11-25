@@ -15,6 +15,7 @@ const SAEBOM := 2
 const URAM_SHIELD_COUNTER_DAMAGE := 18
 const URAM_SHIELD_COUNTER_STUN := 1.15
 var prey_stun_remaining := 0.0
+var prey_basic_damage := COUNTER_DAMAGE
 const RALLY_COST := 3
 const RALLY_SECONDS := 5.0
 const RALLY_RADIUS := 190.0
@@ -115,7 +116,7 @@ func resolve_independent_prey_basic(victim:int) -> void:
 
 func _resolve_prey_damage(victim:int) -> void:
 	var before := party_hp[victim]
-	party_hp[victim] = maxi(0, before - COUNTER_DAMAGE)
+	party_hp[victim] = maxi(0, before - prey_basic_damage)
 	if party_hp[victim] < before:hp_lost.emit(victim,before,party_hp[victim])
 	if party_hp[victim]==0:
 		charges[victim]=0.0

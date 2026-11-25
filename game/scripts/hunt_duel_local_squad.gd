@@ -59,7 +59,6 @@ var story_uram_dust_layer: Node2D
 var story_uram_entrance_front = StoryFrontFx.new()
 var story_uram_entrance_art: RefCounted
 var story_first_charge_resolved := false
-var story_auto_parry_used := false
 var story_taught_parry := false
 
 func _story_teaching_first_charge() -> bool:
@@ -95,24 +94,7 @@ func configure_story_encounter(row: Dictionary) -> bool:
 	return true
 
 func story_allows(i: int, move: String) -> bool:
-	if story_encounter.is_empty():
-		return true
-	var number := int(story_encounter.number)
-	if bool(story_encounter.get("free_replay",false)):
-		return move in ["skill","chain"] and i>=0 and i<3 and units[i].hp>0
-	if move == "skill":
-		if _story_teaching_first_charge():
-			return false
-		if number == 2 and i == 0 and bool(story_encounter.get("first_visit", true)) and units.size() > 3:
-			var target := _target(i)
-			# Teach the existing range, don't change actual contact authority.
-			return target >= 0 and units[i].feet.distance_to(units[target].feet) <= _gap(i) + 8.0
-		return number >= [2, 3, 4][i]
-	if move != "chain":
-		return false
-	if number == 5:
-		return i == 1 and _squad_guard_candidate() >= 0
-	return number >= 6
+	return move in ["skill", "chain"] and i in range(3) and i < units.size() and units[i].hp > 0
 
 func _story_enemy_can_use_skill(unit: Dictionary) -> bool:
 	if story_encounter.is_empty():
@@ -286,7 +268,7 @@ func setup(dust_draw:Callable=Callable(),gong:Callable=Callable(), heavy:Callabl
 				u.max_hp=roundi(Hunt.RULES.PARTY_HP[i] * story_allied_growth[i])
 			else:
 				var n:=int(story_encounter.number)
-				var stats:=ChapterEnemyLevels.prey_stats(n,id,MAX_HP,Hunt.RULES.COUNTER_DAMAGE if n<=6 else 11,23,MAX_HP*Hunt.RULES.COUNTER_DAMAGE)
+				var stats:=ChapterEnemyLevels.prey_stats(n,id)
 				u.max_hp=int(stats.hp)
 				u.level=int(stats.level)
 				u.basic_damage=int(stats.attack)
@@ -932,10 +914,6 @@ func _step(dt:float)->void:
 	if not story_outcome.is_empty():return
 	elapsed+=dt
 	_update_saebom_range()
-	if _story_teaching_first_charge() and int(story_encounter.number) == 6 and not story_auto_parry_used and _squad_guard_candidate() == 3:
-		var before: float = units[1].sp
-		_request("chain", 1)
-		story_auto_parry_used = units[1].sp < before
 	for i in units.size():
 		var u:=units[i];u.age+=dt
 		if ended or u.hp<=0:continue
@@ -980,9 +958,6 @@ func _step(dt:float)->void:
 			else:_approach(i,theirs,dt)
 		elif elapsed>=u.next:
 			var teaching := _story_teaching_first_charge()
-			if teaching and i < 3:
-				if u.move != "idle": _play(u, "idle")
-				continue
 			var first_charge := teaching and i == 3
 			_begin(i,"skill" if first_charge or (i>=3 and _story_enemy_can_use_skill(u) and int(elapsed*1.45+i)%4==0) else "attack",target)
 		elif u.move!="idle":_play(u,"idle")
@@ -1064,6 +1039,12 @@ func _resolve(i:int)->void:
 		if u.rally > elapsed:
 			power *= 1.20 if local_melee_polish else 1.25
 		var amount := roundi(power)
+		if not story_encounter.is_empty():
+			var story_targets := _story_skill_targets(j)
+			for rank in story_targets.size():
+				var target_index := story_targets[rank]
+				_damage(0,target_index,ChapterEnemyLevels.shared_damage(amount,story_targets.size(),rank),"chain" if target_index == j else "han_chain_splash")
+			return
 		var primary_alive := j >= 3 and j < units.size() and int(units[j].hp) > 0
 		if primary_alive:
 			_damage(0, j, amount, "chain")
@@ -1128,7 +1109,8 @@ func _resolve(i:int)->void:
 		missiles.append({"from":i,"target":j,"point":start,"destination":finish,"damage":damage,"kind":u.move,"trace":PackedVector2Array([release]),"origin":start,"paired_presentation":paired_presentation,"release":release,"rendered":release,"basic_rope":basic_rope,"launched_at":elapsed})
 		return
 	var range_px:=80.0 if i==2 and u.move=="attack" and bool(u.get("bom_shove",false)) else _gap(i)+8.0+(14.0 if u.move!="attack" else 0.0)
-	if u.feet.distance_to(units[j].feet)>range_px:_miss(i,j,u.move);return
+	var story_range_free: bool = not story_encounter.is_empty() and i in [0,1] and u.move == "skill"
+	if not story_range_free and u.feet.distance_to(units[j].feet)>range_px:_miss(i,j,u.move);return
 	if i==2 and _uses_close_basic_pose(u,j):
 		# Capture the receiver pose before damage initializes the native hit clip.
 		var target:Dictionary=units[j]
@@ -1139,8 +1121,35 @@ func _resolve(i:int)->void:
 		target["close_basic_head_pose"]=receiver.get_bone_pose_rotation(receiver.find_bone("head"))
 	_damage(i,j,damage,u.move)
 
+func _story_skill_targets(primary: int) -> Array[int]:
+	var targets: Array[int] = []
+	if primary >= 3 and primary < units.size() and units[primary].hp > 0:
+		targets.append(primary)
+	for j in range(3,units.size()):
+		if j != primary and units[j].hp > 0:
+			targets.append(j)
+	return targets
+
+
+func _apply_uram_story_counter(primary: int) -> void:
+	var targets := _story_skill_targets(primary)
+	var total := roundi(Hunt.RULES.URAM_SHIELD_COUNTER_DAMAGE * story_allied_growth[1])
+	for i in targets.size():
+		var j := targets[i]
+		var amount := ChapterEnemyLevels.shared_damage(total,targets.size(),i)
+		_damage(1,j,amount,"counter" if j == primary else "counter_splash")
+		if units[j].hp > 0:
+			_play(units[j],"hit")
+			units[j].next=maxf(float(units[j].next),elapsed+URAM_STUN_SECONDS)
+			units[j].uram_splash_stun_until=elapsed+URAM_STUN_SECONDS
+			squad_stuns[j]=elapsed
+
+
 func _finish_uram_ordinary_counter(j:int)->void:
 	uram_ordinary_impact.emit()
+	if not story_encounter.is_empty():
+		_apply_uram_story_counter(j)
+		return
 	if j<3 or j>=units.size() or units[j].hp<=0:
 		_apply_uram_field_hit(-1)
 		return
@@ -1265,6 +1274,9 @@ func _damage(i:int,j:int,amount:int,key:String,stone_impact:=Vector2.INF)->void:
 				gong_events.append({"at":elapsed,"point":point,"forward":base.direction_to(incoming)})
 		if not parry_dust.is_valid() and not gong_draw.is_valid():
 			glints.append({"at":elapsed,"point":target.feet-Vector2(0,25),"tint":Color("65e4cf")})
+		if not story_encounter.is_empty() and local_melee_polish:
+			_apply_uram_story_counter(i)
+			return
 		var counter_primary:bool=units[i].hp>0 and target.feet.distance_to(units[i].feet)<76.0
 		if counter_primary:
 			_damage(j,i,roundi(Hunt.RULES.URAM_SHIELD_COUNTER_DAMAGE * story_allied_growth[1]),"counter")
@@ -1475,7 +1487,7 @@ func _draw_pose(dt:float)->void:
 		if story_encounter.is_empty():
 			huds[i].sync(u.sp,u.hp,MAX_HP,u.hp>0,_free_to_cast(i),dt)
 		else:
-			huds[i].chain_allowed = bool(story_encounter.get("free_replay",false)) or int(story_encounter.number) >= 6 or (int(story_encounter.number) == 5 and i == 1)
+			huds[i].chain_allowed = true
 			var skill_allowed := story_allows(i, "skill")
 			huds[i].sync(u.sp, u.hp, u.max_hp, u.hp > 0, _free_to_cast(i) and skill_allowed, dt, _free_to_cast(i) and story_allows(i, "chain"))
 			if not skill_allowed:

@@ -17,7 +17,7 @@ func check(ok: bool, title: String) -> void:
 
 
 func run() -> void:
-	var expected := [["forest"], ["forest", "forest"], ["stag", "forest"],
+	var expected := [["forest"], ["stag"], ["stag", "forest"],
 		["stag", "forest", "forest"], ["juvenile"], ["juvenile", "forest"],
 		["juvenile", "forest", "forest"], ["juvenile", "stag", "forest"],
 		["juvenile", "stag", "stag"], ["adult"]]
@@ -32,17 +32,18 @@ func run() -> void:
 	check(CATALOG.encounter(3).opening_party == ["han"] and CATALOG.encounter(3).story_join == ["uram"], "1-3 follows Han with Uram only")
 	check(CATALOG.encounter(4).opening_party == ["han", "uram"] and CATALOG.encounter(4).story_join == ["saebom"], "1-4 follows Han and Uram with Saebom")
 	check(best_meat == 880, "Figma base three-star total")
-	var levels := [1,2,3,3,5,1,1,1,1,1]
+	var levels := [1,1,1,2,2,3,3,4,4,5]
 	for i in range(levels.size()):
 		var row := CATALOG.encounter(i+1)
 		var level: int = levels[i]
 		check(row.prey_level == level, "configured enemy level %s" % row.key)
 		for kind: String in row.prey:
 			var stats := CATALOG.prey_stats(i+1,kind)
-			check(stats == {"level": level, "hp": 100*level, "attack": 2*level, "skill": 23*level, "power": 200*level}, "linear independent stats %s %s" % [row.key,kind])
-	check(CATALOG.prey_stats(10, "adult", 170, 11, 23, 1870) == {"level":1,"hp":170,"attack":11,"skill":23,"power":1870}, "unaffected stages may preserve their existing baseline")
+			var attack := int({"forest":3,"stag":4,"juvenile":7 if i == 4 else 5,"adult":10}[kind])
+			check(stats == {"level": level, "hp": [100,110,120,130,140][level-1], "attack": roundi(attack * (9.0+level)/10.0), "skill": [23,25,28,30,32][level-1], "power": 10 * attack * (9+level)}, "linear independent stats %s %s" % [row.key,kind])
+	check(CATALOG.prey_stats(10, "adult", 170, 11, 23, 1870) == {"level":5,"hp":238,"attack":15,"skill":32,"power":2618}, "final boss uses its custom baseline at Lv.5")
 	check(CATALOG.encounter(0).is_empty() and CATALOG.encounter(11).is_empty(), "invalid numbers aren't stages")
-	check(CATALOG.prey_stats_at_level(20)=={"level":20,"hp":2000,"attack":40,"skill":460,"power":4000} and CATALOG.prey_stats_at_level(0).level==1 and CATALOG.prey_stats_at_level(99).level==20,"provisional linear range reaches Lv.20 and does not leak beyond it")
+	check(CATALOG.prey_stats_at_level(20)=={"level":20,"hp":290,"attack":9,"skill":67,"power":870} and CATALOG.prey_stats_at_level(0).level==1 and CATALOG.prey_stats_at_level(99).level==20,"provisional linear range reaches Lv.20 and does not leak beyond it")
 	check(CATALOG.victory_stars(20.0,60.0)==3 and CATALOG.victory_stars(20.001,60.0)==2, "three-star threshold is inclusive")
 	check(CATALOG.victory_stars(25.0,50.0)==2 and CATALOG.victory_stars(25.001,50.0)==1, "two-star threshold is inclusive")
 	check(CATALOG.victory_stars(89.999,90.0)==1 and CATALOG.victory_stars(90.0,90.0)==0, "timeout has no victory stars")

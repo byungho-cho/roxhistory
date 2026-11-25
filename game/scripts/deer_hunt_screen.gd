@@ -277,6 +277,7 @@ func _ready() -> void:
 	if stage_one_one:
 		var completed:Dictionary = app.chapter_one_story_completions()
 		rules.first_hunt = not bool(completed.get(ChapterOneCatalog.STAGE_KEYS[0],false))
+		rules.prey_basic_damage = int(ChapterOneCatalog.prey_stats(1,ChapterOneCatalog.FLOWER).attack)
 		rules.manual_only = rules.first_hunt
 		rules.han_ordinary_damage=RallyCloud.SQUAD_BASE
 		if not rules.first_hunt:
@@ -689,7 +690,7 @@ func build_power_comparison() -> void:
 		name_label.add_theme_color_override("font_outline_color",Color("263b4c"))
 	# Keep the existing display-only rating formula; no stored rating or damage changes.
 	var prey_power:=rules.deer_max_hp*RULES.COUNTER_DAMAGE
-	if ChapterOneCatalog.prey_level(chapter_story_number)>1:
+	if chapter_story_number > 0:
 		prey_power=0
 		for species:String in ChapterOneCatalog.encounter(chapter_story_number).prey:
 			prey_power+=int(ChapterOneCatalog.prey_stats(chapter_story_number,species).power)
