@@ -32,6 +32,7 @@ const LEVEL_UP_AURA := preload("res://scripts/village_upgrade_feedback.gd")
 const VALLEY_PANORAMAS := [VALLEY_TERRAIN, preload("res://assets/ui/hero-level-up/valley/riverbend.jpg")]
 # x is the foot centre; y is the first-frame footline. Heights exclude the spear.
 const VALLEY_LAYOUT := [[552, 792, 728], [553, 748, 535], [550, 645, 507], [525, 735, 615], [553, 783, 679]]
+const VALLEY_CROWNS := [Vector2(539, 91), Vector2(562, 214), Vector2(554, 139), Vector2(529, 117), Vector2(500, 103)]
 const MOTIONS := [
 	{
 		"idle": preload("res://assets/ui/hero-level-up/han-idle.ogv"),
@@ -517,12 +518,20 @@ func fit_celebration() -> void:
 	var feet := hero_footline(valley_viewport)
 	if is_instance_valid(active_foreground): feet.x += active_foreground.position.x
 	var unit := valley_viewport.size.y / MOTION_SIZE.y
-	var head := feet.y - 400.0 * unit
-	var top := maxf(valley_viewport.position.y + 70.0, head - 43.0)
-	celebration_caption.position = Vector2(feet.x - 175.0, top)
+	# The firework starts above the character's crown, not at the spiral tip.
+	var offset := Vector2(0.0, -448.0) * unit
+	if swipe_follow_hero:
+		var pose: Array = VALLEY_LAYOUT[selected]
+		offset = (VALLEY_CROWNS[selected] - Vector2(pose[0], pose[1])) * (unit * 400.0 / float(pose[2]))
+		offset.y -= 48.0 * unit
+	var origin := feet + offset
+	var left := clampf(origin.x - 175.0, valley_viewport.position.x + 48.0, valley_viewport.end.x - 398.0)
+	var top := maxf(valley_viewport.position.y + 50.0, origin.y - 89.0)
+	celebration_caption.position = Vector2(left, top)
 	if is_instance_valid(celebration_effect):
 		celebration_effect.position = feet
 		celebration_effect.scale = Vector2.ONE * unit
+		celebration_effect.hero_burst_offset = offset / unit
 
 func rise_celebration(value: float) -> void:
 	celebration_lift = value
@@ -1102,13 +1111,15 @@ func feed(amount: int = 1) -> void:
 		celebration_caption.show()
 		rise_celebration(0.0)
 		fit_celebration()
+		var burst_delay: float = LEVEL_UP_AURA.HERO_BURST_AT
 		celebration = create_tween().set_parallel(true)
-		celebration.tween_property(celebration_text, "modulate:a", 1.0, 0.13)
-		celebration.tween_method(rise_celebration, 0.0, 48.0, 2.82).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
-		celebration.tween_property(celebration_text, "modulate:a", 0.0, 0.46).set_delay(2.49)
-		celebration.tween_property(celebration_stats, "modulate:a", 1.0, 0.15).set_delay(0.24)
-		celebration.tween_property(celebration_stats, "position:y", -13.0, 2.61).set_delay(0.24).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
-		celebration.tween_property(celebration_stats, "modulate:a", 0.0, 0.46).set_delay(2.60)
+		celebration.tween_callback(func(): celebration_text.modulate.a = 0.26).set_delay(burst_delay)
+		celebration.tween_property(celebration_text, "modulate:a", 1.0, 0.13).set_delay(burst_delay)
+		celebration.tween_method(rise_celebration, 0.0, 48.0, 1.95).set_delay(burst_delay).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+		celebration.tween_property(celebration_text, "modulate:a", 0.0, 0.42).set_delay(burst_delay + 1.58)
+		celebration.tween_property(celebration_stats, "modulate:a", 1.0, 0.15).set_delay(burst_delay + 0.24)
+		celebration.tween_property(celebration_stats, "position:y", -13.0, 1.76).set_delay(burst_delay + 0.24).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+		celebration.tween_property(celebration_stats, "modulate:a", 0.0, 0.40).set_delay(burst_delay + 1.60)
 		celebration.chain().tween_callback(celebration_caption.hide)
 
 func cancel_celebration() -> void:

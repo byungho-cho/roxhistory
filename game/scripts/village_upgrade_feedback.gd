@@ -4,6 +4,12 @@ const DUST := preload("res://assets/ui/d0019/ground-dust-soft.png")
 const CELEBRATION_TIME := 2.7
 const CAPTION_EXTRA_TIME := 2.0
 const ACHIEVEMENT_APPEAR := .72
+const HERO_TRACE_LIFETIME := 1.11
+const HERO_TRACE_STAGGER := .078
+const HERO_TOP_LIFT := 265.2 # 1.2 times the approved 221 px upper travel.
+const HERO_SPIRAL_FINISH := HERO_TRACE_LIFETIME + 2.0 * HERO_TRACE_STAGGER
+const HERO_BURST_AT := .50
+const HERO_BURST_LIFETIME := .43
 const FIREWORK_COLORS := [Color("ff8678"),Color("7ce9d2"),Color("d2a0ff")]
 var age := 0.0
 var level: int
@@ -14,6 +20,7 @@ static var glow: GradientTexture2D
 static var hero_bloom: GradientTexture2D
 var play_completion: Callable
 var aura_only: bool
+var hero_burst_offset := Vector2(0.0, -444.0)
 
 func _init(at: Vector2, target_level: int, on_completion := Callable(), ground_aura_only := false) -> void:
 	position = at
@@ -67,7 +74,7 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	age += delta
 	if aura_only:
-		if age >= 1.32: queue_free()
+		if age >= maxf(HERO_SPIRAL_FINISH, HERO_BURST_AT + HERO_BURST_LIFETIME): queue_free()
 		else: queue_redraw()
 		return
 	if level > 0:
@@ -142,30 +149,34 @@ func draw_hero_aura() -> void:
 	var throw := lerpf(.58, 1.0, 1.0 - exp(-age * 9.8))
 	var height := lerpf(.61, 1.0, smoothstep(.045, .46, age))
 	for i in 3:
-		var since := age - float(i) * .078
-		if since <= 0.0 or since >= 1.11: continue
-		var alpha := smoothstep(0.0, .1, since) * (1.0 - smoothstep(.47, 1.11, since))
+		var since := age - float(i) * HERO_TRACE_STAGGER
+		if since <= 0.0 or since >= HERO_TRACE_LIFETIME: continue
+		var alpha := smoothstep(0.0, .1, since) * (1.0 - smoothstep(.47, HERO_TRACE_LIFETIME, since))
 		var reach := lerpf(.46, 1.0, smoothstep(0.0, .29, since))
 		var points := PackedVector2Array()
 		for j in 92:
 			var t := float(j) / 91.0 * reach
 			var angle := t * TAU * (1.54 - float(i) * .13) + .58 + age * (1.55 + float(i) * .64) - float(i) * 1.47
-			var radius := (242.0 - t * 50.0 - float(i) * 16.0) * throw
-			var lifted := pow(t, 1.28) * (221.0 - float(i) * 36.0) * height
+			var taper := lerpf(1.0, .70, smoothstep(.17, 1.0, t))
+			var radius := (242.0 - t * 50.0 - float(i) * 16.0) * throw * taper
+			var lifted := pow(t, 1.28) * (HERO_TOP_LIFT - float(i) * 43.2) * height
 			var y := sin(angle) * radius * .24 - lifted + 5.0
 			points.append(Vector2(cos(angle) * radius, y))
 		# Layering small energy increments over progressively narrower widths
 		# creates a feathered additive light with a crisp warm-white core.
 		var shine := alpha * (.82 + .24 * fast)
-		draw_aura_trail(points, 60.0, Color(1.0, .53, .16, shine * .012))
-		draw_aura_trail(points, 46.0, Color(1.0, .55, .19, shine * .024))
-		draw_aura_trail(points, 34.0, Color(1.0, .62, .22, shine * .044))
-		draw_aura_trail(points, 25.0, Color(1.0, .69, .31, shine * .054))
+		draw_aura_trail(points, 94.0, Color(1.0, .50, .15, shine * .009))
+		draw_aura_trail(points, 76.0, Color(1.0, .54, .18, shine * .016))
+		draw_aura_trail(points, 62.0, Color(1.0, .57, .20, shine * .027))
+		draw_aura_trail(points, 48.0, Color(1.0, .63, .26, shine * .039))
+		draw_aura_trail(points, 36.0, Color(1.0, .68, .29, shine * .052))
+		draw_aura_trail(points, 25.0, Color(1.0, .72, .36, shine * .055))
 		draw_aura_trail(points, 17.0, Color(1.0, .72, .34, shine * .075))
 		draw_aura_trail(points, 11.0, Color(1.0, .78, .42, shine * .115))
 		draw_aura_trail(points, 6.3, Color(1.0, .82, .54, shine * .172))
 		draw_aura_trail(points, 3.2, Color(1.0, .90, .65, shine * .31))
 		draw_aura_trail(points, 1.45, Color(1.0, .98, .87, shine * .51))
+	draw_hero_endpoint_burst()
 	# Bright warm sparks rise quickly and dissipate well below the hero's face.
 	for i in 34:
 		var since := age - float((i * 11) % 9) * .033
@@ -184,6 +195,23 @@ func draw_hero_aura() -> void:
 		draw_line(at + streak * .23, at, Color(1.0, .94, .59, twinkle), 1.6, true)
 		if i % 4 == 0:
 			draw_texture_rect(hero_bloom, Rect2(at.x-13.0, at.y-13.0, 26, 26), false, Color(1.0, .93, .62, twinkle * .60))
+
+func draw_hero_endpoint_burst() -> void:
+	var elapsed := age - HERO_BURST_AT
+	if elapsed < 0.0 or elapsed > HERO_BURST_LIFETIME: return
+	var tip := hero_burst_offset
+	var spread := 1.0 - exp(-elapsed * 12.0)
+	var strength := smoothstep(0.0, .027, elapsed) * (1.0 - smoothstep(.12, .43, elapsed))
+	draw_texture_rect(hero_bloom, Rect2(tip - Vector2(29, 29), Vector2(58, 58)), false, Color(1.0, .96, .70, strength * (1.0 - spread * .69) * .78))
+	for i in 13:
+		var phase := float(i) / 13.0 * TAU + .23
+		var direction := Vector2.from_angle(phase)
+		var distance := (20.0 + float((i * 7) % 9) * 2.4) * spread
+		var at := tip + direction * distance + Vector2(0, elapsed * elapsed * 31.0)
+		var tail := at - direction * minf(distance, 5.0 + 7.0 * strength)
+		draw_line(tail, at, Color(1.0, .65, .25, strength * .51), 3.7, true)
+		draw_line(tail.lerp(at, .21), at, Color(1.0, .94, .66, strength * .94), 1.35, true)
+		draw_circle(at, 1.0 + strength * .55, Color(1.0, .96, .73, strength), true, -1.0, true)
 
 func draw_aura_trail(points: PackedVector2Array, width: float, color: Color) -> void:
 	var colors := PackedColorArray()
