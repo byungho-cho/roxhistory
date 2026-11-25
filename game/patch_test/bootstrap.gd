@@ -1,7 +1,7 @@
 extends Control
 
 const BASE_VERSION := "0.315.315"
-const BASE_COMMIT := "0ab51227980fbeaf495da9cf237fc1573ada65bc"
+const BASE_COMMIT := "f41111193f6aff6c8b4c7eb7a8fc75b0d6485854"
 const RUNTIME := "godot-4.5.1-android-pck-4"
 const RELEASE_ROOT := "https://github.com/byungho-cho/roxhistory/releases/download/android-patches-0.315.315/"
 signal check_status_changed(value: String)
