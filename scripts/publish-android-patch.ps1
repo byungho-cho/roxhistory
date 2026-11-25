@@ -20,6 +20,7 @@ $baseCommit = [regex]::Match($bootstrap,'const BASE_COMMIT := "([0-9a-f]{40})"')
 $runtime = [regex]::Match($bootstrap,'const RUNTIME := "([^"]+)"').Groups[1].Value
 $tag = "android-patches-$base"
 $referenceHashes = @{
+    '0.315.315' = 'DCE25C14BBFEB92A6AA8228C73F384F9C76FF0B0710687BF2685854733ED876C'
     '0.313.313' = '104A41649DE053ACE3C017404B60562616941295F6B574CABBC10AA96201A052'
     '0.2.91' = '2A87A1D547551F76C858D2F70030DBA7C0F28C794C0BE3B41FF6CDAC67490644'
     '0.2.174' = 'DE8EE37DC8864F201C0B87876BCE599EE694B0C7F3BEED6D2C8CCE459FBD202F'
@@ -39,7 +40,7 @@ $payloadPath = Join-Path $directory "manifest-$version.json"
 $payload = [ordered]@{ base=$base; base_commit=$baseCommit; runtime=$runtime; version=$version; commit=$commit }
 if ($InitializeChannel) {
     $payload.patch_available = $false
-    if ($base -eq '0.313.313' -and !$BaselinePinManifest) { throw 'Provide the exact native APK reference pin to initialize this baseline.' }
+    if ($base -in @('0.313.313','0.315.315') -and !$BaselinePinManifest) { throw 'Provide the exact native APK reference pin to initialize this baseline.' }
     if ($BaselinePinManifest) {
         $pin = Get-Content -Raw -LiteralPath $BaselinePinManifest | ConvertFrom-Json
         if ($pin.base -cne $base -or $pin.base_commit -cne $baseCommit -or $pin.runtime -cne $runtime -or
