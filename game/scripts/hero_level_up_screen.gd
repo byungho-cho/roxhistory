@@ -10,47 +10,43 @@ const NONE := -2
 const HERO_INTERACTION := Rect2(679, 100, 413, 560)
 const MOTION_SIZE := Vector2(1280, 720)
 const PANEL_HEIGHT := 639.0
-const FOLD_BODY_HEIGHT := 320.0
-const FOLD_CROP_SIZE := 640.0
 const GOLD_LOCK := preload("res://assets/ui/d0024/08-ui-padlock-gold.png")
-const FOLD_SHADER := preload("res://shaders/packed_alpha_cutin.gdshader")
+const FOLD_SHADER := preload("res://shaders/hero_landscape_feather.gdshader")
 const MOTIONS := [
 	{
 		"idle": preload("res://assets/ui/hero-level-up/han-idle.ogv"),
 		"action": preload("res://assets/ui/hero-level-up/han-action.ogv"),
 		"poster": preload("res://assets/ui/hero-level-up/han-action-start.webp"),
-		"fold_idle": preload("res://assets/ui/hero-level-up/han-fold-idle.ogv"),
-		"fold_action": preload("res://assets/ui/hero-level-up/han-fold-action.ogv"),
-		"fold_poster": preload("res://assets/ui/hero-level-up/han-fold-poster.webp"),
-		"body_height": 400.0,
-		"feet": 498.0,
 	},
 	{
 		"idle": preload("res://assets/ui/hero-level-up/uram-idle.ogv"),
 		"action": preload("res://assets/ui/hero-level-up/uram-tap.ogv"),
+		"fold_full_action": preload("res://assets/ui/hero-level-up/uram-full-fold-action.ogv"),
 		"poster": preload("res://assets/ui/hero-level-up/uram-action-start.webp"),
-		"fold_idle": preload("res://assets/ui/hero-level-up/uram-fold-idle.ogv"),
-		"fold_action": preload("res://assets/ui/hero-level-up/uram-fold-action.ogv"),
-		"fold_poster": preload("res://assets/ui/hero-level-up/uram-fold-poster.webp"),
-		"body_height": 435.0,
-		"feet": 502.0,
 	},
 	{
 		"idle": preload("res://assets/ui/hero-level-up/saebom-idle.ogv"),
 		"action": preload("res://assets/ui/hero-level-up/saebom-action.ogv"),
 		"poster": preload("res://assets/ui/hero-level-up/saebom-action-start.webp"),
-		"fold_idle": preload("res://assets/ui/hero-level-up/saebom-fold-idle.ogv"),
-		"fold_action": preload("res://assets/ui/hero-level-up/saebom-fold-action.ogv"),
-		"fold_poster": preload("res://assets/ui/hero-level-up/saebom-fold-poster.webp"),
-		"body_height": 400.0,
-		"feet": 497.0,
+	},
+	{
+		"idle": preload("res://assets/ui/hero-level-up/gahui-idle.ogv"),
+		"action": preload("res://assets/ui/hero-level-up/gahui-action.ogv"),
+		"poster": preload("res://assets/ui/hero-level-up/gahui-action-start.webp"),
+		"size": Vector2(1280, 720), "anchor": Vector2(630, 495), "stature": 315.0,
+	},
+	{
+		"idle": preload("res://assets/ui/hero-level-up/bau-idle.ogv"),
+		"action": preload("res://assets/ui/hero-level-up/bau-action.ogv"),
+		"poster": preload("res://assets/ui/hero-level-up/bau-action-start.webp"),
+		"size": Vector2(768, 768), "anchor": Vector2(369, 650), "stature": 538.0,
 	},
 ]
 const DATA := [
 	["한결", "han", "근접", "ally-melee", "han-3sp-A.png"],
 	["우람", "uram", "방어", "ally-tank", "uram-3sp.png"],
 	["새봄", "saebom", "원거리", "ally-ranged", "saebom-3sp-transparent.png"],
-	["가희", "gahui"], ["바우", "bau"]
+	["가희", "gahui", "치유", "ally-healer", ""], ["바우", "bau", "주술", "ally-shaman", ""]
 ]
 const BACK := preload("res://assets/ui/d0024/08-ui-back-button.png")
 const Readiness := preload("res://scripts/hunt_readiness_art.gd")
@@ -88,6 +84,7 @@ var forward: Button
 var hero_name: Label
 var role_name: Label
 var role_art: TextureRect
+var skills: Control
 var skill_art: Array[TextureRect] = []
 var skill_value: Array[Label] = []
 var skill_frame: Array[Panel] = []
@@ -151,21 +148,20 @@ func fit_hero_motion(viewport: Rect2) -> void:
 		fold_motion = fold_layout
 		play_hero_motion(not hero_video.loop, true)
 
-	if fold_motion:
-		var clip: Dictionary = MOTIONS[selected]
-		var actor_scale := viewport.size.x / MOTION_SIZE.x * FOLD_BODY_HEIGHT / float(clip.body_height)
-		var ground := viewport.position.y + viewport.size.y * 500.0 / MOTION_SIZE.y
-		hero_video.size = Vector2.ONE * FOLD_CROP_SIZE * actor_scale
-		hero_video.position = Vector2(viewport.get_center().x - hero_video.size.x * 0.5,
-			ground - float(clip.feet) * actor_scale)
-		hero_video.material = fold_material
-		hero_frame.material = fold_material
+	# Match the 16:9 cover's screen-height ratio. On Fold only the sides crop.
+	var cover := viewport.size.y / MOTION_SIZE.y if fold_motion else maxf(viewport.size.x / MOTION_SIZE.x, viewport.size.y / MOTION_SIZE.y)
+	var clip: Dictionary = MOTIONS[selected]
+	if clip.has("anchor"):
+		var unit := viewport.size.y / MOTION_SIZE.y
+		var scale_to_stature := unit * 400.0 / float(clip.stature)
+		var feet := viewport.position + Vector2(viewport.size.x * 0.5, unit * 500.0)
+		hero_video.size = Vector2(clip.size) * scale_to_stature
+		hero_video.position = feet - Vector2(clip.anchor) * scale_to_stature
 	else:
-		hero_video.material = null
-		hero_frame.material = null
-		var cover := maxf(viewport.size.x / MOTION_SIZE.x, viewport.size.y / MOTION_SIZE.y)
 		hero_video.size = MOTION_SIZE * cover
 		hero_video.position = viewport.get_center() - hero_video.size * 0.5
+	hero_video.material = fold_material if fold_motion or clip.has("anchor") else null
+	hero_frame.material = hero_video.material
 	hero_frame.position = hero_video.position
 	hero_frame.size = hero_video.size
 
@@ -207,16 +203,12 @@ func play_hero_motion(action: bool, mode_changed := false) -> void:
 	motion_generation += 1
 	if action or mode_changed:
 		# Show the requested first frame at once, including rapid action restarts.
-		hero_frame.texture = clips.fold_poster if fold_motion else clips.poster
+		hero_frame.texture = clips.poster
 		hero_frame.show()
 	else:
 		freeze_hero_frame()
 	player.stop()
-	var stream: VideoStream
-	if fold_motion:
-		stream = clips.fold_action if action else clips.fold_idle
-	else:
-		stream = clips.action if action else clips.idle
+	var stream: VideoStream = clips.get("fold_full_action", clips.action) if action and fold_motion else (clips.action if action else clips.idle)
 	if player.stream != stream:
 		player.stream = stream
 	player.loop = not action
@@ -315,17 +307,20 @@ func make_hero_details() -> void:
 	panel_at(board, Rect2(810, 674, 134, 44), Color("463215e6"), Color("a8844b"), 2, 12)
 	role_art = app.picture(board, null, Rect2(802, 668, 54, 54))
 	role_name = text_at(board, "", Rect2(865, 675, 74, 41), 23, Color("ffe3ae"), HORIZONTAL_ALIGNMENT_CENTER, true)
-	text_at(board, "스킬", Rect2(653, 757, 101, 48), 39, Color("f1c573"), HORIZONTAL_ALIGNMENT_RIGHT, true)
-	panel_at(board, Rect2(756, 769, 2, 80), Color("bf8b4acc"))
+	skills = Control.new()
+	skills.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	board.add_child(skills)
+	text_at(skills, "스킬", Rect2(653, 757, 101, 48), 39, Color("f1c573"), HORIZONTAL_ALIGNMENT_RIGHT, true)
+	panel_at(skills, Rect2(756, 769, 2, 80), Color("bf8b4acc"))
 	for i in 2:
 		var x: int = [782, 938][i]
 		var width: int = [128, 136][i]
-		skill_frame.append(panel_at(board, Rect2(x, 748, width, 121), Color("332318"), Color("ffb841"), 4, 16))
-		skill_art.append(app.picture(board, null, Rect2(x + 5, 752, width - 10, 113)))
+		skill_frame.append(panel_at(skills, Rect2(x, 748, width, 121), Color("332318"), Color("ffb841"), 4, 16))
+		skill_art.append(app.picture(skills, null, Rect2(x + 5, 752, width - 10, 113)))
 		skill_art[i].stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		text_at(board, "%dSP" % (i + 2), Rect2(x + width - 66, 750, 52, 32), 19, Color("fff0d2"), HORIZONTAL_ALIGNMENT_RIGHT, true)
-		skill_value.append(text_at(board, "", Rect2(x - 12, 873, width + 24, 38), 22, CREAM, HORIZONTAL_ALIGNMENT_CENTER))
-	chain_lock = picture(board, "roster-lock.svg", Rect2(1044, 837, 19, 24))
+		text_at(skills, "%dSP" % (i + 2), Rect2(x + width - 66, 750, 52, 32), 19, Color("fff0d2"), HORIZONTAL_ALIGNMENT_RIGHT, true)
+		skill_value.append(text_at(skills, "", Rect2(x - 12, 873, width + 24, 38), 22, CREAM, HORIZONTAL_ALIGNMENT_CENTER))
+	chain_lock = picture(skills, "roster-lock.svg", Rect2(1044, 837, 19, 24))
 
 func make_roster() -> void:
 	var top := (DESIGN.y - PANEL_HEIGHT) * 0.5
@@ -375,7 +370,7 @@ func refresh() -> void:
 		if unlocked: owned.append(i)
 		var active := i == selected
 		var card := roster[i]
-		card.disabled = not unlocked
+		card.disabled = not unlocked and i < 3
 		card.get_node("Portrait").modulate.a = 1.0 if unlocked else 0.48 if i >= 3 else 0.75
 		card.get_node("NameBand").add_theme_stylebox_override("panel", style(Color("35281c") if unlocked else Color("202224"), Color.TRANSPARENT, 0, 6))
 		locks[i].visible = not unlocked
@@ -415,6 +410,20 @@ func refresh() -> void:
 	hero_name.text = hero[0]
 	role_name.text = hero[2]
 	role_art.texture = Readiness.role_texture(hero[3])
+	var preview_only := selected >= 3 and not HeroGrowth.owns(state, id)
+	if preview_only:
+		level_text.text = "미획득"
+		xp_text.text = "—"
+		remaining_text.text = ""
+		xp_fill.hide()
+		for i in 3:
+			before_text[i].text = "—"
+			after_text[i].text = "—"
+	skills.visible = selected < 3
+	if selected >= 3:
+		chain_lock.hide()
+		stop_hold()
+		return
 	skill_art[0].texture = load(ART + str(hero[1]) + "-2sp.png")
 	skill_art[1].texture = load(ART + str(hero[4]))
 	skill_value[0].text = "피해 %d" % int(stats.skill)
@@ -431,10 +440,11 @@ func refresh() -> void:
 
 func cycle(direction: int) -> void:
 	if owned.size() < 2: return
-	choose(owned[posmod(owned.find(selected) + direction, owned.size())], direction)
+	var current := owned.find(selected)
+	choose(owned[posmod(current + direction if current >= 0 else (0 if direction > 0 else -1), owned.size())], direction)
 
 func choose(index: int, direction := 0) -> void:
-	if index == selected or index not in owned: return
+	if index == selected or index < 0 or index >= DATA.size() or (index < 3 and index not in owned): return
 	stop_hold()
 	swipe = NONE
 	stop_hero_motion()
