@@ -27,6 +27,7 @@ const VALLEY_PACKED_SHADER := preload("res://shaders/packed_alpha_cutin.gdshader
 const VALLEY_SOURCE_SIZE := Vector2(1112, 834)
 const VALLEY_SPAN_RATIO := 366.0 / 960.0
 const HEROES_PER_PANORAMA := 3
+const LEVEL_UP_AURA := preload("res://scripts/village_upgrade_feedback.gd")
 const VALLEY_PANORAMAS := [VALLEY_TERRAIN, preload("res://assets/ui/hero-level-up/valley/riverbend.jpg")]
 # x is the foot centre; y is the first-frame footline. Heights exclude the spear.
 const VALLEY_LAYOUT := [[552, 792, 728], [553, 748, 535], [550, 645, 507], [525, 735, 615], [553, 783, 679]]
@@ -125,8 +126,14 @@ var roster_roles: Array[TextureRect] = []
 var skill_art: Array[TextureRect] = []
 var skill_value: Array[Label] = []
 var skill_frame: Array[Panel] = []
+var skill_back: Array[Panel] = []
+var skill_trim: Array[Panel] = []
 var chain_lock: TextureRect
+var celebration_caption: Control
 var celebration_text: Label
+var celebration_stats: Label
+var celebration_effect: Node2D
+var celebration_lift := 0.0
 var held := NONE
 var swipe := NONE
 var swipe_start := Vector2.ZERO
@@ -169,6 +176,7 @@ func _ready() -> void:
 	board.add_child(world_view)
 	make_valley()
 	make_scene()
+	make_celebration_caption()
 	make_header()
 	make_bag_button()
 	make_growth()
@@ -204,6 +212,7 @@ func fit() -> void:
 	bag_button.position = Vector2(viewport.end.x - hud_margin.x / factor - bag_button.size.x, back_button.position.y)
 	if is_instance_valid(hero_video):
 		fit_hero_motion(viewport)
+	fit_celebration()
 	if is_instance_valid(outgoing_scene):
 		var background := outgoing_scene.get_child(0) as TextureRect
 		background.position = viewport.position
@@ -214,7 +223,7 @@ func fit_hero_motion(viewport: Rect2) -> void:
 		var a: Array = VALLEY_LAYOUT[selected]
 		var unit := viewport.size.y / MOTION_SIZE.y
 		var scale_to_stature := unit * 400.0 / float(a[2])
-		var feet := viewport.position + Vector2(viewport.size.x * 0.5, unit * (590.0 if selected == 0 else 550.0))
+		var feet := hero_footline(viewport)
 		hero_video.size = VALLEY_SOURCE_SIZE * scale_to_stature
 		hero_video.position = feet - Vector2(a[0], a[1]) * scale_to_stature
 		hero_video.material = fold_material
@@ -480,9 +489,40 @@ func make_growth() -> void:
 	debug_growth_reset = action(board, Rect2(80, 841, 154, 52), "HeroGrowthResetShortcut", app.confirm_hero_growth_reset.bind(app.close_modal))
 	make_wood_button(debug_growth_reset, "초기화")
 	debug_growth_reset.modulate.a = 0.82
-	celebration_text = text_at(frame, "", Rect2(20, 365, 257, 53), 16, GOLD, HORIZONTAL_ALIGNMENT_CENTER, true)
+
+func make_celebration_caption() -> void:
+	celebration_caption = Control.new()
+	celebration_caption.name = "HeroLevelUpCaption"
+	celebration_caption.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	place(board, celebration_caption, Rect2(0, 0, 350, 67))
+	celebration_text = text_at(celebration_caption, "", Rect2(0, 0, 350, 34), 30, GOLD, HORIZONTAL_ALIGNMENT_CENTER, true)
 	celebration_text.name = "LevelUpCelebration"
-	celebration_text.hide()
+	celebration_stats = text_at(celebration_caption, "", Rect2(0, 35, 350, 26), 21, CREAM, HORIZONTAL_ALIGNMENT_CENTER, true)
+	for label in [celebration_text, celebration_stats]:
+		label.add_theme_color_override("font_outline_color", Color("271908f0"))
+		label.add_theme_constant_override("outline_size", 6)
+	celebration_caption.hide()
+
+func hero_footline(viewport: Rect2) -> Vector2:
+	var unit := viewport.size.y / MOTION_SIZE.y
+	var height := (590.0 if selected == 0 else 550.0) if swipe_follow_hero else 500.0
+	return viewport.position + Vector2(viewport.size.x * 0.5, unit * height)
+
+func fit_celebration() -> void:
+	if not is_instance_valid(celebration_caption) or not celebration_caption.visible: return
+	var feet := hero_footline(valley_viewport)
+	if is_instance_valid(active_foreground): feet.x += active_foreground.position.x
+	var unit := valley_viewport.size.y / MOTION_SIZE.y
+	var head := feet.y - 400.0 * unit
+	var top := maxf(valley_viewport.position.y + 70.0, head - 57.0 - celebration_lift)
+	celebration_caption.position = Vector2(feet.x - 175.0, top)
+	if is_instance_valid(celebration_effect):
+		celebration_effect.position = feet
+		celebration_effect.scale = Vector2.ONE * unit
+
+func rise_celebration(value: float) -> void:
+	celebration_lift = value
+	fit_celebration()
 
 func make_wood_button(button: Button, label: String) -> void:
 	var area := Rect2(Vector2.ZERO, button.size)
@@ -514,16 +554,37 @@ func make_hero_details() -> void:
 	for i in 2:
 		var x: float = [715.4, 845.8][i]
 		var width: float = [102.4, 108.8][i]
-		skill_frame.append(panel_at(skills, Rect2(x, 796.2, width, 96.8), Color("332318"), Color("ffb841"), 3, 12))
-		skill_art.append(app.picture(skills, null, Rect2(x + 4, 799.4, width - 8, 90.4)))
+		var card := Control.new()
+		card.name = "HeroSkillCard%d" % (i + 2)
+		card.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		place(skills, card, Rect2(x, 796.2, width, 96.8))
+		var bounds := Rect2(Vector2.ZERO, card.size)
+		var lip := 3.0 if i == 0 else 4.0
+		var radius := 12 if i == 0 else 16
+		skill_back.append(panel_at(card, bounds, Color("332318"), Color.TRANSPARENT, 0, radius))
+		var content := Control.new()
+		content.name = "SkillContentClip"
+		content.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		content.clip_contents = true
+		place(card, content, bounds.grow(-lip))
+		skill_art.append(app.picture(content, null, Rect2(Vector2.ZERO, content.size)))
 		skill_art[i].stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		panel_at(skills, Rect2(x + 4, 867.8, width - 8, 22), Color(0, 0, 0, 0.5), Color.TRANSPARENT, 0, 4)
-		var sp := text_at(skills, "%dSP" % (i + 2), Rect2(x + width - 59, 798.2, 53, 27), 17, Color("fff0d2"), HORIZONTAL_ALIGNMENT_RIGHT, true)
+		# Inset the strip at the rounded lower corners; the frame covers the lip.
+		var band := Rect2(5.0, content.size.y - 23.0, content.size.x - 10.0, 22.0)
+		panel_at(content, band, Color(0, 0, 0, 0.5), Color.TRANSPARENT, 0, 5).name = "SkillValueBacking"
+		var sp := text_at(content, "%dSP" % (i + 2), Rect2(content.size.x - 55, 0.0, 53, 27), 17, Color("fff0d2"), HORIZONTAL_ALIGNMENT_RIGHT, true)
 		apply_skill_outline(sp)
-		var value := text_at(skills, "", Rect2(x + 4, 867.8, width - 8, 22), 16, CREAM, HORIZONTAL_ALIGNMENT_CENTER)
+		var value := text_at(content, "", band, 16, CREAM, HORIZONTAL_ALIGNMENT_CENTER)
 		apply_skill_outline(value)
 		skill_value.append(value)
-	chain_lock = picture(skills, "roster-lock.svg", Rect2(929.6, 841.8, 19, 24))
+		if i == 1:
+			chain_lock = picture(content, "roster-lock.svg", Rect2(content.size.x - 23.0, 41.6, 19, 24))
+		var frame := panel_at(card, bounds, Color.TRANSPARENT, Color("82562f"), int(lip), radius)
+		frame.name = "SkillBorderOverlay"
+		skill_frame.append(frame)
+		var trim := panel_at(frame, bounds.grow(-1.0), Color.TRANSPARENT, Color("e5bb77"), 2, radius - 1)
+		trim.name = "SkillGoldTrim"
+		skill_trim.append(trim)
 
 func make_roster() -> void:
 	var top := (DESIGN.y - PANEL_HEIGHT) * 0.5
@@ -641,7 +702,7 @@ func refresh() -> void:
 			skill_value[i].text = preview[i][1]
 			skill_art[i].modulate.a = 1.0
 			skill_value[i].modulate.a = 1.0
-		skill_frame[1].add_theme_stylebox_override("panel", style(Color("332318"), Color("ffb841"), 4, 16))
+		style_chain_skill(true)
 		chain_lock.hide()
 		if upgrade.disabled: stop_hold()
 		return
@@ -654,10 +715,15 @@ func refresh() -> void:
 		2: skill_value[1].text = "공격 +20% · 5초"
 	var chain_available: bool = selected != 0 or app.chapter_one_story_completions().get("ch1-01", false)
 	chain_lock.visible = not chain_available
-	skill_frame[1].add_theme_stylebox_override("panel", style(Color("332318") if chain_available else Color("202329"), Color("ffb841") if chain_available else Color("85888b"), 4, 16))
+	style_chain_skill(chain_available)
 	skill_art[1].modulate.a = 1.0 if chain_available else 0.78
 	skill_value[1].modulate.a = skill_art[1].modulate.a
 	if upgrade.disabled: stop_hold()
+
+func style_chain_skill(available: bool) -> void:
+	skill_back[1].add_theme_stylebox_override("panel", style(Color("332318") if available else Color("202329"), Color.TRANSPARENT, 0, 16))
+	skill_frame[1].add_theme_stylebox_override("panel", style(Color.TRANSPARENT, Color("82562f") if available else Color("45474c"), 4, 16))
+	skill_trim[1].add_theme_stylebox_override("panel", style(Color.TRANSPARENT, Color("e5bb77") if available else Color("85888b"), 2, 15))
 
 func set_nav_opacity(value: float) -> void:
 	nav_opacity = value
@@ -948,6 +1014,7 @@ func pointer_drag(index: int, point: Vector2) -> void:
 func present_swipe_actor(offset: float, opacity: float) -> void:
 	if not is_instance_valid(active_foreground): return
 	active_foreground.position.x = offset
+	fit_celebration()
 	active_foreground.modulate.a = opacity
 	if not swipe_follow_hero and is_instance_valid(fold_material):
 		fold_material.set_shader_parameter("drag_opacity",opacity)
@@ -1016,20 +1083,31 @@ func feed(amount: int = 1) -> void:
 		var id: String = HeroGrowth.HEROES[selected]
 		var from := HeroGrowth.stats_at(id, result.before.level)
 		var to := HeroGrowth.stats_at(id, result.after.level)
-		celebration_text.text = "Lv. %d 달성 · 체력 %+d · 공격 %+d · 스킬 %+d" % [result.after.level, to.hp - from.hp, to.attack - from.attack, to.skill - from.skill]
-		celebration_text.modulate.a = 1.0
-		celebration_text.pivot_offset = celebration_text.size * 0.5
-		celebration_text.scale = Vector2.ONE * 0.93
-		celebration_text.show()
+		celebration_text.text = "Lv. %d 달성!" % int(result.after.level)
+		celebration_stats.text = "체력 %+d · 공격 %+d · 스킬 %+d" % [to.hp - from.hp, to.attack - from.attack, to.skill - from.skill]
+		celebration_effect = LEVEL_UP_AURA.new(Vector2.ZERO, result.after.level, Callable(), true)
+		celebration_effect.name = "HeroGroundGoldAura"
+		celebration_effect.z_index = 0
+		board.add_child(celebration_effect)
+		board.move_child(celebration_effect, celebration_caption.get_index())
+		celebration_caption.modulate.a = 1.0
+		celebration_caption.pivot_offset = celebration_caption.size * 0.5
+		celebration_caption.scale = Vector2.ONE * 0.94
+		celebration_caption.show()
+		rise_celebration(0.0)
 		celebration = create_tween()
-		celebration.tween_property(celebration_text, "scale", Vector2.ONE, 0.18).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-		celebration.tween_interval(1.42)
-		celebration.tween_property(celebration_text, "modulate:a", 0.0, 0.3)
-		celebration.tween_callback(celebration_text.hide)
+		celebration.tween_property(celebration_caption, "scale", Vector2.ONE, 0.18).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		celebration.parallel().tween_method(rise_celebration, 0.0, 24.0, 1.6).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+		celebration.tween_property(celebration_caption, "modulate:a", 0.0, 0.3)
+		celebration.tween_callback(celebration_caption.hide)
 
 func cancel_celebration() -> void:
 	if celebration: celebration.kill()
-	celebration_text.hide()
+	celebration_caption.hide()
+	if is_instance_valid(celebration_effect):
+		celebration_effect.hide()
+		celebration_effect.queue_free()
+		celebration_effect = null
 
 func place(parent: Control, node: Control, rect: Rect2) -> void:
 	parent.add_child(node)

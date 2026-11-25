@@ -12,11 +12,13 @@ var glyph_origins: Array[Vector2] = []
 var level_glyph_count := 0
 static var glow: GradientTexture2D
 var play_completion: Callable
+var aura_only: bool
 
-func _init(at: Vector2, target_level: int, on_completion := Callable()) -> void:
+func _init(at: Vector2, target_level: int, on_completion := Callable(), ground_aura_only := false) -> void:
 	position = at
 	level = target_level
 	play_completion = on_completion
+	aura_only = ground_aura_only
 	z_index = 10 if level == 0 else 5
 	visibility_layer = 2
 
@@ -29,6 +31,7 @@ func _ready() -> void:
 		glow.fill = GradientTexture2D.FILL_RADIAL
 		glow.fill_from = Vector2(.5,.5)
 		glow.fill_to = Vector2(1,.5)
+	if aura_only: return
 	var prefix := "Lv. %d " % level
 	var caption := prefix+"달성!"
 	level_glyph_count=prefix.length()
@@ -48,6 +51,10 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	age += delta
+	if aura_only:
+		if age >= 1.16: queue_free()
+		else: queue_redraw()
+		return
 	if level > 0:
 		if age>=ACHIEVEMENT_APPEAR and play_completion.is_valid():
 			var completion := play_completion
@@ -93,6 +100,7 @@ func _draw() -> void:
 		var color := Color(1,.89,.53,.90*alpha)
 		draw_line(at-Vector2(size,0),at+Vector2(size,0),color,1.4,true)
 		draw_line(at-Vector2(0,size*1.45),at+Vector2(0,size*1.45),color,1.4,true)
+	if aura_only: return
 	draw_firework(Vector2(-115,-133),.72,0)
 	draw_firework(Vector2(119,-148),.95,1)
 	draw_firework(Vector2(37,-224),1.14,2)
