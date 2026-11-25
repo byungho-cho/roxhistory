@@ -1307,15 +1307,15 @@ func play_hud(spread:=false) -> void:
 	add_parry_lab_entry(debug_shortcut.position-Vector2(0,57))
 	debug_shortcut_icon=picture(debug_shortcut,preload("res://assets/ui/v0158/debug-bug.svg"),Rect2(9,9,30,30))
 	update_debug_shortcut()
-	for data in [["사냥","spear"],["채집","berries"],["제작","hammer"],["가방","bag"],["건설","hut"]]:
+	for data in [["사냥","spear"],["채집","berries"],["영웅","hero"],["가방","bag"],["건설","hut"]]:
 		var caption:String=data[0]
-		var callback:Callable=open_hunt if caption=="사냥" else gather_from_menu if caption=="채집" else construction_menu if caption=="건설" else inventory_summary if caption=="가방" else func():toast("아직 준비 중인 기능입니다")
+		var callback:Callable=open_hunt if caption=="사냥" else gather_from_menu if caption=="채집" else construction_menu if caption=="건설" else inventory_summary if caption=="가방" else open_hero_level_up
 		var b:=button(action_row,caption,callback,false,data[1],"");b.custom_minimum_size=Vector2(action_width,72)
 		b.set_meta("permanent_action",true)
 		b.set_meta("auxiliary_action",caption!="건설")
 		if caption=="사냥":b.name="HuntButton"
-		if caption=="제작":b.disabled=true;b.hint_text=caption+"은 아직 준비 중입니다"
-		b.icon=DemoArt.play_icon(data[1])
+		if caption=="영웅":b.name="HeroLevelUpButton"
+		b.icon=preload("res://assets/ui/s40000/gather-wood-stone-v001.png") if caption=="채집" else preload("res://assets/ui/s40000/hunt-bow-stone-v001.png") if caption=="사냥" else DemoArt.play_icon(data[1])
 		if caption=="가방":b.name="InventoryButton"
 		var action_style:=StyleBoxFlat.new();action_style.bg_color=Color.TRANSPARENT;action_style.set_content_margin_all(2)
 		for state in ["normal","hover","pressed","disabled"]:b.add_theme_stylebox_override(state,action_style)
@@ -1356,15 +1356,6 @@ func play_hud(spread:=false) -> void:
 	stage.add_child(ConstructionProgress.new(self))
 	stage.add_child(ConstructionProgress.new(self,false,true))
 	family=FamilyArrival.new(self);stage.add_child(family)
-	var hero_entry := button(stage, "", open_hero_level_up)
-	hero_entry.name = "HeroLevelUpButton"
-	hero_entry.hint_text = "영웅 레벨업"
-	hero_entry.custom_minimum_size = Vector2.ZERO
-	hero_entry.position = safe - Vector2(4, 3)
-	hero_entry.size = Vector2(63, 69)
-	hero_entry.z_index = 31
-	for button_state in ["normal", "hover", "pressed", "focus"]:
-		hero_entry.add_theme_stylebox_override(button_state, StyleBoxEmpty.new())
 	var map_hit:=button(stage,"",recenter_map);map_hit.name="RecenterCamera";map_hit.custom_minimum_size=Vector2.ZERO;map_hit.position=chrome.minimap_hit_rect().position;map_hit.size=chrome.minimap_hit_rect().size
 	map_hit.hint_text="현재 위치로 지도 맞추기"
 	for state in ["normal","hover","pressed"]:map_hit.add_theme_stylebox_override(state,StyleBoxEmpty.new())
@@ -1391,7 +1382,7 @@ func play_hud(spread:=false) -> void:
 	intro_probe_step("hud_total",hud_started)
 
 func open_hero_level_up() -> void:
-	if screen != "play" or modal or world_map_open or village_entry_active(): return
+	if screen != "play" or modal or world_map_open or map_transition_active or not application_active or village_entry_active(): return
 	if is_instance_valid(tutorial) and tutorial.active(): return
 	gestures.clear()
 	cancel_task()

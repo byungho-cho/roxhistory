@@ -9,22 +9,47 @@ const REPEAT_SECONDS := 0.25
 const NONE := -2
 const HERO_INTERACTION := Rect2(679, 100, 413, 560)
 const MOTION_SIZE := Vector2(1280, 720)
+const PANEL_HEIGHT := 639.0
+const FOLD_BODY_HEIGHT := 320.0
+const FOLD_CROP_SIZE := 640.0
+const GOLD_LOCK := preload("res://assets/ui/d0024/08-ui-padlock-gold.png")
+const FOLD_SHADER := preload("res://shaders/packed_alpha_cutin.gdshader")
 const MOTIONS := [
 	{
 		"idle": preload("res://assets/ui/hero-level-up/han-idle.ogv"),
 		"action": preload("res://assets/ui/hero-level-up/han-action.ogv"),
 		"poster": preload("res://assets/ui/hero-level-up/han-action-start.webp"),
+		"fold_idle": preload("res://assets/ui/hero-level-up/han-fold-idle.ogv"),
+		"fold_action": preload("res://assets/ui/hero-level-up/han-fold-action.ogv"),
+		"fold_poster": preload("res://assets/ui/hero-level-up/han-fold-poster.webp"),
+		"body_height": 400.0,
+		"feet": 498.0,
 	},
 	{
 		"idle": preload("res://assets/ui/hero-level-up/uram-idle.ogv"),
 		"action": preload("res://assets/ui/hero-level-up/uram-tap.ogv"),
 		"poster": preload("res://assets/ui/hero-level-up/uram-action-start.webp"),
+		"fold_idle": preload("res://assets/ui/hero-level-up/uram-fold-idle.ogv"),
+		"fold_action": preload("res://assets/ui/hero-level-up/uram-fold-action.ogv"),
+		"fold_poster": preload("res://assets/ui/hero-level-up/uram-fold-poster.webp"),
+		"body_height": 435.0,
+		"feet": 502.0,
+	},
+	{
+		"idle": preload("res://assets/ui/hero-level-up/saebom-idle.ogv"),
+		"action": preload("res://assets/ui/hero-level-up/saebom-action.ogv"),
+		"poster": preload("res://assets/ui/hero-level-up/saebom-action-start.webp"),
+		"fold_idle": preload("res://assets/ui/hero-level-up/saebom-fold-idle.ogv"),
+		"fold_action": preload("res://assets/ui/hero-level-up/saebom-fold-action.ogv"),
+		"fold_poster": preload("res://assets/ui/hero-level-up/saebom-fold-poster.webp"),
+		"body_height": 400.0,
+		"feet": 497.0,
 	},
 ]
 const DATA := [
-	["한결", "han", "근접", "ally-melee", "han-spear-pose-reconstructed.png", "han-3sp-A.png"],
-	["우람", "uram", "방어", "ally-tank", "RoxHistory-Uram-Transparent.png", "uram-3sp.png"],
-	["새봄", "saebom", "원거리", "ally-ranged", "RoxHistory-Saebom-Transparent.png", "saebom-3sp-transparent.png"],
+	["한결", "han", "근접", "ally-melee", "han-3sp-A.png"],
+	["우람", "uram", "방어", "ally-tank", "uram-3sp.png"],
+	["새봄", "saebom", "원거리", "ally-ranged", "saebom-3sp-transparent.png"],
 	["가희", "gahui"], ["바우", "bau"]
 ]
 const BACK := preload("res://assets/ui/d0024/08-ui-back-button.png")
@@ -35,6 +60,11 @@ var board: Control
 var world_view: Control
 var active_scene: Control
 var active_background: TextureRect
+var active_foreground: Control
+var back_button: Button
+var screen_title: Label
+var fold_material: ShaderMaterial
+var fold_motion := false
 var hero_video: VideoStreamPlayer
 var hero_frame: TextureRect
 var motion_generation := 0
@@ -105,16 +135,39 @@ func fit() -> void:
 	var viewport := Rect2(bleed, size / factor)
 	active_background.position = viewport.position
 	active_background.size = viewport.size
+	var hud_margin := Vector2(maxf(57.0 * factor, safe.x), maxf(48.0 * factor, safe.y))
+	back_button.position = (hud_margin - board.position) / factor
+	screen_title.position = back_button.position + Vector2(96, (back_button.size.y - screen_title.size.y) * 0.5)
 	if is_instance_valid(hero_video):
-		var cover := maxf(viewport.size.x / MOTION_SIZE.x, viewport.size.y / MOTION_SIZE.y)
-		hero_video.size = MOTION_SIZE * cover
-		hero_video.position = viewport.get_center() - hero_video.size * 0.5
-		hero_frame.position = hero_video.position
-		hero_frame.size = hero_video.size
+		fit_hero_motion(viewport)
 	if is_instance_valid(outgoing_scene):
 		var background := outgoing_scene.get_child(0) as TextureRect
 		background.position = viewport.position
 		background.size = viewport.size
+
+func fit_hero_motion(viewport: Rect2) -> void:
+	var fold_layout := viewport.size.aspect() <= 1.5
+	if fold_layout != fold_motion:
+		fold_motion = fold_layout
+		play_hero_motion(not hero_video.loop, true)
+
+	if fold_motion:
+		var clip: Dictionary = MOTIONS[selected]
+		var actor_scale := viewport.size.x / MOTION_SIZE.x * FOLD_BODY_HEIGHT / float(clip.body_height)
+		var ground := viewport.position.y + viewport.size.y * 500.0 / MOTION_SIZE.y
+		hero_video.size = Vector2.ONE * FOLD_CROP_SIZE * actor_scale
+		hero_video.position = Vector2(viewport.get_center().x - hero_video.size.x * 0.5,
+			ground - float(clip.feet) * actor_scale)
+		hero_video.material = fold_material
+		hero_frame.material = fold_material
+	else:
+		hero_video.material = null
+		hero_frame.material = null
+		var cover := maxf(viewport.size.x / MOTION_SIZE.x, viewport.size.y / MOTION_SIZE.y)
+		hero_video.size = MOTION_SIZE * cover
+		hero_video.position = viewport.get_center() - hero_video.size * 0.5
+	hero_frame.position = hero_video.position
+	hero_frame.size = hero_video.size
 
 func make_scene() -> void:
 	active_scene = Control.new()
@@ -122,43 +175,48 @@ func make_scene() -> void:
 	active_scene.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	world_view.add_child(active_scene)
 	active_background = picture(active_scene, "background-landscape-reconstructed.png", Rect2(Vector2.ZERO, DESIGN), TextureRect.STRETCH_KEEP_ASPECT_COVERED)
-	var shadow := picture(active_scene, "hero-shadow.svg", Rect2(767, 596, 276, 82))
-	var soft_edge := ShaderMaterial.new()
-	soft_edge.shader = preload("res://shaders/hero_level_up_shadow.gdshader")
-	shadow.material = soft_edge
-	var pose := Rect2(749, 100, 344, 575) if selected == 0 else Rect2(716, 130, 372, 565)
-	picture(active_scene, str(DATA[selected][4]), pose)
+	active_foreground = Control.new()
+	active_foreground.name = "HeroForeground"
+	active_foreground.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	active_scene.add_child(active_foreground)
 	if selected < MOTIONS.size():
 		make_hero_motion()
 
 func make_hero_motion() -> void:
+	fold_material = ShaderMaterial.new()
+	fold_material.shader = FOLD_SHADER
+	fold_motion = size.y > 0 and size.aspect() <= 1.5
 	hero_video = VideoStreamPlayer.new()
 	hero_video.name = "HeroLevelUpMotion"
 	hero_video.expand = true
 	hero_video.volume_db = -80.0
 	hero_video.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	hero_video.finished.connect(_finish_hero_motion.bind(hero_video))
-	active_scene.add_child(hero_video)
+	active_foreground.add_child(hero_video)
 	hero_frame = TextureRect.new()
 	hero_frame.name = "HeroTransitionFrame"
 	hero_frame.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	hero_frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	active_scene.add_child(hero_frame)
+	active_foreground.add_child(hero_frame)
 	play_hero_motion(true)
 
-func play_hero_motion(action: bool) -> void:
+func play_hero_motion(action: bool, mode_changed := false) -> void:
 	if not is_instance_valid(hero_video): return
 	var player := hero_video
 	var clips: Dictionary = MOTIONS[selected]
 	motion_generation += 1
-	if action:
+	if action or mode_changed:
 		# Show the requested first frame at once, including rapid action restarts.
-		hero_frame.texture = clips.poster
+		hero_frame.texture = clips.fold_poster if fold_motion else clips.poster
 		hero_frame.show()
 	else:
 		freeze_hero_frame()
 	player.stop()
-	var stream: VideoStream = clips.action if action else clips.idle
+	var stream: VideoStream
+	if fold_motion:
+		stream = clips.fold_action if action else clips.fold_idle
+	else:
+		stream = clips.action if action else clips.idle
 	if player.stream != stream:
 		player.stream = stream
 	player.loop = not action
@@ -192,11 +250,9 @@ func _resume_hero_idle(player: VideoStreamPlayer, generation: int) -> void:
 	if player == hero_video and generation == motion_generation:
 		play_hero_motion(false)
 
-func stop_hero_motion(keep_frame := false) -> void:
+func stop_hero_motion() -> void:
 	motion_generation += 1
 	if is_instance_valid(hero_video):
-		if keep_frame:
-			freeze_hero_frame()
 		hero_video.stop()
 		hero_video.stream = null
 		hero_video.hide()
@@ -207,17 +263,17 @@ func _exit_tree() -> void:
 	stop_hero_motion()
 
 func make_header() -> void:
-	var back := action(board, Rect2(57, 55, 80, 80), "Back", app.go_back)
-	app.picture(back, BACK, Rect2(0, 0, 80, 80))
-	text_at(board, "영웅 레벨업", Rect2(153, 42, 333, 66), 46, Color("ffe2a7"), HORIZONTAL_ALIGNMENT_LEFT, true)
+	back_button = action(board, Rect2(57, 48, 80, 80), "Back", app.go_back)
+	app.picture(back_button, BACK, Rect2(0, 0, 80, 80))
+	screen_title = text_at(board, "영웅 레벨업", Rect2(153, 55, 333, 66), 46, Color("ffe2a7"), HORIZONTAL_ALIGNMENT_LEFT, true)
 
 func make_growth() -> void:
 	var frame := Panel.new()
 	frame.name = "GrowthPanel"
 	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	place(board, frame, Rect2(80, 166, 424, 629))
-	panel_at(frame, Rect2(5, 5, 414, 619), DARK, Color("76502f"), 5, 20)
-	picture(frame, "growth-wood-frame.png", Rect2(0, 0, 424, 629))
+	place(board, frame, Rect2(80, (DESIGN.y - PANEL_HEIGHT) * 0.5, 424, PANEL_HEIGHT))
+	panel_at(frame, Rect2(5, 5, 414, PANEL_HEIGHT - 10.0), DARK, Color("76502f"), 5, 20)
+	picture(frame, "growth-wood-frame.png", Rect2(0, 0, 424, PANEL_HEIGHT))
 	text_at(frame, "성장 미리보기", Rect2(35, 27, 230, 35), 25, Color("f7d499"), HORIZONTAL_ALIGNMENT_LEFT, true)
 	text_at(frame, "수치 검수 가안", Rect2(244, 27, 149, 35), 17, Color("f7d499"), HORIZONTAL_ALIGNMENT_RIGHT)
 	level_text = text_at(frame, "", Rect2(34, 73, 230, 52), 38, GOLD, HORIZONTAL_ALIGNMENT_LEFT, true)
@@ -240,7 +296,7 @@ func make_growth() -> void:
 	meat_text = text_at(frame, "", Rect2(166, 408, 128, 43), 21, Color("ffcc75"), HORIZONTAL_ALIGNMENT_CENTER)
 	meat_text.name = "MeatBalance"
 	# Figma's inner lip is y=777 and the visual bottom of the CTA is y=757.
-	upgrade = action(frame, Rect2(34, 507, 358, 84), "FeedHero", Callable())
+	upgrade = action(frame, Rect2(34, 517, 358, 84), "FeedHero", Callable())
 	picture(upgrade, "levelup-wood-cta-blank.png", Rect2(0, 0, 358, 84))
 	text_at(upgrade, "레벨업", Rect2(0, 0, 358, 84), 39, Color("371c06"), HORIZONTAL_ALIGNMENT_CENTER, true)
 	upgrade.focus_mode = Control.FOCUS_NONE
@@ -272,22 +328,30 @@ func make_hero_details() -> void:
 	chain_lock = picture(board, "roster-lock.svg", Rect2(1044, 837, 19, 24))
 
 func make_roster() -> void:
-	panel_at(board, Rect2(1232, 102, 340, 750), Color(0.16, 0.14, 0.10, 0.78), Color("76502f"), 5, 20)
-	picture(board, "roster-wood-frame.png", Rect2(1227, 97, 350, 760))
-	picture(board, "allied-heading.svg", Rect2(1259, 116, 28, 31))
-	text_at(board, "아군", Rect2(1297, 113, 124, 36), 26, Color("f6d38d"), HORIZONTAL_ALIGNMENT_LEFT, true)
+	var top := (DESIGN.y - PANEL_HEIGHT) * 0.5
+	panel_at(board, Rect2(1232, top + 5, 340, PANEL_HEIGHT - 10), Color(0.16, 0.14, 0.10, 0.78), Color("76502f"), 5, 20)
+	var frame := NinePatchRect.new()
+	frame.texture = preload("res://assets/ui/hero-level-up/roster-wood-frame.png")
+	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	frame.draw_center = false
+	for side in [SIDE_LEFT, SIDE_TOP, SIDE_RIGHT, SIDE_BOTTOM]:
+		frame.set_patch_margin(side, 48)
+	place(board, frame, Rect2(1227, top, 350, PANEL_HEIGHT))
+	frame.name = "HeroRosterFrame"
+	picture(board, "allied-heading.svg", Rect2(1259, top + 7, 28, 31))
+	text_at(board, "아군", Rect2(1297, top + 4, 124, 36), 26, Color("f6d38d"), HORIZONTAL_ALIGNMENT_LEFT, true)
 	var scroll := ScrollContainer.new()
 	scroll.name = "HeroRoster"
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
-	place(board, scroll, Rect2(1248, 162, 314, 675))
+	place(board, scroll, Rect2(1248, top + 41, 314, PANEL_HEIGHT - 48))
 	var content := Control.new()
 	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	content.custom_minimum_size = Vector2(312, 622)
+	content.custom_minimum_size = Vector2(312, 590)
 	scroll.add_child(content)
-	panel_at(content, Rect2(4, 405, 296, 2), Color("a78e5a99"))
+	panel_at(content, Rect2(4, 394, 296, 2), Color("a78e5a99"))
 	for i in DATA.size():
-		var at: Vector2 = [Vector2(4,7), Vector2(160,7), Vector2(4,203), Vector2(4,423), Vector2(160,423)][i]
+		var at: Vector2 = [Vector2(4,1), Vector2(160,1), Vector2(4,198), Vector2(4,398), Vector2(160,398)][i]
 		var card := action(content, Rect2(at, Vector2(146, 191)), "HeroCard" + str(i), choose.bind(i))
 		card.set_meta("semantic_text", DATA[i][0])
 		roster.append(card)
@@ -296,7 +360,12 @@ func make_roster() -> void:
 		var band := panel_at(card, Rect2(5, 147, 136, 39), Color("35281c"), Color.TRANSPARENT, 0, 6)
 		band.name = "NameBand"
 		text_at(band, DATA[i][0], Rect2(0, 0, 136, 39), 25, Color("f9e6c3"), HORIZONTAL_ALIGNMENT_CENTER, true)
-		locks.append(picture(card, "roster-lock.svg", Rect2(118, 125, 19, 24)))
+		if i >= 3:
+			var lock := app.picture(card, GOLD_LOCK, Rect2(104, 113, 35, 32)) as TextureRect
+			lock.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+			locks.append(lock)
+		else:
+			locks.append(picture(card, "roster-lock.svg", Rect2(118, 125, 19, 24)))
 
 func refresh() -> void:
 	var state: Dictionary = app.model.state
@@ -307,7 +376,7 @@ func refresh() -> void:
 		var active := i == selected
 		var card := roster[i]
 		card.disabled = not unlocked
-		card.get_node("Portrait").modulate.a = 1.0 if unlocked else 0.75
+		card.get_node("Portrait").modulate.a = 1.0 if unlocked else 0.48 if i >= 3 else 0.75
 		card.get_node("NameBand").add_theme_stylebox_override("panel", style(Color("35281c") if unlocked else Color("202224"), Color.TRANSPARENT, 0, 6))
 		locks[i].visible = not unlocked
 		var edge := style(Color("33271b") if unlocked else Color("333638"), Color("ffbe50") if active else Color("94704b") if unlocked else Color("888b8c"), 4 if active else 3, 13)
@@ -347,7 +416,7 @@ func refresh() -> void:
 	role_name.text = hero[2]
 	role_art.texture = Readiness.role_texture(hero[3])
 	skill_art[0].texture = load(ART + str(hero[1]) + "-2sp.png")
-	skill_art[1].texture = load(ART + str(hero[5]))
+	skill_art[1].texture = load(ART + str(hero[4]))
 	skill_value[0].text = "피해 %d" % int(stats.skill)
 	match selected:
 		0: skill_value[1].text = "피해 %d" % int(stats.chain)
@@ -368,7 +437,8 @@ func choose(index: int, direction := 0) -> void:
 	if index == selected or index not in owned: return
 	stop_hold()
 	swipe = NONE
-	stop_hero_motion(true)
+	stop_hero_motion()
+	active_foreground.hide()
 	cancel_celebration()
 	if slide:
 		slide.kill()

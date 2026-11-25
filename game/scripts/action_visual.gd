@@ -12,6 +12,10 @@ func _init(owner_button:DemoButton, texture:Texture2D)->void:
 	pedestal.mouse_filter=Control.MOUSE_FILTER_IGNORE;add_child(pedestal)
 	var icon:=TextureRect.new();icon.texture=texture;icon.expand_mode=TextureRect.EXPAND_IGNORE_SIZE;icon.stretch_mode=TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	icon.position=Vector2(4,0);icon.size=Vector2(button.custom_minimum_size.x-8,52);icon.mouse_filter=Control.MOUSE_FILTER_IGNORE;add_child(icon)
+	if button.text in ["사냥", "채집"]:
+		var previous_size := icon.size
+		icon.size = previous_size * 0.8835
+		icon.position += (previous_size - icon.size) * 0.5
 	if button.text=="건설":
 		var previous_size:=icon.size
 		icon.size=previous_size*.9

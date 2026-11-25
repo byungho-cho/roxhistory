@@ -6,6 +6,7 @@ static var cache := {}
 static var shared_theme: Theme
 static var play_cache:Dictionary={}
 static func play_icon(key:String)->Texture2D:
+	if key=="hero":return preload("res://assets/ui/s40000/hero-shield-v001.png")
 	if key=="hut":return icon("hut") # BLD-001_icon_play uses the approved I10000 atlas.
 	if key=="collapse":return AssetCatalog.texture("UI-MENU-COLLAPSE")
 	if key in ["menu","expand"]:return AssetCatalog.texture("UI-MENU-EXPAND")
