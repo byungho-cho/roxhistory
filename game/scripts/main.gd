@@ -2079,6 +2079,23 @@ func start_parry_lab(model_only := false, duel_only := false) -> void:
 	stage.hide()
 	ui.add_child(parry_lab)
 
+func open_gahui_hunt_from_lab() -> void:
+	if not is_instance_valid(parry_lab) or not modal or screen != "play": return
+	var packed := load("res://gahui_trial/gahui_hunt_test.tscn") as PackedScene
+	if packed == null: return
+	var previous = parry_lab
+	var trial = packed.instantiate()
+	if trial == null: return
+	previous.set_process(false)
+	previous.set_process_input(false)
+	previous.hide()
+	previous.queue_free()
+	parry_lab = trial
+	trial.app = self
+	trial.z_index = 57
+	trial.exited.connect(exit_parry_lab)
+	ui.add_child(trial)
+
 func exit_parry_lab() -> void:
 	parry_lab.queue_free()
 	parry_lab = null

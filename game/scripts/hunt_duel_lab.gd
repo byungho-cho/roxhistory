@@ -432,6 +432,10 @@ func _ready() -> void:
 	cast_notice_layer.draw.connect(func():_draw_cast_notice(cast_notice_anchor))
 
 	_setup_ui()
+	if app!=null and ResourceLoader.exists("res://gahui_trial/gahui_hunt_test.tscn"):
+		var gahui_button := _button("가희 모션",Rect2(603,16,108,34),func():app.call_deferred("open_gahui_hunt_from_lab"))
+		gahui_button.name="GahuiMotionEntry"
+		gahui_button.add_theme_font_size_override("font_size",16)
 	for i in 21:
 		var stem:="res://assets/effects/d0071-chain/han_chain_impact_%02d.png"%i
 		var half:="res://assets/effects/duel-3sp-authored/hangyeol/192/han_chain_impact_%02d.png"%i
