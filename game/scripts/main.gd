@@ -2708,7 +2708,7 @@ func go_back() -> void:
 			{"text":"종료","action":save_and_quit_windows,"primary":true}],false,true,true,Vector2(424,230))
 	elif screen == "region": show_screen("title")
 	else:
-		show_modal("여정을 나갈까요?","앱을 종료합니다.",[{"text":"돌아가기","action":close_modal},{"text":"종료","action":func(): get_tree().quit()}],false,false,false,Vector2.ZERO,true)
+		show_modal("여정을 나갈까요?","앱을 종료합니다.",[{"text":"돌아가기","action":close_modal},{"text":"종료","action":_quit_after_windows_cleanup}],false,false,false,Vector2.ZERO,true)
 
 func _input(event: InputEvent) -> void:
 	if not modal and title_input_blocked() and not get_node("/root/PatchBootstrap/Overlay").popup.visible and (event is InputEventScreenTouch or event is InputEventScreenDrag or event is InputEventMouseButton or event.is_action("ui_accept") or event.is_action("ui_cancel")):
@@ -2814,8 +2814,18 @@ func _go_to_title_from_village() -> void:
 func save_and_quit_windows() -> bool:
 	if is_instance_valid(world) and not model.save_position(world.player.position): return false
 	windows_unfocused_since = -1
-	get_tree().quit()
+	_quit_after_windows_cleanup()
 	return true
+
+func _quit_after_windows_cleanup() -> void:
+	var tree := get_tree()
+	if not OS.has_feature("windows"):
+		tree.quit()
+		return
+	if is_queued_for_deletion(): return
+	# Release the game and video textures before shutting down the Windows GL context.
+	tree.create_timer(0.15).timeout.connect(tree.quit)
+	queue_free()
 
 func _notification(what: int) -> void:
 	# Synthetic tests issue PAUSED/RESUMED explicitly; desktop focus is external.
@@ -2856,7 +2866,7 @@ func _notification(what: int) -> void:
 		if is_instance_valid(world): world.player.presentation_paused = modal
 	elif what == NOTIFICATION_WM_CLOSE_REQUEST:
 		if is_instance_valid(world) and not is_instance_valid(parry_lab): model.save_position(world.player.position)
-		get_tree().quit()
+		_quit_after_windows_cleanup()
 
 # Available actions use the selected option-3 gold pedestal; unavailable actions
 # remain readable and retain DemoButton's reason-on-tap behavior.
