@@ -11,6 +11,7 @@ var glyphs: Array[Label] = []
 var glyph_origins: Array[Vector2] = []
 var level_glyph_count := 0
 static var glow: GradientTexture2D
+static var hero_bloom: GradientTexture2D
 var play_completion: Callable
 var aura_only: bool
 
@@ -31,7 +32,21 @@ func _ready() -> void:
 		glow.fill = GradientTexture2D.FILL_RADIAL
 		glow.fill_from = Vector2(.5,.5)
 		glow.fill_to = Vector2(1,.5)
-	if aura_only: return
+	if aura_only:
+		if hero_bloom == null:
+			hero_bloom = GradientTexture2D.new()
+			hero_bloom.width = 192
+			hero_bloom.height = 128
+			hero_bloom.gradient = Gradient.new()
+			hero_bloom.gradient.offsets = PackedFloat32Array([0.0, .16, .36, .62, .82, 1.0])
+			hero_bloom.gradient.colors = PackedColorArray([Color(1,.98,.82,.94), Color(1,.89,.60,.65), Color(1,.73,.34,.38), Color(.97,.57,.16,.17), Color(.92,.46,.08,.047), Color(.91,.4,.08,0)])
+			hero_bloom.fill = GradientTexture2D.FILL_RADIAL
+			hero_bloom.fill_from = Vector2(.5,.5)
+			hero_bloom.fill_to = Vector2(1.0,.5)
+		var additive := CanvasItemMaterial.new()
+		additive.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
+		material = additive
+		return
 	var prefix := "Lv. %d " % level
 	var caption := prefix+"달성!"
 	level_glyph_count=prefix.length()
@@ -52,7 +67,7 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	age += delta
 	if aura_only:
-		if age >= 1.16: queue_free()
+		if age >= 1.32: queue_free()
 		else: queue_redraw()
 		return
 	if level > 0:
@@ -77,6 +92,9 @@ func _process(delta: float) -> void:
 		queue_redraw()
 
 func _draw() -> void:
+	if aura_only:
+		draw_hero_aura()
+		return
 	if level == 0:
 		var alpha := 1.0-smoothstep(.12,2.6,age)
 		for side in [-1,1]:
@@ -100,10 +118,80 @@ func _draw() -> void:
 		var color := Color(1,.89,.53,.90*alpha)
 		draw_line(at-Vector2(size,0),at+Vector2(size,0),color,1.4,true)
 		draw_line(at-Vector2(0,size*1.45),at+Vector2(0,size*1.45),color,1.4,true)
-	if aura_only: return
 	draw_firework(Vector2(-115,-133),.72,0)
 	draw_firework(Vector2(119,-148),.95,1)
 	draw_firework(Vector2(37,-224),1.14,2)
+
+# Wide open golden helix from the approved S40700 success concept.
+# Hero-only effect. The legacy village equalizer and fireworks are unaffected.
+func draw_hero_aura() -> void:
+	var power := smoothstep(0.0, .12, age) * (1.0 - smoothstep(.49, 1.29, age))
+	var fast := smoothstep(0.0, .065, age) * (1.0 - smoothstep(.13, .43, age))
+	if power > 0.001:
+		draw_texture_rect(hero_bloom, Rect2(-304, -119, 608, 201), false, Color(1.0, .83, .64, power * .39))
+		draw_texture_rect(hero_bloom, Rect2(-187, -88, 374, 149), false, Color(1.0, .93, .69, power * .53 + fast * .13))
+		draw_texture_rect(hero_bloom, Rect2(-101, -53, 202, 101), false, Color(1.0, .99, .82, power * .35 + fast * .38))
+		var rise := smoothstep(.055, .40, age)
+		for i in 6:
+			var sway := sin(float(i) * 2.17)
+			var width := 34.0 + float(i % 4) * 13.0
+			var height := (92.0 + float(i % 3) * 33.0) * lerpf(.65, 1.28, rise)
+			var beam := Rect2(sway * 104.0 - width * .5, -height - 9.0, width, height)
+			draw_texture_rect(hero_bloom, beam, false, Color(1.0, .81, .51, power * (.31 + float(i % 3) * .053)))
+	# Long, open tracers instead of stacked closed rings or a bright vertical pillar.
+	var throw := lerpf(.58, 1.0, 1.0 - exp(-age * 9.8))
+	var height := lerpf(.61, 1.0, smoothstep(.045, .46, age))
+	for i in 3:
+		var since := age - float(i) * .078
+		if since <= 0.0 or since >= 1.11: continue
+		var alpha := smoothstep(0.0, .1, since) * (1.0 - smoothstep(.47, 1.11, since))
+		var reach := lerpf(.46, 1.0, smoothstep(0.0, .29, since))
+		var points := PackedVector2Array()
+		for j in 92:
+			var t := float(j) / 91.0 * reach
+			var angle := t * TAU * (1.54 - float(i) * .13) + .58 + age * (1.55 + float(i) * .64) - float(i) * 1.47
+			var radius := (242.0 - t * 50.0 - float(i) * 16.0) * throw
+			var lifted := pow(t, 1.28) * (221.0 - float(i) * 36.0) * height
+			var y := sin(angle) * radius * .24 - lifted + 5.0
+			points.append(Vector2(cos(angle) * radius, y))
+		# Layering small energy increments over progressively narrower widths
+		# creates a feathered additive light with a crisp warm-white core.
+		var shine := alpha * (.82 + .24 * fast)
+		draw_aura_trail(points, 60.0, Color(1.0, .53, .16, shine * .012))
+		draw_aura_trail(points, 46.0, Color(1.0, .55, .19, shine * .024))
+		draw_aura_trail(points, 34.0, Color(1.0, .62, .22, shine * .044))
+		draw_aura_trail(points, 25.0, Color(1.0, .69, .31, shine * .054))
+		draw_aura_trail(points, 17.0, Color(1.0, .72, .34, shine * .075))
+		draw_aura_trail(points, 11.0, Color(1.0, .78, .42, shine * .115))
+		draw_aura_trail(points, 6.3, Color(1.0, .82, .54, shine * .172))
+		draw_aura_trail(points, 3.2, Color(1.0, .90, .65, shine * .31))
+		draw_aura_trail(points, 1.45, Color(1.0, .98, .87, shine * .51))
+	# Bright warm sparks rise quickly and dissipate well below the hero's face.
+	for i in 34:
+		var since := age - float((i * 11) % 9) * .033
+		var life := .64 + float(i % 6) * .082
+		if since <= 0.0 or since >= life: continue
+		var t := since / life
+		var rise := 1.0 - pow(1.0 - t, 1.42)
+		var spread := sin(float(i) * 2.39)
+		var start := spread * (41.0 + float(i % 5) * 19.0)
+		var ceiling := lerpf(62.0, 221.0, float((i * 17) % 34) / 33.0)
+		var at := Vector2(start + spread * 39.0 * t + sin(age * 7.0 + float(i)) * 8.0, 3.0 - ceiling * rise)
+		var twinkle := smoothstep(0.0, .11, t) * (1.0 - smoothstep(.44, 1.0, t))
+		var length := 2.1 + float(i % 5) * 1.03
+		var streak := Vector2(-spread * length * .65, length * 2.9)
+		draw_line(at + streak, at, Color(1.0, .59, .23, twinkle * .62), 2.3, true)
+		draw_line(at + streak * .23, at, Color(1.0, .94, .59, twinkle), 1.6, true)
+		if i % 4 == 0:
+			draw_texture_rect(hero_bloom, Rect2(at.x-13.0, at.y-13.0, 26, 26), false, Color(1.0, .93, .62, twinkle * .60))
+
+func draw_aura_trail(points: PackedVector2Array, width: float, color: Color) -> void:
+	var colors := PackedColorArray()
+	for i in points.size():
+		var t := float(i) / float(points.size() - 1)
+		var fade := smoothstep(0.0, .095, t) * (1.0 - smoothstep(.87, 1.0, t))
+		colors.append(Color(color, color.a * fade))
+	draw_polyline_colors(points, colors, width, true)
 
 func draw_firework(center: Vector2, delay: float, palette_offset: int) -> void:
 	var time := age-delay

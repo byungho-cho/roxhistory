@@ -16,6 +16,7 @@ const SWIPE_COMMIT := 70.0
 const MOTION_SIZE := Vector2(1280, 720)
 const PANEL_HEIGHT := 520.0
 const GROWTH_WIDTH := 297.0
+const PANEL_OUTER_MARGIN := 48.0
 const ROSTER_WIDTH := 280.0
 const ROSTER_X := 1342.0
 const GOLD_LOCK := preload("res://assets/ui/d0024/08-ui-padlock-gold.png")
@@ -101,6 +102,7 @@ var selected := 0
 var navigable: Array[int] = []
 var roster: Array[Button] = []
 var locks: Array[TextureRect] = []
+var growth_panel: Control
 var level_text: Label
 var xp_text: Label
 var remaining_text: Label
@@ -199,6 +201,7 @@ func fit() -> void:
 	board.position = (size - DESIGN * factor) * 0.5
 	var bleed := -board.position / factor
 	var viewport := Rect2(bleed, size / factor)
+	growth_panel.position.x = maxf(PANEL_OUTER_MARGIN, viewport.position.x + safe.x / factor)
 	active_background.position = viewport.position
 	active_background.size = viewport.size
 	valley_viewport = viewport
@@ -464,7 +467,8 @@ func make_growth() -> void:
 	var frame := Control.new()
 	frame.name = "GrowthPanel"
 	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	place(board, frame, Rect2(80, (DESIGN.y - PANEL_HEIGHT) * 0.5, GROWTH_WIDTH, PANEL_HEIGHT))
+	growth_panel = frame
+	place(board, frame, Rect2(PANEL_OUTER_MARGIN, (DESIGN.y - PANEL_HEIGHT) * 0.5, GROWTH_WIDTH, PANEL_HEIGHT))
 	panel_at(frame, Rect2(5, 5, GROWTH_WIDTH - 10, PANEL_HEIGHT - 10), DARK, Color.TRANSPARENT, 0, 25)
 	picture(frame, "growth-wood-frame.png", Rect2(0, 0, GROWTH_WIDTH, PANEL_HEIGHT), TextureRect.STRETCH_SCALE)
 	level_text = text_at(frame, "", Rect2(20, 20, 257, 52), 38, GOLD, HORIZONTAL_ALIGNMENT_LEFT, true)
@@ -514,7 +518,7 @@ func fit_celebration() -> void:
 	if is_instance_valid(active_foreground): feet.x += active_foreground.position.x
 	var unit := valley_viewport.size.y / MOTION_SIZE.y
 	var head := feet.y - 400.0 * unit
-	var top := maxf(valley_viewport.position.y + 70.0, head - 57.0 - celebration_lift)
+	var top := maxf(valley_viewport.position.y + 70.0, head - 43.0)
 	celebration_caption.position = Vector2(feet.x - 175.0, top)
 	if is_instance_valid(celebration_effect):
 		celebration_effect.position = feet
@@ -522,7 +526,7 @@ func fit_celebration() -> void:
 
 func rise_celebration(value: float) -> void:
 	celebration_lift = value
-	fit_celebration()
+	celebration_text.position.y = -value
 
 func make_wood_button(button: Button, label: String) -> void:
 	var area := Rect2(Vector2.ZERO, button.size)
@@ -1092,16 +1096,20 @@ func feed(amount: int = 1) -> void:
 		celebration_effect.z_index = 0
 		board.add_child(celebration_effect)
 		board.move_child(celebration_effect, celebration_caption.get_index())
-		celebration_caption.modulate.a = 1.0
-		celebration_caption.pivot_offset = celebration_caption.size * 0.5
-		celebration_caption.scale = Vector2.ONE * 0.94
+		celebration_text.modulate.a = 0.0
+		celebration_stats.modulate.a = 0.0
+		celebration_stats.position.y = 35.0
 		celebration_caption.show()
 		rise_celebration(0.0)
-		celebration = create_tween()
-		celebration.tween_property(celebration_caption, "scale", Vector2.ONE, 0.18).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-		celebration.parallel().tween_method(rise_celebration, 0.0, 24.0, 1.6).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
-		celebration.tween_property(celebration_caption, "modulate:a", 0.0, 0.3)
-		celebration.tween_callback(celebration_caption.hide)
+		fit_celebration()
+		celebration = create_tween().set_parallel(true)
+		celebration.tween_property(celebration_text, "modulate:a", 1.0, 0.13)
+		celebration.tween_method(rise_celebration, 0.0, 48.0, 2.82).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+		celebration.tween_property(celebration_text, "modulate:a", 0.0, 0.46).set_delay(2.49)
+		celebration.tween_property(celebration_stats, "modulate:a", 1.0, 0.15).set_delay(0.24)
+		celebration.tween_property(celebration_stats, "position:y", -13.0, 2.61).set_delay(0.24).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+		celebration.tween_property(celebration_stats, "modulate:a", 0.0, 0.46).set_delay(2.60)
+		celebration.chain().tween_callback(celebration_caption.hide)
 
 func cancel_celebration() -> void:
 	if celebration: celebration.kill()
