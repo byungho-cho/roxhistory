@@ -588,7 +588,8 @@ func make_hero_details() -> void:
 
 func make_roster() -> void:
 	var top := (DESIGN.y - PANEL_HEIGHT) * 0.5
-	panel_at(board, Rect2(ROSTER_X + 5, top + 5, ROSTER_WIDTH - 10, PANEL_HEIGHT - 10), Color(0.16, 0.14, 0.10, 0.78), Color.TRANSPARENT, 0, 25)
+	# Keep the tint behind the rounded lip instead of filling transparent corners.
+	panel_at(board, Rect2(ROSTER_X + 8, top + 8, ROSTER_WIDTH - 16, PANEL_HEIGHT - 16), Color(0.16, 0.14, 0.10, 0.78), Color.TRANSPARENT, 0, 26).name = "HeroRosterBacking"
 	roster_frame = NinePatchRect.new()
 	roster_frame.texture = preload("res://assets/ui/hero-level-up/roster-wood-frame.png")
 	roster_frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -626,7 +627,7 @@ func make_roster() -> void:
 		var band := panel_at(card, Rect2(4.5, 84.5, 107, 27), Color(0, 0, 0, 0.8), Color.TRANSPARENT, 0, 5)
 		band.name = "NameBand"
 		text_at(band, DATA[i][0], Rect2(0, 0, 107, 27), 20, Color("f9e6c3"), HORIZONTAL_ALIGNMENT_CENTER, true)
-		panel_at(card, Rect2(7.5, 7.5, 26, 26), Color(0.13, 0.09, 0.05, 0.90), Color("edb85e"), 1, 5)
+		panel_at(card, Rect2(7.5, 7.5, 26, 26), Color(0.13, 0.09, 0.05, 0.90), Color("d9aa66"), 1, 7).name = "RoleBadgeRim"
 		var badge := app.picture(card, Readiness.role_texture(DATA[i][3]), Rect2(9.5, 9.5, 22, 22)) as TextureRect
 		badge.name = "RoleBadge"
 		badge.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
@@ -638,6 +639,7 @@ func make_roster() -> void:
 	swipe_card_hint.name = "SwipeNextCardHint"
 	swipe_card_hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	swipe_card_hint.hide()
+	board.move_child(roster_frame, -1)
 
 func refresh() -> void:
 	var state: Dictionary = app.model.state
