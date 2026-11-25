@@ -8,9 +8,19 @@ const DARK := Color(0.16, 0.14, 0.10, 0.82)
 const REPEAT_SECONDS := 0.25
 const NONE := -2
 const HERO_INTERACTION := Rect2(679, 100, 413, 560)
-const URAM_IDLE := preload("res://assets/ui/hero-level-up/uram-idle.ogv")
-const URAM_TAP := preload("res://assets/ui/hero-level-up/uram-tap.ogv")
-const URAM_VIDEO_SIZE := Vector2(1276, 720)
+const MOTION_SIZE := Vector2(1280, 720)
+const MOTIONS := [
+	{
+		"idle": preload("res://assets/ui/hero-level-up/han-idle.ogv"),
+		"action": preload("res://assets/ui/hero-level-up/han-action.ogv"),
+		"poster": preload("res://assets/ui/hero-level-up/han-action-start.webp"),
+	},
+	{
+		"idle": preload("res://assets/ui/hero-level-up/uram-idle.ogv"),
+		"action": preload("res://assets/ui/hero-level-up/uram-tap.ogv"),
+		"poster": preload("res://assets/ui/hero-level-up/uram-action-start.webp"),
+	},
+]
 const DATA := [
 	["한결", "han", "근접", "ally-melee", "han-spear-pose-reconstructed.png", "han-3sp-A.png"],
 	["우람", "uram", "방어", "ally-tank", "RoxHistory-Uram-Transparent.png", "uram-3sp.png"],
@@ -25,9 +35,9 @@ var board: Control
 var world_view: Control
 var active_scene: Control
 var active_background: TextureRect
-var uram_video: VideoStreamPlayer
-var uram_frame: TextureRect
-var uram_tap_active := false
+var hero_video: VideoStreamPlayer
+var hero_frame: TextureRect
+var motion_generation := 0
 var outgoing_scene: Control
 var slide: Tween
 var celebration: Tween
@@ -95,12 +105,12 @@ func fit() -> void:
 	var viewport := Rect2(bleed, size / factor)
 	active_background.position = viewport.position
 	active_background.size = viewport.size
-	if is_instance_valid(uram_video):
-		var cover := maxf(viewport.size.x / URAM_VIDEO_SIZE.x, viewport.size.y / URAM_VIDEO_SIZE.y)
-		uram_video.size = URAM_VIDEO_SIZE * cover
-		uram_video.position = viewport.get_center() - uram_video.size * 0.5
-		uram_frame.position = uram_video.position
-		uram_frame.size = uram_video.size
+	if is_instance_valid(hero_video):
+		var cover := maxf(viewport.size.x / MOTION_SIZE.x, viewport.size.y / MOTION_SIZE.y)
+		hero_video.size = MOTION_SIZE * cover
+		hero_video.position = viewport.get_center() - hero_video.size * 0.5
+		hero_frame.position = hero_video.position
+		hero_frame.size = hero_video.size
 	if is_instance_valid(outgoing_scene):
 		var background := outgoing_scene.get_child(0) as TextureRect
 		background.position = viewport.position
@@ -118,75 +128,83 @@ func make_scene() -> void:
 	shadow.material = soft_edge
 	var pose := Rect2(749, 100, 344, 575) if selected == 0 else Rect2(716, 130, 372, 565)
 	picture(active_scene, str(DATA[selected][4]), pose)
-	if selected == 1:
-		make_uram_motion()
+	if selected < MOTIONS.size():
+		make_hero_motion()
 
-func make_uram_motion() -> void:
-	uram_video = VideoStreamPlayer.new()
-	uram_video.name = "UramLevelUpMotion"
-	uram_video.expand = true
-	uram_video.volume_db = -80.0
-	uram_video.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	uram_video.finished.connect(_finish_uram_tap.bind(uram_video))
-	active_scene.add_child(uram_video)
-	uram_frame = TextureRect.new()
-	uram_frame.name = "UramTransitionFrame"
-	uram_frame.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	uram_frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	uram_frame.hide()
-	active_scene.add_child(uram_frame)
-	play_uram_motion(false)
+func make_hero_motion() -> void:
+	hero_video = VideoStreamPlayer.new()
+	hero_video.name = "HeroLevelUpMotion"
+	hero_video.expand = true
+	hero_video.volume_db = -80.0
+	hero_video.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	hero_video.finished.connect(_finish_hero_motion.bind(hero_video))
+	active_scene.add_child(hero_video)
+	hero_frame = TextureRect.new()
+	hero_frame.name = "HeroTransitionFrame"
+	hero_frame.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	hero_frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	active_scene.add_child(hero_frame)
+	play_hero_motion(true)
 
-func play_uram_motion(tap: bool) -> void:
-	if not is_instance_valid(uram_video): return
-	var player := uram_video
-	freeze_uram_frame()
-	uram_tap_active = tap
+func play_hero_motion(action: bool) -> void:
+	if not is_instance_valid(hero_video): return
+	var player := hero_video
+	var clips: Dictionary = MOTIONS[selected]
+	motion_generation += 1
+	if action:
+		# Show the requested first frame at once, including rapid action restarts.
+		hero_frame.texture = clips.poster
+		hero_frame.show()
+	else:
+		freeze_hero_frame()
 	player.stop()
-	player.stream = URAM_TAP if tap else URAM_IDLE
-	player.loop = not tap
+	var stream: VideoStream = clips.action if action else clips.idle
+	if player.stream != stream:
+		player.stream = stream
+	player.loop = not action
 	player.hide()
 	player.play()
-	show_uram_when_ready(player)
+	show_hero_when_ready(player, motion_generation)
 
-func show_uram_when_ready(player: VideoStreamPlayer) -> void:
-	# Keep the previous frame visible until the new stream has produced a frame.
-	while is_instance_valid(player) and player == uram_video:
+func show_hero_when_ready(player: VideoStreamPlayer, generation: int) -> void:
+	while is_instance_valid(player) and player == hero_video and generation == motion_generation:
 		if player.stream_position >= 2.0 / 24.0:
 			player.show()
-			uram_frame.hide()
-			uram_frame.texture = null
+			hero_frame.hide()
+			hero_frame.texture = null
 			return
 		await get_tree().process_frame
 
-func freeze_uram_frame() -> void:
-	if not uram_video.visible: return
-	var video_texture := uram_video.get_video_texture()
+func freeze_hero_frame() -> void:
+	if not hero_video.visible: return
+	var video_texture := hero_video.get_video_texture()
 	if video_texture == null: return
 	var pixels := video_texture.get_image()
 	if pixels == null or pixels.is_empty(): return
-	uram_frame.texture = ImageTexture.create_from_image(pixels)
-	uram_frame.show()
+	hero_frame.texture = ImageTexture.create_from_image(pixels)
+	hero_frame.show()
 
-func _finish_uram_tap(player: VideoStreamPlayer) -> void:
-	_resume_uram_idle.call_deferred(player)
+func _finish_hero_motion(player: VideoStreamPlayer) -> void:
+	if player == hero_video and not player.loop:
+		_resume_hero_idle.call_deferred(player, motion_generation)
 
-func _resume_uram_idle(player: VideoStreamPlayer) -> void:
-	if player == uram_video and uram_tap_active:
-		play_uram_motion(false)
+func _resume_hero_idle(player: VideoStreamPlayer, generation: int) -> void:
+	if player == hero_video and generation == motion_generation:
+		play_hero_motion(false)
 
-func stop_uram_motion() -> void:
-	if is_instance_valid(uram_video):
-		freeze_uram_frame()
-		uram_video.stop()
-		uram_video.stream = null
-		uram_video.hide()
-	uram_video = null
-	uram_frame = null
-	uram_tap_active = false
+func stop_hero_motion(keep_frame := false) -> void:
+	motion_generation += 1
+	if is_instance_valid(hero_video):
+		if keep_frame:
+			freeze_hero_frame()
+		hero_video.stop()
+		hero_video.stream = null
+		hero_video.hide()
+	hero_video = null
+	hero_frame = null
 
 func _exit_tree() -> void:
-	stop_uram_motion()
+	stop_hero_motion()
 
 func make_header() -> void:
 	var back := action(board, Rect2(57, 55, 80, 80), "Back", app.go_back)
@@ -350,7 +368,7 @@ func choose(index: int, direction := 0) -> void:
 	if index == selected or index not in owned: return
 	stop_hold()
 	swipe = NONE
-	stop_uram_motion()
+	stop_hero_motion(true)
 	cancel_celebration()
 	if slide:
 		slide.kill()
@@ -401,8 +419,8 @@ func pointer(index: int, point: Vector2, pressed: bool) -> void:
 		var movement := (point - swipe_start) / board.scale.x
 		if absf(movement.x) > 70 and absf(movement.x) > absf(movement.y) * 1.2:
 			cycle(-signi(int(movement.x)))
-		elif movement.length() < 20.0 and selected == 1 and not uram_tap_active:
-			play_uram_motion(true)
+		elif movement.length() < 20.0 and is_instance_valid(hero_video):
+			play_hero_motion(true)
 		get_viewport().set_input_as_handled()
 
 func _process(delta: float) -> void:
@@ -419,9 +437,9 @@ func _notification(what: int) -> void:
 	if what in [NOTIFICATION_APPLICATION_PAUSED, NOTIFICATION_APPLICATION_FOCUS_OUT, NOTIFICATION_EXIT_TREE]:
 		swipe = NONE
 		stop_hold()
-		if is_instance_valid(uram_video): uram_video.paused = true
+		if is_instance_valid(hero_video): hero_video.paused = true
 	elif what in [NOTIFICATION_APPLICATION_RESUMED, NOTIFICATION_APPLICATION_FOCUS_IN]:
-		if is_instance_valid(uram_video): uram_video.paused = false
+		if is_instance_valid(hero_video): hero_video.paused = false
 
 func stop_hold() -> void:
 	held = NONE
