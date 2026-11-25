@@ -8,6 +8,8 @@ const DARK := Color(0.16, 0.14, 0.10, 0.82)
 const REPEAT_SECONDS := 0.25
 const NONE := -2
 const HERO_INTERACTION := Rect2(679, 100, 413, 560)
+const SWIPE_SLOP := 20.0
+const SWIPE_COMMIT := 70.0
 const MOTION_SIZE := Vector2(1280, 720)
 const PANEL_HEIGHT := 639.0
 const GOLD_LOCK := preload("res://assets/ui/d0024/08-ui-padlock-gold.png")
@@ -91,6 +93,9 @@ var after_text: Array[Label] = []
 var upgrade: Button
 var previous: Button
 var forward: Button
+var previous_arrow: TextureRect
+var forward_arrow: TextureRect
+var swipe_card_hint: Panel
 var hero_name: Label
 var role_name: Label
 var role_art: TextureRect
@@ -103,6 +108,7 @@ var celebration_text: Label
 var held := NONE
 var swipe := NONE
 var swipe_start := Vector2.ZERO
+var swipe_moved := false
 var repeats_in := REPEAT_SECONDS
 var bold := FontVariation.new()
 
@@ -309,8 +315,8 @@ func make_growth() -> void:
 func make_hero_details() -> void:
 	previous = action(board, Rect2(609, 377, 60, 81), "PreviousHero", cycle.bind(-1))
 	forward = action(board, Rect2(1098, 377, 60, 81), "NextHero", cycle.bind(1))
-	picture(previous, "carousel-left.svg", Rect2(12, 11, 36, 59))
-	picture(forward, "carousel-right.svg", Rect2(12, 11, 36, 59))
+	previous_arrow = picture(previous, "carousel-left.svg", Rect2(12, 11, 36, 59))
+	forward_arrow = picture(forward, "carousel-right.svg", Rect2(12, 11, 36, 59))
 	picture(board, "name-divider.svg", Rect2(625, 687, 506, 45))
 	hero_name = text_at(board, "", Rect2(650, 666, 104, 52), 43, Color("ffdaa2"), HORIZONTAL_ALIGNMENT_RIGHT, true)
 	panel_at(board, Rect2(781, 677, 2, 33), Color("bf8b4acc"))
@@ -371,6 +377,11 @@ func make_roster() -> void:
 			locks.append(lock)
 		else:
 			locks.append(picture(card, "roster-lock.svg", Rect2(118, 125, 19, 24)))
+
+	swipe_card_hint = panel_at(content, Rect2(Vector2.ZERO,Vector2(146,191)),Color.TRANSPARENT,Color("ffd283"),4,13)
+	swipe_card_hint.name = "SwipeNextCardHint"
+	swipe_card_hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	swipe_card_hint.hide()
 
 func refresh() -> void:
 	var state: Dictionary = app.model.state
@@ -462,7 +473,7 @@ func cycle(direction: int) -> void:
 func choose(index: int, direction := 0) -> void:
 	if index == selected or index not in navigable: return
 	stop_hold()
-	swipe = NONE
+	reset_swipe()
 	stop_hero_motion()
 	active_foreground.hide()
 	cancel_celebration()
@@ -489,9 +500,13 @@ func _input(event: InputEvent) -> void:
 	if event is InputEventScreenTouch:
 		if event.canceled:
 			if held == event.index: stop_hold()
-			if swipe == event.index: swipe = NONE
+			if swipe == event.index: reset_swipe()
 			return
 		pointer(event.index, event.position, event.pressed)
+	elif event is InputEventScreenDrag:
+		pointer_drag(event.index, event.position)
+	elif event is InputEventMouseMotion and event.device != InputEvent.DEVICE_ID_EMULATION:
+		pointer_drag(-1, event.position)
 	elif event is InputEventMouseButton and event.device != InputEvent.DEVICE_ID_EMULATION and event.button_index == MOUSE_BUTTON_LEFT:
 		pointer(-1, event.position, event.pressed)
 
@@ -509,15 +524,52 @@ func pointer(index: int, point: Vector2, pressed: bool) -> void:
 	elif pressed and swipe == NONE and HERO_INTERACTION.has_point(board.get_global_transform().affine_inverse() * point):
 		swipe = index
 		swipe_start = point
+		swipe_moved = false
 		get_viewport().set_input_as_handled()
 	elif not pressed and swipe == index:
-		swipe = NONE
-		var movement := (point - swipe_start) / board.scale.x
-		if absf(movement.x) > 70 and absf(movement.x) > absf(movement.y) * 1.2:
-			cycle(-signi(int(movement.x)))
-		elif movement.length() < 20.0 and is_instance_valid(hero_video):
+		var movement := swipe_delta(point)
+		var was_drag := swipe_moved
+		reset_swipe()
+		if absf(movement.x) > SWIPE_COMMIT and is_horizontal_swipe(movement):
+			cycle(1 if movement.x < 0 else -1)
+		elif not was_drag and movement.length() < SWIPE_SLOP and is_instance_valid(hero_video):
 			play_hero_motion(true)
 		get_viewport().set_input_as_handled()
+
+func swipe_delta(point: Vector2) -> Vector2:
+	return (point - swipe_start) / board.scale.x
+
+func is_horizontal_swipe(movement: Vector2) -> bool:
+	return absf(movement.x) > absf(movement.y) * 1.2
+
+func pointer_drag(index: int, point: Vector2) -> void:
+	if swipe != index: return
+	var movement := swipe_delta(point)
+	swipe_moved = swipe_moved or movement.length() >= SWIPE_SLOP
+	clear_swipe_hint()
+	if navigable.size() > 1 and absf(movement.x) > SWIPE_SLOP and is_horizontal_swipe(movement):
+		var direction := 1 if movement.x < 0 else -1
+		var arrow := forward_arrow if direction > 0 else previous_arrow
+		var progress := clampf((absf(movement.x) - SWIPE_SLOP) / (SWIPE_COMMIT - SWIPE_SLOP), 0.0, 1.0)
+		arrow.position.x = 12.0 + signf(movement.x) * 12.0 * progress
+		arrow.modulate = Color.WHITE.lerp(GOLD,progress)
+		var candidate := navigable[posmod(navigable.find(selected) + direction, navigable.size())]
+		swipe_card_hint.position = roster[candidate].position
+		swipe_card_hint.modulate.a = 0.30 + 0.70 * progress
+		swipe_card_hint.show()
+	get_viewport().set_input_as_handled()
+
+func clear_swipe_hint() -> void:
+	for arrow in [previous_arrow, forward_arrow]:
+		if is_instance_valid(arrow):
+			arrow.position.x = 12.0
+			arrow.modulate = Color.WHITE
+	if is_instance_valid(swipe_card_hint): swipe_card_hint.hide()
+
+func reset_swipe() -> void:
+	swipe = NONE
+	swipe_moved = false
+	clear_swipe_hint()
 
 func _process(delta: float) -> void:
 	if not app.application_active or not is_visible_in_tree() or held == NONE:
@@ -531,7 +583,7 @@ func _process(delta: float) -> void:
 
 func _notification(what: int) -> void:
 	if what in [NOTIFICATION_APPLICATION_PAUSED, NOTIFICATION_APPLICATION_FOCUS_OUT, NOTIFICATION_EXIT_TREE]:
-		swipe = NONE
+		reset_swipe()
 		stop_hold()
 		if is_instance_valid(hero_video): hero_video.paused = true
 	elif what in [NOTIFICATION_APPLICATION_RESUMED, NOTIFICATION_APPLICATION_FOCUS_IN]:
