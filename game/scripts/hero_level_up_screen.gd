@@ -119,7 +119,7 @@ var held := NONE
 var swipe := NONE
 var swipe_start := Vector2.ZERO
 var swipe_moved := false
-var swipe_follow_hero := false
+var swipe_follow_hero := true
 var swipe_scene_tween: Tween
 var valley_view: Control
 var valley_terrain: TextureRect
