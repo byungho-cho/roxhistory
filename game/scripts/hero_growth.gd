@@ -14,6 +14,7 @@ const STATS := ["hp", "attack", "skill"]
 # S40700 provisional rules for the 0.313.314 review.
 const XP_PER_MEAT := 1
 const MAX_LEVEL := 5
+const FAST_FEED_FRACTION := 0.10
 const XP_TO_NEXT := [10, 20, 35, 55]
 const GROWTH_PER_LEVEL := 0.05
 
@@ -56,10 +57,23 @@ static func needed_at(level: int) -> int:
 static func can_feed(state: Dictionary, id: String) -> bool:
 	return int(state.get("meat", 0)) > 0 and owns(state, id) and int(read(state, id).level) < MAX_LEVEL
 
-static func after_feed(state: Dictionary, id: String) -> Dictionary:
-	if not can_feed(state, id): return {}
+## Planned fast-repeat batch is based on the current level's full XP cost.
+static func fast_feed_cap(level: int) -> int:
+	return maxi(1, floori(float(needed_at(level)) * FAST_FEED_FRACTION / XP_PER_MEAT))
+
+## Never cross a level boundary or spend more than the inventory in one tick.
+static func feed_cost(state: Dictionary, id: String, requested: int) -> int:
+	if requested < 1 or not can_feed(state, id): return 0
 	var progress := read(state, id)
-	progress.xp += XP_PER_MEAT
+	var remaining := needed_at(progress.level) - int(progress.xp)
+	var until_level := ceili(float(remaining) / XP_PER_MEAT)
+	return mini(requested, mini(int(state.get("meat", 0)), maxi(0, until_level)))
+
+static func after_feed(state: Dictionary, id: String, requested: int = 1) -> Dictionary:
+	var amount := feed_cost(state, id, requested)
+	if amount == 0: return {}
+	var progress := read(state, id)
+	progress.xp += XP_PER_MEAT * amount
 	while progress.level < MAX_LEVEL:
 		var required := needed_at(progress.level)
 		if progress.xp < required: break

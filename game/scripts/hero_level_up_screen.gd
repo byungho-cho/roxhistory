@@ -6,13 +6,18 @@ const CREAM := Color("f8e2ad")
 const GOLD := Color("ffd283")
 const DARK := Color(0.16, 0.14, 0.10, 0.82)
 const REPEAT_SECONDS := 0.25
+const FEED_RAMP_SECONDS := 1.5
+const FEED_TOP_SPEED := 2.5
 const NONE := -2
 const HERO_INTERACTION := Rect2(679, 100, 413, 560)
 const SWIPE_SLOP := 20.0
 const SWIPE_PREVIEW_SLOP := 5.0
 const SWIPE_COMMIT := 70.0
 const MOTION_SIZE := Vector2(1280, 720)
-const PANEL_HEIGHT := 639.0
+const PANEL_HEIGHT := 520.0
+const GROWTH_WIDTH := 297.0
+const ROSTER_WIDTH := 280.0
+const ROSTER_X := 1342.0
 const GOLD_LOCK := preload("res://assets/ui/d0024/08-ui-padlock-gold.png")
 const FOLD_SHADER := preload("res://shaders/hero_landscape_feather.gdshader")
 const VALLEY_ART := ART + "valley/"
@@ -81,6 +86,7 @@ var active_scene: Control
 var active_background: TextureRect
 var active_foreground: Control
 var back_button: Button
+var bag_button: Button
 var screen_title: Label
 var fold_material: ShaderMaterial
 var fold_motion := false
@@ -102,8 +108,11 @@ var xp_fill: Panel
 var before_text: Array[Label] = []
 var after_text: Array[Label] = []
 var upgrade: Button
+var debug_growth_reset: Button
 var previous: Button
 var forward: Button
+var arrow_fade: Tween
+var nav_opacity := 1.0
 var previous_arrow: TextureRect
 var forward_arrow: TextureRect
 var swipe_card_hint: Panel
@@ -111,6 +120,8 @@ var hero_name: Label
 var role_name: Label
 var role_art: TextureRect
 var skills: Control
+var hero_details: Control
+var roster_roles: Array[TextureRect] = []
 var skill_art: Array[TextureRect] = []
 var skill_value: Array[Label] = []
 var skill_frame: Array[Panel] = []
@@ -140,6 +151,7 @@ var valley_departing: TextureRect
 var valley_anim: Tween
 
 var repeats_in := REPEAT_SECONDS
+var hold_seconds := 0.0
 var bold := FontVariation.new()
 
 func _ready() -> void:
@@ -158,6 +170,7 @@ func _ready() -> void:
 	make_valley()
 	make_scene()
 	make_header()
+	make_bag_button()
 	make_growth()
 	make_hero_details()
 	make_roster()
@@ -165,6 +178,7 @@ func _ready() -> void:
 	resized.connect(fit)
 	fit()
 	refresh()
+	show_nav_hints()
 	set_process(false)
 
 func fit() -> void:
@@ -181,10 +195,13 @@ func fit() -> void:
 	active_background.size = viewport.size
 	valley_viewport = viewport
 	fit_valley()
-	skills.position.y = clampf(viewport.end.y - 923.0, 0.0, 40.0) if selected == 4 else 0.0
-	var hud_margin := Vector2(maxf(57.0 * factor, safe.x), maxf(48.0 * factor, safe.y))
+	skills.position.y = viewport.end.y - DESIGN.y - maxf(0.0, safe.y / factor - 48.0)
+	hero_details.position.y = skills.position.y
+	debug_growth_reset.position.y = 841.0 + skills.position.y
+	var hud_margin := Vector2(maxf(48.0 * factor, safe.x), maxf(48.0 * factor, safe.y))
 	back_button.position = (hud_margin - board.position) / factor
 	screen_title.position = back_button.position + Vector2(96, (back_button.size.y - screen_title.size.y) * 0.5)
+	bag_button.position = Vector2(viewport.end.x - hud_margin.x / factor - bag_button.size.x, back_button.position.y)
 	if is_instance_valid(hero_video):
 		fit_hero_motion(viewport)
 	if is_instance_valid(outgoing_scene):
@@ -425,118 +442,140 @@ func _exit_tree() -> void:
 	stop_hero_motion()
 
 func make_header() -> void:
-	back_button = action(board, Rect2(57, 48, 80, 80), "Back", app.go_back)
+	back_button = action(board, Rect2(48, 48, 80, 80), "Back", app.go_back)
 	app.picture(back_button, BACK, Rect2(0, 0, 80, 80))
 	screen_title = text_at(board, "영웅 레벨업", Rect2(153, 55, 333, 66), 46, Color("ffe2a7"), HORIZONTAL_ALIGNMENT_LEFT, true)
 
+func make_bag_button() -> void:
+	bag_button = action(board, Rect2(1542, 48, 80, 80), "HeroBagButton", app.inventory_summary)
+	bag_button.tooltip_text = "가방"
+	var rim := panel_at(bag_button, Rect2(4, 4, 72, 72), Color(0.16, 0.11, 0.05, 0.86), Color("d6a65a"), 2, 15)
+	rim.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	app.picture(bag_button, DemoArt.play_icon("bag"), Rect2(11, 11, 58, 58))
+
 func make_growth() -> void:
-	var frame := Panel.new()
+	var frame := Control.new()
 	frame.name = "GrowthPanel"
 	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	place(board, frame, Rect2(80, (DESIGN.y - PANEL_HEIGHT) * 0.5, 424, PANEL_HEIGHT))
-	panel_at(frame, Rect2(5, 5, 414, PANEL_HEIGHT - 10.0), DARK, Color("76502f"), 5, 20)
-	picture(frame, "growth-wood-frame.png", Rect2(0, 0, 424, PANEL_HEIGHT))
-	text_at(frame, "성장 미리보기", Rect2(35, 27, 230, 35), 25, Color("f7d499"), HORIZONTAL_ALIGNMENT_LEFT, true)
-	text_at(frame, "수치 검수 가안", Rect2(244, 27, 149, 35), 17, Color("f7d499"), HORIZONTAL_ALIGNMENT_RIGHT)
-	level_text = text_at(frame, "", Rect2(34, 73, 230, 52), 38, GOLD, HORIZONTAL_ALIGNMENT_LEFT, true)
+	place(board, frame, Rect2(80, (DESIGN.y - PANEL_HEIGHT) * 0.5, GROWTH_WIDTH, PANEL_HEIGHT))
+	panel_at(frame, Rect2(5, 5, GROWTH_WIDTH - 10, PANEL_HEIGHT - 10), DARK, Color.TRANSPARENT, 0, 25)
+	picture(frame, "growth-wood-frame.png", Rect2(0, 0, GROWTH_WIDTH, PANEL_HEIGHT), TextureRect.STRETCH_SCALE)
+	level_text = text_at(frame, "", Rect2(20, 20, 257, 52), 38, GOLD, HORIZONTAL_ALIGNMENT_LEFT, true)
 	level_text.name = "LevelAndCap"
-	text_at(frame, "현재 경험치", Rect2(34, 138, 100, 29), 18)
-	xp_text = text_at(frame, "", Rect2(138, 138, 126, 29), 18, Color("f6ce78"), HORIZONTAL_ALIGNMENT_LEFT, true)
-	remaining_text = text_at(frame, "", Rect2(273, 138, 120, 29), 18, CREAM, HORIZONTAL_ALIGNMENT_RIGHT)
-	panel_at(frame, Rect2(33, 171, 359, 20), Color("1c160c"), Color("966336"), 2, 9)
-	xp_fill = panel_at(frame, Rect2(37, 175, 0, 11), Color("e9ba66"), Color("ffe6aa"), 1, 6)
+	text_at(frame, "현재 경험치", Rect2(20, 79, 85, 29), 16)
+	xp_text = text_at(frame, "", Rect2(106, 79, 78, 29), 16, Color("f6ce78"), HORIZONTAL_ALIGNMENT_LEFT, true)
+	remaining_text = text_at(frame, "", Rect2(184, 79, 93, 29), 16, CREAM, HORIZONTAL_ALIGNMENT_RIGHT)
+	panel_at(frame, Rect2(20, 108, 257, 20), Color("1c160c"), Color("966336"), 2, 9)
+	xp_fill = panel_at(frame, Rect2(24, 112, 0, 11), Color("e9ba66"), Color("ffe6aa"), 1, 6)
 	for i in 3:
-		var y: int = [217, 275, 330][i]
-		text_at(frame, ["체력", "기본 공격", "스킬 피해"][i], Rect2(34, y, 146, 43), 24)
-		before_text.append(text_at(frame, "", Rect2(189, y, 93, 43), 24, Color("ffe8bc"), HORIZONTAL_ALIGNMENT_RIGHT, true))
-		text_at(frame, "→", Rect2(300, y, 32, 43), 23, Color("f0bb52"), HORIZONTAL_ALIGNMENT_CENTER, true)
-		after_text.append(text_at(frame, "", Rect2(337, y, 56, 43), 24, Color("a9dd70"), HORIZONTAL_ALIGNMENT_RIGHT, true))
-		panel_at(frame, Rect2(34, [267, 323, 381][i], 359, 1), Color("9e80507a"))
-	app.picture(frame, DemoArt.icon("meat"), Rect2(40, 406, 55, 46))
-	text_at(frame, "고기", Rect2(104, 410, 52, 35), 22)
-	panel_at(frame, Rect2(162, 408, 136, 43), Color("322010e6"), Color("a8844b"), 2, 12)
-	meat_text = text_at(frame, "", Rect2(166, 408, 128, 43), 21, Color("ffcc75"), HORIZONTAL_ALIGNMENT_CENTER)
+		var y: int = 139 + i * 52
+		text_at(frame, ["체력", "공격", "스킬"][i], Rect2(20, y, 104, 43), 22)
+		before_text.append(text_at(frame, "", Rect2(127, y, 50, 43), 24, Color("ffe8bc"), HORIZONTAL_ALIGNMENT_RIGHT, true))
+		text_at(frame, "→", Rect2(188, y, 24, 43), 23, Color("f0bb52"), HORIZONTAL_ALIGNMENT_CENTER, true)
+		after_text.append(text_at(frame, "", Rect2(226, y, 51, 43), 24, Color("a9dd70"), HORIZONTAL_ALIGNMENT_RIGHT, true))
+		panel_at(frame, Rect2(20, y + 45, 257, 1), Color("9e80507a"))
+	app.picture(frame, DemoArt.icon("meat"), Rect2(20, 309, 48, 46))
+	meat_text = text_at(frame, "", Rect2(146, 309, 131, 46), 20, Color("ffcc75"), HORIZONTAL_ALIGNMENT_RIGHT, true)
 	meat_text.name = "MeatBalance"
-	# Figma's inner lip is y=777 and the visual bottom of the CTA is y=757.
-	upgrade = action(frame, Rect2(34, 517, 358, 84), "FeedHero", Callable())
-	picture(upgrade, "levelup-wood-cta-blank.png", Rect2(0, 0, 358, 84))
-	text_at(upgrade, "레벨업", Rect2(0, 0, 358, 84), 39, Color("371c06"), HORIZONTAL_ALIGNMENT_CENTER, true)
-	upgrade.focus_mode = Control.FOCUS_NONE
-	celebration_text = text_at(frame, "", Rect2(36, 451, 352, 53), 24, GOLD, HORIZONTAL_ALIGNMENT_CENTER, true)
+	upgrade = action(frame, Rect2(20, 432, 257, 68), "FeedHero", Callable())
+	make_wood_button(upgrade, "레벨업")
+	debug_growth_reset = action(board, Rect2(80, 841, 154, 52), "HeroGrowthResetShortcut", app.confirm_hero_growth_reset.bind(app.close_modal))
+	make_wood_button(debug_growth_reset, "초기화")
+	debug_growth_reset.modulate.a = 0.82
+	celebration_text = text_at(frame, "", Rect2(20, 365, 257, 53), 16, GOLD, HORIZONTAL_ALIGNMENT_CENTER, true)
 	celebration_text.name = "LevelUpCelebration"
 	celebration_text.hide()
 
+func make_wood_button(button: Button, label: String) -> void:
+	var area := Rect2(Vector2.ZERO, button.size)
+	picture(button, "levelup-wood-cta-blank.png", area, TextureRect.STRETCH_SCALE)
+	text_at(button, label, area, 36, Color("371c06"), HORIZONTAL_ALIGNMENT_CENTER, true)
+	button.focus_mode = Control.FOCUS_NONE
+
+func apply_skill_outline(label: Label) -> void:
+	label.add_theme_color_override("font_outline_color", Color.BLACK)
+	label.add_theme_constant_override("outline_size", 3)
+
 func make_hero_details() -> void:
-	previous = action(board, Rect2(609, 377, 60, 81), "PreviousHero", cycle.bind(-1))
-	forward = action(board, Rect2(1098, 377, 60, 81), "NextHero", cycle.bind(1))
+	previous = action(board, Rect2(397, 377, 60, 81), "PreviousHero", cycle.bind(-1))
+	forward = action(board, Rect2(1262, 377, 60, 81), "NextHero", cycle.bind(1))
 	previous_arrow = picture(previous, "carousel-left.svg", Rect2(12, 11, 36, 59))
 	forward_arrow = picture(forward, "carousel-right.svg", Rect2(12, 11, 36, 59))
-	picture(board, "name-divider.svg", Rect2(625, 687, 506, 45))
-	hero_name = text_at(board, "", Rect2(650, 666, 104, 52), 43, Color("ffdaa2"), HORIZONTAL_ALIGNMENT_RIGHT, true)
-	panel_at(board, Rect2(781, 677, 2, 33), Color("bf8b4acc"))
-	panel_at(board, Rect2(810, 674, 134, 44), Color("463215e6"), Color("a8844b"), 2, 12)
-	role_art = app.picture(board, null, Rect2(802, 668, 54, 54))
-	role_name = text_at(board, "", Rect2(865, 675, 74, 41), 23, Color("ffe3ae"), HORIZONTAL_ALIGNMENT_CENTER, true)
+	hero_details = Control.new()
+	hero_details.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	board.add_child(hero_details)
+	picture(hero_details, "name-branch.svg", Rect2(650.8, 743.2, 368.4, 43), TextureRect.STRETCH_SCALE)
+	hero_name = text_at(hero_details, "", Rect2(695.5, 708.2, 89, 52), 43, Color("ffdaa2"), HORIZONTAL_ALIGNMENT_RIGHT, true)
+	panel_at(hero_details, Rect2(811.5, 719.2, 2, 33), Color("bf8b4acc"))
+	panel_at(hero_details, Rect2(840.5, 716.2, 134, 44), Color("463215e6"), Color("a8844b"), 2, 12)
+	role_art = app.picture(hero_details, null, Rect2(832.5, 710.2, 54, 54))
+	role_name = text_at(hero_details, "", Rect2(904.5, 717.2, 54, 41), 23, Color("ffe3ae"), HORIZONTAL_ALIGNMENT_CENTER, true)
 	skills = Control.new()
 	skills.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	board.add_child(skills)
-	text_at(skills, "스킬", Rect2(653, 757, 101, 48), 39, Color("f1c573"), HORIZONTAL_ALIGNMENT_RIGHT, true)
-	panel_at(skills, Rect2(756, 769, 2, 80), Color("bf8b4acc"))
 	for i in 2:
-		var x: int = [782, 938][i]
-		var width: int = [128, 136][i]
-		skill_frame.append(panel_at(skills, Rect2(x, 748, width, 121), Color("332318"), Color("ffb841"), 4, 16))
-		skill_art.append(app.picture(skills, null, Rect2(x + 5, 752, width - 10, 113)))
+		var x: float = [715.4, 845.8][i]
+		var width: float = [102.4, 108.8][i]
+		skill_frame.append(panel_at(skills, Rect2(x, 796.2, width, 96.8), Color("332318"), Color("ffb841"), 3, 12))
+		skill_art.append(app.picture(skills, null, Rect2(x + 4, 799.4, width - 8, 90.4)))
 		skill_art[i].stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-		text_at(skills, "%dSP" % (i + 2), Rect2(x + width - 66, 750, 52, 32), 19, Color("fff0d2"), HORIZONTAL_ALIGNMENT_RIGHT, true)
-		skill_value.append(text_at(skills, "", Rect2(x - 12, 873, width + 24, 38), 22, CREAM, HORIZONTAL_ALIGNMENT_CENTER))
-	chain_lock = picture(skills, "roster-lock.svg", Rect2(1044, 837, 19, 24))
+		panel_at(skills, Rect2(x + 4, 867.8, width - 8, 22), Color(0, 0, 0, 0.5), Color.TRANSPARENT, 0, 4)
+		var sp := text_at(skills, "%dSP" % (i + 2), Rect2(x + width - 59, 798.2, 53, 27), 17, Color("fff0d2"), HORIZONTAL_ALIGNMENT_RIGHT, true)
+		apply_skill_outline(sp)
+		var value := text_at(skills, "", Rect2(x + 4, 867.8, width - 8, 22), 16, CREAM, HORIZONTAL_ALIGNMENT_CENTER)
+		apply_skill_outline(value)
+		skill_value.append(value)
+	chain_lock = picture(skills, "roster-lock.svg", Rect2(929.6, 841.8, 19, 24))
 
 func make_roster() -> void:
 	var top := (DESIGN.y - PANEL_HEIGHT) * 0.5
-	panel_at(board, Rect2(1232, top + 5, 340, PANEL_HEIGHT - 10), Color(0.16, 0.14, 0.10, 0.78), Color("76502f"), 5, 20)
+	panel_at(board, Rect2(ROSTER_X + 5, top + 5, ROSTER_WIDTH - 10, PANEL_HEIGHT - 10), Color(0.16, 0.14, 0.10, 0.78), Color.TRANSPARENT, 0, 25)
 	roster_frame = NinePatchRect.new()
-	var frame := roster_frame
-	frame.texture = preload("res://assets/ui/hero-level-up/roster-wood-frame.png")
-	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	frame.draw_center = false
+	roster_frame.texture = preload("res://assets/ui/hero-level-up/roster-wood-frame.png")
+	roster_frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	roster_frame.draw_center = false
 	for side in [SIDE_LEFT, SIDE_TOP, SIDE_RIGHT, SIDE_BOTTOM]:
-		frame.set_patch_margin(side, 48)
-	place(board, frame, Rect2(1227, top, 350, PANEL_HEIGHT))
-	frame.name = "HeroRosterFrame"
-	picture(board, "allied-heading.svg", Rect2(1254, top + 16, 28, 31))
-	text_at(board, "아군", Rect2(1291, top + 13, 124, 36), 26, Color("f6d38d"), HORIZONTAL_ALIGNMENT_LEFT, true)
-	panel_at(board, Rect2(1252, top + 55, 300, 1), Color("a78e5a99"))
+		roster_frame.set_patch_margin(side, 48)
+	place(board, roster_frame, Rect2(ROSTER_X, top, ROSTER_WIDTH, PANEL_HEIGHT))
+	roster_frame.name = "HeroRosterFrame"
 	roster_scroll = ScrollContainer.new()
 	var scroll := roster_scroll
 	scroll.name = "HeroRoster"
 	scroll.clip_contents = true
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_SHOW_NEVER
-	place(board, scroll, Rect2(1248, top + 64, 308, PANEL_HEIGHT - 83))
+	place(board, scroll, Rect2(ROSTER_X + 20, top + 20, 240, 392))
 	var content := Control.new()
 	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	content.custom_minimum_size = Vector2(308, 606)
+	var recruit := action(board, Rect2(ROSTER_X + 20, top + 432, 240, 68), "RecruitHero", Callable())
+	make_wood_button(recruit, "모집")
+	recruit.disabled = true # Recruitment rules are not part of this patch.
+	recruit.modulate.a = 0.62
+	var rows := ceili(float(maxi(0, DATA.size() - 3)) / 2.0)
+	content.custom_minimum_size = Vector2(240, maxf(240.0, 250.0 + rows * 124.0 - 8.0))
 	scroll.add_child(content)
-	panel_at(content, Rect2(4, 394, 296, 2), Color("a78e5a99")).name = "HeroRosterDivider"
+	if DATA.size() > 3:
+		panel_at(content, Rect2(0, 244, 240, 2), Color("a78e5a99")).name = "HeroRosterDivider"
 	for i in DATA.size():
-		var at: Vector2 = [Vector2(4,1), Vector2(160,1), Vector2(4,194), Vector2(4,405), Vector2(160,405)][i]
-		var card := action(content, Rect2(at, Vector2(146, 191)), "HeroCard" + str(i), choose.bind(i))
+		var offset := i if i < 3 else i - 3
+		var at := Vector2((offset % 2) * 124, floori(float(offset) / 2.0) * 124 + (250 if i >= 3 else 0))
+		var card := action(content, Rect2(at, Vector2(116, 116)), "HeroCard" + str(i), choose.bind(i))
 		card.set_meta("semantic_text", DATA[i][0])
 		roster.append(card)
-		var portrait := picture(card, str(DATA[i][1]) + "-portrait-original.png", Rect2(6, 5, 134, 141), TextureRect.STRETCH_KEEP_ASPECT_COVERED)
+		var portrait := picture(card, str(DATA[i][1]) + "-portrait-original.png", Rect2(4.5, 4.5, 107, 107), TextureRect.STRETCH_KEEP_ASPECT_COVERED)
 		portrait.name = "Portrait"
-		var band := panel_at(card, Rect2(5, 147, 136, 39), Color("35281c"), Color.TRANSPARENT, 0, 6)
+		var band := panel_at(card, Rect2(4.5, 84.5, 107, 27), Color(0, 0, 0, 0.8), Color.TRANSPARENT, 0, 5)
 		band.name = "NameBand"
-		text_at(band, DATA[i][0], Rect2(0, 0, 136, 39), 25, Color("f9e6c3"), HORIZONTAL_ALIGNMENT_CENTER, true)
-		if i >= 3:
-			var lock := app.picture(card, GOLD_LOCK, Rect2(104, 113, 35, 32)) as TextureRect
-			lock.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-			locks.append(lock)
-		else:
-			locks.append(picture(card, "roster-lock.svg", Rect2(118, 125, 19, 24)))
-
-	swipe_card_hint = panel_at(content, Rect2(Vector2.ZERO,Vector2(146,191)),Color.TRANSPARENT,Color("ffd283"),4,13)
+		text_at(band, DATA[i][0], Rect2(0, 0, 107, 27), 20, Color("f9e6c3"), HORIZONTAL_ALIGNMENT_CENTER, true)
+		panel_at(card, Rect2(7.5, 7.5, 26, 26), Color(0.13, 0.09, 0.05, 0.90), Color("edb85e"), 1, 5)
+		var badge := app.picture(card, Readiness.role_texture(DATA[i][3]), Rect2(9.5, 9.5, 22, 22)) as TextureRect
+		badge.name = "RoleBadge"
+		badge.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		roster_roles.append(badge)
+		var lock := app.picture(card, GOLD_LOCK, Rect2(84.5, 9.5, 22, 22)) as TextureRect
+		lock.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		locks.append(lock)
+	swipe_card_hint = panel_at(content, Rect2(Vector2.ZERO,Vector2(116,116)),Color.TRANSPARENT,Color("ffd283"),3,11)
 	swipe_card_hint.name = "SwipeNextCardHint"
 	swipe_card_hint.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	swipe_card_hint.hide()
@@ -551,7 +590,6 @@ func refresh() -> void:
 		var card := roster[i]
 		card.disabled = not unlocked and i < 3
 		card.get_node("Portrait").modulate.a = 1.0 if unlocked else 0.48 if i >= 3 else 0.75
-		card.get_node("NameBand").add_theme_stylebox_override("panel", style(Color("35281c") if unlocked else Color("202224"), Color.TRANSPARENT, 0, 6))
 		locks[i].visible = not unlocked
 		var edge := style(Color("33271b") if unlocked else Color("333638"), Color("ffbe50") if active else Color("94704b") if unlocked else Color("888b8c"), 4 if active else 3, 13)
 		if active:
@@ -561,8 +599,7 @@ func refresh() -> void:
 			card.add_theme_stylebox_override(button_state, edge)
 	previous.disabled = navigable.size() < 2
 	forward.disabled = previous.disabled
-	previous.modulate.a = 0.4 if previous.disabled else 1.0
-	forward.modulate.a = previous.modulate.a
+	set_nav_opacity(nav_opacity)
 
 	var id: String = HeroGrowth.HEROES[selected]
 	var progress := HeroGrowth.read(state, id)
@@ -570,18 +607,19 @@ func refresh() -> void:
 	var has_next: bool = int(progress.level) < limit
 	var need := HeroGrowth.needed_at(progress.level) if has_next else 0
 	var stats := HeroGrowth.stats_at(id, progress.level)
-	var next_stats := HeroGrowth.stats_at(id, progress.level + 1) if has_next else {}
+	var next_stats := HeroGrowth.stats_at(id, progress.level + 1) if has_next else stats
 	level_text.text = "Lv. %d/%d" % [progress.level, limit]
-	xp_text.text = "%d / %s XP" % [progress.xp, str(need) if need > 0 else "—"]
+	xp_text.text = "%d / %d XP" % [progress.xp, need] if need > 0 else ""
 	remaining_text.text = "%d XP 남음" % maxi(0, need - progress.xp) if need > 0 else "최대 레벨"
 	var fraction := clampf(float(progress.xp) / need, 0.0, 1.0) if need > 0 else 1.0
-	xp_fill.size.x = 351 * fraction
+	xp_fill.size.x = 249 * fraction
 	xp_fill.visible = fraction > 0.0
 	meat_text.text = "보유 %d" % int(state.get("meat", 0))
 	for i in 3:
 		var key: String = HeroGrowth.STATS[i]
 		before_text[i].text = str(stats[key])
 		after_text[i].text = str(next_stats.get(key, "—"))
+		after_text[i].add_theme_color_override("font_color", Color("a9dd70") if has_next else Color("ffe8bc"))
 	upgrade.disabled = not HeroGrowth.can_feed(state, id)
 	upgrade.modulate.a = 0.62 if upgrade.disabled else 1.0
 
@@ -623,8 +661,21 @@ func refresh() -> void:
 	skill_value[1].modulate.a = skill_art[1].modulate.a
 	if upgrade.disabled: stop_hold()
 
+func set_nav_opacity(value: float) -> void:
+	nav_opacity = value
+	previous.modulate.a = value * (0.4 if previous.disabled else 1.0)
+	forward.modulate.a = value * (0.4 if forward.disabled else 1.0)
+
+func show_nav_hints() -> void:
+	if arrow_fade: arrow_fade.kill()
+	set_nav_opacity(1.0)
+	arrow_fade = create_tween()
+	arrow_fade.tween_interval(2.0)
+	arrow_fade.tween_method(set_nav_opacity, 1.0, 0.12, 0.26)
+
 func cycle(direction: int, fixed_forest := false) -> void:
 	if navigable.size() < 2: return
+	show_nav_hints()
 	var current := navigable.find(selected)
 	choose(navigable[posmod(current + direction, navigable.size())], direction, fixed_forest)
 
@@ -743,6 +794,7 @@ func valley_drag(movement: Vector2) -> void:
 	present_swipe_actor(clampf(movement.x * 1.28, -w * 0.62, w * 0.62), 1.0 - smoothstep(0.22, 0.43, distance))
 
 func cancel_valley_drag() -> void:
+	if nav_opacity == 1.0: show_nav_hints()
 	if valley_anim: valley_anim.kill()
 	if not is_instance_valid(active_foreground): return
 	var initial := active_foreground.position.x
@@ -752,7 +804,7 @@ func cancel_valley_drag() -> void:
 	valley_anim.tween_method(set_valley_camera, valley_camera, float(selected), 0.24)
 
 func _input(event: InputEvent) -> void:
-	if not is_visible_in_tree() or not app.application_active: return
+	if not is_visible_in_tree() or not app.application_active or app.modal: return
 	if event is InputEventScreenTouch:
 		if handle_roster_touch(event): return
 		if event.canceled:
@@ -805,6 +857,7 @@ func pointer(index: int, point: Vector2, pressed: bool) -> void:
 	if pressed and upgrade.get_global_rect().has_point(point):
 		if held == NONE and not upgrade.disabled:
 			held = index
+			hold_seconds = 0.0
 			repeats_in = REPEAT_SECONDS
 			feed()
 			set_process(held != NONE)
@@ -822,6 +875,7 @@ func pointer(index: int, point: Vector2, pressed: bool) -> void:
 	elif not pressed and swipe == index:
 		var movement := swipe_delta(point)
 		var was_drag := swipe_moved
+		if nav_opacity == 1.0: show_nav_hints()
 		if swipe_follow_hero:
 			swipe = NONE
 			swipe_moved = false
@@ -849,7 +903,7 @@ func is_swipe_origin(point: Vector2) -> bool:
 	if not valley_viewport.has_point(local): return false
 	# Native scrolling and click targets must see the initial pointer event.
 	if roster_frame.get_global_rect().has_point(point): return false
-	for button in [back_button, previous, forward]:
+	for button in [back_button, previous, forward, debug_growth_reset, bag_button]:
 		if button.is_visible_in_tree() and button.get_global_rect().has_point(point): return false
 	return true
 
@@ -864,7 +918,11 @@ func pointer_drag(index: int, point: Vector2) -> void:
 	var movement := swipe_delta(point)
 	swipe_moved = swipe_moved or movement.length() >= SWIPE_SLOP
 	if swipe_follow_hero:
-		if absf(movement.x) >= SWIPE_PREVIEW_SLOP: valley_drag(movement)
+		if absf(movement.x) >= SWIPE_PREVIEW_SLOP:
+			if is_horizontal_swipe(movement):
+				if arrow_fade: arrow_fade.kill()
+				set_nav_opacity(1.0)
+			valley_drag(movement)
 		else:
 			set_valley_camera(float(selected))
 			present_swipe_actor(0.0, 1.0)
@@ -920,14 +978,19 @@ func reset_swipe() -> void:
 	clear_swipe_hint()
 
 func _process(delta: float) -> void:
-	if not app.application_active or not is_visible_in_tree() or held == NONE:
+	if not app.application_active or not is_visible_in_tree() or app.modal or held == NONE:
 		stop_hold()
 		return
+	hold_seconds = minf(hold_seconds + delta, FEED_RAMP_SECONDS)
 	repeats_in -= delta
-	if repeats_in <= 0.0:
-		repeats_in += REPEAT_SECONDS
-		if repeats_in <= 0.0: repeats_in = REPEAT_SECONDS
-		feed()
+	if repeats_in <= 0.00001:
+		var ramp := smoothstep(0.0, 1.0, hold_seconds / FEED_RAMP_SECONDS)
+		var interval := REPEAT_SECONDS / lerpf(1.0, FEED_TOP_SPEED, ramp)
+		# Preserve sub-frame timing, but never burst multiple charges after a stalled frame.
+		repeats_in = maxf(interval * 0.5, repeats_in + interval)
+		var progress := HeroGrowth.read(app.model.state, HeroGrowth.HEROES[selected])
+		var amount := roundi(lerpf(1.0, float(HeroGrowth.fast_feed_cap(progress.level)), ramp))
+		feed(amount)
 
 func _notification(what: int) -> void:
 	if what in [NOTIFICATION_APPLICATION_PAUSED, NOTIFICATION_APPLICATION_FOCUS_OUT, NOTIFICATION_EXIT_TREE]:
@@ -942,10 +1005,11 @@ func _notification(what: int) -> void:
 
 func stop_hold() -> void:
 	held = NONE
+	hold_seconds = 0.0
 	set_process(false)
 
-func feed() -> void:
-	var result: Dictionary = app.model.feed_hero(HeroGrowth.HEROES[selected])
+func feed(amount: int = 1) -> void:
+	var result: Dictionary = app.model.feed_hero(HeroGrowth.HEROES[selected], amount)
 	if result.is_empty():
 		stop_hold()
 		return

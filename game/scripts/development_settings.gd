@@ -38,6 +38,8 @@ static func entries(app:Node)->Array[Dictionary]:
 		{"id":"FillResources","title":"자원 채우기 · 자원바를 눌러 100개 추가","kind":"toggle",
 			"value":app.model.debug_resource_refill,"read":func():return app.model.debug_resource_refill,
 			"changed":func(enabled:bool):app.model.set_debug_resource_refill(enabled)},
+		{ "id":"ResetHeroGrowth", "title":"캐릭터 레벨 초기화", "kind":"action",
+			"button":"초기화","action":app.confirm_hero_growth_reset,"disabled":app.model.state.is_empty()},
 		{"id":"ResetProgress","title":"진행 초기화 · 소리 설정 유지","kind":"action",
 			"button":"초기화","action":app.confirm_progress_reset},
 		{"id":"FullReset","title":"완전 초기화","kind":"action",
@@ -97,5 +99,5 @@ static func populate(app:Node,scroll:ScrollContainer,settings:Array[Dictionary])
 			action.focus_mode=Control.FOCUS_ALL
 			action.disabled=setting.get("disabled",false)
 			action.add_theme_font_size_override("font_size",15)
-			var destructive: bool = setting.id in ["ResetProgress","FullReset","PerformanceDelete"]
+			var destructive: bool = setting.id in ["ResetHeroGrowth","ResetProgress","FullReset","PerformanceDelete"]
 			SharedPopupArt.button_style(action,"wood","red" if destructive else "gold")

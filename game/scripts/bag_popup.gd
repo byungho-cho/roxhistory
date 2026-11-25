@@ -19,6 +19,7 @@ var grid: GridContainer
 var thumb: Panel
 var count: Label
 var amounts: Dictionary = {}
+var resource_slots: Dictionary = {}
 var offset := 0.0
 var max_offset := 0.0
 var pointer := -2
@@ -86,6 +87,7 @@ func _ready() -> void:
 		slot.custom_minimum_size=SLOT_SIZE
 		if i>=ITEMS.size():continue
 		var key: String=ITEMS[i][0]
+		resource_slots[key]=slot
 		var icon := PlayChrome.CORN_ICON if key=="grain" else DemoArt.icon(key)
 		app.picture(slot,icon,Rect2(10.3,15,94.4,94.4))
 		FigmaArt.text(slot,ITEMS[i][1],Rect2(8,0,99,25),18,FigmaArt.NOTO,INK,false)
@@ -217,5 +219,16 @@ func _input(event: InputEvent) -> void:
 		dragging=false
 	elif pointer==id:
 		pointer=-2
+		if not dragging and at.distance_to(drag_origin)<=6.0 and (not touch or not event.canceled):
+			refill_debug_resource(at)
 	else:return
 	get_viewport().set_input_as_handled()
+
+func refill_debug_resource(at: Vector2) -> void:
+	if not app.model.debug_resource_refill or not viewport.get_global_rect().has_point(at): return
+	for key: String in resource_slots:
+		var slot: Control = resource_slots[key]
+		var box := slot.get_global_rect()
+		if box.has_point(at) and box.has_point(drag_origin):
+			app.model.debug_fill_resource(key)
+			return

@@ -242,20 +242,33 @@ func finish_loaded_jobs()->void:
 	if debug_fast_build and state.get("fast_build_mode","")!="fixed5":set_debug_fast_build(true)
 
 ## Spend the resource and record growth in one save transaction.
-func feed_hero(id: String) -> Dictionary:
+func feed_hero(id: String, requested: int = 1) -> Dictionary:
 	if busy: return {}
-	var progress := HeroGrowth.after_feed(state, id)
+	var amount := HeroGrowth.feed_cost(state, id, requested)
+	if amount == 0: return {}
+	var progress := HeroGrowth.after_feed(state, id, amount)
 	if progress.is_empty(): return {}
 	var previous := HeroGrowth.read(state, id)
 	var next := state.duplicate(true)
-	next.meat = int(next.meat) - 1
+	next.meat = int(next.meat) - amount
 	if not next.has(HeroGrowth.SAVE_KEY): next[HeroGrowth.SAVE_KEY] = {}
 	next[HeroGrowth.SAVE_KEY][id] = progress
 	busy = true
 	var saved := commit(next)
 	busy = false
-	return {"before": previous, "after": progress} if saved else {}
+	return {"before": previous, "after": progress, "spent": amount} if saved else {}
 
+
+## Clear hero level and XP only, preserving all resources and recruitment.
+func reset_hero_growth() -> bool:
+	if busy or state.is_empty(): return false
+	if not state.has(HeroGrowth.SAVE_KEY): return true
+	var next := state.duplicate(true)
+	next.erase(HeroGrowth.SAVE_KEY)
+	busy = true
+	var saved := commit(next)
+	busy = false
+	return saved
 
 ## Called while preparing the same save transaction that marks hunt progression.
 func credit_hunt_meat(next: Dictionary, amount: int) -> int:
@@ -863,9 +876,9 @@ func set_debug_resource_refill(enabled:bool)->bool:
 	return commit(next)
 
 func debug_fill_resource(kind:String)->bool:
-	if busy or not debug_resource_refill or kind not in ["wood","stone","grain","diamonds"]:return false
+	if busy or not debug_resource_refill or kind not in ["wood","stone","grain","diamonds","meat"]:return false
 	var next:=state.duplicate(true)
-	next[kind]=int(next.get(kind,0))+100
+	next[kind]=mini(BuildingRules.MAX_RESOURCE, int(next.get(kind,0)) + 100)
 	busy=true
 	var ok:=commit(next)
 	busy=false

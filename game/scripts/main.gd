@@ -2197,6 +2197,21 @@ func set_performance_diagnostics(enabled:bool)->void:
 		show_error("성능 진단 설정을 저장하지 못했습니다.")
 	update_debug_shortcut()
 
+func confirm_hero_growth_reset(return_action := Callable()) -> void:
+	if model.state.is_empty(): return
+	var back: Callable = return_action if return_action.is_valid() else show_development_settings
+	show_modal("캐릭터 레벨을 초기화할까요?", "모든 캐릭터의 레벨과 경험치만 Lv.1·0으로 되돌립니다. 사용한 고기는 돌려주지 않으며, 영입과 사냥 진행은 그대로입니다.", [
+		{"text": "취소", "action": back},
+		{"text": "레벨 초기화", "action": _reset_hero_growth.bind(back)},
+	], false, true, false, Vector2(620, 300), true)
+
+func _reset_hero_growth(return_action: Callable) -> void:
+	if not model.reset_hero_growth():
+		show_error("캐릭터 레벨을 초기화하지 못했습니다.")
+		return
+	return_action.call()
+	toast("캐릭터 레벨과 경험치를 초기화했습니다.")
+
 func confirm_progress_reset()->void:
 	show_modal("진행을 초기화할까요?","진행과 자원을 지우고 소리·디버그 설정은 유지합니다. 삭제한 진행은 되돌릴 수 없습니다.",[
 		{"text":"취소","action":show_development_settings},{"text":"초기화","action":reset_progress}],false,true,false,Vector2.ZERO,true)
