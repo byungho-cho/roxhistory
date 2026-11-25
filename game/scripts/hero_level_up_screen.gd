@@ -20,6 +20,10 @@ const MOTION_SIZE := Vector2(1280, 720)
 const PANEL_HEIGHT := 520.0
 const GROWTH_WIDTH := 297.0
 const PANEL_OUTER_MARGIN := 48.0
+const BAG_ICON_SIDE := 116.0 # Twice the 58 px texture rect used in 329.
+const BAG_VISIBLE_XY := Vector2(36.0, 30.0) * (BAG_ICON_SIDE / 256.0)
+const BAG_VISIBLE_SIZE := Vector2(184.0, 193.0) * (BAG_ICON_SIDE / 256.0)
+const BAG_TOUCH_SLOP := 10.0
 const ROSTER_WIDTH := 280.0
 const ROSTER_X := 1342.0
 const GOLD_LOCK := preload("res://assets/ui/d0024/08-ui-padlock-gold.png")
@@ -93,6 +97,7 @@ var active_background: TextureRect
 var active_foreground: Control
 var back_button: Button
 var bag_button: Button
+var bag_icon: TextureRect
 var screen_title: Label
 var fold_material: ShaderMaterial
 var fold_motion := false
@@ -216,7 +221,7 @@ func fit() -> void:
 	var hud_margin := Vector2(maxf(48.0 * factor, safe.x), maxf(48.0 * factor, safe.y))
 	back_button.position = (hud_margin - board.position) / factor
 	screen_title.position = back_button.position + Vector2(96, (back_button.size.y - screen_title.size.y) * 0.5)
-	bag_button.position = Vector2(viewport.end.x - hud_margin.x / factor - bag_button.size.x, back_button.position.y)
+	fit_bag_button(viewport, safe / factor)
 	if is_instance_valid(hero_video):
 		fit_hero_motion(viewport)
 	fit_celebration()
@@ -463,9 +468,20 @@ func make_header() -> void:
 	screen_title = text_at(board, "영웅 레벨업", Rect2(153, 55, 333, 66), 46, Color("ffe2a7"), HORIZONTAL_ALIGNMENT_LEFT, true)
 
 func make_bag_button() -> void:
-	bag_button = action(board, Rect2(1542, 48, 80, 80), "HeroBagButton", app.inventory_summary)
+	bag_button = action(board, Rect2(), "HeroBagButton", app.inventory_summary)
 	bag_button.tooltip_text = "가방"
-	app.picture(bag_button, DemoArt.play_icon("bag"), Rect2(11, 11, 58, 58))
+	bag_icon = app.picture(bag_button, DemoArt.play_icon("bag"), Rect2(Vector2.ZERO, Vector2.ONE * BAG_ICON_SIDE))
+	bag_icon.name = "HeroBagArtwork"
+
+func fit_bag_button(viewport: Rect2, safe: Vector2) -> void:
+	# Anchor actual art rather than its square PNG, which has transparent edges.
+	var margin := Vector2(maxf(PANEL_OUTER_MARGIN, safe.x), maxf(PANEL_OUTER_MARGIN, safe.y))
+	var visible := Rect2(Vector2(viewport.end.x - margin.x - BAG_VISIBLE_SIZE.x, viewport.position.y + margin.y), BAG_VISIBLE_SIZE)
+	var safe_view := Rect2(viewport.position + safe, viewport.size - 2.0 * safe)
+	var touch := visible.grow(BAG_TOUCH_SLOP).intersection(safe_view)
+	bag_button.position = touch.position
+	bag_button.size = touch.size
+	bag_icon.position = visible.position - BAG_VISIBLE_XY - bag_button.position
 
 func make_growth() -> void:
 	var frame := Control.new()
