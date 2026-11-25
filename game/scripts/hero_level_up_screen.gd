@@ -109,6 +109,11 @@ var held := NONE
 var swipe := NONE
 var swipe_start := Vector2.ZERO
 var swipe_moved := false
+var swipe_follow_hero := false
+var swipe_scene_tween: Tween
+var gesture_tabs: Control
+var gesture_buttons: Array[Button] = []
+
 var repeats_in := REPEAT_SECONDS
 var bold := FontVariation.new()
 
@@ -127,6 +132,7 @@ func _ready() -> void:
 	board.add_child(world_view)
 	make_scene()
 	make_header()
+	make_gesture_tabs()
 	make_growth()
 	make_hero_details()
 	make_roster()
@@ -151,6 +157,7 @@ func fit() -> void:
 	var hud_margin := Vector2(maxf(57.0 * factor, safe.x), maxf(48.0 * factor, safe.y))
 	back_button.position = (hud_margin - board.position) / factor
 	screen_title.position = back_button.position + Vector2(96, (back_button.size.y - screen_title.size.y) * 0.5)
+	if is_instance_valid(gesture_tabs): gesture_tabs.position = Vector2(viewport.get_center().x - 106.0, back_button.position.y)
 	if is_instance_valid(hero_video):
 		fit_hero_motion(viewport)
 	if is_instance_valid(outgoing_scene):
@@ -465,12 +472,40 @@ func refresh() -> void:
 	skill_value[1].modulate.a = skill_art[1].modulate.a
 	if upgrade.disabled: stop_hold()
 
-func cycle(direction: int) -> void:
+func make_gesture_tabs() -> void:
+	gesture_tabs = Control.new()
+	gesture_tabs.name = "GestureCompareTabs"
+	gesture_tabs.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	board.add_child(gesture_tabs)
+	for i in 2:
+		var button := action(gesture_tabs, Rect2(i * 109.0, 0, 103, 54), "GestureMode%d" % (i + 1), set_gesture_mode.bind(i == 1))
+		button.text = "%d안" % (i + 1)
+		button.add_theme_font_override("font", bold)
+		button.add_theme_font_size_override("font_size", 29)
+		button.add_theme_color_override("font_color", Color("fff5db"))
+		gesture_buttons.append(button)
+	refresh_gesture_tabs()
+
+func refresh_gesture_tabs() -> void:
+	for i in gesture_buttons.size():
+		var active := (i == 1) == swipe_follow_hero
+		var border := Color("ffd283") if active else Color("7a603b")
+		var fill := Color("795023") if active else Color("2c251bde")
+		for state in ["normal", "hover", "pressed"]:
+			gesture_buttons[i].add_theme_stylebox_override(state, style(fill, border, 3 if active else 2, 11))
+
+func set_gesture_mode(follow: bool) -> void:
+	if swipe_follow_hero == follow: return
+	reset_swipe()
+	swipe_follow_hero = follow
+	refresh_gesture_tabs()
+
+func cycle(direction: int, fixed_forest := false) -> void:
 	if navigable.size() < 2: return
 	var current := navigable.find(selected)
-	choose(navigable[posmod(current + direction, navigable.size())], direction)
+	choose(navigable[posmod(current + direction, navigable.size())], direction, fixed_forest)
 
-func choose(index: int, direction := 0) -> void:
+func choose(index: int, direction := 0, fixed_forest := false) -> void:
 	if index == selected or index not in navigable: return
 	stop_hold()
 	reset_swipe()
@@ -487,6 +522,14 @@ func choose(index: int, direction := 0) -> void:
 	make_scene()
 	fit()
 	refresh()
+	if fixed_forest:
+		outgoing_scene.hide()
+		outgoing_scene.queue_free()
+		var entry := Vector2(sign_dir * 155.0, 0.0)
+		present_swipe_actor(entry.x, 0.0)
+		swipe_scene_tween = create_tween()
+		swipe_scene_tween.tween_method(animate_swipe_actor.bind(entry.x), 0.0, 1.0, 0.24).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+		return
 	var span := size.x / board.scale.x
 	active_scene.position.x = sign_dir * span
 	var departing := outgoing_scene
@@ -531,7 +574,7 @@ func pointer(index: int, point: Vector2, pressed: bool) -> void:
 		var was_drag := swipe_moved
 		reset_swipe()
 		if absf(movement.x) > SWIPE_COMMIT and is_horizontal_swipe(movement):
-			cycle(1 if movement.x < 0 else -1)
+			cycle(1 if movement.x < 0 else -1, swipe_follow_hero)
 		elif not was_drag and movement.length() < SWIPE_SLOP and is_instance_valid(hero_video):
 			play_hero_motion(true)
 		get_viewport().set_input_as_handled()
@@ -549,6 +592,12 @@ func pointer_drag(index: int, point: Vector2) -> void:
 	clear_swipe_hint()
 	if navigable.size() > 1 and absf(movement.x) > SWIPE_SLOP and is_horizontal_swipe(movement):
 		var direction := 1 if movement.x < 0 else -1
+		if swipe_follow_hero:
+			var shift := clampf(movement.x, -205.0, 205.0)
+			var opacity := 1.0 - smoothstep(38.0, 175.0, absf(shift))
+			present_swipe_actor(shift, opacity)
+			get_viewport().set_input_as_handled()
+			return
 		var arrow := forward_arrow if direction > 0 else previous_arrow
 		var progress := clampf((absf(movement.x) - SWIPE_SLOP) / (SWIPE_COMMIT - SWIPE_SLOP), 0.0, 1.0)
 		arrow.position.x = 12.0 + signf(movement.x) * 12.0 * progress
@@ -559,7 +608,21 @@ func pointer_drag(index: int, point: Vector2) -> void:
 		swipe_card_hint.show()
 	get_viewport().set_input_as_handled()
 
+func present_swipe_actor(offset: float, opacity: float) -> void:
+	if not is_instance_valid(active_foreground): return
+	active_foreground.position.x = offset
+	active_foreground.modulate.a = opacity
+	if is_instance_valid(fold_material):
+		fold_material.set_shader_parameter("drag_opacity",opacity)
+	active_foreground.visible = opacity > 0.001
+
+func animate_swipe_actor(progress: float, start_x: float) -> void:
+	present_swipe_actor(lerpf(start_x, 0.0, progress), progress)
+
 func clear_swipe_hint() -> void:
+	if swipe_follow_hero:
+		if swipe_scene_tween and swipe_scene_tween.is_running(): swipe_scene_tween.kill()
+		present_swipe_actor(0.0, 1.0)
 	for arrow in [previous_arrow, forward_arrow]:
 		if is_instance_valid(arrow):
 			arrow.position.x = 12.0
