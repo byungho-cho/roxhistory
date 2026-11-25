@@ -12,6 +12,9 @@ const NONE := -2
 const HERO_INTERACTION := Rect2(679, 100, 413, 560)
 const SWIPE_SLOP := 20.0
 const SWIPE_PREVIEW_SLOP := 5.0
+const HERO_SWIPE_PREVIEW_SLOP := 14.0
+const HERO_TAP_RELEASE_SLOP := 32.0
+const HERO_TAP_EXCURSION_LIMIT := 44.0
 const SWIPE_COMMIT := 70.0
 const MOTION_SIZE := Vector2(1280, 720)
 const PANEL_HEIGHT := 520.0
@@ -962,7 +965,7 @@ func pointer(index: int, point: Vector2, pressed: bool) -> void:
 			var target := valley_neighbor(direction)
 			if target >= 0 and absf(movement.x) > maxf(SWIPE_COMMIT, valley_viewport.size.x * 0.09) and is_horizontal_swipe(movement):
 				choose(target, direction)
-			elif swipe_can_activate and not was_drag and movement.length() < SWIPE_SLOP:
+			elif swipe_can_activate and not was_drag and movement.length() < HERO_TAP_RELEASE_SLOP:
 				set_valley_camera(float(selected))
 				present_swipe_actor(0.0, 1.0)
 				play_hero_motion(true)
@@ -995,9 +998,11 @@ func is_horizontal_swipe(movement: Vector2) -> bool:
 func pointer_drag(index: int, point: Vector2) -> void:
 	if swipe != index: return
 	var movement := swipe_delta(point)
-	swipe_moved = swipe_moved or movement.length() >= SWIPE_SLOP
+	var excursion_limit := HERO_TAP_EXCURSION_LIMIT if swipe_follow_hero and swipe_can_activate else SWIPE_SLOP
+	swipe_moved = swipe_moved or movement.length() >= excursion_limit
 	if swipe_follow_hero:
-		if absf(movement.x) >= SWIPE_PREVIEW_SLOP:
+		var preview_slop := HERO_SWIPE_PREVIEW_SLOP if swipe_can_activate else SWIPE_PREVIEW_SLOP
+		if absf(movement.x) >= preview_slop:
 			if is_horizontal_swipe(movement):
 				if arrow_fade: arrow_fade.kill()
 				set_nav_opacity(1.0)
