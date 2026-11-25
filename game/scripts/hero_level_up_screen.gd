@@ -48,6 +48,16 @@ const DATA := [
 	["새봄", "saebom", "원거리", "ally-ranged", "saebom-3sp-transparent.png"],
 	["가희", "gahui", "치유", "ally-healer", ""], ["바우", "bau", "주술", "ally-shaman", ""]
 ]
+const PREVIEW_SKILLS := {
+	3: [
+		[preload("res://assets/ui/hero-level-up/gahui-preview-2sp.svg"), "물화살 연타"],
+		[preload("res://assets/ui/hero-level-up/gahui-preview-3sp.svg"), "생명의 샘"],
+	],
+	4: [
+		[preload("res://assets/ui/hero-level-up/bau-preview-2sp.svg"), "낙인 불기둥"],
+		[preload("res://assets/ui/hero-level-up/bau-preview-3sp.svg"), "화염 문양"],
+	],
+}
 const BACK := preload("res://assets/ui/d0024/08-ui-back-button.png")
 const Readiness := preload("res://scripts/hunt_readiness_art.gd")
 
@@ -68,7 +78,7 @@ var outgoing_scene: Control
 var slide: Tween
 var celebration: Tween
 var selected := 0
-var owned: Array[int] = []
+var navigable: Array[int] = []
 var roster: Array[Button] = []
 var locks: Array[TextureRect] = []
 var level_text: Label
@@ -339,14 +349,14 @@ func make_roster() -> void:
 	scroll.name = "HeroRoster"
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_AUTO
-	place(board, scroll, Rect2(1248, top + 41, 314, PANEL_HEIGHT - 48))
+	place(board, scroll, Rect2(1248, top + 41, 314, PANEL_HEIGHT - 43))
 	var content := Control.new()
 	content.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	content.custom_minimum_size = Vector2(312, 590)
+	content.custom_minimum_size = Vector2(312, 596)
 	scroll.add_child(content)
-	panel_at(content, Rect2(4, 394, 296, 2), Color("a78e5a99"))
+	panel_at(content, Rect2(4, 394, 296, 2), Color("a78e5a99")).name = "HeroRosterDivider"
 	for i in DATA.size():
-		var at: Vector2 = [Vector2(4,1), Vector2(160,1), Vector2(4,198), Vector2(4,398), Vector2(160,398)][i]
+		var at: Vector2 = [Vector2(4,1), Vector2(160,1), Vector2(4,194), Vector2(4,405), Vector2(160,405)][i]
 		var card := action(content, Rect2(at, Vector2(146, 191)), "HeroCard" + str(i), choose.bind(i))
 		card.set_meta("semantic_text", DATA[i][0])
 		roster.append(card)
@@ -364,10 +374,10 @@ func make_roster() -> void:
 
 func refresh() -> void:
 	var state: Dictionary = app.model.state
-	owned.clear()
+	navigable.clear()
 	for i in roster.size():
 		var unlocked := HeroGrowth.owns(state, HeroGrowth.HEROES[i])
-		if unlocked: owned.append(i)
+		if unlocked or i >= 3: navigable.append(i)
 		var active := i == selected
 		var card := roster[i]
 		card.disabled = not unlocked and i < 3
@@ -380,7 +390,7 @@ func refresh() -> void:
 			edge.shadow_size = 6
 		for button_state in ["normal", "hover", "pressed", "disabled"]:
 			card.add_theme_stylebox_override(button_state, edge)
-	previous.disabled = owned.size() < 2
+	previous.disabled = navigable.size() < 2
 	forward.disabled = previous.disabled
 	previous.modulate.a = 0.4 if previous.disabled else 1.0
 	forward.modulate.a = previous.modulate.a
@@ -419,10 +429,16 @@ func refresh() -> void:
 		for i in 3:
 			before_text[i].text = "—"
 			after_text[i].text = "—"
-	skills.visible = selected < 3
-	if selected >= 3:
+	if PREVIEW_SKILLS.has(selected):
+		var preview: Array = PREVIEW_SKILLS[selected]
+		for i in preview.size():
+			skill_art[i].texture = preview[i][0]
+			skill_value[i].text = preview[i][1]
+			skill_art[i].modulate.a = 1.0
+			skill_value[i].modulate.a = 1.0
+		skill_frame[1].add_theme_stylebox_override("panel", style(Color("332318"), Color("ffb841"), 4, 16))
 		chain_lock.hide()
-		stop_hold()
+		if upgrade.disabled: stop_hold()
 		return
 	skill_art[0].texture = load(ART + str(hero[1]) + "-2sp.png")
 	skill_art[1].texture = load(ART + str(hero[4]))
@@ -439,12 +455,12 @@ func refresh() -> void:
 	if upgrade.disabled: stop_hold()
 
 func cycle(direction: int) -> void:
-	if owned.size() < 2: return
-	var current := owned.find(selected)
-	choose(owned[posmod(current + direction if current >= 0 else (0 if direction > 0 else -1), owned.size())], direction)
+	if navigable.size() < 2: return
+	var current := navigable.find(selected)
+	choose(navigable[posmod(current + direction, navigable.size())], direction)
 
 func choose(index: int, direction := 0) -> void:
-	if index == selected or index < 0 or index >= DATA.size() or (index < 3 and index not in owned): return
+	if index == selected or index not in navigable: return
 	stop_hold()
 	swipe = NONE
 	stop_hero_motion()
