@@ -179,9 +179,9 @@ func handle_pointer(event:InputEvent)->bool:
 		if not cancelled and not press.dragged and press.start.distance_to(event.position)<=12:advance()
 	return true
 
-func attach_timed_motion(stream: VideoStream, motion_name: String) -> void:
+func attach_timed_motion(stream: VideoStream) -> void:
 	timed_motion = VideoStreamPlayer.new()
-	timed_motion.name = motion_name
+	timed_motion.name = "UramJoinMotion"
 	timed_motion.stream = stream
 	timed_motion.buffering_msec = 0
 	timed_motion.volume_db = -80.0

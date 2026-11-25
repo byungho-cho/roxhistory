@@ -2447,9 +2447,10 @@ func _make_story_cutin(slot: int) -> void:
 	story_cutin.hide()
 	add_child(story_cutin)
 	if slot == 1:
-		story_cutin.attach_timed_motion(preload("res://assets/ui/village-guidance/hunt-uram-entrance.ogv"), "UramJoinMotion")
+		story_cutin.attach_timed_motion(preload("res://assets/ui/village-guidance/hunt-uram-entrance.ogv"))
 	elif slot == 2:
-		story_cutin.attach_timed_motion(preload("res://assets/ui/village-guidance/hunt-saebom-entrance.ogv"), "SaebomJoinMotion")
+		story_cutin.attach_timed_motion(preload("res://assets/ui/village-guidance/hunt-saebom-entrance.ogv"))
+		story_cutin.timed_motion.name = "SaebomJoinMotion"
 
 func _update_story_cutin() -> void:
 	if not is_instance_valid(story_cutin):return
