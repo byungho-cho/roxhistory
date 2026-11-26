@@ -149,6 +149,7 @@ func update_equipment() -> void:
 	shield.global_transform = Transform3D(Basis(right,normal.cross(right),normal),center)
 # Story squad only. Lab/shared-world shields deliberately retain their old mount.
 var campaign_right_shield := false
+var prep_shield_face_camera := false
 const STORY_SHIELD_GRIP_DEPTH := .20
 
 func enable_campaign_right_shield() -> void:
@@ -190,6 +191,10 @@ func _update_campaign_right_shield() -> void:
 	var forward := pivot.global_basis.z.slide(Vector3.UP).normalized()
 	var normal := (side*.65+forward*.66).normalized()
 	normal = normal.lerp((side*.28+forward*.92).normalized(), maxf(shield_push,counter_cover)).normalized()
+	if prep_shield_face_camera:
+		var toward := camera.global_basis.z.slide(Vector3.UP).normalized()
+		var delta := normal.signed_angle_to(toward,Vector3.UP)
+		normal = normal.rotated(Vector3.UP,clampf(delta,-deg_to_rad(22.0),deg_to_rad(22.0)))
 	var up := Vector3.UP.slide(normal).normalized()
 	var fore_up := arm.slide(normal).normalized()
 	if fore_up.dot(up)<0.:fore_up=-fore_up

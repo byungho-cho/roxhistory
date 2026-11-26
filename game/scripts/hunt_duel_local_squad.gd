@@ -37,6 +37,9 @@ const STORY_CUTIN_SECONDS := 1.42
 var story_join_slot := -1
 # Already-mapped native ground positions, in Han / Uram / Saebom order.
 var story_allied_placement := PackedVector2Array()
+var story_team_forward := Vector2.ZERO
+var pc_prepared_actor_scales := PackedFloat32Array()
+var pc_prepared_body_heights := PackedFloat32Array()
 var story_entry_clock := 0.0
 var story_entry_done := false
 # Chapter 1-3's reinforcing tank owns only each living deer's next basic.
@@ -112,6 +115,7 @@ var knife_events:Array[Dictionary]=[]
 const HAN_3SP_SPLASH_FRACTION:=.60
 const CampaignSaebom := preload("res://scripts/hunt_campaign_saebom.gd")
 const CampaignSaebomFx := preload("res://scripts/hunt_campaign_saebom_fx.gd")
+const EquipmentGleam := preload("res://scripts/hunt_equipment_gleam.gd")
 const CampaignCast := preload("res://scripts/hunt_duel_saebom_3p_effect.gd")
 const CAMPAIGN_URAM_TAUNT := preload("res://assets/ui/d0071-hud/uram-taunt.png")
 var campaign_saebom: CampaignSaebom
@@ -266,7 +270,9 @@ func setup(dust_draw:Callable=Callable(),gong:Callable=Callable(), heavy:Callabl
 			home=Hunt.HUNTER_BATTLE_CENTER+(Hunt.ALLY_CELLS[HERO_SLOTS[i]]-Hunt.FORMATION_CENTER)*.62
 			if not story_encounter.is_empty() and story_allied_placement.size()==3:
 				home=story_allied_placement[i]
-		else:home=Hunt.DEER_SLOT+Vector2(111,-9)+(Hunt.ENEMY_CELLS[DEER_SLOTS[i-3]]-Hunt.ENEMY_CELLS[4])*.86
+		else:
+			var enemy_seat: int = Hunt.ENEMY_FRONT_FILL[i-3] if not story_encounter.is_empty() else DEER_SLOTS[i-3]
+			home=Hunt.DEER_SLOT+Vector2(111,-9)+(Hunt.ENEMY_CELLS[enemy_seat]-Hunt.ENEMY_CELLS[4])*.86
 		var actor:=Actor.new();actor.create(self,id);actor.configure(true)
 		if id=="uram" and _story_uram_tank():
 			var tank_view:=actor.preview as HybridCharacter
@@ -278,18 +284,29 @@ func setup(dust_draw:Callable=Callable(),gong:Callable=Callable(), heavy:Callabl
 		if id=="hangyeol" and not story_encounter.is_empty() and actor.preview.has_method("install_han_production_motion"):
 			actor.preview.call("install_han_production_motion")
 		var visual_multiplier:=Hunt.BATTLEFIELD_MODEL_MULTIPLIER if not story_encounter.is_empty() else 1.0
+		if not story_encounter.is_empty() and id=="juvenile": visual_multiplier *= Hunt.HUNT_JUVENILE_BOAR_MODEL_SCALE
 		actor.preview.scale=Vector2.ONE*[.76588,1.08,.90,.82588,.82588,.82588][i]*visual_multiplier
+		if not story_encounter.is_empty() and pc_prepared_actor_scales.size() > i:
+			actor.preview.scale = Vector2.ONE*pc_prepared_actor_scales[i]
 		if i == 2 and story_encounter.get("party", []).has("saebom"):
 			campaign_saebom = CampaignSaebom.new(actor.preview)
 			campaign_far_wing = Node2D.new()
 			campaign_far_wing.name = "CampaignSaebomFarWing"
 			add_child(campaign_far_wing)
 			campaign_far_wing.draw.connect(_paint_campaign_wing.bind(campaign_far_wing, false))
+		if not story_encounter.is_empty() and pc_prepared_body_heights.size() > i:
+			var combat_rig: Skeleton3D = campaign_saebom.rig if i==2 and campaign_saebom!=null else null
+			var actual := Hunt.projected_body_height(actor.preview,combat_rig)
+			if pc_prepared_body_heights[i] > .001 and actual > .001:
+				actor.preview.scale *= pc_prepared_body_heights[i] / actual
 		var ring:=Line2D.new();ring.width=1.65;ring.antialiased=true;ring.default_color=Head.duel_team_color(ally)
 		for j in 41:ring.add_point(Vector2.from_angle(TAU*float(j)/40)*Vector2(22,8))
 		add_child(ring)
 		var u:Dictionary={"actor":actor,"id":id,"home":home,"feet":home,"hp":MAX_HP,"sp":1.0,"move":"idle","age":0.0,"next":.52+float(i%3)*.17,"contact":-1.0,"victim":-1,"ring":ring,"rally":0.0}
 		if not story_encounter.is_empty():
+			var team_direction:Vector2=story_team_forward if not story_team_forward.is_zero_approx() else Hunt.DEER_SLOT+Vector2(111,-9)-Hunt.HUNTER_BATTLE_CENTER
+			u.team_heading=_ground_heading(actor.preview.camera,team_direction if ally else -team_direction)
+			actor.preview.pivot.rotation.y=float(u.team_heading)
 			u.story_dormant = dormant
 			if ally:
 				u.max_hp=roundi(Hunt.RULES.PARTY_HP[i] * story_allied_growth[i])
@@ -306,6 +323,8 @@ func setup(dust_draw:Callable=Callable(),gong:Callable=Callable(), heavy:Callabl
 		units.append(u)
 		_play(u,"idle")
 	_calibrate_han()
+	if not story_encounter.is_empty():
+		units[0].actor.preview.pivot.rotation.y=float(units[0].team_heading)
 	hud_parent=Control.new();hud_parent.mouse_filter=Control.MOUSE_FILTER_IGNORE;add_child(hud_parent)
 	for i in 3:
 		var hud:=HUD.new();hud.position=Vector2(359+88*i,437);hud_parent.add_child(hud)
@@ -1136,11 +1155,21 @@ func _step(dt:float)->void:
 		var ordinary_enemy:=i>=3 and saebom_distance_drill.is_empty()
 		var taunt_walk:=i>=3 and target==1 and _story_uram_tank() and float(u.get("uram_taunted_until",0.))>elapsed
 		var formation_aggro:=ordinary_enemy and not taunt_walk and target==1 and _within_uram_aggro(i)
-		if (not _enemy_slot_ready(i,target) if formation_aggro else ours.distance_to(theirs)>_gap(i)+2.0):
-			var gait:="walk" if taunt_walk else "run"
+		var arrival_pending:bool=not _enemy_slot_ready(i,target) if formation_aggro else ours.distance_to(theirs)>_gap(i)+2.0
+		# A preferred lane is a movement goal, not an attack prerequisite.
+		# A deer stopped by another body may already be in valid melee reach.
+		if arrival_pending and not story_encounter.is_empty() and (i<=1 or (i>=3 and u.id in ["forest","stag"] and not taunt_walk)):
+			var reach:=_gap(i)+8.0 # Same as the normal basic resolver below.
+			if ours.distance_squared_to(theirs)<=reach*reach:
+				arrival_pending=false
+		if arrival_pending:
+			# Ordinary campaign travel uses the same gait and pace as the existing walk lane.
+			var walking:=taunt_walk or not story_encounter.is_empty()
+			var gait:="walk" if walking else "run"
+			var travel_dt:=dt*.65 if walking else dt
 			if u.move!=gait:_play(u,gait)
-			if formation_aggro:_approach_enemy_slot(i,target,dt)
-			else:_approach(i,theirs,dt*.65 if taunt_walk else dt)
+			if formation_aggro:_approach_enemy_slot(i,target,travel_dt)
+			else:_approach(i,theirs,travel_dt)
 		elif elapsed>=u.next:
 			var teaching := _story_teaching_first_charge()
 			var first_charge := teaching and i == 3
@@ -1515,15 +1544,14 @@ func _damage(i:int,j:int,amount:int,key:String,stone_impact:=Vector2.INF)->void:
 			story_contact_audio.emit("ally_hit" if j<3 else "boar_hit" if target.id in ["juvenile","adult"] else "deer_hit",1)
 	if i == 0 and key == "chain":
 		han_ground_events.append({"at":elapsed,"floor":target.feet})
-	var skip_saebom_flash := j == 2 and campaign_saebom != null
+	# Campaign basic attacks keep contact, sound and motion, but no extra hit flash.
+	var skip_saebom_flash := (j == 2 and campaign_saebom != null) or (not story_encounter.is_empty() and key=="attack")
 	if skip_saebom_flash:
 		pass
 	elif bom_hit_draw.is_valid() and i==2 and key=="skill":
 		var feet:Vector2=target.feet
 		var from:Vector2=units[i].feet
 		group_bom_hits.append({"at":elapsed,"point":impact_point if not story_encounter.is_empty() else (feet-Vector2(0,25) if stone_impact==Vector2.INF else stone_impact),"forward":from.direction_to(feet)})
-	elif not story_encounter.is_empty() and i>=3 and key=="attack" and units[i].id in ["forest","stag"]:
-		glints.append({"at":elapsed,"point":impact_point,"lab_deer_basic":true})
 	elif silver_impact.is_valid() and i>=3 and key=="skill":
 		var ground:Vector2=target.feet
 		silver_hits.append({"at":elapsed,"center":impact_point,"floor_point":ground,"unit":i})
@@ -1641,7 +1669,17 @@ func _draw_pose(dt:float)->void:
 			if j>=0:
 				var d:Vector2=units[j].feet-u.feet
 				var heading:=_ground_heading(actor.preview.camera,d)
-				actor.preview.pivot.rotation.y=heading-float(spear_forward_bias.get(u.move,0.0)) if i==0 else heading
+				var facing:=heading-float(spear_forward_bias.get(u.move,0.0)) if i==0 else heading
+				if not story_encounter.is_empty() and u.move in ["idle","walk","run","attack","hit"]:
+					# Keep team-forward while the target is already in front, and progressively aim outside the cone.
+					var team_heading:=float(u.team_heading)
+					var angle:=absf(angle_difference(team_heading,heading))
+					var bias:=float(spear_forward_bias.get(u.move,0.0)) if i==0 else 0.0
+					var turn_weight:=smoothstep(deg_to_rad(37.),deg_to_rad(52.),angle)
+					facing=lerp_angle(team_heading,heading,turn_weight)-bias
+					actor.preview.pivot.rotation.y=rotate_toward(actor.preview.pivot.rotation.y,facing,TAU*maxf(0.,dt))
+				else:
+					actor.preview.pivot.rotation.y=facing
 		var show_basic:=i==2 and _uses_close_basic_pose(u,int(u.victim))
 		if i==0 and u.move=="death" and not story_encounter.is_empty():_present_han_death(u)
 		elif i==1 and _story_uram_tank() and u.move=="skill":
@@ -1654,7 +1692,9 @@ func _draw_pose(dt:float)->void:
 			else:
 				var heavy:bool=u.move=="hit" and bool(u.get("deer_large_hit_pose",false))
 				var motion_age:=float(u.age)/maxf(.001,float(actor.duration))*.74 if heavy else float(u.age)
-				ApprovedDeerPose.apply(actor.preview.skeleton,"heavy_hit" if heavy else u.move,motion_age)
+				# Keep the native (pre-retarget) run sampled above.
+				if u.move!="run":
+					ApprovedDeerPose.apply(actor.preview.skeleton,"heavy_hit" if heavy else "hunt_idle" if u.move=="idle" else u.move,motion_age)
 		if i==0 and u.move=="run" and not story_encounter.is_empty():
 			var target:=_target(i)
 			if target>=0:
@@ -1820,6 +1860,8 @@ func _paint_campaign_wing(layer: Node2D, near: bool) -> void:
 	layer.draw_set_transform_matrix(Transform2D.IDENTITY)
 
 func _paint()->void:
+	if not pc_prepared_actor_scales.is_empty() and units.size()>1 and units[1].hp>0:
+		EquipmentGleam.shield(paint,null,units[1].actor.preview)
 	if not story_encounter.is_empty():
 		for hit in glints:
 			if hit.get("rope",false):continue # The existing rope-impact chips own this hit.
@@ -2063,7 +2105,7 @@ func _paint_campaign_saebom() -> void:
 			if absf(float(bom.age) - Knife.contacts[i]) < .105:
 				forward = forward.rotated(-signf(forward.x) * deg_to_rad(40.0))
 				break
-	CampaignSaebomFx.blade(paint, palm, forward)
+	CampaignSaebomFx.held_blade(paint, palm, forward)
 
 
 func _draw_han_ground() -> void:

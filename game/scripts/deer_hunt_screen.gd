@@ -9,6 +9,19 @@ var prep_tags:Array[Control]=[]
 var chapter_one_solo:=false
 var chapter_story_encounter: Dictionary = {}
 var prep_ally_count := 3
+# From the allied formation's centroid to the opposing formation's centroid.
+const PREP_ALLY_FORWARD := Vector2(900, -634)
+const PREP_PREY_IDLE_RATE := .5
+const CampaignSaebomPrep := preload("res://scripts/hunt_campaign_saebom.gd")
+const CampaignSaebomPrepFx := preload("res://scripts/hunt_campaign_saebom_fx.gd")
+var prep_shield_stock: Mesh
+var prep_shield_handles: Array[Node] = []
+var prep_club_visible := false
+var prep_saebom_view: CampaignSaebomPrep
+var prep_saebom_donor_layers: Dictionary = {}
+var prep_saebom_knife: Node2D
+var prep_header_vs: Control
+const EquipmentGleam := preload("res://scripts/hunt_equipment_gleam.gd")
 var story_cutin: CharacterGuide
 var story_cutin_pointer:=-2
 var story_cutin_touch:=Vector2.INF
@@ -92,7 +105,10 @@ const FORMATION_HERO_IDS: Array[String] = ["han","uram","saebom"]
 const FORMATION_SAVE_KEY := "hunt_formation_cells"
 const PREP_ACTION_Y := 472.0
 const PREP_ACTION_H := 65.0
-const CLEARING := preload("res://assets/ui/hunting-formation/clearing-dirt.png")
+const CLEARING := preload("res://assets/ui/hunting-formation/clearing-meadow-1.png")
+const PREP_HUD_SIDE_MARGIN := 48.0 * 960.0 / 1670.0
+const PC_HUNT_MAP_ZOOM := .8
+var pc_hunt_map: ShaderMaterial
 const ALLY_CELL := preload("res://assets/ui/hunting-formation/ally-cell.svg")
 const ENEMY_CELL := preload("res://assets/ui/hunting-formation/enemy-cell.svg")
 const NativeBoar := preload("res://scripts/hunt_production_boar_actor.gd")
@@ -126,7 +142,32 @@ const ALLY_CELLS := [Vector2(396.5,377.5),Vector2(422.75,321.75),Vector2(475.25,
 	Vector2(449,266),Vector2(501.5,303),Vector2(554,340)]
 const ENEMY_CELLS := [Vector2(686.5,172.5),Vector2(607.75,191.25),Vector2(660.25,228.25),
 	Vector2(529,210),Vector2(581.5,247),Vector2(634,284)]
+# Closest row first: middle, upper lane, lower lane; then middle and back rows.
+const ENEMY_FRONT_FILL := [4,3,5,2,1,0]
 const CELL_SIZE := Vector2(87.74,62.52)
+# Preparation placement uses screen-space diamonds; the 3D camera is independent.
+const PREP_CELL_SIZE := CELL_SIZE * 1.5 * 1.30
+const PREP_CELL_PITCH_SCALE := 1.30
+const PREP_RING_RADIUS := CELL_SIZE.x*.40*.62*1.20
+const PREP_DEER_MODEL_SCALE := .80
+const HUNT_JUVENILE_BOAR_MODEL_SCALE := .70
+const PREP_ELEVATION := 38.0
+const PREP_CAMERA_YAW := 8.0
+const PREP_ALLY_PIVOT := Vector2(363,271)
+const PREP_ENEMY_PIVOT := Vector2(500,184)
+const PREP_ALLY_STAGGER := Vector2(40,-86)
+const PREP_ROW_STEP := Vector2(81,57)
+const PREP_ENEMY_STAGGER := PREP_ALLY_STAGGER + PREP_ROW_STEP
+const PREP_ALLY_LATTICE := [Vector2(-2,0),Vector2(-1,0),Vector2(-1,1),Vector2(0,0),Vector2(0,1),Vector2(0,2)]
+const PREP_ENEMY_LATTICE := [Vector2(2,0),Vector2(1,0),Vector2(1,1),Vector2(0,0),Vector2(0,1),Vector2(0,2)]
+var prep_camera_transforms: Dictionary = {}
+var prep_center_orbit := false
+var pc_hunt_frame_locked := false
+var pc_prepared_actor_scales := PackedFloat32Array()
+var pc_prepared_body_heights := PackedFloat32Array()
+var prep_global_projection := Transform2D.IDENTITY
+var battle_team_forward := Vector2.ZERO
+const PREP_PC_FRAME_ZOOM := .80
 const NAME_BRUSH := preload("res://assets/ui/brush/resource-slot-brush@2x.png")
 const PREP_ART := "res://assets/ui/d0026/"
 const CARD_ART := "res://assets/ui/d0027/"
@@ -175,7 +216,6 @@ var arrival_finished := false
 var arrival_skip_pointer := -2
 var vs_skip_presses: Dictionary = {}
 var match_vs: Dictionary
-var header_spears: Control
 var roster_home: Vector2
 var footer_left_home: Vector2
 var footer_right_home: Vector2
@@ -269,6 +309,9 @@ var actor_delta := 0.0
 var pose := ""
 var exit_button: DemoButton
 var prep_sound_button: DemoButton
+var prep_camera_button: DemoButton
+var prep_camera_guide: CanvasLayer
+const PrepCameraGuide := preload("res://scripts/hunt_prep_camera_guide.gd")
 
 func _ready() -> void:
 	chapter_story_number = int(app.chapter_one_story_number(int(app.hunt_stage)))
@@ -306,6 +349,41 @@ func _ready() -> void:
 	ground = app.picture(self,CLEARING,Rect2())
 	ground.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	ground.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	if OS.has_feature("windows"):
+		# Keep the map full-bleed when its original painted crop runs out.
+		# Only the narrow overrun samples the reflected apron, never gameplay.
+		var map_shader := Shader.new()
+		map_shader.code = """
+shader_type canvas_item;
+uniform float scene_zoom = .704;
+uniform vec2 scene_pan = vec2(0.0);
+uniform float prep_ground_angle = 0.0;
+uniform vec2 prep_inverse_x = vec2(1.0,0.0);
+uniform vec2 prep_inverse_y = vec2(0.0,1.0);
+uniform vec2 prep_source_metric = vec2(1.7777778,1.0);
+uniform vec2 painted_x = vec2(1.,0.);
+uniform vec2 painted_y = vec2(0.,1.);
+varying vec4 tint;
+void vertex() { tint = COLOR; }
+void fragment() {
+	vec2 p = UV - vec2(0.5) - scene_pan;
+	vec2 metric = p * prep_source_metric;
+	vec2 planar = metric.x * prep_inverse_x + metric.y * prep_inverse_y;
+	vec2 painted_p = planar.x * painted_x + planar.y * painted_y;
+	vec2 uv = painted_p / prep_source_metric * (.704 / max(scene_zoom,.001)) + vec2(.5);
+	uv = vec2(1.0) - abs(vec2(1.0) - mod(uv, vec2(2.0)));
+	COLOR = tint * texture(TEXTURE, uv);
+}
+"""
+		pc_hunt_map = ShaderMaterial.new()
+		pc_hunt_map.shader = map_shader
+		# The new artwork is painted for 36/23; only apply camera adjustments relative to that base.
+		var paint_angle := deg_to_rad(23.0-PREP_CAMERA_YAW)
+		var paint_pitch := sin(deg_to_rad(36.0))
+		var ref_pitch := sin(deg_to_rad(PREP_ELEVATION))
+		pc_hunt_map.set_shader_parameter("painted_x",Vector2(cos(paint_angle),paint_pitch*sin(paint_angle)))
+		pc_hunt_map.set_shader_parameter("painted_y",Vector2(-sin(paint_angle)/ref_pitch,paint_pitch*cos(paint_angle)/ref_pitch))
+		ground.material = pc_hunt_map
 	canvas = Control.new()
 	canvas.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	canvas.size = DESIGN
@@ -317,9 +395,7 @@ func _ready() -> void:
 	battlefield.add_child(damage_numbers)
 	rules.hp_lost.connect(_show_hunt_hp_loss)
 	placement_grid = layer(battlefield)
-	for i in ALLY_CELLS.size():
-		app.picture(placement_grid,ALLY_CELL,Rect2(ALLY_CELLS[i]-CELL_SIZE*.5,CELL_SIZE))
-		app.picture(placement_grid,ENEMY_CELL,Rect2(ENEMY_CELLS[i]-CELL_SIZE*.5,CELL_SIZE))
+	placement_grid.draw.connect(_draw_prep_grid)
 	var actors := Node2D.new()
 	actors.y_sort_enabled = true
 	battlefield.add_child(actors)
@@ -333,6 +409,7 @@ func _ready() -> void:
 		hunter.display.position = -hunter.camera.unproject_position(Vector3.ZERO)*hunter.display.scale
 		hunters.append(hunter)
 	_setup_native_hunt_art(actors)
+	_setup_prep_equipment()
 	if app.get("hunt_prey_id") in ["adult","forest"]:
 		var adult := NativeBoar.new()
 		adult.native_species = str(app.get("hunt_prey_id"))
@@ -369,6 +446,11 @@ func _ready() -> void:
 		prep_tags.append(tag)
 	if chapter_story_preview:
 		_build_chapter_preparation_foes(actors)
+	_setup_prep_camera()
+	if OS.has_feature("windows"):
+		prep_camera_guide = PrepCameraGuide.new()
+		add_child(prep_camera_guide)
+		prep_camera_guide.setup(self)
 	update_combat_ui()
 	resized.connect(fit_layout)
 	fit_layout()
@@ -403,7 +485,7 @@ func _fit_hunt_chrome(safe_area:Rect2)->void:
 	canvas.position = safe_start+(safe_size-DESIGN*fit)*.5
 	var start := (safe_start-canvas.position)/fit
 	var end := (safe_end-canvas.position)/fit
-	var margin := Vector2.ONE*10.0
+	var margin := Vector2(10.0 if combat_layout else PREP_HUD_SIDE_MARGIN, 10.0)
 	header_left.position = start+margin-Vector2(3,0)
 	header_right.position = Vector2(end.x-DESIGN.x-margin.x+3,start.y+margin.y-3)
 	power_header.position = Vector2(480,start.y+margin.y)
@@ -413,10 +495,10 @@ func _fit_hunt_chrome(safe_area:Rect2)->void:
 	var sky:=power_header.get_node_or_null("PowerSkyBackdrop") as Control
 	if sky:
 		sky.position=full_start-power_header.position
-		sky.size=Vector2(full_size.x,134.222+start.y-full_start.y)
+		sky.size=Vector2(full_size.x,134.222*.7+start.y-full_start.y)
 	if is_instance_valid(branch_video):branch_video.fit_background(Rect2(full_start,full_size))
 	battle_header.position = Vector2(-45,start.y+margin.y-4)
-	roster_home = Vector2(start.x+margin.x,(start.y+end.y-330)*.5)
+	roster_home = Vector2(start.x+margin.x-(0.0 if combat_layout else 6.0),(start.y+end.y-330)*.5)
 	footer_left_home = Vector2(start.x+margin.x-3,end.y-DESIGN.y-margin.y+2)
 	footer_right_home = end-DESIGN-margin+Vector2(3,3)
 	roster_edge.position = roster_home
@@ -430,7 +512,6 @@ func _fit_hunt_chrome(safe_area:Rect2)->void:
 
 func _build_chapter_preparation_foes(parent: Node2D) -> void:
 	var species_list: Array = ChapterOneCatalog.encounter(chapter_story_number).prey
-	var seats: Array = [[4], [4, 2], [4, 0, 5]][species_list.size() - 1]
 	for i in species_list.size():
 		var species: String = species_list[i]
 		var actor: NativeBoar
@@ -454,7 +535,7 @@ func _build_chapter_preparation_foes(parent: Node2D) -> void:
 			actor.set_physics_process(false)
 			actor.presentation_paused = true
 		actor.name = "ChapterPrepFoe%d" % i
-		actor.set_meta("chapter_prep_slot", int(seats[i]))
+		actor.set_meta("chapter_prep_slot", int(ENEMY_FRONT_FILL[i]))
 		chapter_prep_foes.append(actor)
 		var tag := layer(battlefield)
 		tag.name = "ChapterPrepEnemyMelee%d" % i
@@ -474,27 +555,67 @@ static func battlefield_ground_heading(cam:Camera3D,d:Vector2)->float:
 	var ground:=Vector2(d.cross(z),x.cross(d))/det
 	return atan2(ground.x,ground.y)
 
-func _opposing_position(at:Vector2,opponents:Array[Vector2],fallback:Vector2)->Vector2:
-	var target:=fallback
-	var closest:=INF
-	for point in opponents:
-		var distance:=at.distance_squared_to(point)
-		if distance<closest:
-			closest=distance
-			target=point
-	return target
+func _setup_prep_equipment() -> void:
+	if prep_ally_count >= 2:
+		var tank := hunters[1] as Frontline.Uram
+		prep_club_visible = tank.club.visible
+		prep_shield_stock = tank.shield.mesh
+		if prep_shield_stock is QuadMesh:
+			var large := prep_shield_stock.duplicate() as QuadMesh
+			large.size *= 1.5
+			tank.shield.mesh = large
+		var original_children := tank.shield.get_child_count()
+		tank.enable_campaign_right_shield()
+		tank.prep_shield_face_camera = true
+		for index in range(original_children, tank.shield.get_child_count()):
+			prep_shield_handles.append(tank.shield.get_child(index))
+	if prep_ally_count > RULES.SAEBOM:
+		var view := hunters[RULES.SAEBOM]
+		for mesh: MeshInstance3D in view.pivot.find_children("*", "MeshInstance3D", true, false):
+			prep_saebom_donor_layers[mesh] = mesh.layers
+		prep_saebom_view = CampaignSaebomPrep.new(view, 1.5 * .80)
+	prep_saebom_knife = Node2D.new()
+	battlefield.add_child(prep_saebom_knife)
+	prep_saebom_knife.z_index = 2
+	prep_saebom_knife.draw.connect(_draw_prep_saebom_knife)
 
-func _prep_enemy_positions()->Array[Vector2]:
-	var points:Array[Vector2]=[]
-	for enemy in chapter_prep_foes:
-		points.append(ENEMY_CELLS[int(enemy.get_meta("chapter_prep_slot"))])
-	return points
+func _draw_prep_saebom_knife() -> void:
+	if prep_saebom_view != null and prep_saebom_view.view.visible:
+		CampaignSaebomPrepFx.held_blade(prep_saebom_knife, prep_saebom_view.palm(), prep_saebom_view.forward_screen())
+	var han := hunters[0] as Frontline.Han
+	if is_instance_valid(han) and han.visible and han.has_spear_anchor():
+		var tip := prep_saebom_knife.to_local(han.spear_tip_world())
+		var wrist3d := han.skeleton.to_global(han.skeleton.get_bone_global_pose(han.hand_index).origin)
+		var wrist := prep_saebom_knife.to_local(han.display.to_global(han.camera.unproject_position(wrist3d)))
+		EquipmentGleam.spear(prep_saebom_knife,prey_art.soft,tip,wrist)
+	if prep_ally_count >= 2 and hunters[1].visible:
+		EquipmentGleam.shield(prep_saebom_knife,prey_art.soft,hunters[1])
 
-func _prep_ally_positions()->Array[Vector2]:
-	var points:Array[Vector2]=[]
-	for i in mini(prep_ally_count,assigned_cells.size()):
-		points.append(drag_feet if dragging and i==selected_hunter else ALLY_CELLS[assigned_cells[i]])
-	return points
+func _end_prep_equipment() -> void:
+	if prep_shield_stock != null:
+		var tank := hunters[1] as Frontline.Uram
+		tank.prep_shield_face_camera = false
+		tank.campaign_right_shield = false
+		tank.shield.mesh = prep_shield_stock
+		for handle in prep_shield_handles:
+			tank.shield.remove_child(handle)
+			handle.queue_free()
+		prep_shield_handles.clear()
+		prep_shield_stock = null
+		tank.club.visible = prep_club_visible
+		tank.update_equipment()
+	if prep_saebom_view != null:
+		prep_saebom_view.model.hide()
+		prep_saebom_view.model.queue_free()
+		prep_saebom_view = null
+		for mesh: MeshInstance3D in prep_saebom_donor_layers:
+			mesh.layers = int(prep_saebom_donor_layers[mesh])
+		prep_saebom_donor_layers.clear()
+	if is_instance_valid(prep_saebom_knife):
+		prep_saebom_knife.hide()
+		prep_saebom_knife.queue_free()
+		prep_saebom_knife = null
+
 
 func _sync_chapter_preparation_foes() -> void:
 	if not chapter_prep_setup_ok: return
@@ -510,10 +631,10 @@ func _sync_chapter_preparation_foes() -> void:
 		if not preparing:
 			actor.viewport.render_target_update_mode = SubViewport.UPDATE_DISABLED
 			continue
-		actor.position = ENEMY_CELLS[int(actor.get_meta("chapter_prep_slot"))]
-		actor.scale = Vector2.ONE * PREP_PREY_SCALE * BATTLEFIELD_MODEL_MULTIPLIER
-		actor.heading = battlefield_ground_heading(actor.camera, actor.position.direction_to(_opposing_position(actor.position,_prep_ally_positions(),FORMATION_CENTER)))
-		actor.sample_native_phase("idle", fposmod(pose_clock + .29 * i, maxf(.01, actor.native.length(NativeBoar.Prey.clips(actor.native_species).idle))))
+		actor.position = prep_cell_center(int(actor.get_meta("chapter_prep_slot")), false)
+		actor.scale = Vector2.ONE * PREP_PREY_SCALE * BATTLEFIELD_MODEL_MULTIPLIER * _preparation_prey_multiplier(actor.native_species)
+		actor.heading = battlefield_ground_heading(actor.camera, -prep_global_projection.basis_xform(PREP_ALLY_FORWARD))
+		actor.sample_native_phase("idle", fposmod(pose_clock * PREP_PREY_IDLE_RATE + .29 * i, maxf(.01, actor.native.length(NativeBoar.Prey.clips(actor.native_species).idle))))
 		actor.viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
 		tag.position = actor.position + Vector2(0, -actor.world_height * actor.scale.y - 15)
 
@@ -529,7 +650,12 @@ func build_arrival() -> void:
 	branch_video.hide()
 	vs_ally=app.picture(vs_layer,_prep_hunter_portrait(selected_hunter),Rect2(100.5,117.5,285,275))
 	vs_ally.stretch_mode=TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	vs_enemy=app.picture(vs_layer,_vs_prey_portrait(),Rect2(536,53.5,380,329))
+	var enemy_vs_rect := Rect2(536,53.5,380,329)
+	if _presented_prey_species()==ChapterOneCatalog.JUVENILE:
+		var old_size := enemy_vs_rect.size
+		enemy_vs_rect.size *= HUNT_JUVENILE_BOAR_MODEL_SCALE
+		enemy_vs_rect.position += (old_size-enemy_vs_rect.size)*Vector2(.5,.70)
+	vs_enemy=app.picture(vs_layer,_vs_prey_portrait(),enemy_vs_rect)
 	vs_enemy.stretch_mode=TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	vs_enemy.material=ReadinessArt.vs_portrait_material(vs_enemy.texture,false)
 	vs_ally_name=caption(vs_layer,"",Rect2(145,398,180,35),23,Color("fae4bc"))
@@ -569,6 +695,7 @@ func advance_arrival(delta: float) -> void:
 	if arrival_elapsed >= arrival_duration:
 		arrival_finished = true
 		prep_sound_button.show()
+		if is_instance_valid(prep_camera_button): prep_camera_button.show()
 		preparation.mouse_behavior_recursive = Control.MOUSE_BEHAVIOR_INHERITED
 		header.mouse_behavior_recursive = Control.MOUSE_BEHAVIOR_INHERITED
 		fit_layout()
@@ -598,7 +725,6 @@ func animate_battle_vs(before: float, elapsed: float) -> void:
 		name_label.modulate.a=BranchVS.authored_ease((time-.77)/.2)*ending
 	for rule in vs_name_rules:
 		rule.visible=active;rule.modulate.a=BranchVS.authored_ease((time-.77)/.2)*ending
-	header_spears.visible=not active
 	if before*VS_PLAYBACK_RATE<VS_CONTACT and time>=VS_CONTACT:hunt_audio.cue("S11",2)
 
 
@@ -682,6 +808,10 @@ func _presented_prey_species() -> String:
 	return ChapterOneCatalog.ADULT if _prey_is_adult() else ChapterOneCatalog.FLOWER
 
 
+static func _preparation_prey_multiplier(species: String) -> float:
+	if species==ChapterOneCatalog.JUVENILE: return HUNT_JUVENILE_BOAR_MODEL_SCALE
+	return PREP_DEER_MODEL_SCALE if species in [ChapterOneCatalog.STAG, ChapterOneCatalog.FLOWER] else 1.0
+
 func _presented_prey_is_boar() -> bool:
 	return _presented_prey_species() in [ChapterOneCatalog.JUVENILE,ChapterOneCatalog.ADULT]
 
@@ -700,15 +830,14 @@ func _portrait_for_prey() -> Texture2D:
 
 func build_power_comparison() -> void:
 	ReadinessArt.sky(power_header)
-	prep_ally_portrait = app.picture(power_header,_prep_hunter_portrait(selected_hunter),Rect2(-231.22,-1.11,113.07,92.44))
+	prep_ally_portrait = app.picture(power_header,_prep_hunter_portrait(selected_hunter),Rect2(-130,0,72,48))
 	prep_ally_portrait.material=ReadinessArt.portrait_fade()
 	# Reflect the actual runtime actor, including a safe asset fallback.
-	var prep_prey_portrait:=app.picture(power_header,load(ReadinessArt.ART+"power/Deer-HUD-alpha.png") if not _presented_prey_is_boar() else _portrait_for_prey(),Rect2(109.,-18.,110.,130.03) if _presented_prey_is_boar() else Rect2(82.89,-18,117.33,130.03)) as TextureRect
+	var prep_prey_portrait:=app.picture(power_header,load(ReadinessArt.ART+"power/Deer-HUD-alpha.png") if not _presented_prey_is_boar() else _portrait_for_prey(),Rect2(58,0,72,48)) as TextureRect
 	prep_prey_portrait.name="HuntEnemyReadinessPortrait"
 	if _presented_prey_is_boar():prep_prey_portrait.stretch_mode=TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	header_spears = ReadinessArt.branch(power_header,Rect2(-30.22,27.33,60.44,30.22),false)
 	prep_ally_portrait.stretch_mode=TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	prep_ally_name=caption(power_header,["한결","우람","새봄"][selected_hunter],Rect2(-109.44,10,120,24),17,Color.WHITE)
+	prep_ally_name=caption(power_header,["한결","우람","새봄"][selected_hunter],Rect2(-109.44,1,120,20),roundi(17*.8),Color.WHITE)
 	var prep_prey_title := _presented_prey_name()
 	if chapter_story_preview:
 		var planned: Array = ChapterOneCatalog.encounter(chapter_story_number).prey
@@ -716,9 +845,13 @@ func build_power_comparison() -> void:
 			prep_prey_title = "적 %d마리" % planned.size()
 		elif planned[0] == ChapterOneCatalog.JUVENILE:
 			prep_prey_title = "어린 수퇘지"
-	var prey_name:=caption(power_header,prep_prey_title,Rect2(5,10,106.33,24),17,Color.WHITE)
+	var prey_name:=caption(power_header,prep_prey_title,Rect2(5,1,106.33,20),roundi(17*.8),Color.WHITE)
 	if chapter_story_preview:
 		prey_name.name = "ChapterPrepEnemyRosterCaption"
+	prep_header_vs = ReadinessArt.branch(power_header,Rect2(-30.22,18,60.44,30.22),false)
+	prep_header_vs.name = "HuntPreparationVS"
+	prep_ally_name.hide()
+	prey_name.hide()
 	prep_ally_name.horizontal_alignment=HORIZONTAL_ALIGNMENT_LEFT
 	prey_name.horizontal_alignment=HORIZONTAL_ALIGNMENT_RIGHT
 	for name_label in [prep_ally_name,prey_name]:
@@ -732,8 +865,22 @@ func build_power_comparison() -> void:
 			prey_power+=int(ChapterOneCatalog.prey_stats(chapter_story_number,species).power)
 	var ratings := [rules.hunter_hp*int(RULES.SKILLS.thrust.damage),prey_power]
 	for i in ratings.size():
-		var number := caption(power_header,MATCH.format_power(ratings[i]),Rect2(-112.11+96.44*i,28,130,40),28,Color("9fdaff") if i==0 else Color("ffac98"))
-		number.horizontal_alignment=HORIZONTAL_ALIGNMENT_LEFT if i==0 else HORIZONTAL_ALIGNMENT_RIGHT
+		var ink := Color("9fdaff") if i==0 else Color("ffac98")
+		var x := -133.0 if i==0 else 55.0
+		var plate := Panel.new()
+		plate.name = "HuntAllyPowerPlate" if i==0 else "HuntEnemyPowerPlate"
+		plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		plate.position = Vector2(x,48)
+		plate.size = Vector2(78,25)
+		var backing := StyleBoxFlat.new()
+		backing.bg_color = Color(.07,.14,.19,.38) if i==0 else Color(.22,.10,.07,.38)
+		backing.set_corner_radius_all(7)
+		backing.border_width_bottom = 1
+		backing.border_color = Color(ink,.56)
+		plate.add_theme_stylebox_override("panel",backing)
+		power_header.add_child(plate)
+		var number := caption(plate,MATCH.format_power(ratings[i]),Rect2(1,-2,76,27),roundi(28*.8),ink)
+		number.horizontal_alignment=HORIZONTAL_ALIGNMENT_CENTER
 		number.add_theme_color_override("font_outline_color",Color("35200e"))
 		number.add_theme_constant_override("outline_size",3)
 
@@ -778,6 +925,16 @@ func build_duel_header() -> void:
 	clear_button_art(prep_sound_button)
 	app.picture(prep_sound_button,preload("res://assets/ui/review-v037/settings-figma.png"),Rect2(3,3,42,42))
 	prep_sound_button.hide()
+	if OS.has_feature("windows"):
+		prep_camera_button = make_button(header_right,"",Rect2(858,0,48,48),_toggle_prep_camera_guide)
+		prep_camera_button.name = "HuntPreparationCamera"
+		prep_camera_button.tooltip_text = "카메라 조정 (F7)"
+		prep_camera_button.accessibility_name = prep_camera_button.tooltip_text
+		clear_button_art(prep_camera_button)
+		var symbol := Node2D.new()
+		prep_camera_button.add_child(symbol)
+		symbol.draw.connect(func() -> void: _draw_prep_camera_icon(symbol))
+		prep_camera_button.hide()
 	location_brush = app.picture(header_left,NAME_BRUSH,Rect2(3,0,220,56))
 	var story_chapter := 1 if chapter_story_preview else int(app.hunt_stage)/6+1
 	location_caption = caption(location_brush,"%d장 · %s"%[story_chapter,"초원" if story_chapter==1 else "숲"],Rect2(44,0,163,56),21)
@@ -809,6 +966,19 @@ func build_duel_header() -> void:
 	_build_pause_chrome()
 	update_toggles()
 
+func _toggle_prep_camera_guide() -> void:
+	if is_instance_valid(prep_camera_guide) and arrival_finished and not running and not app.modal:
+		prep_camera_guide.toggle_guide()
+
+func _draw_prep_camera_icon(symbol: Node2D) -> void:
+	var center := Vector2(24,24)
+	var gold := Color("#e2ba70")
+	symbol.draw_circle(center,20.5,Color("#292723"))
+	symbol.draw_arc(center,20.0,0.0,TAU,64,Color("#94683b"),2.3,true)
+	symbol.draw_rect(Rect2(13,17,22,15),gold,false,1.4)
+	symbol.draw_polyline(PackedVector2Array([Vector2(17,17),Vector2(20,13),Vector2(27,13),Vector2(30,17)]),gold,1.6,true)
+	symbol.draw_arc(Vector2(24,24.5),4.6,0.0,TAU,24,gold,1.6,true)
+
 func toggle_control(parent: Control, rect: Rect2, label: String, asset: String, action: Callable) -> DemoButton:
 	var button := make_button(parent,"",rect,action)
 	clear_button_art(button)
@@ -827,8 +997,8 @@ func toggle_auto() -> void:
 func update_toggles() -> void:
 	if not battle_toggles_unlocked:
 		rules.set_auto(false)
-	auto_button.visible=battle_toggles_unlocked
-	auto_button.disabled=not battle_toggles_unlocked
+	auto_button.visible=battle_toggles_unlocked and combat_layout and running
+	auto_button.disabled=not auto_button.visible
 	var active:bool=rules.auto_enabled
 	var icon:TextureRect=auto_button.get_meta("toggle_icon")
 	icon.texture=load("res://assets/ui/hunt-readiness/AUTO-%d.png"%int(active))
@@ -1318,10 +1488,126 @@ func handle_pan(event: InputEvent, at: Vector2) -> bool:
 	return true
 
 
+func _setup_prep_camera() -> void:
+	if pc_hunt_map != null:
+		pc_hunt_map.set_shader_parameter("prep_ground_angle", 1.0)
+	var views: Array[Node] = [deer]
+	views.append_array(hunters)
+	for foe in chapter_prep_foes:
+		if foe != deer: views.append(foe)
+	for view in views:
+		var cam: Camera3D = view.camera
+		var aim := Vector3(0, 1.30 if view is HybridCharacter else .92, 0)
+		prep_camera_transforms[cam] = cam.transform
+		var offset := cam.position - aim
+		var horizontal := Vector3(offset.x, 0, offset.z).normalized().rotated(Vector3.UP, deg_to_rad(PREP_CAMERA_YAW))
+		var pitch := deg_to_rad(PREP_ELEVATION)
+		cam.position = aim + (horizontal * cos(pitch) + Vector3.UP * sin(pitch)) * offset.length()
+		cam.look_at(aim)
+		if view is HybridCharacter:
+			view.display.position = -cam.unproject_position(Vector3.ZERO) * view.display.scale
+		else:
+			view.update_geometry()
+
+func set_prep_center_orbit(pitch: float, yaw: float) -> Vector3:
+	prep_center_orbit = true
+	pc_hunt_frame_locked = OS.has_feature("windows")
+	var ground_pitch := sin(deg_to_rad(clampf(pitch,15.0,70.0)))
+	var ref_pitch := sin(deg_to_rad(PREP_ELEVATION))
+	var ground_yaw := deg_to_rad(yaw-PREP_CAMERA_YAW)
+	var cl := cos(ground_yaw)
+	var sl := sin(ground_yaw)
+	prep_global_projection = Transform2D(Vector2(cl,ground_pitch*sl),
+		Vector2(-sl/ref_pitch,ground_pitch*cl/ref_pitch),Vector2.ZERO)
+	var inv := prep_global_projection.affine_inverse()
+	if pc_hunt_map != null:
+		pc_hunt_map.set_shader_parameter("prep_inverse_x",inv.x)
+		pc_hunt_map.set_shader_parameter("prep_inverse_y",inv.y)
+		pc_hunt_map.set_shader_parameter("prep_ground_angle",1.0)
+	var views: Array[Node] = [deer]
+	views.append_array(hunters)
+	for foe in chapter_prep_foes:
+		if foe != deer: views.append(foe)
+	var guide_ray := Vector3.ZERO
+	var eye_pitch := deg_to_rad(pitch)
+	for view in views:
+		var cam: Camera3D = view.camera
+		if not prep_camera_transforms.has(cam): continue
+		var old: Transform3D = prep_camera_transforms[cam]
+		var aim := Vector3(0,1.30 if view is HybridCharacter else .92,0)
+		var offset := old.origin-aim
+		var heading := Vector3(offset.x,0,offset.z).normalized().rotated(Vector3.UP,deg_to_rad(yaw))
+		var ray := heading*cos(eye_pitch)+Vector3.UP*sin(eye_pitch)
+		if view == hunters[0]: guide_ray = ray
+		if not view is HybridCharacter and not view.has_meta("prep_fixed_pixel_density"):
+			var image_axis := cam.global_basis.x.normalized()
+			var span := cam.unproject_position(image_axis).distance_to(cam.unproject_position(-image_axis))
+			view.set_meta("prep_fixed_pixel_density",view.display.scale.x*span)
+		cam.position = aim+ray*offset.length()
+		cam.look_at(aim)
+		if view is HybridCharacter:
+			view.display.position = -cam.unproject_position(Vector3.ZERO)*view.display.scale
+		else:
+			view.update_geometry()
+	update_camera(0.0)
+	placement_grid.queue_redraw()
+	battlefield.queue_redraw()
+	return guide_ray
+
+func _prep_project(point: Vector2) -> Vector2:
+	var center := DESIGN*.5
+	return center+prep_global_projection.basis_xform(point-center)
+
+func _restore_prep_camera() -> void:
+	if is_instance_valid(prep_camera_button): prep_camera_button.hide()
+	if is_instance_valid(prep_camera_guide):
+		prep_camera_guide.flush_save()
+		prep_camera_guide.ui.hide()
+	if prep_center_orbit:
+		prep_center_orbit = false
+		prep_global_projection = Transform2D.IDENTITY
+		if pc_hunt_map != null and not pc_hunt_frame_locked:
+			pc_hunt_map.set_shader_parameter("prep_inverse_x",Vector2.RIGHT)
+			pc_hunt_map.set_shader_parameter("prep_inverse_y",Vector2.DOWN)
+		for foe: Node in [deer]+chapter_prep_foes:
+			if foe.has_meta("prep_fixed_pixel_density"): foe.remove_meta("prep_fixed_pixel_density")
+	if pc_hunt_map != null and not pc_hunt_frame_locked:
+		var fade := create_tween()
+		fade.tween_method(func(v: float) -> void: pc_hunt_map.set_shader_parameter("prep_ground_angle", v), 1.0, 0.0, .32)
+	for camera: Camera3D in prep_camera_transforms:
+		camera.transform = prep_camera_transforms[camera]
+	prep_camera_transforms.clear()
+	camera_progress = -1.0
+
+func prep_cell_center(index: int, allied: bool) -> Vector2:
+	return _prep_project(_prep_reference_cell(index,allied))
+
+static func _prep_reference_cell(index: int, allied: bool) -> Vector2:
+	var seat: Vector2 = PREP_ALLY_LATTICE[index] if allied else PREP_ENEMY_LATTICE[index]
+	var stagger := PREP_ALLY_STAGGER if allied else PREP_ENEMY_STAGGER
+	var raw := (PREP_ALLY_PIVOT if allied else PREP_ENEMY_PIVOT) + stagger * seat.x + PREP_ROW_STEP * seat.y
+	return DESIGN*.5 + (raw-DESIGN*.5)*PREP_CELL_PITCH_SCALE + (Vector2(52,0) if OS.has_feature("windows") else Vector2.ZERO)
+
+func _prep_cell_polygon(center: Vector2) -> PackedVector2Array:
+	var half := PREP_CELL_SIZE * .5
+	var x := prep_global_projection.x*half.x
+	var y := prep_global_projection.y*half.y
+	return PackedVector2Array([center-y,center+x,center+y,center-x])
+
+func _draw_prep_grid() -> void:
+	for allied: bool in [true,false]:
+		for index in ALLY_CELLS.size():
+			var corners := _prep_cell_polygon(prep_cell_center(index, allied))
+			placement_grid.draw_colored_polygon(corners, Color(.18,.39,.60,.09) if allied else Color(.71,.23,.14,.09))
+			corners.append(corners[0])
+			placement_grid.draw_polyline(corners, Color(.26,.62,.79,.65) if allied else Color(.81,.39,.24,.65), 1.1, true)
+
 func formation_cell(at: Vector2) -> int:
+	var half := PREP_CELL_SIZE * .5
 	for index in ALLY_CELLS.size():
-		var gap: Vector2 = (at-ALLY_CELLS[index]).abs()/(CELL_SIZE*.5)
-		if gap.x+gap.y<=1.0:return index
+		var local := prep_global_projection.affine_inverse().basis_xform(at - prep_cell_center(index, true))
+		if absf(local.x) / half.x + absf(local.y) / half.y <= 1.0:
+			return index
 	return -1
 
 
@@ -1351,7 +1637,7 @@ func handle_formation_pointer(event: InputEvent, global_coordinates: bool) -> bo
 		if not pressed:return false
 		for index in hunters.size():
 			if index>=prep_ally_count:continue
-			var feet: Vector2 = ALLY_CELLS[assigned_cells[index]]
+			var feet := prep_cell_center(assigned_cells[index], true)
 			if Rect2(feet-Vector2(22,53),Vector2(44,58)).has_point(at):
 				select_hunter(index)
 				drag_pointer = pointer
@@ -1378,10 +1664,11 @@ func handle_formation_pointer(event: InputEvent, global_coordinates: bool) -> bo
 
 
 func pointer_over_preparation_ui(at: Vector2) -> bool:
+	if is_instance_valid(prep_camera_guide) and prep_camera_guide.pointer_over(at):return true
 	if roster_edge.get_child(0).get_global_rect().has_point(at):return true
 	for group in [header_left,header_right,footer_left,footer_right]:
 		for control in group.get_children():
-			if control is DemoButton and control.get_global_rect().has_point(at):return true
+			if control is DemoButton and control.visible and control.get_global_rect().has_point(at):return true
 	return false
 
 
@@ -1474,6 +1761,25 @@ func _show_hunt_hp_loss(victim:int,before:int,after:int)->void:
 		anchor = deer.position+Vector2(0,-deer.world_height*deer.scale.y-33)
 	damage_numbers.show_loss(victim,before,after,anchor,ally)
 
+static func projected_body_height(view: Node2D, rig_override: Skeleton3D = null) -> float:
+	var rig := rig_override
+	if rig == null:
+		var skeletons: Array[Node] = view.pivot.find_children("*","Skeleton3D",true,false)
+		if skeletons.is_empty(): return 0.0
+		rig = skeletons[0] as Skeleton3D
+	var low := INF
+	var high := -INF
+	for i in rig.get_bone_count():
+		var bone: String = String(rig.get_bone_name(i)).to_lower()
+		if "weapon" in bone or "spear" in bone or "shield" in bone or "knife" in bone or "club" in bone: continue
+		var world := rig.to_global(rig.get_bone_global_rest(i).origin)
+		low = minf(low,world.y)
+		high = maxf(high,world.y)
+	if not is_finite(low) or high-low < .001: return 0.0
+	var cam: Camera3D = view.camera
+	var stride := absf(cam.unproject_position(Vector3.UP).y-cam.unproject_position(Vector3.ZERO).y)
+	return (high-low)*stride*view.display.scale.y*view.scale.y
+
 func start_combat() -> void:
 	if start_pending:return
 	if settle_age<.18:
@@ -1490,13 +1796,30 @@ func start_combat() -> void:
 	if not _uses_independent_first_hunt():pan = Vector2.ZERO
 	battle_music_started = true
 	app.sync_audio()
+	if pc_hunt_frame_locked:
+		pc_prepared_actor_scales.clear()
+		pc_prepared_body_heights.clear()
+		for i in hunters.size():
+			pc_prepared_actor_scales.append(hunters[i].scale.x * (1.20 if i==RULES.SAEBOM else 1.0))
+			var rig: Skeleton3D = prep_saebom_view.rig if i==RULES.SAEBOM and prep_saebom_view!=null else null
+			pc_prepared_body_heights.append(projected_body_height(hunters[i],rig))
+		if chapter_prep_foes.is_empty():
+			pc_prepared_actor_scales.append(deer.scale.x)
+			pc_prepared_body_heights.append(projected_body_height(deer))
+		else:
+			for foe in chapter_prep_foes:
+				pc_prepared_actor_scales.append(foe.scale.x)
+				pc_prepared_body_heights.append(projected_body_height(foe))
+	battle_team_forward = prep_global_projection.basis_xform(PREP_ALLY_FORWARD)
+	_end_prep_equipment()
+	_restore_prep_camera()
 	transition_elapsed = 0.0
 	_sync_chapter_preparation_foes()
 	vs_ally.texture=_prep_hunter_portrait(selected_hunter)
 	vs_ally.material=ReadinessArt.vs_portrait_material(vs_ally.texture,true)
 	branch_video.play()
 	animate_battle_vs(-1.0, 0.0)
-	header_spears.hide()
+	if is_instance_valid(prep_header_vs): prep_header_vs.hide()
 	preparation.mouse_behavior_recursive = Control.MOUSE_BEHAVIOR_DISABLED
 	# The VS plate is a one-way cover; never return to formation during its exit.
 	preparation.hide()
@@ -1524,8 +1847,10 @@ func finish_battle_transition() -> void:
 		var han_start:Vector2 = ALLY_CELLS[assigned_cells[0]]
 		var prey_start:Vector2 = ENEMY_CELLS[4]
 		var closing := maxf(0.0,han_start.distance_to(prey_start)-FIRST_HUNT_HAN_STANDOFF)
-		solo_deploy_prey_end = prey_start.move_toward(han_start,minf(52.0,closing*.30))
-		solo_deploy_seconds = clampf(.55+closing/360.0,.7,1.05)
+		var prey_travel := minf(52.0,closing*.30)
+		solo_deploy_prey_end = prey_start.move_toward(han_start,prey_travel)
+		# Smoothstep peaks at 1.5x the average; keep this ordinary approach at a walking pace.
+		solo_deploy_seconds = maxf(.72,1.5*maxf(closing-prey_travel,prey_travel)/59.0)
 		solo_deploy_clock = 0.0
 	transition_elapsed = -1.0
 	branch_video.stop()
@@ -1763,13 +2088,13 @@ func _draw_normal_hunt_art(front:bool) -> void:
 		if not front:
 			for actor in hunters:
 				if hunters.find(actor)>=prep_ally_count:continue
-				prey_art.draw_ground_ring(battle_vfx_under,NativeHud.ground_rect(actor.camera,actor.position,lerpf(CELL_SIZE.x*.40*.62,23.,smoothstep(0.,.30,transition_elapsed)) if transition_elapsed>=0.0 else CELL_SIZE.x*.40*.62),true)
+				prey_art.draw_ground_ring(battle_vfx_under,NativeHud.ground_rect(actor.camera,actor.position,lerpf(PREP_RING_RADIUS,23.,smoothstep(0.,.30,transition_elapsed)) if transition_elapsed>=0.0 else PREP_RING_RADIUS),true)
 			if chapter_prep_setup_ok:
 				for actor in chapter_prep_foes:
 					if actor.visible:
-						prey_art.draw_ground_ring(battle_vfx_under, NativeHud.ground_rect(actor.camera, actor.position, CELL_SIZE.x*.40*.62), false)
+						prey_art.draw_ground_ring(battle_vfx_under, NativeHud.ground_rect(actor.camera, actor.position, PREP_RING_RADIUS), false)
 			else:
-				prey_art.draw_ground_ring(battle_vfx_under,NativeHud.ground_rect(deer.camera,deer.position,lerpf(CELL_SIZE.x*.40*.62,23.,smoothstep(0.,.30,transition_elapsed)) if transition_elapsed>=0.0 else CELL_SIZE.x*.40*.62),false)
+				prey_art.draw_ground_ring(battle_vfx_under,NativeHud.ground_rect(deer.camera,deer.position,lerpf(PREP_RING_RADIUS,23.,smoothstep(0.,.30,transition_elapsed)) if transition_elapsed>=0.0 else PREP_RING_RADIUS),false)
 		return
 	var dest := battle_vfx_front if front else battle_vfx_under
 	if not front:
@@ -2051,16 +2376,7 @@ func _tick_first_hunt_deer(elapsed:float) -> void:
 	first_hunt_deer_age+=elapsed
 	if first_hunt_deer_hit_pending and first_hunt_deer_age>=IMPACT_SECONDS:
 		first_hunt_deer_hit_pending=false
-		var old_hp:int=rules.party_hp[0]
 		rules.resolve_independent_prey_basic(0)
-		if rules.party_hp[0]<old_hp:
-			var han:=hunters[0]
-			var at:Vector2=han.position-Vector2(0,23)
-			var spine:int=han.skeleton.find_bone("spine")
-			if spine>=0:
-				var torso:Vector3=han.skeleton.to_global(han.skeleton.get_bone_global_pose(spine).origin)
-				at=battlefield.get_global_transform().affine_inverse()*han.display.to_global(han.camera.unproject_position(torso)+han.display.offset)
-			manual_effects.append({"kind":"lab_deer_basic","age":0.0,"pos":at,"floor":han.position})
 		# A lethal hit cancels an unlanded action, not an already-recorded hit.
 		if not rules.outcome.is_empty():
 			impact_pending=false
@@ -2332,7 +2648,10 @@ func _start_chapter_story_preview() -> void:
 	for cell in assigned_cells:
 		story_foot_placement.append(HUNTER_BATTLE_CENTER+(ALLY_CELLS[cell]-FORMATION_CENTER)*.62)
 	battle.story_allied_placement = story_foot_placement
+	battle.story_team_forward = battle_team_forward
 	battle.story_allied_growth = rules.party_growth
+	battle.pc_prepared_actor_scales = pc_prepared_actor_scales
+	battle.pc_prepared_body_heights = pc_prepared_body_heights
 	canvas.add_child(battle)
 	battle.setup(prey_art.draw_dust, _draw_story_gong, _draw_story_uram_hit,
 		_draw_story_uram_windup, _draw_story_authored_hit, prey_art.draw_charge,
@@ -2340,6 +2659,7 @@ func _start_chapter_story_preview() -> void:
 		_draw_story_saebom_trail, Callable(), Callable(), Callable(), true)
 	battle.story_han_weapon_draw = _draw_story_han_weapon
 	chapter_story_battle = battle
+	update_camera(0.0)
 	battle.story_uram_entrance_impact.connect(func(): hunt_audio.cue("uram_parry",3))
 	battle.story_deer_shove_impact.connect(func(): hunt_audio.cue("S11",3))
 	battle.story_contact_audio.connect(hunt_audio.cue)
@@ -2395,6 +2715,7 @@ func _draw_story_authored_hit(tag: String, point: Vector2, direction: Vector2, a
 
 func _draw_story_han_weapon(tip:Vector2, hand:Vector2, foot:Vector2, age:float, charge:float, layer:Node2D) -> void:
 	native_hud.draw_spear_glow(layer,tip,hand,age)
+	if pc_hunt_frame_locked: EquipmentGleam.spear(layer,prey_art.soft,tip,hand)
 	if charge>=0.0:
 		var power:=smoothstep(.03,.68,charge)
 		_story_soft_light(layer,foot+Vector2(0,2),Vector2(78,28),Color("319cfd"),power*.56)
@@ -3035,19 +3356,36 @@ func _start_camera_accent(source:String,point:Vector2) -> bool:
 func update_camera(delta: float) -> void:
 	var focus := Vector2(480,285).lerp(Vector2(495,305),approach)
 	var target := zoom
-	if transition_elapsed>=0:
+	if pc_hunt_frame_locked:
+		focus = DESIGN*.5
+		target *= PREP_PC_FRAME_ZOOM
+	elif transition_elapsed>=0:
 		target += .12*sin(approach*PI*.5)
-	if camera_accent_age<CAMERA_ACCENT_S:
+	if camera_accent_age<CAMERA_ACCENT_S and not pc_hunt_frame_locked:
 		var accent := smoothstep(0.0,.12,camera_accent_age)*(1.0-smoothstep(.18,CAMERA_ACCENT_S,camera_accent_age))
 		focus=focus.lerp(camera_accent_point,.33*accent)
 		target+=.065*accent
 	var weight := 1.0 if delta==0.0 or not arrival_finished or transition_elapsed>=0 else 1.0-exp(-delta*11.0)
 	battlefield.scale = battlefield.scale.lerp(Vector2.ONE*target,weight)
 	var anchor := Vector2(480,285).lerp(focus,clampf((battlefield.scale.x-1.0)*2.0,0.0,1.0))
+	if pc_hunt_frame_locked: anchor = DESIGN*.5
 	battlefield.position = battlefield.position.lerp(anchor-focus*battlefield.scale+pan,weight)
-	ground.scale = battlefield.scale*1.10
-	ground.position = (size-size*ground.scale)*.5 + (battlefield.position + DESIGN*(battlefield.scale-Vector2.ONE)*.5)*canvas.scale
-	ground.position = ground.position.clamp(size-size*ground.scale,Vector2.ZERO)
+	if pc_hunt_frame_locked and is_instance_valid(chapter_story_battle):
+		chapter_story_battle.scale = battlefield.scale
+		chapter_story_battle.position = battlefield.position
+	var background_scale := battlefield.scale*1.10
+	var background_pan := (battlefield.position + DESIGN*(battlefield.scale-Vector2.ONE)*.5)*canvas.scale
+	if pc_hunt_map != null:
+		ground.scale = Vector2.ONE
+		ground.position = Vector2.ZERO
+		pc_hunt_map.set_shader_parameter("scene_zoom",background_scale.x*PC_HUNT_MAP_ZOOM)
+		var cover := maxf(size.x/float(CLEARING.get_width()),size.y/float(CLEARING.get_height()))
+		var source_canvas := CLEARING.get_size()*maxf(cover,.001)
+		pc_hunt_map.set_shader_parameter("scene_pan",background_pan/source_canvas)
+		pc_hunt_map.set_shader_parameter("prep_source_metric",source_canvas/source_canvas.y)
+	else:
+		ground.scale = background_scale
+		ground.position = ((size-size*ground.scale)*.5+background_pan).clamp(size-size*ground.scale,Vector2.ZERO)
 
 func _hunter_contact_canvas(actor:HybridCharacter) -> Vector2:
 	var world:Vector2 = actor.tool_contact_world()
@@ -3058,7 +3396,7 @@ func _hunter_contact_canvas(actor:HybridCharacter) -> Vector2:
 	return battlefield.get_global_transform().affine_inverse()*world
 
 func update_actors(delta: float) -> void:
-	if absf(camera_progress-approach)>.001:
+	if (running or transition_elapsed >= 0.0) and absf(camera_progress-approach)>.001:
 		camera_progress = approach
 		for hunter in hunters:
 			hunter.camera.position.y = lerpf(7.45,7.05,approach)
@@ -3087,7 +3425,7 @@ func update_actors(delta: float) -> void:
 		var use_field_pose := running and i == 1 and pose == URAM_FIELD_CAST and pose_clock < URAM_FIELD_POSE
 		var attack := running and pose_clock<RULES.POSE_SECONDS and pose in ["thrust","auto_thrust","strike","team"] and i == rules.attacker
 		var dodge := running and pose=="counter" and pose_clock<RULES.POSE_SECONDS and i == rules.attacker
-		var placed: Vector2 = ALLY_CELLS[assigned_cells[i]]
+		var placed: Vector2 = prep_cell_center(assigned_cells[i], true) if transition_elapsed < 0.0 and not running else ALLY_CELLS[assigned_cells[i]]
 		var battle_target := HUNTER_BATTLE_CENTER+(placed-FORMATION_CENTER)*.62
 		var stage_han := i==0 and _uses_independent_first_hunt()
 		if stage_han:
@@ -3101,6 +3439,8 @@ func update_actors(delta: float) -> void:
 		var actor_scale := PREP_HAN_SCALE if chapter_one_solo and i == 0 else lerpf(preview_scale,.56,approach)
 		var base_visual_scale := actor_scale * (1.0 if i == RULES.SAEBOM else FRONTLINE_VISUAL_SCALE)
 		hunter.scale = Vector2.ONE * base_visual_scale * BATTLEFIELD_MODEL_MULTIPLIER
+		if pc_hunt_frame_locked and pc_prepared_actor_scales.size() > i:
+			hunter.scale = Vector2.ONE * pc_prepared_actor_scales[i] / (1.20 if i == RULES.SAEBOM else 1.0)
 		var lunge := 42 if basic_attack else 24
 		var assisting := running and pose == "team" and pose_clock < RULES.POSE_SECONDS and not attack and rules.party_hp[i]>0
 		var attack_direction := base.direction_to(DEER_SLOT)
@@ -3132,8 +3472,7 @@ func update_actors(delta: float) -> void:
 		var approach_phase := hunt_stride_phases[i] if approaching else pose_clock*12.0
 		var facing := first_hunt_facing if tutorial_lunge else han_chain_facing if native_manual and side_han_jump else hunter.position.direction_to(deer.position) if approach >= 1.0 else hunter.position.direction_to(deer.position) if approach<=0.0 else arrival_heading
 		if not running and transition_elapsed<0.0:
-			var opponent:=_opposing_position(hunter.position,_prep_enemy_positions(),ENEMY_CELLS[4])
-			var heading:=battlefield_ground_heading(hunter.camera,hunter.position.direction_to(opponent))
+			var heading:=battlefield_ground_heading(hunter.camera,prep_global_projection.basis_xform(PREP_ALLY_FORWARD))
 			facing=Vector2(sin(heading),cos(heading))
 			hunter.heading=heading
 			hunter.target_heading=heading
@@ -3160,7 +3499,9 @@ func update_actors(delta: float) -> void:
 			if native_manual: motion_time = duration*clampf(pose_clock/_manual_duration(pose),0.0,1.0)
 			if use_guard_pose: motion_time = duration*clampf((manual_combat_clock-guard_started)/ManualHunt.GUARD_CLOSE,0.0,1.0)
 			elif use_field_pose: motion_time = duration*clampf(pose_clock/URAM_FIELD_POSE,0.0,1.0)
-			if smooth_ordinary and i==0 and motion in ["basic","guard","hit"]:
+			if stage_han and approaching:
+				hunter.animate(delta,facing,approach_phase,false,"walk",solo_deploy_clock,false)
+			elif smooth_ordinary and i==0 and motion in ["basic","guard","hit"]:
 				var weight:=smoothstep(0.,.10,pose_clock)*(1.-smoothstep(.37,RULES.POSE_SECONDS,pose_clock))
 				var rig:Skeleton3D=hunter.skeleton
 				if is_instance_valid(rig) and weight<.999:
@@ -3170,7 +3511,7 @@ func update_actors(delta: float) -> void:
 					_blend_local_bones(rig,idle_pose,weight)
 				else:hunter.animate(delta,facing,approach_phase,approaching,motion,motion_time,false)
 			else:hunter.animate(delta,facing,approach_phase,approaching,motion,motion_time,false)
-			if i==0 and approaching and hunter is Frontline.Han:
+			if i==0 and approaching and not stage_han and hunter is Frontline.Han:
 				hunter.present_han_approach_finish((approach-.73)/.27,maxf(0.,approach-.96)*solo_deploy_seconds)
 			if stage_han and running and motion in ["basic",""] and hunter is Frontline.Han:
 				_plant_first_hunt_basic_root(hunter.skeleton,hunter.root_bone)
@@ -3208,13 +3549,17 @@ func update_actors(delta: float) -> void:
 		hunter.visible=i<prep_ally_count
 		hunter_markers[i].visible = arrival_finished and hunter.visible
 		hunter_field_bars[i].get_parent().visible = approach>=1.0
+	if prep_saebom_view != null:
+		prep_saebom_view.sync("idle", pose_clock, 1.0)
+	if is_instance_valid(prep_saebom_knife): prep_saebom_knife.queue_redraw()
 	var independent_prey := _uses_independent_first_hunt()
 	var charge_clock := first_hunt_deer_age if independent_prey else pose_clock
 	var charge := running and (charge_clock<RULES.POSE_SECONDS if independent_prey else pose=="counter")
 	var deer_motion := Vector2(-29,-8) if charge else Vector2.ZERO if independent_prey or basic_attack or (_uses_independent_first_hunt() and pose==ManualHunt.HAN_SPEAR_2) or rules.prey_stun_remaining>0.0 else Vector2(23,-8)
 	if independent_prey:
 		deer_motion=Vector2.ZERO
-	deer.position = ENEMY_CELLS[4].lerp(solo_deploy_prey_end if independent_prey else DEER_SLOT,approach)+(deer_motion*movement_beat if running else Vector2.ZERO)
+	var prey_start := prep_cell_center(4, false) if transition_elapsed < 0.0 and not running else ENEMY_CELLS[4]
+	deer.position = prey_start.lerp(solo_deploy_prey_end if independent_prey else DEER_SLOT,approach)+(deer_motion*movement_beat if running else Vector2.ZERO)
 	var deer_close_travel := false
 	if running and bom_prey_pocket.is_finite():
 		var close_progress := smoothstep(.06,.70,pose_clock/RULES.POSE_SECONDS) if charge and rules.attacker == RULES.SAEBOM else 1.0
@@ -3233,16 +3578,24 @@ func update_actors(delta: float) -> void:
 			ordinary_prey_visual_offset=-recoil*.80
 	var prey_start_scale := PREP_PREY_SCALE if chapter_story_number > 0 else .60
 	deer.scale = Vector2.ONE * (PREP_PREY_SCALE if chapter_one_solo and not _prey_is_adult() else lerpf(prey_start_scale,.63,approach)) * BATTLEFIELD_MODEL_MULTIPLIER
+	if deer is NativeBoar and deer.native_species==ChapterOneCatalog.JUVENILE:
+		deer.scale *= HUNT_JUVENILE_BOAR_MODEL_SCALE
+	elif not running and transition_elapsed < 0.0 and not chapter_prep_setup_ok and not _presented_prey_is_boar():
+		deer.scale *= PREP_DEER_MODEL_SCALE
+	if pc_hunt_frame_locked and not chapter_story_preview and pc_prepared_actor_scales.size() > hunters.size():
+		deer.scale = Vector2.ONE * pc_prepared_actor_scales[hunters.size()]
 	# Sprite vertices only: keep transform, rig sample and physical sweep unchanged.
 	deer.display.offset=ordinary_prey_visual_offset/(deer.scale*deer.display.scale)
 	deer.walking = 1.0 if (transition_elapsed>=0 or solo_deploy_clock>=0.0) and approach>0.0 and approach<1.0 else (movement_beat if running and (charge or basic_recoil>0.0) else 0.0)
 	if deer_close_travel: deer.walking = maxf(deer.walking,.74)
 	deer.heading = battlefield_ground_heading(deer.camera,deer.position.direction_to(hunters[0].position))
 	if transition_elapsed<0.0 and not running:
-		deer.heading=battlefield_ground_heading(deer.camera,deer.position.direction_to(_opposing_position(deer.position,_prep_ally_positions(),FORMATION_CENTER)))
+		deer.heading=battlefield_ground_heading(deer.camera,-prep_global_projection.basis_xform(PREP_ALLY_FORWARD))
 	elif solo_deploy_clock>=0.0 and approach<1.0:
 		var toward:Vector2=ENEMY_CELLS[4].direction_to(solo_deploy_prey_end)
-		deer.heading=lerp_angle(atan2(toward.x,toward.y),deer.heading,smoothstep(.76,1.,approach))
+		var wanted := battlefield_ground_heading(deer.camera,toward)
+		if absf(angle_difference(deer.heading,wanted))>deg_to_rad(30.0):
+			deer.heading=rotate_toward(deer.heading,wanted,deg_to_rad(140.0)*maxf(delta,0.0))
 	deer.gait_phase = solo_deploy_clock*14.0 if solo_deploy_clock>=0.0 else pose_clock*14.0
 	deer.clock += delta
 	# During the short counter, keep the visible body separation even from a wide prep cell.
@@ -3251,7 +3604,14 @@ func update_actors(delta: float) -> void:
 		if separation.is_zero_approx():separation=Vector2.RIGHT
 		deer.position=hunters[0].position+separation*FIRST_HUNT_BODY_CLEARANCE
 	if deer is NativeBoar:
-		if independent_prey:
+		if transition_elapsed < 0.0 and not running and not adult_markers.is_empty():
+			var idle_age: float = deer.clock * PREP_PREY_IDLE_RATE
+			deer.sample_native_phase("idle", fposmod(idle_age, float(adult_markers.idle)))
+			if (independent_prey or smooth_ordinary) and ApprovedDeerPose.supports(deer.native_species):
+				ApprovedDeerPose.apply(deer.rig, "idle", idle_age)
+			if independent_prey and is_instance_valid(deer.native):
+				_plant_first_hunt_basic_root(deer.rig, deer.native.root_index)
+		elif independent_prey:
 			if solo_deploy_clock>=0.0:_pose_solo_deploy_deer(deer)
 			elif charge:_pose_planted_first_hunt_deer_basic(deer,charge_clock)
 			else:
@@ -3427,12 +3787,12 @@ func _pose_first_hunt_deer(actor:NativeBoar, charging:bool, charge_clock:float)-
 	var idle_time:=fposmod(actor.clock,float(adult_markers.idle))
 	if action.is_empty():
 		actor.sample_native_phase("idle",idle_time)
-		if ApprovedDeerPose.supports(actor.native_species):ApprovedDeerPose.apply(actor.rig,"idle",actor.clock)
+		if ApprovedDeerPose.supports(actor.native_species):ApprovedDeerPose.apply(actor.rig,"hunt_idle",actor.clock)
 	elif weight>=.999:
 		actor.sample_native_phase(action,frame)
 	else:
 		actor.sample_native_phase("idle",idle_time)
-		if ApprovedDeerPose.supports(actor.native_species):ApprovedDeerPose.apply(actor.rig,"idle",actor.clock)
+		if ApprovedDeerPose.supports(actor.native_species):ApprovedDeerPose.apply(actor.rig,"hunt_idle",actor.clock)
 		var rested:=_snapshot_local_bones(actor.rig)
 		var idle_height:=actor.pivot.position.y
 		actor.sample_native_phase(action,frame)
@@ -3462,8 +3822,8 @@ func _pose_adult_boar(adult:NativeBoar, charge:bool) -> void:
 func draw_stage() -> void:
 	if arrival_finished and transition_elapsed<0 and not combat_layout:
 		var cell := drag_cell if dragging and drag_cell>=0 else assigned_cells[selected_hunter]
-		var center: Vector2 = ALLY_CELLS[cell]
-		var corners := PackedVector2Array([center-Vector2(0,CELL_SIZE.y*.5),center+Vector2(CELL_SIZE.x*.5,0),center+Vector2(0,CELL_SIZE.y*.5),center-Vector2(CELL_SIZE.x*.5,0)])
+		var center := prep_cell_center(cell, true)
+		var corners := _prep_cell_polygon(center)
 		battlefield.draw_colored_polygon(corners,Color(.1,.55,1,.35))
 		corners.append(corners[0])
 		battlefield.draw_polyline(corners,Color(.32,.78,1),2,true)
@@ -3593,7 +3953,7 @@ func show_result() -> void:
 	var result := preload("res://scripts/hunt_result.gd").new()
 	result.app = app
 	result.won = rules.outcome == "win"
-	result.use_han_field=chapter_one_solo
+	result.use_han_field=chapter_one_solo or not result.won
 	if result.won:
 		result.stars=earned_stars
 		result.reward=reward

@@ -98,7 +98,12 @@ func _ready() -> void:
 func update_geometry() -> void:
 	# Ground point, not image center, anchors both zoom levels and the contact shadow.
 	var projected_height := absf(camera.unproject_position(Vector3(0,2,0)).y-camera.unproject_position(Vector3.ZERO).y)
-	display.scale = Vector2.ONE*world_height/maxf(1,projected_height)
+	if has_meta("prep_fixed_pixel_density"):
+		var orthogonal := camera.global_basis.x.normalized()
+		var fixed_span := camera.unproject_position(orthogonal).distance_to(camera.unproject_position(-orthogonal))
+		display.scale = Vector2.ONE * float(get_meta("prep_fixed_pixel_density")) / maxf(1.0,fixed_span)
+	else:
+		display.scale = Vector2.ONE*world_height/maxf(1,projected_height)
 	display.position = -camera.unproject_position(Vector3.ZERO)*display.scale
 
 func _process(delta: float) -> void:

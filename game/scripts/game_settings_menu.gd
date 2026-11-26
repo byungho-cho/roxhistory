@@ -46,7 +46,9 @@ static func open(app: Node) -> void:
 		arrow.position.x -= 20
 		arrow.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		row.set_process(false)
-	var footer := HBoxContainer.new()
+	var footer := Control.new()
+	footer.custom_minimum_size.y = 48.0
+	footer.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	column.add_child(footer)
 	var version := String(ProjectSettings.get_setting("application/config/version"))
 	var notes: DemoButton = app.button(footer, "", app.show_version_notes.bind(version))
@@ -65,10 +67,7 @@ static func open(app: Node) -> void:
 	version_label.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
 	version_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	version_label.offset_bottom = -1.0
-	var apk_gap := Control.new()
-	apk_gap.custom_minimum_size.x = 8
-	apk_gap.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	footer.add_child(apk_gap)
+
 	var patch_dialog := preload("res://patch_test/patch_dialog.gd")
 	var apk_link: DemoButton = app.button(footer,"",func():
 		app.toast(patch_dialog.copy_full_apk_link(patch_dialog.full_apk_version())))
@@ -78,17 +77,28 @@ static func open(app: Node) -> void:
 		apk_link.add_theme_stylebox_override(state,StyleBoxEmpty.new())
 	var apk_label: Label = app.label(apk_link,"APK v%s 링크 복사"%patch_dialog.full_apk_version(),15,Color("183d65"))
 	apk_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	apk_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	apk_label.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
 	apk_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	apk_label.offset_bottom = -1.0
-	var spacer := Control.new()
-	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	footer.add_child(spacer)
+
 	var home: DemoButton = app.button(footer, "시작 화면", func(): app.close_modal(); app.show_screen("title"), true)
-	home.size_flags_horizontal = Control.SIZE_SHRINK_END
 	home.custom_minimum_size = Vector2(137, SharedPopupArt.WOOD_ACTION_HEIGHT)
 	SharedPopupArt.button_style(home,"wood","gold")
+	# Center the copy link in the footer independently of the outer actions.
+	_anchor_footer_item(notes, 0.0, 0.0, 78.0, 48.0)
+	_anchor_footer_item(apk_link, .5, -110.0, 110.0, 48.0)
+	_anchor_footer_item(home, 1.0, -137.0, 0.0, SharedPopupArt.WOOD_ACTION_HEIGHT)
+
+static func _anchor_footer_item(item: Control, edge: float, from_x: float, to_x: float, height: float) -> void:
+	item.anchor_left = edge
+	item.anchor_right = edge
+	item.anchor_top = 1.0
+	item.anchor_bottom = 1.0
+	item.offset_left = from_x
+	item.offset_right = to_x
+	item.offset_top = -height
+	item.offset_bottom = 0.0
 
 static func detail_header(app: Node, scroll: ScrollContainer, back_id: String, return_action := Callable()) -> void:
 	var action: Callable = return_action if return_action.is_valid() else app.show_game_settings

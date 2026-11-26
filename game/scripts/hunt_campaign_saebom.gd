@@ -28,7 +28,7 @@ var elbow: int
 var wrist: int
 var chest: int
 
-func _init(actor_view: HybridCharacter) -> void:
+func _init(actor_view: HybridCharacter, visual_scale_multiplier := 1.0) -> void:
 	view = actor_view
 	donor = view.skeleton
 	var scene := load(MODEL) as PackedScene
@@ -55,7 +55,7 @@ func _init(actor_view: HybridCharacter) -> void:
 	var stock := _foot_center(donor, donor.find_bone("foot.L"), donor.find_bone("foot.R"))
 	var fresh := _foot_center(rig, feet[0], feet[1])
 	var height := _world_bone(donor, donor.find_bone("head")).y - stock.y
-	model.scale *= height / (_world_bone(rig, head).y - fresh.y)
+	model.scale *= visual_scale_multiplier * height / (_world_bone(rig, head).y - fresh.y)
 	model.force_update_transform()
 	model.position = view.pivot.to_local(stock) - view.pivot.to_local(_foot_center(rig, feet[0], feet[1]))
 	mount = model.position

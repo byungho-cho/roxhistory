@@ -1,7 +1,14 @@
 extends RefCounted
 ## Drawing for the campaign short-hide rig. Contact and damage stay in the squad.
 
-static func blade(layer: CanvasItem, palm: Vector2, direction: Vector2, size := 1.3) -> void:
+const EquipmentGleam := preload("res://scripts/hunt_equipment_gleam.gd")
+
+static func held_blade(layer: CanvasItem, palm: Vector2, direction: Vector2) -> void:
+	EquipmentGleam.blade_glow(layer,palm,direction)
+	blade(layer,palm,direction,1.30*.70,false,false)
+	EquipmentGleam.blade_core(layer,palm,direction)
+
+static func blade(layer: CanvasItem, palm: Vector2, direction: Vector2, size := 1.3, draw_handle := true, luminous_edge := true) -> void:
 	if not palm.is_finite() or direction.is_zero_approx():
 		return
 	var along := direction.normalized() * size
@@ -11,13 +18,16 @@ static func blade(layer: CanvasItem, palm: Vector2, direction: Vector2, size := 
 	var middle := palm + along * 10.0
 	var tip := palm + along * 20.0
 	var edge := PackedVector2Array([base + side * 3.0, middle + side * 3.5, tip, middle - side * 2.6, base - side * 3.0, base + side * 3.0])
-	layer.draw_polyline(edge, Color(1.0, .85, .57, .16), 10.0, true)
-	layer.draw_polyline(edge, Color(1.0, .93, .76, .44), 4.0, true)
-	layer.draw_colored_polygon(PackedVector2Array([handle + side * 2.0, base + side * 2.7, base - side * 2.7, handle - side * 2.0]), Color("#503724"))
+	if luminous_edge:
+		layer.draw_polyline(edge, Color(1.0, .85, .57, .16), 10.0 * minf(1.0,size/1.3), true)
+		layer.draw_polyline(edge, Color(1.0, .93, .76, .44), 4.0 * minf(1.0,size/1.3), true)
+	if draw_handle:
+		layer.draw_colored_polygon(PackedVector2Array([handle + side * 2.0, base + side * 2.7, base - side * 2.7, handle - side * 2.0]), Color("#503724"))
 	layer.draw_colored_polygon(edge.slice(0, -1), Color("#4e5b67"))
-	layer.draw_colored_polygon(PackedVector2Array([base, middle + side * 2.5, tip, middle - side * .7]), Color("#e2d8ba"))
-	layer.draw_line(base.lerp(middle, .22) + side * .45, tip, Color(1.0, .98, .83, .85), 1.35, true)
-	layer.draw_line(middle + side * 2.5, tip, Color(1.0, .99, .93, .76), .75, true)
+	layer.draw_colored_polygon(PackedVector2Array([base, middle + side * 2.5, tip, middle - side * .7]), Color("#e2d8ba") if luminous_edge else Color("#9b8d75"))
+	if luminous_edge:
+		layer.draw_line(base.lerp(middle, .22) + side * .45, tip, Color(1.0, .98, .83, .85), 1.35, true)
+		layer.draw_line(middle + side * 2.5, tip, Color(1.0, .99, .93, .76), .75, true)
 
 static func projectile_progress(progress: float, accelerated: bool) -> float:
 	return .30 * progress + .70 * pow(progress, 1.85) if accelerated else progress

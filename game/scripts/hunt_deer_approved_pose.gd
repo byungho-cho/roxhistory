@@ -12,12 +12,12 @@ static func supports(species: String) -> bool:
  return species in ["forest","stag"]
 
 static func apply(rig: Skeleton3D, move: String, age: float, weight:=1.0, keep_collider:=false) -> void:
- if not is_instance_valid(rig) or weight<=0.0 or move not in ["idle","walk","run","hit","heavy_hit"]:return
+ if not is_instance_valid(rig) or weight<=0.0 or move not in ["idle","hunt_idle","walk","run","hunt_run","hit","heavy_hit"]:return
  if poses.is_empty():return
  match move:
-  "idle":
-   # Approved lookaround at 2x. Keep the chest, roots and four planted feet.
-   var phase:=fposmod(age*2.,float(poses.idle_seconds))/float(poses.idle_seconds)
+  "idle","hunt_idle":
+   # Keep the chest, roots and four planted feet; lab cadence stays separate.
+   var phase:=fposmod(age*(.5 if move=="hunt_idle" else 2.),float(poses.idle_seconds))/float(poses.idle_seconds)
    _head_pose(rig,poses.idle,phase,weight,false)
   "hit":
    # The lab uses the strongest authored alert neck motion, up and back.
@@ -32,7 +32,7 @@ static func apply(rig: Skeleton3D, move: String, age: float, weight:=1.0, keep_c
    _light_hit(rig,clampf(light/maxf(.001,float(frames[peak_i])),0.,1.)*weight)
   "heavy_hit":
    _head_pose(rig,poses.heavy,clampf(age/.74,0.,1.),weight,true,keep_collider)
-  "walk","run":
+  "walk","run","hunt_run":
    _gait(rig,move,age,weight)
 
 static func _light_hit(rig:Skeleton3D, amount:float)->void:
@@ -61,8 +61,8 @@ static func _head_pose(rig: Skeleton3D, frames: Array, phase: float, weight: flo
  rig.force_update_all_bone_transforms()
 
 static func _gait(rig: Skeleton3D, move: String, age: float, weight: float) -> void:
- var gait:Array=poses[move]
- var running:=move=="run"
+ var gait:Array=poses["run" if move=="hunt_run" else move]
+ var running:=move in ["run","hunt_run"]
  var phase:=fposmod((.40 if running else .05)+age/(.50 if running else .91),1.)
  var at:=phase*float(gait.size())
  var n:=floori(at)
@@ -91,7 +91,26 @@ static func _gait(rig: Skeleton3D, move: String, age: float, weight: float) -> v
   var planted:=smoothstep(0.,2.6,stance_at)*(1.-smoothstep(stance_span-2.6,stance_span,stance_at))
   var target:=rest_feet[i]+stride*(right*clampf(v.x,-.12,.12)*.32+forward*clampf(v.z,-.70,.70)*.63)
   target.y=lo+stride*(1.-planted)*clampf(v.y,0.,.23)
-  _solve_hoof(rig,feet[i],rig.get_bone_global_pose(feet[i]).origin.lerp(target,weight*.82))
+  var current:=rig.get_bone_global_pose(feet[i]).origin
+  var blend:=weight*.82
+  if move=="hunt_run":
+   # Keep the original phase/cadence, but compress outlier lifts and lateral
+   # kicks. Blend the wrap into the next source cycle rather than snapping.
+   var wrap:=smoothstep(.86,1.,phase)
+   var first:Array=gait[0][i]
+   v=v.lerp(Vector3(first[0],first[1],first[2]),wrap)
+   var track:=v.z
+   # Keep the established contact portion of the gait; tame extension only
+   # as the hoof leaves the ground, particularly the long rearward hock.
+   var swing:=1.-planted
+   var limited:=tanh(track*1.45)*(.32 if i>=2 and track<0.0 else .42)
+   var fore_aft:=lerpf(clampf(track,-.70,.70)*.63,limited,swing)
+   var lateral:=clampf(v.x,-.12,.12)*lerpf(.32,.19,swing)
+   var lift:=clampf(v.y,0.,.23)
+   if i>=2:lift=lerpf(lift,tanh(lift*4.4)*.19,swing)
+   target=rest_feet[i]+stride*(right*lateral+forward*fore_aft)
+   target.y=lo+stride*swing*lift
+  _solve_hoof(rig,feet[i],current.lerp(target,blend))
 
 # Finish the approved ram's hoof landing on the native surface. Only the
 # two leg chains are adjusted; head, trunk and gameplay sweep stay untouched.
