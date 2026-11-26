@@ -53,7 +53,7 @@ var patch_last_progress_ms := 0
 
 const DELTA := preload("res://patch_test/pack_delta.gd")
 func _init(mount_on_start := true) -> void:
-	if not mount_on_start: return
+	if not mount_on_start or not bool(ProjectSettings.get_setting("roxhistory/distribution/legacy_channel_enabled",true)): return
 	# Autoload _ready runs after the main scene is loaded. Mount before that load.
 	DirAccess.make_dir_recursive_absolute(cache)
 	discard(cache + "incoming.part")
@@ -187,6 +187,7 @@ func check_for_patch() -> void:
 	begin_manifest_check(RELEASE_ROOT+"latest.json")
 
 func begin_manifest_check(url: String) -> bool:
+	if not bool(ProjectSettings.get_setting("roxhistory/distribution/legacy_channel_enabled",true)): return false
 	if downloading or restart_pending or phase==Phase.CHECKING:return false
 	check_url = url
 	candidate.clear()

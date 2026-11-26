@@ -27,7 +27,6 @@ var parry_work_mode: ProcessMode
 var parry_stage_mode: ProcessMode
 var debug_shortcut:DemoButton
 var debug_shortcut_icon:TextureRect
-const HUNT_SELECTION := preload("res://scripts/hunt_stage_selection.gd")
 var hunt_stage := 0
 const HUNT_CHAPTER_ONE := preload("res://scripts/hunt_chapter_one_catalog.gd")
 # Candidate-only route: disable to restore original deer for every saved stage.
@@ -347,7 +346,7 @@ func show_screen(next: String,spread_hud:=false) -> void:
 		if next != "play": world.feedback.clear_transients()
 		world.visible = screen == "play"
 		world.set_process_mode(Node.PROCESS_MODE_INHERIT if screen == "play" else Node.PROCESS_MODE_DISABLED)
-	if screen not in ["play","region","title","hunt","hunt_select","intro","hero_level_up"]:
+	if screen not in ["play","region","title","hunt","hunt_select","battlefield_reset","intro","hero_level_up"]:
 		menu_background()
 	match screen:
 		"onboarding": onboarding()
@@ -361,17 +360,11 @@ func show_screen(next: String,spread_hud:=false) -> void:
 			hero_level_up.app = self
 			stage.add_child(hero_level_up)
 			hero_level_up.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-		"hunt_select":
-			var selection := HUNT_SELECTION.new()
-			selection.name="HuntStageSelection"
-			selection.app = self
-			stage.add_child(selection)
-			selection.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-		"hunt":
-			hunt = HUNT_SCREEN.new()
-			hunt.app = self
-			stage.add_child(hunt)
-			hunt.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		"battlefield_reset":
+			var first_hunt = preload("res://battlefield_reset/first_hunt.tscn").instantiate()
+			stage.add_child(first_hunt)
+			first_hunt.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+			first_hunt.exit_requested.connect(func(): show_screen("play"))
 	toast_panel=PanelContainer.new();toast_panel.z_index=45;stage.add_child(toast_panel)
 	toast_panel.position=Vector2(w*.5-120,safe.y+(190 if w<h else 118) if screen=="play" else safe.y+8);toast_panel.size=Vector2(240,38)
 	var toast_style:=StyleBoxFlat.new();toast_style.bg_color=Color(.13,.10,.07,.87);toast_style.set_corner_radius_all(19);toast_style.set_content_margin_all(8)
@@ -624,6 +617,7 @@ func on_title_patch_popup_changed() -> void:
 	refresh_title_start_prompt()
 
 func open_title_update() -> void:
+	if not bool(ProjectSettings.get_setting("roxhistory/distribution/legacy_channel_enabled",true)): return
 	if screen!="title" or not application_active or modal or title_input_blocked() or is_instance_valid(intro_cloud):return
 	var updates := get_node("/root/PatchBootstrap/Overlay")
 	if not updates.popup.visible:updates.show_popup()
@@ -659,6 +653,7 @@ func style_start_prompt(start: DemoButton) -> void:
 	start.add_theme_color_override("font_outline_color",Color("49321e"));start.add_theme_constant_override("outline_size",3)
 
 func check_title_update(manual:=false) -> void:
+	if not bool(ProjectSettings.get_setting("roxhistory/distribution/legacy_channel_enabled",true)): return
 	if screen!="title" or not application_active or modal or title_reveal or title_update_in_flight or is_instance_valid(intro_cloud):return
 	if test_mode and not manual:return
 	var updates := get_node("/root/PatchBootstrap/Overlay")
@@ -2054,16 +2049,6 @@ func show_development_settings()->void:
 	DevelopmentSettings.open(self)
 	enable_settings_backdrop()
 
-func start_parry_lab(model_only := false, duel_only := false) -> void:
-	if not can_open_lab(): return
-	var lab: Control
-	if duel_only:
-		lab = preload("res://scenes/hunt_duel_lab.tscn").instantiate()
-		lab.show_final_test35 = true
-	else:
-		lab = preload("res://scripts/model_test.gd").new() if model_only else preload("res://scripts/parry_lab.gd").new()
-	begin_lab(lab)
-
 func start_gahui_hunt() -> void:
 	if not can_open_lab(): return
 	var packed := load("res://gahui_trial/gahui_hunt_test.tscn") as PackedScene
@@ -2138,19 +2123,10 @@ func add_parry_lab_entry(at: Vector2) -> void:
 	flask.z_index = 36
 	picture(flask,preload("res://assets/ui/d0031/lab-flask.png"),Rect2(8,8,32,32))
 	flask.tooltip_text = "가희 모션 실험실"
-	var model_button := button(stage,"",func():start_parry_lab(true),false,"","")
-	model_button.name="ModelTestEntry"
-	model_button.custom_minimum_size=Vector2.ZERO
-	model_button.position=at+Vector2(0,57)
-	model_button.size=Vector2(48,48)
-	model_button.z_index=36
-	model_button.tooltip_text="모델 테스트"
-	# Reserve the next row rather than overlap the existing performance shortcut.
-	debug_shortcut.position.y+=57
-	for pair in [[flask,preload("res://assets/ui/d0060/round-silver.svg")],[model_button,preload("res://assets/ui/d0060/round-gold.svg")]]:
-		var box:=StyleBoxTexture.new();box.texture=pair[1]
-		for state in ["normal","hover","pressed","focus"]:pair[0].add_theme_stylebox_override(state,box)
-	picture(model_button,preload("res://scripts/model_test.gd").portrait("hangyeol"),Rect2(9,9,30,30))
+	var box:=StyleBoxTexture.new()
+	box.texture=preload("res://assets/ui/d0060/round-silver.svg")
+	for state in ["normal","hover","pressed","focus"]:
+		flask.add_theme_stylebox_override(state,box)
 
 func set_quest_preview_enabled(enabled: bool) -> void:
 	var previous := quest_preview_enabled
@@ -2473,13 +2449,7 @@ func open_hunt() -> void:
 	cancel_task()
 	gestures.clear()
 	world.player.direction = Vector2.ZERO
-	hunt_stage = clampi(int(model.state.get("hunt_cleared",0)), 0, HUNT_SELECTION.TOTAL_STAGES - 1)
-	if chapter_one_preview_enabled() and int(model.state.get("hunt_cleared",0)) < HUNT_SELECTION.STAGES_PER_CHAPTER:
-		var next_story := HUNT_CHAPTER_ONE.next_number(chapter_one_story_completions())
-		if next_story > 0:
-			hunt_stage = HUNT_CHAPTER_ONE.route_id(next_story)
-	hunt_prey_id = "forest"
-	show_screen("hunt_select")
+	show_screen("battlefield_reset")
 
 func hunt_preparation_paths(stage_id: int) -> PackedStringArray:
 	var cleared := int(model.state.get("hunt_cleared",0))
@@ -2586,23 +2556,10 @@ func chapter_one_story_completions() -> Dictionary:
 
 
 func hunt_stage_is_unlocked(stage_id: int) -> bool:
-	var story := chapter_one_story_number(stage_id)
-	if story > 0:
-		return HUNT_CHAPTER_ONE.is_unlocked(story, chapter_one_story_completions())
-	return stage_id >= 0 and stage_id < HUNT_SELECTION.TOTAL_STAGES and stage_id <= int(model.state.get("hunt_cleared", 0))
-
+	return stage_id == 0
 
 func next_hunt_stage_id() -> int:
-	if screen != "hunt" or not is_instance_valid(hunt) or not hunt.result_shown or hunt.rules.outcome != "win":
-		return -1
-	var story := chapter_one_story_number(hunt_stage)
-	if story > 0:
-		var next_story_id := HUNT_CHAPTER_ONE.route_id(story + 1)
-		return next_story_id if next_story_id >= 0 and hunt_stage_is_unlocked(next_story_id) else -1
-	var next := hunt_stage + 1
-	if next >= HUNT_SELECTION.TOTAL_STAGES or next > int(model.state.get("hunt_cleared", 0)):
-		return -1
-	return next if HUNT_SELECTION.are_adjacent_playable_slots(hunt_stage, next) else -1
+	return -1
 
 func prepare_next_hunt() -> void:
 	var next := next_hunt_stage_id()
@@ -2720,7 +2677,7 @@ func close_hunt() -> void:
 	if screen!="hunt":return
 	hunt = null
 	hunt_prey_id = "forest"
-	show_screen("hunt_select")
+	show_screen("play")
 
 func go_back() -> void:
 	if is_instance_valid(parry_lab):
@@ -2753,7 +2710,7 @@ func go_back() -> void:
 			back.call()
 		else:
 			close_modal()
-	elif screen in ["hunt_select","hero_level_up"]:
+	elif screen in ["hunt_select","hero_level_up","battlefield_reset"]:
 		show_screen("play")
 	elif screen == "play" and is_instance_valid(build_side) and build_side.visible:
 		build_side.hide()

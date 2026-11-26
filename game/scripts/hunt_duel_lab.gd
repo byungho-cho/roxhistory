@@ -66,44 +66,9 @@ var local_bottom_hud_shift:=0.0
 func _play_ranged_drill_stone_contact(enemy:String)->void:
 	_sound(SoundNames.get(enemy,"deer")+"_hit")
 
-func _toggle_local_formation(distance_drill:String="")->void:
-	if is_instance_valid(local_formation):
-		_close_local_formation()
-		return
-	local_formation=preload("res://scripts/hunt_duel_local_squad.gd").new()
-	local_formation.name="LocalHuntFormation"
-	arena.add_child(local_formation)
-	local_formation.setup(_draw_animal_launch_dust if wild_takeoff_dust else Callable(), _draw_uram_gong if uram_gong_test else Callable(), _draw_local_uram_contact if local_all_effects else Callable(), _draw_local_uram_windup if local_all_effects else Callable(), _draw_squad_authored if local_full_squad_effects else Callable(), _draw_silver_deer if local_squad_silver else Callable(), _draw_deer_impact if local_squad_silver else Callable(), _project_preview_ring if local_world_ring else Callable(), _draw_local_weapon_glow if local_shared_ranged else Callable(), 2.04 if local_melee_polish else (1.84 if local_shared_ranged else 1.15), _draw_bom_hit if local_saebom_latest else Callable(), _draw_bom_trail if local_saebom_latest else Callable(), _draw_bom_wings if local_saebom_latest else Callable(), _draw_bom_ally if local_saebom_latest else Callable(), _pose_bom_cast if local_saebom_latest else Callable(), local_melee_polish)
-	if local_melee_polish:
-		local_formation.configure_spotlight(_draw_local_parry_floor,_draw_local_parry_flash,_draw_parry_stars,LOCAL_PARRY_SLOW,.50)
-		local_formation.configure_uram_ground(_draw_squad_uram_ground,_play_uram_ground_thump)
-		local_formation.parry_spotlight_started.connect(_squad_spotlight_started)
-		local_formation.uram_ordinary_impact.connect(_sound.bind("uram_basic"))
-	if not distance_drill.is_empty():
-		local_formation.configure_saebom_distance_drill(distance_drill)
-		if distance_drill=="far":local_formation.ranged_alignment_contact=_play_ranged_drill_stone_contact
-	local_formation.set_input_paused(paused)
-	if local_melee_polish:local_formation.place_bottom_hud(local_bottom_hud_shift)
-	for audio in audio_pool:audio.stop()
-	field.hide()
-	skill_hud.hide()
-	cast_notice.clear()
-	cast_notice_layer.visible=local_melee_polish
-	cast_notice_layer.queue_redraw()
-	for holder in overhead:holder.panel.hide()
-	for hud in local_formation.huds:
-		touch_buttons.append(hud.portrait_button)
-		touch_buttons.append(hud.chain_button)
-	local_formation_button.text="1:1"
-	if distance_drill=="far":
-		local_formation_banner.text="\uC6D0\uAC70\uB9AC  \uC2DC\uD5D8  /  \uC6B0\uB78C HP 50%"
-	elif distance_drill=="near":
-		local_formation_banner.text="\uADFC\uAC70\uB9AC  \uC2DC\uD5D8  /  \uC0C8\uBD04 vs \uAF43\uC0AC\uC2B4"
-	else:
-		local_formation_banner.text="3 : 3  \uC804\uD22C \uC2DC\uD5D8"
-	local_formation_banner.show()
-	_sync_local_distance_buttons()
-
+func _toggle_local_formation(_distance_drill := "") -> void:
+	# The clean lab has no squad or Saebom-distance entry.
+	pass
 
 func _close_local_formation()->void:
 	if not is_instance_valid(local_formation):return
@@ -328,7 +293,6 @@ func _ready() -> void:
 	if local_melee_polish:
 		_load_approved_parry_asset()
 		RallySilver.prepare()
-	if local_melee_polish and "--duel-start-boar" in OS.get_cmdline_user_args():rules.enemy_id="adult"
 	local_saebom_latest=local_melee_polish or "--duel-local-test=34" in OS.get_cmdline_user_args()
 	local_shared_ranged=local_saebom_latest or "--duel-local-test=33" in OS.get_cmdline_user_args()
 	local_world_ring=local_shared_ranged or "--duel-local-test=32" in OS.get_cmdline_user_args()
@@ -547,7 +511,7 @@ func _button_art(button:Button,texture:Texture2D,span:float)->TextureRect:
 func _setup_ui() -> void:
 	var first_top:=arena.get_child_count()
 	# Local backplates only; no full-width title/header covers the battlefield.
-	_plaque(Rect2(68,10,304,52))
+	_plaque(Rect2(68,10,115,52))
 	_plaque(Rect2(774,17,66,30))
 	timer=_label("00:00",Rect2(774,17,66,30),13)
 	timer.add_theme_color_override("font_color",Color("fff2d6"))
@@ -563,31 +527,22 @@ func _setup_ui() -> void:
 	pause_icon=_button_art(pause_button,preload("res://assets/ui/duel-hud/pause-ivory.svg"),20)
 	pause_caption=_label("▶",Rect2(0,0,36,36),18);pause_caption.reparent(pause_button,false)
 	pause_caption.add_theme_color_override("font_color",Color("fff2d6"))
-	var ids := ["hangyeol","uram","saebom","forest","adult"]
+	var ids := ["hangyeol", "forest"]
 	for i in ids.size():
-		var key:String=ids[i]
-		var item:=_button("",Rect2(78+54*i+(14 if i>=3 else 0),14,44,44),_select.bind(key,i>=3))
-		item.name="Select_"+key;item.toggle_mode=true
-		item.tooltip_text=["한결","우람","새봄","꽃사슴","큰 멧돼지"][i]
-		var icon=ModelTest.portrait(key) if i<3 else preload("res://assets/ui/duel-hud/deer-selector.png") if i==3 else preload("res://assets/ui/duel-hud/boar-selector.png")
-		var picture:=_button_art(item,icon,33)
-		var material:=ShaderMaterial.new();material.shader=preload("res://shaders/duel_selector_crop.gdshader");picture.material=material
-		selection_frames[key]=HuntArt.picture(item,preload("res://assets/ui/duel-hud/selection-gold.svg"),Rect2(0,0,44,44))
-		controls[key]=item
-	var stag := _button("\uC22B\uC0AC\uC2B4",Rect2(718,14,50,44),_select.bind("stag",true))
-	stag.name="Select_stag";stag.toggle_mode=true
-	stag.tooltip_text="\uC22B\uC0AC\uC2B4"
-	stag.add_theme_font_size_override("font_size",12)
-	stag.clip_text=true
-	for state in ["normal","hover","pressed","focus","disabled"]:
-		var style:=stag.get_theme_stylebox(state).duplicate() as StyleBox
-		style.content_margin_left=3.
-		style.content_margin_right=3.
-		stag.add_theme_stylebox_override(state,style)
-	stag.size=Vector2(50,44)
-	selection_frames["stag"]=HuntArt.picture(stag,preload("res://assets/ui/duel-hud/selection-gold.svg"),Rect2(0,0,50,44))
-	selection_frames["stag"].mouse_filter=Control.MOUSE_FILTER_IGNORE
-	controls["stag"]=stag
+		var key: String = ids[i]
+		var item := _button("", Rect2(78 + 54 * i, 14, 44, 44), func(): pass)
+		item.name = "Select_" + key
+		item.toggle_mode = true
+		item.focus_mode = Control.FOCUS_NONE
+		item.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		touch_buttons.erase(item)
+		var icon = ModelTest.portrait(key) if i == 0 else preload("res://assets/ui/duel-hud/deer-selector.png")
+		var picture := _button_art(item, icon, 33)
+		var material := ShaderMaterial.new()
+		material.shader = preload("res://shaders/duel_selector_crop.gdshader")
+		picture.material = material
+		selection_frames[key] = HuntArt.picture(item, preload("res://assets/ui/duel-hud/selection-gold.svg"), Rect2(0, 0, 44, 44))
+		controls[key] = item
 	if local_melee_polish:
 		for index in range(first_top,arena.get_child_count()):
 			var control:Control=arena.get_child(index)
@@ -620,28 +575,6 @@ func _setup_ui() -> void:
 		test_charge.mouse_entered.connect(func():orb.self_modulate=Color(1.13,1.13,1.13))
 		test_charge.mouse_exited.connect(func():orb.self_modulate=Color.WHITE)
 		local_test_charge=test_charge
-		if wild_takeoff_dust or "--duel-local-test=25" in OS.get_cmdline_user_args() or "--duel-local-test=24" in OS.get_cmdline_user_args():
-			var formation_panel:=_plaque(Rect2(379,16,78,39))
-			if local_melee_polish:local_top_hud_positions[formation_panel]=formation_panel.position
-			local_formation_button=_button("\uBAA8\uB450",Rect2(381,17,74,37),_toggle_local_formation)
-			local_formation_button.name="DuelTestAll"
-			local_formation_button.add_theme_font_size_override("font_size",16)
-			local_formation_banner=_label("3 : 3  \uC804\uD22C \uC2DC\uD5D8",Rect2(365,78,230,25),16)
-			local_formation_banner.hide()
-			if local_melee_polish:
-				local_top_hud_positions[local_formation_button]=local_formation_button.position
-				local_top_hud_positions[local_formation_banner]=local_formation_banner.position
-			if local_melee_polish:
-				for mode in ["far","near"]:
-					var label:="\uC6D0\uAC70\uB9AC" if mode=="far" else "\uADFC\uAC70\uB9AC"
-					var left:=468.0 if mode=="far" else 560.0
-					var choice:=_button(label,Rect2(left,17,86,37),_start_saebom_distance_drill.bind(mode))
-					choice.name="SaebomDistanceFar" if mode=="far" else "SaebomDistanceNear"
-					choice.toggle_mode=true
-					choice.add_theme_font_size_override("font_size",16)
-					local_distance_buttons[mode]=choice
-					local_top_hud_positions[choice]=choice.position
-					choice.hide()
 
 func _sync_local_distance_buttons()->void:
 	var active:=""
@@ -719,14 +652,6 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 		_exit()
 
-func _select(key: String, enemy: bool) -> void:
-	_close_local_formation()
-	if enemy:
-		rules.enemy_id = key
-	else:
-		rules.ally_id = key
-	reset_round()
-
 func _prepare_authored_frames()->void:
 	var name:="uram" if _uram_duel() else "saebom" if _saebom_duel() or (local_all_effects and rules.ally_id=="saebom") else ""
 	var key:=name if authored_asset_size>0 else ""
@@ -766,6 +691,8 @@ func _draw_authored_frames(origin:Vector2,elapsed:float,screen_size:float)->void
 	effects_layer.draw_texture_rect(authored_frames[frame_index],Rect2(origin-anchor,Vector2.ONE*screen_size),false)
 
 func reset_round(after_fade:=false) -> void:
+	rules.ally_id = "hangyeol"
+	rules.enemy_id = "forest"
 	han_strong_hit_started = -INF
 	if is_instance_valid(a) and a.key=="hangyeol":HanStrongHitVisual.restore(a.preview)
 	if local_melee_polish and rules.ally_id == "uram":uram_combined.prepare()
