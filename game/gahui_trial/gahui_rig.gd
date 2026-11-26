@@ -1,6 +1,8 @@
 extends Node3D
 const LABELS := ["대기", "걷기", "달리기", "평타", "2SP 물화살", "3SP 광역 치유", "일반 피격", "강한 피격"]
 const BASIC_RELEASE := .67
+const BARRAGE_LEAD_IN := 1.17
+const BARRAGE_LOCAL_DURATION := 2.15
 const TWO_SP_RELEASES := [.63, 1.06, 1.54]
 const FLIGHT_SECONDS := .28
 const HEAL_RELEASE := 29.0 / 30.0
@@ -13,7 +15,7 @@ const HEAL_ROTATIONS := preload("res://gahui_trial/meshy-heal-upper.res")
 const UPPER_BONES := [&"Spine", &"Spine01", &"Spine02", &"neck", &"Head", &"LeftShoulder", &"RightShoulder", &"LeftArm", &"RightArm", &"LeftForeArm", &"RightForeArm", &"LeftHand", &"RightHand"]
 const HIT_RECOVERY := 1.12
 const HIT_BONES := [&"Spine", &"Spine01", &"Spine02", &"Neck", &"Head", &"LeftShoulder", &"RightShoulder", &"LeftArm", &"RightArm", &"LeftForeArm", &"RightForeArm", &"LeftHand", &"RightHand"]
-const TIMES := [1.6, 2.2, 2.0, 1.45, 2.15, HEAL_DURATION, HIT_RECOVERY, 1.17]
+const TIMES := [1.6, 2.2, 2.0, 1.45, BARRAGE_LEAD_IN+BARRAGE_LOCAL_DURATION, HEAL_DURATION, HIT_RECOVERY, 1.17]
 const DISPLAY_HEIGHT := 2.33
 const STAFF_NAMES := ["RightArm", "RightForeArm", "RightHand"]
 # Upper ornament landmark, sampled from the exact GLB and converted into the three weighted joint-local spaces.
@@ -92,7 +94,7 @@ func switch_to(i:int):
  p.advance(0.0)
  p.seek(.15 if i in [3,4] else 0.0,true)
  sk.force_update_all_bone_transforms()
- for key in ["Spine","Spine01","Head","RightArm","RightForeArm","RightHand","LeftArm","LeftForeArm"]:
+ for key in ["Spine","Spine01","Head","RightArm","RightForeArm","RightHand","LeftArm","LeftForeArm","RightShoulder","LeftShoulder"]:
   var id := sk.find_bone(key)
   base[key] = sk.get_bone_pose_rotation(id)
   refs[key] = (sk.global_transform.basis * sk.get_bone_global_pose(id).basis).orthonormalized()
@@ -103,10 +105,51 @@ func actor_for(_i:int)->int:
 func step_at(t:float):
  elapsed=t
  if active in [1,2]:
-  var travel := minf(t* (1.02 if active==1 else 2.2), 2.3)
-  position = origin + (target_body.position-origin).slide(Vector3.UP).normalized()*travel
- draw_frame(t)
+  draw_locomotion(t)
+  soften_entry()
+  return
+ draw_frame(clampf(t-BARRAGE_LEAD_IN,0.0,BARRAGE_LOCAL_DURATION) if active==4 else t)
  if active != STRONG_HIT: soften_entry()
+ if active == 4 and t < 1.30: draw_barrage_gather(t)
+
+# Match the approved hunting preview: animation cadence and ground speed slow together.
+func draw_locomotion(t:float) -> void:
+ var factor := .68 if active == 1 else .50
+ var speed := (3.11 if active == 1 else 11.08) * factor
+ var stop := 2.03 if active == 1 else 1.16
+ var u := clampf(t-stop+.24,0.0,.24)
+ var travel_time := t if t < stop-.24 else stop-.24+u-.5*u*u/.24
+ var direction := (target_body.position-origin).slide(Vector3.UP).normalized()
+ position = origin + direction*speed*travel_time
+ if t <= stop:
+  draw_frame(travel_time*factor)
+  return
+ var p := players[0]
+ var sk := skeletons[0]
+ var rest_time := t-stop
+ var departure: Array[Transform3D] = []
+ if rest_time < .22:
+  draw_frame(travel_time*factor)
+  for i in sk.get_bone_count(): departure.append(sk.get_bone_pose(i))
+ if p.current_animation != names[0]:
+  p.play(names[0])
+  p.advance(0.0)
+ p.seek(fposmod(rest_time,p.get_animation(names[0]).length),true)
+ if not departure.is_empty():
+  var mix := smoothstep(0.0,.22,rest_time)
+  for i in departure.size():
+   sk.set_bone_pose(i,departure[i].interpolate_with(sk.get_bone_pose(i),mix))
+ sk.force_update_all_bone_transforms()
+
+func ground_contact() -> Vector3:
+ var sk := skeletons[0]
+ sk.force_update_all_bone_transforms()
+ var l := sk.find_bone("LeftToeBase")
+ var r := sk.find_bone("RightToeBase")
+ if l < 0 or r < 0: return global_position
+ var contact := sk.to_global((sk.get_bone_global_pose(l).origin+sk.get_bone_global_pose(r).origin)*.5)
+ contact.y = global_position.y
+ return contact
 
 func staff_tip()->Vector3:
  var sk:=skeletons[0]
@@ -193,40 +236,56 @@ func draw_frame(t: float):
     sample = first_key + fposmod(t + .00005, len - first_key)
    p.seek(sample, true)
   return
- var sk := skeletons[0]
- p.seek(.15, true)
- var wind := bump(t,.32,.26)
- var push := 0.0
-
- var pulses: Array[float] = [BASIC_RELEASE]
- if active == 4:
-  pulses.assign(TWO_SP_RELEASES)
-  wind = bump(t,.29,.27) + .24*bump(t,.84,.17) + .38*bump(t,1.29,.19)
-
- for k in range(pulses.size()):
-  var strength := (1.16 if k == 2 else .88) if active == 4 else .66
-  push += strength*bump(t,pulses[k],.25)
- twist("Spine", Vector3(0,1,0), 9.0*wind-14.0*push)
- twist("Spine01", Vector3(1,0,0), 3.0*wind-9.0*push)
- twist("Head", Vector3(0,1,0), -7.0*wind+5.0*push)
- twist("RightArm", Vector3(1,0,0), -15.0*wind-67.0*push)
- twist("RightForeArm", Vector3(1,0,0), -21.0*wind+25.0*push)
- twist("RightHand", Vector3(1,0,0), -2.0*wind+2.0*push)
- twist("LeftArm", Vector3(0,0,1), 6.0*wind+4.0*push)
- twist("LeftForeArm", Vector3(1,0,0), -9.0*wind+6.0*push)
+ var sk:=skeletons[0]
+ players[0].seek(.15,true)
+ var pulses:Array=[BASIC_RELEASE] if active==3 else TWO_SP_RELEASES
+ var prepare:float=0.
+ var drive:float=0.
+ var finish:float=0.
+ for n in range(pulses.size()):
+  var release:float=pulses[n]
+  var accent:float=[.76,.83,1.12][n] if active==4 else .88
+  var width:float=.25 if n==0 else .16
+  prepare+=accent*bump(t,release-.19,width*.54)
+  # Asymmetric strike: accelerate into release, then decay into the hold instead of snapping straight back.
+  var attack:=smoothstep(release-.17,release-.025,t)*(1.-smoothstep(release+.025,release+.146,t))
+  drive+=accent*attack
+  finish+=accent*bump(t,release+.097,.12 if n<pulses.size()-1 else .21)
+ var facing:=global_basis.orthonormalized()
+ var forward:=facing.z
+ var right:=facing.x
+ var vertical:=facing.y
+ twist("Spine",vertical,9.0*prepare-11.0*drive-4.5*finish)
+ twist("Spine01",right,-4.0*prepare-13.0*drive-4.0*finish)
+ twist("Head",vertical,-5.5*prepare+5.0*drive+3.0*finish)
+ twist("RightShoulder",vertical,6.0*prepare-9.0*drive-4.5*finish)
+ twist("RightArm",right,-16.0*prepare-62.0*drive-19.0*finish)
+ twist("RightForeArm",right,-21.0*prepare+22.0*drive+8.0*finish)
+ twist("RightHand",right,-1.5*prepare+1.8*drive+1.0*finish)
+ twist("LeftShoulder",vertical,-2.0*prepare+4.0*drive)
+ twist("LeftArm",forward,5.0*prepare-4.0*drive+4.0*finish)
+ twist("LeftForeArm",right,-5.0*prepare+3.0*drive)
  sk.force_update_all_bone_transforms()
- for k in range(pulses.size()):
-  if t < pulses[k]: continue
-  if not launches.has(k):
-   var start := staff_tip()
-   launches[k] = start
+ for i in pulses.size():
+  var elapsed_since:float=t-float(pulses[i])
+  if elapsed_since<-0.00001: continue
+  if not launches.has(i):
+   var start:=staff_tip()
+   launches[i]=start
    shot_started.emit(start)
-  var flight := (t-pulses[k])/FLIGHT_SECONDS
-  if flight >= 1.0:
-   if hits == k:
-    hits+=1
-    shot_arrived.emit(k)
+  if elapsed_since>=FLIGHT_SECONDS and hits==i:
+   hits+=1
+   shot_arrived.emit(i)
 
+func draw_barrage_gather(t:float) -> void:
+ var gather := smoothstep(.62,1.03,t)*(1.0-smoothstep(1.12,1.31,t))
+ if gather <= 0.0: return
+ var side := global_basis.x.normalized()
+ var yaw := global_basis.y.normalized()
+ twist("Spine",yaw,7.0*gather)
+ twist("RightArm",side,-19.0*gather)
+ twist("RightForeArm",side,-22.0*gather)
+ skeletons[0].force_update_all_bone_transforms()
 
 func draw_hit(t:float, player:AnimationPlayer) -> void:
  if active_clip.is_empty() or hit_anchor.is_empty(): return

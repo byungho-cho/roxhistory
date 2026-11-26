@@ -150,6 +150,13 @@ var swipe := NONE
 var swipe_start := Vector2.ZERO
 var swipe_moved := false
 var swipe_can_activate := false
+# Accept one clean hero tap while the valley tween owns presentation. Never
+# send it to the disappearing hero or disturb the scenery's timing.
+var transition_tap_pointer := NONE
+var transition_tap_origin := Vector2.ZERO
+var transition_tap_dragged := false
+var transition_tap_pending := false
+var valley_waiting_for_hero := false
 var roster_frame: NinePatchRect
 var roster_scroll: ScrollContainer
 var roster_touch := NONE
@@ -825,6 +832,8 @@ func set_valley_mist_phase(value: float) -> void:
 
 func choose_valley(index: int, direction: int) -> void:
 	if valley_anim and valley_anim.is_running(): return
+	clear_transition_tap()
+	valley_waiting_for_hero = true
 	stop_hold()
 	swipe = NONE
 	swipe_moved = false
@@ -900,12 +909,16 @@ func cancel_valley_drag() -> void:
 	valley_anim = create_tween().set_parallel(true).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 	valley_anim.tween_method(func(t: float): present_swipe_actor(lerpf(initial, 0.0, t), lerpf(opacity, 1.0, t)), 0.0, 1.0, 0.24)
 	valley_anim.tween_method(set_valley_camera, valley_camera, float(selected), 0.24)
+	valley_anim.chain().tween_callback(flush_transition_tap)
 
 func _input(event: InputEvent) -> void:
-	if not is_visible_in_tree() or not app.application_active or app.modal: return
+	if not is_visible_in_tree() or not app.application_active or app.modal:
+		clear_transition_tap()
+		return
 	if event is InputEventScreenTouch:
 		if handle_roster_touch(event): return
 		if event.canceled:
+			if transition_tap_pointer == event.index: clear_transition_tap()
 			if held == event.index: stop_hold()
 			if swipe == event.index:
 				if swipe_follow_hero:
@@ -951,7 +964,44 @@ func handle_roster_drag(event: InputEventScreenDrag) -> bool:
 	get_viewport().set_input_as_handled()
 	return true
 
+func capture_transition_hero_tap(index: int, point: Vector2, pressed: bool) -> bool:
+	if not swipe_follow_hero: return false
+	var local := board.get_global_transform().affine_inverse() * point
+	if not pressed and transition_tap_pointer == index:
+		var distance := (point - transition_tap_origin).length() / board.scale.x
+		var clean := not transition_tap_dragged and distance < HERO_TAP_RELEASE_SLOP
+		transition_tap_pointer = NONE
+		transition_tap_dragged = false
+		if clean and HERO_INTERACTION.has_point(local) and is_swipe_origin(point):
+			transition_tap_pending = true
+			flush_transition_tap()
+		return true
+	if not pressed or swipe != NONE or transition_tap_pointer != NONE: return false
+	if not valley_anim or not valley_anim.is_running(): return false
+	if not HERO_INTERACTION.has_point(local) or not is_swipe_origin(point): return false
+	transition_tap_pointer = index
+	transition_tap_origin = point
+	transition_tap_dragged = false
+	return true
+
+func clear_transition_tap() -> void:
+	transition_tap_pointer = NONE
+	transition_tap_dragged = false
+	transition_tap_pending = false
+
+func flush_transition_tap() -> void:
+	if not transition_tap_pending: return
+	if app.modal or not app.application_active or not is_visible_in_tree():
+		clear_transition_tap()
+		return
+	if valley_waiting_for_hero or not is_instance_valid(active_foreground) or not active_foreground.visible: return
+	transition_tap_pending = false
+	play_hero_motion(true)
+
 func pointer(index: int, point: Vector2, pressed: bool) -> void:
+	if capture_transition_hero_tap(index, point, pressed):
+		get_viewport().set_input_as_handled()
+		return
 	if pressed and upgrade.get_global_rect().has_point(point):
 		if held == NONE and not upgrade.disabled:
 			held = index
@@ -1012,6 +1062,10 @@ func is_horizontal_swipe(movement: Vector2) -> bool:
 	return absf(movement.x) > absf(movement.y) * 1.2
 
 func pointer_drag(index: int, point: Vector2) -> void:
+	if transition_tap_pointer == index:
+		transition_tap_dragged = transition_tap_dragged or (point - transition_tap_origin).length() / board.scale.x >= HERO_TAP_EXCURSION_LIMIT
+		get_viewport().set_input_as_handled()
+		return
 	if swipe != index: return
 	var movement := swipe_delta(point)
 	var excursion_limit := HERO_TAP_EXCURSION_LIMIT if swipe_follow_hero and swipe_can_activate else SWIPE_SLOP
@@ -1058,9 +1112,13 @@ func present_swipe_actor(offset: float, opacity: float) -> void:
 
 func animate_swipe_actor(progress: float, start_x: float) -> void:
 	present_swipe_actor(lerpf(start_x, 0.0, progress), progress)
+	if progress > 0.001:
+		valley_waiting_for_hero = false
+		flush_transition_tap()
 
 func clear_swipe_hint() -> void:
 	if swipe_follow_hero:
+		valley_waiting_for_hero = false
 		if swipe_scene_tween and swipe_scene_tween.is_running(): swipe_scene_tween.kill()
 		if valley_anim: valley_anim.kill()
 		clear_valley_departure()
@@ -1074,6 +1132,8 @@ func clear_swipe_hint() -> void:
 	if is_instance_valid(swipe_card_hint): swipe_card_hint.hide()
 
 func reset_swipe() -> void:
+	clear_transition_tap()
+	valley_waiting_for_hero = false
 	swipe = NONE
 	swipe_moved = false
 	clear_swipe_hint()

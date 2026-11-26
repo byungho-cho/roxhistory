@@ -3,7 +3,10 @@ const Gahui = preload("res://gahui_trial/gahui_rig.gd")
 const GahuiVfx = preload("res://gahui_trial/gahui_vfx.gd")
 const GAHUI_LAB_SCALE := 1.5
 const DEER_LAB_SCALE := 1.2
-const DEER_HOOVES := ["front_foot.R","front_foot.L","hind_foot.R","hind_foot.L"]
+const DEER_IDS := ["idle","walk","run","attack","skill","hit","heavy_hit"]
+const DEER_LABELS := ["대기","걷기","달리기","평타","3SP 들이받기","일반 피격","큰 피격"]
+const DEER_ALL := ["locomotion","attack","skill","hit","heavy_hit"]
+const DEER_ORIGIN := Vector3(3.05,0,-1.0)
 var gahui: Gahui
 var vfx: GahuiVfx
 var mode_label: Label
@@ -17,6 +20,14 @@ var drill_buttons: Array[Button] = []
 var start_position := Vector3.ZERO
 var shot_total := 0
 var motion_coverage := {}
+var deer
+var subject := 0
+var deer_action := "idle"
+var sequence_index := 0
+var subject_buttons: Array[Button] = []
+var deer_buttons: Array[Button] = []
+var impact_elapsed := 0.0
+var close_button: Button
 
 func _ready():
  show_final_test35 = true
@@ -38,10 +49,10 @@ func _install_gahui():
   if c!=shared_world and c is CanvasItem: c.hide()
  a.preview.pivot.hide()
  b.play("idle")
- shared_world.bodies[1].position = Vector3(3.05,0,-1.0)
+ shared_world.bodies[1].position = DEER_ORIGIN
  b.preview.pivot.rotation.y = -1.4
  b.preview.pivot.scale *= DEER_LAB_SCALE
- _sample_deer(0.0)
+
  gahui = Gahui.new()
  shared_world.scene.add_child(gahui)
  start_position = Vector3(-3.65,0,1.85)
@@ -59,8 +70,17 @@ func _install_gahui():
  shared_world.scene.add_child(vfx)
  gahui.shot_started.connect(func(_point:Vector3):shot_total+=1)
  gahui.shot_arrived.connect(_hit_deer)
- _plaque(Rect2(26,18,323,45))
- mode_label = _label("",Rect2(30,18,308,45),18)
+ var driver := load("res://gahui_trial/deer_lab_motion.gd") as Script
+ if driver==null:
+  push_error("Flower deer lab driver missing")
+  _fail_trial(5)
+  return
+ deer=driver.new()
+ deer.setup(b,shared_world.bodies[1],gahui)
+ _plaque(Rect2(26,18,468,45))
+ subject_buttons.append(_lab_button("가희",Rect2(32,24,83,33),_select_subject.bind(0)))
+ subject_buttons.append(_lab_button("꽃사슴",Rect2(121,24,83,33),_select_subject.bind(1)))
+ mode_label = _label("",Rect2(206,18,288,45),18)
  mode_label.horizontal_alignment=HORIZONTAL_ALIGNMENT_LEFT
  mode_label.position.x+=13
  help_label=_label("모션 확인용 · 실제 피해와 치유 수치는 적용하지 않습니다",Rect2(90,454,780,27),15)
@@ -69,17 +89,22 @@ func _install_gahui():
  var left := 106
  for i in Gahui.LABELS.size():
   var width: int=button_widths[i]
-  var motion_button:=_button("3SP 치유" if i == 5 else Gahui.LABELS[i],Rect2(left,491,width,32),_on_action.bind(i))
+  var motion_button:=_lab_button("3SP 치유" if i == 5 else Gahui.LABELS[i],Rect2(left,491,width,32),_on_action.bind(i))
   motion_button.add_theme_font_size_override("font_size",14)
   motion_button.clip_text=true
   motion_button.size=Vector2(width,32)
   drill_buttons.append(motion_button)
   left+=width+4
- drill_buttons.append(_button("전체 재생",Rect2(left,491,104,32),_start_all))
- drill_buttons.append(_button("닫기",Rect2(874,20,60,34),_exit))
- for btn in drill_buttons:
-  btn.add_theme_font_size_override("font_size",14)
- _play(0)
+ drill_buttons.append(_lab_button("전체 재생",Rect2(left,491,104,32),_start_all))
+ close_button=_lab_button("닫기",Rect2(874,20,60,34),_exit)
+ var deer_left := 113
+ var deer_widths := [64,64,76,67,114,100,92,112]
+ for i in DEER_LABELS.size():
+  var width: int=deer_widths[i]
+  deer_buttons.append(_lab_button(DEER_LABELS[i],Rect2(deer_left,491,width,32),_on_deer_action.bind(i)))
+  deer_left+=width+4
+ deer_buttons.append(_lab_button("전체 재생",Rect2(deer_left,491,deer_widths[-1],32),_start_all))
+ _select_subject(0)
  arena.show()
  recording = "--record" in OS.get_cmdline_user_args()
  if "--verify" in OS.get_cmdline_user_args():
@@ -89,67 +114,126 @@ func _install_gahui():
  set_process(true)
  if recording:_start_all()
 
+func _lab_button(value:String, rect:Rect2, pressed:Callable) -> Button:
+ var button:=_button(value,rect,pressed)
+ button.add_theme_font_size_override("font_size",14)
+ button.clip_text=true
+ button.size=rect.size
+ touch_buttons.append(button)
+ return button
+
 func _input(event:InputEvent):
- if event is InputEventScreenTouch:
+ if event is InputEventMouse or event is InputEventScreenTouch:
   super(event)
   return
  if event.is_action_pressed("ui_cancel"):
   _exit()
   get_viewport().set_input_as_handled()
 
+func _select_subject(next:int) -> void:
+ subject=next
+ autoplay=false
+ end_hold=0.0
+ impact_elapsed=0.0
+ gahui.position=start_position
+ gahui.switch_to(0)
+ vfx.clear()
+ deer.reset()
+ deer.play("idle")
+ deer.sample(0.0)
+ for i in subject_buttons.size():
+  subject_buttons[i].disabled=i==subject
+ for button in drill_buttons:button.visible=subject==0
+ for button in deer_buttons:button.visible=subject==1
+ help_label.text="두 캐릭터가 마주 보는 동작 실험실 · 본편 전투와 저장에는 영향이 없습니다"
+ if subject==0:_play(0)
+ else:_play_deer("idle")
+
 func _on_action(i:int):
  autoplay=false
  gahui.position=start_position
  _play(i)
 
+func _on_deer_action(i:int):
+ autoplay=false
+ deer.reset()
+ _play_deer(DEER_IDS[i])
+
 func _start_all():
- gahui.position=start_position
  autoplay=true
- _play(0)
+ sequence_index=0
+ if subject==0:
+  gahui.position=start_position
+  _play(0)
+ else:
+  deer.reset()
+  _play_deer(DEER_ALL[0])
 
 func _play(i:int):
  selected_index=i
  segment_t=0.0
  gahui.switch_to(i)
+ gahui.step_at(0.0)
  vfx.clear()
- mode_label.text="가희 · 사냥 실험실 / "+Gahui.LABELS[i]
+ mode_label.text="가희 · "+Gahui.LABELS[i]
  motion_coverage[i] = true
+
+func _play_deer(key:String):
+ segment_t=0.0
+ if not deer.play(key):
+  push_warning("Missing lab motion: "+key)
+  deer.play("idle")
+  key="idle"
+ deer_action=key
+ deer.sample(0.0)
+ mode_label.text="꽃사슴 · "+("연속 이동" if key=="locomotion" else DEER_LABELS[DEER_IDS.find(key)])
 
 func _process(delta:float):
  segment_t += delta
+ if subject==1:
+  _process_deer()
+  return
  if segment_t>=float(Gahui.TIMES[selected_index]):
+  # Always sample the ending pose and events, even after a long frame.
+  gahui.step_at(float(Gahui.TIMES[selected_index]))
   if autoplay:
-   if selected_index == Gahui.LABELS.size()-1:
+   if selected_index==Gahui.LABELS.size()-1:
     if recording:
      print("RECORD ",Gahui.LABELS.size()," states; projectiles=",shot_total)
      get_tree().quit()
      return
-    _start_all()
+    autoplay=false
+    _play(0)
    else:
+    gahui.position=start_position
     _play(selected_index+1)
-  elif selected_index<=2:
-   if selected_index!=0: gahui.position=start_position
-   _play(selected_index)
   else:
    _play(0)
  gahui.step_at(segment_t)
  _draw_vfx(segment_t)
+ impact_elapsed+=delta
  if end_hold>0.0:
   end_hold=maxf(0.0,end_hold-delta)
-  if end_hold==0.0: b.play("idle")
- _sample_deer(0.0 if end_hold==0.0 else .16-end_hold)
+  if end_hold==0.0:
+   impact_elapsed=0.0
+   deer.play("idle")
+ deer.sample(impact_elapsed)
+
+func _process_deer():
+ gahui.step_at(fposmod(segment_t,float(Gahui.TIMES[0])))
+ var finished:bool=deer.sample(segment_t)
+ if deer_action=="idle" or not finished:return
+ if autoplay and sequence_index+1<DEER_ALL.size():
+  sequence_index+=1
+  deer.reset()
+  _play_deer(DEER_ALL[sequence_index])
+ else:
+  autoplay=false
+  _play_deer("idle")
 
 func _draw_vfx(t:float) -> void:
  var deer_chest := shared_world.bodies[1].global_position + Vector3.UP * (.95 * DEER_LAB_SCALE)
  vfx.draw(selected_index,t,gahui,shared_world.camera,deer_chest)
-
-func _sample_deer(t:float) -> void:
- b.sample(t,false)
- var ground_y := shared_world.bodies[1].global_position.y
- var bottom := INF
- for hoof:String in DEER_HOOVES:
-  bottom = minf(bottom,shared_world.bone_world(1,hoof).y)
- b.preview.pivot.position.y += ground_y - bottom
 
 func _fail_trial(code:int) -> void:
  if app==null:
@@ -158,9 +242,10 @@ func _fail_trial(code:int) -> void:
   _exit()
 
 func _hit_deer(_index:int):
- end_hold=.16
- b.play("hit")
-
+ if subject!=0:return
+ deer.play("hit")
+ impact_elapsed=0.0
+ end_hold=maxf(.14,float(deer.duration))
 func _verify_gahui():
  for id in Gahui.LABELS.size():
   drill_buttons[id].pressed.emit()
@@ -170,7 +255,7 @@ func _verify_gahui():
  var tip_error:float=gahui.staff_tip().distance_to(gahui.global_position)
  print("GAHUI_QA motion_states=",motion_coverage.size()," projectiles=",shot_total," projected_height=",h," tip_distance=",tip_error)
  var full_bounds:=true
- for k in range(drill_buttons.size()-2):
+ for k in range(drill_buttons.size()-1):
   full_bounds=full_bounds and drill_buttons[k].get_rect().end.x<=drill_buttons[k+1].position.x
  var sk:=gahui.skeletons[0]
  var head:=sk.find_bone(&"Head")
@@ -194,6 +279,26 @@ func _verify_gahui():
  if motion_coverage.size()!=8 or shot_total!=4 or h<88.5 or h>93.0 or tip_error<1.125 or tip_error>3.60 or not full_bounds or not instant or not back_only or not recovered or heal_lift<.23 or heal_end>.16:
   get_tree().quit(4)
   return
+ var deer_seen:=0
+ _select_subject(1)
+ for i in DEER_IDS.size():
+  deer_buttons[i].pressed.emit()
+  if deer_action!=DEER_IDS[i]:continue
+  deer.sample(0.0)
+  deer.sample(float(deer.duration))
+  deer_seen+=1
+ _start_all()
+ var passed_series:=deer_action=="locomotion"
+ if passed_series:
+  _process(float(deer.duration)+.02)
+  passed_series=deer_action=="attack"
+ _select_subject(0)
+ var tabs_restore:=subject_buttons[0].disabled and drill_buttons[0].visible and not deer_buttons[0].visible
+ if deer_seen!=7 or not passed_series or not tabs_restore:
+  printerr("DEER_LAB_QA failed ",deer_seen," ",passed_series," ",tabs_restore)
+  get_tree().quit(7)
+  return
+ print("DEER_LAB_QA PASS ",deer_seen," motions, sequence and tabs")
  print("GAHUI_QA PASS")
  get_tree().quit()
 
