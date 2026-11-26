@@ -113,7 +113,7 @@ static func is_unlocked(number: int, completed: Dictionary) -> bool:
 	return completed.get(STAGE_KEYS[number - 2], false) == true
 
 
-## Story joiners become available for free replay only after the corresponding victory is saved.
+## A saved victory recruits each story ally. Growth can also use ownership retained by a hunt-only reset.
 static func replay_opening_party(completed: Dictionary, retained: Variant = []) -> Array:
 	var recruited: Array = retained.duplicate() if retained is Array else []
 	for i in range(ROWS.size()):
@@ -129,16 +129,16 @@ static func replay_opening_party(completed: Dictionary, retained: Variant = []) 
 
 
 ## First attempts retain the authored encounter. Only a recorded clear
-## changes these tutorials into a normal hunt with the owned roster.
-static func playable_encounter(number: int, completed: Dictionary, retained: Variant = [], verified_clears: Variant = null) -> Dictionary:
+## changes these tutorials into a normal hunt with the currently unlocked roster.
+static func playable_encounter(number: int, completed: Dictionary, verified_clears: Dictionary) -> Dictionary:
 	var row:=encounter(number)
 	if row.is_empty():return row
 	row.first_visit=completed.get(row.key,false)!=true
 	if number in [1,2,3,4] and not row.first_visit:
-		var clears: Dictionary = verified_clears if verified_clears is Dictionary else completed
-		var owned:=replay_opening_party(clears,retained)
-		row.party=owned
-		row.opening_party=owned.duplicate()
+		# Replay deployment follows this run's recorded wins, even when a reset retains hero ownership.
+		var unlocked := replay_opening_party(verified_clears)
+		row.party = unlocked
+		row.opening_party = unlocked.duplicate()
 		row.erase("story_join")
 		row.free_replay=true
 	return row

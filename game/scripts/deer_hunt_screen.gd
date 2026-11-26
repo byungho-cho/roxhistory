@@ -284,14 +284,14 @@ func _ready() -> void:
 		rules.manual_only = rules.first_hunt
 		rules.han_ordinary_damage=RallyCloud.SQUAD_BASE
 		if not rules.first_hunt:
-			prep_ally_count = ChapterOneCatalog.replay_opening_party(app.hunt_recruitment_clears(),app.model.state.get(ChapterOneCatalog.RECRUITS_KEY,[])).size()
+			prep_ally_count = ChapterOneCatalog.replay_opening_party(app.hunt_recruitment_clears()).size()
 			chapter_one_solo = prep_ally_count == 1
 			# The squad engine owns independent casts; a solo 1-1 replay keeps its original duel.
 			chapter_story_preview = chapter_story_number == 1 and not chapter_one_solo
 			battle_toggles_unlocked = ChapterOneCatalog.is_unlocked(4,completed)
 	if chapter_story_preview:
 		var completed:Dictionary=app.chapter_one_story_completions()
-		chapter_story_encounter=ChapterOneCatalog.playable_encounter(chapter_story_number,completed,app.model.state.get(ChapterOneCatalog.RECRUITS_KEY,[]),app.hunt_recruitment_clears())
+		chapter_story_encounter=ChapterOneCatalog.playable_encounter(chapter_story_number,completed,app.hunt_recruitment_clears())
 		prep_ally_count=chapter_story_encounter.get("opening_party",chapter_story_encounter.party).size()
 		if bool(chapter_story_encounter.get("free_replay",false)):
 			chapter_one_solo=prep_ally_count==1

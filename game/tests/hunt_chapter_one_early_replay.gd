@@ -119,6 +119,63 @@ func suite(n:int,expected:Array,owned_toggles:bool)->void:
   for f in 55:
    h._process(1./30.)
    await render()
+
+func check_1_1_roster(expected: Array, record_win := false) -> void:
+ var h = await ready_hunt(1)
+ if not is_instance_valid(h):
+  ck(false, "1-1 replay opens after recorded victories")
+  return
+ if record_win:
+  h.rules.outcome = "win"
+  h.show_result()
+  var select_stage := h.find_child("ResultStageSelect", true, false) as Button
+  var may_retry: bool = is_instance_valid(select_stage) and app.hunt_recruitment_clears() == {C.STAGE_KEYS[0]: true}
+  ck(may_retry, "1-1 victory records its clear and exposes the result stage selection button")
+  if not may_retry:
+   return
+  select_stage.pressed.emit()
+  h = await ready_hunt(1)
+  if not is_instance_valid(h):
+   ck(false, "1-1 is selectable from the victory result")
+   return
+ else:
+  app.retry_hunt()
+ h = app.hunt
+ var deadline := Time.get_ticks_msec() + 15000
+ while not h.arrival_finished and Time.get_ticks_msec() < deadline:
+  await process_frame
+ h.set_process(false)
+ var showing := 0
+ for hunter in h.hunters:
+  showing += int(hunter.visible)
+ ck(h.arrival_finished and h.prep_ally_count == expected.size() and h.portrait_frames.size() == expected.size() and showing == expected.size(), "1-1 retry preparation shows %d currently cleared allies" % expected.size())
+ var b = start(h)
+ for i in 100:
+  h._process(1.0 / 60.0)
+ if expected.size() == 1:
+  ck(not is_instance_valid(b) and h.running and h.rules.party_hp[0] > 0 and h.rules.party_hp[1] == 0 and h.rules.party_hp[2] == 0 and h.party_cards[0].hud.visible and not h.party_cards[1].hud.visible and not h.party_cards[2].hud.visible, "1-1 solo retry permits only Han in the live fight and HUD")
+ else:
+  ck(is_instance_valid(b) and active(b) == expected and b.story_join_slot == -1, "1-1 live replay starts with the exact currently cleared roster")
+
+func check_reset_replay_roster() -> void:
+ carry(4, {C.STAGE_KEYS[0]: true, C.STAGE_KEYS[1]: true, C.STAGE_KEYS[2]: true, C.STAGE_KEYS[3]: true})
+ app.show_screen("hunt_select")
+ app.model.state.hero_growth = {"uram": {"level": 2, "xp": 3}, "saebom": {"level": 2, "xp": 4}}
+ app.confirm_hunt_progress_reset(Callable())
+ app._reset_hunt_progress(Callable())
+ ck(app.hunt_recruitment_clears().is_empty() and app.model.state[C.RECRUITS_KEY] == ["uram", "saebom"], "hunt-only reset retains acquired heroes and clears current chapter wins")
+ for stage in [1, 2, 3, 4]:
+  app.hunt_stage = C.route_id(stage)
+  if stage == 1:
+   await check_1_1_roster(["hangyeol"], true)
+   continue
+  app.record_hunt_win()
+  if stage == 3:
+   await check_1_1_roster(["hangyeol", "uram"])
+  elif stage == 4:
+   await check_1_1_roster(["hangyeol", "uram", "saebom"])
+ ck(HeroGrowth.owns(app.model.state, "uram") and HeroGrowth.owns(app.model.state, "saebom") and HeroGrowth.read(app.model.state, "uram").xp == 3 and HeroGrowth.read(app.model.state, "saebom").xp == 4, "deployment gating preserves retained hero ownership and XP")
+
 func run()->void:
  movie=DisplayServer.get_name()!="headless"
  app=load("res://scenes/main.tscn").instantiate();root.add_child(app);await process_frame
@@ -150,6 +207,8 @@ func run()->void:
  carry(4,{C.STAGE_KEYS[0]:true,C.STAGE_KEYS[1]:true,C.STAGE_KEYS[2]:true,C.STAGE_KEYS[3]:true})
  await suite(2,["hangyeol","uram","saebom"],true)
  await suite(3,["hangyeol","uram","saebom"],true)
- if not movie:await suite(1,["hangyeol","uram","saebom"],true)
+ if not movie:
+  await suite(1,["hangyeol","uram","saebom"],true)
+  await check_reset_replay_roster()
  print("EARLY REPLAY ",count," checks, ",errors," failures")
  quit(errors)
