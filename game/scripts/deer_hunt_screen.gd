@@ -2479,7 +2479,7 @@ static func _hunt_cutin_art(path: String) -> Texture2D:
 
 func _make_story_cutin(slot: int) -> void:
 	var character_art := _hunt_cutin_art("res://assets/ui/village-guidance/hunt-uram-approved-front.png" if slot==1 else "res://assets/ui/village-guidance/hunt-saebom-approved-front.png")
-	story_cutin=CharacterGuide.new(app,"우람" if slot==1 else "새봄","한결아, 내가 앞을 막을게!" if slot==1 else "한결아, 우람아! 뒤는 내가 맡을게!",character_art)
+	story_cutin=CharacterGuide.new(app,"우람" if slot==1 else "새봄","한결아, 내가 적을 끌어낼게! 도발이 성공하면 5초 동안 받는 피해가 줄어." if slot==1 else "한결아, 우람아! 뒤는 내가 맡을게!",character_art)
 	story_cutin.z_index=2000
 	story_cutin.hide()
 	add_child(story_cutin)

@@ -55,6 +55,7 @@ var story_deer_shove_han_end := Vector2.ZERO
 var story_deer_shove_deer := Vector2.ZERO
 const StoryFrontFx = preload("res://scripts/hunt_production_frontline_vfx.gd")
 var story_uram_entrance_clock := -1.0
+var story_han_stand_up: RefCounted
 var story_uram_old_headings: Dictionary = {}
 var story_uram_dust_layer: Node2D
 var story_uram_entrance_front = StoryFrontFx.new()
@@ -109,6 +110,15 @@ const SaebomMelee=preload("res://scripts/duel_shared_world.gd")
 const Knife=preload("res://scripts/duel_saebom_stone_knife.gd")
 var knife_events:Array[Dictionary]=[]
 const HAN_3SP_SPLASH_FRACTION:=.60
+const CampaignSaebom := preload("res://scripts/hunt_campaign_saebom.gd")
+const CampaignSaebomFx := preload("res://scripts/hunt_campaign_saebom_fx.gd")
+const CampaignCast := preload("res://scripts/hunt_duel_saebom_3p_effect.gd")
+const CAMPAIGN_URAM_TAUNT := preload("res://assets/ui/d0071-hud/uram-taunt.png")
+var campaign_saebom: CampaignSaebom
+var campaign_cast := CampaignCast.new()
+var campaign_far_wing: Node2D
+var campaign_bolts: Array[Dictionary] = []
+var campaign_echoes: Array[Dictionary] = []
 const NEAR_SAE_2SP=preload("res://assets/ui/saebom-melee/stone-knife-2sp.png")
 var local_melee_polish:=false
 var saebom_distance_drill:=""
@@ -258,10 +268,23 @@ func setup(dust_draw:Callable=Callable(),gong:Callable=Callable(), heavy:Callabl
 				home=story_allied_placement[i]
 		else:home=Hunt.DEER_SLOT+Vector2(111,-9)+(Hunt.ENEMY_CELLS[DEER_SLOTS[i-3]]-Hunt.ENEMY_CELLS[4])*.86
 		var actor:=Actor.new();actor.create(self,id);actor.configure(true)
+		if id=="uram" and _story_uram_tank():
+			var tank_view:=actor.preview as HybridCharacter
+			if is_instance_valid(tank_view.shield) and tank_view.shield.mesh is QuadMesh:
+				var large:=tank_view.shield.mesh.duplicate() as QuadMesh
+				large.size*=1.50
+				tank_view.shield.mesh=large
+			tank_view.enable_campaign_right_shield()
 		if id=="hangyeol" and not story_encounter.is_empty() and actor.preview.has_method("install_han_production_motion"):
 			actor.preview.call("install_han_production_motion")
 		var visual_multiplier:=Hunt.BATTLEFIELD_MODEL_MULTIPLIER if not story_encounter.is_empty() else 1.0
 		actor.preview.scale=Vector2.ONE*[.76588,1.08,.90,.82588,.82588,.82588][i]*visual_multiplier
+		if i == 2 and story_encounter.get("party", []).has("saebom"):
+			campaign_saebom = CampaignSaebom.new(actor.preview)
+			campaign_far_wing = Node2D.new()
+			campaign_far_wing.name = "CampaignSaebomFarWing"
+			add_child(campaign_far_wing)
+			campaign_far_wing.draw.connect(_paint_campaign_wing.bind(campaign_far_wing, false))
 		var ring:=Line2D.new();ring.width=1.65;ring.antialiased=true;ring.default_color=Head.duel_team_color(ally)
 		for j in 41:ring.add_point(Vector2.from_angle(TAU*float(j)/40)*Vector2(22,8))
 		add_child(ring)
@@ -287,6 +310,9 @@ func setup(dust_draw:Callable=Callable(),gong:Callable=Callable(), heavy:Callabl
 	for i in 3:
 		var hud:=HUD.new();hud.position=Vector2(359+88*i,437);hud_parent.add_child(hud)
 		hud.enable_duel_ready_feedback();hud.reset(HEROES[i])
+		if i == 1 and _story_uram_tank():
+			hud.badge_art.texture = CAMPAIGN_URAM_TAUNT
+			hud.portrait_button.tooltip_text = "2SP 도발 · 피해 없음"
 		if local_melee_polish:
 			hud.enable_portrait_damage_feedback()
 			hud.place_local_combat_hud(480.+128.*float(i-1))
@@ -318,6 +344,7 @@ func configure_uram_ground(draw_wave:Callable,thump:Callable=Callable())->void:
 
 func _paint_uram_ground()->void:
 	for fan in uram_short_fans:
+		if bool(fan.get("shout",false)):continue
 		if bool(fan.get("combined", false)):
 			uram_combined.draw(uram_ground_layer,fan.from,fan.axis,elapsed-float(fan.at))
 		else:UramCounterWave.draw_fan(uram_ground_layer,fan.from,fan.ground,fan.axis,fan.reach,(elapsed-float(fan.at))/float(fan.span),false,true)
@@ -455,7 +482,7 @@ func _play(u:Dictionary,key:String)->void:
 		u.bom_shove=false;u.bom_near_skill=false
 
 func _free_to_cast(i:int)->bool:
-	return not input_paused and not story_entry_active() and story_deer_shove_clock<0.0 and story_uram_entrance_clock<0.0 and not ended and units[i].hp>0 and units[i].move in ["idle","run","walk","attack","hit"]
+	return not input_paused and not story_entry_active() and story_deer_shove_clock<0.0 and story_han_stand_up == null and story_uram_entrance_clock<0.0 and not ended and units[i].hp>0 and units[i].move in ["idle","run","walk","attack","hit"]
 
 func _request(key:String,i:int)->void:
 	var cost:=2 if key=="skill" else 3
@@ -492,12 +519,70 @@ func _squad_guard_candidate(lead:=0.0)->int:
 			id=i
 	return id
 
+const URAM_TAUNT_SECONDS := 5.0
+const URAM_TAUNT_RANGE := 99.0
+const URAM_TAUNT_MIN_DOT := .45
+
+func _story_uram_tank()->bool:
+	return not story_encounter.is_empty()
+
+static func _uram_tank_damage(amount:int,percent:int)->int:
+	return maxi(0,ceili(maxi(0,amount)*percent/100.0))
+
+func _taunt_target_for_uram()->int:
+	var uram:=units[1]
+	var ground:Vector2=uram.feet
+	var aiming:int=uram.victim
+	var forward:=Vector2.RIGHT
+	if aiming>=3 and aiming<units.size():
+		var aim:Vector2=units[aiming].feet
+		if not ground.is_equal_approx(aim):forward=ground.direction_to(aim)
+	var selected:=-1
+	var distance:=URAM_TAUNT_RANGE+0.0001
+	for j in range(3,units.size()):
+		var enemy:=units[j]
+		if int(enemy.hp)<=0:continue
+		var committed:bool=enemy.move in ["attack","skill","chain","counter"] and float(enemy.contact)>=0.0
+		var current:int=int(enemy.victim) if committed else _target(j)
+		if current==1:continue
+		var offset:Vector2=enemy.feet-ground
+		var gap:=offset.length()
+		if gap>=distance or offset.normalized().dot(forward)<URAM_TAUNT_MIN_DOT:continue
+		selected=j
+		distance=gap
+	return selected
+
+func _resolve_uram_taunt()->void:
+	var uram:=units[1]
+	var target:=_taunt_target_for_uram()
+	var ground:Vector2=uram.feet
+	var forward:=Vector2.RIGHT
+	if int(uram.victim)>=3 and int(uram.victim)<units.size():
+		forward=ground.direction_to(units[uram.victim].feet)
+		if forward.is_zero_approx():forward=Vector2.RIGHT
+	if is_instance_valid(paint):
+		var view:HybridCharacter=uram.actor.preview
+		var sk:Skeleton3D=view.skeleton
+		var head:=sk.to_global(sk.get_bone_global_pose(sk.find_bone("head")).origin)
+		var mouth := Knife.project(view, head + view.pivot.global_basis.z.normalized() * .13 + Vector3.UP * .045)
+		uram_short_fans.append({"from":mouth,"axis":forward,"at":elapsed,"span":.96 / .70 + .40,"shout":true})
+		paint.queue_redraw()
+	if target<0:return
+	var enemy:=units[target]
+	enemy.uram_taunted_until=elapsed+URAM_TAUNT_SECONDS
+	uram.uram_taunt_guard_until=elapsed+URAM_TAUNT_SECONDS
+	_play(enemy,"walk")
+	enemy.victim=1
+	enemy.next=maxf(float(enemy.next),elapsed+.18)
+	hits.append({"from":1,"target":target,"type":"taunt","result":"redirected","hp":enemy.hp})
+
 func _target(i:int)->int:
 	if not saebom_distance_drill.is_empty():
 		if i<3:return 3 if units[3].hp>0 else -1
 		if units[1].hp>0:return 1
 		return 2 if units[2].hp>0 else -1
 	if i>=3:
+		if _story_uram_tank() and units[1].hp>0 and float(units[i].get('uram_taunted_until',0.))>elapsed:return 1
 		if story_uram_opening_targets.has(i) and units[1].hp>0:return 1
 		if i == 3 and _story_teaching_first_charge():
 			return 1
@@ -518,7 +603,7 @@ func _target(i:int)->int:
 func _begin(i:int,key:String,target:int)->void:
 	var u:=units[i]
 	if i==2 and local_melee_polish and target>=0:_sample_saebom_mode(u,target)
-	if i==1 and key=="skill" and uram_ground_draw.is_valid():
+	if i==1 and key=="skill" and not _story_uram_tank() and uram_ground_draw.is_valid():
 		var view:HybridCharacter=u.actor.preview
 		var sk:Skeleton3D=view.skeleton
 		var pins:Dictionary={}
@@ -532,6 +617,10 @@ func _begin(i:int,key:String,target:int)->void:
 		u["floor_pins"]=pins
 		u["floor_y"]=view.pivot.global_position.y
 	_play(u,key)
+	if i==1 and key in ["attack","skill"] and _story_uram_tank():
+		var committed_duration:float=u.actor.duration
+		u.actor.play("chain")
+		u.actor.duration=committed_duration
 	u.victim=target
 	if key=="attack" and target==1:story_uram_opening_targets.erase(i)
 	var dur:float=u.actor.duration
@@ -541,7 +630,7 @@ func _begin(i:int,key:String,target:int)->void:
 			u.guarded=false
 			u.contact=minf(URAM_GUARD_EARLIEST,dur)
 		elif key=="counter":u.contact=minf(.46,dur)
-	if i==1 and key=="skill" and uram_ground_draw.is_valid():
+	if i==1 and key=="skill" and not _story_uram_tank() and uram_ground_draw.is_valid():
 		u["floor_cast_at"]=-1.0;u["floor_impact_age"]=-1.0
 	if i>=3 and key=="skill":
 		u.contact=float(u.actor.preview.length("req046_skill_anticipation"))+.14
@@ -644,7 +733,7 @@ func _approach(i:int,target:Vector2,dt:float)->void:
 func tick(delta:float,paused:bool,real_delta:float=-1.0)->void:
 	if paused:return
 	var wall_delta:=delta if real_delta<0.0 else real_delta
-	if _tick_story_deer_shove(wall_delta) or _tick_story_entry(wall_delta) or _tick_story_uram_entrance(wall_delta):return
+	if _tick_story_deer_shove(wall_delta) or _tick_story_han_stand_up(wall_delta) or _tick_story_entry(wall_delta) or _tick_story_uram_entrance(wall_delta):return
 	delta=_story_uram_resume_delta(delta,wall_delta)
 	acc+=minf(delta,.10)
 	if spotlight_clock>=0.:
@@ -692,6 +781,8 @@ func present_victory(delta: float) -> void:
 		if blend<1.0:CastHud.blend_pose(view.skeleton,state.pose,blend)
 		view.pivot.position=(state.pivot as Vector3).lerp(view.pivot.position,blend)
 		view.pivot.rotation.y=lerp_angle(float(state.yaw),0.0,blend)
+		if i == 2 and campaign_saebom != null:
+			campaign_saebom.sync("idle", victory_age, u.actor.duration)
 		view.viewport.render_target_update_mode=SubViewport.UPDATE_ONCE
 	for i in range(3,units.size()):
 		_present_story_prey_death(units[i])
@@ -699,6 +790,7 @@ func present_victory(delta: float) -> void:
 	bars_paint.queue_redraw()
 	han_ground_layer.queue_redraw()
 	rally_silver_back.queue_redraw()
+	if is_instance_valid(campaign_far_wing):campaign_far_wing.queue_redraw()
 	if is_instance_valid(launch_dust_layer):launch_dust_layer.queue_redraw()
 	if is_instance_valid(cast_notice_paint):cast_notice_paint.queue_redraw()
 
@@ -718,7 +810,7 @@ func _effect_clock() -> float:
 
 
 func story_entry_active()->bool:
-	return story_join_slot>=0 and not story_entry_done and not ended and story_deer_shove_clock<0.0 and story_entry_clock>=STORY_JOIN_SECONDS
+	return story_join_slot>=0 and not story_entry_done and not ended and story_deer_shove_clock<0.0 and story_han_stand_up == null and story_entry_clock>=STORY_JOIN_SECONDS
 
 func story_entry_fraction()->float:
 	return clampf((story_entry_clock-STORY_JOIN_SECONDS)/STORY_CUTIN_SECONDS,0.0,1.0)
@@ -867,18 +959,19 @@ func _tick_story_deer_shove(real_delta:float)->bool:
 		deer.actor.play(deer.move)
 		han.feet=story_deer_shove_han_end
 		story_deer_shove_clock=-1.0
-		# Keep the last down pose visible behind the existing Uram cut-in.
-		_draw_pose(0.)
-		_present_story_han_recovery(0.)
+		# Complete the planted get-up before opening the original Uram cut-in.
+		story_han_stand_up = preload("res://scripts/hunt_han_story_stand_up.gd").new(han.actor, han.feet)
+		story_han_stand_up.sample(0.0)
 	return true
 
 
-func _present_story_han_recovery(recovery:float)->void:
-	if not story_deer_shove_done or int(story_encounter.get("number",0))!=3 or recovery>=1.0:return
-	var han:=units[0]
-	if han.hp<=0:return
-	_sample_story_han_shove_fly_up(han.actor,.58,recovery)
-	han.actor.preview.position.y+=15.0*(1.-recovery)
+func _tick_story_han_stand_up(real_delta: float) -> bool:
+	if story_han_stand_up == null:
+		return false
+	if story_han_stand_up.sample(real_delta):
+		_play(units[0], "idle")
+		story_han_stand_up = null
+	return true
 
 func _tick_story_entry(real_delta:float)->bool:
 	if story_join_slot<0 or story_entry_done or ended or not story_outcome.is_empty():return false
@@ -934,7 +1027,6 @@ func _paint_story_uram_entrance()->void:
 
 func _pose_story_uram_entrance()->void:
 	var age:=story_uram_entrance_clock
-	_present_story_han_recovery(smoothstep(.16,.64,age))
 	var actor=units[1].actor
 	var floor:Vector2=units[1].feet
 	# Use the real shield-guard rig in a presentation pose, not a skill.
@@ -1024,6 +1116,8 @@ func _step(dt:float)->void:
 				var launch:float=u.actor.preview.length("req046_skill_anticipation")
 				if launch>0 and float(u.age)-dt<launch and float(u.age)>=launch:
 					launch_dust_events.append({"at":elapsed,"origin":u.feet,"unit":i})
+			if i == 2 and campaign_saebom != null and u.move == "skill" and not bool(u.get("bom_near_skill", false)):
+				_advance_campaign_throw(u, dt)
 			if u.contact>=0 and u.age>=u.contact:
 				u.contact=-1.0
 				_resolve(i)
@@ -1040,17 +1134,23 @@ func _step(dt:float)->void:
 			if u.move!="idle":_play(u,"idle")
 			continue
 		var ordinary_enemy:=i>=3 and saebom_distance_drill.is_empty()
-		var formation_aggro:=ordinary_enemy and target==1 and _within_uram_aggro(i)
+		var taunt_walk:=i>=3 and target==1 and _story_uram_tank() and float(u.get("uram_taunted_until",0.))>elapsed
+		var formation_aggro:=ordinary_enemy and not taunt_walk and target==1 and _within_uram_aggro(i)
 		if (not _enemy_slot_ready(i,target) if formation_aggro else ours.distance_to(theirs)>_gap(i)+2.0):
-			if u.move!="run":_play(u,"run")
+			var gait:="walk" if taunt_walk else "run"
+			if u.move!=gait:_play(u,gait)
 			if formation_aggro:_approach_enemy_slot(i,target,dt)
-			else:_approach(i,theirs,dt)
+			else:_approach(i,theirs,dt*.65 if taunt_walk else dt)
 		elif elapsed>=u.next:
 			var teaching := _story_teaching_first_charge()
 			var first_charge := teaching and i == 3
 			_begin(i,"skill" if first_charge or (i>=3 and _story_enemy_can_use_skill(u) and int(elapsed*1.45+i)%4==0) else "attack",target)
 		elif u.move!="idle":_play(u,"idle")
 	_update_projectiles(dt)
+	while not campaign_bolts.is_empty() and elapsed - float(campaign_bolts[0].at) > .60:
+		campaign_bolts.pop_front()
+	while not campaign_echoes.is_empty() and elapsed - float(campaign_echoes[0].at) > .34:
+		campaign_echoes.pop_front()
 	while not knife_events.is_empty() and elapsed-float(knife_events[0].at)>Knife.ECHO_SECONDS:knife_events.pop_front()
 	_advance_uram_ordinary_wave()
 	_advance_uram_short_fans()
@@ -1089,6 +1189,9 @@ func _step(dt:float)->void:
 
 func _resolve(i:int)->void:
 	var u:=units[i];var j:int=u.victim
+	if i==1 and u.move=="skill" and _story_uram_tank():
+		_resolve_uram_taunt()
+		return
 	if i == 3 and u.move == "skill" and _story_teaching_first_charge():
 		story_first_charge_resolved = true
 	if i==2 and u.move=="chain":
@@ -1183,8 +1286,9 @@ func _resolve(i:int)->void:
 	var finish:Vector2=units[j].feet-Vector2(0,25)
 	if i==2 and not (u.move=="attack" and bool(u.get("bom_shove",false))):
 		if start.distance_to(finish)>149.0:_miss(i,j,"projectile");return
-		var basic_rope:bool=u.move=="attack"
-		var paired_presentation:=saebom_distance_drill=="far" or basic_rope
+		var campaign_throw := campaign_saebom != null
+		var basic_rope:bool=u.move=="attack" and not campaign_throw
+		var paired_presentation:=saebom_distance_drill=="far" or basic_rope or campaign_throw
 		if paired_presentation:_pose_ranged_release(u)
 		var jewel:=_sling_stone(u)
 		if basic_rope:
@@ -1194,8 +1298,11 @@ func _resolve(i:int)->void:
 			if center.is_finite():jewel=view.position+(view.display.position+view.camera.unproject_position(center)*view.display.scale)*view.scale
 			BasicRope.set_loaded(view,false)
 		var release:=jewel if paired_presentation or (bom_trail_draw.is_valid() and jewel.distance_to(start)<65.0) else start
-		# Original simulation uses start/destination; only drawn trail begins at the rig stone.
-		missiles.append({"from":i,"target":j,"point":start,"destination":finish,"damage":damage,"kind":u.move,"trace":PackedVector2Array([release]),"origin":start,"paired_presentation":paired_presentation,"release":release,"rendered":release,"basic_rope":basic_rope,"launched_at":elapsed})
+		if campaign_throw:
+			_sync_campaign_saebom(u)
+			release = campaign_saebom.palm()
+		# Original simulation uses start/destination; only the visible launch point changes.
+		missiles.append({"from":i,"target":j,"point":start,"destination":finish,"damage":damage,"kind":u.move,"trace":PackedVector2Array([release]),"origin":start,"paired_presentation":paired_presentation,"release":release,"rendered":release,"basic_rope":basic_rope,"launched_at":elapsed,"campaign_throw":campaign_throw})
 		return
 	var range_px:=80.0 if i==2 and u.move=="attack" and bool(u.get("bom_shove",false)) else _gap(i)+8.0+(14.0 if u.move!="attack" else 0.0)
 	var story_range_free: bool = not story_encounter.is_empty() and i in [0,1] and u.move == "skill"
@@ -1304,7 +1411,13 @@ func _resolve_saebom_near(i:int,j:int,amount:int,beat:int)->void:
 		if final:_miss(i,j,"saebom_melee_2sp_4")
 		return
 	var edge:=Knife.shoulder(v,u.feet)+Vector2(0.,[-2.,3.,-1.,0.][beat])
-	knife_events.append({"at":elapsed,"point":edge,"feet":v.feet,"beat":beat})
+	var fan: Vector2 = u.feet.direction_to(v.feet)
+	var arc_point := edge
+	if campaign_saebom != null and not final:
+		Knife.sample_skill(u, v, float(u.age))
+		_sync_campaign_saebom(u)
+		arc_point = campaign_saebom.palm()
+	knife_events.append({"at":elapsed,"point":arc_point,"feet":v.feet,"beat":beat,"forward":fan})
 	if final:
 		_damage(i,j,amount,"saebom_melee_2sp_4",edge)
 		return
@@ -1342,6 +1455,7 @@ func _damage(i:int,j:int,amount:int,key:String,stone_impact:=Vector2.INF)->void:
 		hits.append({"from":i,"target":j,"type":key,"result":"drill_visual_only","hp":target.hp})
 		glints.append({"at":elapsed,"point":target.feet-Vector2(0,23) if stone_impact==Vector2.INF else stone_impact,"tint":Color("ffc971")})
 		return
+	if _story_uram_tank() and j==1 and amount<=0:return
 	if j==1 and target.move=="chain" and target.age>URAM_GUARD_LATEST and target.age<minf(URAM_GUARD_EARLIEST,target.actor.duration) and (not local_melee_polish or (not bool(target.get("guarded",false)) and int(target.get("guard_source",-1))==i)):
 		if local_melee_polish:target.guarded=true
 		hits.append({"from":i,"target":j,"type":key,"result":"parried"})
@@ -1381,6 +1495,8 @@ func _damage(i:int,j:int,amount:int,key:String,stone_impact:=Vector2.INF)->void:
 	if impact_point == Vector2.INF:
 		impact_point = target.feet-Vector2(0,23)
 		if not story_encounter.is_empty():impact_point = _ranged_impact_anchor(target,impact_point)
+	if j==1 and _story_uram_tank():amount=_uram_tank_damage(amount,50 if float(target.get('uram_taunt_guard_until',0.))>elapsed else 70)
+	if _story_uram_tank() and j==1 and amount<=0:return
 	var hp_before:=int(target.hp)
 	_subtract_hp_and_show(j,amount)
 	if j==0:
@@ -1399,7 +1515,10 @@ func _damage(i:int,j:int,amount:int,key:String,stone_impact:=Vector2.INF)->void:
 			story_contact_audio.emit("ally_hit" if j<3 else "boar_hit" if target.id in ["juvenile","adult"] else "deer_hit",1)
 	if i == 0 and key == "chain":
 		han_ground_events.append({"at":elapsed,"floor":target.feet})
-	if bom_hit_draw.is_valid() and i==2 and key=="skill":
+	var skip_saebom_flash := j == 2 and campaign_saebom != null
+	if skip_saebom_flash:
+		pass
+	elif bom_hit_draw.is_valid() and i==2 and key=="skill":
 		var feet:Vector2=target.feet
 		var from:Vector2=units[i].feet
 		group_bom_hits.append({"at":elapsed,"point":impact_point if not story_encounter.is_empty() else (feet-Vector2(0,25) if stone_impact==Vector2.INF else stone_impact),"forward":from.direction_to(feet)})
@@ -1446,7 +1565,12 @@ func _update_projectiles(dt:float)->void:
 			var ratio:=1.-now.distance_to(destination)/maxf(.001,origin.distance_to(destination))
 			var target_now:Dictionary=units[m.target]
 			var visible_aim:=_ranged_impact_anchor(target_now,destination) if target_now.hp>0 and destination.distance_to(target_now.feet-Vector2(0,25))<=19.0 else destination
-			m.rendered=Vector2(m.release).lerp(visible_aim,clampf(ratio,0.,1.))
+			m.visual_end = visible_aim
+			m.visual_progress = clampf(ratio, 0.0, 1.0)
+			var progress: float = m.visual_progress
+			if m.get("campaign_throw", false):
+				progress = CampaignSaebomFx.projectile_progress(progress, m.kind == "attack")
+			m.rendered=Vector2(m.release).lerp(visible_aim,progress)
 		var drawn:Vector2=m.rendered if render_projected else m.point
 		if bom_trail_draw.is_valid() and m.kind=="skill":
 			var trace:PackedVector2Array=m.trace
@@ -1461,6 +1585,8 @@ func _update_projectiles(dt:float)->void:
 				basic_rope_hit=drawn;basic_rope_hit_at=elapsed
 			if paired and ranged_alignment_contact.is_valid():ranged_alignment_contact.call(String(u.id))
 		else:_miss(m.from,m.target,m.kind)
+		if m.get("campaign_throw", false):
+			campaign_echoes.append({"at": elapsed, "from": m.release, "to": drawn, "strong": m.kind == "skill"})
 		missiles.remove_at(index)
 
 func _ground_heading(cam:Camera3D,d:Vector2)->float:
@@ -1518,6 +1644,9 @@ func _draw_pose(dt:float)->void:
 				actor.preview.pivot.rotation.y=heading-float(spear_forward_bias.get(u.move,0.0)) if i==0 else heading
 		var show_basic:=i==2 and _uses_close_basic_pose(u,int(u.victim))
 		if i==0 and u.move=="death" and not story_encounter.is_empty():_present_han_death(u)
+		elif i==1 and _story_uram_tank() and u.move=="skill":
+			actor.resident_sample("idle",.12)
+			actor.preview.viewport.render_target_update_mode=SubViewport.UPDATE_ONCE
 		elif not show_basic:actor.sample(_ranged_visible_age(u) if i==2 else float(u.age),false)
 		if i>=3 and u.hp>0 and not story_encounter.is_empty() and ApprovedDeerPose.supports(u.id):
 			if u.move=="skill":
@@ -1554,7 +1683,12 @@ func _draw_pose(dt:float)->void:
 			receiver.set_bone_pose_rotation(head,receiver.get_bone_pose_rotation(head).slerp(u.close_basic_head_pose,keep))
 			receiver.force_update_all_bone_transforms()
 		if i>=3 and u.move!="hit":u.erase("close_basic_impulse")
-		if i==1 and u.move=="skill" and uram_ground_draw.is_valid():_pose_uram_ground(u,actor)
+		if i==1 and _story_uram_tank() and u.move in ["attack","skill"]:
+			var tank_view:=actor.preview as HybridCharacter
+			var phase:=clampf(float(u.age)/maxf(.001,float(actor.duration)),0.,1.)
+			if u.move=="attack":tank_view.present_campaign_shield_bash(phase)
+			else:tank_view.present_campaign_taunt_roar(float(u.age),float(actor.duration))
+		elif i==1 and u.move=="skill" and uram_ground_draw.is_valid():_pose_uram_ground(u,actor)
 		if i==1 and ring_project.is_valid() and u.hp>0:
 			# Sample the visual boots after this frame's final stance/skill pose.
 			var view:HybridCharacter=actor.preview
@@ -1591,6 +1725,8 @@ func _draw_pose(dt:float)->void:
 			var visual := StoryFoot.visual_foot_center(view,i>=3)
 			u.ring.position = to_local(visual) if visual.is_finite() else view.position
 		OrdinaryHitAccent.display(actor.preview.skeleton,elapsed,u.hp>0,bool(u.get("ordinary_resting_hit",false)) and u.move=="hit",elapsed-float(u.age))
+		if i == 2 and campaign_saebom != null:
+			_sync_campaign_saebom(u)
 		if i==0:
 			HanStrongHitVisual.display(u,elapsed,not story_encounter.is_empty() and not input_paused and not ended and not story_entry_active() and story_deer_shove_clock<0.0 and story_uram_entrance_clock<0.0)
 		if silver_draw.is_valid() and i>=3:
@@ -1622,6 +1758,10 @@ func _draw_pose(dt:float)->void:
 	han_ground_layer.queue_redraw()
 	# Keep foreground wing feathers ahead of foes and behind HP/skill HUD.
 	rally_silver_back.z_index=int(units[2].feet.y)-1 if story_encounter.is_empty() else 599
+	if campaign_saebom != null:
+		rally_silver_back.z_index = campaign_saebom.view.z_index + 1
+		campaign_far_wing.z_index = campaign_saebom.view.z_index - 1
+		campaign_far_wing.queue_redraw()
 	rally_silver_back.queue_redraw()
 	paint.queue_redraw()
 	bars_paint.queue_redraw()
@@ -1663,8 +1803,21 @@ func _paint_bars()->void:
 		bars_paint.draw_rect(Rect2(at+Vector2.ONE,Vector2(44.0*float(u.hp)/float(u.get("max_hp", MAX_HP)),3)),color)
 
 func _paint_rally_silver_wings()->void:
-	if local_melee_polish and units.size()>2 and units[2].hp>0:
+	if campaign_saebom != null:
+		_paint_campaign_wing(rally_silver_back, true)
+	elif local_melee_polish and units.size()>2 and units[2].hp>0:
 		RallySilver.wings(rally_silver_back,units[2].feet,_effect_clock()-rally_silver_cast_at)
+
+func _paint_campaign_wing(layer: Node2D, near: bool) -> void:
+	var wing_age := _effect_clock() - rally_silver_cast_at
+	if units[2].hp <= 0 or wing_age < .62 or wing_age >= 3.74:
+		return
+	var wing_plane := campaign_saebom.wing_projection()
+	var rear := wing_plane.affine_inverse().basis_xform(-campaign_saebom.forward_screen()).normalized()
+	var side := campaign_saebom.near_wing_side(wing_plane)
+	layer.draw_set_transform_matrix(wing_plane)
+	RallySilver.campaign_wing(layer, wing_age, side if near else -side, rear * (26.0 if near else 23.0), near)
+	layer.draw_set_transform_matrix(Transform2D.IDENTITY)
 
 func _paint()->void:
 	if not story_encounter.is_empty():
@@ -1686,11 +1839,25 @@ func _paint()->void:
 		for i in mini(3,units.size()):
 			var u:=units[i]
 			if u.hp>0 and float(u.rally)>_effect_clock():
-				RallySilver.aura(paint,u.feet,float(u.rally)-_effect_clock(),5.0)
-	if units.size()>2 and units[2].hp>0:Knife.draw_blade(paint,units[2].actor.preview)
-	for ev in knife_events:Knife.draw_event(paint,int(ev.beat),ev.point,ev.feet,_effect_clock()-float(ev.at))
+				if campaign_saebom != null:
+					paint.draw_set_transform(u.feet, 0.0, Vector2.ONE * 1.5)
+					RallySilver.aura(paint, Vector2.ZERO, float(u.rally) - _effect_clock(), 5.0)
+					paint.draw_set_transform_matrix(Transform2D.IDENTITY)
+				else:
+					RallySilver.aura(paint,u.feet,float(u.rally)-_effect_clock(),5.0)
+	if campaign_saebom != null:
+		_paint_campaign_saebom()
+	elif units.size()>2 and units[2].hp>0:
+		Knife.draw_blade(paint,units[2].actor.preview)
+	for ev in knife_events:
+		var age := _effect_clock() - float(ev.at)
+		if campaign_saebom != null and int(ev.beat) < 3:
+			CampaignSaebomFx.rising_slash(paint, ev.point, ev.forward, age)
+		else:
+			Knife.draw_event(paint,int(ev.beat),ev.point,ev.feet,age)
 	for fan in uram_short_fans:
-		if not bool(fan.get("combined", false)):UramCounterWave.draw_fan(paint,fan.from,fan.ground,fan.axis,fan.reach,(_effect_clock()-float(fan.at))/float(fan.span),true,false)
+		if bool(fan.get("shout",false)):_draw_uram_shout(fan)
+		elif not bool(fan.get("combined", false)):UramCounterWave.draw_fan(paint,fan.from,fan.ground,fan.axis,fan.reach,(_effect_clock()-float(fan.at))/float(fan.span),true,false)
 	if not uram_wave_pop.is_empty():
 		UramCounterWave.draw_pop(paint,uram_wave_pop.point,_effect_clock()-float(uram_wave_pop.at))
 	BasicRope.draw_impact(paint,basic_rope_glow,basic_rope_hit,_effect_clock()-basic_rope_hit_at)
@@ -1699,6 +1866,12 @@ func _paint()->void:
 	for m in (missiles if victory_age < 0.0 else []):
 		var use_projected: bool = m.paired_presentation or (not story_encounter.is_empty() and bom_trail_draw.is_valid() and m.kind == "skill")
 		var drawn:Vector2=m.rendered if use_projected else m.point
+		if m.get("campaign_throw", false):
+			var finish: Vector2 = m.get("visual_end", m.destination)
+			var heavy: bool = m.kind == "skill"
+			CampaignSaebomFx.flight(paint, m.release, finish, float(m.get("visual_progress", 0.0)), not heavy, heavy)
+			CampaignSaebomFx.blade(paint, drawn, Vector2(m.release).direction_to(finish), 1.45 if heavy else 1.3)
+			continue
 		if bool(m.get("basic_rope",false)):
 			bom_active=true
 			BasicRope.draw_stone(paint,basic_rope_glow,drawn,_effect_clock()-float(m.launched_at),true)
@@ -1722,7 +1895,7 @@ func _paint()->void:
 					var view:HybridCharacter=u.actor.preview
 					var point:=BasicRope.stone_world(view)
 					if point.is_finite():BasicRope.draw_stone(paint,basic_rope_glow,view.position+(view.display.position+view.camera.unproject_position(point)*view.display.scale)*view.scale,0.)
-	if victory_age < 0.0 and heavy_windup.is_valid() and units.size()>1 and units[1].move=="skill" and float(units[1].contact)>0:
+	if not _story_uram_tank() and victory_age < 0.0 and heavy_windup.is_valid() and units.size()>1 and units[1].move=="skill" and float(units[1].contact)>0:
 		var view:HybridCharacter=units[1].actor.preview
 		var club:MeshInstance3D=view.club
 		if is_instance_valid(club):
@@ -1778,7 +1951,7 @@ func _deer_tip(u:Dictionary)->Vector2:
 
 func _ranged_visible_age(u:Dictionary)->float:
 	var age:float=u.age
-	if saebom_distance_drill!="far" or u.move not in ["attack","skill"] or bool(u.get("bom_shove",false)) or bool(u.get("bom_near_skill",false)):
+	if (saebom_distance_drill!="far" and campaign_saebom == null) or u.move not in ["attack","skill"] or bool(u.get("bom_shove",false)) or bool(u.get("bom_near_skill",false)):
 		return age
 	var duration:float=u.actor.duration
 	var launch:=duration*.61
@@ -1833,6 +2006,88 @@ func _sling_stone(u:Dictionary)->Vector2:
 	var p:=sk.to_global(sk.get_bone_global_pose(idx).origin)
 	return v.position+(v.display.position+v.camera.unproject_position(p)*v.display.scale)*v.scale
 
+func _sync_campaign_saebom(u: Dictionary) -> void:
+	var actor = u.actor
+	var move: String = u.move
+	var action_age: float = u.age
+	if move == "chain" and u.hp > 0:
+		if action_age < 2.24:
+			var cast_clock := minf(.89, .62 + (action_age - .62) * 1.3) if action_age >= .62 and action_age < .89 else action_age
+			campaign_cast.pose_cast(actor, cast_clock)
+		else:
+			actor.resident_sample("idle", .63 + .05 * sin(action_age * 2.3))
+	var close_skill := move == "skill" and bool(u.get("bom_near_skill", false))
+	var close_basic := move == "attack" and bool(u.get("bom_shove", false))
+	var spin_clock := -1.0
+	if move == "skill" and not close_skill:
+		spin_clock = _ranged_visible_age(u)
+	campaign_saebom.sync(move, action_age, float(actor.duration), close_basic, close_skill, spin_clock)
+
+
+func _advance_campaign_throw(u: Dictionary, dt: float) -> void:
+	var target_index: int = u.victim
+	if target_index < 3 or units[target_index].hp <= 0 or float(u.contact) < 0.0:
+		return
+	# The three wind-up knives are visual. Only the existing post-spin release hits.
+	for release in [.25, .43, .62]:
+		var at := float(u.contact) * float(release) / 1.78
+		if float(u.age) - dt < at and float(u.age) >= at:
+			_pose_ranged_release(u)
+			_sync_campaign_saebom(u)
+			var target := units[target_index]
+			campaign_bolts.append({"at": elapsed, "from": campaign_saebom.palm(), "to": _ranged_impact_anchor(target, target.feet - Vector2(0, 25))})
+
+
+func _paint_campaign_saebom() -> void:
+	for shot in campaign_bolts:
+		var age := _effect_clock() - float(shot.at)
+		var progress := clampf(age / .31, 0.0, 1.0)
+		var origin: Vector2 = shot.from
+		var destination: Vector2 = shot.to
+		CampaignSaebomFx.flight(paint, origin, destination, progress, false, false, 1.0 - smoothstep(.31, .60, age))
+		if age < .31:
+			CampaignSaebomFx.blade(paint, origin.lerp(destination, progress), origin.direction_to(destination))
+	for shot in campaign_echoes:
+		var fade := 1.0 - smoothstep(0.0, .34, _effect_clock() - float(shot.at))
+		CampaignSaebomFx.flight(paint, shot.from, shot.to, 1.0, not shot.strong, shot.strong, fade)
+	var bom := units[2]
+	if bom.hp <= 0 or bom.move == "chain" or victory_age >= 0.0:
+		return
+	var close := bool(bom.get("bom_close", false))
+	if not close and bom.move in ["attack", "skill"] and float(bom.contact) < 0.0:
+		return
+	var palm := campaign_saebom.palm()
+	var forward := campaign_saebom.forward_screen()
+	if bom.move == "skill" and close:
+		for i in range(3):
+			if absf(float(bom.age) - Knife.contacts[i]) < .105:
+				forward = forward.rotated(-signf(forward.x) * deg_to_rad(40.0))
+				break
+	CampaignSaebomFx.blade(paint, palm, forward)
+
+
 func _draw_han_ground() -> void:
 	for event in han_ground_events:
 		han_ground.draw(han_ground_layer, event.floor, _effect_clock() - float(event.at))
+
+func _draw_uram_shout(fan:Dictionary) -> void:
+	var clock := _effect_clock() - float(fan.at)
+	var axis: Vector2 = fan.axis
+	for wave in 3:
+		var age := (clock - float(wave) * .20) * .70
+		if age < 0.0 or age >= .96:
+			continue
+		var spread := 1.0 - pow(1.0 - age / .96, 1.55)
+		var opacity := smoothstep(0.0, .055, age) * (1.0 - smoothstep(.48, .96, age))
+		var reach := 10.0 + 360.0 * spread
+		var width := (4.0 + 120.0 * spread) * 1.5
+		var bow := 6.0 + 86.0 * spread
+		var curve := PackedVector2Array()
+		for index in 55:
+			var angle := float(index - 27) / 27.0 * 1.27
+			curve.append(fan.from + axis * (reach - bow * (1.0 - cos(angle))) + axis.orthogonal() * sin(angle) * width)
+		for segment in range(1, curve.size()):
+			var feather := pow(1.0 - absf((float(segment) - 27.5) / 27.0), .64)
+			var stroke := 1.3 + 1.9 * spread
+			paint.draw_line(curve[segment - 1], curve[segment], Color("#ffe8c1", opacity * feather * .11), stroke * 4.7, true)
+			paint.draw_line(curve[segment - 1], curve[segment], Color("#fff2db", opacity * feather * .53), stroke, true)

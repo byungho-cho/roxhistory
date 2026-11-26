@@ -118,6 +118,7 @@ var remaining_text: Label
 var meat_text: Label
 var xp_fill: Panel
 var before_text: Array[Label] = []
+var growth_stat_names: Array[Label] = []
 var after_text: Array[Label] = []
 var upgrade: Button
 var debug_growth_reset: Button
@@ -507,7 +508,7 @@ func make_growth() -> void:
 	xp_fill = panel_at(frame, Rect2(24, 112, 0, 11), Color("e9ba66"), Color("ffe6aa"), 1, 6)
 	for i in 3:
 		var y: int = 139 + i * 52
-		text_at(frame, ["체력", "공격", "스킬"][i], Rect2(20, y, 104, 43), 22)
+		growth_stat_names.append(text_at(frame, ["체력", "공격", "스킬"][i], Rect2(20, y, 104, 43), 22))
 		before_text.append(text_at(frame, "", Rect2(127, y, 50, 43), 24, Color("ffe8bc"), HORIZONTAL_ALIGNMENT_RIGHT, true))
 		text_at(frame, "→", Rect2(188, y, 24, 43), 23, Color("f0bb52"), HORIZONTAL_ALIGNMENT_CENTER, true)
 		after_text.append(text_at(frame, "", Rect2(226, y, 51, 43), 24, Color("a9dd70"), HORIZONTAL_ALIGNMENT_RIGHT, true))
@@ -717,8 +718,10 @@ func refresh() -> void:
 	meat_text.text = "보유 %d" % int(state.get("meat", 0))
 	for i in 3:
 		var key: String = HeroGrowth.STATS[i]
-		before_text[i].text = str(stats[key])
-		after_text[i].text = str(next_stats.get(key, "—"))
+		var counter_row := id == "uram" and i == 2
+		growth_stat_names[i].text = "반격" if counter_row else ["체력", "공격", "스킬"][i]
+		before_text[i].text = str(stats.chain if counter_row else stats[key])
+		after_text[i].text = str(next_stats.get("chain" if counter_row else key, "—"))
 		after_text[i].add_theme_color_override("font_color", Color("a9dd70") if has_next else Color("ffe8bc"))
 	upgrade.disabled = not HeroGrowth.can_feed(state, id)
 	upgrade.modulate.a = 0.62 if upgrade.disabled else 1.0
@@ -747,9 +750,9 @@ func refresh() -> void:
 		chain_lock.hide()
 		if upgrade.disabled: stop_hold()
 		return
-	skill_art[0].texture = load(ART + str(hero[1]) + "-2sp.png")
+	skill_art[0].texture = preload("res://assets/ui/d0071-hud/uram-taunt.png") if id == "uram" else load(ART + str(hero[1]) + "-2sp.png")
 	skill_art[1].texture = load(ART + str(hero[4]))
-	skill_value[0].text = "피해 %d" % int(stats.skill)
+	skill_value[0].text = "도발 · 피해 없음" if id == "uram" else ("피해 %d" % int(stats.skill))
 	match selected:
 		0: skill_value[1].text = "피해 %d" % int(stats.chain)
 		1: skill_value[1].text = "반격 피해 %d" % int(stats.chain)
@@ -1180,7 +1183,8 @@ func feed(amount: int = 1) -> void:
 		var from := HeroGrowth.stats_at(id, result.before.level)
 		var to := HeroGrowth.stats_at(id, result.after.level)
 		celebration_text.text = "Lv. %d 달성!" % int(result.after.level)
-		celebration_stats.text = "체력 %+d · 공격 %+d · 스킬 %+d" % [to.hp - from.hp, to.attack - from.attack, to.skill - from.skill]
+		var counter_stat := id == "uram"
+		celebration_stats.text = ("체력 %+d · 공격 %+d · 반격 %+d" if counter_stat else "체력 %+d · 공격 %+d · 스킬 %+d") % [to.hp - from.hp, to.attack - from.attack, (to.chain - from.chain) if counter_stat else (to.skill - from.skill)]
 		celebration_effect = LEVEL_UP_AURA.new(Vector2.ZERO, result.after.level, Callable(), true)
 		celebration_effect.name = "HeroGroundGoldAura"
 		celebration_effect.z_index = 0

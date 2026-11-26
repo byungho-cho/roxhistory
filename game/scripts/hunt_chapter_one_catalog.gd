@@ -26,7 +26,7 @@ const SQUAD_PREY_BASIC := 11
 const ROWS := [
 	{"party": SOLO, "prey": [FLOWER], "enemy_skill": "none", "lesson": "han_manual_2sp", "rank": "normal", "seconds": 50, "base_meat": 10, "first_clear_stars": 3},
 	{"party": SOLO, "prey": [STAG], "enemy_skill": "none", "lesson": "han_ground_thrust", "rank": "normal", "seconds": 50, "base_meat": 20},
-	{"party": [ALLY_HAN, ALLY_URAM], "opening_party": SOLO, "prey": [STAG, FLOWER], "enemy_skill": "none", "lesson": "uram_club", "rank": "normal", "seconds": 50, "base_meat": 30, "story_join": [ALLY_URAM]},
+	{"party": [ALLY_HAN, ALLY_URAM], "opening_party": SOLO, "prey": [STAG, FLOWER], "enemy_skill": "none", "lesson": "uram_taunt", "rank": "normal", "seconds": 50, "base_meat": 30, "story_join": [ALLY_URAM]},
 	{"party": TEAM, "opening_party": [ALLY_HAN, ALLY_URAM], "story_join": [ALLY_SAEBOM], "prey": [STAG, FLOWER, FLOWER], "enemy_skill": "none", "lesson": "saebom_sling", "rank": "normal", "seconds": 50, "base_meat": 40},
 	{"party": TEAM, "prey": [JUVENILE], "enemy_skill": "juvenile_charge", "lesson": "uram_parry_only", "rank": "midboss", "seconds": 60, "base_meat": 30},
 	{"party": TEAM, "prey": [JUVENILE, FLOWER], "enemy_skill": "juvenile_charge", "lesson": "first_parry_demo_then_chain", "rank": "normal", "seconds": 50, "base_meat": 40},

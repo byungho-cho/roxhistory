@@ -35,7 +35,23 @@ static func wings(layer:CanvasItem,feet:Vector2,t:float)->void:
 		for j in INNER.size():_feather(layer,join,Vector2(11.+.4*j,-5.+.76*j),INNER[j],j+2,side,t,spread,flap,alpha)
 		for j in SMALL.size():_feather(layer,join,Vector2(9.+.31*j,-2.+1.2*j),SMALL[j],j+3,side,t,spread,flap,alpha)
 
-static func _feather(layer:CanvasItem,join:Vector2,root:Vector2,tip:Vector3,j:int,side:float,t:float,spread:float,flap:float,alpha:float)->void:
+static func campaign_wing(layer: CanvasItem, age: float, side: float, sweep: Vector2, near: bool) -> void:
+	if age < .62 or age >= 3.74:
+		return
+	var fraction := clampf((age - .62) * 1.3 / .27, 0.0, 1.0)
+	var spread := smoothstep(0.0, 1.0, fraction)
+	var clock := lerpf(.08, .56, fraction) + maxf(0.0, age - .89)
+	var alpha := spread * (1.0 - smoothstep(2.82, 3.74, age))
+	var flap := 1.0 + .065 * lerpf(sin(clock * 13.0), sin(.82 * 13.0), smoothstep(.71, .82, clock))
+	var origin := Vector2(2.0 * side, 1.2) if near else Vector2.ZERO
+	for j in PRIMARY.size():
+		_feather(layer, origin, Vector2(13.0 + .55 * j, -3.0 + .25 * j), PRIMARY[j], j + 1, side, clock, spread, flap, alpha, sweep, near)
+	for j in INNER.size():
+		_feather(layer, origin, Vector2(11.0 + .4 * j, -5.0 + .76 * j), INNER[j], j + 2, side, clock, spread, flap, alpha, sweep, near)
+	for j in SMALL.size():
+		_feather(layer, origin, Vector2(9.0 + .31 * j, -2.0 + 1.2 * j), SMALL[j], j + 3, side, clock, spread, flap, alpha, sweep, near)
+
+static func _feather(layer:CanvasItem,join:Vector2,root:Vector2,tip:Vector3,j:int,side:float,t:float,spread:float,flap:float,alpha:float,sweep:=Vector2.ZERO,near:=false)->void:
 	var axis:=Vector2(side*(.24+.76*spread)*flap,.6+.4*spread)*SCALE
 	var a:=join+root*axis
 	var j10:=j%10
@@ -43,6 +59,7 @@ static func _feather(layer:CanvasItem,join:Vector2,root:Vector2,tip:Vector3,j:in
 	var b:=a+(join+Vector2(tip.x,tip.y)*axis-a)*lerpf(.72,1.,smoothstep(.09+delay,.60+delay,t))
 	var ripple:=sin((t-.13)*12.4-j*.34)*exp(-maxf(0.,t-.57)*3.4)+.31*smoothstep(.74,.94,t)*sin((t-.74)*6.2-j*.42)
 	b+=Vector2(side*(1.1+tip.x*.027),.8+tip.x*.034)*ripple*spread*SCALE
+	b += sweep * pow(clampf(tip.x / 139.0, 0.0, 1.0), 1.20) * spread * (.92 if near else .82)
 	var d:=b-a
 	var n:=d.normalized().orthogonal()*-side
 	var w:=tip.z*SCALE
@@ -55,7 +72,7 @@ static func _feather(layer:CanvasItem,join:Vector2,root:Vector2,tip:Vector3,j:in
 	points.append_array(cap.slice(1))
 	points.append_array(_bezier(bot,a+d*.69-n*w*.87,a+d*.25-n*w*.15,a).slice(1,-1))
 	var color:Color=GOLD[j%5]
-	color.a=alpha*.47
+	color.a = alpha * (.76 if near else .47)
 	if Geometry2D.triangulate_polygon(points).is_empty():
 		points=Geometry2D.convex_hull(points).slice(0,-1)
 	if points.size()>=3:layer.draw_colored_polygon(points,color)
