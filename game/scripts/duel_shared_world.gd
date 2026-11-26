@@ -1,4 +1,5 @@
 extends Node2D
+const ApprovedDeerPose := preload("res://scripts/hunt_deer_approved_pose.gd")
 ## Han/forest laboratory only. One renderer and metric space own both rigs,
 ## body capsules, floor and swept weapon/hurt-volume contacts. No screen tests.
 const FIXED_STEP:=1.0/120.0
@@ -55,9 +56,9 @@ var uram_entry_shield_revealed:=false
 
 func configure(left,right,center:Vector2,local_ranged_boar:=false,local_uram_forest:=false)->void:
 	actors=[left,right]
-	uram_forest_pair=left.key=="uram" and right.key=="forest" and local_uram_forest
+	uram_forest_pair=left.key=="uram" and right.key in ["forest","stag"] and local_uram_forest
 	uram_pair=left.key=="uram" and (right.key=="adult" or uram_forest_pair)
-	saebom_pair=left.key=="saebom" and (right.key=="forest" or (local_ranged_boar and right.key=="adult"))
+	saebom_pair=left.key=="saebom" and (right.key in ["forest","stag"] or (local_ranged_boar and right.key=="adult"))
 	viewport=SubViewport.new();viewport.name="SharedDuel3DViewport"
 	viewport.size=Vector2i(1280,720);viewport.own_world_3d=true;viewport.transparent_bg=true
 	viewport.msaa_3d=Viewport.MSAA_2X;viewport.render_target_update_mode=SubViewport.UPDATE_ALWAYS
@@ -83,7 +84,7 @@ func configure(left,right,center:Vector2,local_ranged_boar:=false,local_uram_for
 		originals.append({"parent":p.pivot.get_parent(),"transform":p.pivot.transform,"viewport_size":p.viewport.size})
 		var body:=AnimatableBody3D.new();body.name="HanBody" if i==0 else "DeerBody";body.sync_to_physics=false;body.collision_layer=1;body.collision_mask=5
 		scene.add_child(body);bodies.append(body)
-		if left.key=="hangyeol" and right.key=="forest":
+		if left.key=="hangyeol" and right.key in ["forest","stag"]:
 			var glow:=OmniLight3D.new()
 			glow.name="TeamRingBounce"
 			glow.light_color=Color("54b8ff") if i==0 else Color("ff6b46")
@@ -223,7 +224,7 @@ func mark_saebom_deer_stop()->void:
 	saebom_deer_stop_action=action_id[1]
 
 func present_saebom_deer_stop(key:String)->void:
-	if not local_melee_polish or not saebom_pair or actors[1].key!="forest" or key!="skill" or saebom_deer_stop_action!=action_id[1]:return
+	if not local_melee_polish or not saebom_pair or actors[1].key not in ["forest","stag"] or key!="skill" or saebom_deer_stop_action!=action_id[1]:return
 	restore_saebom_deer_stop()
 	var out:Vector3=bodies[1].position-bodies[0].position
 	out.y=0.
@@ -450,6 +451,11 @@ func render_poses(lab,delta:float)->Array:
 		if key=="death":
 			# Hold the pose from the lethal contact; only opacity changes.
 			root_motion.append(Vector3.ZERO)
+			# Saebom's one-shot now supplies the pose; the existing fade and
+			# reward clock is shared with other combatants and stays identical.
+			if side==0 and saebom_pair and actor.key=="saebom":
+				actor.resident_sample("death",age)
+				p.pivot.position=Vector3(0,.12,0)
 			_rig_alpha(side,1.0-smoothstep(.09,.63,age))
 			if age>=.36:
 				# Let the existing dust and meat outlive the fading rig.
@@ -463,6 +469,7 @@ func render_poses(lab,delta:float)->Array:
 		p.pivot.rotation=Vector3(0,facing[side],0)
 		# Reuse D0070 recovery blending and death-before-reward presentation.
 		var sample_age:float=age/float(lab.entrance_scale) if lab.approach_active else age
+		if side==0 and saebom_pair and key in ["run","walk"]:sample_age=age
 		if uram_forest_pair and side==0 and key=="chain":
 			# Settle on one visible braced posture. The shield quad and hand still
 			# come from the same rig; the old idle of the clip could drop the shield.
@@ -475,6 +482,9 @@ func render_poses(lab,delta:float)->Array:
 		if side==0 and key=="chain" and not uram_pair and not saebom_pair:sample_age=lab.Accent.chain_pose(age,actor.duration)
 		var directional_hit:=side==1 and key=="hit" and deer_spear_reaction and not uram_pair
 		lab.presentation.sample(actor,side,key,sample_age,INF if lab.approach_active else float(lab.next_attack[side])-lab.rules.elapsed,delta,false,directional_hit)
+		if side==0 and saebom_pair and key=="run" and p.has_method("present_saebom_approach_finish"):
+			var remaining:=maxf(0.0,lab.APPROACH_TRAVEL*float(lab.entrance_scale)-float(lab.visual_clock)) if lab.approach_active else maxf(0.0,toward.length()-SAEBOM_MELEE_GAP)/2.9
+			p.present_saebom_approach_finish(remaining<=.68,delta,remaining)
 		if uram_forest_pair and side==1 and key=="run" and not lab.approach_active and bodies[0].position.distance_to(bodies[1].position)<LOCAL_BASIC_READY_MIN:
 			var length:float=p.length("walk")
 			_blend_forest_backstep(p,fposmod(-age*1.4,maxf(.01,length)),1.)
@@ -502,10 +512,14 @@ func render_poses(lab,delta:float)->Array:
 			p.pivot.rotation.x=-.21*lift
 			p.pivot.position-=toward.normalized()*.105*lift
 		sk.force_update_all_bone_transforms()
+		if side==1 and ApprovedDeerPose.supports(actor.key):
+			ApprovedDeerPose.apply(sk,"heavy_hit" if directional_hit else key,sample_age)
 		var feet:=["foot.R","foot.L"] if side==0 else ["front_foot.R","front_foot.L","hind_foot.R","hind_foot.L"]
 		var bottom:=INF
 		for foot in feet:bottom=minf(bottom,bone_world(side,foot).y)
 		if bottom<0:p.pivot.position.y-=bottom;sk.force_update_all_bone_transforms()
+		if side==1 and key=="skill" and ApprovedDeerPose.supports(actor.key):
+			ApprovedDeerPose.ram_landing(sk,sample_age-float(p.length("req046_skill_anticipation")))
 		if side==0 and uram_forest_pair and uram_basic_anchor and key in ["attack","walk"]:
 			# Cap actual rendered boot/pelvis travel, including gait posing,
 			# rather than only the body's numerical step.

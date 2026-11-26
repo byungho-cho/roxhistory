@@ -141,6 +141,99 @@ func draw_locomotion(t:float) -> void:
    sk.set_bone_pose(i,departure[i].interpolate_with(sk.get_bone_pose(i),mix))
  sk.force_update_all_bone_transforms()
 
+const RUN_WALK_BRIDGE := &"locomotion/run_to_walk"
+const RUN_WALK_SOURCE := preload("res://gahui_trial/run-to-walk.res")
+const RUN_WALK_RUN := .62
+const RUN_WALK_WALK := .86
+const RUN_WALK_SETTLE := .23
+const RUN_WALK_SECONDS := RUN_WALK_RUN + 68.0/30.0 + RUN_WALK_WALK + RUN_WALK_SETTLE
+const RUN_WALK_ARM := [&"RightShoulder",&"RightArm",&"RightForeArm",&"RightHand"]
+var run_walk_entry:Array[Transform3D]=[]
+var run_walk_origin:=Vector3.ZERO
+var run_walk_heading:=Vector3.ZERO
+var run_walk_travel_scale:=1.0
+
+func begin_run_to_walk() -> void:
+ _preview_seek(names[0],0.0)
+ run_walk_entry=_preview_pose()
+ run_walk_origin=position
+ var route:=(target_body.position-position).slide(Vector3.UP)
+ run_walk_heading=route.normalized()
+ # Preview-only travel; allow the full bridge while staying out of the deer's space.
+ var span:=RUN_WALK_SOURCE.length
+ var expected:=RUN_WALK_RUN*2.36+span*(2.36+.84)*.5+(RUN_WALK_WALK-.12)*.84
+ run_walk_travel_scale=minf(1.0,maxf(0.0,route.length()-2.35)/expected)
+
+func _preview_seek(clip:StringName,at:float,looped:=true)->void:
+ var p:=players[0]
+ if p.current_animation!=clip:
+  # Avoid inherited channels missing from the source animation, particularly
+  # unmaintained foot and wrist scales.
+  skeletons[0].reset_bone_poses()
+  p.play(clip)
+  p.advance(0.0)
+ var span:=p.get_animation(clip).length
+ p.seek(fposmod(at,span) if looped else clampf(at,0.0,span),true)
+
+func _preview_pose()->Array[Transform3D]:
+ var pose:Array[Transform3D]=[]
+ var sk:=skeletons[0]
+ for i in sk.get_bone_count():pose.append(sk.get_bone_pose(i))
+ return pose
+
+func _preview_blend(from:Array[Transform3D],weight:float)->void:
+ var sk:=skeletons[0]
+ for i in from.size():
+  sk.set_bone_pose(i,from[i].interpolate_with(sk.get_bone_pose(i),weight))
+
+func step_run_to_walk(seconds:float)->String:
+ var t:=clampf(seconds,0.0,RUN_WALK_SECONDS)
+ var bridge:=RUN_WALK_SOURCE.length
+ var bridge_t:=clampf(t-RUN_WALK_RUN,0.0,bridge)
+ var walk_t:=clampf(t-RUN_WALK_RUN-bridge,0.0,RUN_WALK_WALK)
+ var blend_out:=.23
+ var stop_window:=.24
+ var u:=clampf(walk_t-RUN_WALK_WALK+stop_window,0.0,stop_window)
+ var walk_motion:=walk_t if walk_t<RUN_WALK_WALK-stop_window else RUN_WALK_WALK-stop_window+u-.5*u*u/stop_window
+ var travel:=2.36*minf(t,RUN_WALK_RUN)+2.36*bridge_t+(0.84-2.36)*.5*bridge_t*bridge_t/bridge+.84*walk_motion
+ position=run_walk_origin+run_walk_heading*travel*run_walk_travel_scale
+ var sk:=skeletons[0]
+ var phase:="run"
+ if t<RUN_WALK_RUN:
+  _preview_seek(names[3],1.0/30.0+t*.50)
+  if t<.14:_preview_blend(run_walk_entry,smoothstep(0.0,.14,t))
+ elif bridge_t<bridge:
+  phase="bridge"
+  _preview_seek(names[3],1.0/30.0+(RUN_WALK_RUN+bridge_t)*.50)
+  var source_run:=_preview_pose()
+  _preview_seek(names[2],.13+maxf(0.0,bridge_t-bridge+blend_out)*.68)
+  var source_walk:=_preview_pose()
+  _preview_seek(RUN_WALK_BRIDGE,bridge_t,false)
+  # The borrowed motion does not hold a staff. Retain Gahui's right-hand
+  # grip/arm envelope from her own walk/run without touching other drills.
+  var arm_mix:=smoothstep(0.0,bridge,bridge_t)
+  for name in RUN_WALK_ARM:
+   var i:=sk.find_bone(name)
+   if i<0:continue
+   var keep:=source_run[i].basis.get_rotation_quaternion().slerp(source_walk[i].basis.get_rotation_quaternion(),arm_mix)
+   sk.set_bone_pose_rotation(i,sk.get_bone_pose_rotation(i).slerp(keep,.82))
+  _preview_blend(source_run,smoothstep(0.0,.19,bridge_t))
+  if bridge_t>bridge-blend_out:
+   var from:=_preview_pose()
+   _preview_seek(names[2],.13+(bridge_t-bridge+blend_out)*.68)
+   _preview_blend(from,smoothstep(bridge-blend_out,bridge,bridge_t))
+ else:
+  phase="walk"
+  _preview_seek(names[2],.13+(blend_out+walk_t)*.68)
+  if t>=RUN_WALK_RUN+bridge+RUN_WALK_WALK:
+   phase="settle"
+   var from:=_preview_pose()
+   var settle:=t-RUN_WALK_RUN-bridge-RUN_WALK_WALK
+   _preview_seek(names[0],settle)
+   _preview_blend(from,smoothstep(0.0,RUN_WALK_SETTLE,settle))
+ sk.force_update_all_bone_transforms()
+ return phase
+
 func ground_contact() -> Vector3:
  var sk := skeletons[0]
  sk.force_update_all_bone_transforms()
@@ -163,13 +256,14 @@ func merge_locomotion():
  var library := AnimationLibrary.new()
  var player := players[0]
  var skeleton_path := player.get_node(player.root_node).get_path_to(skeletons[0])
- for action in ["walk","run"]:
-  var clip := (load("res://gahui_trial/"+action+".res") as Animation).duplicate() as Animation
+ for action in ["walk","run","run_to_walk"]:
+  var source:Animation=RUN_WALK_SOURCE if action=="run_to_walk" else load("res://gahui_trial/"+action+".res")
+  var clip:=source.duplicate() as Animation
   for idx in clip.get_track_count():
    var path := clip.track_get_path(idx)
    if path.get_subname_count()==0: continue
    clip.track_set_path(idx, NodePath(String(skeleton_path)+":"+String(path.get_subname(0))))
-  clip.loop_mode=Animation.LOOP_LINEAR
+  clip.loop_mode=Animation.LOOP_NONE if action=="run_to_walk" else Animation.LOOP_LINEAR
   library.add_animation(action,clip)
  player.add_animation_library(&"locomotion",library)
  player.get_animation(names[0]).loop_mode=Animation.LOOP_LINEAR

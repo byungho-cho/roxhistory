@@ -47,6 +47,7 @@ const STORY_URAM_RESUME_SECONDS := 2.5
 const STORY_URAM_RESUME_START := .34
 var story_uram_resume_wall := -1.0
 var story_deer_shove_clock := -1.0
+var story_deer_shove_wall_clock := 0.0
 var story_deer_shove_done := false
 var story_deer_shove_attacker := -1
 var story_deer_shove_han := Vector2.ZERO
@@ -257,6 +258,8 @@ func setup(dust_draw:Callable=Callable(),gong:Callable=Callable(), heavy:Callabl
 				home=story_allied_placement[i]
 		else:home=Hunt.DEER_SLOT+Vector2(111,-9)+(Hunt.ENEMY_CELLS[DEER_SLOTS[i-3]]-Hunt.ENEMY_CELLS[4])*.86
 		var actor:=Actor.new();actor.create(self,id);actor.configure(true)
+		if id=="hangyeol" and not story_encounter.is_empty() and actor.preview.has_method("install_han_production_motion"):
+			actor.preview.call("install_han_production_motion")
 		actor.preview.scale=Vector2.ONE*[.76588,1.08,.90,.82588,.82588,.82588][i]
 		var ring:=Line2D.new();ring.width=1.65;ring.antialiased=true;ring.default_color=Head.duel_team_color(ally)
 		for j in 41:ring.add_point(Vector2.from_angle(TAU*float(j)/40)*Vector2(22,8))
@@ -651,6 +654,21 @@ func tick(delta:float,paused:bool,real_delta:float=-1.0)->void:
 		acc-=STEP;_step(STEP)
 	_draw_pose(delta)
 
+# Keep Han's one-shot visible; only the presentation advances after combat ends.
+func _present_han_death(u:Dictionary)->void:
+	var actor=u.actor
+	actor.resident_sample("death",minf(u.age,actor.duration-.00001))
+	actor.preview.modulate.a=1.0
+	actor.preview.viewport.render_target_update_mode=SubViewport.UPDATE_ONCE
+
+func tick_han_death_outro(delta:float)->bool:
+	if story_encounter.is_empty() or units.is_empty():return true
+	var han:=units[0]
+	if han.hp>0 or han.move!="death":return true
+	han.age=minf(han.actor.duration+.20,float(han.age)+maxf(0.,delta))
+	_present_han_death(han)
+	return han.age>=han.actor.duration+.20
+
 func present_victory(delta: float) -> void:
 	if story_outcome != "win":return
 	if victory_age < 0.0:
@@ -762,38 +780,104 @@ func _start_story_deer_shove()->bool:
 	var han:=units[0]
 	var deer:=units[story_deer_shove_attacker]
 	story_deer_shove_clock=0.0
+	story_deer_shove_wall_clock=0.0
 	story_deer_shove_han=han.feet
-	story_deer_shove_han_end=Vector2(maxf(165.,story_deer_shove_han.x-153.),story_deer_shove_han.y+6.)
+	story_deer_shove_han_end=Vector2(maxf(165.,story_deer_shove_han.x-STORY_SHOVE_AIR_TRAVEL-STORY_SHOVE_GROUND_EXTRA),story_deer_shove_han.y+6.)
 	story_deer_shove_deer=deer.feet
 	han.actor.play("hit")
 	deer.actor.play("attack")
 	return true
 
+const HAN_STORY_SHOVE_FLY_UP: Animation = preload("res://assets/characters/res050/han-story-deer-shove-fly-up.res")
+
+const STORY_SHOVE_LAND := .87
+const STORY_SHOVE_HANDOFF := 1.38
+const STORY_SHOVE_AIR_TRAVEL := 253.
+const STORY_SHOVE_GROUND_EXTRA := 18.
+const STORY_SHOVE_SLIDE_END := 1.09
+const STORY_URAM_ENTRY_ADVANCE := 30.
+
+func _sample_story_han_shove_fly_up(actor, age: float, recovery := 0.0) -> void:
+	# Presentation only: the original 1-3 story timeline owns displacement, hop, and end.
+	# Frame the exact Meshy #7 sleeve/body rotation on Han's native stone-spear skeleton.
+	var skeleton: Skeleton3D = actor.preview.skeleton
+	var time := minf(.16+minf(age,.58)*1.20,HAN_STORY_SHOVE_FLY_UP.length-.00001)
+	var weight := smoothstep(0.0, .058, age) * (1.0 - recovery)
+	if weight <= 0.0: return
+	for track in HAN_STORY_SHOVE_FLY_UP.get_track_count():
+		var path := HAN_STORY_SHOVE_FLY_UP.track_get_path(track)
+		var bone := skeleton.find_bone(path.get_subname(0))
+		if bone < 0: continue
+		var rotation := HAN_STORY_SHOVE_FLY_UP.rotation_track_interpolate(track, time)
+		skeleton.set_bone_pose_rotation(bone, skeleton.get_bone_pose_rotation(bone).slerp(rotation, weight))
+	skeleton.force_update_all_bone_transforms()
+
+static func _story_han_shove_pose_time(wall:float)->float:
+	const CONTACT := .29
+	const RAMP := 1.50
+	const SLOW := .01
+	if wall<=CONTACT:return maxf(0.,wall)
+	var x:=clampf(wall-CONTACT,0.,RAMP)
+	# Integrate the speed ramp so the result is independent of frame rate.
+	return minf(STORY_SHOVE_HANDOFF,CONTACT+SLOW*x+(1.-SLOW)*x*x/(2.*RAMP)+maxf(0.,wall-CONTACT-RAMP))
+
+func _story_han_shove_air_path(t:float)->Vector2:
+	var original_end:=Vector2(maxf(165.,story_deer_shove_han.x-STORY_SHOVE_AIR_TRAVEL),story_deer_shove_han_end.y)
+	var flight:=clampf((t-.29)/.65,0.,1.)
+	return story_deer_shove_han.lerp(original_end,1.-pow(1.-flight,1.28))
+
+func _story_han_shove_path(t:float)->Vector2:
+	if t<=STORY_SHOVE_LAND:return _story_han_shove_air_path(t)
+	if t>=STORY_SHOVE_SLIDE_END:return story_deer_shove_han_end
+	var start:=_story_han_shove_air_path(STORY_SHOVE_LAND)
+	var to:=story_deer_shove_han_end
+	var span:=STORY_SHOVE_SLIDE_END-STORY_SHOVE_LAND
+	var u:float=(t-STORY_SHOVE_LAND)/span
+	var speed:=_story_han_shove_air_path(STORY_SHOVE_LAND-.0001).distance_to(start)/.0001
+	var tangent:=minf(2.3,speed*span/maxf(start.distance_to(to),.001))
+	var progress:float=u*u*(3.-2.*u)+tangent*u*(1.-u)*(1.-u)
+	return start.lerp(to,progress)
+
 func _tick_story_deer_shove(real_delta:float)->bool:
 	if story_deer_shove_clock<0.0:return false
 	var old:=story_deer_shove_clock
-	story_deer_shove_clock=minf(.97,old+maxf(0.,real_delta))
+	# Slow at contact, returning smoothly to real time over 1.5 seconds.
+	story_deer_shove_wall_clock+=maxf(0.,real_delta)
+	story_deer_shove_clock=_story_han_shove_pose_time(story_deer_shove_wall_clock)
 	var t:=story_deer_shove_clock
 	var han:=units[0]
 	var deer:=units[story_deer_shove_attacker]
 	var away:=story_deer_shove_deer.direction_to(story_deer_shove_han)
 	deer.feet=story_deer_shove_deer+away*24.*smoothstep(.02,.29,t)*(1.-smoothstep(.38,.81,t))
-	han.feet=story_deer_shove_han.lerp(story_deer_shove_han_end,1.-pow(1.-smoothstep(.29,.73,t),1.45))
+	han.feet=_story_han_shove_path(t)
 	if old<.29 and t>=.29:story_deer_shove_impact.emit()
 	_draw_pose(0.0)
 	deer.actor.sample(lerpf(.03,.78,smoothstep(.01,.64,t))*deer.actor.duration,false)
 	if t>=.29:
-		han.actor.sample(minf(han.actor.duration-.015,(t-.29)*.72),false)
-		han.actor.preview.position+=Vector2(0.,-13.*sin(PI*clampf((t-.29)/.43,0.,1.)))
-	if t>=.97:
+		han.actor.sample(minf(han.actor.duration-.015,minf(t-.29,.58)*.72),false)
+		_sample_story_han_shove_fly_up(han.actor,t-.29)
+		# End the flight at the original point; the last stretch of the authored
+		# displacement is now a short grounded slide, not an upright recovery.
+		var air := clampf((t-.29)/.58,0.,1.)
+		han.actor.preview.position.y -= 68. * 4. * air * (1. - air)
+		han.actor.preview.position.y += 13. * smoothstep(.79,STORY_SHOVE_LAND,t) + 2. * smoothstep(STORY_SHOVE_LAND,.96,t)
+	if t>=STORY_SHOVE_HANDOFF:
 		deer.feet=story_deer_shove_deer
 		deer.actor.play(deer.move)
-		han.actor.play(han.move)
 		han.feet=story_deer_shove_han_end
 		story_deer_shove_clock=-1.0
+		# Keep the last down pose visible behind the existing Uram cut-in.
 		_draw_pose(0.)
+		_present_story_han_recovery(0.)
 	return true
 
+
+func _present_story_han_recovery(recovery:float)->void:
+	if not story_deer_shove_done or int(story_encounter.get("number",0))!=3 or recovery>=1.0:return
+	var han:=units[0]
+	if han.hp<=0:return
+	_sample_story_han_shove_fly_up(han.actor,.58,recovery)
+	han.actor.preview.position.y+=15.0*(1.-recovery)
 
 func _tick_story_entry(real_delta:float)->bool:
 	if story_join_slot<0 or story_entry_done or ended or not story_outcome.is_empty():return false
@@ -805,7 +889,10 @@ func _story_reform_uram_frontline()->void:
 	var han:Dictionary=units[0]
 	var center:Vector2=han.feet if han.hp>0 else units[1].feet
 	center=Vector2(clampf(center.x,160.,755.),clampf(center.y,155.,375.))
-	var tank:=center+Vector2(33.5,-8.)
+	if story_deer_shove_done and story_deer_shove_han_end!=Vector2.ZERO and han.hp>0:
+		var old_landing_x:=maxf(165.,story_deer_shove_han.x-STORY_SHOVE_AIR_TRAVEL)
+		center.x=clampf(old_landing_x,160.,755.)
+	var tank:=center+Vector2(33.5+STORY_URAM_ENTRY_ADVANCE,-8.)
 	units[1].feet=tank
 	story_uram_opening_targets.clear()
 	for i in range(3,units.size()):
@@ -846,6 +933,7 @@ func _paint_story_uram_entrance()->void:
 
 func _pose_story_uram_entrance()->void:
 	var age:=story_uram_entrance_clock
+	_present_story_han_recovery(smoothstep(.16,.64,age))
 	var actor=units[1].actor
 	var floor:Vector2=units[1].feet
 	# Use the real shield-guard rig in a presentation pose, not a skill.
@@ -1242,6 +1330,7 @@ func _subtract_hp_and_show(j:int,amount:int)->void:
 	damage_numbers.show_loss(j,hp_before,int(target.hp),anchor-Vector2(0,9),j<3)
 
 const OrdinaryHitAccent = preload("res://scripts/hunt_ordinary_hit_accent.gd")
+const HanStrongHitVisual = preload("res://scripts/hunt_han_strong_hit_visual.gd")
 
 func _damage(i:int,j:int,amount:int,key:String,stone_impact:=Vector2.INF)->void:
 	var target:=units[j]
@@ -1293,6 +1382,8 @@ func _damage(i:int,j:int,amount:int,key:String,stone_impact:=Vector2.INF)->void:
 		if not story_encounter.is_empty():impact_point = _ranged_impact_anchor(target,impact_point)
 	var hp_before:=int(target.hp)
 	_subtract_hp_and_show(j,amount)
+	if j==0:
+		target.erase(HanStrongHitVisual.START)
 	var saebom_switch_hit:=false
 	if j==2 and target.hp<hp_before and local_melee_polish and not bool(target.get("bom_close",false)):
 		_remember_saebom_proximity(target,_target(2))
@@ -1334,7 +1425,12 @@ func _damage(i:int,j:int,amount:int,key:String,stone_impact:=Vector2.INF)->void:
 		target.ordinary_resting_hit=resting and (key=="attack" or saebom_switch_hit)
 		if key=="attack" or saebom_switch_hit:OrdinaryHitAccent.on_hit(target.actor.preview.skeleton,elapsed,resting)
 		else:OrdinaryHitAccent.clear(target.actor.preview.skeleton)
-		if resting:_play(target,"hit")
+		if resting:
+			_play(target,"hit")
+			if j>=3 and ApprovedDeerPose.supports(target.id):
+				target.deer_large_hit_pose=key in ["skill","chain","han_chain_splash","counter"]
+			if j==0 and i>=3 and target.hp<hp_before and key in ["skill","chain"] and not story_encounter.is_empty() and story_deer_shove_clock<0.0:
+				target[HanStrongHitVisual.START]=elapsed
 
 func _update_projectiles(dt:float)->void:
 	for index in range(missiles.size()-1,-1,-1):
@@ -1392,6 +1488,8 @@ func _calibrate_han()->void:
 			spear_forward_bias[key]=atan2(direction.x,direction.z)
 	_play(units[0],"idle")
 
+const ApprovedDeerPose := preload("res://scripts/hunt_deer_approved_pose.gd")
+
 func _draw_pose(dt:float)->void:
 	_update_saebom_range()
 	var ambient:=Color.WHITE.lerp(Color.BLACK,spotlight_dim())
@@ -1418,7 +1516,28 @@ func _draw_pose(dt:float)->void:
 				var heading:=_ground_heading(actor.preview.camera,d)
 				actor.preview.pivot.rotation.y=heading-float(spear_forward_bias.get(u.move,0.0)) if i==0 else heading
 		var show_basic:=i==2 and _uses_close_basic_pose(u,int(u.victim))
-		if not show_basic:actor.sample(_ranged_visible_age(u) if i==2 else float(u.age),false)
+		if i==0 and u.move=="death" and not story_encounter.is_empty():_present_han_death(u)
+		elif not show_basic:actor.sample(_ranged_visible_age(u) if i==2 else float(u.age),false)
+		if i>=3 and u.hp>0 and not story_encounter.is_empty() and ApprovedDeerPose.supports(u.id):
+			if u.move=="skill":
+				ApprovedDeerPose.ram_landing(actor.preview.skeleton,float(u.age)-float(actor.preview.length("req046_skill_anticipation")))
+			else:
+				var heavy:bool=u.move=="hit" and bool(u.get("deer_large_hit_pose",false))
+				var motion_age:=float(u.age)/maxf(.001,float(actor.duration))*.74 if heavy else float(u.age)
+				ApprovedDeerPose.apply(actor.preview.skeleton,"heavy_hit" if heavy else u.move,motion_age)
+		if i==0 and u.move=="run" and not story_encounter.is_empty():
+			var target:=_target(i)
+			if target>=0:
+				var distance:float=u.feet.distance_to(units[target].feet)-(_gap(i)+2.0)
+				u.han_gait=actor.preview.present_han_approach_finish(1.0-clampf(distance/52.,0.,1.),maxf(0.,9.-distance)/98.)
+		elif i==0:
+			u.han_gait=u.move
+		if i==2 and u.move=="run" and actor.preview.has_method("present_saebom_approach_finish"):
+			var target:=_target(i)
+			var remaining:=INF
+			if target>=0:
+				remaining=maxf(0.0,u.feet.distance_to(units[target].feet)-(_gap(i)+2.0))/98.0
+			actor.preview.present_saebom_approach_finish(remaining<=.68,dt,remaining)
 		if i >= 3 and u.hp <= 0 and not story_encounter.is_empty():_present_story_prey_death(u)
 		if i>=3 and u.move=="hit" and u.has("close_basic_impulse"):
 			var away:Vector2=u.close_basic_impulse
@@ -1471,6 +1590,8 @@ func _draw_pose(dt:float)->void:
 			var visual := StoryFoot.visual_foot_center(view,i>=3)
 			u.ring.position = to_local(visual) if visual.is_finite() else view.position
 		OrdinaryHitAccent.display(actor.preview.skeleton,elapsed,u.hp>0,bool(u.get("ordinary_resting_hit",false)) and u.move=="hit",elapsed-float(u.age))
+		if i==0:
+			HanStrongHitVisual.display(u,elapsed,not story_encounter.is_empty() and not input_paused and not ended and not story_entry_active() and story_deer_shove_clock<0.0 and story_uram_entrance_clock<0.0)
 		if silver_draw.is_valid() and i>=3:
 			var wake:Array=deer_wakes[i-3]
 			while not wake.is_empty() and elapsed-float(wake[0].at)>.53:wake.pop_front()

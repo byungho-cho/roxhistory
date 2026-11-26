@@ -44,7 +44,7 @@ const URAM_GUARD_OPEN := .03
 const URAM_GUARD_CLOSE := .32
 const BasicRope := preload("res://scripts/saebom_rope_sling_basic_presentation.gd")
 var basic_rope_glow:=BasicRope.make_glow()
-const SoundNames := {"hangyeol":"han", "uram":"uram", "saebom":"bom", "forest":"deer", "adult":"boar"}
+const SoundNames := {"hangyeol":"han", "uram":"uram", "saebom":"bom", "forest":"deer", "stag":"deer", "adult":"boar"}
 
 var app: Node
 var rules := Rules.new()
@@ -276,10 +276,10 @@ var contact_glow:GradientTexture2D
 var tip_trail:Array[Vector2]=[]
 
 func _prototype_duel()->bool:
-	return rules.ally_id=="hangyeol" and rules.enemy_id=="forest"
+	return rules.ally_id=="hangyeol" and rules.enemy_id in ["forest","stag"]
 
 func _saebom_duel()->bool:
-	return rules.ally_id=="saebom" and (rules.enemy_id=="forest" or (local_shared_ranged and rules.enemy_id=="adult"))
+	return rules.ally_id=="saebom" and (rules.enemy_id in ["forest","stag"] or (local_shared_ranged and rules.enemy_id=="adult"))
 
 func _uram_duel()->bool:
 	return rules.ally_id=="uram" and (rules.enemy_id=="adult" or _uram_deer_close())
@@ -312,7 +312,7 @@ func _han_fallback()->bool:
 	return local_all_effects and rules.ally_id=="hangyeol" and rules.enemy_id=="adult" and not is_instance_valid(shared_world)
 
 func _han_boar_latest()->bool:return local_melee_polish and _han_fallback()
-func _uram_deer_close()->bool:return local_melee_polish and rules.ally_id=="uram" and rules.enemy_id=="forest"
+func _uram_deer_close()->bool:return local_melee_polish and rules.ally_id=="uram" and rules.enemy_id in ["forest","stag"]
 func _settled_anchor(side:int)->Vector2:
 	if _uram_deer_close():return _duel_anchor(side,76.0)
 	if _han_fallback():return _duel_anchor(side,82.0)
@@ -574,6 +574,20 @@ func _setup_ui() -> void:
 		var material:=ShaderMaterial.new();material.shader=preload("res://shaders/duel_selector_crop.gdshader");picture.material=material
 		selection_frames[key]=HuntArt.picture(item,preload("res://assets/ui/duel-hud/selection-gold.svg"),Rect2(0,0,44,44))
 		controls[key]=item
+	var stag := _button("\uC22B\uC0AC\uC2B4",Rect2(718,14,50,44),_select.bind("stag",true))
+	stag.name="Select_stag";stag.toggle_mode=true
+	stag.tooltip_text="\uC22B\uC0AC\uC2B4"
+	stag.add_theme_font_size_override("font_size",12)
+	stag.clip_text=true
+	for state in ["normal","hover","pressed","focus","disabled"]:
+		var style:=stag.get_theme_stylebox(state).duplicate() as StyleBox
+		style.content_margin_left=3.
+		style.content_margin_right=3.
+		stag.add_theme_stylebox_override(state,style)
+	stag.size=Vector2(50,44)
+	selection_frames["stag"]=HuntArt.picture(stag,preload("res://assets/ui/duel-hud/selection-gold.svg"),Rect2(0,0,50,44))
+	selection_frames["stag"].mouse_filter=Control.MOUSE_FILTER_IGNORE
+	controls["stag"]=stag
 	if local_melee_polish:
 		for index in range(first_top,arena.get_child_count()):
 			var control:Control=arena.get_child(index)
@@ -752,6 +766,8 @@ func _draw_authored_frames(origin:Vector2,elapsed:float,screen_size:float)->void
 	effects_layer.draw_texture_rect(authored_frames[frame_index],Rect2(origin-anchor,Vector2.ONE*screen_size),false)
 
 func reset_round(after_fade:=false) -> void:
+	han_strong_hit_started = -INF
+	if is_instance_valid(a) and a.key=="hangyeol":HanStrongHitVisual.restore(a.preview)
 	if local_melee_polish and rules.ally_id == "uram":uram_combined.prepare()
 	uram_short_counter_fan.clear()
 	ordinary_knife_fx.clear()
@@ -807,7 +823,7 @@ func reset_round(after_fade:=false) -> void:
 		a.configure(true)
 		b.configure(true)
 		a.preview.scale = Vector2.ONE * (HANGYEOL_BATTLE_SCALE if a.key=="hangyeol" else 1.08 if a.key=="uram" else .90)
-		b.preview.scale = Vector2.ONE * (FOREST_BATTLE_SCALE if b.key=="forest" else .92)
+		b.preview.scale = Vector2.ONE * (FOREST_BATTLE_SCALE if b.key in ["forest","stag"] else .92)
 	motion = ["idle","idle"]
 	age = [0.0,0.0]
 	contact_at = [-1.0,-1.0]
@@ -867,7 +883,7 @@ func _refresh(delta := 0.0) -> void:
 	pause_caption.visible=paused;pause_icon.visible=not paused
 	pause_button.tooltip_text="재개" if paused else "일시정지"
 	name_labels[0].text=ModelTest.NAMES[rules.ally_id]
-	name_labels[1].text="꽃사슴" if rules.enemy_id=="forest" else "큰 멧돼지"
+	name_labels[1].text="숫사슴" if rules.enemy_id=="stag" else "꽃사슴" if rules.enemy_id=="forest" else "큰 멧돼지"
 	_update_head_hud(delta)
 	_advance_ground_wave(delta)
 	ready_light_layer.queue_redraw()
@@ -1138,6 +1154,8 @@ func _uram_parry(contact:Dictionary)->void:
 
 const OrdinaryHitAccent = preload("res://scripts/hunt_ordinary_hit_accent.gd")
 var ordinary_resting_hit:=[false,false]
+const HanStrongHitVisual = preload("res://scripts/hunt_han_strong_hit_visual.gd")
+var han_strong_hit_started := -INF
 
 func _land(side: int, key: String,contact:Dictionary={}) -> void:
 	if approach_active or not rules.living():
@@ -1296,7 +1314,8 @@ func _land(side: int, key: String,contact:Dictionary={}) -> void:
 		ordinary_resting_hit[defender]=false
 	var hp_before:=rules.hp[defender]
 	var defeated:=rules.damage(defender,amount)
-	var saebom_charge_hit:=defender==0 and key=="skill" and rules.hp[0]<hp_before and local_melee_polish and is_instance_valid(shared_world) and shared_world.saebom_pair and b.key=="forest"
+	if defender==0 and a.key=="hangyeol":han_strong_hit_started=-INF
+	var saebom_charge_hit:=defender==0 and key=="skill" and rules.hp[0]<hp_before and local_melee_polish and is_instance_valid(shared_world) and shared_world.saebom_pair and b.key in ["forest","stag"]
 	if saebom_charge_hit:shared_world.mark_saebom_deer_stop()
 	var saebom_switch_hit:=false
 	if defender==0 and rules.hp[0]<hp_before and local_melee_polish and is_instance_valid(shared_world) and shared_world.saebom_pair and not shared_world.bom_close:
@@ -1331,6 +1350,8 @@ func _land(side: int, key: String,contact:Dictionary={}) -> void:
 		if defender==0 and key=="skill" and motion[defender]=="idle" and _uram_deer_close() and is_instance_valid(shared_world):
 			shared_world.capture_uram_ram_hit_pose()
 		_react(defender,"hit")
+		if side==1 and a.key=="hangyeol" and key in ["skill","chain"] and rules.hp[0]>0 and rules.hp[0]<hp_before:
+			han_strong_hit_started=visual_clock
 
 func _clear_ordinary_counter()->void:
 	ordinary_counter_target=null
@@ -1567,6 +1588,21 @@ func _sync_saebom_knife_latch()->void:
 	var incoming:bool=not shared_world.consumed[1] and ((threat=="attack" and age[1]<=b.duration*.70) or (threat=="skill" and age[1]<=b.duration*.94))
 	shared_world.update_knife_latch(motion[0],visual_clock,incoming)
 
+func _present_approved_han_duel_pose()->void:
+	# Only the playable 1:1, never the separate model/motion subclasses.
+	if a.key!="hangyeol" or get_script().resource_path!="res://scripts/hunt_duel_lab.gd":
+		return
+	if rules.hp[0]<=0:
+		han_strong_hit_started=-INF
+		HanStrongHitVisual.restore(a.preview)
+		return
+	var strong_age:=visual_clock-han_strong_hit_started if is_finite(han_strong_hit_started) else -1.0
+	var key:String = motion[0]
+	var pose_age:float = _visual_age(0)
+	if key=="chain" and is_instance_valid(shared_world):pose_age=Accent.chain_pose(pose_age,a.duration)
+	if not HanStrongHitVisual.duel(a.preview,key,pose_age,strong_age):
+		han_strong_hit_started=-INF
+
 func _render_actors(delta:=0.0)->void:
 	_sync_saebom_knife_latch()
 	if is_instance_valid(a) and is_instance_valid(b):
@@ -1620,6 +1656,7 @@ func _render_actors(delta:=0.0)->void:
 				var ground_pivot:=arena.position+pivot*arena.scale
 				ground.position=ground_pivot+(ground.position-ground_pivot)*zoom+shake*arena.scale
 				ground.scale*=zoom
+		_present_approved_han_duel_pose()
 		return
 	a.preview.position=_position(0);b.preview.position=_position(1)
 	if a.key=="hangyeol":
@@ -1655,6 +1692,7 @@ func _render_actors(delta:=0.0)->void:
 	battle_camera.pose="strike" if start_cast_at>=0 and rules.elapsed-start_cast_at<.70 else ""
 	battle_camera.pose_clock=(rules.elapsed-start_cast_at)/.70*Hunt.RULES.POSE_SECONDS
 	if delta>0:battle_camera.update_camera(delta)
+	_present_approved_han_duel_pose()
 
 func _advance_shared(delta:float)->void:
 	# Render rate-independent continuous body/weapon integration. No timer can
@@ -1858,7 +1896,7 @@ func _draw_location_rings()->void:
 		var tint:=HeadHUD.duel_team_color(side==0)
 		var settled:=bounds.size*1.08
 		var ring_box:=bounds.size/.68
-		if (_prototype_duel() and is_instance_valid(shared_world)) or _han_boar_latest() or (rules.ally_id=="uram" and rules.enemy_id in ["forest","adult"]):
+		if (_prototype_duel() and is_instance_valid(shared_world)) or _han_boar_latest() or (rules.ally_id=="uram" and rules.enemy_id in ["forest","stag","adult"]):
 			var rich:=Color("1b9df0") if side==0 else Color("e33830")
 			var core:=Color("c2f6ff") if side==0 else Color("ffbeb1")
 			var spread:=bounds.size/.62
@@ -1885,7 +1923,7 @@ func _han_tip_light_position()->Vector2:
 	return presentation.spear_point(a)
 
 func _silver_deer_active()->bool:
-	return _prototype_duel() or (uram_generic_gong_test and b!=null and (b.key=="forest" or (local_world_ring and b.key=="adult")))
+	return _prototype_duel() or (uram_generic_gong_test and b!=null and (b.key in ["forest","stag"] or (local_world_ring and b.key=="adult")))
 
 func _deer_visual_tip()->Vector2:
 	if is_instance_valid(shared_world):return shared_world.project(shared_world.weapon_point(1))

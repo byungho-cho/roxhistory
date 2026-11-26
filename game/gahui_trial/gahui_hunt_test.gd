@@ -5,6 +5,7 @@ const GAHUI_LAB_SCALE := 1.5
 const DEER_LAB_SCALE := 1.2
 const DEER_IDS := ["idle","walk","run","attack","skill","hit","heavy_hit"]
 const DEER_LABELS := ["대기","걷기","달리기","평타","3SP 들이받기","일반 피격","큰 피격"]
+const STAG_ALL := ["idle","walk","run","attack","skill","hit","heavy_hit"]
 const DEER_ALL := ["locomotion","attack","skill","hit","heavy_hit"]
 const DEER_ORIGIN := Vector3(3.05,0,-1.0)
 var gahui: Gahui
@@ -21,6 +22,9 @@ var start_position := Vector3.ZERO
 var shot_total := 0
 var motion_coverage := {}
 var deer
+var flower_driver
+var stag_driver
+var stag_actor
 var subject := 0
 var deer_action := "idle"
 var sequence_index := 0
@@ -28,6 +32,15 @@ var subject_buttons: Array[Button] = []
 var deer_buttons: Array[Button] = []
 var impact_elapsed := 0.0
 var close_button: Button
+var run_walk_button: Button
+var run_walk_elapsed:=-1.0
+var run_walk_phase:=""
+var drill_deer_fx: Node2D
+var drill_deer_wake: Array = []
+var drill_deer_contact := Vector2.ZERO
+var drill_deer_floor := Vector2.ZERO
+var drill_deer_struck := false
+var drill_deer_tail := -1.0
 
 func _ready():
  show_final_test35 = true
@@ -77,10 +90,16 @@ func _install_gahui():
   return
  deer=driver.new()
  deer.setup(b,shared_world.bodies[1],gahui)
- _plaque(Rect2(26,18,468,45))
+ flower_driver=deer
+ drill_deer_fx=Node2D.new()
+ drill_deer_fx.name="DeerDrillEffects"
+ field.add_child(drill_deer_fx)
+ drill_deer_fx.draw.connect(_draw_drill_deer_fx)
+ _plaque(Rect2(26,18,628,45))
  subject_buttons.append(_lab_button("가희",Rect2(32,24,83,33),_select_subject.bind(0)))
  subject_buttons.append(_lab_button("꽃사슴",Rect2(121,24,83,33),_select_subject.bind(1)))
- mode_label = _label("",Rect2(206,18,288,45),18)
+ subject_buttons.append(_lab_button("\uC22B\uC0AC\uC2B4",Rect2(210,24,83,33),_select_subject.bind(2)))
+ mode_label = _label("",Rect2(297,18,337,45),18)
  mode_label.horizontal_alignment=HORIZONTAL_ALIGNMENT_LEFT
  mode_label.position.x+=13
  help_label=_label("모션 확인용 · 실제 피해와 치유 수치는 적용하지 않습니다",Rect2(90,454,780,27),15)
@@ -96,6 +115,11 @@ func _install_gahui():
   drill_buttons.append(motion_button)
   left+=width+4
  drill_buttons.append(_lab_button("전체 재생",Rect2(left,491,104,32),_start_all))
+ run_walk_button=_lab_button("달리기 → 걷기",Rect2(508,20,154,34),_on_run_to_walk)
+ run_walk_button.name="GahuiRunToWalk"
+ if app != null:
+  var one_on_one := _lab_button("1대1 전투 테스트",Rect2(727,20,134,34),func():app.call_deferred("open_one_on_one_from_gahui_lab"))
+  one_on_one.name="OneOnOneEntry"
  close_button=_lab_button("닫기",Rect2(874,20,60,34),_exit)
  var deer_left := 113
  var deer_widths := [64,64,76,67,114,100,92,112]
@@ -130,7 +154,33 @@ func _input(event:InputEvent):
   _exit()
   get_viewport().set_input_as_handled()
 
+func _ensure_stag() -> void:
+ if stag_driver!=null:return
+ stag_actor=Actor.new()
+ stag_actor.create(field,"stag")
+ stag_actor.preview.display.hide()
+ stag_actor.preview.viewport.render_target_update_mode=SubViewport.UPDATE_DISABLED
+ stag_actor.preview.pivot.reparent(shared_world.bodies[1],false)
+ stag_actor.preview.pivot.position=Vector3.ZERO
+ stag_actor.preview.pivot.rotation.y=-1.4
+ stag_actor.preview.pivot.scale=Vector3.ONE*DEER_LAB_SCALE
+ stag_driver=flower_driver.get_script().new()
+ stag_driver.setup(stag_actor,shared_world.bodies[1],gahui,true)
+ stag_driver.set_visible(false)
+
+func _drill_tip()->Vector2:
+ if subject!=2:return _deer_visual_tip()
+ var sk:Skeleton3D=stag_actor.preview.skeleton
+ var head:=sk.find_bone("head")
+ return shared_world.project(sk.to_global(sk.get_bone_global_pose(head)*Vector3(0,0,.23)))
+
 func _select_subject(next:int) -> void:
+ if next==2:_ensure_stag()
+ if next!=subject:
+  deer.reset()
+  deer.set_visible(false)
+  deer=stag_driver if next==2 else flower_driver
+  deer.set_visible(true)
  subject=next
  autoplay=false
  end_hold=0.0
@@ -143,8 +193,10 @@ func _select_subject(next:int) -> void:
  deer.sample(0.0)
  for i in subject_buttons.size():
   subject_buttons[i].disabled=i==subject
+ run_walk_button.visible=subject==0
+ run_walk_elapsed=-1.0
  for button in drill_buttons:button.visible=subject==0
- for button in deer_buttons:button.visible=subject==1
+ for button in deer_buttons:button.visible=subject!=0
  help_label.text="두 캐릭터가 마주 보는 동작 실험실 · 본편 전투와 저장에는 영향이 없습니다"
  if subject==0:_play(0)
  else:_play_deer("idle")
@@ -153,6 +205,19 @@ func _on_action(i:int):
  autoplay=false
  gahui.position=start_position
  _play(i)
+
+func _on_run_to_walk() -> void:
+ if subject!=0:return
+ autoplay=false
+ impact_elapsed=0.0
+ end_hold=0.0
+ deer.play("idle")
+ gahui.position=start_position
+ _play(0)
+ gahui.begin_run_to_walk()
+ run_walk_elapsed=0.0
+ run_walk_phase=gahui.step_run_to_walk(0.0)
+ mode_label.text="가희 · 달리기 → 걷기"
 
 func _on_deer_action(i:int):
  autoplay=false
@@ -167,9 +232,10 @@ func _start_all():
   _play(0)
  else:
   deer.reset()
-  _play_deer(DEER_ALL[0])
+  _play_deer(STAG_ALL[0] if subject==2 else DEER_ALL[0])
 
 func _play(i:int):
+ run_walk_elapsed=-1.0
  selected_index=i
  segment_t=0.0
  gahui.switch_to(i)
@@ -178,7 +244,11 @@ func _play(i:int):
  mode_label.text="가희 · "+Gahui.LABELS[i]
  motion_coverage[i] = true
 
-func _play_deer(key:String):
+func _play_deer(key:String, carry_fx:=false):
+ drill_deer_tail=drill_deer_tail if carry_fx else -1.0
+ if not carry_fx:drill_deer_wake.clear()
+ drill_deer_struck=false
+ drill_deer_fx.queue_redraw()
  segment_t=0.0
  if not deer.play(key):
   push_warning("Missing lab motion: "+key)
@@ -186,12 +256,22 @@ func _play_deer(key:String):
   key="idle"
  deer_action=key
  deer.sample(0.0)
- mode_label.text="꽃사슴 · "+("연속 이동" if key=="locomotion" else DEER_LABELS[DEER_IDS.find(key)])
+ mode_label.text=("숫사슴 · " if subject==2 else "꽃사슴 · ")+("연속 이동" if key=="locomotion" else DEER_LABELS[DEER_IDS.find(key)])
 
 func _process(delta:float):
  segment_t += delta
- if subject==1:
+ if subject!=0:
+  if drill_deer_tail>=0.0:
+   drill_deer_tail+=delta
+   if drill_deer_tail>=.53:drill_deer_tail=-1.0
+   drill_deer_fx.queue_redraw()
   _process_deer()
+  return
+ if run_walk_elapsed>=0.0:
+  run_walk_elapsed=minf(Gahui.RUN_WALK_SECONDS,run_walk_elapsed+delta)
+  run_walk_phase=gahui.step_run_to_walk(run_walk_elapsed)
+  deer.sample(run_walk_elapsed)
+  if run_walk_elapsed>=Gahui.RUN_WALK_SECONDS:_play(0)
   return
  if segment_t>=float(Gahui.TIMES[selected_index]):
   # Always sample the ending pose and events, even after a long frame.
@@ -222,14 +302,56 @@ func _process(delta:float):
 func _process_deer():
  gahui.step_at(fposmod(segment_t,float(Gahui.TIMES[0])))
  var finished:bool=deer.sample(segment_t)
- if deer_action=="idle" or not finished:return
- if autoplay and sequence_index+1<DEER_ALL.size():
+ _update_drill_deer_fx()
+ if deer_action=="idle":
+  if not (autoplay and subject==2 and segment_t>=.80):return
+ elif not finished:return
+ var sequence: Array = STAG_ALL if subject==2 else DEER_ALL
+ if autoplay and sequence_index+1<sequence.size():
   sequence_index+=1
   deer.reset()
-  _play_deer(DEER_ALL[sequence_index])
+  _play_deer(sequence[sequence_index])
  else:
   autoplay=false
-  _play_deer("idle")
+  if deer_action=="skill" and drill_deer_struck:
+   drill_deer_tail=segment_t-deer.fx_contact_time("skill")
+  _play_deer("idle",drill_deer_tail>=0.0)
+
+func _update_drill_deer_fx()->void:
+ drill_deer_fx.queue_redraw()
+ if deer_action not in ["attack","skill"]:return
+ var contact_t:float=deer.fx_contact_time(deer_action)
+ var foot:=shared_world.project(deer.body.global_position)
+ var tip:=_drill_tip()
+ if deer_action=="skill" and segment_t>=deer.fx_release_time() and segment_t<=contact_t+.03:
+  if drill_deer_wake.is_empty() or segment_t-float(drill_deer_wake.back().at)>=.025:
+   drill_deer_wake.append({"foot":foot,"tip":tip,"at":segment_t})
+ if not drill_deer_struck and segment_t>=contact_t:
+  drill_deer_struck=true
+  drill_deer_contact=tip
+  drill_deer_floor=Vector2(tip.x,foot.y)
+
+func _draw_drill_deer_fx()->void:
+ if subject==0:return
+ if drill_deer_tail>=0.0 and deer_action=="idle":
+  var tail_p:=drill_deer_tail/.36
+  if tail_p<1.0:
+   _draw_deer_impact({"center":drill_deer_contact,"floor_point":drill_deer_floor},tail_p,drill_deer_fx)
+  return
+ if deer_action not in ["attack","skill"]:return
+ var basic:=deer_action=="attack"
+ var contact_t:float=deer.fx_contact_time(deer_action)
+ if not basic:
+  var foot:=shared_world.project(deer.body.global_position)
+  var progress:=clampf(segment_t/deer.fx_release_time(),0.,.999) if segment_t<deer.fx_release_time() else -1.0
+  _draw_silver_deer(foot,_drill_tip(),progress,false,drill_deer_wake,segment_t,drill_deer_fx)
+ if drill_deer_struck:
+  var lifetime:=.18 if basic else .36
+  var p:=(segment_t-contact_t)/lifetime
+  if p>=0.0 and p<1.0:
+   var caster:=shared_world.project(deer.body.global_position)
+   var toward:=shared_world.project(gahui.global_position)
+   _draw_deer_impact({"center":drill_deer_contact,"basic":basic,"axis":caster.direction_to(toward),"floor_point":drill_deer_floor},p,drill_deer_fx)
 
 func _draw_vfx(t:float) -> void:
  var deer_chest := shared_world.bodies[1].global_position + Vector3.UP * (.95 * DEER_LAB_SCALE)

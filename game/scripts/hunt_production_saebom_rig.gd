@@ -1,9 +1,10 @@
-extends "res://scripts/res011_lab_preview.gd"
+extends "res://scripts/saebom_motion_resident.gd"
 ## Resident rig for normal hunting; rules own movement, lock, and hit/release timing.
 const CLIP_MAP := {"idle":"idle","walk":"walk","run":"run","attack":"basic_attack","basic":"basic_attack","hunt":"basic_attack","hit":"hit_reaction","skill":"sling_heavy","heavy":"sling_heavy","guard":"req045_evasive_guard","death":"req045_death"}
 var preview: HybridCharacter:
  get:return self
 var restore_after_cast: RefCounted
+var saebom_run_age:=0.0
 
 func _init() -> void:
  character = "saebom"
@@ -45,7 +46,8 @@ func blend_bone(_label:String,_euler:Vector3,_weight:float) -> void:
 func resident_sample(key:String,seconds:float) -> void:
  if not is_instance_valid(animation):return
  var clip:String = CLIP_MAP.get(key,"idle")
- var duration := Timing.duration(character,clip,animation.get_animation(clip).length)
+ var gait:=saebom_gait_period(key)
+ var duration := gait if gait>0.0 else Timing.duration(character,clip,animation.get_animation(clip).length)
  var time := fposmod(seconds,duration) if key in ["idle","walk","run"] else clampf(seconds,0.0,duration)
  sample_clip(clip,time,seconds)
 
@@ -57,7 +59,8 @@ func animate(delta:float,movement:Vector2,phase:float,walking:bool,action:String
  pivot.rotation.y=heading
  if walking:
   var period:=motion_duration("run")
-  resident_sample("run",clock if not is_finite(phase) else phase/TAU*period)
+  resident_sample("run",(clock if not is_finite(phase) else phase/TAU*period) if saebom_use_native_locomotion else saebom_run_age)
+  saebom_run_age+=maxf(0.,delta)
  elif CLIP_MAP.has(action) and action not in ["idle","walk","run"]:
   resident_sample(action,action_time)
  else:

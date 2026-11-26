@@ -146,6 +146,7 @@ const HUNTER_BATTLE_CENTER := Vector2(521,279)
 const FORMATION_CENTER := Vector2(473,325)
 const DEER_SLOT := Vector2(598,245)
 # Logical battlefield feet distances, independent of viewport or HUD scale.
+const HanCombatIdleVisual = preload("res://scripts/hunt_han_strong_hit_visual.gd")
 const FIRST_HUNT_HAN_STANDOFF := 51.0
 const FIRST_HUNT_BODY_CLEARANCE := 36.0
 const FIRST_HUNT_HAN_CONTACT_BEGIN := .17
@@ -256,6 +257,7 @@ var hunter_bar: TextureProgressBar
 var deer_bar: TextureProgressBar
 var running := false
 var result_shown := false
+var han_fall_age := 0.0
 
 var pose_clock := 1.0
 var hunt_stride_phases: Array[float] = [0.,0.,0.]
@@ -1993,7 +1995,7 @@ func _weapon_metric(index:int) -> Vector3:
 	var hero := hunters[index]
 	if hero is Frontline.Han and hero.has_spear_anchor():
 		hero.skeleton.force_update_all_bone_transforms()
-		return _stone_metric_point(hero.camera,hero.display,hero.skeleton.global_transform*hero.skeleton.get_bone_global_pose(hero.hand_index)*hero.spear_tip_local)
+		return _stone_metric_point(hero.camera,hero.display,hero.collision_spear_tip_3d())
 	if hero is Frontline.Uram and hero.has_club_anchor():
 		return _stone_metric_point(hero.camera,hero.display,hero.club.to_global(Vector3(hero.CLUB_SIZE.x*.34,0,0)))
 	return Vector3.INF
@@ -2541,14 +2543,15 @@ func _tick_hunt_frame(delta: float) -> void:
 			for i in 3:
 				rules.party_hp[i] = chapter_story_battle.units[i].hp
 			rules.outcome = outcome
+			var death_outro_done: bool = chapter_story_battle.tick_han_death_outro(delta)
 			if outcome == "win":
 				if chapter_story_battle.victory_age < 0.0:
 					pause_button.clear()
 					pause_button.hide()
 				chapter_story_battle.present_victory(delta)
-				if chapter_story_battle.victory_age >= VICTORY_RESULT_HOLD:
+				if death_outro_done and chapter_story_battle.victory_age >= VICTORY_RESULT_HOLD:
 					show_result()
-			else:
+			elif death_outro_done:
 				show_result()
 		return
 	if not arrival_finished:
@@ -3090,6 +3093,13 @@ func update_actors(delta: float) -> void:
 		if stage_han and running and solo_deploy_clock<0.0 and not native_manual and not side_han_jump:
 			# Compensate the authored spear angle in the split actor camera, not the body location.
 			facing=facing.rotated(-.36)
+		if i==0 and running and rules.party_hp[0]<=0 and hunter is Frontline.Han:
+			HanCombatIdleVisual.restore(hunter)
+			var fall_span:float=hunter.clip_duration("death")
+			han_fall_age=minf(fall_span+.20,han_fall_age+maxf(0.,delta))
+			hunter.resident_sample("death",minf(han_fall_age,fall_span-.00001))
+			hunter.viewport.render_target_update_mode=SubViewport.UPDATE_ONCE
+			continue
 		if i != RULES.SAEBOM:
 			var motion := ""
 			if use_guard_pose or use_field_pose: motion = "counter"
@@ -3113,14 +3123,26 @@ func update_actors(delta: float) -> void:
 					_blend_local_bones(rig,idle_pose,weight)
 				else:hunter.animate(delta,facing,approach_phase,approaching,motion,motion_time,false)
 			else:hunter.animate(delta,facing,approach_phase,approaching,motion,motion_time,false)
+			if i==0 and approaching and hunter is Frontline.Han:
+				hunter.present_han_approach_finish((approach-.73)/.27,maxf(0.,approach-.96)*solo_deploy_seconds)
 			if stage_han and running and motion in ["basic",""] and hunter is Frontline.Han:
 				_plant_first_hunt_basic_root(hunter.skeleton,hunter.root_bone)
+			if i==0 and hunter is Frontline.Han:
+				if stage_han and running and not approaching and approach>=1.0 and motion=="basic" and pose=="auto_thrust" and rules.outcome.is_empty():
+					HanCombatIdleVisual.basic(hunter,pose_clock)
+				elif stage_han and running and not approaching and approach>=1.0 and motion.is_empty() and rules.outcome.is_empty():
+					HanCombatIdleVisual.combat_idle(hunter,manual_combat_clock)
+				else:HanCombatIdleVisual.restore(hunter)
 		elif hunter is SaebomRig:
 			if pose == "team" and rules.attacker == RULES.SAEBOM and not bom_hop_offset.is_zero_approx():
 				hunter.position = _saebom_safe_position(base, base + bom_hop_offset * _saebom_hop_envelope(close_phase))
 			var motion := "skill" if attack and pose == "team" else "attack" if attack or assisting else ""
 			var motion_time: float = close_phase * hunter.motion_duration(motion)
+			hunter.saebom_use_native_locomotion=dodge and not approaching
 			hunter.animate(delta, facing, approach_phase, dodge or approaching, motion, motion_time, false)
+			if approaching:
+				var remaining:=maxf(0.0,1.0-approach)*solo_deploy_seconds
+				hunter.present_saebom_approach_finish(approach>.48,delta,remaining)
 			if pose == "team" and rules.attacker == RULES.SAEBOM and bom_hop_strength > 0.0:
 				var crouch := smoothstep(0.0,.09,close_phase)*(1.0-smoothstep(.09,.18,close_phase))
 				var land := smoothstep(.31,.36,close_phase)*(1.0-smoothstep(.36,.49,close_phase))
@@ -3325,6 +3347,8 @@ func _pose_planted_first_hunt_deer_basic(actor:NativeBoar,age:float) -> void:
 	_plant_first_hunt_basic_root(actor.rig,actor.native.root_index)
 
 
+const ApprovedDeerPose := preload("res://scripts/hunt_deer_approved_pose.gd")
+
 func _pose_solo_deploy_deer(actor:NativeBoar)->void:
 	if adult_markers.is_empty():return
 	actor.sample_native_phase("idle",fposmod(actor.clock,float(adult_markers.idle)))
@@ -3334,6 +3358,7 @@ func _pose_solo_deploy_deer(actor:NativeBoar)->void:
 		var idle_height:=actor.pivot.position.y
 		actor.sample_native_phase("approach",fposmod(solo_deploy_clock,float(adult_markers.approach)))
 		actor.pivot.position.y=lerpf(idle_height,actor.pivot.position.y,walk_weight)
+		if ApprovedDeerPose.supports(actor.native_species):ApprovedDeerPose.apply(actor.rig,"walk",solo_deploy_clock)
 		_blend_local_bones(actor.rig,rested,walk_weight)
 	if is_instance_valid(actor.native):_plant_first_hunt_basic_root(actor.rig,actor.native.root_index)
 
@@ -3355,15 +3380,24 @@ func _pose_first_hunt_deer(actor:NativeBoar, charging:bool, charge_clock:float)-
 	var idle_time:=fposmod(actor.clock,float(adult_markers.idle))
 	if action.is_empty():
 		actor.sample_native_phase("idle",idle_time)
+		if ApprovedDeerPose.supports(actor.native_species):ApprovedDeerPose.apply(actor.rig,"idle",actor.clock)
 	elif weight>=.999:
 		actor.sample_native_phase(action,frame)
 	else:
 		actor.sample_native_phase("idle",idle_time)
+		if ApprovedDeerPose.supports(actor.native_species):ApprovedDeerPose.apply(actor.rig,"idle",actor.clock)
 		var rested:=_snapshot_local_bones(actor.rig)
 		var idle_height:=actor.pivot.position.y
 		actor.sample_native_phase(action,frame)
 		actor.pivot.position.y=lerpf(idle_height,actor.pivot.position.y,weight)
 		_blend_local_bones(actor.rig,rested,weight)
+
+	if action=="charge" and ApprovedDeerPose.supports(actor.native_species):
+		ApprovedDeerPose.ram_landing(actor.rig,frame-float(adult_markers.charge_release))
+	elif action=="hit" and ApprovedDeerPose.supports(actor.native_species):
+		var heavy:=not hit_on_hunter and hit_kind in ["native_manual","sling_contact"]
+		var deer_hit_age:=BASIC_RECOIL_TIME-basic_recoil
+		ApprovedDeerPose.apply(actor.rig,"heavy_hit" if heavy else "hit",deer_hit_age/BASIC_RECOIL_TIME*.74 if heavy else deer_hit_age,weight*.8,true)
 
 ## Marks drive clips, never damage or scheduling.
 func _pose_adult_boar(adult:NativeBoar, charge:bool) -> void:
@@ -3442,6 +3476,8 @@ func _tick_first_hunt_drop(delta: float) -> void:
 
 
 func _finish_visual_ready() -> bool:
+	if rules.party_hp[0]<=0 and not hunters.is_empty() and hunters[0] is Frontline.Han:
+		if han_fall_age<float(hunters[0].clip_duration("death"))+.20:return false
 	if not impact_pending and pose == "thrust" and pose_clock < JumpMotion.JUMP_SECONDS:
 		return false
 	if rules.outcome != "win":

@@ -2,6 +2,7 @@ extends RefCounted
 # Z90000 owns its clock and presentation; no hunt rules or saved state are created.
 const Catalog = preload("res://scripts/lab_motion_catalog.gd")
 const Residents = preload("res://scripts/res011_lab_preview.gd")
+const SaebomResident = preload("res://scripts/saebom_motion_resident.gd")
 const Uram = preload("res://scripts/uram_lab_rig.gd")
 const Wildlife = preload("res://scripts/wildlife_lab.gd")
 const Animal = preload("res://scripts/wildlife_lab_preview.gd")
@@ -32,7 +33,7 @@ func resident_root()->Vector3:
 	return preview.skeleton.get_bone_pose_position(preview.root_bone)
 
 func resident_sample(id:String,clock:float)->void:
-	if id=="walk" and preview is Residents:
+	if id=="walk" and preview is Residents and chosen_gait_period(id)<=0.:
 		var clip:=clip_for(id)
 		var old_period:=Residents.Timing.duration(key,clip,preview.animation.get_animation(clip).length)
 		clock*=old_period/span("walk")
@@ -49,7 +50,7 @@ func create(parent:Node, id:String,comparison_b:=false,run_variant:="")->void:
 	elif key=="uram":
 		preview=Uram.new();preview.use_retouch=true;preview.extra_motions=true
 	else:
-		preview=Residents.new() if run_variant.is_empty() else RunPreview.new()
+		preview=(SaebomResident.new() if key=="saebom" else Residents.new()) if run_variant.is_empty() else RunPreview.new()
 		preview.character=key;preview.shared_motion_view=true;preview.extra_motions=run_variant.is_empty()
 		if not run_variant.is_empty():preview.variant=run_variant
 		if key=="hangyeol":preview.excluded_playlist_clips=PackedStringArray(["stone_spear_thrust"])
@@ -92,6 +93,7 @@ func face_support(target:Vector2)->void:
 		preview.pivot.rotation.y=atan2(world.x,world.y)-support_yaw
 
 func configure(battle:bool)->void:
+	if preview is SaebomResident:preview.saebom_combat_view=battle
 	var animal := Wildlife.ANIMALS.has(key)
 	preview.camera.position=Vector3(0,6.65,6) if battle and animal else Vector3(0,7.05,6) if battle else Residents.GAME_CAMERA
 	preview.camera.look_at(Vector3(0,1,0) if battle and animal else Vector3(0,1.45,0) if battle else Residents.GAME_AIM)
@@ -108,7 +110,13 @@ func clip_for(id:String)->String:
 func supported(id:String)->bool:
 	return id=="full" or not clip_for(id).is_empty()
 
+func chosen_gait_period(id:String)->float:
+	if preview is SaebomResident:return preview.saebom_gait_period(id)
+	return preview.production_han_gait_period(id) if preview is Residents else 0.0
+
 func span(id:String)->float:
+	if preview is Residents and preview.production_han_gait_period(id)>0.:
+		return preview.production_han_gait_period(id)
 	if id=="walk" and not preview is Animal:return WALK_PERIOD*(2.0/3.0 if key=="saebom" else 1.0)
 	if preview is Animal:
 		if id=="skill":return preview.length("req046_skill_anticipation")+preview.length("req046_skill_execute")
@@ -157,11 +165,12 @@ func sample(age:float, route:bool)->void:
 	var moving:=id in ["walk","run"]
 	var shared_walk:=id=="walk" and not preview is Animal
 	var travel_period:=period
-	if moving and preview is Residents:travel_period*=Residents.Timing.rate(key,clip_for(id))
+	if moving and preview is Residents and preview.production_han_gait_period(id)<=0.:travel_period*=Residents.Timing.rate(key,clip_for(id))
 	if shared_walk:travel_period=WALK_PERIOD
 	if route and moving:at=minf(at,travel_period*2)
-	var clock:=fposmod(at,period) if id in Catalog.REPEATS else at
-	if route and moving and at>=travel_period*2:clock=period-.00001
+	var visual_period:=chosen_gait_period(id) if preview is SaebomResident and chosen_gait_period(id)>0. else period
+	var clock:=fposmod(at,visual_period) if id in Catalog.REPEATS else at
+	if route and moving and at>=travel_period*2:clock=visual_period-.00001
 	sampled_motion=id;sampled_time=clock
 	# The animal adapter preserves native root travel and stops after two cycles.
 	if preview is Animal:

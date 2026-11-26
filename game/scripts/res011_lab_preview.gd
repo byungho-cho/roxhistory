@@ -25,6 +25,7 @@ var character := "hangyeol"
 var shared_motion_view := false
 var animation: AnimationPlayer
 var use_run_candidate := true
+var original_han_motion: Dictionary = {}
 var extra_motions := false
 var excluded_playlist_clips:PackedStringArray=[]
 var environment: Environment
@@ -69,6 +70,66 @@ func build_villager() -> void:
 		cool_fill.shadow_enabled = false
 		camera.get_parent().add_child(cool_fill)
 		set_corrected_light(true)
+
+
+# Preserve native names and durations. Only story/frontline consumers opt in;
+# the general character laboratory keeps the original comparison clips.
+func install_han_production_motion() -> bool:
+	if character != "hangyeol" or not is_instance_valid(animation):
+		return false
+	if not original_han_motion.is_empty():
+		return true
+	var native := animation.get_animation_library("")
+	var additions := {
+		&"run": preload("res://assets/characters/han-meshy-motion/run.res"),
+		&"walk": preload("res://assets/characters/han-meshy-motion/walk.res"),
+		&"spear_guard": preload("res://assets/characters/han-meshy-motion/guard.res"),
+		&"req045_death": preload("res://assets/characters/han-meshy-motion/death.res"),
+		&"req047_ground_thrust": preload("res://assets/characters/han-meshy-motion/2sp.res"),
+		&"jump_spear_auto_r03": preload("res://assets/characters/han-meshy-motion/3sp.res"),
+	}
+	for key in additions:
+		if not native.has_animation(key) or (key not in [&"req045_death",&"walk",&"run"] and absf(native.get_animation(key).length - additions[key].length) > .0001):
+			push_error("Han motion rejected: native timing mismatch for " + String(key))
+			return false
+	var library := native.duplicate() as AnimationLibrary
+	for key in additions:
+		original_han_motion[key] = native.get_animation(key)
+		library.remove_animation(key)
+		library.add_animation(key, additions[key])
+	animation.remove_animation_library("")
+	animation.add_animation_library("",library)
+	animation.play("idle")
+	animation.advance(0.0)
+	return true
+
+const HAN_RUN_TO_WALK:Animation=preload("res://assets/characters/han-meshy-motion/run-to-walk.res")
+
+# Called after the regular run pose. Only the visible local bones change;
+# route length, movement speed and the next attack stay with the caller.
+func present_han_approach_finish(finish:float, walk_time:float=0.0)->String:
+	if character!="hangyeol" or original_han_motion.is_empty() or finish<=0.0:return "run"
+	var finish_at:=clampf(finish,0.,1.)
+	var bridge_time:=HAN_RUN_TO_WALK.length*clampf(finish_at/.80,0.,1.)
+	var walk:Animation=animation.get_animation("walk")
+	var walk_at:=fposmod(walk_time,walk.length)
+	var from_run:=smoothstep(0.,.22,finish_at)
+	var to_walk:=smoothstep(.49,.75,finish_at)
+	for track in HAN_RUN_TO_WALK.get_track_count():
+		var name:=HAN_RUN_TO_WALK.track_get_path(track).get_subname(0)
+		var bone:=skeleton.find_bone(name)
+		if bone<0:continue
+		match HAN_RUN_TO_WALK.track_get_type(track):
+			Animation.TYPE_ROTATION_3D:
+				var q:=HAN_RUN_TO_WALK.rotation_track_interpolate(track,bridge_time)
+				q=q.slerp(walk.rotation_track_interpolate(track,walk_at),to_walk)
+				skeleton.set_bone_pose_rotation(bone,skeleton.get_bone_pose_rotation(bone).slerp(q,from_run))
+			Animation.TYPE_POSITION_3D:
+				var p:=HAN_RUN_TO_WALK.position_track_interpolate(track,bridge_time)
+				p=p.lerp(walk.position_track_interpolate(track,walk_at),to_walk)
+				skeleton.set_bone_pose_position(bone,skeleton.get_bone_pose_position(bone).lerp(p,from_run))
+	skeleton.force_update_all_bone_transforms()
+	return "walk" if finish_at>=.75 else "run_to_walk"
 
 func set_corrected_light(corrected: bool) -> void:
 	if not is_instance_valid(cool_fill): return
@@ -121,6 +182,10 @@ func sample_motion(key: String, seconds: float) -> void:
 				break
 	sample_clip(clip,at,seconds)
 
+func production_han_gait_period(key:String)->float:
+	if original_han_motion.is_empty() or key not in ["walk","run"]:return 0.0
+	return animation.get_animation(key).length
+
 func sample_clip(clip:String,at:float,source_clock:=NAN)->void:
 	var previous:String=animation.current_animation
 	var clock:=at if is_nan(source_clock) else source_clock
@@ -133,7 +198,8 @@ func sample_clip(clip:String,at:float,source_clock:=NAN)->void:
 		if addition:skeleton.reset_bone_poses()
 		animation.play(clip,.1 if Timing.enabled and clip!=JUMP_CLIP and not addition else 0.0)
 	animation.advance(dt if Timing.enabled else 0.0)
-	animation.seek(Timing.sample(character,clip,at,animation.get_animation(clip).length),true)
+	var source_period:=production_han_gait_period(clip)
+	animation.seek(fposmod(at,source_period) if source_period>0. else Timing.sample(character,clip,at,animation.get_animation(clip).length),true)
 	# Extract locomotion only for this fixed lab comparison, without deleting any source channels.
 	# Skill/recoil travel remains native. The real hunt keeps its original controller and models.
 	extract_tail=maxf(0.0,extract_tail-dt)

@@ -23,6 +23,7 @@ var body: Node3D
 var target: Node3D
 var origin := Vector3.ZERO
 var rest_yaw := 0.0
+var visual_scale := Vector3.ONE
 var heading := Vector3.FORWARD
 var path_limit := 0.0
 var stride_speed := 0.0
@@ -39,6 +40,7 @@ func setup(deer_actor: RefCounted, deer_body: Node3D, facing_target: Node3D) -> 
 	target = facing_target
 	origin = body.position
 	rest_yaw = actor.preview.pivot.rotation.y
+	visual_scale = actor.preview.pivot.scale
 
 func play(action: String) -> bool:
 	if action not in ACTIONS or not is_instance_valid(body) or actor == null:
@@ -112,6 +114,7 @@ func sample(seconds: float) -> bool:
 				native_age = lerpf(REAR_ACTIVE, warning, (age - REAR_ACTIVE) / REAR_PAUSE)
 	body.position = origin + heading * travelled
 	actor.sample(native_age, false)
+	actor.preview.pivot.scale = visual_scale
 	if not neutral.is_empty():
 		var strength := 0.68 if active_action == "attack" else (0.82 if active_action == "heavy_hit" else 0.44)
 		var phase := 0.0 if seconds >= duration else smoothstep(0.0, 0.08, age) * (1.0-smoothstep(duration-0.14, duration, age))

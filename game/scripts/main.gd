@@ -2094,12 +2094,21 @@ func begin_lab(lab: Control) -> void:
 	ui.add_child(parry_lab)
 
 func open_gahui_hunt_from_lab() -> void:
-	if not is_instance_valid(parry_lab) or not modal or screen != "play": return
 	var packed := load("res://gahui_trial/gahui_hunt_test.tscn") as PackedScene
-	if packed == null: return
-	var previous = parry_lab
-	var trial = packed.instantiate()
+	if packed != null:
+		_replace_active_hunt_lab(packed.instantiate())
+
+func open_one_on_one_from_gahui_lab() -> void:
+	var duel = preload("res://scenes/hunt_duel_lab.tscn").instantiate()
+	duel.show_final_test35 = true
+	_replace_active_hunt_lab(duel)
+
+func _replace_active_hunt_lab(trial: Control) -> void:
 	if trial == null: return
+	if not is_instance_valid(parry_lab) or not modal or screen != "play":
+		trial.free()
+		return
+	var previous = parry_lab
 	previous.set_process(false)
 	previous.set_process_input(false)
 	previous.hide()

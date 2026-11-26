@@ -1,6 +1,7 @@
 extends RefCounted
 ## Flower deer motions for the village lab only. The hunt actor remains the
 ## authority for the existing harvest visuals; this driver adds no game rules.
+const STAG_POSE = preload("res://scripts/hunt_deer_approved_pose.gd")
 const NATIVE = preload("res://gahui_trial/deer_lab_native.gd")
 const ASSETS := "res://gahui_trial/deer_lab_assets/"
 const ACTIONS := ["idle","walk","run","attack","skill","hit","heavy_hit"]
@@ -37,14 +38,17 @@ var _show_run_phase:=.40
 var _show_travel:=0.0
 var _ready:=false
 var _show:=true
+var _native_stag:=false
 
-func setup(deer_actor: RefCounted, deer_body: Node3D, facing_target: Node3D) -> void:
+func setup(deer_actor: RefCounted, deer_body: Node3D, facing_target: Node3D, native_stag:=false) -> void:
  actor=deer_actor
  body=deer_body
  target=facing_target
  if not is_instance_valid(body) or actor==null or not is_instance_valid(actor.preview.pivot):return
  origin=body.position
  _native.setup(actor,body,target)
+ _native_stag=native_stag
+ if _native_stag:return
  _calibration=actor.preview.pivot.transform
  _pivot=Node3D.new()
  _pivot.name="LabFlowerDeerMotion"
@@ -72,6 +76,7 @@ func setup(deer_actor: RefCounted, deer_body: Node3D, facing_target: Node3D) -> 
  var native_idle:Dictionary=_clips.idle
  pose(native_idle,0.0)
  _idle_reference=native_idle.sk.get_bone_global_pose(native_idle.sk.find_bone("head")).basis
+ _match_attack_scale()
  _prepare_hit()
  _ready=not _hit_mask.is_empty()
  if _ready:reset()
@@ -115,6 +120,39 @@ func _ground(data:Dictionary)->void:
  for id:int in data.feet:low=minf(low,_joint(data,id).y)
  _pivot.position.y+=body.global_position.y-low
 
+# Match the two silhouettes from planted hooves, not pose-dependent antler height.
+func _match_attack_scale()->void:
+ var sk:Skeleton3D=actor.preview.skeleton
+ var native:Array[Vector3]=[]
+ for key:String in NATIVE_HOOVES:
+  var id:=sk.find_bone(key)
+  if id<0:return
+  native.append(sk.to_global(sk.get_bone_global_pose(id).origin))
+ var mesh:Array[Vector3]=[]
+ for id:int in _clips.walk.feet:mesh.append(_joint(_clips.walk,id))
+ var mesh_span:=_hoof_span(mesh)
+ var native_span:=_hoof_span(native)
+ if native_span>.01 and mesh_span>.01:
+  var mesh_head:=_joint(_clips.walk,_clips.walk.sk.find_bone("head"))
+  var native_head:=sk.to_global(sk.get_bone_global_pose(sk.find_bone("head")).origin)
+  var mesh_bottom:=minf(minf(mesh[0].y,mesh[1].y),minf(mesh[2].y,mesh[3].y))
+  var native_bottom:=minf(minf(native[0].y,native[1].y),minf(native[2].y,native[3].y))
+  # Balance torso length with head height across the two different meshes.
+  var height_ratio:float=(mesh_head.y-mesh_bottom)/maxf(.01,native_head.y-native_bottom)
+  _native.visual_scale=actor.preview.pivot.scale*(mesh_span/native_span)*pow(clampf(height_ratio/(mesh_span/native_span),.4,3.7),.25)
+  actor.preview.pivot.scale=_native.visual_scale
+
+func _hoof_span(points:Array[Vector3])->float:
+ var axis:Vector3=(points[0]+points[1]-points[2]-points[3])*.5
+ return Vector2(axis.x,axis.z).length()
+
+func fx_contact_time(action:String)->float:
+ # The drill is non-damaging; time the cue against the authored strike.
+ return duration*.44 if action=="attack" else NATIVE.REAR_ACTIVE+NATIVE.REAR_PAUSE+NATIVE.RAM_DRIVE_END
+
+func fx_release_time()->float:
+ return NATIVE.REAR_ACTIVE+NATIVE.REAR_PAUSE
+
 func _prepare_hit()->void:
  var source:Skeleton3D=_clips.alert.sk
  pose(_clips.alert,0.0)
@@ -137,7 +175,8 @@ func set_visible(visible:bool)->void:
  if visible==_show:return
  _show=visible
  if not is_instance_valid(body):return
- _present(active_action)
+ if _native_stag:restore_native()
+ else:_present(active_action)
 
 func restore_native()->void:
  if not is_instance_valid(body):return
@@ -157,6 +196,16 @@ func _present(action:String)->void:
 
 func play(action:String)->bool:
  if (action not in ACTIONS and action!="locomotion") or not is_instance_valid(body):return false
+ if _native_stag:
+  _native.origin=body.position
+  active_action=action
+  if action=="idle":
+   _native.reset()
+   duration=1.00833
+   return true
+  if not _native.play(action):return false
+  duration=_native.duration
+  return true
  if not _ready:
   if action=="locomotion":return false
   if action=="idle":reset();return true
@@ -198,6 +247,17 @@ func play(action:String)->bool:
 
 func sample(seconds:float)->bool:
  if active_action.is_empty():return false
+ if _native_stag:
+  if active_action=="idle":
+   actor.sample(0.0,false)
+   actor.preview.pivot.position.y+=_native._floor_delta()
+   STAG_POSE.apply(actor.preview.skeleton,"idle",seconds)
+   return false
+  var ended:=_native.sample(seconds)
+  if active_action in ["walk","run","hit","heavy_hit"]:
+   STAG_POSE.apply(actor.preview.skeleton,active_action,seconds)
+   actor.preview.pivot.position.y+=_native._floor_delta()
+  return ended
  if not _ready or active_action in ["attack","skill"]:return _native.sample(seconds)
  var age:=clampf(seconds,0.0,duration)
  match active_action:
@@ -242,7 +302,7 @@ func _idle_pose(age:float)->void:
  var dest:Skeleton3D=_clips.walk.sk
  var src:Skeleton3D=_clips.idle.sk
  apply_pose(dest,_rest)
- pose(_clips.idle,age)
+ pose(_clips.idle,fposmod(age*2.,float(_clips.idle.span)))
  var h:=src.find_bone("head")
  var yaw:=clampf((_idle_reference.inverse()*src.get_bone_global_pose(h).basis).get_euler().y,-.28,.28)
  for name in ["neck2","head"]:
