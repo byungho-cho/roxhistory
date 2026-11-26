@@ -260,7 +260,8 @@ func setup(dust_draw:Callable=Callable(),gong:Callable=Callable(), heavy:Callabl
 		var actor:=Actor.new();actor.create(self,id);actor.configure(true)
 		if id=="hangyeol" and not story_encounter.is_empty() and actor.preview.has_method("install_han_production_motion"):
 			actor.preview.call("install_han_production_motion")
-		actor.preview.scale=Vector2.ONE*[.76588,1.08,.90,.82588,.82588,.82588][i]
+		var visual_multiplier:=Hunt.BATTLEFIELD_MODEL_MULTIPLIER if not story_encounter.is_empty() else 1.0
+		actor.preview.scale=Vector2.ONE*[.76588,1.08,.90,.82588,.82588,.82588][i]*visual_multiplier
 		var ring:=Line2D.new();ring.width=1.65;ring.antialiased=true;ring.default_color=Head.duel_team_color(ally)
 		for j in 41:ring.add_point(Vector2.from_angle(TAU*float(j)/40)*Vector2(22,8))
 		add_child(ring)
@@ -1654,7 +1655,8 @@ func _paint_bars()->void:
 	for i in units.size():
 		var u := units[i]
 		if u.hp<=0:continue
-		var at:Vector2=u.feet-Vector2(23,76)
+		var lift:=76.0 if story_encounter.is_empty() else 76.0*Hunt.BATTLEFIELD_MODEL_MULTIPLIER
+		var at:Vector2=u.feet-Vector2(23,lift)
 		var back:=Rect2(at,Vector2(46,5))
 		bars_paint.draw_rect(back,Color("211f23"))
 		var color := Color("68c8ff") if (u.id != "forest" if story_encounter.is_empty() else i < 3) else Color("ff8176")

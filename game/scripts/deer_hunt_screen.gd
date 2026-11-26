@@ -100,6 +100,7 @@ const APPROVED_BOAR := preload("res://assets/ui/duel-hud/boar-selector.png")
 const APPROVED_DEER := preload("res://assets/ui/hunting-combat/png/common/deer-approved.png")
 const COMBAT_PREVIEW := preload("res://scripts/hunt_combat_preview.gd") # Legacy parry lab import.
 const Frontline := preload("res://scripts/hunt_production_frontline_rig.gd")
+const BATTLEFIELD_MODEL_MULTIPLIER := 1.5
 const FRONTLINE_VISUAL_SCALE := 1.20
 const IMPACT_ART := "res://assets/ui/hunt-impact/"
 const BASIC_HIT := preload(IMPACT_ART+"basic-contact.svg")
@@ -462,6 +463,39 @@ func _build_chapter_preparation_foes(parent: Node2D) -> void:
 	chapter_prep_setup_ok = true
 
 
+static func battlefield_ground_heading(cam:Camera3D,d:Vector2)->float:
+	if d.is_zero_approx():return 0.0
+	if not is_instance_valid(cam):return atan2(d.x,d.y)
+	var p:=cam.unproject_position(Vector3.ZERO)
+	var x:=cam.unproject_position(Vector3.RIGHT)-p
+	var z:=cam.unproject_position(Vector3.BACK)-p
+	var det:=x.cross(z)
+	if absf(det)<.0001:return atan2(d.x,d.y)
+	var ground:=Vector2(d.cross(z),x.cross(d))/det
+	return atan2(ground.x,ground.y)
+
+func _opposing_position(at:Vector2,opponents:Array[Vector2],fallback:Vector2)->Vector2:
+	var target:=fallback
+	var closest:=INF
+	for point in opponents:
+		var distance:=at.distance_squared_to(point)
+		if distance<closest:
+			closest=distance
+			target=point
+	return target
+
+func _prep_enemy_positions()->Array[Vector2]:
+	var points:Array[Vector2]=[]
+	for enemy in chapter_prep_foes:
+		points.append(ENEMY_CELLS[int(enemy.get_meta("chapter_prep_slot"))])
+	return points
+
+func _prep_ally_positions()->Array[Vector2]:
+	var points:Array[Vector2]=[]
+	for i in mini(prep_ally_count,assigned_cells.size()):
+		points.append(drag_feet if dragging and i==selected_hunter else ALLY_CELLS[assigned_cells[i]])
+	return points
+
 func _sync_chapter_preparation_foes() -> void:
 	if not chapter_prep_setup_ok: return
 	var preparing := transition_elapsed < 0.0 and not running and not is_instance_valid(chapter_story_battle) and not result_shown
@@ -477,8 +511,8 @@ func _sync_chapter_preparation_foes() -> void:
 			actor.viewport.render_target_update_mode = SubViewport.UPDATE_DISABLED
 			continue
 		actor.position = ENEMY_CELLS[int(actor.get_meta("chapter_prep_slot"))]
-		actor.scale = Vector2.ONE * PREP_PREY_SCALE
-		actor.heading = 0.0 # The readiness lineup faces the camera, not the selected ally.
+		actor.scale = Vector2.ONE * PREP_PREY_SCALE * BATTLEFIELD_MODEL_MULTIPLIER
+		actor.heading = battlefield_ground_heading(actor.camera, actor.position.direction_to(_opposing_position(actor.position,_prep_ally_positions(),FORMATION_CENTER)))
 		actor.sample_native_phase("idle", fposmod(pose_clock + .29 * i, maxf(.01, actor.native.length(NativeBoar.Prey.clips(actor.native_species).idle))))
 		actor.viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
 		tag.position = actor.position + Vector2(0, -actor.world_height * actor.scale.y - 15)
@@ -2845,6 +2879,13 @@ func _stone_metric_point(camera:Camera3D, display:Sprite2D, world_point:Vector3)
 	var inv := battlefield.get_global_transform().affine_inverse()
 	var visual := inv * display.to_global(camera.unproject_position(world_point))
 	var floor_point := inv * display.to_global(camera.unproject_position(Vector3(world_point.x,0.0,world_point.z)))
+	# Collision uses the pre-enlargement projection about each actor's feet.
+	# Models, their textures, and the overhead UI can grow independently.
+	var owner_node := display.get_parent() as Node2D
+	if is_instance_valid(owner_node):
+		var base := inv * owner_node.global_position
+		visual = base + (visual-base)/BATTLEFIELD_MODEL_MULTIPLIER
+		floor_point = base + (floor_point-base)/BATTLEFIELD_MODEL_MULTIPLIER
 	return Vector3(visual.x, floor_point.y - visual.y, floor_point.y) / STONE_METRIC
 
 func _stone_render_point(metric:Vector3) -> Vector2:
@@ -3058,7 +3099,8 @@ func update_actors(delta: float) -> void:
 		if i==0 and steady_first_hunt_heads: han_head_ground=base
 		var preview_scale := PREP_HAN_SCALE if i == 0 and (chapter_story_number > 0 or chapter_one_solo) else .60
 		var actor_scale := PREP_HAN_SCALE if chapter_one_solo and i == 0 else lerpf(preview_scale,.56,approach)
-		hunter.scale = Vector2.ONE * actor_scale * (1.0 if i == RULES.SAEBOM else FRONTLINE_VISUAL_SCALE)
+		var base_visual_scale := actor_scale * (1.0 if i == RULES.SAEBOM else FRONTLINE_VISUAL_SCALE)
+		hunter.scale = Vector2.ONE * base_visual_scale * BATTLEFIELD_MODEL_MULTIPLIER
 		var lunge := 42 if basic_attack else 24
 		var assisting := running and pose == "team" and pose_clock < RULES.POSE_SECONDS and not attack and rules.party_hp[i]>0
 		var attack_direction := base.direction_to(DEER_SLOT)
@@ -3086,10 +3128,15 @@ func update_actors(delta: float) -> void:
 		var close_phase := clampf(pose_clock / RULES.POSE_SECONDS, 0.0, 1.0)
 		if approaching:
 			var travel := previous_position.distance_to(hunter.position)
-			hunt_stride_phases[i] = fposmod(hunt_stride_phases[i]+travel/maxf(1.0,42.0*hunter.scale.x)*TAU,TAU)
+			hunt_stride_phases[i] = fposmod(hunt_stride_phases[i]+travel/maxf(1.0,42.0*base_visual_scale)*TAU,TAU)
 		var approach_phase := hunt_stride_phases[i] if approaching else pose_clock*12.0
 		var facing := first_hunt_facing if tutorial_lunge else han_chain_facing if native_manual and side_han_jump else hunter.position.direction_to(deer.position) if approach >= 1.0 else hunter.position.direction_to(deer.position) if approach<=0.0 else arrival_heading
-		if not running and transition_elapsed<0.0:facing=Vector2.DOWN
+		if not running and transition_elapsed<0.0:
+			var opponent:=_opposing_position(hunter.position,_prep_enemy_positions(),ENEMY_CELLS[4])
+			var heading:=battlefield_ground_heading(hunter.camera,hunter.position.direction_to(opponent))
+			facing=Vector2(sin(heading),cos(heading))
+			hunter.heading=heading
+			hunter.target_heading=heading
 		if stage_han and running and solo_deploy_clock<0.0 and not native_manual and not side_han_jump:
 			# Compensate the authored spear angle in the split actor camera, not the body location.
 			facing=facing.rotated(-.36)
@@ -3157,7 +3204,7 @@ func update_actors(delta: float) -> void:
 				BasicRope.set_loaded(hunter,not basic_rope_empty)
 		hunter.viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
 		if i!=0 or not steady_first_hunt_heads:
-			hunter_markers[i].position = hunter.position+Vector2(0,-63)
+			hunter_markers[i].position = hunter.position+Vector2(0,-63*BATTLEFIELD_MODEL_MULTIPLIER)
 		hunter.visible=i<prep_ally_count
 		hunter_markers[i].visible = arrival_finished and hunter.visible
 		hunter_field_bars[i].get_parent().visible = approach>=1.0
@@ -3185,14 +3232,14 @@ func update_actors(delta: float) -> void:
 		if pose=="auto_thrust" and hit_kind=="auto_thrust" and hit_damage>0 and not hit_on_hunter:
 			ordinary_prey_visual_offset=-recoil*.80
 	var prey_start_scale := PREP_PREY_SCALE if chapter_story_number > 0 else .60
-	deer.scale = Vector2.ONE * (PREP_PREY_SCALE if chapter_one_solo and not _prey_is_adult() else lerpf(prey_start_scale,.63,approach))
+	deer.scale = Vector2.ONE * (PREP_PREY_SCALE if chapter_one_solo and not _prey_is_adult() else lerpf(prey_start_scale,.63,approach)) * BATTLEFIELD_MODEL_MULTIPLIER
 	# Sprite vertices only: keep transform, rig sample and physical sweep unchanged.
 	deer.display.offset=ordinary_prey_visual_offset/(deer.scale*deer.display.scale)
 	deer.walking = 1.0 if (transition_elapsed>=0 or solo_deploy_clock>=0.0) and approach>0.0 and approach<1.0 else (movement_beat if running and (charge or basic_recoil>0.0) else 0.0)
 	if deer_close_travel: deer.walking = maxf(deer.walking,.74)
-	deer.heading = lerp_angle(-PI*.34,-PI*.35,approach)
+	deer.heading = battlefield_ground_heading(deer.camera,deer.position.direction_to(hunters[0].position))
 	if transition_elapsed<0.0 and not running:
-		deer.heading=0.0
+		deer.heading=battlefield_ground_heading(deer.camera,deer.position.direction_to(_opposing_position(deer.position,_prep_ally_positions(),FORMATION_CENTER)))
 	elif solo_deploy_clock>=0.0 and approach<1.0:
 		var toward:Vector2=ENEMY_CELLS[4].direction_to(solo_deploy_prey_end)
 		deer.heading=lerp_angle(atan2(toward.x,toward.y),deer.heading,smoothstep(.76,1.,approach))
@@ -3221,7 +3268,7 @@ func update_actors(delta: float) -> void:
 	var transform:=combat_controls.get_global_transform().affine_inverse()*battlefield.get_global_transform()
 	for i in hunters.size():
 		var anchor := han_head_ground if i==0 and han_head_ground.is_finite() else hunters[i].position
-		points.append(transform*(anchor+Vector2(0,-63)))
+		points.append(transform*(anchor+Vector2(0,-63*BATTLEFIELD_MODEL_MULTIPLIER)))
 	var head_prey := ENEMY_CELLS[4].lerp(solo_deploy_prey_end,approach) if steady_first_hunt_heads else prey_visual_anchor
 	points.append(transform*(head_prey+Vector2(0,-deer.world_height*deer.scale.y-15)))
 	NativeHud.sync_heads(head_headers,points,transform*Rect2(8,70,944,350),NativeHud.HP_FADE_SECONDS if arrival_finished and (transition_elapsed>=0.0 or running) else -INF)
@@ -3230,7 +3277,7 @@ func update_actors(delta: float) -> void:
 	for i in prep_tags.size():
 		var tag:=prep_tags[i]
 		var actor=hunters[i] if i<3 else deer
-		tag.position=actor.position+Vector2(0,-63 if i<3 else -deer.world_height*deer.scale.y-15)
+		tag.position=actor.position+Vector2(0,-63*BATTLEFIELD_MODEL_MULTIPLIER if i<3 else -deer.world_height*deer.scale.y-15)
 		tag.visible=arrival_finished and transition_elapsed<0.0 and not running and (i==3 or i<prep_ally_count)
 	if chapter_one_solo:
 		for i in [1,2]:head_headers[i].panel.hide()
