@@ -27,6 +27,7 @@ var parry_work_mode: ProcessMode
 var parry_stage_mode: ProcessMode
 var debug_shortcut:DemoButton
 var debug_shortcut_icon:TextureRect
+const HUNT_SELECTION := preload("res://scripts/hunt_stage_selection.gd")
 var hunt_stage := 0
 const HUNT_CHAPTER_ONE := preload("res://scripts/hunt_chapter_one_catalog.gd")
 # Candidate-only route: disable to restore original deer for every saved stage.
@@ -347,7 +348,7 @@ func show_screen(next: String,spread_hud:=false) -> void:
 		if next != "play": world.feedback.clear_transients()
 		world.visible = screen == "play"
 		world.set_process_mode(Node.PROCESS_MODE_INHERIT if screen == "play" else Node.PROCESS_MODE_DISABLED)
-	if screen not in ["play","region","title","hunt","hunt_select","battlefield_reset","intro","hero_level_up"]:
+	if screen not in ["play","region","title","hunt","hunt_select","intro","hero_level_up"]:
 		menu_background()
 	match screen:
 		"onboarding": onboarding()
@@ -361,11 +362,17 @@ func show_screen(next: String,spread_hud:=false) -> void:
 			hero_level_up.app = self
 			stage.add_child(hero_level_up)
 			hero_level_up.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-		"battlefield_reset":
-			var first_hunt = preload("res://battlefield_reset/first_hunt.tscn").instantiate()
-			stage.add_child(first_hunt)
-			first_hunt.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-			first_hunt.exit_requested.connect(func(): show_screen("play"))
+		"hunt_select":
+			var selection := HUNT_SELECTION.new()
+			selection.name="HuntStageSelection"
+			selection.app = self
+			stage.add_child(selection)
+			selection.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		"hunt":
+			hunt = HUNT_SCREEN.new()
+			hunt.app = self
+			stage.add_child(hunt)
+			hunt.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	toast_panel=PanelContainer.new();toast_panel.z_index=45;stage.add_child(toast_panel)
 	toast_panel.position=Vector2(w*.5-120,safe.y+(190 if w<h else 118) if screen=="play" else safe.y+8);toast_panel.size=Vector2(240,38)
 	var toast_style:=StyleBoxFlat.new();toast_style.bg_color=Color(.13,.10,.07,.87);toast_style.set_corner_radius_all(19);toast_style.set_content_margin_all(8)
@@ -2454,7 +2461,9 @@ func open_hunt() -> void:
 	cancel_task()
 	gestures.clear()
 	world.player.direction = Vector2.ZERO
-	show_screen("battlefield_reset")
+	hunt_stage = HUNT_CHAPTER_ONE.route_id(1)
+	hunt_prey_id = HUNT_CHAPTER_ONE.FLOWER
+	show_screen("hunt_select")
 
 func hunt_preparation_paths(stage_id: int) -> PackedStringArray:
 	var cleared := int(model.state.get("hunt_cleared",0))
@@ -2561,7 +2570,7 @@ func chapter_one_story_completions() -> Dictionary:
 
 
 func hunt_stage_is_unlocked(stage_id: int) -> bool:
-	return stage_id == 0
+	return stage_id == HUNT_CHAPTER_ONE.route_id(1)
 
 func next_hunt_stage_id() -> int:
 	return -1
@@ -2682,7 +2691,7 @@ func close_hunt() -> void:
 	if screen!="hunt":return
 	hunt = null
 	hunt_prey_id = "forest"
-	show_screen("play")
+	show_screen("hunt_select")
 
 func go_back() -> void:
 	if is_instance_valid(parry_lab):
@@ -2715,7 +2724,7 @@ func go_back() -> void:
 			back.call()
 		else:
 			close_modal()
-	elif screen in ["hunt_select","hero_level_up","battlefield_reset"]:
+	elif screen in ["hunt_select","hero_level_up"]:
 		show_screen("play")
 	elif screen == "play" and is_instance_valid(build_side) and build_side.visible:
 		build_side.hide()

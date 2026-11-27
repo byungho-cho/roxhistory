@@ -93,7 +93,11 @@ func _ready() -> void:
 	add_title_rule(details,accent)
 	if won and use_han_field:
 		var replay:=int(app.model.state.get("hunt_cleared",0))>int(app.hunt_stage) and not progression_advanced
-		var message:=("다음 단계 해금" if story > 1 else "진행 보상 · 다음 단계 해금") if progression_advanced else "이미 완료한 사냥입니다." if replay else "진행 저장 상태를 확인해 주세요."
+		var message := "이미 완료한 사냥입니다." if replay else "진행 저장 상태를 확인해 주세요."
+		if progression_advanced:
+			message = "진행 보상"
+			if app.next_hunt_stage_id() >= 0:
+				message = "다음 단계 해금" if story > 1 else "진행 보상 · 다음 단계 해금"
 		write(details,message,Rect2(0,173,420,28),19,Color("fff0d0"))
 	reduced_motion = app.reduced_ui_motion()
 	if won and stars>0:
