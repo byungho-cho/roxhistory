@@ -287,8 +287,8 @@ func face_target(target: Vector2) -> void:
 
 func set_activity(value: String) -> void:
 	if activity != value:
+		if is_instance_valid(hybrid): hybrid.on_village_activity_change(activity,value,action_time)
 		action_time = 0.0
-		if is_instance_valid(hybrid): hybrid.on_village_activity_change(activity,value)
 	activity = value
 
 func _physics_process(delta: float) -> void:

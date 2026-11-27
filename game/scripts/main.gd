@@ -1723,7 +1723,7 @@ func gather_action(selected_id:String="") -> bool:
 	world.player.set_activity("gather")
 	task_target = n.id
 	world.feedback.begin("gather",n.id)
-	task_total = float(DemoConfig.get_data().gather_seconds)
+	task_total = DemoPlayer.VILLAGE_HAN.GATHER_SECONDS
 	task_remaining = task_total
 	task_bar.visible = false
 	context.text = "자원 옆에 자리 잡는 중" if gather_approach else "채집 중… 이동하면 멈춥니다"

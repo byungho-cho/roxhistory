@@ -1,10 +1,14 @@
 extends HybridCharacter
 
 const MODEL := "res://assets/characters/village_han/village_han_12k.glb"
-const AXE := "res://assets/characters/village_han/village_han_axe.glb"
+const APPROVED_GATHER := preload("res://assets/characters/village_han/han-village-approved-gather.scn")
 const MOTIONS := preload("res://assets/characters/village_han/village_han_core.res")
-const SOCKET := Vector3(0,.16,0)
-const EDGE := Vector3(0,.548,.232)
+const GATHER_CLIP := &"Village_Gather_3x"
+const GATHER_SOURCE_START := 1.0
+const GATHER_SECONDS := 4.0
+const GATHER_FINISH_HOLD := .5
+const GATHER_CONTACTS := [1.60, 2.60, 3.60]
+const EDGE := Vector3(0,.5565,.236)
 var village_model: Node3D
 var axe_visual: Node3D
 var tracks: Dictionary = {}
@@ -13,11 +17,14 @@ var stride_phase := 0.0
 var move_weight := 0.0
 var run_weight := 0.0
 var run_presentation := 0.0
-var axe_hold := 0.0
-var was_gathering := false
-var axe_generation := 0
-var right_hand := -1
-var left_hand := -1
+var approved_gather: Node3D
+var gather_player: AnimationPlayer
+var gather_head: MeshInstance3D
+var gather_generation := 0
+var gather_running := false
+var gather_finished_hold := false
+var regular_camera_position := Vector3.ZERO
+var regular_camera_size := 0.0
 
 func build_villager() -> void:
 	village_model = (load(MODEL) as PackedScene).instantiate() as Node3D
@@ -25,8 +32,6 @@ func build_villager() -> void:
 	rig = village_model.find_children("*","Skeleton3D",true,false)[0]
 	for player: AnimationPlayer in village_model.find_children("*","AnimationPlayer",true,false):
 		player.active = false
-	right_hand = rig.find_bone("RightHand")
-	left_hand = rig.find_bone("LeftHand")
 	for key: StringName in MOTIONS.get_animation_list():
 		var clip: Animation = MOTIONS.get_animation(key)
 		var by_bone: Dictionary = {}
@@ -35,11 +40,14 @@ func build_villager() -> void:
 			if not by_bone.has(bone):by_bone[bone]=[-1,-1,-1]
 			by_bone[bone][clip.track_get_type(index)-Animation.TYPE_POSITION_3D]=index
 		tracks[key] = by_bone
-	axe_visual = Node3D.new()
-	axe_visual.name = "VillageGatherStoneAxe"
-	pivot.add_child(axe_visual)
-	axe_visual.add_child((load(AXE) as PackedScene).instantiate())
-	axe_visual.hide()
+	approved_gather = APPROVED_GATHER.instantiate() as Node3D
+	pivot.add_child(approved_gather)
+	gather_player = approved_gather.get_node("AnimationPlayer")
+	axe_visual = approved_gather.get_node("GroundAnchor/StoneAxe")
+	gather_head = approved_gather.find_children("*stone axe head*","MeshInstance3D",true,false)[0]
+	gather_player.play(GATHER_CLIP)
+	gather_player.pause()
+	approved_gather.hide()
 	_apply_core_pose(&"idle",0.0,0.0)
 	rig.force_update_all_bone_transforms()
 	var foot_l := rig.get_bone_global_pose(rig.find_bone("LeftFoot")).origin
@@ -67,17 +75,46 @@ func _apply_core_pose(key: StringName,age: float,weight: float) -> void:
 			if run_weight>.001:pose=pose.interpolate_with(_sample(&"run",index,run_time),run_weight)
 		rig.set_bone_pose(index,pose)
 
-# The release follows the completed action, even if an onboarding popup pauses pose updates.
-func on_village_activity_change(previous: String, next: String) -> void:
+func on_village_activity_change(previous: String, next: String, previous_age:float) -> void:
 	if previous!="gather" and next!="gather":return
-	axe_generation+=1
-	if previous=="gather" and next!="gather":
-		var generation := axe_generation
-		get_tree().create_timer(.5).timeout.connect(func():
-			if generation==axe_generation and is_instance_valid(axe_visual):
-				axe_hold=0.0
-				axe_visual.hide()
+	gather_generation+=1
+	if next=="gather":
+		gather_running=true
+		gather_finished_hold=false
+		_show_gather(0.0)
+	elif previous_age>=GATHER_SECONDS-.06 and gather_running:
+		gather_running=false
+		gather_finished_hold=true
+		_show_gather(GATHER_SECONDS)
+		var generation := gather_generation
+		get_tree().create_timer(GATHER_FINISH_HOLD).timeout.connect(func():
+			if generation==gather_generation:
+				gather_finished_hold=false
+				_end_gather_display()
 		, CONNECT_ONE_SHOT)
+	else:
+		gather_running=false
+		gather_finished_hold=false
+		_end_gather_display()
+
+func _show_gather(action_age: float) -> void:
+	if not approved_gather.visible:
+		regular_camera_position=camera.position
+		regular_camera_size=camera.size
+		# The edited scene is already scaled by two. Normalize only its isolated
+		# actor viewport, not the village camera or the animated scene transform.
+		camera.position*=2.0
+		camera.size*=2.0
+	approved_gather.show()
+	village_model.hide()
+	gather_player.seek(GATHER_SOURCE_START+clampf(action_age,0.0,GATHER_SECONDS),true,true)
+
+func _end_gather_display() -> void:
+	if approved_gather.visible:
+		camera.position=regular_camera_position
+		camera.size=regular_camera_size
+	approved_gather.hide()
+	village_model.show()
 
 func animate(delta: float,movement: Vector2,_phase: float,walking: bool,action: String,action_time: float,paused: bool) -> void:
 	if not enabled or paused:return
@@ -86,6 +123,14 @@ func animate(delta: float,movement: Vector2,_phase: float,walking: bool,action: 
 	pivot.rotation.y=heading
 	var gathering := action=="gather"
 	var working := gathering or action=="build"
+	if gathering:
+		_show_gather(action_time)
+		work_block.hide()
+		return
+	if walking and gather_finished_hold:
+		gather_generation+=1
+		gather_finished_hold=false
+		_end_gather_display()
 	move_weight=move_toward(move_weight,1.0 if walking and not working else 0.0,delta*5.0)
 	run_weight=move_toward(run_weight,run_presentation if walking else 0.0,delta*5.0)
 	if walking:stride_phase+=delta*lerpf(.96,1.56,run_weight)
@@ -99,33 +144,7 @@ func animate(delta: float,movement: Vector2,_phase: float,walking: bool,action: 
 		_apply_core_pose(&"idle",idle_age,move_weight)
 	rig.force_update_all_bone_transforms()
 	work_block.visible=action=="build"
-	if gathering:
-		_update_gather_axe(action_time)
-		axe_hold=.5
-		axe_visual.show()
-	elif walking or working:
-		axe_hold=0.0
-		axe_visual.hide()
-	else:
-		if not was_gathering:axe_hold=maxf(0.0,axe_hold-delta)
-		axe_visual.visible=axe_hold>.0001
-	was_gathering=gathering
 
-func _palm(bone:int,side:float)->Vector3:
-	return rig.to_global(rig.get_bone_global_pose(bone)*Vector3(side*.8,9.6,-side*1.75))
-
-func _update_gather_axe(seconds:float)->void:
-	var right := _palm(right_hand,-1.0)
-	var direction := (_palm(left_hand,1.0)-right).normalized()
-	if direction.is_zero_approx():direction=Vector3.UP
-	var forward := pivot.global_basis.z
-	if direction.dot(forward)<-.97:direction=direction.lerp(forward,.17).normalized()
-	var basis := Basis(Quaternion(Vector3.UP,direction))*Basis(Vector3.UP,PI-.16)
-	var beat := fposmod(seconds,HeroMotion.CYCLE)/HeroMotion.CYCLE
-	var aim := (pivot.to_global(Vector3(0,.25,.54))-right).normalized()
-	var turn := Basis(Quaternion((basis*(EDGE-SOCKET)).normalized(),aim))*basis
-	basis=basis.slerp(turn,smoothstep(.32,.50,beat)*(1.0-smoothstep(.52,.66,beat)))
-	axe_visual.global_transform=Transform3D(basis,right-basis*SOCKET)
-
-func tool_contact_world()->Vector2:
-	return global_position+display.position+camera.unproject_position(axe_visual.to_global(EDGE))*display.scale
+func tool_contact_world() -> Vector2:
+	var point := gather_head.to_global(EDGE)
+	return global_position+display.position+camera.unproject_position(point)*display.scale
