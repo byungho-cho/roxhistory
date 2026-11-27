@@ -19,6 +19,7 @@ var prep_shield_handles: Array[Node] = []
 var prep_club_visible := false
 const HanModel = preload("res://battlefield_reset/han_motion/han_motion_viewer.gd")
 var prep_han_view: HanModel
+var battle_han_view: HanModel
 var prep_saebom_view: CampaignSaebomPrep
 var prep_saebom_donor_layers: Dictionary = {}
 var prep_saebom_knife: Node2D
@@ -1865,6 +1866,15 @@ func finish_battle_transition() -> void:
 		solo_deploy_prey_end = prey_start.move_toward(han_start,prey_travel)
 		# Smoothstep peaks at 1.5x the average; keep this ordinary approach at a walking pace.
 		solo_deploy_seconds = maxf(.72,1.5*maxf(closing-prey_travel,prey_travel)/59.0)
+		var han: HybridCharacter = hunters[0]
+		battle_han_view = HanModel.new()
+		battle_han_view.duel_binding = true
+		han.add_child(battle_han_view)
+		if battle_han_view.bind_duel(han.pivot, null, han.camera):
+			solo_deploy_seconds = maxf(solo_deploy_seconds, HanModel.ENTRY_SECONDS)
+		else:
+			battle_han_view.queue_free()
+			battle_han_view = null
 		solo_deploy_clock = 0.0
 	transition_elapsed = -1.0
 	branch_video.stop()
@@ -2004,7 +2014,7 @@ func _tick_native_hud(elapsed:float) -> void:
 func _draw_native_weapon_and_notices(dest:Node2D) -> void:
 	var inv := battlefield.get_global_transform().affine_inverse()
 	var han := hunters[0] as Frontline.Han
-	if rules.party_hp[0]>0 and is_instance_valid(han) and han.has_spear_anchor():
+	if battle_han_view == null and rules.party_hp[0]>0 and is_instance_valid(han) and han.has_spear_anchor():
 		var hand:Vector3 = han.skeleton.to_global(han.skeleton.get_bone_global_pose(han.hand_index).origin)
 		native_hud.draw_spear_glow(dest, inv*han.spear_tip_world(), inv*han.display.to_global(han.camera.unproject_position(hand)),manual_combat_clock)
 	var uram := hunters[1] as Frontline.Uram
@@ -3448,6 +3458,8 @@ func update_actors(delta: float) -> void:
 			lane=Vector2(-1.,clampf(lane.y,-.11,.11)).normalized()
 			battle_target=solo_deploy_prey_end+lane*FIRST_HUNT_HAN_STANDOFF
 		var base := placed.lerp(battle_target,approach)
+		if stage_han and solo_deploy_clock >= 0.0 and battle_han_view != null:
+			base = placed.lerp(battle_target, HanModel.entry_progress(solo_deploy_clock))
 		if i==0 and steady_first_hunt_heads: han_head_ground=base
 		var preview_scale := PREP_HAN_SCALE if i == 0 and (chapter_story_number > 0 or chapter_one_solo) else .60
 		var actor_scale := PREP_HAN_SCALE if chapter_one_solo and i == 0 else lerpf(preview_scale,.56,approach)
@@ -3498,6 +3510,8 @@ func update_actors(delta: float) -> void:
 			var fall_span:float=hunter.clip_duration("death")
 			han_fall_age=minf(fall_span+.20,han_fall_age+maxf(0.,delta))
 			hunter.resident_sample("death",minf(han_fall_age,fall_span-.00001))
+			if battle_han_view != null:
+				battle_han_view.show_duel_motion("death",han_fall_age,fall_span,false)
 			hunter.viewport.render_target_update_mode=SubViewport.UPDATE_ONCE
 			continue
 		if i != RULES.SAEBOM:
@@ -3529,7 +3543,16 @@ func update_actors(delta: float) -> void:
 				hunter.present_han_approach_finish((approach-.73)/.27,maxf(0.,approach-.96)*solo_deploy_seconds)
 			if stage_han and running and motion in ["basic",""] and hunter is Frontline.Han:
 				_plant_first_hunt_basic_root(hunter.skeleton,hunter.root_bone)
-			if i==0 and hunter is Frontline.Han:
+			if stage_han and battle_han_view != null:
+				if solo_deploy_clock >= 0.0 and solo_deploy_clock < HanModel.ENTRY_SECONDS:
+					battle_han_view.sample_entry(solo_deploy_clock)
+				elif motion.is_empty():
+					var ready_age := maxf(0.0, solo_deploy_clock - HanModel.ENTRY_SECONDS) if solo_deploy_clock >= 0.0 else manual_combat_clock
+					battle_han_view.show_battle_ready(ready_age)
+				else:
+					var entry := "attack" if motion == "basic" else motion
+					battle_han_view.show_duel_motion(entry, motion_time, duration, true)
+			elif i==0 and hunter is Frontline.Han:
 				if stage_han and running and not approaching and approach>=1.0 and motion=="basic" and pose=="auto_thrust" and rules.outcome.is_empty():
 					HanCombatIdleVisual.basic(hunter,pose_clock)
 				elif stage_han and running and not approaching and approach>=1.0 and motion.is_empty() and rules.outcome.is_empty():
@@ -3890,6 +3913,8 @@ func _tick_first_hunt_drop(delta: float) -> void:
 	if progress<1.0:NativeHud.blend_pose(han.skeleton,first_hunt_victory_pose,progress)
 	han.pivot.position=first_hunt_victory_pivot.lerp(han.pivot.position,progress)
 	han.pivot.rotation.y=lerp_angle(first_hunt_victory_yaw,0.0,progress)
+	if battle_han_view != null:
+		battle_han_view.show_battle_ready(first_hunt_end_age)
 	han.viewport.render_target_update_mode=SubViewport.UPDATE_ONCE
 	hit_age+=delta
 	_update_native_hunt_art(delta,pose_clock)

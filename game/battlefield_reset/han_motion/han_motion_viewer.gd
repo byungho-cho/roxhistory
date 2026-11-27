@@ -1228,11 +1228,28 @@ var model_display_scale := 1.0
 var donor_meshes: Dictionary = {}
 var duel_gait_key := ""
 var duel_gait_origin := Vector2.ZERO
+var approved_weapon: Node3D
+var approved_travel: Node3D
+var approved_back_bone := -1
+var ready_from_entry := false
+var entry_end_pose: Array[Transform3D] = []
+var entry_weapon_pose := Transform3D.IDENTITY
 
 const MODEL_TEST_SCALE := 1.58
 const MODEL_TEST_CAMERA_SIZE := 7.0
 const MODEL_TEST_VIEW_SIZE := Vector2i(960, 720)
 const MODEL_TEST_DISPLAY_FACTOR := .46 / 1.5
+const ENTRY_CLIP := &"meshy116_direct"
+const ENTRY_SECONDS := 2.3
+const ENTRY_SOURCE_DISTANCE := 3.75637
+const ENTRY_CURVE := preload("res://battlefield_reset/han_motion/han-entry-travel.tres")
+const APPROVED_RETOUCH := preload("res://battlefield_reset/han_motion/han-approved-retouch.res")
+const APPROVED_BLADE := "res://battlefield_reset/han_motion/han-approved-stoneblade.glb"
+const APPROVED_BLADE_TIP := Vector3(-.94989, -.001564, -.003134)
+const APPROVED_BACK_SOCKET := Transform3D(
+	Basis(Vector3(-.263041, .338687, .021431), Vector3(.154897, .095695, .388855), Vector3(.301952, .245952, -.180808)),
+	Vector3(.024872, -.185219, -.183101))
+const AUTHOR_MODEL_SCALE := .90593854
 
 # Clip phase and forward distance at the standard model scale, measured from
 # the backward travel of each planted toe. Airborne sections continue the run.
@@ -1249,13 +1266,13 @@ const GAIT_TRAVEL := {
 		Vector2(.800, 1.8543), Vector2(.875, 2.0724), Vector2(.950, 2.3126),
 		Vector2(1.0, 2.4759),
 	],
-	# Right toe supports the first part, then the left toe carries the walk-out.
-	"decel": [
-		Vector2(0.0, 0.0), Vector2(.1111, .1494), Vector2(.3333, .4954),
-		Vector2(.4444, .6634), Vector2(.5000, .6963), Vector2(.6667, .8762),
-		Vector2(.8889, 1.0981), Vector2(1.0, 1.2184),
-	],
 }
+
+static func entry_progress(seconds: float) -> float:
+	return ENTRY_CURVE.sample(clampf(seconds / ENTRY_SECONDS, 0.0, 1.0))
+
+func entry_distance() -> float:
+	return ENTRY_SOURCE_DISTANCE * duel_model.scale.x
 
 func gait_distance(key: String, time: float) -> float:
 	var curve: Array = GAIT_TRAVEL[key]
@@ -1283,6 +1300,7 @@ func _gait_time(key: String, distance: float) -> float:
 
 func reset_duel_gait() -> void:
 	duel_gait_key = ""
+	ready_from_entry = false
 
 static func model_test_projection_ratio(camera: Camera3D, display_scale: float) -> float:
 	var measured_height := camera.unproject_position(Vector3.UP).distance_to(camera.unproject_position(Vector3.ZERO)) * display_scale
@@ -1314,13 +1332,47 @@ func bind_duel(pivot:Node3D,other:Node3D,cam:Camera3D,display_scale := 1.0) -> b
 	ap.callback_mode_process=AnimationMixer.ANIMATION_CALLBACK_MODE_PROCESS_MANUAL
 	duel_model.add_child(ap)
 	library=(load("res://battlefield_reset/han_motion/han-action-library.res") as AnimationLibrary).duplicate(true) as AnimationLibrary
+	for key in APPROVED_RETOUCH.get_animation_list():
+		library.add_animation(key, APPROVED_RETOUCH.get_animation(key))
 	ap.add_animation_library("",library)
-	make_blade()
 	install_grip_shape(duel_model)
+	_setup_approved_equipment()
 	for mesh:MeshInstance3D in original:
 		donor_meshes[mesh] = mesh.visible
 		mesh.hide()
 	return true
+
+func _setup_approved_equipment() -> void:
+	approved_weapon = Node3D.new()
+	approved_weapon.name = "HanWeaponPose"
+	rig.get_parent().add_child(approved_weapon)
+	approved_weapon.add_child((load(APPROVED_BLADE) as PackedScene).instantiate())
+	approved_back_bone = rig.find_bone("Spine")
+	approved_travel = Node3D.new()
+	approved_travel.name = "HanTravel"
+	duel_model.add_child(approved_travel)
+	for player: AnimationPlayer in approved_weapon.find_children("*", "AnimationPlayer", true, false):
+		var glow := player.get_animation("TipFlow")
+		glow.loop_mode = Animation.LOOP_LINEAR
+		player.play("TipFlow")
+	sample_han_clip(ENTRY_CLIP, ENTRY_SECONDS)
+	for joint in rig.get_bone_count():
+		entry_end_pose.append(rig.get_bone_pose(joint))
+	entry_weapon_pose = approved_weapon.transform
+	ap.stop(true)
+	duel_active_key = ""
+
+func sample_entry(time: float) -> void:
+	ready_from_entry = true
+	sample_han_clip(ENTRY_CLIP, time)
+
+func show_battle_ready(time: float) -> void:
+	var blend := smoothstep(0.0, .18, time) if ready_from_entry else 1.0
+	sample_han_clip(&"retouch_guard", fposmod(time, ap.get_animation(&"retouch_guard").length), entry_end_pose, blend)
+	if blend < 1.0:
+		approved_weapon.transform = entry_weapon_pose.interpolate_with(approved_weapon.transform, blend)
+	if blend >= 1.0:
+		ready_from_entry = false
 
 func restore_duel_donor() -> void:
 	for mesh: MeshInstance3D in donor_meshes:
@@ -1337,16 +1389,18 @@ func restore_duel_donor() -> void:
 func show_duel_motion(move:String,clock:float,duration:float,alive:bool,ground_position := Vector3.INF) -> void:
 	if not is_instance_valid(duel_model):return
 	var key: String = {
-		"idle": "ready_idle", "walk": "walk_native", "run": "run_native",
-		"attack": "clear_basic", "skill": "sp2", "chain": "sp3",
-		"hit": "normal_179", "heavy_hit": "heavy_173", "death": "dead",
-	}.get(move, "ready_idle")
+		"idle": "retouch_guard", "walk": "walk_native", "run": "run_native",
+		"attack": "retouch_basic", "skill": "retouch_sp2", "chain": "retouch_chain",
+		"hit": "retouch_hit", "heavy_hit": "retouch_heavy", "death": "retouch_death",
+	}.get(move, "retouch_guard")
 	if not alive:
-		key = "dead"
+		key = "retouch_death"
+	if key == "retouch_guard":
+		duel_gait_key = ""
+		show_battle_ready(clock)
+		return
 	var span := ap.get_animation(key).length
-	var gait := key in ["ready_idle", "walk_native", "run_native"]
-	var start := .72 if key == "heavy_173" else 0.0
-	var time := fposmod(clock, span) if gait else lerpf(start, span, clampf(clock / maxf(.001, duration), 0.0, 1.0))
+	var time := fposmod(clock, span) if GAIT_TRAVEL.has(key) else span * clampf(clock / maxf(.001, duration), 0.0, 1.0)
 	if GAIT_TRAVEL.has(key) and ground_position.is_finite():
 		var ground := Vector2(ground_position.x, ground_position.z)
 		if duel_gait_key != key:
@@ -1355,28 +1409,32 @@ func show_duel_motion(move:String,clock:float,duration:float,alive:bool,ground_p
 		time = _gait_time(key, duel_gait_origin.distance_to(ground))
 	else:
 		reset_duel_gait()
-	sample_han_clip(key,time,gait)
+	sample_han_clip(key, time)
 
-func capture_han_pose(key: String, time: float) -> Array[Transform3D]:
-	sample_han_clip(key, time, true)
-	var pose: Array[Transform3D] = []
-	for joint in rig.get_bone_count():
-		pose.append(rig.get_bone_pose(joint))
-	return pose
+func preview_travel(key: StringName, time: float) -> Vector3:
+	var clip := ap.get_animation(key)
+	var track := clip.find_track(^"HanTravel", Animation.TYPE_POSITION_3D)
+	if track < 0:
+		return Vector3.ZERO
+	return clip.position_track_interpolate(track, time) * model_display_scale
 
-func sample_han_clip(key: String, time: float, ready_grip := false, previous_pose: Array[Transform3D] = [], blend := 1.0) -> void:
+func sample_han_clip(key: StringName, time: float, previous_pose: Array[Transform3D] = [], blend := 1.0) -> void:
 	var span := ap.get_animation(key).length
 	if duel_active_key!=key:
 		duel_active_key=key
+		rig.reset_bone_poses()
 		ap.play(key,0.)
-	ap.seek(minf(span-.00001,time),true)
+	ap.seek(clampf(time, 0.0, span), true)
 	if blend < 1.0:
 		for joint in previous_pose.size():
 			rig.set_bone_pose(joint, previous_pose[joint].interpolate_with(rig.get_bone_pose(joint), blend))
 	rig.force_update_all_bone_transforms()
-	var hand:=bone_world(hand_index)
-	var basis:=hand.basis.orthonormalized()*hand_local_basis
-	if ready_grip:basis=Basis(Quaternion(Vector3.UP,ready_blade_axis()))
-	var palm := hand.origin + hand.basis.orthonormalized() * palm_local * model_display_scale
-	var weapon_basis := basis.scaled(Vector3.ONE * (.90 * model_display_scale))
-	blade.global_transform = Transform3D(weapon_basis, palm + palm_clearance(basis.y) * model_display_scale - weapon_basis * LOW_GRIP)
+	var travel_review := key.begins_with("retouch_travel_")
+	if not key.begins_with("retouch_") or travel_review:
+		var mount := bone_world(approved_back_bone).orthonormalized()
+		# The approved blade is on the back through the travel, then the authored
+		# tracks control its grip during the combat motions.
+		var socket := APPROVED_BACK_SOCKET.scaled(Vector3.ONE * (duel_model.scale.x / AUTHOR_MODEL_SCALE))
+		approved_weapon.global_transform = mount * socket
+		if not travel_review:
+			approved_travel.position = Vector3.ZERO

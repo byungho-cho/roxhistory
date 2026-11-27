@@ -2,10 +2,10 @@ extends "res://scripts/model_test.gd"
 
 const HanModel = preload("res://battlefield_reset/han_motion/han_motion_viewer.gd")
 const CLIPS := [
-	["idle_02_11"], ["listen"], ["talk"], ["angry"], ["cheer"],
-	["walk_native"], ["run_native"], ["decel"], ["meshy_draw222"],
-	["clear_basic"], ["sp2"], ["sp3"], ["normal_179"], ["heavy_173"],
-	["knock_190"], ["story_stand"], ["dead"], ["story_fly", "story_stand"],
+	"retouch_idle", "retouch_listen", "retouch_talk", "retouch_angry", "retouch_cheer",
+	"walk_native", "run_native", HanModel.ENTRY_CLIP, "retouch_ready",
+	"retouch_basic_preview", "retouch_sp2", "retouch_chain", "retouch_hit", "retouch_heavy",
+	"retouch_knockdown", "retouch_stand", "retouch_death", "retouch_flight",
 ]
 const REPEATS := [0, 5, 6]
 const WALK := 5
@@ -14,21 +14,15 @@ const DECELERATE := 7
 const CHAIN := 11
 const KNOCKDOWN := 14
 const FALL_AND_RISE := 17
-const RUN_OUT_PHASE := 26.0 / 36.0
-const WALK_IN_PHASE := 25.0 / 36.0
-const RUN_WALK_BLEND := .10
 const FLIGHT_DISTANCE_MULTIPLIER := 3.0
 
 var han := HybridCharacter.new()
 var model: HanModel
 var floor_label: Label
 var ground_dim: ColorRect
-var neutral_support := 0.0
 var steps: Array[Dictionary] = []
 var reel_duration := 0.0
 var shown_motion := 0
-var run_out_pose: Array[Transform3D]
-var bridge_out_pose: Array[Transform3D]
 
 func build_selectors() -> void:
 	back_button.tooltip_text = ""
@@ -63,10 +57,7 @@ func start_preview() -> void:
 	if not model.bind_duel(han.pivot, null, han.camera):
 		push_error("The approved Han model could not be started")
 		return
-	run_out_pose = model.capture_han_pose("run_native", model.ap.get_animation("run_native").length * RUN_OUT_PHASE)
-	bridge_out_pose = model.capture_han_pose("decel", model.ap.get_animation("decel").length)
-	model.sample_han_clip("idle_02_11", 0.0)
-	neutral_support = model._story_support()
+	model.sample_han_clip(&"retouch_idle", 0.0)
 	ground_dim = ColorRect.new()
 	ground_dim.mouse_filter = MOUSE_FILTER_IGNORE
 	ground_dim.color = Color(0, 0, 0, 0)
@@ -129,48 +120,26 @@ func play_motion(id: String) -> void:
 	reel_duration = 0.0
 	var motion_ids := range(CLIPS.size()) if id == "full" else [id.to_int() - 1]
 	for index in motion_ids:
-		if index == DECELERATE:
-			_append_run_to_walk()
-			continue
-		if id == "full" and index in [WALK, RUN]:
-			continue
-		for clip: String in CLIPS[index]:
-			var length := model.ap.get_animation(clip).length
-			var begin := .72 if clip in ["heavy_173", "knock_190"] else 0.0
-			var finish := minf(length, 1.78) if clip == "meshy_draw222" else length
-			var repeated: bool = index in [WALK, RUN] and route
-			var span := (finish - begin) * (2.0 if repeated else 1.0)
-			if index == CHAIN:
-				span = HanModel.cinematic_duration(length)
-			elif clip == "story_fly":
-				span = HanModel.STORY_FLY_SECONDS
-			_append_step(index, clip, begin, finish - begin, span, repeated)
+		var clip := StringName(CLIPS[index])
+		if route and index in [WALK, RUN]:
+			clip = &"retouch_travel_walk" if index == WALK else &"retouch_travel_run"
+		_append_step(index, clip, model.ap.get_animation(clip).length)
 	render_frame()
 	refresh()
 
-func _append_run_to_walk() -> void:
-	var run_period := model.ap.get_animation("run_native").length
-	var run_span := run_period * 1.8
-	var run_start := fposmod(run_period * RUN_OUT_PHASE - run_span, run_period)
-	var bridge_span := model.ap.get_animation("decel").length
-	var walk_period := model.ap.get_animation("walk_native").length
-	_append_step(RUN, "run_native", run_start, run_period, run_span, true)
-	_append_step(DECELERATE, "decel", 0.0, bridge_span, bridge_span, false, run_out_pose)
-	_append_step(WALK, "walk_native", walk_period * WALK_IN_PHASE, walk_period, walk_period * 1.15, true, bridge_out_pose)
-
-func _append_step(index: int, clip: String, begin: float, length: float, span: float, repeated: bool, previous_pose: Array[Transform3D] = []) -> void:
+func _append_step(index: int, clip: StringName, length: float) -> void:
 	var distance: float = 0.0 if steps.is_empty() else steps.back().to
 	var end_distance := distance
-	if route and HanModel.GAIT_TRAVEL.has(clip):
-		end_distance += model.gait_distance(clip, begin + span) - model.gait_distance(clip, begin)
-	elif route and clip == "story_fly":
-		end_distance -= HanModel.story_flight_retreat(1.0) * FLIGHT_DISTANCE_MULTIPLIER
+	if route and clip == HanModel.ENTRY_CLIP:
+		end_distance += model.entry_distance()
+	elif route and (index == FALL_AND_RISE or index in [WALK, RUN]):
+		end_distance += model.preview_travel(clip, length).z * (FLIGHT_DISTANCE_MULTIPLIER if index == FALL_AND_RISE else 1.0)
 	steps.append({
-		"index": index, "clip": clip, "begin": begin, "length": length,
-		"start": reel_duration, "until": reel_duration + span, "repeated": repeated,
-		"from": distance, "to": end_distance, "previous_pose": previous_pose,
+		"index": index, "clip": clip, "length": length,
+		"start": reel_duration, "until": reel_duration + length,
+		"from": distance, "to": end_distance,
 	})
-	reel_duration += span
+	reel_duration += length
 
 func _route_space(distance: float) -> Vector2:
 	var world := han.pivot.basis.z * distance
@@ -190,44 +159,29 @@ func render_frame() -> void:
 	var offset := clampf(local_time - step.start, 0.0, step.until - step.start)
 	var complete := not loop and age >= reel_duration
 	var return_idle: bool = complete and (selection == "full" or step.index not in [KNOCKDOWN, 16])
-	var progress := offset / maxf(.001, step.until - step.start)
-	if step.clip == "story_fly":
-		progress = HanModel.story_flight_retreat(HanModel.story_flight_clock(offset)) / HanModel.story_flight_retreat(1.0)
-	var distance := lerpf(step.from, step.to, progress)
-	if route and HanModel.GAIT_TRAVEL.has(step.clip):
-		distance = step.from + model.gait_distance(step.clip, step.begin + offset) - model.gait_distance(step.clip, step.begin)
+	var distance: float = step.from
+	var travel := model.preview_travel(step.clip, offset) if route or step.index == FALL_AND_RISE else Vector3.ZERO
+	if route and step.index == DECELERATE:
+		distance = lerpf(step.from, step.to, HanModel.entry_progress(offset))
+	elif route:
+		distance += travel.z * (FLIGHT_DISTANCE_MULTIPLIER if step.index == FALL_AND_RISE else 1.0)
 	var center_offset: float = steps.back().to * .5 if selection == "08" else 0.0
 	han.position = Vector2(field.size.x * .5, field.size.y * .55) + _route_space(distance - center_offset)
 	floor_label.position = han.position + Vector2(-41, 17)
-	han.pivot.position.y = 0.0
+	han.pivot.position.y = travel.y
 	ground_dim.color.a = HanModel.cinematic_dim_alpha(offset) if step.index == CHAIN and not return_idle else 0.0
 	if return_idle:
-		var idle_length := model.ap.get_animation("idle_02_11").length
-		model.sample_han_clip("idle_02_11", fposmod(age - reel_duration, idle_length))
+		var idle := &"retouch_guard" if step.index >= DECELERATE else &"retouch_idle"
+		if step.index == DECELERATE:
+			model.ready_from_entry = true
+			model.show_battle_ready(age - reel_duration)
+		else:
+			model.sample_han_clip(idle, fposmod(age - reel_duration, model.ap.get_animation(idle).length))
 	else:
-		_sample_step(step, offset)
+		model.sample_han_clip(step.clip, offset)
 	shown_motion = int(step.index) + 1
 	var label := "대기" if return_idle else motion_title(step.index)
 	motion_status.text = "%s · %s배속" % [label, rate]
-
-func _sample_step(step: Dictionary, time: float) -> void:
-	var clip_time: float = step.begin + time
-	if step.repeated:
-		clip_time = fposmod(clip_time, step.length)
-	if step.index == CHAIN:
-		clip_time = HanModel.cinematic_motion_time(time)
-	elif step.clip == "story_fly":
-		var motion_time := HanModel.story_flight_clock(time)
-		clip_time = .16 + minf(motion_time, .58) * 1.20
-	var blend := 1.0 if step.previous_pose.is_empty() else smoothstep(0.0, RUN_WALK_BLEND, time)
-	model.sample_han_clip(step.clip, clip_time, step.index in [WALK, RUN, DECELERATE, 8], step.previous_pose, blend)
-	if step.clip == "story_fly":
-		var motion_time := HanModel.story_flight_clock(time)
-		var lift := HanModel.story_flight_height(motion_time) - .20 * smoothstep(.43, .60, motion_time)
-		han.pivot.position.y = clampf(neutral_support + lift - model._story_support(), -.9, 1.05)
-	elif step.index == FALL_AND_RISE and step.clip == "story_stand":
-		var floor_blend := .23 * (1.0 - smoothstep(.2, 1.24, time))
-		han.pivot.position.y = clampf(neutral_support - model._story_support() - floor_blend, -.9, .9)
 
 func refresh() -> void:
 	for id in motion_buttons:

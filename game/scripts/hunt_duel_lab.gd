@@ -24,6 +24,7 @@ const FOREST_BATTLE_SCALE := .82588
 # Local experiment: only this default lab matchup opts into grouped movement.
 const APPROACH_TRAVEL := .88
 const APPROACH_END := 1.04
+const ApprovedHan = preload("res://battlefield_reset/han_motion/han_motion_viewer.gd")
 const REVIVAL_ENTRANCE_SCALE := 1.30
 const SHARED_REVIVAL_DELAY := 1.38
 const HAN_SKILL_WINDUP_RATE := 3.25
@@ -1675,8 +1676,11 @@ func _advance_shared(delta:float)->void:
 		if approach_active:
 			for side in 2:age[side]+=dt
 			shared_world.step(self,dt)
-			if visual_clock>=APPROACH_TRAVEL*entrance_scale and motion[0]=="run":_react(0,"idle");_react(1,"idle")
-			if visual_clock+.000001>=APPROACH_END*entrance_scale:approach_active=false
+			var authored_entry := uses_approved_han_entry()
+			var arrives_at := ApprovedHan.ENTRY_SECONDS if authored_entry else APPROACH_TRAVEL * entrance_scale
+			var ready_at := ApprovedHan.ENTRY_SECONDS if authored_entry else APPROACH_END * entrance_scale
+			if visual_clock+.000001>=arrives_at and motion[0]=="run":_react(0,"idle");_react(1,"idle")
+			if visual_clock+.000001>=ready_at:approach_active=false
 			_advance_ground_wave(dt)
 			_render_actors(dt);_refresh();continue
 		if not rules.advance(wall).is_empty():reset_round(true);return
@@ -1876,6 +1880,8 @@ func _draw_location_rings()->void:
 func _han_tip_light_position()->Vector2:
 	if local_melee_polish and rules.ally_id!="hangyeol":return Vector2.INF
 	if (not is_instance_valid(shared_world) and not _han_fallback()) or rules.hp[0]<=0:return Vector2.INF
+	if _has_bound_han_model():
+		return shared_world.project(han_ultra.approved_weapon.to_global(ApprovedHan.APPROVED_BLADE_TIP))
 	return presentation.spear_point(a)
 
 func _silver_deer_active()->bool:
@@ -3072,18 +3078,24 @@ func _local_floor_heading(cam:Camera3D,screen_dir:Vector2)->float:
 	return atan2(world.x,world.y)
 var han_ultra
 
+func uses_approved_han_entry() -> bool:
+	return app != null and get_script().resource_path == "res://scripts/hunt_duel_lab.gd" and show_final_test35 and a.key == "hangyeol" and b.key == "forest"
+
+func entrance_progress() -> float:
+	return ApprovedHan.entry_progress(visual_clock) if uses_approved_han_entry() else smoothstep(0.0, APPROACH_TRAVEL * entrance_scale, visual_clock)
+
 func _has_bound_han_model() -> bool:
 	return is_instance_valid(han_ultra) and is_instance_valid(han_ultra.duel_model) and han_ultra.duel_model.get_parent() == a.preview.pivot
 
 func _present_han_ultra() -> void:
-	if app==null or get_script().resource_path!="res://scripts/hunt_duel_lab.gd" or not show_final_test35 or a.key!="hangyeol" or b.key!="forest":return
+	if not uses_approved_han_entry():return
 	if is_instance_valid(han_ultra) and not _has_bound_han_model():
 		han_ultra.restore_duel_donor()
 		han_ultra.queue_free()
 		han_ultra = null
 	if not is_instance_valid(han_ultra):
 		HanStrongHitVisual.restore(a.preview)
-		var binder = load("res://battlefield_reset/han_motion/han_motion_viewer.gd").new()
+		var binder := ApprovedHan.new()
 		binder.duel_binding = true
 		add_child(binder)
 		var scale: float = binder.model_test_projection_ratio(shared_world.camera, shared_world.display.scale.y)
@@ -3091,10 +3103,11 @@ func _present_han_ultra() -> void:
 			binder.queue_free()
 			return
 		han_ultra=binder
-	var key: String = a.sampled_motion if approach_active else motion[0]
-	var pose_age := _visual_age(0)
 	if approach_active:
-		pose_age /= entrance_scale
+		han_ultra.sample_entry(visual_clock)
+		return
+	var key: String = motion[0]
+	var pose_age := _visual_age(0)
 	var alive: bool = rules.hp[0] > 0
 	var strong_age := visual_clock - han_strong_hit_started
 	var strong_duration := HanStrongHitVisual.HEAVY.length

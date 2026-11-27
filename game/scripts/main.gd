@@ -46,6 +46,7 @@ const HUNT_READINESS_ART := preload("res://scripts/hunt_readiness_art.gd")
 const HUNT_PREP_MODELS := [
 	"res://battlefield_reset/han_motion/Han-Battle-Ultra-Rigged-12k.glb",
 	"res://battlefield_reset/han_motion/han-action-library.res",
+	"res://battlefield_reset/han_motion/han-approved-stoneblade.glb",
 	"res://assets/characters/res050/hangyeol-latest.glb",
 	"res://assets/characters/res050/uram-latest.glb",
 	"res://assets/characters/res050/saebom-latest.glb",

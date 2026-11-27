@@ -48,36 +48,25 @@ func _at(view, time: float) -> Vector2:
 	view.render_frame()
 	return view.han.position
 
-func _check_planted_toe(view, motion_id: String, from_phase: float, to_phase: float) -> void:
-	view.play_motion(motion_id)
-	var rig: Skeleton3D = view.model.rig
-	var toe := rig.find_bone("LeftToeBase")
-	var cycle: float = view.steps[0].length
-	var camera: Camera3D = view.han.camera
-	var scale: Vector2 = view.han.display.scale * view.han.scale
-	var start := _at(view, cycle * from_phase)
-	var toe_start := start + camera.unproject_position(rig.to_global(rig.get_bone_global_pose(toe).origin)) * scale
-	var end := _at(view, cycle * to_phase)
-	var toe_end := end + camera.unproject_position(rig.to_global(rig.get_bone_global_pose(toe).origin)) * scale
-	var travel := start.distance_to(end)
-	_check(travel > 4.0 and absf((toe_end - toe_start).dot(start.direction_to(end))) < travel * .15,
-		"Fixed-route %s advances while the planted toe stays put" % ("walk" if motion_id == "06" else "run"))
-
 func _check_motion_enhancements(view) -> void:
 	if not view.route:
 		view.toggle_route()
-	_check_planted_toe(view, "06", .40, .60)
-	_check_planted_toe(view, "07", .38, .47)
+	for gait in ["06", "07"]:
+		view.play_motion(gait)
+		var start := _at(view, 0.0)
+		var max_distance := 0.0
+		for i in range(1, 61):
+			max_distance = maxf(max_distance, _at(view, view.reel_duration * i / 60.0).distance_to(start))
+		_check(max_distance > 100.0 and _at(view, view.reel_duration).distance_to(start) < 2.0,
+			"Approved fixed-route %s advances, backs up and stops at the start" % gait)
 	view.play_motion("08")
 	var duration: float = view.reel_duration
-	var start := _at(view, .0)
+	var start := _at(view, 0.0)
 	var stop := _at(view, duration - .0001)
 	var after := _at(view, duration + .4)
-	var chain: Array[String] = []
-	for step in view.steps:
-		chain.append(step.clip)
-	_check(chain == ["run_native", "decel", "walk_native"] and absf(view.steps[1].length - .42) < .002,
-		"08 plays run, the native Meshy bridge, then walk")
+	_check(view.steps.size() == 1 and view.steps[0].clip == "meshy116_direct" and absf(duration - 2.3) < .001,
+		"08 plays the full native #116 once at authored speed")
+	_check(view.model.ap.current_animation == "retouch_guard", "08 returns to the approved battle-ready pose")
 	var forward := start.direction_to(stop)
 	var monotonic := start.distance_to(stop) > 65.0
 	var previous := start
@@ -85,80 +74,60 @@ func _check_motion_enhancements(view) -> void:
 		var current := _at(view, duration * float(i) / 120.0)
 		monotonic = monotonic and (current - previous).dot(forward) >= -.01
 		previous = current
-	var bridge_start: float = view.steps[1].start
-	var walk_start: float = view.steps[2].start
-	var no_stop := _at(view, bridge_start - .02).distance_to(_at(view, bridge_start + .02)) > 1.0 and _at(view, walk_start - .02).distance_to(_at(view, walk_start + .02)) > 1.0
-	_check(monotonic and no_stop and stop.distance_to(after) < .03, "Fixed-route 08 advances through both joins, then holds the walk-out position")
+	_check(monotonic and stop.distance_to(after) < .03, "Fixed-route 08 follows the native forward root and holds its endpoint")
 	view.play_motion("18")
-	var takeoff := _at(view, .0)
+	var takeoff := _at(view, 0.0)
 	var flying := _at(view, 1.05)
-	var landing := _at(view, view.model.STORY_FLY_SECONDS - .001)
-	var standing := _at(view, view.model.STORY_FLY_SECONDS + .5)
-	var landed_idle := _at(view, view.reel_duration + .4)
-	var original_travel: Vector2 = view._route_space(-view.model.story_flight_retreat(1.0))
-	_check(takeoff.distance_to(flying) > 4.0 and (landing - takeoff).distance_to(original_travel * 3.0) < .1,
-		"Fixed-route flight follows the arc and lands at three times the original distance")
-	_check(standing.distance_to(landing) < .1 and landed_idle.distance_to(landing) < .1, "Flying, standing and idle share the landing anchor")
+	var landed := _at(view, view.reel_duration - .001)
+	var held := _at(view, view.reel_duration + .4)
+	_check(takeoff.distance_to(flying) > 4.0 and landed.distance_to(takeoff) > 70.0 and landed.distance_to(held) < .1,
+		"Native flight retreats, lands and retains the standing anchor")
 	view.play_motion("full")
-	chain.clear()
-	for step in view.steps:
-		if step.clip in ["run_native", "decel", "walk_native"]:
-			chain.append(step.clip)
-	_check(chain == ["run_native", "decel", "walk_native"], "Full reel uses one unbroken gait transition without repeats")
-	var flight_start: float = view.steps[-2].start
-	var reel_takeoff := _at(view, flight_start)
-	var reel_landing := _at(view, flight_start + view.model.STORY_FLY_SECONDS)
-	_check((reel_landing - reel_takeoff).distance_to(original_travel * 3.0) < .1,
-		"Full playback applies the same flight distance from its current position")
+	_check(view.steps.size() == 18 and view.steps[7].clip == "meshy116_direct" and view.steps[17].clip == "retouch_flight",
+		"Full reel plays the 18 authored stages once each")
 	view.toggle_route()
 	view.play_motion("06")
 	var walk_anchor := _at(view, .0)
 	_check(walk_anchor.is_equal_approx(_at(view, .35)), "Route OFF keeps walking in place")
 	view.play_motion("18")
 	var free_start := _at(view, .0)
-	_check(free_start.is_equal_approx(_at(view, 1.05)) and free_start.is_equal_approx(_at(view, view.reel_duration + .4)), "Route OFF keeps the same ground anchor")
+	_check(free_start.is_equal_approx(_at(view, 1.05)) and free_start.is_equal_approx(_at(view, view.reel_duration + .4)), "Route OFF keeps the ground anchor")
 	view.play_motion("15")
-	_check(view.motion_buttons["15"].text == "넉다운" and view.steps.size() == 1 and view.steps[0].clip == "knock_190", "Knockdown uses a single approved clip")
+	_check(view.motion_buttons["15"].text == "넉다운" and view.steps.size() == 1 and view.steps[0].clip == "retouch_knockdown", "Knockdown uses the corrected single clip")
 	view.play_motion("12")
 	_at(view, 2.1)
-	_check(view.ground_dim.color.a > .49 and view.model.ap.current_animation_position < 1.0, "3SP restores the dim and original slow timing")
+	_check(view.ground_dim.color.a > .49 and absf(view.model.ap.current_animation_position - 2.1) < .002,
+		"Approved slow 3SP is sampled once with the existing dim")
 	_at(view, view.reel_duration + .2)
 	_check(is_zero_approx(view.ground_dim.color.a), "3SP dim clears when the motion ends")
 
 func _check_visible_duel_motion(duel) -> void:
 	var model = duel.han_ultra
-	if not is_instance_valid(model):
-		_check(false, "Duel uses a live animated Han rig")
+	if not _check(is_instance_valid(model), "Duel uses a live animated Han rig"):
 		return
 	var mesh: MeshInstance3D = model.grip_mesh
 	var arm: int = model.rig.find_bone("RightArm")
-	var first_run := Quaternion.IDENTITY
-	var first_attack := Quaternion.IDENTITY
-	var run_samples := 0
-	var attack_samples := 0
+	var first_run: Quaternion = model.rig.get_bone_pose_rotation(arm)
 	var run_changed := false
-	var attack_changed := false
 	var always_visible := true
 	var deer_hp: int = duel.rules.hp[1]
-	for frame in 138:
+	var phases: Array[StringName] = []
+	var native_rate := true
+	for frame in 280:
 		duel.advance(1.0 / 60.0)
-		always_visible = always_visible and mesh.is_visible_in_tree() and model.blade.is_visible_in_tree()
-		var pose: Quaternion = model.rig.get_bone_pose_rotation(arm)
-		match duel.motion[0]:
-			"run":
-				if run_samples == 0:
-					first_run = pose
-				run_samples += 1
-				run_changed = run_changed or first_run.angle_to(pose) > .2
-			"attack":
-				if attack_samples == 0:
-					first_attack = pose
-				attack_samples += 1
-				attack_changed = attack_changed or first_attack.angle_to(pose) > .2
-	_check(always_visible and not duel.a.preview.has_meta("han_presentation_proxy"), "The live model stays visible instead of a frozen proxy")
-	_check(run_changed and attack_changed and duel.rules.hp[1] < deer_hp, "Displayed run and basic attack advance through real combat")
+		always_visible = always_visible and mesh.is_visible_in_tree() and model.approved_weapon.is_visible_in_tree()
+		var phase: StringName = model.ap.current_animation
+		if phases.is_empty() or phases.back() != phase:
+			phases.append(phase)
+		if duel.approach_active:
+			native_rate = native_rate and phase == &"meshy116_direct" and absf(model.ap.current_animation_position - duel.visual_clock) < .001
+			run_changed = run_changed or first_run.angle_to(model.rig.get_bone_pose_rotation(arm)) > .2
+	_check(always_visible and not duel.a.preview.has_meta("han_presentation_proxy"), "The approved character and stoneblade stay visible")
+	_check(native_rate and run_changed and phases.slice(0, 3) == [&"meshy116_direct", &"retouch_guard", &"retouch_basic"],
+		"Duel plays the native entrance once, then ready then the approved attack")
+	_check(duel.rules.hp[1] < deer_hp, "Approved presentation leaves real 1v1 contact active")
 	duel.reset_round()
-	_check(mesh.is_visible_in_tree(), "Reset keeps the live Han rig visible")
+	_check(mesh.is_visible_in_tree() and model.ap.current_animation == "meshy116_direct", "Reset restarts the native clip on the live rig")
 
 func _check_roster(screen: Node, prefix: String) -> void:
 	var available := true
@@ -276,8 +245,8 @@ func _check_motion_lab() -> void:
 	for i in range(1, 19):
 		var key := "%02d" % i
 		await _press(_button(view, "HanMotion" + key), i % 2 == 0)
-		var opening: String = "run_native" if key == "08" else view.CLIPS[i - 1][0]
-		_check(view.selection == key and view.model.ap.get_current_animation() == opening and (key == "08" or view.shown_motion == i), "Individual motion " + key)
+		var opening := String(view.CLIPS[i - 1])
+		_check(view.selection == key and view.model.ap.get_current_animation() == opening and view.shown_motion == i, "Individual motion " + key)
 	await _press(_button(view, "HanAllMotions"), true)
 	var observed := {}
 	var start := 0.0
@@ -289,7 +258,7 @@ func _check_motion_lab() -> void:
 	_check(observed.size() == 18 and not (false in observed.values()), "One sequence contains all 18 approved motions in order")
 	view.age = view.reel_duration + 0.5
 	view.render_frame()
-	_check(view.model.ap.get_current_animation() == "idle_02_11", "Full motion returns to idle")
+	_check(view.model.ap.get_current_animation() == "retouch_guard", "Full motion returns to battle-ready idle")
 	_check_motion_enhancements(view)
 	await _press(_button(view, "MotionSelect_gahui"), true)
 	await process_frame

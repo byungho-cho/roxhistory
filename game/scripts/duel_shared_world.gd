@@ -679,7 +679,7 @@ func step(lab,delta:float,prior_han_age:float=-1.0)->Array[Dictionary]:
 		var toward:Vector3=bodies[1-side].position-bodies[side].position;toward.y=0
 		var distance:=toward.length();toward=toward.normalized()
 		if lab.approach_active:
-			var gap:=lerpf(START_DISTANCE,URAM_FOREST_GAP if uram_forest_pair else URAM_PAIR_GAP if uram_pair else SAEBOM_GAP if saebom_pair else ENGAGE_DISTANCE,smoothstep(0,lab.APPROACH_TRAVEL*lab.entrance_scale,lab.visual_clock))
+			var gap:=lerpf(START_DISTANCE,URAM_FOREST_GAP if uram_forest_pair else URAM_PAIR_GAP if uram_pair else SAEBOM_GAP if saebom_pair else ENGAGE_DISTANCE,lab.entrance_progress())
 			desired[side]=direction*gap*.5*(-1 if side==0 else 1)
 		elif uram_forest_pair and key=="run" and lab.rules.living() and not lab._local_ram_busy():
 			if side==1 and distance<LOCAL_BASIC_READY_MIN:
