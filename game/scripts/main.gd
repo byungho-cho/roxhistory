@@ -44,6 +44,8 @@ var hunt_preparing := false
 const HUNT_PRELOADER := preload("res://scripts/hunt_resource_preload.gd")
 const HUNT_READINESS_ART := preload("res://scripts/hunt_readiness_art.gd")
 const HUNT_PREP_MODELS := [
+	"res://battlefield_reset/han_motion/Han-Battle-Ultra-Rigged-12k.glb",
+	"res://battlefield_reset/han_motion/han-action-library.res",
 	"res://assets/characters/res050/hangyeol-latest.glb",
 	"res://assets/characters/res050/uram-latest.glb",
 	"res://assets/characters/res050/saebom-latest.glb",
@@ -673,7 +675,8 @@ func check_title_update(manual:=false) -> void:
 	title_update_in_flight = true
 	updates.title_active = true
 	updates.checked_title = true
-	var url := str(updates.channel_root if updates.has_method("begin_manifest_check") else updates.RELEASE_ROOT)+"latest.json?check="+str(Time.get_unix_time_from_system())
+	var root_url: Variant = updates.get("channel_root")
+	var url := str(updates.RELEASE_ROOT if root_url == null else root_url)+"latest.json?check="+str(Time.get_unix_time_from_system())
 	if updates.has_method("begin_manifest_check"):
 		if not updates.begin_manifest_check(url):finish_title_update_check()
 		return
@@ -2090,11 +2093,6 @@ func begin_lab(lab: Control) -> void:
 	stage.hide()
 	ui.add_child(parry_lab)
 
-func open_gahui_hunt_from_lab() -> void:
-	var packed := load("res://gahui_trial/gahui_hunt_test.tscn") as PackedScene
-	if packed != null:
-		_replace_active_hunt_lab(packed.instantiate())
-
 func new_one_on_one_lab() -> Control:
 	var duel = preload("res://scenes/hunt_duel_lab.tscn").instantiate()
 	duel.show_final_test35 = true
@@ -2104,7 +2102,7 @@ func start_one_on_one_lab() -> void:
 	if can_open_lab():
 		begin_lab(new_one_on_one_lab())
 
-func open_one_on_one_from_gahui_lab() -> void:
+func return_to_one_on_one_lab() -> void:
 	_replace_active_hunt_lab(new_one_on_one_lab())
 
 func _replace_active_hunt_lab(trial: Control) -> void:
@@ -2137,14 +2135,13 @@ func add_parry_lab_entry(at: Vector2) -> void:
 	var flask := button(stage,"",start_one_on_one_lab,false,"","")
 	flask.name = "DuelTestEntry"
 	flask.tooltip_text = "실험실 · 1대1 전투"
-	picture(flask,preload("res://assets/ui/d0031/lab-flask.png"),Rect2(8,8,32,32))
+	picture(flask,preload("res://assets/ui/hero-level-up/gahui-portrait-original.png"),Rect2(9,9,30,30))
 	var gahui := button(stage,"",start_gahui_hunt,false,"","")
 	gahui.name = "GahuiLabEntry"
 	gahui.tooltip_text = "가희 모션 실험실"
-	picture(gahui,preload("res://assets/ui/hero-level-up/gahui-portrait-original.png"),Rect2(9,9,30,30))
-	# Reuse the old second lab row and leave the original duel entry in its original slot.
+	picture(gahui,preload("res://assets/ui/d0031/lab-flask.png"),Rect2(8,8,32,32))
 	debug_shortcut.position.y += 57
-	for entry in [[flask, at, preload("res://assets/ui/d0060/round-silver.svg")], [gahui, at+Vector2(0,57), preload("res://assets/ui/d0060/round-gold.svg")]]:
+	for entry in [[gahui, at, preload("res://assets/ui/d0060/round-silver.svg")], [flask, at+Vector2(0,57), preload("res://assets/ui/d0060/round-gold.svg")]]:
 		var control: DemoButton = entry[0]
 		control.custom_minimum_size = Vector2.ZERO
 		control.position = entry[1]

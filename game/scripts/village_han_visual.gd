@@ -147,4 +147,4 @@ func animate(delta: float,movement: Vector2,_phase: float,walking: bool,action: 
 
 func tool_contact_world() -> Vector2:
 	var point := gather_head.to_global(EDGE)
-	return global_position+display.position+camera.unproject_position(point)*display.scale
+	return display.to_global(camera.unproject_position(point))

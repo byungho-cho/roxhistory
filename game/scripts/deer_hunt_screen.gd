@@ -17,6 +17,8 @@ const CampaignSaebomPrepFx := preload("res://scripts/hunt_campaign_saebom_fx.gd"
 var prep_shield_stock: Mesh
 var prep_shield_handles: Array[Node] = []
 var prep_club_visible := false
+const HanModel = preload("res://battlefield_reset/han_motion/han_motion_viewer.gd")
+var prep_han_view: HanModel
 var prep_saebom_view: CampaignSaebomPrep
 var prep_saebom_donor_layers: Dictionary = {}
 var prep_saebom_knife: Node2D
@@ -556,6 +558,14 @@ static func battlefield_ground_heading(cam:Camera3D,d:Vector2)->float:
 	return atan2(ground.x,ground.y)
 
 func _setup_prep_equipment() -> void:
+	var han := hunters[0]
+	var han_view := HanModel.new()
+	han_view.duel_binding = true
+	han.add_child(han_view)
+	if han_view.bind_duel(han.pivot, null, han.camera):
+		prep_han_view = han_view
+	else:
+		han_view.queue_free()
 	if prep_ally_count >= 2:
 		var tank := hunters[1] as Frontline.Uram
 		prep_club_visible = tank.club.visible
@@ -583,7 +593,7 @@ func _draw_prep_saebom_knife() -> void:
 	if prep_saebom_view != null and prep_saebom_view.view.visible:
 		CampaignSaebomPrepFx.held_blade(prep_saebom_knife, prep_saebom_view.palm(), prep_saebom_view.forward_screen())
 	var han := hunters[0] as Frontline.Han
-	if is_instance_valid(han) and han.visible and han.has_spear_anchor():
+	if prep_han_view == null and is_instance_valid(han) and han.visible and han.has_spear_anchor():
 		var tip := prep_saebom_knife.to_local(han.spear_tip_world())
 		var wrist3d := han.skeleton.to_global(han.skeleton.get_bone_global_pose(han.hand_index).origin)
 		var wrist := prep_saebom_knife.to_local(han.display.to_global(han.camera.unproject_position(wrist3d)))
@@ -592,6 +602,10 @@ func _draw_prep_saebom_knife() -> void:
 		EquipmentGleam.shield(prep_saebom_knife,prey_art.soft,hunters[1])
 
 func _end_prep_equipment() -> void:
+	if prep_han_view != null:
+		prep_han_view.restore_duel_donor()
+		prep_han_view.queue_free()
+		prep_han_view = null
 	if prep_shield_stock != null:
 		var tank := hunters[1] as Frontline.Uram
 		tank.prep_shield_face_camera = false
@@ -3549,6 +3563,8 @@ func update_actors(delta: float) -> void:
 		hunter.visible=i<prep_ally_count
 		hunter_markers[i].visible = arrival_finished and hunter.visible
 		hunter_field_bars[i].get_parent().visible = approach>=1.0
+	if prep_han_view != null:
+		prep_han_view.show_duel_motion("idle", pose_clock, 1.0, true)
 	if prep_saebom_view != null:
 		prep_saebom_view.sync("idle", pose_clock, 1.0)
 	if is_instance_valid(prep_saebom_knife): prep_saebom_knife.queue_redraw()

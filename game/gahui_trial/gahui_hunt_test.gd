@@ -28,8 +28,6 @@ var stag_actor
 var subject := 0
 var deer_action := "idle"
 var sequence_index := 0
-var subject_buttons: Array[Button] = []
-var deer_buttons: Array[Button] = []
 var impact_elapsed := 0.0
 var close_button: Button
 var run_walk_button: Button
@@ -60,7 +58,9 @@ func _install_gahui():
   if c!=field and c is CanvasItem: c.hide()
  for c in field.get_children():
   if c!=shared_world and c is CanvasItem: c.hide()
+ a.preview.set_enabled(false)
  a.preview.pivot.hide()
+ a.preview.pivot.queue_free()
  b.play("idle")
  shared_world.bodies[1].position = DEER_ORIGIN
  b.preview.pivot.rotation.y = -1.4
@@ -96,10 +96,7 @@ func _install_gahui():
  field.add_child(drill_deer_fx)
  drill_deer_fx.draw.connect(_draw_drill_deer_fx)
  _plaque(Rect2(26,18,628,45))
- subject_buttons.append(_lab_button("가희",Rect2(32,24,83,33),_select_subject.bind(0)))
- subject_buttons.append(_lab_button("꽃사슴",Rect2(121,24,83,33),_select_subject.bind(1)))
- subject_buttons.append(_lab_button("\uC22B\uC0AC\uC2B4",Rect2(210,24,83,33),_select_subject.bind(2)))
- mode_label = _label("",Rect2(297,18,337,45),18)
+ mode_label = _label("",Rect2(32,18,456,45),18)
  mode_label.horizontal_alignment=HORIZONTAL_ALIGNMENT_LEFT
  mode_label.position.x+=13
  help_label=_label("모션 확인용 · 실제 피해와 치유 수치는 적용하지 않습니다",Rect2(90,454,780,27),15)
@@ -117,17 +114,7 @@ func _install_gahui():
  drill_buttons.append(_lab_button("전체 재생",Rect2(left,491,104,32),_start_all))
  run_walk_button=_lab_button("달리기 → 걷기",Rect2(508,20,154,34),_on_run_to_walk)
  run_walk_button.name="GahuiRunToWalk"
- if app != null:
-  var one_on_one := _lab_button("1대1 전투 테스트",Rect2(727,20,134,34),func():app.call_deferred("open_one_on_one_from_gahui_lab"))
-  one_on_one.name="OneOnOneEntry"
  close_button=_lab_button("닫기",Rect2(874,20,60,34),_exit)
- var deer_left := 113
- var deer_widths := [64,64,76,67,114,100,92,112]
- for i in DEER_LABELS.size():
-  var width: int=deer_widths[i]
-  deer_buttons.append(_lab_button(DEER_LABELS[i],Rect2(deer_left,491,width,32),_on_deer_action.bind(i)))
-  deer_left+=width+4
- deer_buttons.append(_lab_button("전체 재생",Rect2(deer_left,491,deer_widths[-1],32),_start_all))
  _select_subject(0)
  arena.show()
  recording = "--record" in OS.get_cmdline_user_args()
@@ -191,12 +178,9 @@ func _select_subject(next:int) -> void:
  deer.reset()
  deer.play("idle")
  deer.sample(0.0)
- for i in subject_buttons.size():
-  subject_buttons[i].disabled=i==subject
  run_walk_button.visible=subject==0
  run_walk_elapsed=-1.0
  for button in drill_buttons:button.visible=subject==0
- for button in deer_buttons:button.visible=subject!=0
  help_label.text="두 캐릭터가 마주 보는 동작 실험실 · 본편 전투와 저장에는 영향이 없습니다"
  if subject==0:_play(0)
  else:_play_deer("idle")
@@ -404,7 +388,7 @@ func _verify_gahui():
  var deer_seen:=0
  _select_subject(1)
  for i in DEER_IDS.size():
-  deer_buttons[i].pressed.emit()
+  _on_deer_action(i)
   if deer_action!=DEER_IDS[i]:continue
   deer.sample(0.0)
   deer.sample(float(deer.duration))
@@ -415,12 +399,12 @@ func _verify_gahui():
   _process(float(deer.duration)+.02)
   passed_series=deer_action=="attack"
  _select_subject(0)
- var tabs_restore:=subject_buttons[0].disabled and drill_buttons[0].visible and not deer_buttons[0].visible
+ var tabs_restore:=subject==0 and drill_buttons[0].visible
  if deer_seen!=7 or not passed_series or not tabs_restore:
   printerr("DEER_LAB_QA failed ",deer_seen," ",passed_series," ",tabs_restore)
   get_tree().quit(7)
   return
- print("DEER_LAB_QA PASS ",deer_seen," motions, sequence and tabs")
+ print("DEER_LAB_QA PASS ",deer_seen," motions, sequence and Gahui default")
  print("GAHUI_QA PASS")
  get_tree().quit()
 

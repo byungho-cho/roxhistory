@@ -397,13 +397,9 @@ func _ready() -> void:
 
 	_setup_ui()
 	if app!=null and get_script().resource_path=="res://scripts/hunt_duel_lab.gd":
-		var han_motion_button:=_button("한결 모션",Rect2(451,16,140,34),_open_han_motion_viewer)
+		var han_motion_button:=_button("한결 모션",Rect2(410,16,140,34),_open_han_motion_viewer)
 		han_motion_button.name="HanMotionEntry"
 		han_motion_button.add_theme_font_size_override("font_size",16)
-	if app!=null and ResourceLoader.exists("res://gahui_trial/gahui_hunt_test.tscn"):
-		var gahui_button := _button("가희 모션",Rect2(603,16,108,34),func():app.call_deferred("open_gahui_hunt_from_lab"))
-		gahui_button.name="GahuiMotionEntry"
-		gahui_button.add_theme_font_size_override("font_size",16)
 	for i in 21:
 		var stem:="res://assets/effects/d0071-chain/han_chain_impact_%02d.png"%i
 		var half:="res://assets/effects/duel-3sp-authored/hangyeol/192/han_chain_impact_%02d.png"%i
@@ -3047,9 +3043,8 @@ func _local_floor_heading(cam:Camera3D,screen_dir:Vector2)->float:
 	var world:=Vector2(screen_dir.cross(z),x.cross(screen_dir))/det
 	return atan2(world.x,world.y)
 func _open_han_motion_viewer() -> void:
-	var view:=Control.new()
+	var view: Control = load("res://scripts/han_model_test.gd").new()
 	view.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	view.set_script(load("res://battlefield_reset/han_motion/han_motion_viewer.gd"))
 	app.call_deferred("_replace_active_hunt_lab",view)
 var han_ultra
 func _present_han_ultra() -> void:

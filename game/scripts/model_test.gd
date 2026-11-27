@@ -76,9 +76,7 @@ func _ready()->void:
 	selectors=Control.new();field.add_child(selectors);selectors.position=Vector2(24,15.8);selectors.scale=Vector2.ONE*1.3
 	back_button=button(selectors,"‹",Rect2(0,0,68,68),func():exited.emit(),"round")
 	back_button.add_theme_font_size_override("font_size",54)
-	category_buttons.allies=icon_button(selectors,"hangyeol",Rect2(80,0,68,68),choose_category.bind("allies"),false)
-	category_buttons.animals=icon_button(selectors,"adult",Rect2(160,0,68,68),choose_category.bind("animals"),false)
-	var divider:=ColorRect.new();divider.color=Color("64796c");divider.position=Vector2(248,12);divider.size=Vector2(1,44);divider.mouse_filter=MOUSE_FILTER_IGNORE;selectors.add_child(divider)
+	build_selectors()
 	var status_brush:=Art.picture(field,preload("res://assets/ui/brush/resource-slot-brush@2x.png"),Rect2(605,35,330,50));status_brush.modulate.a=.25
 	status_brush.name="StatusBrush"
 	status=text(field,"",Rect2(605,35,330,26),20)
@@ -99,8 +97,16 @@ func _ready()->void:
 	running_button=button(field,"달리기 비교",Rect2(925,77,190,36),toggle_running_comparison)
 	running_button.add_theme_font_size_override("font_size",20)
 	resized.connect(fit)
-	choose_category("allies")
+	start_preview()
 	fit()
+
+func build_selectors() -> void:
+	category_buttons.allies=icon_button(selectors,"hangyeol",Rect2(80,0,68,68),choose_category.bind("allies"),false)
+	category_buttons.animals=icon_button(selectors,"adult",Rect2(160,0,68,68),choose_category.bind("animals"),false)
+	var divider:=ColorRect.new();divider.color=Color("64796c");divider.position=Vector2(248,12);divider.size=Vector2(1,44);divider.mouse_filter=MOUSE_FILTER_IGNORE;selectors.add_child(divider)
+
+func start_preview() -> void:
+	choose_category("allies")
 
 func text(parent:Node,value:String,rect:Rect2,px:int,center:=true)->Label:
 	var item:Label=app.label(parent,value,px,Color("fff9ec"))

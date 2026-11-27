@@ -101,7 +101,7 @@ func _ready() -> void:
 	field.han_anim=ap
 	field.paint.draw.connect(draw_effect)
 	field.set_process(false)
-	field.exit_requested.connect(func():app.call_deferred("open_one_on_one_from_gahui_lab") if is_instance_valid(app) else exited.emit())
+	field.exit_requested.connect(func():app.call_deferred("return_to_one_on_one_lab") if is_instance_valid(app) else exited.emit())
 	field._reset()
 	field.body_line.hide()
 	for control in field.find_children("*","Button",true,false):
@@ -704,7 +704,7 @@ func plant_leg(side:String,target:Vector3) -> void:
 	rig.force_update_all_bone_transforms()
 
 func ready_blade_axis() -> Vector3:
-	var delta: Vector3 = field.deer.global_position-field.han.global_position
+	var delta: Vector3 = field.deer.global_position-field.han.global_position if is_instance_valid(field.deer) else field.han.global_basis.z
 	delta.y=0.0
 	return (Vector3.UP*.72+delta.normalized()*.66).normalized()
 
@@ -1206,6 +1206,7 @@ func _preview_stand() -> void:
 var duel_binding:=false
 var duel_model:Node3D
 var duel_active_key:=""
+var donor_meshes: Dictionary = {}
 
 func bind_duel(pivot:Node3D,other:Node3D,cam:Camera3D) -> bool:
 	duel_binding=true
@@ -1234,8 +1235,22 @@ func bind_duel(pivot:Node3D,other:Node3D,cam:Camera3D) -> bool:
 	ap.add_animation_library("",library)
 	make_blade()
 	install_grip_shape(duel_model)
-	for mesh:MeshInstance3D in original:mesh.hide()
+	for mesh:MeshInstance3D in original:
+		donor_meshes[mesh] = mesh.visible
+		mesh.hide()
 	return true
+
+func restore_duel_donor() -> void:
+	for mesh: MeshInstance3D in donor_meshes:
+		if is_instance_valid(mesh):
+			mesh.visible = donor_meshes[mesh]
+	donor_meshes.clear()
+	if is_instance_valid(duel_model):
+		duel_model.hide()
+		duel_model.queue_free()
+	if is_instance_valid(blade):
+		blade.hide()
+		blade.queue_free()
 
 func show_duel_motion(move:String,clock:float,duration:float,alive:bool) -> void:
 	if not is_instance_valid(duel_model):return
@@ -1244,6 +1259,10 @@ func show_duel_motion(move:String,clock:float,duration:float,alive:bool) -> void
 	var span:=ap.get_animation(key).length
 	var gait:=key in ["ready_idle","walk_native","run_native"]
 	var time:=fposmod(clock,span) if gait else clampf(clock/maxf(.001,duration),0.,1.)*span
+	sample_han_clip(key,time,gait)
+
+func sample_han_clip(key: String, time: float, ready_grip := false) -> void:
+	var span := ap.get_animation(key).length
 	if duel_active_key!=key:
 		duel_active_key=key
 		ap.play(key,0.)
@@ -1251,7 +1270,7 @@ func show_duel_motion(move:String,clock:float,duration:float,alive:bool) -> void
 	rig.force_update_all_bone_transforms()
 	var hand:=bone_world(hand_index)
 	var basis:=hand.basis.orthonormalized()*hand_local_basis
-	if gait:basis=Basis(Quaternion(Vector3.UP,ready_blade_axis()))
+	if ready_grip:basis=Basis(Quaternion(Vector3.UP,ready_blade_axis()))
 	var palm:=hand.origin+hand.basis.orthonormalized()*palm_local
 	var weapon_basis:=basis.scaled(Vector3.ONE*.90)
 	blade.global_transform=Transform3D(weapon_basis,palm+palm_clearance(basis.y)-weapon_basis*LOW_GRIP)
