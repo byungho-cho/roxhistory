@@ -2013,7 +2013,12 @@ func world_tap(screen_point:Vector2) -> void:
 			if not task.is_empty():
 				navigation.start("gather",n.id,world.gather_stand(point,n.kind));return
 			navigation.cancel()
-			if world.player.position.distance_to(point)<=float(DemoConfig.get_data().interact_radius):gather_action(n.id)
+			if world.player.position.distance_to(point)<=float(DemoConfig.get_data().interact_radius):
+				if n.kind=="wood":
+					# The approved axe swing reaches the trunk from the existing side stance.
+					var stand:=world.gather_stand(point,n.kind)
+					if stand.is_finite() and world.player.position.distance_to(stand)>14 and navigation.start("gather",n.id,stand,0,[],true):return
+				gather_action(n.id)
 			else:navigation.start("gather",n.id,world.gather_stand(point,n.kind))
 			return
 	# Building images own their taps even after their reward has been claimed.
