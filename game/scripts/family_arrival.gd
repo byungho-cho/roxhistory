@@ -19,6 +19,7 @@ var visit_check_elapsed:=0.0
 const MEETING := Vector2(1540,975)
 func _init(owner_app:Node)->void:app=owner_app
 func _ready()->void:
+	app.model.resident_party_arrived.connect(_on_resident_party_arrived)
 	bubble=DemoButton.new();bubble.name="FamilyConversation";bubble.z_index=22;bubble.text="";bubble.custom_minimum_size=Vector2(0,44);bubble.focus_mode=Control.FOCUS_NONE
 	bubble.add_theme_font_size_override("font_size",14)
 	# The shared button theme has pale hover text for dark buttons, unlike this bubble.
@@ -49,8 +50,14 @@ func finish()->void:
 	app.world.animating_family_join=true
 	var joined:bool=app.model.join_family()
 	app.world.animating_family_join=false
-	if joined:app.show_character_guide("주민 %d명이 합류했어요"%party,"새 주민이 마을에 자리를 잡았어요.")
+	if joined:
+		app.world.player.play_village_gesture(&"talk")
+		app.show_character_guide("주민 %d명이 합류했어요"%party,"새 주민이 마을에 자리를 잡았어요.")
 	elif app.model.family_available() and app.model.resident_capacity()-app.model.resident_count()<party:show_capacity_needed()
+
+func _on_resident_party_arrived()->void:
+	if is_instance_valid(app.world) and app.screen=="play" and not app.world_map_open and app.application_active:
+		app.world.player.play_village_gesture(&"listen")
 func show_capacity_needed()->void:
 	var free:int=maxi(0,app.model.resident_capacity()-app.model.resident_count())
 	app.show_character_guide("주민 %d명이 기다리고 있어요"%app.model.family_visitor_count(),"빈자리 %d명 · 주민 움집을 짓거나 업그레이드해 주세요."%free)

@@ -2,6 +2,7 @@ class_name GameState
 extends RefCounted
 
 signal notification_requested(event:String,payload:Dictionary)
+signal resident_party_arrived
 signal changed
 signal farm_clock_changed(keys: Array[String])
 signal failed(message: String)

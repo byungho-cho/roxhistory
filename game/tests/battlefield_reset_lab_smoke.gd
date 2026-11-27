@@ -71,10 +71,24 @@ func _check_motion_enhancements(view) -> void:
 	view.play_motion("08")
 	var duration: float = view.reel_duration
 	var start := _at(view, .0)
-	var middle := _at(view, duration * .5)
 	var stop := _at(view, duration - .0001)
 	var after := _at(view, duration + .4)
-	_check(start.distance_to(middle) > middle.distance_to(stop) * 2.5 and stop.distance_to(after) < .03, "Deceleration slows and retains the stopped position")
+	var chain: Array[String] = []
+	for step in view.steps:
+		chain.append(step.clip)
+	_check(chain == ["run_native", "decel", "walk_native"] and absf(view.steps[1].length - .42) < .002,
+		"08 plays run, the native Meshy bridge, then walk")
+	var forward := start.direction_to(stop)
+	var monotonic := start.distance_to(stop) > 65.0
+	var previous := start
+	for i in range(1, 121):
+		var current := _at(view, duration * float(i) / 120.0)
+		monotonic = monotonic and (current - previous).dot(forward) >= -.01
+		previous = current
+	var bridge_start: float = view.steps[1].start
+	var walk_start: float = view.steps[2].start
+	var no_stop := _at(view, bridge_start - .02).distance_to(_at(view, bridge_start + .02)) > 1.0 and _at(view, walk_start - .02).distance_to(_at(view, walk_start + .02)) > 1.0
+	_check(monotonic and no_stop and stop.distance_to(after) < .03, "Fixed-route 08 advances through both joins, then holds the walk-out position")
 	view.play_motion("18")
 	var takeoff := _at(view, .0)
 	var flying := _at(view, 1.05)
@@ -86,6 +100,11 @@ func _check_motion_enhancements(view) -> void:
 		"Fixed-route flight follows the arc and lands at three times the original distance")
 	_check(standing.distance_to(landing) < .1 and landed_idle.distance_to(landing) < .1, "Flying, standing and idle share the landing anchor")
 	view.play_motion("full")
+	chain.clear()
+	for step in view.steps:
+		if step.clip in ["run_native", "decel", "walk_native"]:
+			chain.append(step.clip)
+	_check(chain == ["run_native", "decel", "walk_native"], "Full reel uses one unbroken gait transition without repeats")
 	var flight_start: float = view.steps[-2].start
 	var reel_takeoff := _at(view, flight_start)
 	var reel_landing := _at(view, flight_start + view.model.STORY_FLY_SECONDS)
@@ -257,7 +276,8 @@ func _check_motion_lab() -> void:
 	for i in range(1, 19):
 		var key := "%02d" % i
 		await _press(_button(view, "HanMotion" + key), i % 2 == 0)
-		_check(view.selection == key and view.shown_motion == i and view.model.ap.get_current_animation() == view.CLIPS[i - 1][0], "Individual motion " + key)
+		var opening: String = "run_native" if key == "08" else view.CLIPS[i - 1][0]
+		_check(view.selection == key and view.model.ap.get_current_animation() == opening and (key == "08" or view.shown_motion == i), "Individual motion " + key)
 	await _press(_button(view, "HanAllMotions"), true)
 	var observed := {}
 	var start := 0.0

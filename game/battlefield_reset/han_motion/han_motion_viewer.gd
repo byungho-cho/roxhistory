@@ -1249,6 +1249,12 @@ const GAIT_TRAVEL := {
 		Vector2(.800, 1.8543), Vector2(.875, 2.0724), Vector2(.950, 2.3126),
 		Vector2(1.0, 2.4759),
 	],
+	# Right toe supports the first part, then the left toe carries the walk-out.
+	"decel": [
+		Vector2(0.0, 0.0), Vector2(.1111, .1494), Vector2(.3333, .4954),
+		Vector2(.4444, .6634), Vector2(.5000, .6963), Vector2(.6667, .8762),
+		Vector2(.8889, 1.0981), Vector2(1.0, 1.2184),
+	],
 }
 
 func gait_distance(key: String, time: float) -> float:
@@ -1351,12 +1357,22 @@ func show_duel_motion(move:String,clock:float,duration:float,alive:bool,ground_p
 		reset_duel_gait()
 	sample_han_clip(key,time,gait)
 
-func sample_han_clip(key: String, time: float, ready_grip := false) -> void:
+func capture_han_pose(key: String, time: float) -> Array[Transform3D]:
+	sample_han_clip(key, time, true)
+	var pose: Array[Transform3D] = []
+	for joint in rig.get_bone_count():
+		pose.append(rig.get_bone_pose(joint))
+	return pose
+
+func sample_han_clip(key: String, time: float, ready_grip := false, previous_pose: Array[Transform3D] = [], blend := 1.0) -> void:
 	var span := ap.get_animation(key).length
 	if duel_active_key!=key:
 		duel_active_key=key
 		ap.play(key,0.)
 	ap.seek(minf(span-.00001,time),true)
+	if blend < 1.0:
+		for joint in previous_pose.size():
+			rig.set_bone_pose(joint, previous_pose[joint].interpolate_with(rig.get_bone_pose(joint), blend))
 	rig.force_update_all_bone_transforms()
 	var hand:=bone_world(hand_index)
 	var basis:=hand.basis.orthonormalized()*hand_local_basis

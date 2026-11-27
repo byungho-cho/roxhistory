@@ -505,8 +505,10 @@ func _plaque(rect:Rect2)->Panel:
 func _button_art(button:Button,texture:Texture2D,span:float)->TextureRect:
 	return HuntArt.picture(button,texture,Rect2((button.size-Vector2.ONE*span)*.5,Vector2.ONE*span))
 
-func _selector_portrait(item: Button, texture: Texture2D) -> void:
+func _selector_portrait(item: Button, texture: Texture2D, preserve_aspect := false) -> void:
 	var icon := _button_art(item, texture, 33)
+	if preserve_aspect:
+		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	var material := ShaderMaterial.new()
 	material.shader = preload("res://shaders/duel_selector_crop.gdshader")
 	icon.material = material
@@ -518,7 +520,8 @@ func _add_test_roster(at: Vector2, current: String, select: Callable, prefix: St
 		item.name = prefix + ally
 		item.disabled = ally not in ModelTest.LAB_AVAILABLE
 		item.modulate.a = .43 if item.disabled else 1.0
-		_selector_portrait(item, ModelTest.portrait(ally))
+		var approved: Texture2D = ModelTest.LAB_PORTRAITS.get(ally)
+		_selector_portrait(item, approved if approved else ModelTest.portrait(ally), approved != null)
 		if ally == current:
 			HuntArt.picture(item, preload("res://assets/ui/duel-hud/selection-gold.svg"), Rect2(0, 0, 44, 44))
 

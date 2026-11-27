@@ -83,7 +83,9 @@ static func join(model:GameState,now:float=-1.0)->bool:
 static func _arrive(model:GameState,next:Dictionary)->bool:
 	var id:=VillageNotifications.arrival_id(float(model.state.get("family_next_at",0)))
 	var ok:=_commit(model,next)
-	if ok:VillageNotifications.dispatch(model,"arrival",{"count":next.pending_family_count,"id":id})
+	if ok:
+		model.resident_party_arrived.emit()
+		VillageNotifications.dispatch(model,"arrival",{"count":next.pending_family_count,"id":id})
 	return ok
 
 static func _commit(model:GameState,next:Dictionary)->bool:

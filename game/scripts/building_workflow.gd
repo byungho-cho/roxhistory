@@ -172,10 +172,15 @@ func show_upgrade_completed(key: String, level: int) -> void:
 	if not is_instance_valid(app.world) or app.screen!="play" or app.world_map_open or not app.application_active:return
 	var at: Vector2=app.model.building_position(key)
 	var screen_point: Vector2=app.world.get_global_transform_with_canvas()*at
-	if not Rect2(0,0,app.w,app.h).has_point(screen_point):return
+	if not Rect2(0,0,app.w,app.h).has_point(screen_point):
+		app.world.player.play_village_gesture(&"cheer")
+		return
+	var player: DemoPlayer = app.world.player
 	var fanfare := func():
 		if app.screen=="play" and not app.world_map_open and app.application_active:
 			app.audio.cue("upgrade_fanfare")
+			if is_instance_valid(player):
+				player.play_village_gesture(&"cheer")
 	app.world.add_child(preload("res://scripts/village_upgrade_feedback.gd").new(at,level,fanfare))
 
 func owned_upgrade_reason(key:String,check_resources:bool=true)->String:

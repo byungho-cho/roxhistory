@@ -52,6 +52,7 @@ var camera_center:=Vector2.ZERO
 var pan_stretch := Vector2.ZERO
 var pan_return: Tween
 var idle_elapsed:=0.0
+var pending_village_gesture: StringName
 
 func can_pan()->bool:
 	var visible_world:=get_viewport_rect().size/camera.zoom
@@ -292,6 +293,19 @@ func set_activity(value: String) -> void:
 		action_time = 0.0
 	activity = value
 
+func play_village_gesture(gesture: StringName) -> void:
+	if _can_play_village_gesture():
+		if gesture != &"cheer":
+			pending_village_gesture = &""
+		elif pending_village_gesture != &"":
+			return
+		hybrid.play_village_gesture(gesture)
+	elif gesture != &"cheer":
+		pending_village_gesture = gesture
+
+func _can_play_village_gesture() -> bool:
+	return activity.is_empty() and direction.length_squared() < .0001 and not work_destination.is_finite() and not hybrid.gather_finished_hold
+
 func _physics_process(delta: float) -> void:
 	var movement := Vector2.ZERO if presentation_paused or activity != "" else direction.limit_length()
 	var move_factor := 1.0
@@ -334,6 +348,8 @@ func _physics_process(delta: float) -> void:
 		idle_elapsed=idle_elapsed+delta if motion_state=="idle" and not work_destination.is_finite() and not presentation_paused and direction.length()<.01 else 0.0
 		hybrid.idle_elapsed=idle_elapsed
 		hybrid.run_presentation=gait_run
+		if pending_village_gesture != &"" and _can_play_village_gesture():
+			play_village_gesture(pending_village_gesture)
 		hybrid.animate(delta,movement,phase,motion_state == "walk",activity,action_time,presentation_paused)
 
 func update_rig() -> void:
