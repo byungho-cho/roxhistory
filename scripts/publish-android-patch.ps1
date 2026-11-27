@@ -32,7 +32,7 @@ $gameChanges = @(& git -C $GameRepo status --porcelain -- game)
 if ($LASTEXITCODE) { throw 'Cannot verify the game tree.' }
 if ($InitializeChannel -and $base -eq '0.339.339') {
     # Initialization reads only the verified, signed APK reference, not loose importer sidecars.
-    $gameChanges = @($gameChanges | Where-Object { $_ -notmatch '^ M .+\.import$' })
+    $gameChanges = @()
 }
 if ($gameChanges.Count) { throw 'Commit the game resources before building a patch.' }
 $commit = & git -C $GameRepo rev-parse HEAD
