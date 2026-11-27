@@ -48,9 +48,26 @@ func _at(view, time: float) -> Vector2:
 	view.render_frame()
 	return view.han.position
 
+func _check_planted_toe(view, motion_id: String, from_phase: float, to_phase: float) -> void:
+	view.play_motion(motion_id)
+	var rig: Skeleton3D = view.model.rig
+	var toe := rig.find_bone("LeftToeBase")
+	var cycle: float = view.steps[0].length
+	var camera: Camera3D = view.han.camera
+	var scale: Vector2 = view.han.display.scale * view.han.scale
+	var start := _at(view, cycle * from_phase)
+	var toe_start := start + camera.unproject_position(rig.to_global(rig.get_bone_global_pose(toe).origin)) * scale
+	var end := _at(view, cycle * to_phase)
+	var toe_end := end + camera.unproject_position(rig.to_global(rig.get_bone_global_pose(toe).origin)) * scale
+	var travel := start.distance_to(end)
+	_check(travel > 4.0 and absf((toe_end - toe_start).dot(start.direction_to(end))) < travel * .15,
+		"Fixed-route %s advances while the planted toe stays put" % ("walk" if motion_id == "06" else "run"))
+
 func _check_motion_enhancements(view) -> void:
 	if not view.route:
 		view.toggle_route()
+	_check_planted_toe(view, "06", .40, .60)
+	_check_planted_toe(view, "07", .38, .47)
 	view.play_motion("08")
 	var duration: float = view.reel_duration
 	var start := _at(view, .0)
@@ -67,6 +84,9 @@ func _check_motion_enhancements(view) -> void:
 	_check(takeoff.distance_to(flying) > 4.0 and takeoff.distance_to(landing) > 25.0, "Fixed-route flight travels through an arc")
 	_check(standing.distance_to(landing) < .1 and landed_idle.distance_to(landing) < .1, "Flying, standing and idle share the landing anchor")
 	view.toggle_route()
+	view.play_motion("06")
+	var walk_anchor := _at(view, .0)
+	_check(walk_anchor.is_equal_approx(_at(view, .35)), "Route OFF keeps walking in place")
 	view.play_motion("18")
 	var free_start := _at(view, .0)
 	_check(free_start.is_equal_approx(_at(view, 1.05)) and free_start.is_equal_approx(_at(view, view.reel_duration + .4)), "Route OFF keeps the same ground anchor")

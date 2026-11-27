@@ -781,6 +781,8 @@ func reset_round(after_fade:=false) -> void:
 			shared_world.configure(a,b,(Left+Right)*.5,local_shared_ranged,_uram_deer_close())
 		shared_world.local_melee_polish=local_melee_polish
 		shared_world.reset()
+		if is_instance_valid(han_ultra):
+			han_ultra.reset_duel_gait()
 	elif a.key=="hangyeol":
 		a.play("attack")
 		presentation.prepare_spear(a,_settled_anchor(0),_settled_anchor(1)-Vector2(0,33),a.duration*.55,0.0 if approach_active else 78.0)
@@ -3084,4 +3086,4 @@ func _present_han_ultra() -> void:
 	han_strong_hit_started = -INF
 	if key == "chain":
 		pose_age = Accent.chain_pose(pose_age, a.duration)
-	han_ultra.show_duel_motion(key, pose_age, a.duration, alive)
+	han_ultra.show_duel_motion(key, pose_age, a.duration, alive, shared_world.bodies[0].position)

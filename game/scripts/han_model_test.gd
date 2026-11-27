@@ -14,7 +14,7 @@ const DECELERATE := 7
 const CHAIN := 11
 const KNOCKDOWN := 14
 const FALL_AND_RISE := 17
-const TRAVEL := {WALK: .85, RUN: 1.40, DECELERATE: .36}
+const DECELERATE_DISTANCE := .36
 
 var han := HybridCharacter.new()
 var model: HanModel
@@ -125,10 +125,12 @@ func play_motion(id: String) -> void:
 			elif clip == "story_fly":
 				span = HanModel.STORY_FLY_SECONDS
 			var end_distance := distance
-			if route:
-				end_distance += float(TRAVEL.get(index, 0.0))
-				if clip == "story_fly":
-					end_distance -= HanModel.story_flight_retreat(1.0)
+			if route and index in [WALK, RUN]:
+				end_distance += model.gait_distance(clip, span)
+			elif route and index == DECELERATE:
+				end_distance += DECELERATE_DISTANCE
+			elif route and clip == "story_fly":
+				end_distance -= HanModel.story_flight_retreat(1.0)
 			steps.append({
 				"index": index, "clip": clip, "begin": begin, "length": finish - begin,
 				"start": reel_duration, "until": reel_duration + span, "repeated": repeated,
@@ -160,11 +162,11 @@ func render_frame() -> void:
 	var progress := offset / maxf(.001, step.until - step.start)
 	if step.index == DECELERATE:
 		progress = 1.0 - (1.0 - progress) * (1.0 - progress)
-	elif step.index in [WALK, RUN]:
-		progress = ease(progress, -2.0)
 	elif step.clip == "story_fly":
 		progress = HanModel.story_flight_retreat(HanModel.story_flight_clock(offset)) / HanModel.story_flight_retreat(1.0)
 	var distance := lerpf(step.from, step.to, progress)
+	if route and step.index in [WALK, RUN]:
+		distance = step.from + model.gait_distance(step.clip, offset)
 	han.position = Vector2(field.size.x * .5, field.size.y * .55) + _route_space(distance)
 	floor_label.position = han.position + Vector2(-41, 17)
 	han.pivot.position.y = 0.0

@@ -1226,11 +1226,57 @@ var duel_model:Node3D
 var duel_active_key:=""
 var model_display_scale := 1.0
 var donor_meshes: Dictionary = {}
+var duel_gait_key := ""
+var duel_gait_origin := Vector2.ZERO
 
 const MODEL_TEST_SCALE := 1.58
 const MODEL_TEST_CAMERA_SIZE := 7.0
 const MODEL_TEST_VIEW_SIZE := Vector2i(960, 720)
 const MODEL_TEST_DISPLAY_FACTOR := .46 / 1.5
+
+# Clip phase and forward distance at the standard model scale, measured from
+# the backward travel of each planted toe. Airborne sections continue the run.
+const GAIT_TRAVEL := {
+	"walk_native": [
+		Vector2(0.0, 0.0), Vector2(.025, 0.0), Vector2(.225, .2786),
+		Vector2(.300, .3982), Vector2(.350, .4710), Vector2(.675, .9298),
+		Vector2(.775, 1.0876), Vector2(.825, 1.1634), Vector2(1.0, 1.4102),
+	],
+	"run_native": [
+		Vector2(0.0, 0.0), Vector2(.050, 0.0), Vector2(.100, .1435),
+		Vector2(.250, .4845), Vector2(.300, .5282), Vector2(.375, .7499),
+		Vector2(.450, .9803), Vector2(.550, 1.3098), Vector2(.750, 1.7688),
+		Vector2(.800, 1.8543), Vector2(.875, 2.0724), Vector2(.950, 2.3126),
+		Vector2(1.0, 2.4759),
+	],
+}
+
+func gait_distance(key: String, time: float) -> float:
+	var curve: Array = GAIT_TRAVEL[key]
+	var cycles := time / ap.get_animation(key).length
+	var phase := fposmod(cycles, 1.0)
+	var distance: float = floorf(cycles) * curve.back().y
+	for index in range(1, curve.size()):
+		var from: Vector2 = curve[index - 1]
+		var to: Vector2 = curve[index]
+		if phase <= to.x:
+			distance += lerpf(from.y, to.y, inverse_lerp(from.x, to.x, phase))
+			break
+	return distance * model_display_scale
+
+func _gait_time(key: String, distance: float) -> float:
+	var curve: Array = GAIT_TRAVEL[key]
+	var phase_distance := fposmod(distance / model_display_scale, curve.back().y)
+	for index in range(1, curve.size()):
+		var from: Vector2 = curve[index - 1]
+		var to: Vector2 = curve[index]
+		if to.y > from.y and phase_distance <= to.y:
+			var phase := lerpf(from.x, to.x, inverse_lerp(from.y, to.y, phase_distance))
+			return phase * ap.get_animation(key).length
+	return 0.0
+
+func reset_duel_gait() -> void:
+	duel_gait_key = ""
 
 static func model_test_projection_ratio(camera: Camera3D, display_scale: float) -> float:
 	var measured_height := camera.unproject_position(Vector3.UP).distance_to(camera.unproject_position(Vector3.ZERO)) * display_scale
@@ -1282,7 +1328,7 @@ func restore_duel_donor() -> void:
 		blade.hide()
 		blade.queue_free()
 
-func show_duel_motion(move:String,clock:float,duration:float,alive:bool) -> void:
+func show_duel_motion(move:String,clock:float,duration:float,alive:bool,ground_position := Vector3.INF) -> void:
 	if not is_instance_valid(duel_model):return
 	var key: String = {
 		"idle": "ready_idle", "walk": "walk_native", "run": "run_native",
@@ -1295,6 +1341,14 @@ func show_duel_motion(move:String,clock:float,duration:float,alive:bool) -> void
 	var gait := key in ["ready_idle", "walk_native", "run_native"]
 	var start := .72 if key == "heavy_173" else 0.0
 	var time := fposmod(clock, span) if gait else lerpf(start, span, clampf(clock / maxf(.001, duration), 0.0, 1.0))
+	if GAIT_TRAVEL.has(key) and ground_position.is_finite():
+		var ground := Vector2(ground_position.x, ground_position.z)
+		if duel_gait_key != key:
+			duel_gait_key = key
+			duel_gait_origin = ground
+		time = _gait_time(key, duel_gait_origin.distance_to(ground))
+	else:
+		reset_duel_gait()
 	sample_han_clip(key,time,gait)
 
 func sample_han_clip(key: String, time: float, ready_grip := false) -> void:
