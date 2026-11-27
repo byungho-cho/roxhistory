@@ -673,7 +673,7 @@ func check_title_update(manual:=false) -> void:
 	title_update_in_flight = true
 	updates.title_active = true
 	updates.checked_title = true
-	var url := str(updates.RELEASE_ROOT)+"latest.json?check="+str(Time.get_unix_time_from_system())
+	var url := str(updates.channel_root if updates.has_method("begin_manifest_check") else updates.RELEASE_ROOT)+"latest.json?check="+str(Time.get_unix_time_from_system())
 	if updates.has_method("begin_manifest_check"):
 		if not updates.begin_manifest_check(url):finish_title_update_check()
 		return

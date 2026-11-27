@@ -105,6 +105,7 @@ func _ready() -> void:
 	notes_button.pressed.connect(show_notes)
 	apk_link_button = make_button()
 	apk_link_button.name = "FullApkLink"
+	apk_link_button.visible = not OS.has_feature("rox_windows_patch")
 	apk_link_button.position = Vector2(content.position.x,216)
 	apk_link_button.size = Vector2(content.size.x,44)
 	var apk_caption := make_label(14,700,Color("183d65"))

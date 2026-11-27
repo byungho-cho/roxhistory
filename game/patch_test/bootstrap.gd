@@ -478,7 +478,7 @@ func transfer_size() -> int:
 	return int(candidate.get("size",0) if delta.is_empty() else delta.size)
 
 func transfer_summary() -> String:
-	var kind := "현재 버전용 차이 패치" if not delta.is_empty() else "APK 기준 누적 패치"
+	var kind := "현재 버전용 차이 패치" if not delta.is_empty() else ("Windows 기준 누적 패치" if windows_channel else "APK 기준 누적 패치")
 	return "%s · %.2f MB"%[kind,transfer_size()/1000000.0]
 
 func version_number(version:String) -> int:
