@@ -1,9 +1,9 @@
 extends Control
 
-const BASE_VERSION := "0.315.315"
-const BASE_COMMIT := "f41111193f6aff6c8b4c7eb7a8fc75b0d6485854"
-const RUNTIME := "godot-4.5.1-android-pck-4"
-const RELEASE_ROOT := "https://github.com/byungho-cho/roxhistory/releases/download/android-patches-0.315.315/"
+const BASE_VERSION := "0.339.339"
+const BASE_COMMIT := "5a139c938502202b6a69303513e6c689657cb737"
+const RUNTIME := "godot-4.5.1-android-reset-339"
+const RELEASE_ROOT := "https://github.com/byungho-cho/roxhistory/releases/download/android-patches-0.339.339/"
 signal check_status_changed(value: String)
 signal manifest_check_failed_to_start
 var check_status := "":
@@ -15,13 +15,13 @@ var title_active := false
 var restart_pending := false
 const TRUST := preload("res://patch_test/patch_key.gd")
 
-var cache := "user://rox-patches-0.315.315/"
+var cache := "user://rox-patches-0.339.339/"
 var index := cache + "current.json"
 var shade:ColorRect
 var popup:CenterContainer
 enum Phase { IDLE, CHECKING, AVAILABLE, CURRENT, DOWNLOADING, VERIFYING, READY, CHECK_FAILED, DOWNLOAD_FAILED,
 	APK_READY, APK_PERMISSION, APK_INSTALLING, APK_INSTALL_FAILED }
-const APK_CHANNEL := "https://github.com/byungho-cho/roxhistory/releases/download/android-apk-channel/apk-latest.json"
+const APK_CHANNEL := "https://github.com/byungho-cho/roxhistory/releases/download/android-apk-channel-0.339.339/apk-latest.json"
 var apk_bridge: Object
 var android_activity: Object
 var installed_apk := {}
@@ -53,7 +53,7 @@ var patch_last_progress_ms := 0
 
 const DELTA := preload("res://patch_test/pack_delta.gd")
 func _init(mount_on_start := true) -> void:
-	if not mount_on_start or not bool(ProjectSettings.get_setting("roxhistory/distribution/legacy_channel_enabled",true)): return
+	if not mount_on_start or not bool(ProjectSettings.get_setting("roxhistory/distribution/reset_patch_channel_enabled",false)): return
 	# Autoload _ready runs after the main scene is loaded. Mount before that load.
 	DirAccess.make_dir_recursive_absolute(cache)
 	discard(cache + "incoming.part")
@@ -187,7 +187,7 @@ func check_for_patch() -> void:
 	begin_manifest_check(RELEASE_ROOT+"latest.json")
 
 func begin_manifest_check(url: String) -> bool:
-	if not bool(ProjectSettings.get_setting("roxhistory/distribution/legacy_channel_enabled",true)): return false
+	if not bool(ProjectSettings.get_setting("roxhistory/distribution/reset_patch_channel_enabled",false)): return false
 	if downloading or restart_pending or phase==Phase.CHECKING:return false
 	check_url = url
 	candidate.clear()
@@ -201,7 +201,7 @@ func begin_manifest_check(url: String) -> bool:
 	request.cancel_request()
 	request.download_file = ""
 	request.body_size_limit = 8192
-	checking_apk = apk_bridge!=null and not installed_apk.is_empty()
+	checking_apk = false
 	if checking_apk:
 		request.timeout = 2.0
 		if request.request(APK_CHANNEL)==OK:return true
@@ -249,7 +249,9 @@ func request_completed(result: int, code: int, _headers: PackedStringArray, body
 		if phase==Phase.AVAILABLE:
 			delta = select_delta(candidate)
 			envelope = body
-			if title_active:show_popup()
+			if title_active:
+				show_popup()
+				call_deferred("primary_action")
 			else:checked_title = false
 		render_phase()
 		return

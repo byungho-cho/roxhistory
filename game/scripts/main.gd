@@ -213,7 +213,7 @@ func _ready() -> void:
 	audio = DemoSoundscape.new()
 	add_child(audio)
 	# Full reset starts a fresh progress namespace; legacy data stays available to the previous build.
-	var save_directory:="user://tests/session" if test_mode else "user://progress-main-reset-339"
+	var save_directory:="user://tests/session" if test_mode else "user://progress-main-reset-v339"
 	model = GameState.new(SaveStore.new(save_directory),true)
 	if not test_mode:village_alerts=AndroidVillageNotifications.new(model)
 	model.finish_loaded_jobs()
@@ -618,7 +618,7 @@ func on_title_patch_popup_changed() -> void:
 	refresh_title_start_prompt()
 
 func open_title_update() -> void:
-	if not bool(ProjectSettings.get_setting("roxhistory/distribution/legacy_channel_enabled",true)): return
+	if not bool(ProjectSettings.get_setting("roxhistory/distribution/reset_patch_channel_enabled",false)): return
 	if screen!="title" or not application_active or modal or title_input_blocked() or is_instance_valid(intro_cloud):return
 	var updates := get_node("/root/PatchBootstrap/Overlay")
 	if not updates.popup.visible:updates.show_popup()
@@ -654,7 +654,7 @@ func style_start_prompt(start: DemoButton) -> void:
 	start.add_theme_color_override("font_outline_color",Color("49321e"));start.add_theme_constant_override("outline_size",3)
 
 func check_title_update(manual:=false) -> void:
-	if not bool(ProjectSettings.get_setting("roxhistory/distribution/legacy_channel_enabled",true)): return
+	if not bool(ProjectSettings.get_setting("roxhistory/distribution/reset_patch_channel_enabled",false)): return
 	if screen!="title" or not application_active or modal or title_reveal or title_update_in_flight or is_instance_valid(intro_cloud):return
 	if test_mode and not manual:return
 	var updates := get_node("/root/PatchBootstrap/Overlay")
@@ -769,8 +769,7 @@ func refresh_title_loading_visibility() -> void:
 func title_input_blocked() -> bool:
 	if screen!="title":return false
 	var popup: Control = get_node("/root/PatchBootstrap/Overlay").popup
-	return title_reveal!=null or (is_instance_valid(title_loading) and title_loading.visible) or (
-		not test_mode and not title_initial_update_done) or popup.visible
+	return title_reveal!=null or (is_instance_valid(title_loading) and title_loading.visible) or popup.visible
 
 func title_needs_loading() -> bool:
 	return not is_instance_valid(world) and (not intro_preload_started or not intro_preload_paths.is_empty() or
