@@ -78,6 +78,41 @@ func _check_motion_enhancements(view) -> void:
 	_at(view, view.reel_duration + .2)
 	_check(is_zero_approx(view.ground_dim.color.a), "3SP dim clears when the motion ends")
 
+func _check_visible_duel_motion(duel) -> void:
+	var model = duel.han_ultra
+	if not is_instance_valid(model):
+		_check(false, "Duel uses a live animated Han rig")
+		return
+	var mesh: MeshInstance3D = model.grip_mesh
+	var arm: int = model.rig.find_bone("RightArm")
+	var first_run := Quaternion.IDENTITY
+	var first_attack := Quaternion.IDENTITY
+	var run_samples := 0
+	var attack_samples := 0
+	var run_changed := false
+	var attack_changed := false
+	var always_visible := true
+	var deer_hp: int = duel.rules.hp[1]
+	for frame in 138:
+		duel.advance(1.0 / 60.0)
+		always_visible = always_visible and mesh.is_visible_in_tree() and model.blade.is_visible_in_tree()
+		var pose: Quaternion = model.rig.get_bone_pose_rotation(arm)
+		match duel.motion[0]:
+			"run":
+				if run_samples == 0:
+					first_run = pose
+				run_samples += 1
+				run_changed = run_changed or first_run.angle_to(pose) > .2
+			"attack":
+				if attack_samples == 0:
+					first_attack = pose
+				attack_samples += 1
+				attack_changed = attack_changed or first_attack.angle_to(pose) > .2
+	_check(always_visible and not duel.a.preview.has_meta("han_presentation_proxy"), "The live model stays visible instead of a frozen proxy")
+	_check(run_changed and attack_changed and duel.rules.hp[1] < deer_hp, "Displayed run and basic attack advance through real combat")
+	duel.reset_round()
+	_check(mesh.is_visible_in_tree(), "Reset keeps the live Han rig visible")
+
 func _run() -> void:
 	if not OS.get_cmdline_user_args().has("--test-ui"):
 		quit(90)
@@ -110,6 +145,7 @@ func _run() -> void:
 				for donor: MeshInstance3D in duel.han_ultra.donor_meshes:
 					donor_hidden = donor_hidden and not donor.is_visible_in_tree()
 				_check(donor_hidden, "The duel does not render the older donor model")
+			_check_visible_duel_motion(duel)
 			await _capture("01-duel")
 			await _press(_button(duel, "HanMotionEntry"), true)
 			await process_frame

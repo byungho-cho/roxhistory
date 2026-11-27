@@ -1519,6 +1519,10 @@ func _present_approved_han_duel_pose()->void:
 	# Only the playable 1:1, never the separate model/motion subclasses.
 	if a.key!="hangyeol" or get_script().resource_path!="res://scripts/hunt_duel_lab.gd":
 		return
+	# The older pose overlay duplicates the actor pivot and hides its meshes.
+	# The motion-test model already owns the display for this matchup.
+	if _has_bound_han_model():
+		return
 	if rules.hp[0]<=0:
 		han_strong_hit_started=-INF
 		HanStrongHitVisual.restore(a.preview)
@@ -3047,13 +3051,18 @@ func _open_han_motion_viewer() -> void:
 	view.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	app.call_deferred("_replace_active_hunt_lab",view)
 var han_ultra
+
+func _has_bound_han_model() -> bool:
+	return is_instance_valid(han_ultra) and is_instance_valid(han_ultra.duel_model) and han_ultra.duel_model.get_parent() == a.preview.pivot
+
 func _present_han_ultra() -> void:
 	if app==null or get_script().resource_path!="res://scripts/hunt_duel_lab.gd" or not show_final_test35 or a.key!="hangyeol" or b.key!="forest":return
-	if is_instance_valid(han_ultra) and (not is_instance_valid(han_ultra.duel_model) or han_ultra.duel_model.get_parent() != a.preview.pivot):
+	if is_instance_valid(han_ultra) and not _has_bound_han_model():
 		han_ultra.restore_duel_donor()
 		han_ultra.queue_free()
 		han_ultra = null
 	if not is_instance_valid(han_ultra):
+		HanStrongHitVisual.restore(a.preview)
 		var binder = load("res://battlefield_reset/han_motion/han_motion_viewer.gd").new()
 		binder.duel_binding = true
 		add_child(binder)
@@ -3062,6 +3071,17 @@ func _present_han_ultra() -> void:
 			binder.queue_free()
 			return
 		han_ultra=binder
-	var key:String=motion[0]
-	if approach_active:key=a.sampled_motion
-	han_ultra.show_duel_motion(key,float(age[0]),a.duration,rules.hp[0]>0)
+	var key: String = a.sampled_motion if approach_active else motion[0]
+	var pose_age := _visual_age(0)
+	if approach_active:
+		pose_age /= entrance_scale
+	var alive: bool = rules.hp[0] > 0
+	var strong_age := visual_clock - han_strong_hit_started
+	var strong_duration := HanStrongHitVisual.HEAVY.length
+	if alive and key in ["idle", "hit"] and strong_age >= 0.0 and strong_age < strong_duration:
+		han_ultra.show_duel_motion("heavy_hit", strong_age, strong_duration, true)
+		return
+	han_strong_hit_started = -INF
+	if key == "chain":
+		pose_age = Accent.chain_pose(pose_age, a.duration)
+	han_ultra.show_duel_motion(key, pose_age, a.duration, alive)

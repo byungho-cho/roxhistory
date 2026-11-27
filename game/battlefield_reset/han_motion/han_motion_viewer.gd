@@ -1284,11 +1284,17 @@ func restore_duel_donor() -> void:
 
 func show_duel_motion(move:String,clock:float,duration:float,alive:bool) -> void:
 	if not is_instance_valid(duel_model):return
-	var key:String={"idle":"ready_idle","walk":"walk_native","run":"run_native","attack":"clear_basic","skill":"sp2","chain":"sp3","hit":"hit_reaction","death":"dead"}.get(move,"ready_idle")
-	if not alive:key="dead"
-	var span:=ap.get_animation(key).length
-	var gait:=key in ["ready_idle","walk_native","run_native"]
-	var time:=fposmod(clock,span) if gait else clampf(clock/maxf(.001,duration),0.,1.)*span
+	var key: String = {
+		"idle": "ready_idle", "walk": "walk_native", "run": "run_native",
+		"attack": "clear_basic", "skill": "sp2", "chain": "sp3",
+		"hit": "normal_179", "heavy_hit": "heavy_173", "death": "dead",
+	}.get(move, "ready_idle")
+	if not alive:
+		key = "dead"
+	var span := ap.get_animation(key).length
+	var gait := key in ["ready_idle", "walk_native", "run_native"]
+	var start := .72 if key == "heavy_173" else 0.0
+	var time := fposmod(clock, span) if gait else lerpf(start, span, clampf(clock / maxf(.001, duration), 0.0, 1.0))
 	sample_han_clip(key,time,gait)
 
 func sample_han_clip(key: String, time: float, ready_grip := false) -> void:
