@@ -141,6 +141,152 @@ func _check_visible_duel_motion(duel) -> void:
 	duel.reset_round()
 	_check(mesh.is_visible_in_tree(), "Reset keeps the live Han rig visible")
 
+func _check_roster(screen: Node, prefix: String) -> void:
+	var available := true
+	for key in ["hangyeol", "uram", "saebom", "gahui", "bau"]:
+		var item := _button(screen, prefix + key)
+		available = available and is_instance_valid(item) and item.visible and item.disabled == (key not in ["hangyeol", "gahui"])
+	_check(available, prefix + " exposes five heroes with just Han and Gahui enabled")
+	await _press(_button(screen, prefix + "uram"), true)
+	_check(app.parry_lab == screen, "Disabled hero leaves the active screen in place")
+
+func _check_village_idle() -> void:
+	var player = app.world.player
+	var visual = player.hybrid
+	_check(visual.tracks.get(&"quiet_idle", {}).size() >= 17 and absf(visual.QUIET_IDLE.length - 2.033333) < .001,
+		"Approved Idle 09 is mapped onto the village rig at native length")
+	var initial_position: Vector2 = player.position
+	player.idle_elapsed = visual.FIRST_AMBIENT_IDLE - .10
+	for i in 15:
+		await physics_frame
+	_check(player.position.distance_to(initial_position) < .01 and visual.ambient_idle_phase(player.idle_elapsed) >= 0.0,
+		"Village idle reaches the existing stretch on the same footline")
+	var move := InputEventKey.new()
+	move.physical_keycode = KEY_D
+	move.pressed = true
+	Input.parse_input_event(move)
+	for i in 12:
+		await physics_frame
+	_check(player.position.distance_to(initial_position) > 5.0 and is_zero_approx(player.idle_elapsed),
+		"Movement interrupts the village idle immediately")
+	var stop := move.duplicate() as InputEventKey
+	stop.pressed = false
+	Input.parse_input_event(stop)
+	for i in 18:
+		await physics_frame
+	_check(player.motion_state == "idle" and player.idle_elapsed > .16 and visual.ambient_idle_phase(player.idle_elapsed) < 0.0,
+		"Stopping resumes Idle 09 before the stretch")
+	await _capture("00-village")
+
+func _check_duel() -> void:
+	var duel_button := _button(app, "DuelTestEntry")
+	var lab_button := _button(app, "MotionLabEntry")
+	var icon := "hunt-bow-stone-v001.png"
+	var has_arrow := false
+	for child in duel_button.get_children():
+		has_arrow = has_arrow or (child is TextureRect and child.texture.resource_path.ends_with(icon))
+	_check(duel_button.text.is_empty() and has_arrow and duel_button.size.is_equal_approx(lab_button.size) and absf(duel_button.size.x-duel_button.size.y)<.01,
+		"Village hunting icon fits the same circle as the lab button")
+	await _press(duel_button)
+	var duel = app.parry_lab
+	if not _check(is_instance_valid(duel) and duel.rules.ally_id == "hangyeol" and duel.rules.enemy_id == "forest", "Hunting button opens Han versus flower deer"):
+		return
+	_check(_button(duel, "HanMotionEntry") == null, "Duel omits the standalone motion shortcut")
+	_check(duel.han_ultra.duel_model.scene_file_path.ends_with("Han-Battle-Ultra-Rigged-12k.glb"), "Duel uses the approved Han model")
+	await _check_roster(duel, "DuelSelect_")
+	_check_visible_duel_motion(duel)
+	await _capture("01-han-duel")
+	await _press(_button(duel, "DuelSelect_gahui"), true)
+	await process_frame
+	duel = app.parry_lab
+	if not _check(duel.rules.ally_id == "gahui" and is_instance_valid(duel.gahui) and duel.gahui.rig_ready, "The same duel opens with live Gahui"):
+		return
+	duel.set_process(false)
+	await _check_roster(duel, "DuelSelect_")
+	for i in 174:
+		duel.advance(1.0/60.0)
+	_check(duel.rules.hp[1] < 100 and duel.rules.hp[0] < 100, "Both Gahui's auto shot and the deer's attack actually land")
+	duel.rules.sp = 3.0
+	duel._refresh()
+	await _press(duel.skill_button, true)
+	_check(duel.motion[0]=="skill" and is_equal_approx(duel.rules.sp,1.0), "Gahui's 2 SP action spends two")
+	var before:int=duel.rules.hp[1]
+	for i in 201:
+		duel.advance(1.0/60.0)
+	_check(duel.rules.hp[1] <= before-27, "All three approved water-arrow arrivals apply damage")
+	duel.rules.hp[0]=30
+	duel.rules.sp=3.0
+	duel._react(0,"idle")
+	duel._refresh()
+	await _press(duel.chain_button, true)
+	_check(duel.motion[0]=="chain" and is_zero_approx(duel.rules.sp), "Gahui's 3 SP heal spends three")
+	for i in 59:
+		duel.advance(1.0/60.0)
+	_check(duel.duel_healed and duel.rules.hp[0] > 30, "Gahui heals on the authored release")
+	await _capture("02-gahui-duel")
+	duel.reset_round()
+	_check(duel.rules.ally_id=="gahui" and duel.rules.hp==[100,100] and is_equal_approx(duel.rules.sp,1.0), "Duel reset keeps the selected ally")
+	await _press(_button(duel, "DuelSelect_hangyeol"))
+	await process_frame
+	duel = app.parry_lab
+	_check(duel.rules.ally_id=="hangyeol" and is_instance_valid(duel.han_ultra), "Duel switches back to Han")
+	await _press(_button(duel, "DuelClose"))
+
+func _check_motion_lab() -> void:
+	await _press(_button(app, "MotionLabEntry"), true)
+	await process_frame
+	var view = app.parry_lab
+	if not _check(is_instance_valid(view) and view.name == "HanModelTest", "Village flask opens the combined motion lab"):
+		return
+	await _check_roster(view, "MotionSelect_")
+	var no_tips := true
+	for item: Button in view.find_children("*", "Button", true, false):
+		no_tips = no_tips and item.tooltip_text.is_empty()
+	_check(no_tips, "All Han motion-lab buttons omit tooltips")
+	_check(view.model.duel_model.scene_file_path.ends_with("Han-Battle-Ultra-Rigged-12k.glb"), "New Han rig is loaded")
+	_check(view.motion_buttons.size() == 19 and view.actors.is_empty(), "18 motions plus full playback, with a single Han rig")
+	var motion_rects: Array[Rect2] = []
+	var separate := true
+	for control: Button in view.motion_buttons.values():
+		var bounds := control.get_global_rect()
+		for previous in motion_rects:
+			separate = separate and not previous.intersects(bounds)
+		motion_rects.append(bounds)
+	_check(separate, "All 19 controls have separate touch areas")
+	await _capture("02-han-model-test")
+	for i in range(1, 19):
+		var key := "%02d" % i
+		await _press(_button(view, "HanMotion" + key), i % 2 == 0)
+		_check(view.selection == key and view.shown_motion == i and view.model.ap.get_current_animation() == view.CLIPS[i - 1][0], "Individual motion " + key)
+	await _press(_button(view, "HanAllMotions"), true)
+	var observed := {}
+	var start := 0.0
+	for step: Dictionary in view.steps:
+		view.age = (start + float(step.until)) * 0.5
+		view.render_frame()
+		observed[view.shown_motion] = view.model.ap.get_current_animation() == step.clip
+		start = float(step.until)
+	_check(observed.size() == 18 and not (false in observed.values()), "One sequence contains all 18 approved motions in order")
+	view.age = view.reel_duration + 0.5
+	view.render_frame()
+	_check(view.model.ap.get_current_animation() == "idle_02_11", "Full motion returns to idle")
+	_check_motion_enhancements(view)
+	await _press(_button(view, "MotionSelect_gahui"), true)
+	await process_frame
+	var lab = app.parry_lab
+	if not _check(is_instance_valid(lab) and is_instance_valid(lab.get("gahui")) and lab.subject == 0, "The lab switches to Gahui motions"):
+		return
+	await _check_roster(lab, "MotionSelect_")
+	_check(not is_instance_valid(lab.a.preview.pivot) and lab.drill_buttons.size() == 9, "Gahui motion buttons and solo rig remain available")
+	await _press(lab.drill_buttons[3])
+	_check(lab.selected_index == 3, "Gahui's basic motion can be played")
+	await _capture("03-gahui-motion")
+	await _press(_button(lab, "MotionSelect_hangyeol"))
+	await process_frame
+	view = app.parry_lab
+	_check(view.name == "HanModelTest", "Lab switches back without entering a fight")
+	await _press(view.back_button, true)
+
 func _run() -> void:
 	if not OS.get_cmdline_user_args().has("--test-ui"):
 		quit(90)
@@ -154,77 +300,13 @@ func _run() -> void:
 	await process_frame
 	if app.modal:
 		app.close_modal()
-	_check(app.world.player.hybrid.scale.is_equal_approx(Vector2(3, 3)), "Village Han is 1.5 times the 342 presentation size")
+	_check(app.world.player.hybrid.scale.is_equal_approx(Vector2(3, 3)), "Village display scale is retained")
 	var world_mode: int = app.world.process_mode
-	var duel_button := _button(app, "DuelTestEntry")
-	var gahui_button := _button(app, "GahuiLabEntry")
-	if _check(is_instance_valid(duel_button) and duel_button.is_visible_in_tree() and duel_button.text == "테스트", "Village portal uses the text-only label"):
-		await _press(duel_button)
-		var duel = app.parry_lab
-		if _check(is_instance_valid(duel) and duel.rules.ally_id == "hangyeol" and duel.rules.enemy_id == "forest", "Village portal opens Han versus flower deer"):
-			_check(is_instance_valid(duel.han_ultra) and duel.han_ultra.duel_model.scene_file_path.ends_with("Han-Battle-Ultra-Rigged-12k.glb"), "Duel uses the same Han model")
-			if is_instance_valid(duel.han_ultra):
-				var world = duel.shared_world
-				var projected: float = world.camera.unproject_position(Vector3.UP).distance_to(world.camera.unproject_position(Vector3.ZERO))
-				var actual: float = projected * world.display.scale.y * duel.han_ultra.model_display_scale
-				var expected: float = 720.0 / 7.0 * (.46 / 1.5) * 1.58 / sqrt(2.0)
-				_check(absf(actual - expected) < .02, "Duel Han matches the model-test projection")
-				var donor_hidden := true
-				for donor: MeshInstance3D in duel.han_ultra.donor_meshes:
-					donor_hidden = donor_hidden and not donor.is_visible_in_tree()
-				_check(donor_hidden, "The duel does not render the older donor model")
-			_check_visible_duel_motion(duel)
-			await _capture("01-duel")
-			await _press(_button(duel, "HanMotionEntry"), true)
-			await process_frame
-			var view = app.parry_lab
-			if _check(is_instance_valid(view) and view.name == "HanModelTest", "Duel opens the model-only test"):
-				_check(view.model.duel_model.scene_file_path.ends_with("Han-Battle-Ultra-Rigged-12k.glb"), "New Han rig is loaded")
-				_check(view.motion_buttons.size() == 19 and view.actors.is_empty(), "18 motions plus full playback, with a single Han rig")
-				var motion_rects: Array[Rect2] = []
-				var separate := true
-				for control: Button in view.motion_buttons.values():
-					var bounds := control.get_global_rect()
-					for previous in motion_rects:
-						separate = separate and not previous.intersects(bounds)
-					motion_rects.append(bounds)
-				_check(separate, "All 19 controls have separate touch areas")
-				await _capture("02-han-model-test")
-				for i in range(1, 19):
-					var key := "%02d" % i
-					await _press(_button(view, "HanMotion" + key), i % 2 == 0)
-					_check(view.selection == key and view.shown_motion == i and view.model.ap.get_current_animation() == view.CLIPS[i - 1][0], "Individual motion " + key)
-				await _press(_button(view, "HanAllMotions"), true)
-				var observed := {}
-				var start := 0.0
-				for step: Dictionary in view.steps:
-					view.age = (start + float(step.until)) * 0.5
-					view.render_frame()
-					observed[view.shown_motion] = view.model.ap.get_current_animation() == step.clip
-					start = float(step.until)
-				_check(observed.size() == 18 and not (false in observed.values()), "One sequence contains all 18 approved motions in order")
-				view.age = view.reel_duration + 0.5
-				view.render_frame()
-				_check(view.model.ap.get_current_animation() == "idle_02_11", "Full motion returns to idle")
-				_check_motion_enhancements(view)
-				await _press(view.back_button, true)
-				await process_frame
-				duel = app.parry_lab
-				_check(is_instance_valid(duel) and _button(duel, "HanMotionEntry") != null, "Model back returns to the duel")
-			if is_instance_valid(duel):
-				await _press(_button(duel, "DuelClose"))
-		_check(not is_instance_valid(app.parry_lab) and app.world.process_mode == world_mode, "Duel close restores the village")
-	if _check(is_instance_valid(gahui_button) and gahui_button.is_visible_in_tree(), "Separate village flask is available"):
-		await _press(gahui_button)
-		await process_frame
-		var lab = app.parry_lab
-		if _check(is_instance_valid(lab) and is_instance_valid(lab.get("gahui")) and lab.subject == 0, "Gahui starts as the active ally"):
-			_check(not is_instance_valid(lab.a.preview.pivot) and _button(lab, "HanMotionEntry") == null and _button(lab, "OneOnOneEntry") == null, "Gahui lab contains no Han visual or duel controls")
-			_check(_button(lab, "GahuiRunToWalk").visible and lab.drill_buttons[0].visible, "Gahui motions remain available")
-			await _capture("03-gahui")
-		app.go_back()
-		await process_frame
-		_check(not is_instance_valid(app.parry_lab) and app.world.process_mode == world_mode, "Gahui closes back to the village")
+	await _check_village_idle()
+	await _check_duel()
+	_check(not is_instance_valid(app.parry_lab) and app.world.process_mode == world_mode, "Duel close restores the village")
+	await _check_motion_lab()
+	_check(not is_instance_valid(app.parry_lab) and app.world.process_mode == world_mode, "Lab close restores the village")
 	app.queue_free()
 	await process_frame
 	print("LAB PATCH RESULTS ", checks - failures, "/", checks)

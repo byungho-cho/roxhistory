@@ -14,8 +14,10 @@ const ROUND_SILVER=preload("res://assets/ui/d0060/round-silver.svg")
 const ROUND_RUBY=preload("res://assets/ui/d0063/round-ruby.svg")
 const RATES=[3.0,2.5,2.0,1.75,1.5,1.0,.5]
 const ALLIES=["hangyeol","uram","saebom"]
+const LAB_ROSTER := ["hangyeol", "uram", "saebom", "gahui", "bau"]
+const LAB_AVAILABLE := ["hangyeol", "gahui"]
 const ANIMALS=["forest","stag","juvenile","adult"]
-const NAMES={"hangyeol":"한결","uram":"우람","saebom":"새봄","forest":"숲사슴","stag":"산수사슴","juvenile":"어린 수퇘지","adult":"큰 멧돼지"}
+const NAMES={"hangyeol":"한결","uram":"우람","saebom":"새봄","gahui":"가희","bau":"바우","forest":"숲사슴","stag":"산수사슴","juvenile":"어린 수퇘지","adult":"큰 멧돼지"}
 const ORDER=["idle","walk","run","attack","hit","skill","chain","guard","counter","death","full"]
 var app:Node
 var canvas:Control
@@ -53,6 +55,10 @@ var running_comparison:=false
 var running_button:Button
 
 static func portrait(id:String)->Texture2D:
+	if id == "gahui":
+		return preload("res://assets/ui/hero-level-up/gahui-portrait-original.png")
+	if id == "bau":
+		return preload("res://assets/ui/hero-level-up/bau-portrait-original.png")
 	var source:=load("res://assets/ui/d0060/"+id+".png") as Texture2D
 	var atlas:=AtlasTexture.new();atlas.atlas=source
 	var dimensions:=Vector2(source.get_size())
@@ -135,7 +141,7 @@ func icon_button(parent:Node,id:String,rect:Rect2,action:Callable,circle:=true)-
 	var item:=button(parent,"",rect,action,"round" if circle else "rect")
 	for state in ["normal","hover","pressed","focus"]:item.add_theme_stylebox_override(state,StyleBoxEmpty.new())
 	var icon:=Art.picture(item,portrait(id),Rect2(3,3,62,62))
-	var shader:=Shader.new();shader.code="shader_type canvas_item; uniform bool circle = true; void fragment(){ vec4 c=texture(TEXTURE,UV); if(circle && distance(UV,vec2(.5))>.5){c.a=0.;} COLOR=c; }"
+	var shader:=Shader.new();shader.code="shader_type canvas_item; uniform bool circle = true; void fragment(){ if(circle && distance(UV,vec2(.5))>.5){COLOR.a=0.;} }"
 	var material:=ShaderMaterial.new();material.shader=shader;material.set_shader_parameter("circle",circle);icon.material=material
 	item.set_meta("portrait",true);item.tooltip_text=NAMES[id]
 	var border:=StyleBoxFlat.new();border.bg_color=Color.TRANSPARENT;border.border_color=Color("e6bc70");border.set_border_width_all(2);border.set_corner_radius_all(34 if circle else 12)

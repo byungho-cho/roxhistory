@@ -55,6 +55,7 @@ const MeleeKnifeIcon=preload("res://assets/ui/saebom-melee/stone-knife-2sp.png")
 
 var local_formation_button:Button
 var show_final_test35 := false
+var test_ally := ""
 var local_test_charge:Button
 var local_formation_banner:Label
 var local_distance_buttons:Dictionary={}
@@ -396,10 +397,6 @@ func _ready() -> void:
 	cast_notice_layer.draw.connect(func():_draw_cast_notice(cast_notice_anchor))
 
 	_setup_ui()
-	if app!=null and get_script().resource_path=="res://scripts/hunt_duel_lab.gd":
-		var han_motion_button:=_button("한결 모션",Rect2(410,16,140,34),_open_han_motion_viewer)
-		han_motion_button.name="HanMotionEntry"
-		han_motion_button.add_theme_font_size_override("font_size",16)
 	for i in 21:
 		var stem:="res://assets/effects/d0071-chain/han_chain_impact_%02d.png"%i
 		var half:="res://assets/effects/duel-3sp-authored/hangyeol/192/han_chain_impact_%02d.png"%i
@@ -508,10 +505,31 @@ func _plaque(rect:Rect2)->Panel:
 func _button_art(button:Button,texture:Texture2D,span:float)->TextureRect:
 	return HuntArt.picture(button,texture,Rect2((button.size-Vector2.ONE*span)*.5,Vector2.ONE*span))
 
+func _selector_portrait(item: Button, texture: Texture2D) -> void:
+	var icon := _button_art(item, texture, 33)
+	var material := ShaderMaterial.new()
+	material.shader = preload("res://shaders/duel_selector_crop.gdshader")
+	icon.material = material
+
+func _add_test_roster(at: Vector2, current: String, select: Callable, prefix: String) -> void:
+	for index in ModelTest.LAB_ROSTER.size():
+		var ally: String = ModelTest.LAB_ROSTER[index]
+		var item := _button("", Rect2(at + Vector2(index * 54, 0), Vector2(44, 44)), select.bind(ally))
+		item.name = prefix + ally
+		item.disabled = ally not in ModelTest.LAB_AVAILABLE
+		item.modulate.a = .43 if item.disabled else 1.0
+		_selector_portrait(item, ModelTest.portrait(ally))
+		if ally == current:
+			HuntArt.picture(item, preload("res://assets/ui/duel-hud/selection-gold.svg"), Rect2(0, 0, 44, 44))
+
+func _select_test_ally(ally: String) -> void:
+	if ally != test_ally:
+		app.call_deferred("select_one_on_one_ally", ally)
+
 func _setup_ui() -> void:
 	var first_top:=arena.get_child_count()
 	# Local backplates only; no full-width title/header covers the battlefield.
-	_plaque(Rect2(68,10,115,52))
+	_plaque(Rect2(68,10,331 if not test_ally.is_empty() else 115,52))
 	_plaque(Rect2(774,17,66,30))
 	timer=_label("00:00",Rect2(774,17,66,30),13)
 	timer.add_theme_color_override("font_color",Color("fff2d6"))
@@ -527,20 +545,19 @@ func _setup_ui() -> void:
 	pause_icon=_button_art(pause_button,preload("res://assets/ui/duel-hud/pause-ivory.svg"),20)
 	pause_caption=_label("▶",Rect2(0,0,36,36),18);pause_caption.reparent(pause_button,false)
 	pause_caption.add_theme_color_override("font_color",Color("fff2d6"))
-	var ids := ["hangyeol", "forest"]
+	if not test_ally.is_empty():
+		_add_test_roster(Vector2(78, 14), test_ally, _select_test_ally, "DuelSelect_")
+	var ids := ["hangyeol", "forest"] if test_ally.is_empty() else ["forest"]
 	for i in ids.size():
 		var key: String = ids[i]
-		var item := _button("", Rect2(78 + 54 * i, 14, 44, 44), func(): pass)
+		var item := _button("", Rect2(78 + 54 * (i if test_ally.is_empty() else ModelTest.LAB_ROSTER.size()), 14, 44, 44), func(): pass)
 		item.name = "Select_" + key
 		item.toggle_mode = true
 		item.focus_mode = Control.FOCUS_NONE
 		item.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		touch_buttons.erase(item)
-		var icon = ModelTest.portrait(key) if i == 0 else preload("res://assets/ui/duel-hud/deer-selector.png")
-		var picture := _button_art(item, icon, 33)
-		var material := ShaderMaterial.new()
-		material.shader = preload("res://shaders/duel_selector_crop.gdshader")
-		picture.material = material
+		var icon = preload("res://assets/ui/duel-hud/deer-selector.png") if key == "forest" else ModelTest.portrait(key)
+		_selector_portrait(item, icon)
 		selection_frames[key] = HuntArt.picture(item, preload("res://assets/ui/duel-hud/selection-gold.svg"), Rect2(0, 0, 44, 44))
 		controls[key] = item
 	if local_melee_polish:
@@ -691,7 +708,7 @@ func _draw_authored_frames(origin:Vector2,elapsed:float,screen_size:float)->void
 	effects_layer.draw_texture_rect(authored_frames[frame_index],Rect2(origin-anchor,Vector2.ONE*screen_size),false)
 
 func reset_round(after_fade:=false) -> void:
-	rules.ally_id = "hangyeol"
+	rules.ally_id = test_ally if not test_ally.is_empty() else "hangyeol"
 	rules.enemy_id = "forest"
 	han_strong_hit_started = -INF
 	if is_instance_valid(a) and a.key=="hangyeol":HanStrongHitVisual.restore(a.preview)
@@ -735,7 +752,8 @@ func reset_round(after_fade:=false) -> void:
 	for item in audio_pool:
 		item.stop()
 		item.stream_paused=paused
-	if a == null or b == null or a.key != rules.ally_id or b.key != rules.enemy_id:
+	var ally_model := "hangyeol" if rules.ally_id == "gahui" else rules.ally_id
+	if a == null or b == null or a.key != ally_model or b.key != rules.enemy_id:
 		if is_instance_valid(shared_world):
 			shared_world.detach();shared_world.queue_free();shared_world=null
 		for actor in [a,b]:
@@ -745,7 +763,7 @@ func reset_round(after_fade:=false) -> void:
 				actor.preview.queue_free()
 		a = Actor.new()
 		b = Actor.new()
-		a.create(field,rules.ally_id)
+		a.create(field,ally_model)
 		b.create(field,rules.enemy_id)
 		a.configure(true)
 		b.configure(true)
@@ -759,8 +777,9 @@ func reset_round(after_fade:=false) -> void:
 	start_cast_at = -1.0
 	execute_at = -1.0
 	visual_clock = 0.0
-	approach_active = _prototype_duel() or _uram_duel() or _saebom_duel() or _han_boar_latest() or _uram_deer_close()
-	next_attack = FIRST_BASIC.duplicate() if (_prototype_duel() or _uram_duel() or _saebom_duel()) else [0.4,1.6]
+	var shared_match := _prototype_duel() or _uram_duel() or _saebom_duel() or test_ally == "gahui"
+	approach_active = shared_match or _han_boar_latest() or _uram_deer_close()
+	next_attack = FIRST_BASIC.duplicate() if shared_match else [0.4,1.6]
 	animal_attack_count = 0
 	han_ground_anchor = Vector2.INF
 	fx.clear()
@@ -772,7 +791,7 @@ func reset_round(after_fade:=false) -> void:
 	cast_from=_settled_anchor(0)
 	presentation.reset(rules.hp)
 	presentation.grounded_spear=_prototype_duel() or _han_boar_latest()
-	if _prototype_duel() or _uram_duel() or _saebom_duel():
+	if shared_match:
 		if _prototype_duel():
 			presentation.cache_spear(a)
 			a.preview.set_meta("duel_presenter",presentation)
@@ -792,7 +811,7 @@ func reset_round(after_fade:=false) -> void:
 		motion = ["run","run"]
 		a.play("run");b.play("run")
 	_start_battle_camera()
-	skill_hud.reset(a.key)
+	skill_hud.reset(rules.ally_id)
 	_render_actors()
 	cues.clear()
 	effects_layer.queue_redraw()
@@ -3048,10 +3067,6 @@ func _local_floor_heading(cam:Camera3D,screen_dir:Vector2)->float:
 	if absf(det)<.0001:return atan2(screen_dir.x,screen_dir.y)
 	var world:=Vector2(screen_dir.cross(z),x.cross(screen_dir))/det
 	return atan2(world.x,world.y)
-func _open_han_motion_viewer() -> void:
-	var view: Control = load("res://scripts/han_model_test.gd").new()
-	view.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	app.call_deferred("_replace_active_hunt_lab",view)
 var han_ultra
 
 func _has_bound_han_model() -> bool:

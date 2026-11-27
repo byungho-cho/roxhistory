@@ -2064,11 +2064,18 @@ func show_development_settings()->void:
 	DevelopmentSettings.open(self)
 	enable_settings_backdrop()
 
-func start_gahui_hunt() -> void:
-	if not can_open_lab(): return
-	var packed := load("res://gahui_trial/gahui_hunt_test.tscn") as PackedScene
-	if packed != null:
-		begin_lab(packed.instantiate())
+func start_motion_lab() -> void:
+	if can_open_lab():
+		begin_lab(_new_motion_lab("hangyeol"))
+
+func _new_motion_lab(ally: String) -> Control:
+	if ally == "gahui":
+		return load("res://gahui_trial/gahui_hunt_test.tscn").instantiate()
+	return load("res://scripts/han_model_test.gd").new()
+
+func select_motion_lab_ally(ally: String) -> void:
+	if ally in ["hangyeol", "gahui"]:
+		_replace_active_hunt_lab(_new_motion_lab(ally))
 
 func can_open_lab() -> bool:
 	return screen == "play" and not modal and application_active
@@ -2093,17 +2100,19 @@ func begin_lab(lab: Control) -> void:
 	stage.hide()
 	ui.add_child(parry_lab)
 
-func new_one_on_one_lab() -> Control:
-	var duel = preload("res://scenes/hunt_duel_lab.tscn").instantiate()
+func new_one_on_one_lab(ally := "hangyeol") -> Control:
+	var duel = load("res://gahui_trial/gahui_hunt_test.tscn").instantiate() if ally == "gahui" else preload("res://scenes/hunt_duel_lab.tscn").instantiate()
 	duel.show_final_test35 = true
+	duel.test_ally = ally
 	return duel
 
 func start_one_on_one_lab() -> void:
 	if can_open_lab():
 		begin_lab(new_one_on_one_lab())
 
-func return_to_one_on_one_lab() -> void:
-	_replace_active_hunt_lab(new_one_on_one_lab())
+func select_one_on_one_ally(ally: String) -> void:
+	if ally in ["hangyeol", "gahui"]:
+		_replace_active_hunt_lab(new_one_on_one_lab(ally))
 
 func _replace_active_hunt_lab(trial: Control) -> void:
 	if trial == null: return
@@ -2132,22 +2141,19 @@ func exit_parry_lab() -> void:
 	if is_instance_valid(world): world.player.presentation_paused = not application_active
 
 func add_parry_lab_entry(at: Vector2) -> void:
-	var duel := button(stage,"테스트",start_one_on_one_lab,false,"","")
+	var duel := button(stage,"",start_one_on_one_lab,false,"","")
 	duel.name = "DuelTestEntry"
-	duel.tooltip_text = "실험실 · 1대1 전투"
-	duel.add_theme_font_size_override("font_size", 14)
-	for color_key in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
-		duel.add_theme_color_override(color_key, Color("#fff0da"))
-	var gahui := button(stage,"",start_gahui_hunt,false,"","")
-	gahui.name = "GahuiLabEntry"
-	gahui.tooltip_text = "가희 모션 실험실"
-	picture(gahui,preload("res://assets/ui/d0031/lab-flask.png"),Rect2(8,8,32,32))
+	picture(duel,preload("res://assets/ui/s40000/hunt-bow-stone-v001.png"),Rect2(8,8,32,32))
+	var lab := button(stage,"",start_motion_lab,false,"","")
+	lab.name = "MotionLabEntry"
+	picture(lab,preload("res://assets/ui/d0031/lab-flask.png"),Rect2(8,8,32,32))
 	debug_shortcut.position.y += 57
-	for entry in [[gahui, at, preload("res://assets/ui/d0060/round-silver.svg")], [duel, at+Vector2(0,57), preload("res://assets/ui/d0060/round-gold.svg")]]:
+	for entry in [[lab, at, preload("res://assets/ui/d0060/round-silver.svg")], [duel, at+Vector2(0,57), preload("res://assets/ui/d0060/round-gold.svg")]]:
 		var control: DemoButton = entry[0]
 		control.custom_minimum_size = Vector2.ZERO
 		control.position = entry[1]
 		control.size = Vector2(48,48)
+		control.scale = Vector2.ONE
 		control.z_index = 36
 		var box := StyleBoxTexture.new()
 		box.texture = entry[2]

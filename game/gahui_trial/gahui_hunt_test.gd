@@ -8,6 +8,9 @@ const DEER_LABELS := ["대기","걷기","달리기","평타","3SP 들이받기",
 const STAG_ALL := ["idle","walk","run","attack","skill","hit","heavy_hit"]
 const DEER_ALL := ["locomotion","attack","skill","hit","heavy_hit"]
 const DEER_ORIGIN := Vector3(3.05,0,-1.0)
+const DUEL_ACTIONS := {"idle":0,"walk":1,"run":2,"attack":3,"skill":4,"chain":5,"hit":6}
+const DUEL_WATER_ARROW_DAMAGE := 9
+const DUEL_HEAL := 38
 var gahui: Gahui
 var vfx: GahuiVfx
 var mode_label: Label
@@ -39,14 +42,77 @@ var drill_deer_contact := Vector2.ZERO
 var drill_deer_floor := Vector2.ZERO
 var drill_deer_struck := false
 var drill_deer_tail := -1.0
+var duel_healed := false
 
 func _ready():
  show_final_test35 = true
  super()
+ if test_ally == "gahui":
+  _install_duel_gahui()
+  return
  arena.hide()
  set_process_input(false)
  set_process(false)
  call_deferred("_install_gahui")
+
+func _install_duel_gahui() -> void:
+ for mesh: MeshInstance3D in a.preview.pivot.find_children("*", "MeshInstance3D", true, false):
+  mesh.hide()
+ gahui = Gahui.new()
+ shared_world.scene.add_child(gahui)
+ gahui.position=shared_world.bodies[0].position
+ gahui.initialize(shared_world.bodies[1])
+ gahui.shot_arrived.connect(_duel_shot_arrived)
+ vfx = GahuiVfx.new()
+ shared_world.scene.add_child(vfx)
+ _render_actors()
+
+func _act(side: int, key: String) -> void:
+ if test_ally != "gahui" or side != 0:
+  super(side, key)
+  return
+ motion[0]=key
+ age[0]=0.0
+ frame_contact[0]=-1.0
+ a.duration=Gahui.TIMES[DUEL_ACTIONS[key]]
+ duel_healed=false
+ next_attack[0]=rules.elapsed+BASIC_CADENCE[0]
+ gahui.switch_to(DUEL_ACTIONS[key])
+
+func _render_actors(delta:=0.0) -> void:
+ super(delta)
+ if test_ally != "gahui" or not is_instance_valid(gahui):
+  return
+ gahui.visible=rules.hp[0]>0
+ if not gahui.visible or not rules.living():
+  vfx.clear()
+  return
+ var action: int=DUEL_ACTIONS.get(motion[0],0)
+ gahui.position=shared_world.bodies[0].position
+ var facing: Vector3=shared_world.bodies[1].position-gahui.position
+ facing.y=0.0
+ if facing.length_squared()>.001:
+  gahui.look_at(gahui.position+facing,Vector3.UP,true)
+ if action!=gahui.active:
+  gahui.switch_to(action)
+ var clock: float=age[0]
+ gahui.step_at(clock)
+ # Keep the motion on the shared physical body's footline.
+ gahui.position=shared_world.bodies[0].position
+ var target: Vector3=shared_world.bodies[1].position+Vector3.UP*.95
+ vfx.draw(action,clock,gahui,shared_world.camera,target)
+ if action==5 and not duel_healed and clock>=Gahui.HEAL_RELEASE:
+  duel_healed=true
+  rules.hp[0]=mini(rules.full_hp(0),rules.hp[0]+DUEL_HEAL)
+
+func _duel_shot_arrived(_index: int) -> void:
+ if not rules.living() or motion[0] not in ["attack","skill"]:
+  return
+ var damage: int=DUEL_WATER_ARROW_DAMAGE if motion[0]=="skill" else RallyCloud.SOLO_BASE
+ if rules.damage(1,damage):
+  _die(1)
+ elif motion[1] in ["idle","walk"]:
+  _react(1,"hit")
 
 func _install_gahui():
  if not is_instance_valid(shared_world):
@@ -95,8 +161,10 @@ func _install_gahui():
  drill_deer_fx.name="DeerDrillEffects"
  field.add_child(drill_deer_fx)
  drill_deer_fx.draw.connect(_draw_drill_deer_fx)
- _plaque(Rect2(26,18,628,45))
- mode_label = _label("",Rect2(32,18,456,45),18)
+ _plaque(Rect2(12,10,650,52))
+ if app!=null:
+  _add_test_roster(Vector2(22,14), "gahui", _select_motion_ally, "MotionSelect_")
+ mode_label = _label("",Rect2(283,18,220,45),18)
  mode_label.horizontal_alignment=HORIZONTAL_ALIGNMENT_LEFT
  mode_label.position.x+=13
  help_label=_label("모션 확인용 · 실제 피해와 치유 수치는 적용하지 않습니다",Rect2(90,454,780,27),15)
@@ -124,6 +192,10 @@ func _install_gahui():
  set_process_input(true)
  set_process(true)
  if recording:_start_all()
+
+func _select_motion_ally(ally: String) -> void:
+ if ally=="hangyeol":
+  app.call_deferred("select_motion_lab_ally", ally)
 
 func _lab_button(value:String, rect:Rect2, pressed:Callable) -> Button:
  var button:=_button(value,rect,pressed)
@@ -243,6 +315,9 @@ func _play_deer(key:String, carry_fx:=false):
  mode_label.text=("숫사슴 · " if subject==2 else "꽃사슴 · ")+("연속 이동" if key=="locomotion" else DEER_LABELS[DEER_IDS.find(key)])
 
 func _process(delta:float):
+ if test_ally=="gahui":
+  super(delta)
+  return
  segment_t += delta
  if subject!=0:
   if drill_deer_tail>=0.0:

@@ -101,7 +101,7 @@ func _ready() -> void:
 	field.han_anim=ap
 	field.paint.draw.connect(draw_effect)
 	field.set_process(false)
-	field.exit_requested.connect(func():app.call_deferred("return_to_one_on_one_lab") if is_instance_valid(app) else exited.emit())
+	field.exit_requested.connect(func():exited.emit())
 	field._reset()
 	field.body_line.hide()
 	for control in field.find_children("*","Button",true,false):

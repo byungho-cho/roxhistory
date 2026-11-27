@@ -6,9 +6,9 @@ const ROOT="res://assets/ui/d0071-hud/"
 const PORTRAIT_SIZE:=66.0
 const SKILL_BOX_LIGHT_ALPHA:=.50
 const FACTOR:=.66
-const PORTRAITS={"hangyeol":preload(ROOT+"han.png"),"uram":preload(ROOT+"uram.png"),"saebom":preload(ROOT+"saebom.png")}
-const ORDINARY={"hangyeol":preload(ROOT+"han-2sp.png"),"uram":preload(ROOT+"uram-2sp.png"),"saebom":preload(ROOT+"saebom-2sp.png")}
-const LINKED={"hangyeol":preload(ROOT+"han-3sp-A.png"),"uram":preload(ROOT+"uram-3sp.png"),"saebom":preload(ROOT+"saebom-3sp.png")}
+const PORTRAITS={"hangyeol":preload(ROOT+"han.png"),"uram":preload(ROOT+"uram.png"),"saebom":preload(ROOT+"saebom.png"),"gahui":preload("res://assets/ui/hero-level-up/gahui-portrait-original.png")}
+const ORDINARY={"hangyeol":preload(ROOT+"han-2sp.png"),"uram":preload(ROOT+"uram-2sp.png"),"saebom":preload(ROOT+"saebom-2sp.png"),"gahui":preload("res://assets/ui/hero-level-up/gahui-preview-2sp.svg")}
+const LINKED={"hangyeol":preload(ROOT+"han-3sp-A.png"),"uram":preload(ROOT+"uram-3sp.png"),"saebom":preload(ROOT+"saebom-3sp.png"),"gahui":preload("res://assets/ui/hero-level-up/gahui-preview-3sp.svg")}
 const ORB_FULL=preload(ROOT+"orb-active.svg")
 const ORB_EMPTY=preload(ROOT+"orb-inactive.svg")
 var portrait_button:Button
@@ -197,7 +197,7 @@ func reset(id:String)->void:
 	near_mode=false
 	orb_light_progress.assign([1.0,0.0,0.0])
 	_load_portrait_hurt_art(id)
-	portrait.texture=PORTRAITS[id];badge_art.texture=ORDINARY[id];chain_art.texture=LINKED[id];names.text={"hangyeol":"한결","uram":"우람","saebom":"새봄"}[id]
+	portrait.texture=PORTRAITS[id];badge_art.texture=ORDINARY[id];chain_art.texture=LINKED[id];names.text={"hangyeol":"한결","uram":"우람","saebom":"새봄","gahui":"가희"}[id]
 	# Figma's88% figure width enlarged20%, with its real aspect and lower edge pinned.
 	portrait.size=Vector2(69.696,69.696*portrait.texture.get_height()/portrait.texture.get_width())
 	portrait.position=Vector2((62.04-portrait.size.x)*.5,62.04-portrait.size.y)

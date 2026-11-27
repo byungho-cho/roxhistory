@@ -27,11 +27,22 @@ var reel_duration := 0.0
 var shown_motion := 0
 
 func build_selectors() -> void:
-	back_button.tooltip_text = "1대1 대결 테스트로 돌아가기"
-	for link in back_button.pressed.get_connections():
-		back_button.pressed.disconnect(link.callable)
-	back_button.pressed.connect(_return_to_duel)
-	model_buttons.hangyeol = icon_button(selectors, "hangyeol", Rect2(84, 0, 68, 68), play_motion.bind("01"))
+	back_button.tooltip_text = ""
+	for index in LAB_ROSTER.size():
+		var ally: String = LAB_ROSTER[index]
+		var item := icon_button(selectors, ally, Rect2(84 + index * 75, 0, 68, 68), _select_lab_ally.bind(ally))
+		item.name = "MotionSelect_" + ally
+		item.tooltip_text = ""
+		item.disabled = ally not in LAB_AVAILABLE
+		item.modulate.a = .43 if item.disabled else 1.0
+		if ally != "hangyeol":
+			var border := item.get_theme_stylebox("normal") as StyleBoxFlat
+			border.border_color = Color("8b8272")
+		model_buttons[ally] = item
+
+func _select_lab_ally(ally: String) -> void:
+	if ally == "gahui":
+		app.call_deferred("select_motion_lab_ally", ally)
 
 func start_preview() -> void:
 	name = "HanModelTest"
@@ -70,16 +81,12 @@ func start_preview() -> void:
 		item.name = "HanMotion" + key
 		item.add_theme_font_size_override("font_size", 17)
 		item.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		item.tooltip_text = motion_title(index)
 		motion_buttons[key] = item
 	var full := button(motions, "전체 모션", Rect2(8 * 139, 64, 132, 57), play_motion.bind("full"))
 	full.name = "HanAllMotions"
 	motion_buttons.full = full
 	configure_camera()
 	play_motion("01")
-
-func _return_to_duel() -> void:
-	app.call_deferred("return_to_one_on_one_lab")
 
 func configure_camera() -> void:
 	han.camera.position = Vector3(0, 7.45 if battle else 3.6, 6)
@@ -210,6 +217,6 @@ func refresh() -> void:
 func _input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_cancel"):
 		get_viewport().set_input_as_handled()
-		_return_to_duel()
+		exited.emit()
 		return
 	super(event)

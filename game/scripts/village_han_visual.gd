@@ -3,6 +3,8 @@ extends HybridCharacter
 const MODEL := "res://assets/characters/village_han/village_han_12k.glb"
 const APPROVED_GATHER := preload("res://assets/characters/village_han/han-village-approved-gather.scn")
 const MOTIONS := preload("res://assets/characters/village_han/village_han_core.res")
+const QUIET_IDLE := preload("res://assets/characters/village_han/village_han_idle09.res")
+const QUIET_LOOP_BLEND := .12
 const GATHER_CLIP := &"Village_Gather_3x"
 const GATHER_SOURCE_START := 1.0
 const GATHER_SECONDS := 4.0
@@ -15,7 +17,6 @@ const AMBIENT_IDLE_BLEND := .36
 var village_model: Node3D
 var axe_visual: Node3D
 var tracks: Dictionary = {}
-var ambient_arm_corrections: Dictionary[int, Quaternion] = {}
 var stride_phase := 0.0
 var move_weight := 0.0
 var run_weight := 0.0
@@ -35,8 +36,10 @@ func build_villager() -> void:
 	rig = village_model.find_children("*","Skeleton3D",true,false)[0]
 	for player: AnimationPlayer in village_model.find_children("*","AnimationPlayer",true,false):
 		player.active = false
-	for key: StringName in MOTIONS.get_animation_list():
-		var clip: Animation = MOTIONS.get_animation(key)
+	var clips := MOTIONS.get_animation_list()
+	clips.append("quiet_idle")
+	for key: StringName in clips:
+		var clip := _core_clip(key)
 		var by_bone: Dictionary = {}
 		for index in clip.get_track_count():
 			var bone := rig.find_bone(clip.track_get_path(index).get_subname(0))
@@ -53,16 +56,16 @@ func build_villager() -> void:
 	approved_gather.hide()
 	_apply_core_pose(&"idle",0.0,0.0)
 	rig.force_update_all_bone_transforms()
-	for side in ["Left", "Right"]:
-		_cache_ambient_arm_correction(side + "Arm", side + "ForeArm", .59)
-		_cache_ambient_arm_correction(side + "ForeArm", side + "Hand", .45)
 	var foot_l := rig.get_bone_global_pose(rig.find_bone("LeftFoot")).origin
 	var foot_r := rig.get_bone_global_pose(rig.find_bone("RightFoot")).origin
 	village_model.position.y -= minf(rig.to_global(foot_l).y,rig.to_global(foot_r).y)-.075
 
+func _core_clip(key: StringName) -> Animation:
+	return QUIET_IDLE if key == &"quiet_idle" else MOTIONS.get_animation(key)
+
 func _sample(key: StringName,index: int,age: float) -> Transform3D:
 	var rest := rig.get_bone_rest(index)
-	var clip: Animation = MOTIONS.get_animation(key)
+	var clip := _core_clip(key)
 	var ids: Array = tracks[key].get(index,[-1,-1,-1])
 	var time := clampf(age,0.0,clip.length-.0001)
 	var p := clip.position_track_interpolate(ids[0],time) if ids[0]>=0 else rest.origin
@@ -81,29 +84,6 @@ func _apply_core_pose(key: StringName,age: float,weight: float) -> void:
 			if run_weight>.001:pose=pose.interpolate_with(_sample(&"run",index,run_time),run_weight)
 		rig.set_bone_pose(index,pose)
 
-func _cache_ambient_arm_correction(joint_name: StringName, child_name: StringName, amount: float) -> void:
-	var joint := rig.find_bone(joint_name)
-	var child := rig.find_bone(child_name)
-	if joint < 0 or child < 0:
-		return
-	var pose := rig.get_bone_global_pose(joint)
-	var child_origin := rig.get_bone_global_pose(child).origin
-	var extended := (rig.to_global(child_origin) - rig.to_global(pose.origin)).normalized()
-	var relaxed := extended.lerp(Vector3.DOWN, amount).normalized()
-	var inverse_basis := (rig.global_basis * pose.basis).orthonormalized().inverse()
-	var correction := Quaternion(inverse_basis * extended, inverse_basis * relaxed)
-	ambient_arm_corrections[joint] = correction
-	# Measure each forearm from the relaxed shoulder pose.
-	rig.set_bone_pose_rotation(joint, rig.get_bone_pose_rotation(joint) * correction)
-	rig.force_update_all_bone_transforms()
-
-func _turn_idle_bone(bone: int, yaw: float, pitch: float) -> void:
-	if bone < 0:
-		return
-	var basis := (rig.global_basis * rig.get_bone_global_pose(bone).basis).orthonormalized().inverse()
-	var rotation := rig.get_bone_pose_rotation(bone)
-	rig.set_bone_pose_rotation(bone, rotation * Quaternion(basis * Vector3.UP, yaw) * Quaternion(basis * Vector3.RIGHT, pitch))
-
 func ambient_idle_phase(time: float) -> float:
 	var phase := fposmod(time - FIRST_AMBIENT_IDLE, AMBIENT_IDLE_INTERVAL)
 	return phase if time >= FIRST_AMBIENT_IDLE and phase < MOTIONS.get_animation(&"idle").length else -1.0
@@ -117,18 +97,16 @@ func _apply_ambient_idle(time: float) -> void:
 	if blend >= .999:
 		_apply_core_pose(&"idle", phase, 0.0)
 		return
-	_apply_core_pose(&"idle", 0.0, 0.0)
-	if blend > 0.0:
-		for i in rig.get_bone_count():
-			rig.set_bone_pose(i, rig.get_bone_pose(i).interpolate_with(_sample(&"idle", i, phase), blend))
-	var relax := (1.0 - blend) * smoothstep(0.0, .20, time)
-	for arm in ambient_arm_corrections:
-		var correction := Quaternion.IDENTITY.slerp(ambient_arm_corrections[arm], relax)
-		rig.set_bone_pose_rotation(arm, rig.get_bone_pose_rotation(arm) * correction)
-	var look := deg_to_rad(21.0) * sin(TAU * time / 5.3) * (1.0 - blend)
-	var raise := deg_to_rad(2.3) * sin(TAU * time / 4.8 + .3) * (1.0 - blend)
-	_turn_idle_bone(rig.find_bone("neck"), look * .29, raise * .36)
-	_turn_idle_bone(rig.find_bone("Head"), look * .71, raise * .64)
+	var cycle := QUIET_IDLE.length - .001 - QUIET_LOOP_BLEND
+	var quiet_time := fposmod(time, cycle)
+	var loop_blend := smoothstep(0.0, QUIET_LOOP_BLEND, quiet_time)
+	for joint in rig.get_bone_count():
+		var pose := _sample(&"quiet_idle", joint, quiet_time)
+		if time >= cycle and quiet_time < QUIET_LOOP_BLEND:
+			pose = _sample(&"quiet_idle", joint, cycle + quiet_time).interpolate_with(pose, loop_blend)
+		if blend > 0.0:
+			pose = pose.interpolate_with(_sample(&"idle", joint, phase), blend)
+		rig.set_bone_pose(joint, pose)
 
 func on_village_activity_change(previous: String, next: String, previous_age:float) -> void:
 	if previous!="gather" and next!="gather":return

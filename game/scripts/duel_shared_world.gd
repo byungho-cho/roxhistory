@@ -311,8 +311,8 @@ func weapon_point(side:int)->Vector3:
 			return crown+forward.normalized()*.46+Vector3.UP*.025
 		return sk.to_global(sk.get_bone_global_pose(head)*Vector3(0,0,.23))
 	var p=actors[0].preview
-	var presenter=actors[0].preview.get_meta("duel_presenter",null)
-	if presenter==null:return bone_world(0,"hand.R")
+	if not p.has_meta("duel_presenter"):return bone_world(0,"hand.R")
+	var presenter=p.get_meta("duel_presenter")
 	return p.skeleton.global_transform*p.skeleton.get_bone_global_pose(presenter.hand)*presenter.tip_in_hand
 
 func hurt_capsule(side:int)->Dictionary:
@@ -439,6 +439,9 @@ func render_poses(lab,delta:float)->Array:
 	for side in 2:
 		var actor=actors[side];var key:String=lab.motion[side];var age:float=lab.age[side]
 		var p=actor.preview
+		if side==0 and lab.test_ally=="gahui" and key!="death":
+			# The hidden reference body supplies the existing contact volume only.
+			key="idle"
 		if side==0 and uram_pair:
 			# The shared world explicitly samples the run-in clip at each step.
 			# Keep the engine from writing the unrooted gait over that displayed pose.
@@ -702,7 +705,7 @@ func step(lab,delta:float,prior_han_age:float=-1.0)->Array[Dictionary]:
 			var pre:float=age-delta
 			var back:=FOREST_RETREAT_DIST*(smoothstep(FOREST_RETREAT_AT,FOREST_RETREAT_END,age)-smoothstep(FOREST_RETREAT_AT,FOREST_RETREAT_END,pre))
 			desired[side]-=toward*back
-		elif key in ["attack","skill","chain"] or (uram_pair and key=="counter"):
+		elif (key in ["attack","skill","chain"] or (uram_pair and key=="counter")) and not (side==0 and lab.test_ally=="gahui"):
 			var forward:=maxf(0,float(roots[side].z-previous_root[side].z))*1.24
 			var safe:=1.75 if side==0 and key=="skill" else 1.85 if key=="chain" else .85
 			if side==1 and key=="attack" and lab.age[side]<actors[side].duration*.55:
@@ -761,6 +764,7 @@ func step(lab,delta:float,prior_han_age:float=-1.0)->Array[Dictionary]:
 		var impact:=.261 if side==0 else length*.53
 		if committed_basic:active=prior_age<impact and lab.age[side]>=impact
 		var can_strike:=key in ["attack","skill","chain"]
+		if side==0 and lab.test_ally=="gahui":can_strike=false
 		if uram_pair and side==0:can_strike=key in ["attack","skill","counter"]
 		if saebom_pair and side==0:can_strike=bom_shove and key=="attack"
 		if not lab.approach_active and can_strike and not consumed[side] and active and lab.rules.living():
