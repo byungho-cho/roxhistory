@@ -396,6 +396,10 @@ func _ready() -> void:
 	cast_notice_layer.draw.connect(func():_draw_cast_notice(cast_notice_anchor))
 
 	_setup_ui()
+	if app!=null and get_script().resource_path=="res://scripts/hunt_duel_lab.gd":
+		var han_motion_button:=_button("한결 모션",Rect2(451,16,140,34),_open_han_motion_viewer)
+		han_motion_button.name="HanMotionEntry"
+		han_motion_button.add_theme_font_size_override("font_size",16)
 	if app!=null and ResourceLoader.exists("res://gahui_trial/gahui_hunt_test.tscn"):
 		var gahui_button := _button("가희 모션",Rect2(603,16,108,34),func():app.call_deferred("open_gahui_hunt_from_lab"))
 		gahui_button.name="GahuiMotionEntry"
@@ -1546,6 +1550,7 @@ func _render_actors(delta:=0.0)->void:
 			var blade_expected:bool=shared_world.bom_shove if key=="attack" else shared_world.bom_near_skill if key=="skill" else shared_world.bom_close and key in ["idle","walk","run","hit"]
 			saebom_pose_mismatch=blade_expected!=a.preview.has_meta("saebom_melee_blade")
 		if delta==0 or saebom_pose_mismatch:shared_world.render_poses(self,0)
+		_present_han_ultra()
 		a.preview.position=_position(0);b.preview.position=_position(1)
 		if local_saebom_latest and a.key=="saebom":_pose_bom_cast(a,float(age[0]) if motion[0]=="chain" and rules.hp[0]>0 else -1.0)
 		a.place_effect();b.place_effect()
@@ -3041,3 +3046,22 @@ func _local_floor_heading(cam:Camera3D,screen_dir:Vector2)->float:
 	if absf(det)<.0001:return atan2(screen_dir.x,screen_dir.y)
 	var world:=Vector2(screen_dir.cross(z),x.cross(screen_dir))/det
 	return atan2(world.x,world.y)
+func _open_han_motion_viewer() -> void:
+	var view:=Control.new()
+	view.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	view.set_script(load("res://battlefield_reset/han_motion/han_motion_viewer.gd"))
+	app.call_deferred("_replace_active_hunt_lab",view)
+var han_ultra
+func _present_han_ultra() -> void:
+	if app==null or get_script().resource_path!="res://scripts/hunt_duel_lab.gd" or not show_final_test35 or a.key!="hangyeol" or b.key!="forest":return
+	if not is_instance_valid(han_ultra):
+		var binder=load("res://battlefield_reset/han_motion/han_motion_viewer.gd").new()
+		binder.duel_binding=true
+		add_child(binder)
+		if not binder.bind_duel(a.preview.pivot,b.preview.pivot,shared_world.camera):
+			binder.queue_free()
+			return
+		han_ultra=binder
+	var key:String=motion[0]
+	if approach_active:key=a.sampled_motion
+	han_ultra.show_duel_motion(key,float(age[0]),a.duration,rules.hp[0]>0)

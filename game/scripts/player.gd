@@ -8,6 +8,10 @@ const COLS := 16
 const ROWS := 32
 const HEIGHT := 142.0
 const STRIDE := 104.0
+const VILLAGE_HAN := preload("res://scripts/village_han_visual.gd")
+const DESTINATION_WALK_START := 2.0
+const DESTINATION_WALK_END := 1.0
+const DESTINATION_RUN_FACTOR := 1.55
 const MIN_ZOOM := 0.56 # Previous 0.8 minimum reduced by another 30%.
 const MAX_ZOOM := 1.6 # Maximum unchanged during the additional zoom-out review.
 const WORLD_SIZE := VillageBounds.WORLD_SIZE
@@ -23,11 +27,15 @@ var action_time := 0.0
 var external_work_clock := false
 var activity := ""
 var work_destination:=Vector2.INF
+var gait_destination := Vector2.INF
+var gait_route_age := 0.0
+var gait_run := 0.0
+var travel_waypoints := PackedVector2Array()
 var facing := 0
 var presentation_paused := false
 var motion_state := "idle"
 var sprite: Polygon2D
-var hybrid: HybridCharacter
+var hybrid: VILLAGE_HAN
 var use_3d := true
 var perf_frames: Array[float] = []
 var perf_start := 0
@@ -195,7 +203,7 @@ func _ready() -> void:
 	get_viewport().size_changed.connect(fit_camera)
 	fit_camera()
 	update_rig()
-	hybrid = HybridCharacter.new()
+	hybrid = VILLAGE_HAN.new()
 	add_child(hybrid)
 	set_character_3d(true)
 
@@ -278,15 +286,34 @@ func face_target(target: Vector2) -> void:
 		facing = (2 if d.x < 0 else 3) if absf(d.x) > absf(d.y) else (1 if d.y < 0 else 0)
 
 func set_activity(value: String) -> void:
-	if activity != value: action_time = 0.0
+	if activity != value:
+		action_time = 0.0
+		if is_instance_valid(hybrid): hybrid.on_village_activity_change(activity,value)
 	activity = value
 
 func _physics_process(delta: float) -> void:
 	var movement := Vector2.ZERO if presentation_paused or activity != "" else direction.limit_length()
+	var move_factor := 1.0
 	if not presentation_paused and activity=="" and work_destination.is_finite():
-		movement=ActorMovement.direction_to(position,work_destination,delta)
+		var route_goal := work_destination if travel_waypoints.is_empty() else travel_waypoints[-1]
+		if not gait_destination.is_finite() or gait_destination.distance_squared_to(route_goal)>4.0:
+			gait_destination=route_goal
+			gait_route_age=0.0
+			gait_run=0.0
+		var remaining := position.distance_to(work_destination)
+		for i in range(1,travel_waypoints.size()):
+			remaining+=travel_waypoints[i-1].distance_to(travel_waypoints[i])
+		var walking_eta:=remaining/maxf(.01,ActorMovement.speed())
+		var can_run:=gait_route_age>=DESTINATION_WALK_START and walking_eta>DESTINATION_WALK_END
+		gait_run=move_toward(gait_run,1.0 if can_run else 0.0,delta*5.0)
+		move_factor=lerpf(1.0,DESTINATION_RUN_FACTOR,gait_run)
+		movement=ActorMovement.direction_to(position,work_destination,delta,move_factor)
+		gait_route_age+=delta
+	elif not presentation_paused:
+		gait_destination=Vector2.INF
+		gait_run=0.0
 	var before := position
-	ActorMovement.move(self,movement)
+	ActorMovement.move(self,movement,move_factor)
 	var safe_bounds:Rect2=get_parent().playable_rect().grow(-24) if get_parent().has_method("playable_rect") else VillageBounds.WORLD_RECT.grow(-24)
 	position=position.clamp(safe_bounds.position,safe_bounds.end)
 	var travelled := position.distance_to(before)
@@ -305,6 +332,7 @@ func _physics_process(delta: float) -> void:
 		tool.visible = false
 		idle_elapsed=idle_elapsed+delta if motion_state=="idle" and not work_destination.is_finite() and not presentation_paused and direction.length()<.01 else 0.0
 		hybrid.idle_elapsed=idle_elapsed
+		hybrid.run_presentation=gait_run
 		hybrid.animate(delta,movement,phase,motion_state == "walk",activity,action_time,presentation_paused)
 
 func update_rig() -> void:

@@ -15,7 +15,10 @@ func cancel() -> void:
 	if app.model:app.model.release_gather("hero")
 	path.clear();action="";target="";stuck=0;retry_count=0;blocked_cells.clear()
 	if is_instance_valid(trail):trail.clear()
-	if is_instance_valid(app.world):app.world.player.work_destination=Vector2.INF
+	
+	if is_instance_valid(app.world):
+		app.world.player.work_destination=Vector2.INF
+		app.world.player.travel_waypoints.clear()
 func start(kind:String,id:String,destination:Vector2,retry:int=0,blocked:Array=[],quiet:bool=false) -> bool:
 	if not is_instance_valid(trail):
 		trail=TravelTrail.new(self);app.world.add_child(trail)
@@ -46,6 +49,7 @@ func start(kind:String,id:String,destination:Vector2,retry:int=0,blocked:Array=[
 	if path.is_empty() or path[-1].distance_to(destination)>.01:path.append(destination)
 	action=kind;target=id;previous=player.position
 	player.work_destination=path[0]
+	player.travel_waypoints=path.duplicate()
 	return true
 func _physics_process(delta:float) -> void:
 	if app.world_map_open or app.map_transition_active:return
@@ -69,7 +73,10 @@ func _physics_process(delta:float) -> void:
 		return
 	if player.position.distance_to(path[0])>3:return
 	path.remove_at(0)
-	if not path.is_empty():player.work_destination=path[0];return
+	if not path.is_empty():
+		player.work_destination=path[0]
+		player.travel_waypoints=path.duplicate()
+		return
 	var next:=action;var id:=target;cancel()
 	if next=="move":return
 	elif next=="family":app.family.begin();return

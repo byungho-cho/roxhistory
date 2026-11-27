@@ -212,7 +212,8 @@ func _ready() -> void:
 	quest_preview_enabled = bool(settings.get_value("development","quest_hold_preview",test_mode))
 	audio = DemoSoundscape.new()
 	add_child(audio)
-	var save_directory:="user://tests/session" if test_mode else "user://"
+	# Full reset starts a fresh progress namespace; legacy data stays available to the previous build.
+	var save_directory:="user://tests/session" if test_mode else "user://progress-main-reset-339"
 	model = GameState.new(SaveStore.new(save_directory),true)
 	if not test_mode:village_alerts=AndroidVillageNotifications.new(model)
 	model.finish_loaded_jobs()

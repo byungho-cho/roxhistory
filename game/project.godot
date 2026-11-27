@@ -1,10 +1,10 @@
 config_version=5
 
 [application]
-config/name="RoxHistory - Battlefield Reset"
+config/name="RoxHistory"
 config/use_custom_user_dir=true
-config/custom_user_dir_name="RoxHistory-Battlefield-Reset"
-config/version="0.315.338"
+config/custom_user_dir_name="RoxHistory"
+config/version="0.315.339"
 config/build_date="2026.11.27"
 config/icon="res://assets/app-icon-pioneer.png"
 run/main_scene="res://scenes/main.tscn"
@@ -37,7 +37,7 @@ pointing/emulate_touch_from_mouse=false
 pointing/emulate_mouse_from_touch=false
 
 [roxhistory]
-distribution/full_apk_version="0.315.338"
+distribution/full_apk_version="0.315.339"
 distribution/legacy_channel_enabled=false
 
 inventory/capacity=64
