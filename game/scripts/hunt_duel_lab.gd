@@ -3049,11 +3049,16 @@ func _open_han_motion_viewer() -> void:
 var han_ultra
 func _present_han_ultra() -> void:
 	if app==null or get_script().resource_path!="res://scripts/hunt_duel_lab.gd" or not show_final_test35 or a.key!="hangyeol" or b.key!="forest":return
+	if is_instance_valid(han_ultra) and (not is_instance_valid(han_ultra.duel_model) or han_ultra.duel_model.get_parent() != a.preview.pivot):
+		han_ultra.restore_duel_donor()
+		han_ultra.queue_free()
+		han_ultra = null
 	if not is_instance_valid(han_ultra):
-		var binder=load("res://battlefield_reset/han_motion/han_motion_viewer.gd").new()
-		binder.duel_binding=true
+		var binder = load("res://battlefield_reset/han_motion/han_motion_viewer.gd").new()
+		binder.duel_binding = true
 		add_child(binder)
-		if not binder.bind_duel(a.preview.pivot,b.preview.pivot,shared_world.camera):
+		var scale: float = binder.model_test_projection_ratio(shared_world.camera, shared_world.display.scale.y)
+		if not binder.bind_duel(a.preview.pivot, b.preview.pivot, shared_world.camera, scale):
 			binder.queue_free()
 			return
 		han_ultra=binder

@@ -43,6 +43,41 @@ func _capture(filename: String) -> void:
 	await RenderingServer.frame_post_draw
 	_check(root.get_texture().get_image().save_png(capture_dir.path_join(filename + ".png")) == OK, "capture " + filename)
 
+func _at(view, time: float) -> Vector2:
+	view.age = time
+	view.render_frame()
+	return view.han.position
+
+func _check_motion_enhancements(view) -> void:
+	if not view.route:
+		view.toggle_route()
+	view.play_motion("08")
+	var duration: float = view.reel_duration
+	var start := _at(view, .0)
+	var middle := _at(view, duration * .5)
+	var stop := _at(view, duration - .0001)
+	var after := _at(view, duration + .4)
+	_check(start.distance_to(middle) > middle.distance_to(stop) * 2.5 and stop.distance_to(after) < .03, "Deceleration slows and retains the stopped position")
+	view.play_motion("18")
+	var takeoff := _at(view, .0)
+	var flying := _at(view, 1.05)
+	var landing := _at(view, view.model.STORY_FLY_SECONDS - .001)
+	var standing := _at(view, view.model.STORY_FLY_SECONDS + .5)
+	var landed_idle := _at(view, view.reel_duration + .4)
+	_check(takeoff.distance_to(flying) > 4.0 and takeoff.distance_to(landing) > 25.0, "Fixed-route flight travels through an arc")
+	_check(standing.distance_to(landing) < .1 and landed_idle.distance_to(landing) < .1, "Flying, standing and idle share the landing anchor")
+	view.toggle_route()
+	view.play_motion("18")
+	var free_start := _at(view, .0)
+	_check(free_start.is_equal_approx(_at(view, 1.05)) and free_start.is_equal_approx(_at(view, view.reel_duration + .4)), "Route OFF keeps the same ground anchor")
+	view.play_motion("15")
+	_check(view.motion_buttons["15"].text == "넉다운" and view.steps.size() == 1 and view.steps[0].clip == "knock_190", "Knockdown uses a single approved clip")
+	view.play_motion("12")
+	_at(view, 2.1)
+	_check(view.ground_dim.color.a > .49 and view.model.ap.current_animation_position < 1.0, "3SP restores the dim and original slow timing")
+	_at(view, view.reel_duration + .2)
+	_check(is_zero_approx(view.ground_dim.color.a), "3SP dim clears when the motion ends")
+
 func _run() -> void:
 	if not OS.get_cmdline_user_args().has("--test-ui"):
 		quit(90)
@@ -56,14 +91,25 @@ func _run() -> void:
 	await process_frame
 	if app.modal:
 		app.close_modal()
-	_check(app.world.player.hybrid.scale.is_equal_approx(Vector2(2, 2)), "Only the village Han visual is scaled twofold")
+	_check(app.world.player.hybrid.scale.is_equal_approx(Vector2(3, 3)), "Village Han is 1.5 times the 342 presentation size")
 	var world_mode: int = app.world.process_mode
 	var duel_button := _button(app, "DuelTestEntry")
 	var gahui_button := _button(app, "GahuiLabEntry")
-	if _check(is_instance_valid(duel_button) and duel_button.is_visible_in_tree(), "Village portrait button is available"):
+	if _check(is_instance_valid(duel_button) and duel_button.is_visible_in_tree() and duel_button.text == "테스트", "Village portal uses the text-only label"):
 		await _press(duel_button)
 		var duel = app.parry_lab
 		if _check(is_instance_valid(duel) and duel.rules.ally_id == "hangyeol" and duel.rules.enemy_id == "forest", "Village portal opens Han versus flower deer"):
+			_check(is_instance_valid(duel.han_ultra) and duel.han_ultra.duel_model.scene_file_path.ends_with("Han-Battle-Ultra-Rigged-12k.glb"), "Duel uses the same Han model")
+			if is_instance_valid(duel.han_ultra):
+				var world = duel.shared_world
+				var projected: float = world.camera.unproject_position(Vector3.UP).distance_to(world.camera.unproject_position(Vector3.ZERO))
+				var actual: float = projected * world.display.scale.y * duel.han_ultra.model_display_scale
+				var expected: float = 720.0 / 7.0 * (.46 / 1.5) * 1.58 / sqrt(2.0)
+				_check(absf(actual - expected) < .02, "Duel Han matches the model-test projection")
+				var donor_hidden := true
+				for donor: MeshInstance3D in duel.han_ultra.donor_meshes:
+					donor_hidden = donor_hidden and not donor.is_visible_in_tree()
+				_check(donor_hidden, "The duel does not render the older donor model")
 			await _capture("01-duel")
 			await _press(_button(duel, "HanMotionEntry"), true)
 			await process_frame
@@ -96,6 +142,7 @@ func _run() -> void:
 				view.age = view.reel_duration + 0.5
 				view.render_frame()
 				_check(view.model.ap.get_current_animation() == "idle_02_11", "Full motion returns to idle")
+				_check_motion_enhancements(view)
 				await _press(view.back_button, true)
 				await process_frame
 				duel = app.parry_lab

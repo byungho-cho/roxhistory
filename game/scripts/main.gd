@@ -2132,16 +2132,18 @@ func exit_parry_lab() -> void:
 	if is_instance_valid(world): world.player.presentation_paused = not application_active
 
 func add_parry_lab_entry(at: Vector2) -> void:
-	var flask := button(stage,"",start_one_on_one_lab,false,"","")
-	flask.name = "DuelTestEntry"
-	flask.tooltip_text = "실험실 · 1대1 전투"
-	picture(flask,preload("res://assets/ui/hero-level-up/gahui-portrait-original.png"),Rect2(9,9,30,30))
+	var duel := button(stage,"테스트",start_one_on_one_lab,false,"","")
+	duel.name = "DuelTestEntry"
+	duel.tooltip_text = "실험실 · 1대1 전투"
+	duel.add_theme_font_size_override("font_size", 14)
+	for color_key in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
+		duel.add_theme_color_override(color_key, Color("#fff0da"))
 	var gahui := button(stage,"",start_gahui_hunt,false,"","")
 	gahui.name = "GahuiLabEntry"
 	gahui.tooltip_text = "가희 모션 실험실"
 	picture(gahui,preload("res://assets/ui/d0031/lab-flask.png"),Rect2(8,8,32,32))
 	debug_shortcut.position.y += 57
-	for entry in [[gahui, at, preload("res://assets/ui/d0060/round-silver.svg")], [flask, at+Vector2(0,57), preload("res://assets/ui/d0060/round-gold.svg")]]:
+	for entry in [[gahui, at, preload("res://assets/ui/d0060/round-silver.svg")], [duel, at+Vector2(0,57), preload("res://assets/ui/d0060/round-gold.svg")]]:
 		var control: DemoButton = entry[0]
 		control.custom_minimum_size = Vector2.ZERO
 		control.position = entry[1]

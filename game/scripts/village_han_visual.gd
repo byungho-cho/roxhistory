@@ -9,10 +9,12 @@ const GATHER_SECONDS := 4.0
 const GATHER_FINISH_HOLD := .5
 const GATHER_CONTACTS := [1.60, 2.60, 3.60]
 const EDGE := Vector3(0,.5565,.236)
+const FIRST_AMBIENT_IDLE := 5.25
+const AMBIENT_IDLE_INTERVAL := 7.5
+const AMBIENT_IDLE_BLEND := .36
 var village_model: Node3D
 var axe_visual: Node3D
 var tracks: Dictionary = {}
-var idle_age := 0.0
 var stride_phase := 0.0
 var move_weight := 0.0
 var run_weight := 0.0
@@ -75,6 +77,35 @@ func _apply_core_pose(key: StringName,age: float,weight: float) -> void:
 			if run_weight>.001:pose=pose.interpolate_with(_sample(&"run",index,run_time),run_weight)
 		rig.set_bone_pose(index,pose)
 
+func _turn_idle_bone(bone: int, yaw: float, pitch: float) -> void:
+	if bone < 0:
+		return
+	var basis := (rig.global_basis * rig.get_bone_global_pose(bone).basis).orthonormalized().inverse()
+	var rotation := rig.get_bone_pose_rotation(bone)
+	rig.set_bone_pose_rotation(bone, rotation * Quaternion(basis * Vector3.UP, yaw) * Quaternion(basis * Vector3.RIGHT, pitch))
+
+func ambient_idle_phase(time: float) -> float:
+	var phase := fposmod(time - FIRST_AMBIENT_IDLE, AMBIENT_IDLE_INTERVAL)
+	return phase if time >= FIRST_AMBIENT_IDLE and phase < MOTIONS.get_animation(&"idle").length else -1.0
+
+func _apply_ambient_idle(time: float) -> void:
+	var phase := ambient_idle_phase(time)
+	var length := MOTIONS.get_animation(&"idle").length
+	var blend := 0.0
+	if phase >= 0.0:
+		blend = smoothstep(0.0, AMBIENT_IDLE_BLEND, phase) * (1.0 - smoothstep(length - AMBIENT_IDLE_BLEND, length, phase))
+	if blend >= .999:
+		_apply_core_pose(&"idle", phase, 0.0)
+		return
+	_apply_core_pose(&"idle", 0.0, 0.0)
+	if blend > 0.0:
+		for i in rig.get_bone_count():
+			rig.set_bone_pose(i, rig.get_bone_pose(i).interpolate_with(_sample(&"idle", i, phase), blend))
+	var look := deg_to_rad(21.0) * sin(TAU * time / 5.3) * (1.0 - blend)
+	var raise := deg_to_rad(2.3) * sin(TAU * time / 4.8 + .3) * (1.0 - blend)
+	_turn_idle_bone(rig.find_bone("neck"), look * .29, raise * .36)
+	_turn_idle_bone(rig.find_bone("Head"), look * .71, raise * .64)
+
 func on_village_activity_change(previous: String, next: String, previous_age:float) -> void:
 	if previous!="gather" and next!="gather":return
 	gather_generation+=1
@@ -134,14 +165,15 @@ func animate(delta: float,movement: Vector2,_phase: float,walking: bool,action: 
 	move_weight=move_toward(move_weight,1.0 if walking and not working else 0.0,delta*5.0)
 	run_weight=move_toward(run_weight,run_presentation if walking else 0.0,delta*5.0)
 	if walking:stride_phase+=delta*lerpf(.96,1.56,run_weight)
-	else:idle_age+=delta
 	if working:
 		# Synchronize the unchanged donor joint path to the existing resource contact cadence.
 		var beat := fposmod(action_time,HeroMotion.CYCLE)/HeroMotion.CYCLE
 		var age := lerpf(0.0,.58235,beat*2.0) if beat<.5 else lerpf(.58235,1.0,(beat-.5)*2.0)
 		_apply_core_pose(&"gather",age,0.0)
+	elif not walking and idle_elapsed > 0.0 and move_weight <= .001:
+		_apply_ambient_idle(idle_elapsed)
 	else:
-		_apply_core_pose(&"idle",idle_age,move_weight)
+		_apply_core_pose(&"idle",0.0,move_weight)
 	rig.force_update_all_bone_transforms()
 	work_block.visible=action=="build"
 

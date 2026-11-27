@@ -949,13 +949,11 @@ func story_preview() -> void:
 	var took_off:=false
 	var landed:=false
 	var down_shown:=false
-	while clock<1.99:
-		var x:=minf(clock,1.5)
-		var motion_time:=.01*x+.99*x*x/3.0+maxf(0.0,clock-1.5)
-		var air:=clampf(motion_time/.58,0.0,1.0)
-		var slide:=smoothstep(.58,.80,motion_time)
-		var retreat:float=1.30*(1.0-pow(1.0-air,1.28))+.15*slide
-		var height:=.52*4.0*air*(1.0-air)
+	while clock < STORY_FLY_SECONDS:
+		var motion_time := story_flight_clock(clock)
+		var air := clampf(motion_time / .58, 0.0, 1.0)
+		var retreat := story_flight_retreat(motion_time)
+		var height := story_flight_height(motion_time)
 		field.han.position=origin+toward*retreat
 		ap.seek(minf(.16+minf(motion_time,.58)*1.20,ap.get_animation("story_fly").length-.01),true)
 		field.han.position.y+=clampf(floor_y+height-_story_support()-.20*smoothstep(.43,.60,motion_time),-.9,1.05)
@@ -987,6 +985,20 @@ func story_preview() -> void:
 		printerr("FAIL story chain")
 		push_error("Han motion viewer operation failed")
 	await wait_for(.65)
+
+const STORY_FLY_SECONDS := 1.99
+
+static func story_flight_clock(time: float) -> float:
+	var ramp := minf(time, 1.5)
+	return .01 * ramp + .99 * ramp * ramp / 3.0 + maxf(0.0, time - 1.5)
+
+static func story_flight_retreat(motion_time: float) -> float:
+	var air := clampf(motion_time / .58, 0.0, 1.0)
+	return 1.30 * (1.0 - pow(1.0 - air, 1.28)) + .15 * smoothstep(.58, .80, motion_time)
+
+static func story_flight_height(motion_time: float) -> float:
+	var air := clampf(motion_time / .58, 0.0, 1.0)
+	return .52 * 4.0 * air * (1.0 - air)
 
 func _story_support() -> float:
 	rig.force_update_all_bone_transforms()
@@ -1054,11 +1066,9 @@ func full_cinematic_3sp() -> void:
 	ap.pause()
 	var hit:=false
 	print("QA full cinematic start frame=",Engine.get_process_frames())
-	for i in range(ceili((2.5+span-1.08)*30.)+1):
+	for i in range(ceili(cinematic_duration(span) * 30.0) + 1):
 		var t:=i/30.
-		var u:=clampf((t-.90)/1.20,0.,1.)
-		var v:=clampf((t-2.57)/.76,0.,1.)
-		curtain.color.a=.55*(.45*u+.55*u*u)*(1.-v)*(1.-v)
+		curtain.color.a = cinematic_dim_alpha(t)
 		var clip_t:=cinematic_motion_time(t)
 		ap.seek(minf(clip_t,span-.001),true)
 		rig.force_update_all_bone_transforms()
@@ -1079,7 +1089,15 @@ func full_cinematic_3sp() -> void:
 	field.elapsed=0.
 	busy=false
 
-func cinematic_motion_time(t:float)->float:
+static func cinematic_duration(clip_length: float) -> float:
+	return 2.5 + clip_length - 1.08
+
+static func cinematic_dim_alpha(time: float) -> float:
+	var enter := clampf((time - .90) / 1.20, 0.0, 1.0)
+	var leave := 1.0 - clampf((time - 2.57) / .76, 0.0, 1.0)
+	return .55 * (.45 * enter + .55 * enter * enter) * leave * leave
+
+static func cinematic_motion_time(t:float)->float:
 	if t<=.9: return .5*t
 	if t<=1.:
 		var d:=t-.9
@@ -1206,9 +1224,20 @@ func _preview_stand() -> void:
 var duel_binding:=false
 var duel_model:Node3D
 var duel_active_key:=""
+var model_display_scale := 1.0
 var donor_meshes: Dictionary = {}
 
-func bind_duel(pivot:Node3D,other:Node3D,cam:Camera3D) -> bool:
+const MODEL_TEST_SCALE := 1.58
+const MODEL_TEST_CAMERA_SIZE := 7.0
+const MODEL_TEST_VIEW_SIZE := Vector2i(960, 720)
+const MODEL_TEST_DISPLAY_FACTOR := .46 / 1.5
+
+static func model_test_projection_ratio(camera: Camera3D, display_scale: float) -> float:
+	var measured_height := camera.unproject_position(Vector3.UP).distance_to(camera.unproject_position(Vector3.ZERO)) * display_scale
+	var preview_height := MODEL_TEST_VIEW_SIZE.y / MODEL_TEST_CAMERA_SIZE * MODEL_TEST_DISPLAY_FACTOR * MODEL_TEST_SCALE / sqrt(2.0)
+	return preview_height / maxf(.001, measured_height)
+
+func bind_duel(pivot:Node3D,other:Node3D,cam:Camera3D,display_scale := 1.0) -> bool:
 	duel_binding=true
 	field={"han":pivot,"deer":other,"camera":cam}
 	var model:=load("res://battlefield_reset/han_motion/Han-Battle-Ultra-Rigged-12k.glb") as PackedScene
@@ -1222,7 +1251,8 @@ func bind_duel(pivot:Node3D,other:Node3D,cam:Camera3D) -> bool:
 		return false
 	var top:=duel_model.to_local(rig.to_global(rig.get_bone_global_rest(rig.find_bone("head_end")).origin)).y
 	var heel:=duel_model.to_local(rig.to_global(rig.get_bone_global_rest(rig.find_bone("LeftToeBase")).origin)).y
-	var factor:=1.58/maxf(.2,top-maxf(heel-.022,0.))
+	model_display_scale = display_scale
+	var factor := 1.58 * model_display_scale / maxf(.2, top - maxf(heel - .022, 0.0))
 	duel_model.scale*=factor
 	duel_model.position.y=-maxf(heel-.022,0.)*factor
 	for p:AnimationPlayer in duel_model.find_children("*","AnimationPlayer",true,false):
@@ -1271,6 +1301,6 @@ func sample_han_clip(key: String, time: float, ready_grip := false) -> void:
 	var hand:=bone_world(hand_index)
 	var basis:=hand.basis.orthonormalized()*hand_local_basis
 	if ready_grip:basis=Basis(Quaternion(Vector3.UP,ready_blade_axis()))
-	var palm:=hand.origin+hand.basis.orthonormalized()*palm_local
-	var weapon_basis:=basis.scaled(Vector3.ONE*.90)
-	blade.global_transform=Transform3D(weapon_basis,palm+palm_clearance(basis.y)-weapon_basis*LOW_GRIP)
+	var palm := hand.origin + hand.basis.orthonormalized() * palm_local * model_display_scale
+	var weapon_basis := basis.scaled(Vector3.ONE * (.90 * model_display_scale))
+	blade.global_transform = Transform3D(weapon_basis, palm + palm_clearance(basis.y) * model_display_scale - weapon_basis * LOW_GRIP)
