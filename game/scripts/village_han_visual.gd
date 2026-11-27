@@ -54,8 +54,8 @@ func build_villager() -> void:
 	_apply_core_pose(&"idle",0.0,0.0)
 	rig.force_update_all_bone_transforms()
 	for side in ["Left", "Right"]:
-		_cache_ambient_arm_correction(side + "Arm", side + "ForeArm")
-		_cache_ambient_arm_correction(side + "ForeArm", side + "Hand")
+		_cache_ambient_arm_correction(side + "Arm", side + "ForeArm", .59)
+		_cache_ambient_arm_correction(side + "ForeArm", side + "Hand", .45)
 	var foot_l := rig.get_bone_global_pose(rig.find_bone("LeftFoot")).origin
 	var foot_r := rig.get_bone_global_pose(rig.find_bone("RightFoot")).origin
 	village_model.position.y -= minf(rig.to_global(foot_l).y,rig.to_global(foot_r).y)-.075
@@ -81,7 +81,7 @@ func _apply_core_pose(key: StringName,age: float,weight: float) -> void:
 			if run_weight>.001:pose=pose.interpolate_with(_sample(&"run",index,run_time),run_weight)
 		rig.set_bone_pose(index,pose)
 
-func _cache_ambient_arm_correction(joint_name: StringName, child_name: StringName) -> void:
+func _cache_ambient_arm_correction(joint_name: StringName, child_name: StringName, amount: float) -> void:
 	var joint := rig.find_bone(joint_name)
 	var child := rig.find_bone(child_name)
 	if joint < 0 or child < 0:
@@ -89,8 +89,7 @@ func _cache_ambient_arm_correction(joint_name: StringName, child_name: StringNam
 	var pose := rig.get_bone_global_pose(joint)
 	var child_origin := rig.get_bone_global_pose(child).origin
 	var extended := (rig.to_global(child_origin) - rig.to_global(pose.origin)).normalized()
-	# The slight remaining bend keeps the resting arms clear of the tunic.
-	var relaxed := extended.lerp(Vector3.DOWN, .90).normalized()
+	var relaxed := extended.lerp(Vector3.DOWN, amount).normalized()
 	var inverse_basis := (rig.global_basis * pose.basis).orthonormalized().inverse()
 	var correction := Quaternion(inverse_basis * extended, inverse_basis * relaxed)
 	ambient_arm_corrections[joint] = correction
