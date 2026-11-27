@@ -10,15 +10,19 @@ param(
     [string]$BaselinePinManifest,
     [string]$PreviousPack,
     [string]$PreviousManifest,
-    [string]$PythonPath = 'python'
+    [string]$PythonPath = 'python',
+    [switch]$Windows,
+    [string]$EditorSettingsPath
 )
 $ErrorActionPreference = 'Stop'
 $repository = 'byungho-cho/roxhistory'
 $bootstrap = Get-Content -Raw (Join-Path $GameRepo 'game/patch_test/bootstrap.gd')
-$base = [regex]::Match($bootstrap,'const BASE_VERSION := "([0-9.]+)"').Groups[1].Value
-$baseCommit = [regex]::Match($bootstrap,'const BASE_COMMIT := "([0-9a-f]{40})"').Groups[1].Value
-$runtime = [regex]::Match($bootstrap,'const RUNTIME := "([^"]+)"').Groups[1].Value
-$tag = "android-patches-$base"
+$prefix = if ($Windows) { 'WINDOWS_' } else { '' }
+$base = [regex]::Match($bootstrap,'const '+$prefix+'BASE_VERSION := "([0-9.]+)"').Groups[1].Value
+$baseCommit = [regex]::Match($bootstrap,'const '+$prefix+'BASE_COMMIT := "([0-9a-f]{40})"').Groups[1].Value
+$runtime = [regex]::Match($bootstrap,'const '+$prefix+'RUNTIME := "([^"]+)"').Groups[1].Value
+$platform = if ($Windows) { 'Windows Desktop' } else { 'Android' }
+$tag = if ($Windows) { "windows-patches-$base" } else { "android-patches-$base" }
 $referenceHashes = @{
     '0.315.315' = 'DCE25C14BBFEB92A6AA8228C73F384F9C76FF0B0710687BF2685854733ED876C'
     '0.339.339' = '1B1E3CC9B20CB0D72B10A879D72E7E53BF10B32070F8E5DF952F8AD09618E50A'
@@ -27,10 +31,22 @@ $referenceHashes = @{
     '0.2.174' = 'DE8EE37DC8864F201C0B87876BCE599EE694B0C7F3BEED6D2C8CCE459FBD202F'
     '0.2.295' = '88E90ED277E04229F2C5FFAF16CEA4223A1D47FEDD60476CC87B76FEEC0DFBCB'
 }
-if (!$baseCommit -or !$runtime -or (Get-FileHash $ReferencePack).Hash -ne $referenceHashes[$base]) { throw 'Wrong reference PCK for this runtime.' }
+$pin = if ($BaselinePinManifest) { Get-Content -Raw -LiteralPath $BaselinePinManifest | ConvertFrom-Json }
+$referenceHash = (Get-FileHash -LiteralPath $ReferencePack).Hash.ToLowerInvariant()
+$referenceBytes = (Get-Item -LiteralPath $ReferencePack).Length
+$expectedHash = $referenceHashes[$base]
+if ($Windows) {
+    if (!$pin -or !$pin.exe_reference_exact -or $pin.base -cne $base -or $pin.base_commit -cne $baseCommit -or
+        $pin.runtime -cne $runtime -or $pin.reference_size -ne $referenceBytes -or
+        $pin.build_commit -notmatch '^[a-f0-9]{40}$' -or $pin.exe_sha256 -notmatch '^[a-f0-9]{64}$') {
+        throw 'Provide the exact embedded Windows reference and its baseline pin.'
+    }
+    $expectedHash = $pin.reference_sha256
+}
+if (!$baseCommit -or !$runtime -or $referenceHash -ne $expectedHash) { throw 'Wrong reference PCK for this runtime.' }
 $gameChanges = @(& git -C $GameRepo status --porcelain -- game)
 if ($LASTEXITCODE) { throw 'Cannot verify the game tree.' }
-if ($InitializeChannel -and $base -eq '0.339.339') {
+if ($InitializeChannel -and !$Windows -and $base -eq '0.339.339') {
     # Initialization reads only the verified, signed APK reference, not loose importer sidecars.
     $gameChanges = @()
 }
@@ -49,9 +65,9 @@ if ($InitializeChannel) {
     $payload.patch_available = $false
     if ($base -in @('0.313.313','0.315.315','0.339.339') -and !$BaselinePinManifest) { throw 'Provide the exact native APK reference pin to initialize this baseline.' }
     if ($BaselinePinManifest) {
-        $pin = Get-Content -Raw -LiteralPath $BaselinePinManifest | ConvertFrom-Json
+        $exact = if ($Windows) { $pin.exe_reference_exact } else { $pin.apk_reference_every_payload_exact }
         if ($pin.base -cne $base -or $pin.base_commit -cne $baseCommit -or $pin.runtime -cne $runtime -or
-            $pin.build_commit -notmatch '^[0-9a-f]{40}$' -or !$pin.apk_reference_every_payload_exact -or
+            $pin.build_commit -notmatch '^[0-9a-f]{40}$' -or !$exact -or
             $pin.reference_sha256 -cne (Get-FileHash -LiteralPath $ReferencePack).Hash.ToLowerInvariant() -or
             $pin.reference_size -ne (Get-Item -LiteralPath $ReferencePack).Length) {
             throw 'The baseline pin does not describe the exact tested APK reference.'
@@ -64,7 +80,7 @@ if ($InitializeChannel) {
         $payload.reference_size = $pin.reference_size
     }
 } else {
-    & $GodotPath --headless --path (Join-Path $GameRepo 'game') --export-patch Android $pack --patches (Resolve-Path $ReferencePack).Path *> (Join-Path $directory "export-$version.log")
+    & $GodotPath --headless --path (Join-Path $GameRepo 'game') --export-patch $platform $pack --patches (Resolve-Path $ReferencePack).Path *> (Join-Path $directory "export-$version.log")
     if ($LASTEXITCODE -ne 0) { throw 'PCK export failed.' }
     $sha = (Get-FileHash $pack).Hash.ToLowerInvariant()
     $size = (Get-Item $pack).Length
@@ -135,7 +151,8 @@ if ($PreviousPack -or $PreviousManifest) {
     if ($deltas.Count) { $payload.deltas = $deltas }
 }
 $payload | ConvertTo-Json -Depth 5 -Compress | Set-Content -LiteralPath $payloadPath -Encoding utf8NoBOM -NoNewline
-$settings = Get-Content -Raw (Join-Path (Split-Path $GodotPath) 'editor_data/editor_settings-4.5.tres')
+if (!$EditorSettingsPath) { $EditorSettingsPath = Join-Path (Split-Path $GodotPath) 'editor_data/editor_settings-4.5.tres' }
+$settings = Get-Content -Raw -LiteralPath $EditorSettingsPath
 function Read-Setting([string]$name) {
     $match = [regex]::Match($settings, '(?m)^' + [regex]::Escape($name) + ' = (".*")\r?$')
     if ($match.Success) { return ConvertFrom-Json $match.Groups[1].Value }
@@ -168,7 +185,7 @@ Write-Output "Patch $version ($size bytes), source $commit"
 if (-not $Publish) { return }
 $remote = & gh release view $tag -R $repository --json isDraft,assets 2>$null
 if ($LASTEXITCODE -ne 0) {
-    & gh release create $tag -R $repository --target $commit --title 'RoxHistory Android patches' --notes 'Install the patch-enabled Android APK once, then use the in-game update button.' --draft --latest=false
+    & gh release create $tag -R $repository --target $commit --title "RoxHistory $platform patches" --notes 'Install the patch-enabled build, then use the in-game update button.' --draft --latest=false
     if ($LASTEXITCODE -ne 0) { throw 'Could not create patch release.' }
     $remote = & gh release view $tag -R $repository --json isDraft,assets
     if ($LASTEXITCODE -ne 0) { throw 'Could not read patch release.' }

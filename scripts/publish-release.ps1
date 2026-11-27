@@ -1,18 +1,20 @@
 [CmdletBinding()]
-param([string]$Repository = 'byungho-cho/roxhistory', [string]$ReleaseNotesPath, [string]$OutputDirectory, [switch]$AndroidOnly, [switch]$ReviewOnly)
+param([string]$Repository = 'byungho-cho/roxhistory', [string]$ReleaseNotesPath, [string]$OutputDirectory, [switch]$AndroidOnly, [switch]$ReviewOnly, [switch]$WindowsOnly)
 $ErrorActionPreference = 'Stop'
+if ($AndroidOnly -and $WindowsOnly) { throw 'Choose one platform filter.' }
 $latestOption = if ($ReviewOnly) { @('-f','make_latest=false') } else { @() }
 $repo = Split-Path $PSScriptRoot -Parent
 $output = if ($OutputDirectory) { $OutputDirectory } else { Join-Path $repo 'build' }
 $manifest = Get-Content -Raw (Join-Path $output 'release-manifest.json') | ConvertFrom-Json
 $version = $manifest.version
 if ($version -notmatch '^\d+\.\d+\.\d+$') { throw 'Invalid release version.' }
-$files = @("Roxhistory_$version.apk")
-$platforms = 'Android'
-if (-not $AndroidOnly) {
-    $files += "Roxhistory_$version.exe"
-    $platforms = 'Android / Windows'
+$files = @()
+$platforms = 'Windows'
+if (-not $WindowsOnly) {
+    $files += "Roxhistory_$version.apk"
+    $platforms = if ($AndroidOnly) { 'Android' } else { 'Android / Windows' }
 }
+if (-not $AndroidOnly) { $files += "Roxhistory_$version.exe" }
 if (@($manifest.files).Count -ne $files.Count) { throw 'The build manifest does not match the requested platforms.' }
 foreach ($name in $files) {
     $entry = @($manifest.files | Where-Object name -CEQ $name)
@@ -33,12 +35,13 @@ if ($matchingReleases.Count -gt 1) { throw 'Multiple releases use this tag. Reso
 $exists = $matchingReleases.Count -eq 1
 $notes = Join-Path $repo '.work/release-logs/release-notes.txt'
 New-Item -ItemType Directory (Split-Path $notes) -Force | Out-Null
+$androidNote = if (!$WindowsOnly) { 'This Android APK uses the existing development signing key. Uninstalling the app can erase saved progress.' } else { '' }
 @"
 RoxHistory $version — $platforms development build
 
 Source commit: $($manifest.commit)
-This Android APK uses the current MY-NUROX debug signing key. Older differently signed installations require reinstalling; uninstalling can erase saved progress.
-Build and signature checks passed. Known legacy regression-test failures remain documented; this is not a full gameplay approval.
+$androidNote
+Build checks passed. Known legacy regression-test failures remain documented; this is not a full gameplay approval.
 "@ | Set-Content -LiteralPath $notes -Encoding utf8
 if ($ReleaseNotesPath) {
     Get-Content -Raw -LiteralPath $ReleaseNotesPath | Add-Content -LiteralPath $notes -Encoding utf8

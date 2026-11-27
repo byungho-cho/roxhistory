@@ -4,6 +4,16 @@ const BASE_VERSION := "0.339.339"
 const BASE_COMMIT := "5a139c938502202b6a69303513e6c689657cb737"
 const RUNTIME := "godot-4.5.1-android-reset-339"
 const RELEASE_ROOT := "https://github.com/byungho-cho/roxhistory/releases/download/android-patches-0.339.339/"
+const WINDOWS_BASE_VERSION := "0.339.341"
+const WINDOWS_BASE_COMMIT := "94cf90bd98255df9e38b472e8514e6dc5d202e04"
+const WINDOWS_RUNTIME := "godot-4.5.1-windows-341"
+const WINDOWS_RELEASE_ROOT := "https://github.com/byungho-cho/roxhistory/releases/download/windows-patches-0.339.341/"
+
+var windows_channel := OS.has_feature("rox_windows_patch")
+var channel_base := WINDOWS_BASE_VERSION if windows_channel else BASE_VERSION
+var channel_commit := WINDOWS_BASE_COMMIT if windows_channel else BASE_COMMIT
+var channel_runtime := WINDOWS_RUNTIME if windows_channel else RUNTIME
+var channel_root := WINDOWS_RELEASE_ROOT if windows_channel else RELEASE_ROOT
 signal check_status_changed(value: String)
 signal manifest_check_failed_to_start
 var check_status := "":
@@ -15,7 +25,7 @@ var title_active := false
 var restart_pending := false
 const TRUST := preload("res://patch_test/patch_key.gd")
 
-var cache := "user://rox-patches-0.339.339/"
+var cache := "user://rox-windows-patches-" + channel_base + "/" if windows_channel else "user://rox-patches-0.339.339/"
 var index := cache + "current.json"
 var shade:ColorRect
 var popup:CenterContainer
@@ -32,7 +42,7 @@ var phase := Phase.IDLE
 var dialog: Control
 var verification_generation := 0
 var failure_message := ""
-var check_url := RELEASE_ROOT + "latest.json"
+var check_url := channel_root + "latest.json"
 var request: HTTPRequest
 var status: Label
 var update_button: Button
@@ -41,7 +51,7 @@ var progress_bar: ProgressBar
 var progress_text: Label
 var downloading := false
 var previous_mouse_emulation := false
-var embedded_version := str(ProjectSettings.get_setting("application/config/version",BASE_VERSION))
+var embedded_version := str(ProjectSettings.get_setting("application/config/version",channel_base))
 var cached := {}
 var candidate := {}
 var envelope := PackedByteArray()
@@ -61,7 +71,7 @@ func _init(mount_on_start := true) -> void:
 	discard(index + ".part")
 	cached = verified_manifest(FileAccess.get_file_as_bytes(index)) if FileAccess.file_exists(index) else {}
 	if not cached.is_empty() and (version_number(cached.version)<=version_number(embedded_version) or not valid_pack(pack_path(cached),cached)):cached = {}
-	ProjectSettings.set_setting("roxhistory/update/source_commit",BASE_COMMIT)
+	ProjectSettings.set_setting("roxhistory/update/source_commit",channel_commit)
 	mount_cached()
 
 func _ready() -> void:
@@ -184,7 +194,7 @@ func render_phase() -> void:
 			dialog.render("게임 업데이트","","","","",false,"닫기","")
 
 func check_for_patch() -> void:
-	begin_manifest_check(RELEASE_ROOT+"latest.json")
+	begin_manifest_check(channel_root+"latest.json")
 
 func begin_manifest_check(url: String) -> bool:
 	if not bool(ProjectSettings.get_setting("roxhistory/distribution/reset_patch_channel_enabled",false)): return false
@@ -237,7 +247,7 @@ func request_completed(result: int, code: int, _headers: PackedStringArray, body
 		return
 	if phase==Phase.CHECKING:
 		var remote := verify_payload(body)
-		if compatible(remote) and remote.get("version")==BASE_VERSION and remote.get("patch_available")==false:
+		if compatible(remote) and remote.get("version")==channel_base and remote.get("patch_available")==false:
 			phase = Phase.CURRENT
 		else:
 			candidate = verified_manifest(body)
@@ -327,7 +337,7 @@ func download_patch() -> void:
 	request.download_file = cache+"incoming.part"
 	request.body_size_limit = transfer_size()
 	var filename: String = candidate.file if delta.is_empty() else delta.file
-	if request.request(RELEASE_ROOT+filename)!=OK:show_failure()
+	if request.request(channel_root+filename)!=OK:show_failure()
 
 
 func setup_apk_bridge() -> void:
@@ -426,7 +436,7 @@ func verify_payload(bytes:PackedByteArray) -> Dictionary:
 	return data if data is Dictionary else {}
 
 func compatible(data: Dictionary) -> bool:
-	return data.get("base")==BASE_VERSION and data.get("base_commit")==BASE_COMMIT and data.get("runtime")==RUNTIME
+	return data.get("base")==channel_base and data.get("base_commit")==channel_commit and data.get("runtime")==channel_runtime
 
 func verified_manifest(bytes:PackedByteArray) -> Dictionary:
 	var data:=verify_payload(bytes)
@@ -434,11 +444,11 @@ func verified_manifest(bytes:PackedByteArray) -> Dictionary:
 	if not data.get("version") is String or not data.get("sha256") is String or not data.get("size") is float:return {}
 	var regex := RegEx.new()
 	regex.compile("^[0-9]{1,4}\\.[0-9]{1,4}\\.[0-9]{1,4}$")
-	if regex.search(data.version)==null or version_number(data.version)<=version_number(BASE_VERSION):return {}
+	if regex.search(data.version)==null or version_number(data.version)<=version_number(channel_base):return {}
 	regex.compile("^[0-9a-f]{64}$")
 	if not data.get("commit") is String or data.commit.length()!=40:return {}
 	if regex.search(data.sha256)==null or data.size<=0 or data.size>600000000 or data.size!=floorf(data.size):return {}
-	if data.get("file") != "Roxhistory_%s_to_%s.pck"%[BASE_VERSION,data.version]:return {}
+	if data.get("file") != "Roxhistory_%s_to_%s.pck"%[channel_base,data.version]:return {}
 	return data
 
 func select_delta(target: Dictionary) -> Dictionary:
@@ -458,7 +468,7 @@ func select_delta(target: Dictionary) -> Dictionary:
 		if not item is Dictionary: continue
 		if item.get("from_version") != cached.version or item.get("from_commit") != cached.commit or item.get("from_sha256") != cached.sha256:
 			continue
-		if item.get("file") != "Roxhistory_%s_%s_to_%s.rdx"%[BASE_VERSION,cached.version,target.version]: continue
+		if item.get("file") != "Roxhistory_%s_%s_to_%s.rdx"%[channel_base,cached.version,target.version]: continue
 		if not item.get("sha256") is String or not pattern.search(item.sha256): continue
 		if not item.get("size") is float or item.size != floorf(item.size) or item.size < 12 or item.size > target.size*.8: continue
 		return item.duplicate()
