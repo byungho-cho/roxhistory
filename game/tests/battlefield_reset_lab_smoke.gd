@@ -71,6 +71,14 @@ func _run() -> void:
 			if _check(is_instance_valid(view) and view.name == "HanModelTest", "Duel opens the model-only test"):
 				_check(view.model.duel_model.scene_file_path.ends_with("Han-Battle-Ultra-Rigged-12k.glb"), "New Han rig is loaded")
 				_check(view.motion_buttons.size() == 19 and view.actors.is_empty(), "18 motions plus full playback, with a single Han rig")
+				var motion_rects: Array[Rect2] = []
+				var separate := true
+				for control: Button in view.motion_buttons.values():
+					var bounds := control.get_global_rect()
+					for previous in motion_rects:
+						separate = separate and not previous.intersects(bounds)
+					motion_rects.append(bounds)
+				_check(separate, "All 19 controls have separate touch areas")
 				await _capture("02-han-model-test")
 				for i in range(1, 19):
 					var key := "%02d" % i

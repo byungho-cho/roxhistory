@@ -46,7 +46,8 @@ func start_preview() -> void:
 	for index in CLIPS.size():
 		var key := "%02d" % (index + 1)
 		var button_rect := Rect2((index % 10) * 139, floori(index / 10.0) * 64, 132, 57)
-		var item := button(motions, HanModel.TITLES[index], button_rect, play_motion.bind(key))
+		var title: String = "날아감 · 착지\n일어서기" if index == 17 else HanModel.TITLES[index]
+		var item := button(motions, title, button_rect, play_motion.bind(key))
 		item.name = "HanMotion" + key
 		item.add_theme_font_size_override("font_size", 17)
 		item.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -77,7 +78,7 @@ func toggle_battle() -> void:
 func layout_actors() -> void:
 	if not is_instance_valid(floor_label):
 		return
-	han.scale = Vector2.ONE * (.99 * field.size.x / 960.0)
+	han.scale = Vector2.ONE * (1.58 * field.size.x / 960.0)
 	motions.position.y = field.size.y - 145
 	render_frame()
 
