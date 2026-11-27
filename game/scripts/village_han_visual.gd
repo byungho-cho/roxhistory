@@ -15,6 +15,7 @@ const AMBIENT_IDLE_BLEND := .36
 var village_model: Node3D
 var axe_visual: Node3D
 var tracks: Dictionary = {}
+var ambient_arm_corrections: Dictionary[int, Quaternion] = {}
 var stride_phase := 0.0
 var move_weight := 0.0
 var run_weight := 0.0
@@ -52,6 +53,8 @@ func build_villager() -> void:
 	approved_gather.hide()
 	_apply_core_pose(&"idle",0.0,0.0)
 	rig.force_update_all_bone_transforms()
+	_cache_ambient_arm_correction(&"LeftArm", &"LeftForeArm")
+	_cache_ambient_arm_correction(&"RightArm", &"RightForeArm")
 	var foot_l := rig.get_bone_global_pose(rig.find_bone("LeftFoot")).origin
 	var foot_r := rig.get_bone_global_pose(rig.find_bone("RightFoot")).origin
 	village_model.position.y -= minf(rig.to_global(foot_l).y,rig.to_global(foot_r).y)-.075
@@ -77,6 +80,18 @@ func _apply_core_pose(key: StringName,age: float,weight: float) -> void:
 			if run_weight>.001:pose=pose.interpolate_with(_sample(&"run",index,run_time),run_weight)
 		rig.set_bone_pose(index,pose)
 
+func _cache_ambient_arm_correction(upper_name: StringName, elbow_name: StringName) -> void:
+	var upper := rig.find_bone(upper_name)
+	var elbow := rig.find_bone(elbow_name)
+	if upper < 0 or elbow < 0:
+		return
+	var pose := rig.get_bone_global_pose(upper)
+	var forearm_origin := rig.get_bone_global_pose(elbow).origin
+	var extended := (rig.to_global(forearm_origin) - rig.to_global(pose.origin)).normalized()
+	var relaxed := extended.lerp(Vector3.DOWN, .28).normalized()
+	var inverse_basis := (rig.global_basis * pose.basis).orthonormalized().inverse()
+	ambient_arm_corrections[upper] = Quaternion(inverse_basis * extended, inverse_basis * relaxed)
+
 func _turn_idle_bone(bone: int, yaw: float, pitch: float) -> void:
 	if bone < 0:
 		return
@@ -101,6 +116,10 @@ func _apply_ambient_idle(time: float) -> void:
 	if blend > 0.0:
 		for i in rig.get_bone_count():
 			rig.set_bone_pose(i, rig.get_bone_pose(i).interpolate_with(_sample(&"idle", i, phase), blend))
+	var relax := (1.0 - blend) * smoothstep(0.0, .20, time)
+	for arm in ambient_arm_corrections:
+		var correction := Quaternion.IDENTITY.slerp(ambient_arm_corrections[arm], relax)
+		rig.set_bone_pose_rotation(arm, rig.get_bone_pose_rotation(arm) * correction)
 	var look := deg_to_rad(21.0) * sin(TAU * time / 5.3) * (1.0 - blend)
 	var raise := deg_to_rad(2.3) * sin(TAU * time / 4.8 + .3) * (1.0 - blend)
 	_turn_idle_bone(rig.find_bone("neck"), look * .29, raise * .36)
