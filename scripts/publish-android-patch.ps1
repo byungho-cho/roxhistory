@@ -21,13 +21,20 @@ $runtime = [regex]::Match($bootstrap,'const RUNTIME := "([^"]+)"').Groups[1].Val
 $tag = "android-patches-$base"
 $referenceHashes = @{
     '0.315.315' = 'DCE25C14BBFEB92A6AA8228C73F384F9C76FF0B0710687BF2685854733ED876C'
+    '0.339.339' = '1B1E3CC9B20CB0D72B10A879D72E7E53BF10B32070F8E5DF952F8AD09618E50A'
     '0.313.313' = '104A41649DE053ACE3C017404B60562616941295F6B574CABBC10AA96201A052'
     '0.2.91' = '2A87A1D547551F76C858D2F70030DBA7C0F28C794C0BE3B41FF6CDAC67490644'
     '0.2.174' = 'DE8EE37DC8864F201C0B87876BCE599EE694B0C7F3BEED6D2C8CCE459FBD202F'
     '0.2.295' = '88E90ED277E04229F2C5FFAF16CEA4223A1D47FEDD60476CC87B76FEEC0DFBCB'
 }
 if (!$baseCommit -or !$runtime -or (Get-FileHash $ReferencePack).Hash -ne $referenceHashes[$base]) { throw 'Wrong reference PCK for this runtime.' }
-if (& git -C $GameRepo status --porcelain -- game) { throw 'Commit the game resources before building a patch.' }
+$gameChanges = @(& git -C $GameRepo status --porcelain -- game)
+if ($LASTEXITCODE) { throw 'Cannot verify the game tree.' }
+if ($InitializeChannel -and $base -eq '0.339.339') {
+    # Initialization reads only the verified, signed APK reference, not loose importer sidecars.
+    $gameChanges = @($gameChanges | Where-Object { $_ -notmatch '^ M .+\.import$' })
+}
+if ($gameChanges.Count) { throw 'Commit the game resources before building a patch.' }
 $commit = & git -C $GameRepo rev-parse HEAD
 if ($LASTEXITCODE -ne 0) { throw 'Cannot identify source commit.' }
 $project = Get-Content -Raw (Join-Path $GameRepo 'game/project.godot')
@@ -40,7 +47,7 @@ $payloadPath = Join-Path $directory "manifest-$version.json"
 $payload = [ordered]@{ base=$base; base_commit=$baseCommit; runtime=$runtime; version=$version; commit=$commit }
 if ($InitializeChannel) {
     $payload.patch_available = $false
-    if ($base -in @('0.313.313','0.315.315') -and !$BaselinePinManifest) { throw 'Provide the exact native APK reference pin to initialize this baseline.' }
+    if ($base -in @('0.313.313','0.315.315','0.339.339') -and !$BaselinePinManifest) { throw 'Provide the exact native APK reference pin to initialize this baseline.' }
     if ($BaselinePinManifest) {
         $pin = Get-Content -Raw -LiteralPath $BaselinePinManifest | ConvertFrom-Json
         if ($pin.base -cne $base -or $pin.base_commit -cne $baseCommit -or $pin.runtime -cne $runtime -or
