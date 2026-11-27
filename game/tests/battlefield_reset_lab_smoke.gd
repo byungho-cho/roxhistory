@@ -81,8 +81,16 @@ func _check_motion_enhancements(view) -> void:
 	var landing := _at(view, view.model.STORY_FLY_SECONDS - .001)
 	var standing := _at(view, view.model.STORY_FLY_SECONDS + .5)
 	var landed_idle := _at(view, view.reel_duration + .4)
-	_check(takeoff.distance_to(flying) > 4.0 and takeoff.distance_to(landing) > 25.0, "Fixed-route flight travels through an arc")
+	var original_travel: Vector2 = view._route_space(-view.model.story_flight_retreat(1.0))
+	_check(takeoff.distance_to(flying) > 4.0 and (landing - takeoff).distance_to(original_travel * 3.0) < .1,
+		"Fixed-route flight follows the arc and lands at three times the original distance")
 	_check(standing.distance_to(landing) < .1 and landed_idle.distance_to(landing) < .1, "Flying, standing and idle share the landing anchor")
+	view.play_motion("full")
+	var flight_start: float = view.steps[-2].start
+	var reel_takeoff := _at(view, flight_start)
+	var reel_landing := _at(view, flight_start + view.model.STORY_FLY_SECONDS)
+	_check((reel_landing - reel_takeoff).distance_to(original_travel * 3.0) < .1,
+		"Full playback applies the same flight distance from its current position")
 	view.toggle_route()
 	view.play_motion("06")
 	var walk_anchor := _at(view, .0)

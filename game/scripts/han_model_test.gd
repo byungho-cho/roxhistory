@@ -15,6 +15,7 @@ const CHAIN := 11
 const KNOCKDOWN := 14
 const FALL_AND_RISE := 17
 const DECELERATE_DISTANCE := .36
+const FLIGHT_DISTANCE_MULTIPLIER := 3.0
 
 var han := HybridCharacter.new()
 var model: HanModel
@@ -130,7 +131,7 @@ func play_motion(id: String) -> void:
 			elif route and index == DECELERATE:
 				end_distance += DECELERATE_DISTANCE
 			elif route and clip == "story_fly":
-				end_distance -= HanModel.story_flight_retreat(1.0)
+				end_distance -= HanModel.story_flight_retreat(1.0) * FLIGHT_DISTANCE_MULTIPLIER
 			steps.append({
 				"index": index, "clip": clip, "begin": begin, "length": finish - begin,
 				"start": reel_duration, "until": reel_duration + span, "repeated": repeated,
