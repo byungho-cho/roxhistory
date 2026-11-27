@@ -316,24 +316,28 @@ func draw_effect() -> void:
 	var target:Node3D = field.deer if float_foe else field.han
 	var focus:Vector2=field.camera.unproject_position(target.position + Vector3(0,.75,0))
 	var origin:Vector2=field.camera.unproject_position(field.han.position + Vector3(0,.90,0))
+	var col := draw_contact_effect(c, origin, focus, vfx_id, t)
+	var font:Font=field.theme.default_font
+	var origin_text:=focus+Vector2(-14.,-27.-t*33.)
+	c.draw_string_outline(font,origin_text,float_text,HORIZONTAL_ALIGNMENT_LEFT,-1.,22,5,Color("#27180e"))
+	c.draw_string(font,origin_text,float_text,HORIZONTAL_ALIGNMENT_LEFT,-1.,22,col)
+
+static func draw_contact_effect(c: CanvasItem, origin: Vector2, focus: Vector2, id: int, t: float) -> Color:
 	var heading: float = origin.angle_to_point(focus)
 	var colors := [Color("ffdd93"),Color("ffe191"),Color("9cd6ff"),Color("ffbc62")]
-	var col:Color=colors[vfx_id]
+	var col:Color=colors[id]
 	var fade:=1.-t
-	if vfx_id==2 or vfx_id==3:
+	if id==2 or id==3:
 		var center:=origin.lerp(focus,smoothstep(0.,.68,t))
-		var theta:=heading+(-.54 if vfx_id==2 else .43)
-		var radius:=(25. if vfx_id==2 else 46.)+t*10.
+		var theta:=heading+(-.54 if id==2 else .43)
+		var radius:=(25. if id==2 else 46.)+t*10.
 		c.draw_arc(center,radius,theta-1.0,theta+1.0,32,Color(col,.21*fade),13.,true)
 		c.draw_arc(center,radius,theta-1.0,theta+1.0,32,Color(col,.91*fade),3.,true)
 	for i in range(6):
 		var d:=Vector2.from_angle(float(i)*TAU/6.+.17)
 		var k:=lerpf(6.,33.,t)
 		c.draw_line(focus+d*k*.62,focus+d*k,Color(col,fade),2.4,true)
-	var font:Font=field.theme.default_font
-	var origin_text:=focus+Vector2(-14.,-27.-t*33.)
-	c.draw_string_outline(font,origin_text,float_text,HORIZONTAL_ALIGNMENT_LEFT,-1.,22,5,Color("#27180e"))
-	c.draw_string(font,origin_text,float_text,HORIZONTAL_ALIGNMENT_LEFT,-1.,22,col)
+	return col
 
 func effect(n:int, foe:bool, delta:int) -> void:
 	vfx_age=0.

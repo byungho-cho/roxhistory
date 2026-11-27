@@ -27,6 +27,10 @@ var destination:=Vector2.ZERO
 var phase:=0.0
 var rest_time:=2.0
 var rng:=RandomNumberGenerator.new()
+var gesture := ""
+var gesture_age := 0.0
+var conversation_partner: TrialResident
+var conversation_facing := Vector2.ZERO
 var idle_time:=0.0
 var visual_elapsed:=0.0
 const WORK_WALK_FACTOR:=.5
@@ -42,7 +46,7 @@ func _ready()->void:
 	jobs=ResidentJobs.new(get_parent().model)
 	origin=position;destination=position;rng.seed=abs(resident_id.hash())+122;rest_time=2.0+float(abs(resident_id.hash())%30)/10.0
 	var shape:=CollisionShape2D.new();var circle:=CircleShape2D.new();circle.radius=12;shape.shape=circle;add_child(shape)
-	if resident_id.begins_with("resident-") and ResourceLoader.exists(RESIDENT_SPRITE.atlas_path(variant)):
+	if variant in ["female", "sturdy_male"]:
 		resident_sprite=RESIDENT_SPRITE.new()
 		resident_sprite.variant=variant
 		add_child(resident_sprite)
@@ -59,6 +63,44 @@ func _draw()->void:
 	if job_phase=="harvest":
 		draw_rect(Rect2(-20,-66,40,5),Color(0,0,0,.65))
 		draw_rect(Rect2(-19,-65,38*clampf(1-job_timer/(1.2 if job_kind=="farmer" else gather_seconds()),0,1),3),Color("bfd274"))
+	if gesture == "speak":
+		var font := ThemeDB.fallback_font
+		var mark := "…"
+		var at := Vector2(-font.get_string_size(mark, HORIZONTAL_ALIGNMENT_LEFT, -1, 25).x * .5, -86)
+		draw_string_outline(font, at, mark, HORIZONTAL_ALIGNMENT_LEFT, -1, 25, 4, Color("49311f"))
+		draw_string(font, at, mark, HORIZONTAL_ALIGNMENT_LEFT, -1, 25, Color("fff5d9"))
+
+func can_idle_gesture() -> bool:
+	if not resident_sprite or not jobs.available(resident_id) or rest_time <= 0.0 or velocity.length_squared() > .01:
+		return false
+	var item := jobs.entry(resident_id)
+	return item.job == "idle" and item.cargo.is_empty()
+
+func play_idle_gesture(motion: String, partner: TrialResident = null) -> bool:
+	if not can_idle_gesture():
+		return false
+	gesture = motion
+	gesture_age = 0.0
+	conversation_partner = partner
+	conversation_facing = (partner.position - position).normalized() if partner else Vector2.ZERO
+	rest_time = maxf(rest_time, RESIDENT_SPRITE.gesture_duration(motion) + .03)
+	queue_redraw()
+	return true
+
+func _update_gesture(delta: float, travelled: float) -> void:
+	if gesture.is_empty():
+		return
+	gesture_age += delta
+	var social := gesture in ["speak", "listen"]
+	var interrupted := travelled > .01 or not can_idle_gesture()
+	if social:
+		interrupted = interrupted or not is_instance_valid(conversation_partner) or not conversation_partner.can_idle_gesture()
+		interrupted = interrupted or conversation_partner.gesture == "cheer"
+	if interrupted or gesture_age >= RESIDENT_SPRITE.gesture_duration(gesture):
+		gesture = ""
+		conversation_partner = null
+		conversation_facing = Vector2.ZERO
+		idle_time = 0.0
 func _physics_process(delta:float)->void:
 	var world:DemoWorld=get_parent()
 	if world.simulation_paused:
@@ -80,12 +122,18 @@ func _physics_process(delta:float)->void:
 		ActorMovement.move(self,ActorMovement.direction_to(position,destination,delta) if offset.length()>3 else Vector2.ZERO)
 		if offset.length()<3 or position.distance_to(before)<.01:
 			rest_time=rng.randf_range(2.5,5.0)
+			if rng.randf() < .16:
+				velocity = Vector2.ZERO
+				play_idle_gesture("stretch")
 			if visual:visual.ambient_offset=fposmod(visual.ambient_offset+9.7,26.0)
 	queue_redraw()
 	var travelled:=position.distance_to(before)
 	var stride:=visual.stride_world_length()*visual.scale.x if visual else DemoPlayer.STRIDE*(1.08 if variant=="female" else 1.16)
 	if travelled>.01:phase=fposmod(phase+travelled/stride*TAU,TAU);idle_time=0
 	else:idle_time+=delta
+	if resident_sprite and travelled > .01:
+		resident_sprite.advance_walk(travelled)
+	_update_gesture(delta, travelled)
 	var cargo: Dictionary=jobs.entry(resident_id).cargo
 	if visual:
 		visual.idle_elapsed=idle_time
@@ -101,9 +149,13 @@ func _physics_process(delta:float)->void:
 		var facing:Vector2=(farm_origin-position).normalized() if action=="farm_care" or (job_kind=="farmer" and job_phase=="harvest") else velocity.normalized()
 		var action_time:=duty_clock if action in ["farm_care","guard"] else maxf(0,(1.2 if job_kind=="farmer" else gather_seconds())-job_timer)
 		if resident_sprite:
-			if variant == "female" and action in ["wood","stone"]:
+			if action in ["wood", "stone"]:
 				facing = (gather_visual_target-position).normalized()
-			resident_sprite.pose(facing,phase,travelled>.01,action,action_time,idle_time,cargo)
+			if action == "farmer":
+				action = "grain"
+			if not gesture.is_empty() and not conversation_facing.is_zero_approx():
+				facing = conversation_facing
+			resident_sprite.pose(facing, travelled > .01, action, action_time, idle_time, cargo, gesture, gesture_age)
 		else:
 			carried_load.update_load(cargo)
 			visual.set_render_zoom(world.player.zoom_factor)
@@ -169,7 +221,8 @@ func _job_tick(delta:float)->bool:
 		job_timer -= delta
 		if job_kind in ["wood", "stone"]:
 			var work_time := gather_seconds() - job_timer
-			if floori((work_time + .45) / 1.2) > floori((previous_work + .45) / 1.2):
+			var contact := RESIDENT_SPRITE.wood_contact_crossed(previous_work, work_time) if job_kind == "wood" and resident_sprite else floori((work_time + .45) / 1.2) > floori((previous_work + .45) / 1.2)
+			if contact:
 				var world: DemoWorld = get_parent()
 				if world.art_nodes.has(job_target):
 					var art: Node2D = world.art_nodes[job_target]

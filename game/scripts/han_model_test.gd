@@ -7,6 +7,14 @@ const CLIPS := [
 	"retouch_basic_preview", "retouch_sp2", "retouch_chain", "retouch_hit", "retouch_heavy",
 	"retouch_knockdown", "retouch_stand", "retouch_death", "retouch_flight",
 ]
+const MOTION_RATES := {
+	&"retouch_listen": 1.5, &"retouch_talk": 1.5, &"retouch_angry": 1.5, &"retouch_cheer": 1.5,
+	&"walk_native": 1.5, &"retouch_travel_walk": 1.5, HanModel.ENTRY_CLIP: 1.5,
+	&"retouch_basic_preview": 1.3, &"retouch_sp2": 1.75, &"retouch_chain": 1.75,
+	&"retouch_knockdown": 1.5, &"retouch_stand": 2.0, &"retouch_death": 2.0, &"retouch_flight": 1.75,
+}
+const DRAW_OPENING_LENGTH := 1.0
+const DRAW_OPENING_RATE := 1.5
 const REPEATS := [0, 5, 6]
 const WALK := 5
 const RUN := 6
@@ -15,11 +23,24 @@ const CHAIN := 11
 const KNOCKDOWN := 14
 const FALL_AND_RISE := 17
 const FLIGHT_DISTANCE_MULTIPLIER := 3.0
+# Contact frames in the 30 fps approved clips. The second basic starts 33 frames after the first.
+const CONTACT_FRAMES := {
+	&"retouch_basic_preview": [11, 44], &"retouch_sp2": [33], &"retouch_chain": [99],
+}
+const CONTACT_STYLES := {&"retouch_basic_preview": 1, &"retouch_sp2": 2, &"retouch_chain": 3}
+const CONTACT_SECONDS := .38
 
 var han := HybridCharacter.new()
 var model: HanModel
 var floor_label: Label
 var ground_dim: ColorRect
+var effect_button: Button
+var effects_enabled := true
+var effect_layer: Control
+var effect_origin := Vector2.ZERO
+var effect_contact := Vector2.ZERO
+var effect_progress := 1.0
+var effect_style := 0
 var steps: Array[Dictionary] = []
 var reel_duration := 0.0
 var shown_motion := 0
@@ -65,6 +86,16 @@ func start_preview() -> void:
 	# The dim layer affects the battlefield art while the character and controls stay clear.
 	field.move_child(ground_dim, 1)
 	ground_dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	toggles.position.x -= 180.0
+	effect_button = switch_button("이펙트", 360.0, toggle_effects)
+	effect_button.name = "MotionEffects"
+	# Keep the status clear of the third switch.
+	for item in [field.get_node("StatusBrush"), status, motion_status]:
+		item.position.x -= 96.0
+	effect_layer = Control.new()
+	effect_layer.mouse_filter = MOUSE_FILTER_IGNORE
+	effect_layer.draw.connect(_draw_effect)
+	field.add_child(effect_layer)
 	floor_label = text(field, "한결", Rect2(0, 0, 82, 36), 22)
 	var badge := StyleBoxFlat.new()
 	badge.bg_color = Color("162e2a")
@@ -128,6 +159,10 @@ func play_motion(id: String) -> void:
 	refresh()
 
 func _append_step(index: int, clip: StringName, length: float) -> void:
+	var motion_rate: float = MOTION_RATES.get(clip, 1.0)
+	var opening_length := minf(length, DRAW_OPENING_LENGTH) if clip == &"retouch_ready" else 0.0
+	var opening_span := opening_length / DRAW_OPENING_RATE
+	var span := opening_span + (length - opening_length) / motion_rate
 	var distance: float = 0.0 if steps.is_empty() else steps.back().to
 	var end_distance := distance
 	if route and clip == HanModel.ENTRY_CLIP:
@@ -136,10 +171,11 @@ func _append_step(index: int, clip: StringName, length: float) -> void:
 		end_distance += model.preview_travel(clip, length).z * (FLIGHT_DISTANCE_MULTIPLIER if index == FALL_AND_RISE else 1.0)
 	steps.append({
 		"index": index, "clip": clip, "length": length,
-		"start": reel_duration, "until": reel_duration + length,
+		"start": reel_duration, "until": reel_duration + span,
+		"motion_rate": motion_rate, "opening_span": opening_span,
 		"from": distance, "to": end_distance,
 	})
-	reel_duration += length
+	reel_duration += span
 
 func _route_space(distance: float) -> Vector2:
 	var world := han.pivot.basis.z * distance
@@ -157,19 +193,22 @@ func render_frame() -> void:
 			step = candidate
 			break
 	var offset := clampf(local_time - step.start, 0.0, step.until - step.start)
+	var opening_span: float = step.opening_span
+	var clip_time := minf(step.length, minf(offset, opening_span) * DRAW_OPENING_RATE
+		+ maxf(0.0, offset - opening_span) * step.motion_rate)
 	var complete := not loop and age >= reel_duration
 	var return_idle: bool = complete and (selection == "full" or step.index not in [KNOCKDOWN, 16])
 	var distance: float = step.from
-	var travel := model.preview_travel(step.clip, offset) if route or step.index == FALL_AND_RISE else Vector3.ZERO
+	var travel := model.preview_travel(step.clip, clip_time) if route or step.index == FALL_AND_RISE else Vector3.ZERO
 	if route and step.index == DECELERATE:
-		distance = lerpf(step.from, step.to, HanModel.entry_progress(offset))
+		distance = lerpf(step.from, step.to, HanModel.entry_progress(clip_time))
 	elif route:
 		distance += travel.z * (FLIGHT_DISTANCE_MULTIPLIER if step.index == FALL_AND_RISE else 1.0)
 	var center_offset: float = steps.back().to * .5 if selection == "08" else 0.0
 	han.position = Vector2(field.size.x * .5, field.size.y * .55) + _route_space(distance - center_offset)
 	floor_label.position = han.position + Vector2(-41, 17)
 	han.pivot.position.y = travel.y
-	ground_dim.color.a = HanModel.cinematic_dim_alpha(offset) if step.index == CHAIN and not return_idle else 0.0
+	_sample_effect(step.clip, clip_time, complete)
 	if return_idle:
 		var idle := &"retouch_guard" if step.index >= DECELERATE else &"retouch_idle"
 		if step.index == DECELERATE:
@@ -178,10 +217,40 @@ func render_frame() -> void:
 		else:
 			model.sample_han_clip(idle, fposmod(age - reel_duration, model.ap.get_animation(idle).length))
 	else:
-		model.sample_han_clip(step.clip, offset)
+		model.sample_han_clip(step.clip, clip_time)
 	shown_motion = int(step.index) + 1
 	var label := "대기" if return_idle else motion_title(step.index)
 	motion_status.text = "%s · %s배속" % [label, rate]
+
+func toggle_effects() -> void:
+	effects_enabled = not effects_enabled
+	render_frame()
+	show_switch(effect_button, effects_enabled)
+
+func _sample_effect(clip: StringName, clip_time: float, complete: bool) -> void:
+	effect_progress = 1.0
+	var active := effects_enabled and not complete
+	ground_dim.color.a = HanModel.cinematic_dim_alpha(clip_time) if active and clip == &"retouch_chain" else 0.0
+	if active:
+		for frame: int in CONTACT_FRAMES.get(clip, []):
+			var contact_time := frame / 30.0
+			if clip_time < contact_time or clip_time >= contact_time + CONTACT_SECONDS:
+				continue
+			model.sample_han_clip(clip, contact_time)
+			var weapon := model.approved_weapon
+			effect_origin = _project_effect(weapon.global_position)
+			effect_contact = _project_effect(weapon.to_global(HanModel.APPROVED_BLADE_TIP))
+			effect_style = CONTACT_STYLES[clip]
+			effect_progress = (clip_time - contact_time) / CONTACT_SECONDS
+			break
+	effect_layer.queue_redraw()
+
+func _project_effect(point: Vector3) -> Vector2:
+	return han.position + (han.display.position + han.camera.unproject_position(point) * han.display.scale) * han.scale
+
+func _draw_effect() -> void:
+	if effect_progress < 1.0:
+		HanModel.draw_contact_effect(effect_layer, effect_origin, effect_contact, effect_style, effect_progress)
 
 func refresh() -> void:
 	for id in motion_buttons:
@@ -190,6 +259,7 @@ func refresh() -> void:
 		skin(speed_buttons[value], ROUND_GOLD if value == rate else ROUND_SILVER)
 	show_switch(battle_button, battle)
 	show_switch(route_button, route)
+	show_switch(effect_button, effects_enabled)
 	status.text = "한결 · 전체 모션" if selection == "full" else "한결"
 	motion_status.text = "%s · %s배속" % [motion_title(maxi(0, shown_motion - 1)), rate]
 

@@ -64,8 +64,8 @@ func _check_motion_enhancements(view) -> void:
 	var start := _at(view, 0.0)
 	var stop := _at(view, duration - .0001)
 	var after := _at(view, duration + .4)
-	_check(view.steps.size() == 1 and view.steps[0].clip == "meshy116_direct" and absf(duration - 2.3) < .001,
-		"08 plays the full native #116 once at authored speed")
+	_check(view.steps.size() == 1 and view.steps[0].clip == "meshy116_direct" and absf(duration - 2.3 / 1.5) < .001,
+		"The motion test plays the full native 08 once at its tuned speed")
 	_check(view.model.ap.current_animation == "retouch_guard", "08 returns to the approved battle-ready pose")
 	var forward := start.direction_to(stop)
 	var monotonic := start.distance_to(stop) > 65.0
@@ -95,11 +95,48 @@ func _check_motion_enhancements(view) -> void:
 	view.play_motion("15")
 	_check(view.motion_buttons["15"].text == "넉다운" and view.steps.size() == 1 and view.steps[0].clip == "retouch_knockdown", "Knockdown uses the corrected single clip")
 	view.play_motion("12")
-	_at(view, 2.1)
+	_at(view, 2.1 / 1.75)
 	_check(view.ground_dim.color.a > .49 and absf(view.model.ap.current_animation_position - 2.1) < .002,
 		"Approved slow 3SP is sampled once with the existing dim")
 	_at(view, view.reel_duration + .2)
 	_check(is_zero_approx(view.ground_dim.color.a), "3SP dim clears when the motion ends")
+	_check_default_han_rates(view)
+
+func _check_default_han_rates(view) -> void:
+	var expected := [1.0, 1.5, 1.5, 1.5, 1.5, 1.5, 1.0, 1.5, 1.0,
+		1.3, 1.75, 1.75, 1.0, 1.0, 1.5, 2.0, 2.0, 1.75]
+	var durations: Array[float] = []
+	var pose_times_match: bool = view.rate == 1.0
+	for index in expected.size():
+		view.play_motion("%02d" % (index + 1))
+		view.advance(.4)
+		var target: float = .6 if index == 8 else .4 * expected[index]
+		pose_times_match = pose_times_match and absf(view.model.ap.current_animation_position - target) < .002
+		durations.append(view.reel_duration)
+	_check(pose_times_match, "The selected 1x setting plays all 18 individual motions at their expected base speeds")
+
+	view.play_motion("09")
+	_at(view, 2.0 / 3.0)
+	var boundary: float = view.model.ap.current_animation_position
+	_at(view, 2.0 / 3.0 + .25)
+	_check(absf(boundary - 1.0) < .002 and absf(view.model.ap.current_animation_position - 1.25) < .002,
+		"Weapon draw uses 1.5x for its first source second and resumes at native speed")
+
+	view.play_motion("full")
+	var reel_matches := true
+	for index in expected.size():
+		var step: Dictionary = view.steps[index]
+		reel_matches = reel_matches and absf(step.until - step.start - durations[index]) < .002
+		_at(view, step.start + .4)
+		var target: float = .6 if index == 8 else .4 * expected[index]
+		reel_matches = reel_matches and absf(view.model.ap.current_animation_position - target) < .002
+	_check(reel_matches, "The full reel uses the same tuned timeline as the individual buttons")
+
+	view.play_motion("11")
+	view.set_rate(2.0)
+	view.advance(.2)
+	_check(absf(view.model.ap.current_animation_position - .7) < .002, "The right speed rail multiplies the tuned base speed")
+	view.set_rate(1.0)
 
 func _check_visible_duel_motion(duel) -> void:
 	var model = duel.han_ultra
@@ -220,6 +257,44 @@ func _check_duel() -> void:
 	_check(duel.rules.ally_id=="hangyeol" and is_instance_valid(duel.han_ultra), "Duel switches back to Han")
 	await _press(_button(duel, "DuelClose"))
 
+func _check_effect_toggle(view) -> void:
+	var button: Button = _button(view, "MotionEffects")
+	if not _check(is_instance_valid(button) and view.effects_enabled, "Motion effects start enabled"):
+		return
+	var bounds := button.get_global_rect()
+	_check(root.get_visible_rect().encloses(bounds) and not bounds.intersects(view.route_button.get_global_rect()), "Effect toggle fits the game and has its own touch area")
+	view.set_process(false)
+	for key in ["10", "11", "12"]:
+		await _press(view.motion_buttons[key], true)
+		var step: Dictionary = view.steps[0]
+		for frame: int in view.CONTACT_FRAMES[step.clip]:
+			var source_time := frame / 30.0
+			view.age = (source_time - .01) / step.motion_rate
+			view.render_frame()
+			_check(view.effect_progress == 1.0, "Effect waits until the contact frame %s/%s" % [key, frame])
+			view.age = (source_time + .02) / step.motion_rate
+			view.render_frame()
+			_check(view.effect_progress < .1 and view.effect_contact.is_finite(), "Effect begins on the retimed contact frame %s/%s" % [key, frame])
+	await _press(view.motion_buttons["12"], false)
+	view.age = 2.0 / float(view.steps[0].motion_rate)
+	view.render_frame()
+	var before: float = view.model.ap.current_animation_position
+	_check(view.ground_dim.color.a > .2, "3SP preserves the approved dim")
+	await _press(button, true)
+	_check(not view.effects_enabled and view.ground_dim.color.a == 0.0 and view.effect_progress == 1.0, "Native touch switches off outstanding effects immediately")
+	_check(is_equal_approx(view.model.ap.current_animation_position, before), "Effect switch does not restart or retime the motion")
+	await _press(view.motion_buttons.full, true)
+	var chain: Dictionary = view.steps[11]
+	view.age = chain.start + 3.32 / chain.motion_rate
+	view.render_frame()
+	_check(view.shown_motion == 12 and view.effect_progress == 1.0, "Full playback suppresses the same effect when off")
+	await _press(button)
+	_check(view.effects_enabled and view.effect_progress < .1, "Full playback enables the same effect on its original frame")
+	await _press(button, true)
+	_check(view.effect_progress == 1.0, "Switch off clears an active contact burst immediately")
+	await _press(button)
+	view.set_process(true)
+
 func _check_motion_lab() -> void:
 	await _press(_button(app, "MotionLabEntry"), true)
 	await process_frame
@@ -260,6 +335,7 @@ func _check_motion_lab() -> void:
 	view.render_frame()
 	_check(view.model.ap.get_current_animation() == "retouch_guard", "Full motion returns to battle-ready idle")
 	_check_motion_enhancements(view)
+	await _check_effect_toggle(view)
 	await _press(_button(view, "MotionSelect_gahui"), true)
 	await process_frame
 	var lab = app.parry_lab

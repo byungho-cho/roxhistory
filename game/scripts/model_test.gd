@@ -402,7 +402,9 @@ func _input(event:InputEvent)->void:
 	if not event is InputEventScreenTouch:return
 	if event.pressed:
 		if pointer>=0:return
-		var list:Array=[back_button,battle_button,route_button,restart_button,running_button]+category_buttons.values()+model_buttons.values()+motion_buttons.values()+speed_buttons.values()
+		var list:Array=[back_button,restart_button,running_button]+category_buttons.values()+model_buttons.values()+motion_buttons.values()+speed_buttons.values()
+		for child in toggles.get_children():
+			if child is Button:list.append(child)
 		for item in list:
 			if item.is_visible_in_tree() and not item.disabled and item.get_global_rect().has_point(event.position):pointer=event.index;pressed_button=item;get_viewport().set_input_as_handled();return
 	elif event.index==pointer:

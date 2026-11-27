@@ -24,6 +24,8 @@ var objectives: WorldObjectives
 var animals: Array[WorldAnimal] = []
 var residents:Array[TrialResident]=[]
 var visitors:Array[TrialResident]=[]
+var resident_social_timer := 5.0
+var resident_social_rng := RandomNumberGenerator.new()
 var animating_family_join:=false
 var resource_tweens:Dictionary={}
 var resources_initialized:=false
@@ -368,9 +370,14 @@ func reward_marker_rect(index:int)->Rect2:
 func reward_hit(index:int,at:Vector2)->bool:
 	return reward_marker_rect(index).grow(10).has_point(at) or Rect2(homes[index].position-Vector2(150,245),Vector2(300,260)).has_point(at)
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
 	if not is_instance_valid(player): return
 	for animal in animals: animal.presentation_paused = simulation_paused
+	if not simulation_paused:
+		resident_social_timer -= delta
+		if resident_social_timer <= 0.0:
+			resident_social_timer = resident_social_rng.randf_range(6.0, 12.0)
+			start_resident_conversation()
 	var id := str(nearest().get("id",""))
 	if id != selected:
 		selected = id
@@ -714,6 +721,28 @@ func resource_transition(id:String,reveal:bool,delay:float=0.0,animate:bool=true
 		tween.tween_property(node,"modulate:a",0.0,.32)
 		tween.tween_callback(node.hide)
 	tween.tween_callback(func():resource_tweens.erase(id))
+
+func cheer_idle_residents() -> void:
+	for resident in residents:
+		resident.play_idle_gesture("cheer")
+
+func start_resident_conversation() -> void:
+	var waiting: Array[TrialResident] = []
+	for resident in residents:
+		if resident.gesture.is_empty() and resident.can_idle_gesture():
+			waiting.append(resident)
+	if waiting.size() < 2:
+		return
+	var start := resident_social_rng.randi_range(0, waiting.size() - 1)
+	for offset in waiting.size():
+		var speaker := waiting[(start + offset) % waiting.size()]
+		for partner in waiting:
+			if partner == speaker or speaker.position.distance_squared_to(partner.position) > 150.0 * 150.0:
+				continue
+			speaker.play_idle_gesture("speak", partner)
+			partner.play_idle_gesture("speak" if resident_social_rng.randf() < .35 else "listen", speaker)
+			partner.rest_time = maxf(partner.rest_time, speaker.rest_time)
+			return
 
 func refresh_residents()->void:
 	var roster:=ResidentAdmission.ids(model.state)

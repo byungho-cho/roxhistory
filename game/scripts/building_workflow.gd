@@ -170,6 +170,7 @@ func confirm_instant_upgrade(key: String, target: int) -> bool:
 
 func show_upgrade_completed(key: String, level: int) -> void:
 	if not is_instance_valid(app.world) or app.screen!="play" or app.world_map_open or not app.application_active:return
+	app.world.cheer_idle_residents()
 	var at: Vector2=app.model.building_position(key)
 	var screen_point: Vector2=app.world.get_global_transform_with_canvas()*at
 	if not Rect2(0,0,app.w,app.h).has_point(screen_point):
