@@ -2095,10 +2095,17 @@ func open_gahui_hunt_from_lab() -> void:
 	if packed != null:
 		_replace_active_hunt_lab(packed.instantiate())
 
-func open_one_on_one_from_gahui_lab() -> void:
+func new_one_on_one_lab() -> Control:
 	var duel = preload("res://scenes/hunt_duel_lab.tscn").instantiate()
 	duel.show_final_test35 = true
-	_replace_active_hunt_lab(duel)
+	return duel
+
+func start_one_on_one_lab() -> void:
+	if can_open_lab():
+		begin_lab(new_one_on_one_lab())
+
+func open_one_on_one_from_gahui_lab() -> void:
+	_replace_active_hunt_lab(new_one_on_one_lab())
 
 func _replace_active_hunt_lab(trial: Control) -> void:
 	if trial == null: return
@@ -2127,18 +2134,26 @@ func exit_parry_lab() -> void:
 	if is_instance_valid(world): world.player.presentation_paused = not application_active
 
 func add_parry_lab_entry(at: Vector2) -> void:
-	var flask := button(stage,"",start_gahui_hunt,false,"","")
+	var flask := button(stage,"",start_one_on_one_lab,false,"","")
 	flask.name = "DuelTestEntry"
-	flask.custom_minimum_size = Vector2.ZERO
-	flask.position = at
-	flask.size = Vector2(48,48)
-	flask.z_index = 36
+	flask.tooltip_text = "실험실 · 1대1 전투"
 	picture(flask,preload("res://assets/ui/d0031/lab-flask.png"),Rect2(8,8,32,32))
-	flask.tooltip_text = "가희 모션 실험실"
-	var box:=StyleBoxTexture.new()
-	box.texture=preload("res://assets/ui/d0060/round-silver.svg")
-	for state in ["normal","hover","pressed","focus"]:
-		flask.add_theme_stylebox_override(state,box)
+	var gahui := button(stage,"",start_gahui_hunt,false,"","")
+	gahui.name = "GahuiLabEntry"
+	gahui.tooltip_text = "가희 모션 실험실"
+	picture(gahui,preload("res://assets/ui/hero-level-up/gahui-portrait-original.png"),Rect2(9,9,30,30))
+	# Reuse the old second lab row and leave the original duel entry in its original slot.
+	debug_shortcut.position.y += 57
+	for entry in [[flask, at, preload("res://assets/ui/d0060/round-silver.svg")], [gahui, at+Vector2(0,57), preload("res://assets/ui/d0060/round-gold.svg")]]:
+		var control: DemoButton = entry[0]
+		control.custom_minimum_size = Vector2.ZERO
+		control.position = entry[1]
+		control.size = Vector2(48,48)
+		control.z_index = 36
+		var box := StyleBoxTexture.new()
+		box.texture = entry[2]
+		for state in ["normal","hover","pressed","focus"]:
+			control.add_theme_stylebox_override(state,box)
 
 func set_quest_preview_enabled(enabled: bool) -> void:
 	var previous := quest_preview_enabled

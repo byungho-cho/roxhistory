@@ -26,11 +26,24 @@ func _run() -> void:
 	await process_frame
 	if app.modal:
 		app.close_modal()
-	var flask := _button(app, "DuelTestEntry")
+	var flask := _button(app, "GahuiLabEntry")
 	_check(is_instance_valid(flask) and flask.is_visible_in_tree(), "Village flask is visible")
 	_check(_button(app, "ModelTestEntry") == null, "Extra model-test entry is absent")
+	var direct := _button(app, "DuelTestEntry")
+	var previous_world_mode: int = app.world.process_mode
+	_check(is_instance_valid(direct) and direct.is_visible_in_tree(), "Original village 1:1 entry is visible")
+	if is_instance_valid(direct):
+		var expected := Vector2(app.w-app.safe.x-48,app.action_row.position.y-181)
+		_check(direct.position.is_equal_approx(expected) and direct.size == Vector2(48,48), "Original 1:1 entry uses the historical village position and size")
+		direct.pressed.emit()
+		await process_frame
+		var duel = app.parry_lab
+		_check(is_instance_valid(duel) and duel.rules.ally_id == "hangyeol" and duel.rules.enemy_id == "forest", "Original 1:1 entry opens the same test directly")
+		if is_instance_valid(duel):
+			_button(duel, "DuelClose").pressed.emit()
+			await process_frame
+		_check(not is_instance_valid(app.parry_lab) and app.screen == "play" and app.world.process_mode == previous_world_mode, "Direct 1:1 close restores village")
 	if is_instance_valid(flask):
-		var previous_world_mode: int = app.world.process_mode
 		flask.pressed.emit()
 		await process_frame
 		await process_frame

@@ -27,7 +27,7 @@ func run()->void:
 		await app.enter_game()
 		await process_frame
 		if app.modal:app.close_modal()
-		app.find_child("DuelTestEntry",true,false).pressed.emit()
+		app.find_child("GahuiLabEntry",true,false).pressed.emit()
 		await process_frame
 		await process_frame
 		app.parry_lab.find_child("OneOnOneEntry",true,false).pressed.emit()
