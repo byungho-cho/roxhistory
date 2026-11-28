@@ -11,10 +11,10 @@ const SAMPLES := 32
 const PRACTICE_SECONDS := 2.2
 
 var visual: Sprite2D
-var female: bool
+var faces_left: bool
 
 func _init(facing: int) -> void:
-	female = facing < 0
+	faces_left = facing < 0
 	visibility_layer = 2
 
 func _ready() -> void:
@@ -26,7 +26,7 @@ func _ready() -> void:
 	visual.region_filter_clip_enabled = true
 	visual.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 	visual.texture = PRACTICE_ATLAS
-	visual.scale = Vector2.ONE * RESIDENT_SPRITE.display_scale(female)
+	visual.scale = Vector2.ONE * RESIDENT_SPRITE.display_scale(false)
 	visual.position = -FLOOR * visual.scale
 	add_child(visual)
 	show_practice_frame(0.0)
@@ -43,7 +43,7 @@ func show_practice_frame(elapsed: float) -> void:
 	if not Rect2(Vector2(-120, -120), get_viewport_rect().size + Vector2(240, 240)).has_point(point):
 		return
 	var frame := floori(fposmod(elapsed, PRACTICE_SECONDS) / PRACTICE_SECONDS * SAMPLES)
-	var tile := frame + (SAMPLES if female else 0)
+	var tile := frame + (SAMPLES if faces_left else 0)
 	var region := Rect2(Vector2(tile % COLUMNS, floori(float(tile) / COLUMNS)) * FRAME_SIZE, FRAME_SIZE)
 	if region != visual.region_rect:
 		visual.region_rect = region

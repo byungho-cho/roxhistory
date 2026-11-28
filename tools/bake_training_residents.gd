@@ -6,6 +6,7 @@ const FLOOR := Vector2i(56, 89)
 const COLUMNS := 8
 const SAMPLES := 32
 const PRACTICE_SECONDS := 2.2
+const SPEAR_SCALE := 1.5
 const JOINTS := {
 	"spine":"Spine", "head":"Head", "armL":"LeftArm", "armR":"RightArm",
 	"forearmL":"LeftForeArm", "forearmR":"RightForeArm", "handL":"LeftHand", "handR":"RightHand",
@@ -45,10 +46,10 @@ func bake() -> void:
 	var crop := Rect2i(Vector2i(camera.unproject_position(Vector3.ZERO).round()) - FLOOR * 2, FRAME * 2)
 	var atlas := Image.create_empty(FRAME.x * COLUMNS, FRAME.y * SAMPLES * 2 / COLUMNS, false, Image.FORMAT_RGBA8)
 	for index in 2:
-		var sex := "Man" if index == 0 else "Woman"
+		var facing := "right" if index == 0 else "left"
 		var doc := GLTFDocument.new()
 		var state := GLTFState.new()
-		var error := doc.append_from_file(args[0].path_join("Resident-%s-01-11.glb" % sex), state)
+		var error := doc.append_from_file(args[0].path_join("Resident-Man-01-11.glb"), state)
 		if error != OK:
 			quit(error)
 			return
@@ -57,6 +58,11 @@ func bake() -> void:
 		var travel := model.get_node("Travel") as Node3D
 		var player := model.get_node("AnimationPlayer") as AnimationPlayer
 		var rig := model.find_child("Skeleton3D", true, false) as Skeleton3D
+		for joint: String in JOINTS.values():
+			if rig.find_bone(joint) < 0:
+				push_error("Missing resident training joint " + joint)
+				quit(4)
+				return
 		var axe := travel.get_node("StoneAxe") as Node3D
 		var spear := legacy.tool_3d.duplicate() as Node3D
 		travel.add_child(spear)
@@ -83,8 +89,9 @@ func bake() -> void:
 			var old_rest := legacy.rig.get_bone_global_rest(legacy.bones.handR).basis.orthonormalized()
 			var rotation := hand_pose.basis.orthonormalized() * hand_rest.inverse() * old_rest
 			var local_hand := travel.global_transform.affine_inverse() * Transform3D(rotation, hand_pose.origin)
-			# Ignore Travel's model scale when sizing the existing practice spear.
-			spear.transform = Transform3D(local_hand.basis.orthonormalized().scaled(Vector3.ONE * .67), local_hand.origin) * legacy.tool_3d.transform
+			# Keep the grip at the hand as the shaft and point grow together.
+			var tool_basis := local_hand.basis.orthonormalized().scaled(Vector3.ONE * .67 * SPEAR_SCALE)
+			spear.transform = Transform3D(tool_basis, local_hand.origin) * legacy.tool_3d.transform
 			spear.show()
 			viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
 			await process_frame
@@ -94,12 +101,12 @@ func bake() -> void:
 			image.resize(FRAME.x, FRAME.y, Image.INTERPOLATE_LANCZOS)
 			var bounds := image.get_used_rect()
 			if bounds.size.x < 10 or bounds.position.x < 1 or bounds.end.x >= FRAME.x - 1 or bounds.position.y < 1 or bounds.end.y >= FRAME.y - 1:
-				push_error("Clipped or empty training frame %s %d %s" % [sex, sample, bounds])
+				push_error("Clipped or empty training frame %s %d %s" % [facing, sample, bounds])
 				quit(3)
 				return
 			var tile := index * SAMPLES + sample
 			atlas.blit_rect(image, Rect2i(Vector2i.ZERO, FRAME), Vector2i(tile % COLUMNS, tile / COLUMNS) * FRAME)
-		print("TRAINING BAKE ", sex, " ", SAMPLES, " complete frames")
+		print("TRAINING BAKE male facing ", facing, " ", SAMPLES, " complete frames, spear scale ", SPEAR_SCALE)
 		model.free()
 	quit(atlas.save_png(args[1]))
 
