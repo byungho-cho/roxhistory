@@ -1,4 +1,5 @@
 extends Control
+const CHARACTER_PREVIEW_SCALE := 1.5
 signal exited
 const Actor=preload("res://scripts/model_test_actor.gd")
 const Poly=preload("res://scripts/model_test_poly_catalog.gd")

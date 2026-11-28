@@ -142,6 +142,11 @@ func _check_visible_duel_motion(duel) -> void:
 	var model = duel.han_ultra
 	if not _check(is_instance_valid(model), "Duel uses a live animated Han rig"):
 		return
+	var shared = duel.shared_world
+	var base_scale: float = model.model_test_projection_ratio(shared.camera, shared.display.scale.y)
+	_check(is_equal_approx(model.model_display_scale / base_scale, 1.5), "Han's 1v1 rig is 1.5 times its former visible size")
+	var deer_ratio: float = duel.b.preview.pivot.scale.y / shared.deer_simulation_transform.basis.get_scale().y
+	_check(is_equal_approx(deer_ratio, 1.5) and is_equal_approx(shared.hurt_capsule(1).radius, .36), "Deer display grows while the hurt volume stays at its existing size")
 	var mesh: MeshInstance3D = model.grip_mesh
 	var arm: int = model.rig.find_bone("RightArm")
 	var first_run: Quaternion = model.rig.get_bone_pose_rotation(arm)
@@ -165,6 +170,7 @@ func _check_visible_duel_motion(duel) -> void:
 	_check(duel.rules.hp[1] < deer_hp, "Approved presentation leaves real 1v1 contact active")
 	duel.reset_round()
 	_check(mesh.is_visible_in_tree() and model.ap.current_animation == "meshy116_direct", "Reset restarts the native clip on the live rig")
+	_check(is_equal_approx(duel.b.preview.pivot.scale.y, 1.5), "Duel reset applies the enlargement once")
 
 func _check_roster(screen: Node, prefix: String) -> void:
 	var available := true
@@ -250,6 +256,7 @@ func _check_duel() -> void:
 	duel = app.parry_lab
 	if not _check(duel.rules.ally_id == "gahui" and is_instance_valid(duel.gahui) and duel.gahui.rig_ready, "The same duel opens with live Gahui"):
 		return
+	_check(_gahui_has_size(duel, 1.5), "Gahui and deer use the enlarged 1v1 view")
 	duel.set_process(false)
 	await _check_roster(duel, "DuelSelect_")
 	for i in 174:
@@ -280,6 +287,13 @@ func _check_duel() -> void:
 	duel = app.parry_lab
 	_check(duel.rules.ally_id=="hangyeol" and is_instance_valid(duel.han_ultra), "Duel switches back to Han")
 	await _press(_button(duel, "DuelClose"))
+
+func _gahui_has_size(screen, multiplier: float) -> bool:
+	var model: Node3D = screen.gahui.models[0]
+	var body_mesh := model.find_children("*", "MeshInstance3D", true, false)[0] as MeshInstance3D
+	var height: float = body_mesh.mesh.get_aabb().size.y * model.scale.y
+	var deer_scale: float = screen.b.preview.pivot.scale.y if screen.test_ally == "gahui" else screen.flower_driver._calibration.basis.get_scale().y
+	return is_equal_approx(height / screen.Gahui.DISPLAY_HEIGHT, multiplier) and is_equal_approx(deer_scale, 1.5 if screen.test_ally == "gahui" else 1.8)
 
 func _check_effect_toggle(view) -> void:
 	var button: Button = _button(view, "MotionEffects")
@@ -372,6 +386,7 @@ func _check_motion_lab() -> void:
 		no_tips = no_tips and item.tooltip_text.is_empty()
 	_check(no_tips, "All Han motion-lab buttons omit tooltips")
 	_check(view.model.duel_model.scene_file_path.ends_with("Han-Battle-Ultra-Rigged-12k.glb"), "New Han rig is loaded")
+	_check(is_equal_approx(view.han.display.scale.y, view.HanModel.MODEL_TEST_DISPLAY_FACTOR * 1.5), "Han motion lab magnifies only the rendered character")
 	_check(view.motion_buttons.size() == 19 and view.actors.is_empty(), "18 motions plus full playback, with a single Han rig")
 	var motion_rects: Array[Rect2] = []
 	var separate := true
@@ -407,6 +422,10 @@ func _check_motion_lab() -> void:
 	var lab = app.parry_lab
 	if not _check(is_instance_valid(lab) and is_instance_valid(lab.get("gahui")) and lab.subject == 0, "The lab switches to Gahui motions"):
 		return
+	_check(_gahui_has_size(lab, 2.25), "Gahui motion lab enlarges Gahui and the deer from their own prior sizes")
+	lab._select_subject(2)
+	_check(is_equal_approx(lab.stag_actor.preview.pivot.scale.y, 1.8), "Mountain deer drill keeps the same 1.5x enlargement")
+	lab._select_subject(0)
 	await _check_roster(lab, "MotionSelect_")
 	_check(not is_instance_valid(lab.a.preview.pivot) and lab.drill_buttons.size() == 9, "Gahui motion buttons and solo rig remain available")
 	await _press(lab.drill_buttons[3])

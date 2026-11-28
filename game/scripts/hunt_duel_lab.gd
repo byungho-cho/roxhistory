@@ -244,6 +244,13 @@ var tip_trail:Array[Vector2]=[]
 func _prototype_duel()->bool:
 	return rules.ally_id=="hangyeol" and rules.enemy_id in ["forest","stag"]
 
+func character_preview_scale() -> float:
+	return ModelTest.CHARACTER_PREVIEW_SCALE if is_instance_valid(app) else 1.0
+
+func _displayed_body_point(side: int, point: Vector3) -> Vector3:
+	var root: Vector3 = shared_world.bodies[side].position
+	return root + (point - root) * character_preview_scale()
+
 func _saebom_duel()->bool:
 	return rules.ally_id=="saebom" and (rules.enemy_id in ["forest","stag"] or (local_shared_ranged and rules.enemy_id=="adult"))
 
@@ -827,22 +834,24 @@ func _refresh(delta := 0.0) -> void:
 
 func _show_duel_hp_loss(side:int,before:int,after:int)->void:
 	if a==null or b==null:return
-	var anchor := presentation.bone_point(a,"head") if side==0 else _position(1)-Vector2(0,54)
-	if side==1 and is_instance_valid(shared_world):
-		var height := 1.65 if _uram_duel() else 2.02
-		var depth := .56 if _uram_duel() else .48
-		anchor=shared_world.project(shared_world.bodies[1].position+Vector3.UP*height-shared_world.direction*depth)
+	var anchor := _ally_duel_head() if side == 0 else _deer_duel_head()
 	damage_numbers.show_loss(side,before,after,anchor-Vector2(0,20),side==0)
+
+func _ally_duel_head() -> Vector2:
+	return _han_duel_bone("Head", "head")
+
+func _deer_duel_head() -> Vector2:
+	if not is_instance_valid(shared_world):
+		return _position(1) - Vector2(0, 54)
+	var height := 1.65 if _uram_duel() else 2.02
+	var depth := .56 if _uram_duel() else .48
+	var root: Vector3 = shared_world.bodies[1].position
+	return shared_world.project(_displayed_body_point(1, root + Vector3.UP * height - shared_world.direction * depth))
 
 func _update_head_hud(delta:float)->void:
 	if a==null or b==null:return
-	var ally_anchor:=presentation.bone_point(a,"head")
-	var deer_anchor:=_position(1)-Vector2(0,54)
-	if is_instance_valid(shared_world) and _uram_duel():
-		deer_anchor=shared_world.project(shared_world.bodies[1].position+Vector3.UP*1.65-shared_world.direction*.56)
-	elif is_instance_valid(shared_world):
-		var nominal_head:Vector3=shared_world.bodies[1].position+Vector3.UP*2.02-shared_world.direction*.48
-		deer_anchor=shared_world.project(nominal_head)
+	var ally_anchor := _ally_duel_head()
+	var deer_anchor := _deer_duel_head()
 	# Smooth only real body travel before applying the current camera transform.
 	if deer_hud_anchor==Vector2.INF:
 		deer_hud_anchor=deer_anchor
@@ -1112,7 +1121,10 @@ func _land(side: int, key: String,contact:Dictionary={}) -> void:
 		ordinary_counter_wave.clear()
 	var defender := 1-side
 	var impact_point := _position(defender)-Vector2(0,33)
-	if is_instance_valid(shared_world):impact_point=shared_world.project(contact.point)
+	var displayed_contact := Vector3.ZERO
+	if is_instance_valid(shared_world):
+		displayed_contact = _displayed_body_point(defender, contact.point)
+		impact_point = shared_world.project(displayed_contact)
 	elif side==0 and a.key=="hangyeol" and (key in ["attack","skill"] or (_prototype_duel() and key=="chain")):
 		# The calibrated mesh tip and the body's actual contact location coincide.
 		impact_point=presentation.spear_point(a)
@@ -1122,7 +1134,7 @@ func _land(side: int, key: String,contact:Dictionary={}) -> void:
 		shared_world.apply_hit(defender,contact.normal,skill)
 		if _prototype_duel() and side==0 and key=="chain":
 			accent.chain_contact()
-			var floor_contact:Vector3=contact.point
+			var floor_contact := displayed_contact
 			floor_contact.y=0.0
 			var floor_point:=shared_world.project(floor_contact)
 			_flash(impact_point,"han_chain_impact",Color.WHITE,HAN_CHAIN_IMPACT_SECONDS)
@@ -1221,7 +1233,7 @@ func _land(side: int, key: String,contact:Dictionary={}) -> void:
 			fx[-1]["han_2sp_authored"]=true
 			fx[-1]["spear_axis"]=(target-origin).angle()+.57
 		if is_instance_valid(shared_world) and (key=="skill" or (_uram_duel() and key=="counter")):
-			var ground_point:Vector3=contact.point
+			var ground_point := displayed_contact
 			ground_point.y=0
 			fx[-1]["floor_point"]=shared_world.project(ground_point)
 	# Han is a light glint, Uram dust, Saebom stone fragments. The inbound
@@ -1558,7 +1570,9 @@ func _render_actors(delta:=0.0)->void:
 		if local_saebom_latest and a.key=="saebom":_pose_bom_cast(a,float(age[0]) if motion[0]=="chain" and rules.hp[0]>0 else -1.0)
 		a.place_effect();b.place_effect()
 		if _prototype_duel() and motion[0] in ["skill","chain"] and delta>0:
-			tip_trail.push_front(presentation.spear_point(a))
+			var tip := _han_tip_light_position()
+			if tip.is_finite():
+				tip_trail.push_front(tip)
 			if tip_trail.size()>7:tip_trail.pop_back()
 		elif motion[0] not in ["skill","chain"]:tip_trail.clear()
 		battle_camera.hunters.assign([a.preview]);battle_camera.rules.attacker=0
@@ -1592,6 +1606,8 @@ func _render_actors(delta:=0.0)->void:
 				ground.position=ground_pivot+(ground.position-ground_pivot)*zoom+shake*arena.scale
 				ground.scale*=zoom
 		_present_approved_han_duel_pose()
+		if app != null and test_ally in ["hangyeol", "gahui"]:
+			shared_world.show_deer_at_scale(character_preview_scale())
 		return
 	a.preview.position=_position(0);b.preview.position=_position(1)
 	if a.key=="hangyeol":
@@ -1858,11 +1874,22 @@ func _han_tip_light_position()->Vector2:
 		return shared_world.project(han_ultra.approved_weapon.to_global(ApprovedHan.APPROVED_BLADE_TIP))
 	return presentation.spear_point(a)
 
+func _han_duel_bone(bone: String, fallback: String) -> Vector2:
+	if _has_bound_han_model() and is_instance_valid(shared_world):
+		var index: int = han_ultra.rig.find_bone(bone)
+		if index >= 0:
+			return shared_world.project(han_ultra.bone_world(index).origin)
+	return presentation.bone_point(a, fallback)
+
 func _silver_deer_active()->bool:
 	return _prototype_duel() or (uram_generic_gong_test and b!=null and (b.key in ["forest","stag"] or (local_world_ring and b.key=="adult")))
 
 func _deer_visual_tip()->Vector2:
-	if is_instance_valid(shared_world):return shared_world.project(shared_world.weapon_point(1))
+	if is_instance_valid(shared_world):
+		var tip := shared_world.weapon_point(1)
+		if app != null and test_ally in ["hangyeol", "gahui"] and not shared_world.deer_display_scaled:
+			tip = _displayed_body_point(1, tip)
+		return shared_world.project(tip)
 	var view:=b.preview
 	var sk:Skeleton3D=view.skeleton
 	var idx:=sk.find_bone("head")
@@ -1890,7 +1917,7 @@ func _draw_duel_lights()->void:
 	var tip:=_han_tip_light_position()
 	if tip!=Vector2.INF:
 		var breath:=.88+.12*sin(visual_clock*TAU*.75)
-		var hand:=presentation.bone_point(a,"hand.R")
+		var hand := _han_duel_bone("RightHand", "hand.R")
 		var blade:=tip-hand
 		var blade_length:=clampf(blade.length()*.24,10,21)
 		var blade_center:=tip-blade.normalized()*blade_length*.42
@@ -2118,7 +2145,7 @@ func _draw_deer_impact(effect:Dictionary,p:float,layer:Node2D=null)->void:
 		_soft_light(at+direction*reach,Vector2(11,8),sil,fade*.75,layer)
 
 func _draw_han_skill_light(tip:Vector2,charge:float)->void:
-	var hand:=presentation.bone_point(a,"hand.R")
+	var hand := _han_duel_bone("RightHand", "hand.R")
 	var foot:=_position(0)+Vector2(0,2)
 	var power:=smoothstep(.03,.68,charge)
 	_soft_light(foot,Vector2(78,28),Color("319cfd"),power*.56)
@@ -2246,9 +2273,11 @@ func _draw_han_chain_light()->void:
 		var phase:=_visual_age(0)/maxf(a.duration,.001)
 		var power:=smoothstep(.035,.21,phase)*(1.0-smoothstep(.70,.86,phase))
 		var foot:=_position(0)
-		var chest:=a.screen_anchor()
-		var hand:=presentation.bone_point(a,"hand.R")
-		var tip:=presentation.spear_point(a)
+		var chest := _han_duel_bone("Spine", "spine")
+		var hand := _han_duel_bone("RightHand", "hand.R")
+		var tip := _han_tip_light_position()
+		if not tip.is_finite():
+			return
 		var charge:=power*(1.0-smoothstep(.22,.39,phase))
 		if han_radial_frames.size()==21 or not han_ground.frames.is_empty():_draw_han_charge_gather(foot,tip,phase)
 		_soft_light(foot,Vector2(111,40),Color("1ba3ff"),charge*.76,han_chain_light)
@@ -2296,10 +2325,10 @@ func _draw_han_chain_light()->void:
 
 func _draw_contact_effects()->void:
 	if _prototype_duel() and motion[0]=="skill" and is_instance_valid(shared_world):
-		var tip:=presentation.spear_point(a)
+		var tip := _han_tip_light_position()
 		var p:=clampf(_visual_age(0)/maxf(.01,motion_contact[0]),0,1)
 		var release:=1.0 if not shared_world.consumed[0] else 1.0-smoothstep(motion_contact[0],motion_contact[0]+.29,age[0])
-		if release>0:_draw_han_skill_light(tip,p*release)
+		if release>0 and tip.is_finite():_draw_han_skill_light(tip,p*release)
 	for i in range(fx.size()-1,-1,-1):
 		var effect:=fx[i]
 		var p:float=(visual_clock-float(effect.at))/float(effect.duration)
@@ -3054,7 +3083,7 @@ func _present_han_ultra() -> void:
 		var binder := ApprovedHan.new()
 		binder.duel_binding = true
 		add_child(binder)
-		var scale: float = binder.model_test_projection_ratio(shared_world.camera, shared_world.display.scale.y)
+		var scale: float = binder.model_test_projection_ratio(shared_world.camera, shared_world.display.scale.y) * character_preview_scale()
 		if not binder.bind_duel(a.preview.pivot, b.preview.pivot, shared_world.camera, scale):
 			binder.queue_free()
 			return

@@ -62,10 +62,23 @@ func _install_duel_gahui() -> void:
  shared_world.scene.add_child(gahui)
  gahui.position=shared_world.bodies[0].position
  gahui.initialize(shared_world.bodies[1])
+ _scale_gahui_model(character_preview_scale())
  gahui.shot_arrived.connect(_duel_shot_arrived)
  vfx = GahuiVfx.new()
  shared_world.scene.add_child(vfx)
  _render_actors()
+
+func _scale_gahui_model(multiplier: float) -> void:
+ var visual := gahui.models[0]
+ visual.scale *= multiplier
+ visual.position.y *= multiplier
+
+func _ally_duel_head() -> Vector2:
+ if not is_instance_valid(gahui) or not gahui.rig_ready:
+  return super()
+ var rig := gahui.skeletons[0]
+ var head := rig.find_bone("Head")
+ return shared_world.project(rig.to_global(rig.get_bone_global_pose(head).origin)) if head >= 0 else super()
 
 func _act(side: int, key: String) -> void:
  if test_ally != "gahui" or side != 0:
@@ -99,7 +112,7 @@ func _render_actors(delta:=0.0) -> void:
  gahui.step_at(clock)
  # Keep the motion on the shared physical body's footline.
  gahui.position=shared_world.bodies[0].position
- var target: Vector3=shared_world.bodies[1].position+Vector3.UP*.95
+ var target: Vector3=shared_world.bodies[1].position+Vector3.UP*(.95*character_preview_scale())
  vfx.draw(action,clock,gahui,shared_world.camera,target)
  if action==5 and not duel_healed and clock>=Gahui.HEAL_RELEASE:
   duel_healed=true
@@ -130,7 +143,7 @@ func _install_gahui():
  b.play("idle")
  shared_world.bodies[1].position = DEER_ORIGIN
  b.preview.pivot.rotation.y = -1.4
- b.preview.pivot.scale *= DEER_LAB_SCALE
+ b.preview.pivot.scale *= DEER_LAB_SCALE * character_preview_scale()
 
  gahui = Gahui.new()
  shared_world.scene.add_child(gahui)
@@ -142,9 +155,7 @@ func _install_gahui():
   _fail_trial(3)
   return
  # Resize the model about the original footline, without resizing the world effects.
- var visual := gahui.models[0]
- visual.scale *= GAHUI_LAB_SCALE
- visual.position.y *= GAHUI_LAB_SCALE
+ _scale_gahui_model(GAHUI_LAB_SCALE * character_preview_scale())
  vfx = GahuiVfx.new()
  shared_world.scene.add_child(vfx)
  gahui.shot_started.connect(func(_point:Vector3):shot_total+=1)
@@ -222,7 +233,7 @@ func _ensure_stag() -> void:
  stag_actor.preview.pivot.reparent(shared_world.bodies[1],false)
  stag_actor.preview.pivot.position=Vector3.ZERO
  stag_actor.preview.pivot.rotation.y=-1.4
- stag_actor.preview.pivot.scale=Vector3.ONE*DEER_LAB_SCALE
+ stag_actor.preview.pivot.scale=Vector3.ONE*DEER_LAB_SCALE*character_preview_scale()
  stag_driver=flower_driver.get_script().new()
  stag_driver.setup(stag_actor,shared_world.bodies[1],gahui,true)
  stag_driver.set_visible(false)
@@ -413,7 +424,7 @@ func _draw_drill_deer_fx()->void:
    _draw_deer_impact({"center":drill_deer_contact,"basic":basic,"axis":caster.direction_to(toward),"floor_point":drill_deer_floor},p,drill_deer_fx)
 
 func _draw_vfx(t:float) -> void:
- var deer_chest := shared_world.bodies[1].global_position + Vector3.UP * (.95 * DEER_LAB_SCALE)
+ var deer_chest := shared_world.bodies[1].global_position + Vector3.UP * (.95 * DEER_LAB_SCALE * character_preview_scale())
  vfx.draw(selected_index,t,gahui,shared_world.camera,deer_chest)
 
 func _fail_trial(code:int) -> void:

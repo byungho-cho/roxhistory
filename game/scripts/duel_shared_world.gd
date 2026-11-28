@@ -41,6 +41,8 @@ var body_contacts:=0
 var knockback:=[Vector3.ZERO,Vector3.ZERO]
 var max_body_penetration:=0.0
 var deer_spear_reaction:=false
+var deer_simulation_transform := Transform3D.IDENTITY
+var deer_display_scaled := false
 var fade_materials:Array=[[],[]]
 var last_alpha:=[1.0,1.0]
 var direction:=Vector3(1,0,-.88).normalized()
@@ -125,7 +127,22 @@ func configure(left,right,center:Vector2,local_ranged_boar:=false,local_uram_for
 	if saebom_pair:_setup_projectile()
 	reset()
 
+func show_deer_at_scale(multiplier: float) -> void:
+	if multiplier == 1.0 or deer_display_scaled:
+		return
+	var pivot: Node3D = actors[1].preview.pivot
+	# Enlarge around the body's ground origin and restore before contact sampling.
+	deer_simulation_transform = pivot.transform
+	pivot.transform = Transform3D(pivot.basis.scaled(Vector3.ONE * multiplier), pivot.position * multiplier)
+	deer_display_scaled = true
+
+func _restore_deer_simulation_scale() -> void:
+	if deer_display_scaled:
+		actors[1].preview.pivot.transform = deer_simulation_transform
+		deer_display_scaled = false
+
 func detach()->void:
+	_restore_deer_simulation_scale()
 	if uram_previous_animator_mode>=0 and not actors.is_empty() and is_instance_valid(actors[0].preview):
 		actors[0].preview.animator.callback_mode_process=uram_previous_animator_mode
 		uram_previous_animator_mode=-1
@@ -152,6 +169,7 @@ func _calibrate_weapon_axis()->void:
 	actor.play("idle");actors[1].play("idle")
 
 func reset()->void:
+	_restore_deer_simulation_scale()
 	restore_uram_outgoing_display()
 	uram_out_started=-1.0;uram_out_snapshot.clear();uram_out_bridge.clear();uram_out_basic_return=false
 	uram_trade_last_strike=-INF;uram_trade_pending_hit=-INF;uram_trade_at=-INF;uram_trade_feet.clear()
@@ -181,6 +199,7 @@ func reset()->void:
 		previous_weapon[i]=weapon_point(i);previous_hurt.append(hurt_capsule(i))
 
 func begin_action(side:int,key:String)->void:
+	_restore_deer_simulation_scale()
 	if side==0 and uram_pair:
 		uram_floor_trace_advance=0.0
 		uram_floor_original_tip=weapon_point(0)
@@ -434,6 +453,7 @@ func _rig_alpha(side:int,fade:float)->void:
 	actors[side].preview.pivot.visible=fade>.02
 
 func render_poses(lab,delta:float)->Array:
+	_restore_deer_simulation_scale()
 	restore_saebom_deer_stop()
 	var root_motion:Array=[]
 	for side in 2:
@@ -659,6 +679,7 @@ func deer_return_offset()->Vector3:
 	return direction*maxf(0,remaining)
 
 func step(lab,delta:float,prior_han_age:float=-1.0)->Array[Dictionary]:
+	_restore_deer_simulation_scale()
 	restore_saebom_deer_stop()
 	var old_hurt:=[hurt_capsule(0),hurt_capsule(1)]
 	var old_weapon:=[weapon_point(0),weapon_point(1)]

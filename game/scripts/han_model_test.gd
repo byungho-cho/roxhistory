@@ -99,6 +99,7 @@ func start_preview() -> void:
 	field.add_child(han)
 	field.move_child(han, 1)
 	han.set_enabled(true)
+	han.display.scale *= CHARACTER_PREVIEW_SCALE
 	han.viewport.size = HanModel.MODEL_TEST_VIEW_SIZE
 	han.camera.size = HanModel.MODEL_TEST_CAMERA_SIZE
 	model = HanModel.new()
@@ -235,7 +236,8 @@ func _append_step(index: int, clip: StringName, length: float) -> void:
 func _route_space(distance: float) -> Vector2:
 	var world := han.pivot.basis.z * distance
 	var projected := han.camera.unproject_position(world) - han.camera.unproject_position(Vector3.ZERO)
-	return projected * han.display.scale * han.scale
+	# Character magnification must not change the selected motion's route.
+	return projected * han.display.scale * han.scale / CHARACTER_PREVIEW_SCALE
 
 func render_frame() -> void:
 	if steps.is_empty():
@@ -262,7 +264,7 @@ func render_frame() -> void:
 	var center_offset: float = steps.back().to * .5 if selection == "08" else 0.0
 	han.position = Vector2(field.size.x * .5, field.size.y * .55) + _route_space(distance - center_offset)
 	floor_label.position = han.position + Vector2(-41, 17)
-	han.pivot.position.y = travel.y
+	han.pivot.position.y = travel.y / CHARACTER_PREVIEW_SCALE
 	_sample_effect(step.clip, clip_time, complete)
 	if return_idle:
 		var idle := &"retouch_guard" if step.index >= DECELERATE else &"retouch_idle"
