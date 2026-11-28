@@ -293,7 +293,8 @@ func _check_effect_toggle(view) -> void:
 	for key in ["10", "11", "12"]:
 		await _press(view.motion_buttons[key], true)
 		var step: Dictionary = view.steps[0]
-		for frame: int in view.CONTACT_FRAMES[step.clip]:
+		for cue: Dictionary in view.CONTACT_CUES[step.clip]:
+			var frame: int = cue.frame
 			var source_time := frame / 30.0
 			view.age = (source_time - .01) / step.motion_rate
 			view.render_frame()
@@ -319,6 +320,44 @@ func _check_effect_toggle(view) -> void:
 	await _press(button, true)
 	_check(view.effect_progress == 1.0, "Switch off clears an active contact burst immediately")
 	await _press(button)
+	view.set_process(true)
+
+func _check_motion_sounds(view) -> void:
+	view.set_process(false)
+	await _press(view.motion_buttons["10"], true)
+	var player: AudioStreamPlayer = view.combat_players[&"han_basic"]
+	var first: float = view.sound_timeline[0].at
+	var second: float = view.sound_timeline[1].at
+	_check(view.sound_timeline.size() == 2 and player.bus == &"Combat" and player.stream is AudioStream, "Basic attack has two cues routed to the Combat settings")
+	view.advance(first - .01)
+	_check(view.next_sound == 0 and not player.playing, "Basic attack stays silent before contact")
+	view.advance(.02)
+	_check(view.next_sound == 1 and player.playing and view.effect_progress < .1, "First basic sound plays in the same frame as its effect")
+	view.render_frame()
+	view.render_frame()
+	_check(view.next_sound == 1, "Redrawing a frame never repeats the sound")
+	view.advance(second - view.age + .01)
+	_check(view.next_sound == 2 and player.playing and view.effect_progress < .1, "Second basic strike plays exactly one more sound")
+	await _press(view.effect_button, true)
+	_check(not player.playing, "Turning effects off also stops active combat sounds")
+	await _press(view.motion_buttons["11"], true)
+	view.advance(float(view.sound_timeline[0].at) + .01)
+	var skill: AudioStreamPlayer = view.combat_players[&"han_skill"]
+	_check(view.next_sound == 1 and not skill.playing, "Moving past a cue with effects off stays silent")
+	await _press(view.effect_button, true)
+	view.advance(.01)
+	_check(not skill.playing, "Turning effects on does not replay a discarded cue")
+	await _press(view.motion_buttons["13"], true)
+	var hit: AudioStreamPlayer = view.combat_players[&"ally_hit"]
+	_check(view.next_sound == 1 and hit.playing and view.effect_style == 0, "Normal hit has one sound and flash at the first reaction frame")
+	await _press(view.motion_buttons.full, true)
+	_check(not hit.playing and view.sound_timeline.size() == 10, "Switching to the full reel stops the old cue and schedules all ten contacts")
+	view.set_rate(2.0)
+	first = view.sound_timeline[0].at
+	view.advance(first / 2.0 + .005)
+	_check(view.next_sound == 1 and player.playing and view.effect_progress < .1, "Full reel uses the same contacts with the playback multiplier")
+	view.set_rate(1.0)
+	await _press(view.motion_buttons["01"], true)
 	view.set_process(true)
 
 func _check_motion_lab() -> void:
@@ -362,6 +401,7 @@ func _check_motion_lab() -> void:
 	_check(view.model.ap.get_current_animation() == "retouch_guard", "Full motion returns to battle-ready idle")
 	_check_motion_enhancements(view)
 	await _check_effect_toggle(view)
+	await _check_motion_sounds(view)
 	await _press(_button(view, "MotionSelect_gahui"), true)
 	await process_frame
 	var lab = app.parry_lab

@@ -23,11 +23,32 @@ const DECELERATE := 7
 const KNOCKDOWN := 14
 const FALL_AND_RISE := 17
 const FLIGHT_DISTANCE_MULTIPLIER := 3.0
-# Contact frames in the 30 fps approved clips. The second basic starts 33 frames after the first.
-const CONTACT_FRAMES := {
-	&"retouch_basic_preview": [11, 44], &"retouch_sp2": [33], &"retouch_chain": [99],
+# Cues are in source frames, so the sound and visual contact use the same retiming.
+const CONTACT_CUES := {
+	&"retouch_basic_preview": [
+		{"frame": 11, "style": 1, "sound": &"han_basic"},
+		{"frame": 44, "style": 1, "sound": &"han_basic"},
+	],
+	&"retouch_sp2": [{"frame": 33, "style": 2, "sound": &"han_skill"}],
+	&"retouch_chain": [{"frame": 99, "style": 3, "sound": &"han_chain"}],
+	&"retouch_hit": [{"frame": 0, "style": 0, "sound": &"ally_hit"}],
+	&"retouch_heavy": [{"frame": 0, "style": 0, "sound": &"heavy_hit"}],
+	&"retouch_knockdown": [{"frame": 26, "sound": &"ground_land"}],
+	&"retouch_death": [{"frame": 0, "sound": &"ally_death"}],
+	&"retouch_flight": [
+		{"frame": 0, "style": 0, "sound": &"ally_hit"},
+		{"frame": 40, "sound": &"ground_land"},
+	],
 }
-const CONTACT_STYLES := {&"retouch_basic_preview": 1, &"retouch_sp2": 2, &"retouch_chain": 3}
+const COMBAT_STREAMS := {
+	&"han_basic": preload("res://assets/audio/hunt-duel-lab/han_basic.wav"),
+	&"han_skill": preload("res://assets/audio/hunt-duel-lab/han_skill.wav"),
+	&"han_chain": preload("res://assets/audio/hunt-duel-lab/han_chain.wav"),
+	&"ally_hit": preload("res://assets/audio/hunt-duel-lab/ally_hit.wav"),
+	&"heavy_hit": preload("res://assets/audio/d0006-approved/heavy-hit.mp3"),
+	&"ally_death": preload("res://assets/audio/hunt-duel-lab/ally_death.wav"),
+	&"ground_land": preload("res://assets/audio/uram-2sp-weight/uram-ground-thump.wav"),
+}
 const CONTACT_SECONDS := .38
 const IMPACT_DRAW_SCALE := 1600.0 / 960.0
 
@@ -46,6 +67,9 @@ var effect_progress := 1.0
 var effect_style := 0
 var skill_frames: Array[Texture2D] = []
 var chain_frames: Array[Texture2D] = []
+var combat_players: Dictionary = {}
+var sound_timeline: Array[Dictionary] = []
+var next_sound := 0
 var steps: Array[Dictionary] = []
 var reel_duration := 0.0
 var shown_motion := 0
@@ -110,6 +134,14 @@ func start_preview() -> void:
 	chain_glow = HanSkillImpact.make_contact_glow()
 	skill_frames = HanSkillImpact.load_skill()
 	chain_frames = HanSkillImpact.load_chain(192)
+	for cue in COMBAT_STREAMS:
+		var player := AudioStreamPlayer.new()
+		player.stream = COMBAT_STREAMS[cue]
+		player.bus = &"Combat"
+		player.volume_db = -12.0 if cue == &"ground_land" else -9.0
+		player.max_polyphony = 2
+		add_child(player)
+		combat_players[cue] = player
 	floor_label = text(field, "한결", Rect2(0, 0, 82, 36), 22)
 	var badge := StyleBoxFlat.new()
 	badge.bg_color = Color("162e2a")
@@ -162,6 +194,9 @@ func play_motion(id: String) -> void:
 	age = 0.0
 	shown_motion = 0
 	steps.clear()
+	_stop_combat_audio()
+	sound_timeline.clear()
+	next_sound = 0
 	reel_duration = 0.0
 	var motion_ids := range(CLIPS.size()) if id == "full" else [id.to_int() - 1]
 	for index in motion_ids:
@@ -170,6 +205,7 @@ func play_motion(id: String) -> void:
 			clip = &"retouch_travel_walk" if index == WALK else &"retouch_travel_run"
 		_append_step(index, clip, model.ap.get_animation(clip).length)
 	render_frame()
+	_play_due_sounds()
 	refresh()
 
 func _append_step(index: int, clip: StringName, length: float) -> void:
@@ -189,6 +225,11 @@ func _append_step(index: int, clip: StringName, length: float) -> void:
 		"motion_rate": motion_rate, "opening_span": opening_span,
 		"from": distance, "to": end_distance,
 	})
+	for cue: Dictionary in CONTACT_CUES.get(clip, []):
+		var source_time := float(cue.frame) / HanSkillImpact.FRAME_RATE
+		if source_time <= length:
+			var offset := minf(source_time, opening_length) / DRAW_OPENING_RATE + maxf(0.0, source_time - opening_length) / motion_rate
+			sound_timeline.append({"at": reel_duration + offset, "sound": cue.sound})
 	reel_duration += span
 
 func _route_space(distance: float) -> Vector2:
@@ -238,24 +279,55 @@ func render_frame() -> void:
 
 func toggle_effects() -> void:
 	effects_enabled = not effects_enabled
+	if not effects_enabled:
+		_stop_combat_audio()
 	render_frame()
 	show_switch(effect_button, effects_enabled)
+
+func _process(delta: float) -> void:
+	if not app.application_active:
+		_stop_combat_audio()
+		return
+	advance(delta)
+
+func advance(delta: float) -> void:
+	super(delta)
+	_play_due_sounds()
+
+func _play_due_sounds() -> void:
+	while next_sound < sound_timeline.size() and sound_timeline[next_sound].at <= age + .00001:
+		var cue: Dictionary = sound_timeline[next_sound]
+		next_sound += 1
+		if effects_enabled and app.application_active:
+			combat_players[cue.sound].play()
+
+func _stop_combat_audio() -> void:
+	for player: AudioStreamPlayer in combat_players.values():
+		if player.playing:
+			player.stop()
 
 func _sample_effect(clip: StringName, clip_time: float, complete: bool) -> void:
 	effect_progress = 1.0
 	var active := effects_enabled and not complete
 	ground_dim.color.a = HanModel.cinematic_dim_alpha(clip_time) if active and clip == &"retouch_chain" else 0.0
-	if active and CONTACT_FRAMES.has(clip):
-		var style: int = CONTACT_STYLES[clip]
-		var duration := _impact_duration(style)
-		for frame: int in CONTACT_FRAMES.get(clip, []):
-			var contact_time := frame / 30.0
+	if active:
+		for cue: Dictionary in CONTACT_CUES.get(clip, []):
+			if not cue.has("style"):
+				continue
+			var style: int = cue.style
+			var duration := _impact_duration(style)
+			var contact_time := float(cue.frame) / HanSkillImpact.FRAME_RATE
 			if clip_time < contact_time or clip_time >= contact_time + duration:
 				continue
 			model.sample_han_clip(clip, contact_time)
-			var weapon := model.approved_weapon
-			effect_origin = _project_effect(weapon.global_position)
-			effect_contact = _project_effect(weapon.to_global(HanModel.APPROVED_BLADE_TIP))
+			if style == 0:
+				var chest := model.rig.find_bone("Spine")
+				effect_contact = _project_effect(model.bone_world(chest).origin)
+				effect_origin = effect_contact
+			else:
+				var weapon := model.approved_weapon
+				effect_origin = _project_effect(weapon.global_position)
+				effect_contact = _project_effect(weapon.to_global(HanModel.APPROVED_BLADE_TIP))
 			effect_style = style
 			effect_progress = (clip_time - contact_time) / duration
 			break
