@@ -7,6 +7,10 @@ const COLUMNS := 8
 const SAMPLES := 32
 const PRACTICE_SECONDS := 2.2
 const SPEAR_SCALE := 1.5
+const SHAFT_LENGTH := 1.15
+const SHAFT_BELOW_GRIP := .10
+const HAND_SPACING := .175
+const PALM_OFFSETS := [Vector3(-.091, -.021, .001), Vector3(.091, -.0246, .001)]
 const JOINTS := {
 	"spine":"Spine", "head":"Head", "armL":"LeftArm", "armR":"RightArm",
 	"forearmL":"LeftForeArm", "forearmR":"RightForeArm", "handL":"LeftHand", "handR":"RightHand",
@@ -27,6 +31,7 @@ func bake() -> void:
 	legacy.use_training_spear()
 	legacy.hide()
 	legacy.viewport.render_target_update_mode = SubViewport.UPDATE_DISABLED
+	await process_frame
 	# Match the resident atlas camera, lighting, and logical pixels per metre.
 	var viewport := SubViewport.new()
 	viewport.size = Vector2i(320, 280)
@@ -66,9 +71,20 @@ func bake() -> void:
 		var axe := travel.get_node("StoneAxe") as Node3D
 		var spear := legacy.tool_3d.duplicate() as Node3D
 		travel.add_child(spear)
+		var shaft := spear.get_child(0) as MeshInstance3D
+		var spearhead := spear.get_child(1) as MeshInstance3D
+		var shaft_center := SHAFT_LENGTH * (.5 - SHAFT_BELOW_GRIP)
+		spearhead.position.z += shaft_center - shaft.position.z
+		shaft.position.z = shaft_center
+		var character_mesh := model.find_child("char1", true, false) as MeshInstance3D
+		if not character_mesh or character_mesh.mesh.get_blend_shape_name(0) != &"Gather_Grip":
+			push_error("Missing the resident's authored grip shape")
+			quit(4)
+			return
 		player.play("01_Idle_9")
 		player.advance(0)
 		player.pause()
+		var largest_grip_error := 0.0
 		for sample in SAMPLES:
 			var time := sample * PRACTICE_SECONDS / SAMPLES
 			player.seek(0.0, true)
@@ -83,15 +99,14 @@ func bake() -> void:
 			for joint: String in JOINTS:
 				copy_rotation(legacy, rig, joint)
 			rig.force_update_all_bone_transforms()
-			var hand_index := rig.find_bone("RightHand")
-			var hand_pose := rig.global_transform * rig.get_bone_global_pose(hand_index)
-			var hand_rest := rig.get_bone_global_rest(hand_index).basis.orthonormalized()
-			var old_rest := legacy.rig.get_bone_global_rest(legacy.bones.handR).basis.orthonormalized()
-			var rotation := hand_pose.basis.orthonormalized() * hand_rest.inverse() * old_rest
-			var local_hand := travel.global_transform.affine_inverse() * Transform3D(rotation, hand_pose.origin)
-			# Keep the grip at the hand as the shaft and point grow together.
-			var tool_basis := local_hand.basis.orthonormalized().scaled(Vector3.ONE * .67 * SPEAR_SCALE)
-			spear.transform = Transform3D(tool_basis, local_hand.origin) * legacy.tool_3d.transform
+			for shape in character_mesh.mesh.get_blend_shape_count():
+				character_mesh.set_blend_shape_value(shape, 1.0 if shape == 0 else 0.0)
+			var grip_error := pose_two_handed_strike(rig, travel, spear, time)
+			if grip_error > .003:
+				push_error("An open grip in frame %s %d: %f" % [facing, sample, grip_error])
+				quit(5)
+				return
+			largest_grip_error = maxf(largest_grip_error, grip_error)
 			spear.show()
 			viewport.render_target_update_mode = SubViewport.UPDATE_ONCE
 			await process_frame
@@ -106,9 +121,92 @@ func bake() -> void:
 				return
 			var tile := index * SAMPLES + sample
 			atlas.blit_rect(image, Rect2i(Vector2i.ZERO, FRAME), Vector2i(tile % COLUMNS, tile / COLUMNS) * FRAME)
-		print("TRAINING BAKE male facing ", facing, " ", SAMPLES, " complete frames, spear scale ", SPEAR_SCALE)
+		print("TRAINING BAKE ", facing, " ", SAMPLES, " frames, maximum palm separation ", largest_grip_error)
 		model.free()
 	quit(atlas.save_png(args[1]))
+
+func pose_two_handed_strike(rig: Skeleton3D, travel: Node3D, spear: Node3D, time: float) -> float:
+	var rig_to_travel := travel.global_transform.affine_inverse() * rig.global_transform
+	var right_shoulder := rig_to_travel * rig.get_bone_global_pose(rig.find_bone("RightArm")).origin
+	var left_shoulder := rig_to_travel * rig.get_bone_global_pose(rig.find_bone("LeftArm")).origin
+	var shoulder_center := (right_shoulder + left_shoulder) * .5
+	var extension := pow(maxf(0.0, sin(time * TAU / PRACTICE_SECONDS)), 2.0)
+	var angle := deg_to_rad(lerpf(-28.0, 72.0, extension))
+	var axis := Vector3(-.12, cos(angle), sin(angle)).normalized()
+	var grip := shoulder_center + Vector3(-.055, lerpf(-.25, -.16, extension), lerpf(.145, .17, extension))
+	var right := solve_grip(rig, rig_to_travel, "Right", grip, axis, 0)
+	var left := solve_grip(rig, rig_to_travel, "Left", grip + axis * HAND_SPACING, axis, 1)
+	for attempt in 8:
+		var excess := maxf(right.error, left.error)
+		if excess <= .0005:
+			break
+		grip = grip.move_toward(shoulder_center + Vector3(0, -.19, .06), excess + .005)
+		right = solve_grip(rig, rig_to_travel, "Right", grip, axis, 0)
+		left = solve_grip(rig, rig_to_travel, "Left", grip + axis * HAND_SPACING, axis, 1)
+	var to_rig := rig_to_travel.affine_inverse()
+	for arm in [right, left]:
+		rig.set_bone_global_pose(arm.upper, to_rig * arm.upper_pose)
+		rig.set_bone_global_pose(arm.forearm, to_rig * arm.forearm_pose)
+		rig.set_bone_global_pose(arm.hand, to_rig * arm.hand_pose)
+	rig.force_update_all_bone_transforms()
+	var cross_axis := Vector3.RIGHT.slide(axis).normalized()
+	spear.transform = Transform3D(Basis(cross_axis, axis.cross(cross_axis), axis).scaled(Vector3.ONE * .67 * SPEAR_SCALE), grip)
+	var right_palm := palm_position(rig, rig_to_travel, right.hand, right.socket)
+	var left_palm := palm_position(rig, rig_to_travel, left.hand, left.socket)
+	return maxf(right_palm.distance_to(grip), left_palm.distance_to(grip + axis * HAND_SPACING))
+
+func solve_grip(rig: Skeleton3D, to_actor: Transform3D, label: String, grip: Vector3, shaft: Vector3, palm_index: int) -> Dictionary:
+	var upper := rig.find_bone(label + "Arm")
+	var forearm := rig.find_bone(label + "ForeArm")
+	var hand := rig.find_bone(label + "Hand")
+	var a := to_actor * rig.get_bone_global_pose(upper)
+	var b := to_actor * rig.get_bone_global_pose(forearm)
+	var c := to_actor * rig.get_bone_global_pose(hand)
+	var side := -1.0 if palm_index == 0 else 1.0
+	var ab := b.origin - a.origin
+	var bc := c.origin - b.origin
+	var upper_length := ab.length()
+	var forearm_length := bc.length()
+	var rest_hand := rig.get_bone_global_rest(hand).basis.orthonormalized()
+	var socket: Vector3 = rest_hand.inverse() * PALM_OFFSETS[palm_index]
+	var palm_bind := direction_frame(Vector3.BACK, Vector3.RIGHT * side).inverse() * rest_hand
+	var neutral := (grip - a.origin).slide(shaft).normalized()
+	if neutral.is_zero_approx():
+		neutral = Vector3.DOWN.slide(shaft).normalized()
+	var best := {}
+	var best_score := INF
+	for roll in [-60.0, -30.0, 0.0, 30.0, 60.0]:
+		var hand_dir := neutral.rotated(shaft, deg_to_rad(roll))
+		var wrist_basis := direction_frame(shaft, hand_dir) * palm_bind
+		var wrist_goal := grip - wrist_basis * socket
+		var distance := wrist_goal.distance_to(a.origin)
+		var aim := (wrist_goal - a.origin).normalized()
+		var reach := clampf(distance, absf(upper_length - forearm_length) + .001, upper_length + forearm_length - .002)
+		var wrist := a.origin + aim * reach
+		var pole := Vector3(.55 * side, -.85, -.16).slide(aim).normalized()
+		var along := (upper_length * upper_length - forearm_length * forearm_length + reach * reach) / (2.0 * reach)
+		var elbow := a.origin + aim * along + pole * sqrt(maxf(0.0, upper_length * upper_length - along * along))
+		var solved_upper := (elbow - a.origin).normalized()
+		var solved_forearm := (wrist - elbow).normalized()
+		var error := absf(distance - reach)
+		var score := solved_forearm.angle_to(hand_dir) + error * 44.0 + absf(roll) * .0008
+		if score < best_score:
+			best_score = score
+			best = {
+				"upper": upper, "forearm": forearm, "hand": hand, "socket": socket, "error": error,
+				"upper_pose": Transform3D(Basis(Quaternion(ab.normalized(), solved_upper)) * a.basis, a.origin),
+				"forearm_pose": Transform3D(Basis(Quaternion(bc.normalized(), solved_forearm)) * b.basis, elbow),
+				"hand_pose": Transform3D(wrist_basis.scaled(c.basis.get_scale()), wrist),
+			}
+	return best
+
+func direction_frame(primary: Vector3, transverse: Vector3) -> Basis:
+	var second := transverse.slide(primary).normalized()
+	return Basis(primary, second, primary.cross(second))
+
+func palm_position(rig: Skeleton3D, to_actor: Transform3D, hand: int, socket: Vector3) -> Vector3:
+	var pose := to_actor * rig.get_bone_global_pose(hand)
+	return pose.origin + pose.basis.orthonormalized() * socket
 
 func accent_strike(legacy: HybridCharacter, time: float) -> void:
 	var phase := time * TAU / PRACTICE_SECONDS
