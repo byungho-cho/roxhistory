@@ -27,8 +27,11 @@ func _ready()->void:
 	region_enabled=true
 	region_filter_clip_enabled=true
 	texture_filter=CanvasItem.TEXTURE_FILTER_LINEAR
-	scale = Vector2.ONE * (.46 / 1.5) * 4.0 * (1.08 if variant == "female" else 1.16) * DISPLAY_SIZE_MULTIPLIER
+	scale = Vector2.ONE * display_scale(variant == "female")
 	_pose_approved("idle", 0.0)
+
+static func display_scale(female: bool) -> float:
+	return (.46 / 1.5) * 4.0 * (1.08 if female else 1.16) * DISPLAY_SIZE_MULTIPLIER
 
 static func gesture_duration(gesture: String) -> float:
 	var track: Vector3i = APPROVED_ROWS[gesture]
