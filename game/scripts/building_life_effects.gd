@@ -1,6 +1,9 @@
 class_name BuildingLifeEffects
 extends Node2D
 ## Presentation-only accents; never change footprint, save data or work clocks.
+const TRAINING_STRIKE_SECONDS := .33
+const TRAINING_REST_SECONDS := 1.5
+
 var sprite:Sprite2D
 var kind:String
 var level:int
@@ -61,7 +64,14 @@ func sync_training()->void:
 	while hunters.size()<wanted:
 		var index:=hunters.size();var actor:=TrainingHunter.new(1 if index==0 else -1)
 		add_child(actor);hunters.append(actor)
+	var pair_time := fposmod(clock, 2.0 * TRAINING_STRIKE_SECONDS + TRAINING_REST_SECONDS)
 	for i in hunters.size():
 		var hunter := hunters[i]
 		hunter.position = Vector2(-58 if i == 0 else 58, 56 if i == 0 else 62)
-		hunter.show_practice_frame(clock)
+		if wanted == 1:
+			hunter.show_practice_frame(clock)
+			continue
+		var strike_time := pair_time - i * TRAINING_STRIKE_SECONDS
+		# The first half of the source loop is a strike; the second half holds the ready pose.
+		var progress := strike_time / TRAINING_STRIKE_SECONDS if strike_time >= 0.0 and strike_time < TRAINING_STRIKE_SECONDS else 0.0
+		hunter.show_practice_frame(progress * TrainingHunter.PRACTICE_SECONDS * .5)
