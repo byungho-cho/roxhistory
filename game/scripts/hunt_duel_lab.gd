@@ -25,6 +25,7 @@ const FOREST_BATTLE_SCALE := .82588
 const APPROACH_TRAVEL := .88
 const APPROACH_END := 1.04
 const ApprovedHan = preload("res://battlefield_reset/han_motion/han_motion_viewer.gd")
+const HanSkillImpact = preload("res://scripts/han_skill_impact.gd")
 const REVIVAL_ENTRANCE_SCALE := 1.30
 const SHARED_REVIVAL_DELAY := 1.38
 const HAN_SKILL_WINDUP_RATE := 3.25
@@ -111,7 +112,7 @@ var effects_layer := Node2D.new()
 var ready_light_layer := Node2D.new()
 var deer_skill_light_layer := Node2D.new()
 var han_chain_light := Node2D.new()
-const HAN_CHAIN_IMPACT_SECONDS := .70
+const HAN_CHAIN_IMPACT_SECONDS := HanSkillImpact.CHAIN_SECONDS
 const HAN_CHAIN_TAIL := .32
 const AUTHORED_FRAME_COUNT := 21
 const AUTHORED_FRAME_SECONDS := .70
@@ -140,10 +141,8 @@ var han_ground_anchor := Vector2.INF
 var han_ground_at := -INF
 var han_2sp_enabled:=true
 var han_2sp_frames:Array[Texture2D]=[]
-const HAN_2SP_COUNT:=11
-const HAN_2SP_DURATION:=11.0/30.0
-const HAN_2SP_DISPLAY_SIZE:=288.0
-const HAN_2SP_ORIGIN:=Vector2(90,117)
+const HAN_2SP_COUNT := HanSkillImpact.SKILL_FRAME_COUNT
+const HAN_2SP_DURATION := HanSkillImpact.SKILL_SECONDS
 var authored_frames:Array[Texture2D]=[]
 var authored_asset_hero:=""
 var authored_load_us:=0
@@ -398,10 +397,7 @@ func _ready() -> void:
 	cast_notice_layer.draw.connect(func():_draw_cast_notice(cast_notice_anchor))
 
 	_setup_ui()
-	for i in 21:
-		var stem:="res://assets/effects/d0071-chain/han_chain_impact_%02d.png"%i
-		var half:="res://assets/effects/duel-3sp-authored/hangyeol/192/han_chain_impact_%02d.png"%i
-		chain_impact_frames.append(load(half if han_authored_size==192 and ResourceLoader.exists(half) else stem))
+	chain_impact_frames = HanSkillImpact.load_chain(han_authored_size)
 	if not han_ground.prepare() and han_radial:
 		for i in 21:
 			var folder:="duel-3sp-polished" if authored_polished else "duel-3sp-directional"
@@ -413,18 +409,7 @@ func _ready() -> void:
 				break
 			han_radial_frames.append(texture)
 	if han_2sp_enabled:
-		for i in HAN_2SP_COUNT:
-			var path:="res://assets/effects/duel-2sp-authored/han_2sp_impact_%02d.png"%i
-			if not ResourceLoader.exists(path):
-				push_warning("Missing Han 2 SP visual trial frame: "+path)
-				han_2sp_frames.clear()
-				break
-			var frame:=ResourceLoader.load(path,"Texture2D",ResourceLoader.CACHE_MODE_IGNORE) as Texture2D
-			if frame==null or frame.get_size()!=Vector2(192,192):
-				push_warning("Invalid Han 2 SP visual trial frame: "+path)
-				han_2sp_frames.clear()
-				break
-			han_2sp_frames.append(frame)
+		han_2sp_frames = HanSkillImpact.load_skill()
 	resized.connect(_fit)
 	_fit()
 	reset_round()
@@ -1769,11 +1754,7 @@ func _flash(center: Vector2, key: String, tint: Color, duration: float) -> void:
 func _soft_light(center:Vector2,extent:Vector2,tint:Color,alpha:float,layer:Node2D=null)->void:
 	if alpha<=0:return
 	if not contact_glow:
-		contact_glow=GradientTexture2D.new();contact_glow.width=64;contact_glow.height=64
-		contact_glow.fill=GradientTexture2D.FILL_RADIAL;contact_glow.fill_from=Vector2(.5,.5);contact_glow.fill_to=Vector2(1,.5)
-		var gradient:=Gradient.new();gradient.offsets=PackedFloat32Array([0,.18,.48,1])
-		gradient.colors=PackedColorArray([Color(1,1,1,.95),Color(1,1,1,.65),Color(1,1,1,.18),Color(1,1,1,0)])
-		contact_glow.gradient=gradient
+		contact_glow = HanSkillImpact.make_contact_glow()
 	var target:=effects_layer if layer==null else layer
 	target.draw_texture_rect(contact_glow,Rect2(center-extent*.5,extent),false,Color(tint,alpha))
 
@@ -2294,7 +2275,6 @@ func _draw_han_chain_light()->void:
 		var elapsed:float=visual_clock-float(effect.at)
 		if effect.name=="han_chain_impact":
 			var center:Vector2=effect.center
-			var peak:=1.0-smoothstep(.025,.155,elapsed)
 			var stroke:=1.0-smoothstep(.015,.145,elapsed)
 			_chain_ray(effect.wake_start,center,22.0,stroke)
 			var floor_point:Vector2=effect.floor_point
@@ -2302,8 +2282,9 @@ func _draw_han_chain_light()->void:
 			var wave_size:=Vector2(58,18).lerp(Vector2(143,48),clampf(elapsed/.52,0,1))
 			if han_radial_frames.size()!=21 and han_ground.frames.is_empty():
 				han_chain_light.draw_texture_rect(Hunt.GROUND_PULSE,Rect2(floor_point-wave_size*.5,wave_size),false,Color("6ac7ff",wave_alpha*.67))
-			_soft_light(center,Vector2(93,70),Color("36afff"),peak*.85,han_chain_light)
-			_soft_light(center,Vector2(28,24),Color("f2fcff"),peak,han_chain_light)
+			if not contact_glow:
+				contact_glow = HanSkillImpact.make_contact_glow()
+			HanSkillImpact.draw_chain_flash(han_chain_light, contact_glow, center, elapsed)
 		elif effect.name=="han_chain_afterglow":
 			var fade:=smoothstep(.08,.19,elapsed)*(1.0-smoothstep(.15,HAN_CHAIN_IMPACT_SECONDS+HAN_CHAIN_TAIL,elapsed))
 			var spread:=clampf(elapsed/(HAN_CHAIN_IMPACT_SECONDS+HAN_CHAIN_TAIL),0,1)
@@ -2325,9 +2306,7 @@ func _draw_contact_effects()->void:
 		if p>=1:fx.remove_at(i);continue
 		if _draw_local_skill_effect(effect,p):continue
 		if effect.name=="han_chain_impact":
-			var index:=clampi(floori((visual_clock-float(effect.at))*30),0,chain_impact_frames.size()-1)
-			const FACTOR:=.50
-			effects_layer.draw_texture_rect(chain_impact_frames[index],Rect2(effect.center-Vector2(192,243)*FACTOR,Vector2(384,384)*FACTOR),false)
+			HanSkillImpact.draw_chain(effects_layer, chain_impact_frames, effect.center, visual_clock - float(effect.at))
 			continue
 		if effect.name=="uram_deer_stun":
 			_draw_uram_deer_stun(p)
@@ -2373,12 +2352,7 @@ func _draw_contact_effects()->void:
 			continue
 		if is_instance_valid(shared_world) and effect.get("attacker",-1)==0 and (basic or effect.name=="contact_skill"):
 			if effect.get("han_2sp_authored",false):
-				var elapsed:=visual_clock-float(effect.at)
-				var idx:=clampi(floori(elapsed*30.0),0,HAN_2SP_COUNT-1)
-				var scale_factor:=HAN_2SP_DISPLAY_SIZE/192.0
-				effects_layer.draw_set_transform(effect.center,float(effect.spear_axis))
-				effects_layer.draw_texture_rect(han_2sp_frames[idx],Rect2(-HAN_2SP_ORIGIN*scale_factor,Vector2.ONE*HAN_2SP_DISPLAY_SIZE),false)
-				effects_layer.draw_set_transform(Vector2.ZERO)
+				HanSkillImpact.draw_skill(effects_layer, han_2sp_frames, effect.center, float(effect.spear_axis), visual_clock - float(effect.at))
 			else:_draw_han_impact(effect,clampf(p,0,1),basic)
 			continue
 		if strong and is_instance_valid(shared_world):continue # Replace only the shared-world pilot impact.
@@ -2913,17 +2887,10 @@ func _draw_local_skill_effect(effect:Dictionary,p:float)->bool:
 				_draw_local_uram_contact(effect.center,effect.floor_point,effect.forward,visual_clock-float(effect.at),effects_layer)
 		"local_han_hit":_draw_han_impact(effect,p,effect.basic)
 		"local_han_2p":
-			var elapsed:=visual_clock-float(effect.at)
-			var idx:=clampi(floori(elapsed*30.0),0,HAN_2SP_COUNT-1)
-			var factor:=HAN_2SP_DISPLAY_SIZE/192.0
-			effects_layer.draw_set_transform(effect.center,float(effect.spear_axis))
-			effects_layer.draw_texture_rect(han_2sp_frames[idx],Rect2(-HAN_2SP_ORIGIN*factor,Vector2.ONE*HAN_2SP_DISPLAY_SIZE),false)
-			effects_layer.draw_set_transform(Vector2.ZERO)
+			HanSkillImpact.draw_skill(effects_layer, han_2sp_frames, effect.center, float(effect.spear_axis), visual_clock - float(effect.at))
 		"han_chain_impact":
 			if not _han_fallback():return false
-			var index:=clampi(floori((visual_clock-float(effect.at))*30),0,chain_impact_frames.size()-1)
-			var extent:=Vector2(384,384)*.50
-			effects_layer.draw_texture_rect(chain_impact_frames[index],Rect2(effect.center-Vector2(192,243)*.50,extent),false)
+			HanSkillImpact.draw_chain(effects_layer, chain_impact_frames, effect.center, visual_clock - float(effect.at))
 		_:return false
 	return true
 
@@ -2933,14 +2900,10 @@ func _draw_squad_authored(tag:String,point:Vector2,axis:Vector2,t:float,layer:No
 	match tag:
 		"han_chain":
 			if chain_impact_frames.is_empty() or t>=HAN_CHAIN_IMPACT_SECONDS:return
-			var idx:=clampi(floori(t*30),0,chain_impact_frames.size()-1)
-			layer.draw_texture_rect(chain_impact_frames[idx],Rect2(point-Vector2(96,121.5),Vector2(192,192)),false)
+			HanSkillImpact.draw_chain(layer, chain_impact_frames, point, t)
 		"han_skill":
 			if han_2sp_frames.size()!=HAN_2SP_COUNT or t>=HAN_2SP_DURATION:return
-			var idx:=clampi(floori(t*30),0,HAN_2SP_COUNT-1)
-			layer.draw_set_transform(point,axis.angle()+.57)
-			layer.draw_texture_rect(han_2sp_frames[idx],Rect2(-HAN_2SP_ORIGIN*(HAN_2SP_DISPLAY_SIZE/192.0),Vector2.ONE*HAN_2SP_DISPLAY_SIZE),false)
-			layer.draw_set_transform(Vector2.ZERO)
+			HanSkillImpact.draw_skill(layer, han_2sp_frames, point, axis.angle() + .57, t)
 		"saebom_hit":
 			if t>=.31:return
 			var decay:=1.0-smoothstep(.015,.31,t)

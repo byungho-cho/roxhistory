@@ -1,6 +1,7 @@
 extends "res://scripts/model_test.gd"
 
 const HanModel = preload("res://battlefield_reset/han_motion/han_motion_viewer.gd")
+const HanSkillImpact = preload("res://scripts/han_skill_impact.gd")
 const CLIPS := [
 	"retouch_idle", "retouch_listen", "retouch_talk", "retouch_angry", "retouch_cheer",
 	"walk_native", "run_native", HanModel.ENTRY_CLIP, "retouch_ready",
@@ -19,7 +20,6 @@ const REPEATS := [0, 5, 6]
 const WALK := 5
 const RUN := 6
 const DECELERATE := 7
-const CHAIN := 11
 const KNOCKDOWN := 14
 const FALL_AND_RISE := 17
 const FLIGHT_DISTANCE_MULTIPLIER := 3.0
@@ -29,6 +29,7 @@ const CONTACT_FRAMES := {
 }
 const CONTACT_STYLES := {&"retouch_basic_preview": 1, &"retouch_sp2": 2, &"retouch_chain": 3}
 const CONTACT_SECONDS := .38
+const IMPACT_DRAW_SCALE := 1600.0 / 960.0
 
 var han := HybridCharacter.new()
 var model: HanModel
@@ -37,10 +38,14 @@ var ground_dim: ColorRect
 var effect_button: Button
 var effects_enabled := true
 var effect_layer: Control
+var chain_flash_layer: Node2D
+var chain_glow: GradientTexture2D
 var effect_origin := Vector2.ZERO
 var effect_contact := Vector2.ZERO
 var effect_progress := 1.0
 var effect_style := 0
+var skill_frames: Array[Texture2D] = []
+var chain_frames: Array[Texture2D] = []
 var steps: Array[Dictionary] = []
 var reel_duration := 0.0
 var shown_motion := 0
@@ -96,6 +101,15 @@ func start_preview() -> void:
 	effect_layer.mouse_filter = MOUSE_FILTER_IGNORE
 	effect_layer.draw.connect(_draw_effect)
 	field.add_child(effect_layer)
+	chain_flash_layer = Node2D.new()
+	var blend := CanvasItemMaterial.new()
+	blend.blend_mode = CanvasItemMaterial.BLEND_MODE_ADD
+	chain_flash_layer.material = blend
+	chain_flash_layer.draw.connect(_draw_chain_flash)
+	effect_layer.add_child(chain_flash_layer)
+	chain_glow = HanSkillImpact.make_contact_glow()
+	skill_frames = HanSkillImpact.load_skill()
+	chain_frames = HanSkillImpact.load_chain(192)
 	floor_label = text(field, "한결", Rect2(0, 0, 82, 36), 22)
 	var badge := StyleBoxFlat.new()
 	badge.bg_color = Color("162e2a")
@@ -231,26 +245,46 @@ func _sample_effect(clip: StringName, clip_time: float, complete: bool) -> void:
 	effect_progress = 1.0
 	var active := effects_enabled and not complete
 	ground_dim.color.a = HanModel.cinematic_dim_alpha(clip_time) if active and clip == &"retouch_chain" else 0.0
-	if active:
+	if active and CONTACT_FRAMES.has(clip):
+		var style: int = CONTACT_STYLES[clip]
+		var duration := _impact_duration(style)
 		for frame: int in CONTACT_FRAMES.get(clip, []):
 			var contact_time := frame / 30.0
-			if clip_time < contact_time or clip_time >= contact_time + CONTACT_SECONDS:
+			if clip_time < contact_time or clip_time >= contact_time + duration:
 				continue
 			model.sample_han_clip(clip, contact_time)
 			var weapon := model.approved_weapon
 			effect_origin = _project_effect(weapon.global_position)
 			effect_contact = _project_effect(weapon.to_global(HanModel.APPROVED_BLADE_TIP))
-			effect_style = CONTACT_STYLES[clip]
-			effect_progress = (clip_time - contact_time) / CONTACT_SECONDS
+			effect_style = style
+			effect_progress = (clip_time - contact_time) / duration
 			break
 	effect_layer.queue_redraw()
+	chain_flash_layer.queue_redraw()
 
 func _project_effect(point: Vector3) -> Vector2:
 	return han.position + (han.display.position + han.camera.unproject_position(point) * han.display.scale) * han.scale
 
+func _impact_duration(style: int) -> float:
+	match style:
+		2: return HanSkillImpact.SKILL_SECONDS
+		3: return HanSkillImpact.CHAIN_SECONDS
+	return CONTACT_SECONDS
+
 func _draw_effect() -> void:
-	if effect_progress < 1.0:
+	if effect_progress >= 1.0:
+		return
+	var elapsed := effect_progress * _impact_duration(effect_style)
+	if effect_style == 2 and not skill_frames.is_empty():
+		HanSkillImpact.draw_skill(effect_layer, skill_frames, effect_contact, effect_origin.angle_to_point(effect_contact) + .57, elapsed, IMPACT_DRAW_SCALE)
+	elif effect_style == 3 and not chain_frames.is_empty():
+		HanSkillImpact.draw_chain(effect_layer, chain_frames, effect_contact, elapsed, IMPACT_DRAW_SCALE)
+	else:
 		HanModel.draw_contact_effect(effect_layer, effect_origin, effect_contact, effect_style, effect_progress)
+
+func _draw_chain_flash() -> void:
+	if effect_progress < 1.0 and effect_style == 3 and not chain_frames.is_empty():
+		HanSkillImpact.draw_chain_flash(chain_flash_layer, chain_glow, effect_contact, effect_progress * HanSkillImpact.CHAIN_SECONDS, IMPACT_DRAW_SCALE)
 
 func refresh() -> void:
 	for id in motion_buttons:

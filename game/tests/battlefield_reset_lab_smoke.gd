@@ -203,6 +203,29 @@ func _check_village_idle() -> void:
 		"Stopping resumes Idle 09 before the stretch")
 	await _capture("00-village")
 
+func _check_han_duel_skills(duel) -> void:
+	duel.set_process(false)
+	for key in ["skill", "chain"]:
+		duel.reset_round()
+		for frame in 150:
+			if not duel.approach_active:
+				break
+			duel.advance(1.0 / 60.0)
+		await _press(_button(duel, "DuelTestCharge"), true)
+		await _press(duel.skill_button if key == "skill" else duel.chain_button, true)
+		var cost := 2 if key == "skill" else 3
+		_check(duel.motion[0] == key and is_equal_approx(duel.rules.sp, 3.0 - cost), "Han's 1v1 %dSP button spends the original cost" % cost)
+		var impact := false
+		for frame in 120:
+			duel.advance(1.0 / 60.0)
+			for event: Dictionary in duel.fx:
+				impact = impact or (event.name == "han_chain_impact" if key == "chain" else event.get("han_2sp_authored", false))
+			if impact:
+				break
+		var damage := 27 if key == "skill" else 38
+		_check(impact and duel.rules.hp[1] == 100 - damage, "Han's 1v1 %dSP impact uses the existing effect and damage" % cost)
+	duel.reset_round()
+
 func _check_duel() -> void:
 	var duel_button := _button(app, "DuelTestEntry")
 	var lab_button := _button(app, "MotionLabEntry")
@@ -220,6 +243,7 @@ func _check_duel() -> void:
 	_check(duel.han_ultra.duel_model.scene_file_path.ends_with("Han-Battle-Ultra-Rigged-12k.glb"), "Duel uses the approved Han model")
 	await _check_roster(duel, "DuelSelect_")
 	_check_visible_duel_motion(duel)
+	await _check_han_duel_skills(duel)
 	await _capture("01-han-duel")
 	await _press(_button(duel, "DuelSelect_gahui"), true)
 	await process_frame
@@ -261,6 +285,8 @@ func _check_effect_toggle(view) -> void:
 	var button: Button = _button(view, "MotionEffects")
 	if not _check(is_instance_valid(button) and view.effects_enabled, "Motion effects start enabled"):
 		return
+	_check(view.skill_frames.size() == 11 and view.skill_frames[0].resource_path.contains("duel-2sp-authored"), "Motion test loads the existing 1v1 2SP effect frames")
+	_check(view.chain_frames.size() == 21 and view.chain_frames[0].resource_path.contains("han_chain_impact"), "Motion test loads the existing 1v1 3SP effect frames")
 	var bounds := button.get_global_rect()
 	_check(root.get_visible_rect().encloses(bounds) and not bounds.intersects(view.route_button.get_global_rect()), "Effect toggle fits the game and has its own touch area")
 	view.set_process(false)
