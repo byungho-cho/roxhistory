@@ -12,7 +12,7 @@ const CARRY_COLUMNS := ResidentSprite.CARRY_COLUMNS
 const CARGO_SIZE_MULTIPLIER := 1.5
 const CARGO_SURFACE := """
 shader_type spatial;
-render_mode diffuse_lambert, specular_disabled, cull_disabled;
+render_mode diffuse_lambert, specular_disabled;
 
 uniform vec4 base_color : source_color;
 uniform vec4 detail_color : source_color;
@@ -40,9 +40,6 @@ void fragment() {
 	} else if (pattern == 3) {
 		float twist = sin(angle * 3.0 + p.y * 216.0);
 		detail = mix(0.26, 0.9, smoothstep(-0.65, 0.7, twist));
-	} else if (pattern == 4) {
-		float twist = sin(UV.x * 18.84956 + UV.y * 156.0);
-		detail = mix(0.28, 0.88, smoothstep(-0.7, 0.74, twist));
 	} else {
 		float vein = sin(dot(p, vec3(13.0, 42.0, 29.0)) + sin(p.x * 35.0) * 0.45);
 		detail = smoothstep(-0.82, 0.87, vein) * 0.57;
@@ -86,40 +83,6 @@ func cord(parent: Node3D, from: Vector3, to: Vector3, radius: float, material: M
 	part.position = (from + to) * .5
 	part.quaternion = Quaternion(Vector3.UP, (to - from).normalized())
 
-func woven_strand(parent: Node3D, path: PackedVector3Array, radius: float, material: Material, closed := false) -> void:
-	const SIDES := 6
-	var surface := SurfaceTool.new()
-	surface.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var length := 0.0
-	var end := path.size() + (1 if closed else 0)
-	for index in end:
-		var point := path[index % path.size()]
-		var before := path[posmod(index - 1, path.size())] if closed else path[maxi(0, index - 1)]
-		var after := path[(index + 1) % path.size()] if closed else path[mini(index + 1, path.size() - 1)]
-		var forward := (after - before).normalized()
-		var axis := Vector3.UP if absf(forward.dot(Vector3.UP)) < .88 else Vector3.RIGHT
-		var side := forward.cross(axis).normalized()
-		var up := side.cross(forward)
-		if index > 0:
-			length += point.distance_to(path[(index - 1) % path.size()])
-		for edge in SIDES + 1:
-			var fraction := float(edge) / SIDES
-			var angle := TAU * fraction
-			var normal := side * cos(angle) + up * sin(angle)
-			surface.set_normal(normal)
-			surface.set_uv(Vector2(fraction, length))
-			surface.add_vertex(point + normal * radius)
-	for index in end - 1:
-		for edge in SIDES:
-			var corner := index * (SIDES + 1) + edge
-			var next := corner + SIDES + 1
-			for vertex: int in [corner, corner + 1, next, next, corner + 1, next + 1]:
-				surface.add_index(vertex)
-	var strand := MeshInstance3D.new()
-	strand.mesh = surface.commit()
-	strand.material_override = material
-	parent.add_child(strand)
-
 func loop(parent: Node3D, y: float, radius: float, depth: float, thickness: float, material: Material) -> void:
 	var band := MeshInstance3D.new()
 	var torus := TorusMesh.new()
@@ -157,76 +120,49 @@ func wood_pack(parent: Node3D) -> void:
 		cargo_surface("61402a", "94603b", 0),
 	]
 	var rings := cargo_surface("ac7744", "e4b87f", 1)
-	var rope := cargo_surface("93643a", "e1be80", 4)
-	var offsets := [Vector3(-.024, 0, 0), Vector3(.011, .008, 0), Vector3(.024, -.008, -.006)]
+	var rope := cargo_surface("a77848", "dfbc81", 3)
 	for index in logs.get_child_count():
 		var piece := logs.get_child(index) as MeshInstance3D
-		if index >= offsets.size() * 3:
-			piece.hide()
-			continue
 		var source := piece.mesh.surface_get_material(0)
-		var log := index / 3
-		piece.position += offsets[log]
 		match source.resource_name:
-			"bark": piece.material_override = bark[log]
+			"bark": piece.material_override = bark[index / 3]
 			"cut wood": piece.material_override = rings
-	var contour := PackedVector2Array([
-		Vector2(.123, -.175), Vector2(.094, -.267), Vector2(.032, -.346),
-		Vector2(-.071, -.392), Vector2(-.159, -.350), Vector2(-.245, -.268),
-		Vector2(-.269, -.18), Vector2(-.224, -.107), Vector2(-.081, -.097),
-		Vector2(.071, -.104),
-	])
+			"fiber": piece.material_override = rope
 	for side in [-1.0, 1.0]:
 		var x: float = .185 * side
-		for wrap in [-.013, .013]:
-			var route := PackedVector3Array()
-			for point in contour:
-				route.append(Vector3(x + wrap + .012 * point.x, point.x, point.y))
-			woven_strand(parent, route, .0125, rope, true)
-		cord(parent, Vector3(x - .021, .066, -.325), Vector3(x + .021, .025, -.359), .0165, cargo_surface("a0713f", "e5c086", 3))
+		cord(parent, Vector3(x, -.22, -.23), Vector3(x * .91, .145, -.236), .021, rope)
 
 func wicker_pack(parent: Node3D, kind: String) -> void:
 	var basket := Node3D.new()
 	parent.add_child(basket)
 	basket.position = Vector3(0, -.124, -.262)
-	var reeds := [
-		cargo_surface("936237", "ca9a59", 4),
-		cargo_surface("a16f42", "dbad69", 4),
-	]
-	var stakes := cargo_surface("835734", "b88850", 4)
+	var wicker := fiber("aa7843")
+	var pale := fiber("d4a764")
+	var dark := fiber("8e6038")
 	var rim := cargo_surface("b4844d", "e2bc7c", 3)
-	var deep := fiber("694429")
+	var deep := fiber("79502d")
 	var shell := MeshInstance3D.new()
 	var vase := CylinderMesh.new()
-	vase.top_radius = .224
-	vase.bottom_radius = .151
+	vase.top_radius = .234
+	vase.bottom_radius = .163
 	vase.height = .35
-	vase.radial_segments = 24
+	vase.radial_segments = 16
 	shell.mesh = vase
 	shell.material_override = deep
 	basket.add_child(shell)
 	shell.scale.z = .64
-	const STAKES := 20
-	const ROWS := 11
-	for row in ROWS:
-		var t := float(row) / (ROWS - 1)
-		var path := PackedVector3Array()
-		for segment in STAKES * 4:
-			var angle := segment * TAU / (STAKES * 4)
-			var over_under := cos(angle * STAKES * .5 + row * PI)
-			var radius := lerpf(.166, .237, t) + .0075 * over_under
-			path.append(Vector3(cos(angle) * radius, lerpf(-.165, .162, t), sin(angle) * radius * .64))
-		woven_strand(basket, path, .010, reeds[row % reeds.size()], true)
-	for slat in STAKES:
-		var angle := slat * TAU / STAKES
-		var path := PackedVector3Array()
-		for row in ROWS:
-			var t := float(row) / (ROWS - 1)
-			var radius := lerpf(.167, .237, t) - .009 * cos((slat + row) * PI)
-			path.append(Vector3(cos(angle) * radius, lerpf(-.168, .17, t), sin(angle) * radius * .64))
-		woven_strand(basket, path, .0085, stakes)
-	loop(basket, .168, .235, .64, .016, rim)
-	loop(basket, .153, .234, .64, .008, rim)
+	for row in 9:
+		var t := float(row) / 8.0
+		var radius := lerpf(.167, .239, t)
+		var band_color: Material = rim if row == 8 else pale if row % 2 == 0 else wicker
+		loop(basket, lerpf(-.166, .175, t), radius, .64, .009 if row < 8 else .019, band_color)
+	for slat in 12:
+		var angle := slat * TAU / 12.0
+		var root := Vector3(cos(angle) * .167, -.166, sin(angle) * .107)
+		for direction in [-1.0, 1.0]:
+			var upper: float = angle + direction * TAU / 13.0
+			var end := Vector3(cos(upper) * .245, .168, sin(upper) * .157)
+			cord(basket, root, end, .009 if kind == "stone" else .006, pale if direction > 0 else dark)
 	if kind == "stone":
 		var stones: Node3D = ResidentLoadVisual.LOADS.stone.instantiate()
 		basket.add_child(stones)
@@ -238,56 +174,27 @@ func wicker_pack(parent: Node3D, kind: String) -> void:
 			cargo_surface("958a7c", "c1b4a1", 2),
 		]
 		var rock_index := 0
-		var variations := [1.0, .76, 1.05, .87, 1.12, .88, .96]
 		for child in stones.get_children():
 			if child.name.begins_with("Icosphere"):
-				var rock := child as MeshInstance3D
-				rock.material_override = rock_colors[rock_index % rock_colors.size()]
-				rock.scale *= variations[rock_index]
-				rock.rotation = Vector3(.14 * rock_index, -.38 * rock_index, .21 * rock_index)
-				rock.position.y += (rock_index % 3 - 1) * .014
+				(child as MeshInstance3D).material_override = rock_colors[rock_index % rock_colors.size()]
 				rock_index += 1
 			else:
 				child.hide()
 		return
 	var stalk := fiber("b18942")
-	var husks := [fiber("d5a044"), fiber("e7b65d"), fiber("f0c674")]
-	var tip_color := fiber("f3d48a")
-	var ear := SphereMesh.new()
-	ear.radius = .019
-	ear.height = .097
-	ear.radial_segments = 8
-	ear.rings = 6
-	var kernel := SphereMesh.new()
-	kernel.radius = .014
-	kernel.height = .046
-	kernel.radial_segments = 8
-	kernel.rings = 5
+	var husks := [fiber("c89438"), fiber("e1ad49"), fiber("edc26c")]
+	var kernels := [fiber("d6a345"), fiber("f0ca79")]
 	for index in 9:
 		var t := float(index) / 8.0
 		var bottom := Vector3(lerpf(-.12, .12, t), .08, 0)
 		var shoulder := Vector3(lerpf(-.18, .15, t), .238 + .085 * sin(t * PI), sin(index * 2.4) * .065)
 		var tip := shoulder + Vector3(lerpf(-.095, .083, t), .084 + .035 * sin(index * 1.6), -.04)
-		var bow := bottom.lerp(shoulder, .56) - Vector3((t - .5) * .024, 0, .018)
-		woven_strand(basket, PackedVector3Array([bottom, bow, shoulder, tip]), .008, stalk)
-		var grain_head := MeshInstance3D.new()
-		grain_head.mesh = ear
-		grain_head.material_override = husks[index % husks.size()]
-		basket.add_child(grain_head)
-		grain_head.position = shoulder.lerp(tip, .47)
-		grain_head.quaternion = Quaternion(Vector3.UP, (tip - shoulder).normalized())
-		for grain in 5:
-			var fraction := .12 + grain * .19
-			var at := shoulder.lerp(tip, fraction)
-			for direction in [-1.0, 1.0]:
-				var seed := MeshInstance3D.new()
-				seed.mesh = kernel
-				seed.material_override = tip_color if grain == 4 else husks[(grain + index) % husks.size()]
-				basket.add_child(seed)
-				var lateral: float = direction * lerpf(.017, .009, fraction)
-				seed.position = at + Vector3(lateral, 0, direction * .007)
-				seed.scale = Vector3.ONE * lerpf(1.05, .72, fraction)
-				seed.quaternion = Quaternion(Vector3.UP, (tip - shoulder + Vector3(lateral * 3, 0, 0)).normalized())
+		cord(basket, bottom, shoulder, .009, stalk)
+		cord(basket, shoulder, tip, .027, husks[index % husks.size()])
+		for grain in 4:
+			var at := shoulder.lerp(tip, .16 + grain * .18)
+			var direction := 1.0 if grain % 2 == 0 else -1.0
+			cord(basket, at, at + Vector3(.019 * direction, .021, .004), .012, kernels[grain % 2])
 
 func bake() -> void:
 	var args := OS.get_cmdline_user_args()
