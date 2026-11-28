@@ -136,12 +136,8 @@ static func copy_full_apk_link(version: String) -> String:
 
 func fit_paper() -> void:
 	var available := get_viewport_rect().size
-	var inset := Vector2.ZERO
-	if OS.has_feature("android"):
-		var safe := DisplayServer.get_display_safe_area()
-		var physical := Vector2(DisplayServer.screen_get_size())
-		if physical.x>0 and physical.y>0 and safe.has_area():
-			inset = Vector2(maxi(safe.position.x,int(physical.x)-safe.end.x),maxi(safe.position.y,int(physical.y)-safe.end.y))*available/physical
+	var bounds := ViewportLayout.content_rect(available)
+	var inset := bounds.position.max(available - bounds.end)
 	var factor := clampf(minf((available.x-inset.x*2-16)/PAPER_SIZE.x,(available.y-inset.y*2-16)/PAPER_SIZE.y),.1,1.0)
 	custom_minimum_size = PAPER_SIZE*factor
 	paper.scale = Vector2.ONE*factor

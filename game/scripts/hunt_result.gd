@@ -171,13 +171,8 @@ func fit(layout: Control) -> void:
 	# Use some of the extra vertical space without scaling or moving the actor.
 	var extra_height := maxf(0.0, (size.y - inset.y*2.0) / layout.scale.y - layout.size.y)
 	result_actions.position = Vector2(RESULT_COLUMN_X, 34.0 + minf(extra_height*.30, 60.0))
-	var safe_origin := Vector2.ZERO
-	var top_left := inset
-	if OS.has_feature("android"):
-		var area := DisplayServer.get_display_safe_area()
-		var physical := Vector2(DisplayServer.screen_get_size())
-		safe_origin = (Vector2(area.position)*size/physical).clamp(Vector2.ZERO,size) if physical.x>0 and physical.y>0 and area.has_area() else inset
-		top_left = safe_origin
+	var safe_origin := ViewportLayout.content_rect(size).position
+	var top_left := Vector2(maxf(inset.x, safe_origin.x), maxf(inset.y, safe_origin.y))
 	var glyph_top := safe_origin.y + RESULT_TITLE_SAFE_Y
 	result_details.position = Vector2(RESULT_COLUMN_X,(glyph_top-layout.position.y)/layout.scale.y-RESULT_TITLE_GLYPH_Y)
 	if is_instance_valid(village_back):

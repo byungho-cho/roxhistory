@@ -170,10 +170,7 @@ func refresh()->void:
 	contact_label.modulate=Color("ffd258") if contact_pulse>0 else Color.WHITE
 
 func fit()->void:
-	var region:=Rect2(Vector2.ZERO,size)
-	if OS.has_feature("android"):
-		var safe:=DisplayServer.get_display_safe_area();var physical:=Vector2(DisplayServer.screen_get_size())
-		if safe.has_area() and physical.x>0 and physical.y>0:region=Rect2(Vector2(safe.position)*size/physical,Vector2(safe.size)*size/physical)
+	var region := ViewportLayout.content_rect(size)
 	var factor:=minf(region.size.x/960.0,region.size.y/540.0)
 	canvas.scale=Vector2.ONE*factor
 	canvas.position=region.position+(region.size-Vector2(960,540)*factor)*.5

@@ -412,18 +412,11 @@ func draw_page() -> void:
 	footer=layer(page)
 	# Match the existing preparation title plank and visible gold button artwork.
 	# The preparatory scene retains its original layout, including its edge wash.
-	var safe_start:=Vector2.ZERO
-	var safe_end:=size
-	if OS.has_feature("android"):
-		var area:=DisplayServer.get_display_safe_area()
-		var physical:=Vector2(DisplayServer.screen_get_size())
-		if physical.x>0. and physical.y>0. and area.has_area():
-			safe_start=(Vector2(area.position)*size/physical).clamp(Vector2.ZERO,size)
-			safe_end=(Vector2(area.end)*size/physical).clamp(safe_start,size)
-	var safe_size:=safe_end-safe_start
+	var bounds := ViewportLayout.content_rect(size)
+	var safe_size := bounds.size
 	var prep_fit:=maxf(.1,minf(safe_size.x/DESIGN.x,safe_size.y/DESIGN.y))
-	var prep_bar_top:=safe_start.y+10.*prep_fit
-	var prep_art_end:=safe_end.y-(540.+7.-472.-65.*(.18+.64))*prep_fit
+	var prep_bar_top:=bounds.position.y+10.*prep_fit
+	var prep_art_end:=bounds.end.y-(540.+7.-472.-65.*(.18+.64))*prep_fit
 	top_rest_y=(prep_bar_top-page.position.y)/unit-12.
 	footer_rest_y=(prep_art_end-page.position.y)/unit-PREPARE_Y-PREPARE_HEIGHT
 	var crest := Rect2(315,12,330,65)

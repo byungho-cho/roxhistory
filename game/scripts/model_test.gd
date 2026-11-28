@@ -376,10 +376,9 @@ func refresh()->void:
 	motion_status.text=motion_buttons[selection].text+" · "+str(rate)+"배속"
 
 func fit()->void:
-	var region:=Rect2(Vector2.ZERO,size)
-	if OS.has_feature("android"):
-		var safe:=DisplayServer.get_display_safe_area();var physical:=Vector2(DisplayServer.screen_get_size())
-		if safe.has_area() and physical.x>0 and physical.y>0:region=Rect2(Vector2(safe.position)*size/physical,Vector2(safe.size)*size/physical)
+	var region := ViewportLayout.content_rect(size)
+	if not region.has_area():
+		return
 	var factor:=region.size.x/1600.0
 	logical_size=Vector2(1600,region.size.y/factor)
 	factor=minf(factor,region.size.y/logical_size.y)

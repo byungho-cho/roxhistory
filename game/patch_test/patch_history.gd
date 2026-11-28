@@ -97,12 +97,7 @@ func text_label(value: String, point: int, font: Font) -> Label:
 	return label
 
 func fit() -> void:
-	var room := Rect2(Vector2.ZERO,size)
-	if OS.has_feature("android"):
-		var safe := DisplayServer.get_display_safe_area()
-		var physical := Vector2(DisplayServer.screen_get_size())
-		if safe.has_area() and physical.x>0 and physical.y>0:
-			room = Rect2(Vector2(safe.position)*size/physical,Vector2(safe.size)*size/physical)
+	var room := ViewportLayout.content_rect(size)
 	room = room.grow(-minf(12.0,minf(room.size.x,room.size.y)*.08))
 	var panel_size := room.size * fit_ratio
 	room = Rect2(room.get_center() - panel_size * .5,panel_size)

@@ -497,12 +497,7 @@ func preview_contact(before: float, at: float, cue: String) -> void:
 		lab_audio.cue(cue)
 
 func fit() -> void:
-	var region := Rect2(Vector2.ZERO,size)
-	if OS.has_feature("android"):
-		var safe := DisplayServer.get_display_safe_area()
-		var physical := Vector2(DisplayServer.screen_get_size())
-		if safe.has_area() and physical.x > 0 and physical.y > 0:
-			region = Rect2(Vector2(safe.position)*size/physical,Vector2(safe.size)*size/physical)
+	var region := ViewportLayout.content_rect(size)
 	var factor := minf(region.size.x/SIZE.x,region.size.y/SIZE.y)
 	canvas.scale = Vector2.ONE*factor
 	canvas.position = region.position+(region.size-SIZE*factor)*.5

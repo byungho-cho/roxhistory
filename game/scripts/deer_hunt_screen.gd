@@ -469,15 +469,7 @@ func build_scenery() -> void:
 
 
 func fit_layout() -> void:
-	var safe_start := Vector2.ZERO
-	var safe_end := size
-	if OS.has_feature("android"):
-		var area := DisplayServer.get_display_safe_area()
-		var physical := Vector2(DisplayServer.screen_get_size())
-		if physical.x>0 and physical.y>0 and area.has_area():
-			safe_start = (Vector2(area.position)*size/physical).clamp(Vector2.ZERO,size)
-			safe_end = (Vector2(area.end)*size/physical).clamp(safe_start,size)
-	_fit_hunt_chrome(Rect2(safe_start,safe_end-safe_start))
+	_fit_hunt_chrome(ViewportLayout.content_rect(size))
 
 func _fit_hunt_chrome(safe_area:Rect2)->void:
 	var safe_start:=safe_area.position

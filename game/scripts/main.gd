@@ -305,13 +305,9 @@ func update_window_layout() -> void:
 func refresh_viewport_metrics() -> void:
 	w = get_viewport().get_visible_rect().size.x
 	h = get_viewport().get_visible_rect().size.y
-	safe = Vector2(24,18)
-	if OS.has_feature("android"):
-		var area := DisplayServer.get_display_safe_area()
-		var physical := DisplayServer.screen_get_size()
-		if physical.x > 0 and physical.y > 0:
-			safe.x = maxf(24,maxf(area.position.x,physical.x-area.end.x)*w/physical.x)
-			safe.y = maxf(18,maxf(area.position.y,physical.y-area.end.y)*h/physical.y)
+	var bounds := ViewportLayout.content_rect(Vector2(w, h))
+	safe = Vector2(maxf(24.0, maxf(bounds.position.x, w - bounds.end.x)),
+		maxf(18.0, maxf(bounds.position.y, h - bounds.end.y)))
 
 func show_screen(next: String,spread_hud:=false) -> void:
 	if screen in ["hunt","hunt_select"] and next not in ["hunt","hunt_select"]:

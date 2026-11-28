@@ -430,18 +430,11 @@ func _ready() -> void:
 	reset_round()
 
 func _fit() -> void:
-	var safe_start:=Vector2.ZERO
-	var safe_end:=size
-	if OS.has_feature("android"):
-		var area:=DisplayServer.get_display_safe_area()
-		var physical:=Vector2(DisplayServer.screen_get_size())
-		if physical.x>0 and physical.y>0 and area.has_area():
-			safe_start=(Vector2(area.position)*size/physical).clamp(Vector2.ZERO,size)
-			safe_end=(Vector2(area.end)*size/physical).clamp(safe_start,size)
-	var safe_size:=safe_end-safe_start
+	var bounds := ViewportLayout.content_rect(size)
+	var safe_size := bounds.size
 	var fit := minf(safe_size.x/SceneSize.x,safe_size.y/SceneSize.y)
 	arena.scale = Vector2.ONE * fit
-	arena.position = safe_start+(safe_size - SceneSize*fit)*.5
+	arena.position = bounds.position + (safe_size - SceneSize*fit)*.5
 	battle_camera.size=size
 	if local_melee_polish and fit>.0001:_place_expanded_test_hud(safe_size.y/fit,fit)
 	# Refit the painted ground without snapping the current combat camera ease.

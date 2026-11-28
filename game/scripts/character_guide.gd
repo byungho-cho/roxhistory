@@ -228,13 +228,7 @@ func present_timed(progress:float, duration:float) -> void:
 	panel_group.modulate.a=appearing
 	character.modulate.a=smoothstep(.05,.26,seconds)
 	# Translate only the full-body art, not the frame or its layout fit.
-	var safe_bottom := float(app.h)
-	if OS.has_feature("android"):
-		var screen_height := DisplayServer.screen_get_size().y
-		if screen_height > 0:
-			var bounds := DisplayServer.get_display_safe_area()
-			if bounds.has_area():
-				safe_bottom -= maxf(0.0,float(screen_height-bounds.end.y))*float(app.h)/float(screen_height)
+	var safe_bottom := ViewportLayout.content_rect(Vector2(app.w, app.h)).end.y
 	var bottom_cap := minf(DESIGN_SIZE.y,(safe_bottom-layout.position.y)/layout.scale.y)-4.0
 	var drop := clampf(bottom_cap-art_rect.end.y,0.0,CUTIN_BODY_DROP)
 	character.position=art_rect.position+Vector2(-13.0*(1.0-appearing),drop)
