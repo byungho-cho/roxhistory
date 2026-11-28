@@ -1,5 +1,7 @@
 extends Control
 
+const ViewportLayout = preload("res://scripts/viewport_layout.gd")
+
 const INK := Color("49321e")
 const MUTED := Color("917957")
 const PAPER_SIZE := Vector2(500,356)

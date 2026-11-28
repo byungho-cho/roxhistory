@@ -1,5 +1,7 @@
 class_name CharacterGuide
 extends Control
+
+const ViewportLayout = preload("res://scripts/viewport_layout.gd")
 ## U10400: reusable dynamic text, independent artwork and modal input ownership.
 var app:Node
 var heading:String

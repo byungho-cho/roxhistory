@@ -1,5 +1,7 @@
 extends Control
 
+const ViewportLayout = preload("res://scripts/viewport_layout.gd")
+
 const ART := "res://assets/ui/hunt-result/"
 const CELL := Vector2i(388,516)
 const ATLAS_SIZE := Vector2i(2328,3096)

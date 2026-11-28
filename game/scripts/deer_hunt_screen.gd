@@ -1,5 +1,7 @@
 extends Control
 
+const ViewportLayout = preload("res://scripts/viewport_layout.gd")
+
 signal preparation_ready
 
 const BranchVS:=preload("res://scripts/hunt_branch_vs.gd")

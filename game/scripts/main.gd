@@ -1,5 +1,7 @@
 extends Node
 
+const ViewportLayout = preload("res://scripts/viewport_layout.gd")
+
 var model: GameState
 var world: DemoWorld
 var canvas: CanvasLayer

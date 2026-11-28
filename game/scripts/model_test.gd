@@ -1,4 +1,6 @@
 extends Control
+
+const ViewportLayout = preload("res://scripts/viewport_layout.gd")
 const CHARACTER_PREVIEW_SCALE := 1.5
 signal exited
 const Actor=preload("res://scripts/model_test_actor.gd")

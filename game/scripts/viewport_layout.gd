@@ -1,4 +1,3 @@
-class_name ViewportLayout
 extends RefCounted
 
 static func content_rect(viewport_size: Vector2) -> Rect2:

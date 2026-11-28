@@ -1,5 +1,7 @@
 extends Control
 
+const ViewportLayout = preload("res://scripts/viewport_layout.gd")
+
 const NOTES := preload("res://patch_test/patch_notes.gd")
 const HISTORY_SCROLL := preload("res://patch_test/history_scroll.gd")
 const INK := Color("47240e")

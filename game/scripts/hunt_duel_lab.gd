@@ -1,4 +1,6 @@
 extends Control
+
+const ViewportLayout = preload("res://scripts/viewport_layout.gd")
 signal exited
 
 const SkillHUD = preload("res://scripts/duel_skill_hud.gd")

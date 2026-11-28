@@ -1,4 +1,6 @@
 extends Control
+
+const ViewportLayout = preload("res://scripts/viewport_layout.gd")
 ## Visual slots are separate from the six playable encounters in each saved chapter.
 const STAGES_PER_CHAPTER := 6
 const HUNT_CHAPTER_ONE := preload("res://scripts/hunt_chapter_one_catalog.gd")

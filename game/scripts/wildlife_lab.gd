@@ -1,4 +1,6 @@
 extends Control
+
+const ViewportLayout = preload("res://scripts/viewport_layout.gd")
 signal exited
 const Preview:=preload("res://scripts/wildlife_lab_preview.gd")
 const Art:=preload("res://scripts/hunt_match_art.gd")
