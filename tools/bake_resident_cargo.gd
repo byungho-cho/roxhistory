@@ -8,14 +8,58 @@ const FRAME := Vector2i(ResidentSprite.APPROVED_FRAME)
 const FLOOR := Vector2i(ResidentSprite.APPROVED_FLOOR)
 const COLUMNS := ResidentSprite.APPROVED_COLUMNS
 const CARGO_SIZE_MULTIPLIER := 1.5
+const CARGO_SURFACE := """
+shader_type spatial;
+render_mode diffuse_lambert, specular_disabled;
+
+uniform vec4 base_color : source_color;
+uniform vec4 detail_color : source_color;
+uniform int pattern;
+varying vec3 local_point;
+
+void vertex() {
+	local_point = VERTEX;
+}
+
+void fragment() {
+	vec3 p = local_point;
+	float angle = atan(p.z + 0.0001, p.x);
+	float detail;
+	if (pattern == 0) {
+		float groove = sin(angle * 8.0 + sin(p.y * 15.0 + angle * 3.0) * 0.9);
+		float streak = sin(angle * 13.0 - p.y * 9.0) * 0.12;
+		detail = clamp(0.52 + groove * 0.34 + streak, 0.0, 1.0);
+	} else if (pattern == 1) {
+		float radius = length(p.xz - vec2(0.007, -0.009));
+		float rings = sin(radius * 246.0 + sin(angle * 3.0) * 0.46);
+		detail = 0.23 + smoothstep(-0.5, 0.3, rings) * 0.62;
+	} else {
+		float vein = sin(dot(p, vec3(13.0, 42.0, 29.0)) + sin(p.x * 35.0) * 0.45);
+		detail = smoothstep(-0.82, 0.87, vein) * 0.57;
+	}
+	ALBEDO = mix(base_color.rgb, detail_color.rgb, detail);
+	ROUGHNESS = 0.96;
+}
+"""
+
+var surface_shader := Shader.new()
 
 func _initialize() -> void:
+	surface_shader.code = CARGO_SURFACE
 	call_deferred("bake")
 
 func fiber(color: String) -> StandardMaterial3D:
 	var material := StandardMaterial3D.new()
 	material.albedo_color = Color(color)
 	material.roughness = .96
+	return material
+
+func cargo_surface(base_color: String, detail_color: String, pattern: int) -> ShaderMaterial:
+	var material := ShaderMaterial.new()
+	material.shader = surface_shader
+	material.set_shader_parameter("base_color", Color(base_color))
+	material.set_shader_parameter("detail_color", Color(detail_color))
+	material.set_shader_parameter("pattern", pattern)
 	return material
 
 func cord(parent: Node3D, from: Vector3, to: Vector3, radius: float, material: Material) -> void:
@@ -46,7 +90,7 @@ func loop(parent: Node3D, y: float, radius: float, depth: float, thickness: floa
 	band.scale.z = depth
 
 func harness(parent: Node3D, is_wood: bool) -> void:
-	var rope := fiber("ac8050")
+	var rope := fiber("ba9768")
 	var width := .15 if is_wood else .135
 	for side in [-1.0, 1.0]:
 		var x: float = width * side
@@ -63,7 +107,20 @@ func wood_pack(parent: Node3D) -> void:
 	parent.add_child(logs)
 	logs.scale = Vector3(.83, 1.23, .9)
 	logs.position = Vector3(0, -.035, -.164)
-	var rope := fiber("a37a4b")
+	var bark := [
+		cargo_surface("6e3b25", "a67345", 0),
+		cargo_surface("79502f", "b17b4d", 0),
+		cargo_surface("61402a", "94603b", 0),
+	]
+	var rings := cargo_surface("ac7744", "e4b87f", 1)
+	var rope := fiber("ccab76")
+	for index in logs.get_child_count():
+		var piece := logs.get_child(index) as MeshInstance3D
+		var source := piece.mesh.surface_get_material(0)
+		match source.resource_name:
+			"bark": piece.material_override = bark[index / 3]
+			"cut wood": piece.material_override = rings
+			"fiber": piece.material_override = rope
 	for side in [-1.0, 1.0]:
 		var x: float = .185 * side
 		cord(parent, Vector3(x, -.22, -.23), Vector3(x * .91, .145, -.236), .021, rope)
@@ -72,9 +129,11 @@ func wicker_pack(parent: Node3D, kind: String) -> void:
 	var basket := Node3D.new()
 	parent.add_child(basket)
 	basket.position = Vector3(0, -.124, -.262)
-	var wicker := fiber("947049")
-	var pale := fiber("b8905d")
-	var deep := fiber("775735")
+	var wicker := fiber("aa7843")
+	var pale := fiber("d4a764")
+	var dark := fiber("8e6038")
+	var rim := fiber("deb679")
+	var deep := fiber("79502d")
 	var shell := MeshInstance3D.new()
 	var vase := CylinderMesh.new()
 	vase.top_radius = .234
@@ -88,33 +147,43 @@ func wicker_pack(parent: Node3D, kind: String) -> void:
 	for row in 9:
 		var t := float(row) / 8.0
 		var radius := lerpf(.167, .239, t)
-		loop(basket, lerpf(-.166, .175, t), radius, .64, .009 if row < 8 else .019, pale if row % 2 == 0 else wicker)
+		var band_color := rim if row == 8 else pale if row % 2 == 0 else wicker
+		loop(basket, lerpf(-.166, .175, t), radius, .64, .009 if row < 8 else .019, band_color)
 	for slat in 12:
 		var angle := slat * TAU / 12.0
 		var root := Vector3(cos(angle) * .167, -.166, sin(angle) * .107)
 		for direction in [-1.0, 1.0]:
 			var upper: float = angle + direction * TAU / 13.0
 			var end := Vector3(cos(upper) * .245, .168, sin(upper) * .157)
-			cord(basket, root, end, .009 if kind == "stone" else .006, pale if direction > 0 else wicker)
+			cord(basket, root, end, .009 if kind == "stone" else .006, pale if direction > 0 else dark)
 	if kind == "stone":
 		var stones: Node3D = ResidentLoadVisual.LOADS.stone.instantiate()
 		basket.add_child(stones)
 		stones.scale = Vector3(1.1, .87, .73)
 		stones.position.y = .117
+		var rock_colors := [
+			cargo_surface("777b84", "afb1ae", 2),
+			cargo_surface("626974", "9c9fa3", 2),
+			cargo_surface("958a7c", "c1b4a1", 2),
+		]
+		var rock_index := 0
 		for child in stones.get_children():
-			if not child.name.begins_with("Icosphere"):
+			if child.name.begins_with("Icosphere"):
+				(child as MeshInstance3D).material_override = rock_colors[rock_index % rock_colors.size()]
+				rock_index += 1
+			else:
 				child.hide()
 		return
-	var stalk := fiber("b18235")
-	var seed := fiber("dba749")
-	var pale_seed := fiber("edc471")
+	var stalk := fiber("b18942")
+	var husks := [fiber("c89438"), fiber("e1ad49"), fiber("edc26c")]
+	var pale_seed := fiber("f2ce83")
 	for index in 9:
 		var t := float(index) / 8.0
 		var bottom := Vector3(lerpf(-.12, .12, t), .08, 0)
 		var shoulder := Vector3(lerpf(-.18, .15, t), .238 + .085 * sin(t * PI), sin(index * 2.4) * .065)
 		var tip := shoulder + Vector3(lerpf(-.095, .083, t), .084 + .035 * sin(index * 1.6), -.04)
 		cord(basket, bottom, shoulder, .009, stalk)
-		cord(basket, shoulder, tip, .027, seed)
+		cord(basket, shoulder, tip, .027, husks[index % husks.size()])
 		for grain in 3:
 			var at := shoulder.lerp(tip, .22 + grain * .21)
 			cord(basket, at, at + Vector3(.019 if grain % 2 == 0 else -.019, .023, .004), .013, pale_seed)
