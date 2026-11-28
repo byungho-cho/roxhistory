@@ -7,6 +7,7 @@ const ATLAS_DIR := "res://assets/characters/residents"
 const FRAME := Vector2i(ResidentSprite.APPROVED_FRAME)
 const FLOOR := Vector2i(ResidentSprite.APPROVED_FLOOR)
 const COLUMNS := ResidentSprite.APPROVED_COLUMNS
+const CARGO_SIZE_MULTIPLIER := 1.5
 
 func _initialize() -> void:
 	call_deferred("bake")
@@ -161,10 +162,15 @@ func bake() -> void:
 			var prop := Node3D.new()
 			travel.add_child(prop)
 			harness(prop, kind == "wood")
+			# Size the load separately from the straps fitted to the shoulders.
+			var load_mesh := Node3D.new()
+			prop.add_child(load_mesh)
+			load_mesh.scale = Vector3.ONE * CARGO_SIZE_MULTIPLIER
+			load_mesh.position = Vector3(0, -.025, .05)
 			if kind == "wood":
-				wood_pack(prop)
+				wood_pack(load_mesh)
 			else:
-				wicker_pack(prop, kind)
+				wicker_pack(load_mesh, kind)
 			var track: Vector3i = ResidentSprite.APPROVED_ROWS[key]
 			for sample in track.y:
 				player.seek(float(track.z * sample) / (30.0 * track.y), true)

@@ -59,6 +59,9 @@ func sync_training()->void:
 	var wanted:=1 if level==1 else 2
 	while hunters.size()>wanted:hunters.pop_back().queue_free()
 	while hunters.size()<wanted:
-		var index:=hunters.size();var actor:=TrainingHunter.new(1 if index==0 else -1,index*1.1)
+		var index:=hunters.size();var actor:=TrainingHunter.new(1 if index==0 else -1)
 		add_child(actor);hunters.append(actor)
-	for i in hunters.size():hunters[i].position=Vector2(-58 if i==0 else 58,56 if i==0 else 62)
+	for i in hunters.size():
+		var hunter := hunters[i]
+		hunter.position = Vector2(-58 if i == 0 else 58, 56 if i == 0 else 62)
+		hunter.show_practice_frame(clock)

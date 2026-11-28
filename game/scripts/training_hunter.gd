@@ -12,11 +12,9 @@ const PRACTICE_SECONDS := 2.2
 
 var visual: Sprite2D
 var female: bool
-var clock: float
 
-func _init(facing: int, phase_offset: float) -> void:
+func _init(facing: int) -> void:
 	female = facing < 0
-	clock = phase_offset
 	visibility_layer = 2
 
 func _ready() -> void:
@@ -31,24 +29,20 @@ func _ready() -> void:
 	visual.scale = Vector2.ONE * RESIDENT_SPRITE.display_scale(female)
 	visual.position = -FLOOR * visual.scale
 	add_child(visual)
-	update_frame()
+	show_practice_frame(0.0)
 	queue_redraw()
 
 func _draw() -> void:
 	draw_set_transform(Vector2(2, -1), 0, Vector2(1, .28))
 	draw_circle(Vector2.ZERO, 17, SceneStyle.CONTACT_COLOR)
 
-func _process(delta: float) -> void:
-	var world := get_parent().get_parent().get_parent() as DemoWorld
-	if not is_visible_in_tree() or (world and world.simulation_paused):
+func show_practice_frame(elapsed: float) -> void:
+	if not is_visible_in_tree():
 		return
-	clock = fposmod(clock + delta, PRACTICE_SECONDS)
 	var point := get_global_transform_with_canvas().origin
-	if Rect2(Vector2(-120, -120), get_viewport_rect().size + Vector2(240, 240)).has_point(point):
-		update_frame()
-
-func update_frame() -> void:
-	var frame := floori(fposmod(clock, PRACTICE_SECONDS) / PRACTICE_SECONDS * SAMPLES)
+	if not Rect2(Vector2(-120, -120), get_viewport_rect().size + Vector2(240, 240)).has_point(point):
+		return
+	var frame := floori(fposmod(elapsed, PRACTICE_SECONDS) / PRACTICE_SECONDS * SAMPLES)
 	var tile := frame + (SAMPLES if female else 0)
 	var region := Rect2(Vector2(tile % COLUMNS, floori(float(tile) / COLUMNS)) * FRAME_SIZE, FRAME_SIZE)
 	if region != visual.region_rect:
