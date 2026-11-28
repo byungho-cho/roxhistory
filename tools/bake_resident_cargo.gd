@@ -7,6 +7,8 @@ const ATLAS_DIR := "res://assets/characters/residents"
 const FRAME := Vector2i(ResidentSprite.APPROVED_FRAME)
 const FLOOR := Vector2i(ResidentSprite.APPROVED_FLOOR)
 const COLUMNS := ResidentSprite.APPROVED_COLUMNS
+const CARRY_FRAME := Vector2i(ResidentSprite.APPROVED_FRAME * ResidentSprite.CARRY_RENDER_SCALE)
+const CARRY_COLUMNS := ResidentSprite.CARRY_COLUMNS
 const CARGO_SIZE_MULTIPLIER := 1.5
 const CARGO_SURFACE := """
 shader_type spatial;
@@ -27,12 +29,17 @@ void fragment() {
 	float detail;
 	if (pattern == 0) {
 		float groove = sin(angle * 8.0 + sin(p.y * 15.0 + angle * 3.0) * 0.9);
-		float streak = sin(angle * 13.0 - p.y * 9.0) * 0.12;
-		detail = clamp(0.52 + groove * 0.34 + streak, 0.0, 1.0);
+		float grain = sin(angle * 21.0 - p.y * 9.0 + sin(p.y * 23.0)) * 0.13;
+		float bark_edge = smoothstep(-0.8, 0.5, groove);
+		detail = clamp(0.19 + bark_edge * 0.65 + grain, 0.0, 1.0);
 	} else if (pattern == 1) {
 		float radius = length(p.xz - vec2(0.007, -0.009));
 		float rings = sin(radius * 246.0 + sin(angle * 3.0) * 0.46);
 		detail = 0.23 + smoothstep(-0.5, 0.3, rings) * 0.62;
+		detail *= 1.0 - 0.43 * smoothstep(0.062, 0.079, radius);
+	} else if (pattern == 3) {
+		float twist = sin(angle * 3.0 + p.y * 216.0);
+		detail = mix(0.26, 0.9, smoothstep(-0.65, 0.7, twist));
 	} else {
 		float vein = sin(dot(p, vec3(13.0, 42.0, 29.0)) + sin(p.x * 35.0) * 0.45);
 		detail = smoothstep(-0.82, 0.87, vein) * 0.57;
@@ -90,7 +97,7 @@ func loop(parent: Node3D, y: float, radius: float, depth: float, thickness: floa
 	band.scale.z = depth
 
 func harness(parent: Node3D, is_wood: bool) -> void:
-	var rope := fiber("ba9768")
+	var rope := cargo_surface("94673e", "d2ad75", 3)
 	var width := .15 if is_wood else .135
 	for side in [-1.0, 1.0]:
 		var x: float = width * side
@@ -113,7 +120,7 @@ func wood_pack(parent: Node3D) -> void:
 		cargo_surface("61402a", "94603b", 0),
 	]
 	var rings := cargo_surface("ac7744", "e4b87f", 1)
-	var rope := fiber("ccab76")
+	var rope := cargo_surface("a77848", "dfbc81", 3)
 	for index in logs.get_child_count():
 		var piece := logs.get_child(index) as MeshInstance3D
 		var source := piece.mesh.surface_get_material(0)
@@ -132,7 +139,7 @@ func wicker_pack(parent: Node3D, kind: String) -> void:
 	var wicker := fiber("aa7843")
 	var pale := fiber("d4a764")
 	var dark := fiber("8e6038")
-	var rim := fiber("deb679")
+	var rim := cargo_surface("b4844d", "e2bc7c", 3)
 	var deep := fiber("79502d")
 	var shell := MeshInstance3D.new()
 	var vase := CylinderMesh.new()
@@ -147,7 +154,7 @@ func wicker_pack(parent: Node3D, kind: String) -> void:
 	for row in 9:
 		var t := float(row) / 8.0
 		var radius := lerpf(.167, .239, t)
-		var band_color := rim if row == 8 else pale if row % 2 == 0 else wicker
+		var band_color: Material = rim if row == 8 else pale if row % 2 == 0 else wicker
 		loop(basket, lerpf(-.166, .175, t), radius, .64, .009 if row < 8 else .019, band_color)
 	for slat in 12:
 		var angle := slat * TAU / 12.0
@@ -176,7 +183,7 @@ func wicker_pack(parent: Node3D, kind: String) -> void:
 		return
 	var stalk := fiber("b18942")
 	var husks := [fiber("c89438"), fiber("e1ad49"), fiber("edc26c")]
-	var pale_seed := fiber("f2ce83")
+	var kernels := [fiber("d6a345"), fiber("f0ca79")]
 	for index in 9:
 		var t := float(index) / 8.0
 		var bottom := Vector3(lerpf(-.12, .12, t), .08, 0)
@@ -184,9 +191,10 @@ func wicker_pack(parent: Node3D, kind: String) -> void:
 		var tip := shoulder + Vector3(lerpf(-.095, .083, t), .084 + .035 * sin(index * 1.6), -.04)
 		cord(basket, bottom, shoulder, .009, stalk)
 		cord(basket, shoulder, tip, .027, husks[index % husks.size()])
-		for grain in 3:
-			var at := shoulder.lerp(tip, .22 + grain * .21)
-			cord(basket, at, at + Vector3(.019 if grain % 2 == 0 else -.019, .023, .004), .013, pale_seed)
+		for grain in 4:
+			var at := shoulder.lerp(tip, .16 + grain * .18)
+			var direction := 1.0 if grain % 2 == 0 else -1.0
+			cord(basket, at, at + Vector3(.019 * direction, .021, .004), .012, kernels[grain % 2])
 
 func bake() -> void:
 	var args := OS.get_cmdline_user_args()
@@ -203,12 +211,17 @@ func bake() -> void:
 	viewport.size = Vector2i(256, 280)
 	reference.camera.size = 3.0 * viewport.size.y / 200.0
 	var crop := Rect2i(Vector2i(reference.camera.unproject_position(Vector3.ZERO).round()) - FLOOR * 2, FRAME * 2)
+	var first_carry: Vector3i = ResidentSprite.APPROVED_ROWS[CARRY_STATES[0]]
+	var last_carry: Vector3i = ResidentSprite.APPROVED_ROWS[CARRY_STATES[-1]]
+	var first_tile := first_carry.x * 4
+	var carry_rows := ceili(float((last_carry.x + last_carry.y) * 4 - first_tile) / CARRY_COLUMNS)
 	for sex in ["Man", "Woman"]:
 		var filename := "res053-%s.png" % sex.to_lower()
 		var atlas := Image.load_from_file(ProjectSettings.globalize_path(ATLAS_DIR.path_join(filename)))
 		if not atlas:
 			quit(3)
 			return
+		var carry_atlas := Image.create_empty(CARRY_FRAME.x * CARRY_COLUMNS, CARRY_FRAME.y * carry_rows, false, Image.FORMAT_RGBA8)
 		var doc := GLTFDocument.new()
 		var state := GLTFState.new()
 		var error := doc.append_from_file(args[0].path_join("Resident-%s-01-11.glb" % sex), state)
@@ -256,17 +269,25 @@ func bake() -> void:
 					await RenderingServer.frame_post_draw
 					var frame := viewport.get_texture().get_image().get_region(crop)
 					frame.convert(Image.FORMAT_RGBA8)
-					frame.resize(FRAME.x, FRAME.y, Image.INTERPOLATE_LANCZOS)
+					frame.resize(CARRY_FRAME.x, CARRY_FRAME.y, Image.INTERPOLATE_LANCZOS)
 					var bounds := frame.get_used_rect()
-					if bounds.position.x < 1 or bounds.end.x >= FRAME.x - 1 or bounds.position.y < 1 or bounds.end.y >= FRAME.y - 1 or bounds.size.y < 30:
+					if bounds.position.x < 1 or bounds.end.x >= CARRY_FRAME.x - 1 or bounds.position.y < 1 or bounds.end.y >= CARRY_FRAME.y - 1 or bounds.size.y < 45:
 						push_error("Clipped or empty cargo frame %s %s %d %d %s" % [sex, kind, sample, direction, bounds])
 						quit(4)
 						return
-					var tile := (track.x + sample) * 4 + direction
-					atlas.blit_rect(frame, Rect2i(Vector2i.ZERO, FRAME), Vector2i(tile % COLUMNS, tile / COLUMNS) * FRAME)
+					var tile := (track.x + sample) * 4 + direction - first_tile
+					carry_atlas.blit_rect(frame, Rect2i(Vector2i.ZERO, CARRY_FRAME), Vector2i(tile % CARRY_COLUMNS, tile / CARRY_COLUMNS) * CARRY_FRAME)
 			prop.free()
 			print("CARGO BAKE ", sex, " ", kind, " ", track.y * 4)
-		error = atlas.save_png(args[1].path_join(filename))
+		error = carry_atlas.save_png(args[1].path_join(filename.get_basename() + "-carry.png"))
+		if error != OK:
+			quit(error)
+			return
+		var base_height := ceili(float(first_tile) / COLUMNS) * FRAME.y
+		var base_atlas := atlas.get_region(Rect2i(0, 0, atlas.get_width(), base_height))
+		for tile in range(first_tile, base_height / FRAME.y * COLUMNS):
+			base_atlas.fill_rect(Rect2i(Vector2i(tile % COLUMNS, tile / COLUMNS) * FRAME, FRAME), Color.TRANSPARENT)
+		error = base_atlas.save_png(args[1].path_join(filename))
 		if error != OK:
 			quit(error)
 			return

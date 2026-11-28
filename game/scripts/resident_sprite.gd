@@ -3,6 +3,8 @@ extends Sprite2D
 const APPROVED_FRAME := Vector2(80, 100)
 const APPROVED_FLOOR := Vector2(40, 89)
 const APPROVED_COLUMNS := 32
+const CARRY_RENDER_SCALE := 1.5
+const CARRY_COLUMNS := 16
 # Each entry is the first sample, sample count, and clip length at the source frame rate.
 const APPROVED_ROWS := {
 	"idle": Vector3i(0, 24, 122), "stretch": Vector3i(24, 24, 129),
@@ -14,6 +16,8 @@ const APPROVED_ROWS := {
 }
 const APPROVED_MAN := preload("res://assets/characters/residents/res053-man.png")
 const APPROVED_WOMAN := preload("res://assets/characters/residents/res053-woman.png")
+const CARRY_MAN := preload("res://assets/characters/residents/res053-man-carry.png")
+const CARRY_WOMAN := preload("res://assets/characters/residents/res053-woman-carry.png")
 const DISPLAY_SIZE_MULTIPLIER := 1.5
 const GRAIN_HARVEST_SECONDS := 1.2
 const WOOD_CONTACTS := [35.0 / 30.0, 65.0 / 30.0]
@@ -27,7 +31,6 @@ func _ready()->void:
 	region_enabled=true
 	region_filter_clip_enabled=true
 	texture_filter=CanvasItem.TEXTURE_FILTER_LINEAR
-	scale = Vector2.ONE * display_scale(variant == "female")
 	_pose_approved("idle", 0.0)
 
 static func display_scale(female: bool) -> float:
@@ -72,9 +75,19 @@ func pose(facing: Vector2, walking: bool, action: String, action_time: float, id
 func _pose_approved(state: String, fraction: float) -> void:
 	var track: Vector3i = APPROVED_ROWS[state]
 	var tile := (track.x + floori(fraction * track.y)) * 4 + direction_index
-	var atlas := APPROVED_WOMAN if variant == "female" else APPROVED_MAN
+	var female := variant == "female"
+	var atlas := APPROVED_WOMAN if female else APPROVED_MAN
+	var columns := APPROVED_COLUMNS
+	var render_scale := 1.0
+	if state.begins_with("carry_"):
+		atlas = CARRY_WOMAN if female else CARRY_MAN
+		columns = CARRY_COLUMNS
+		render_scale = CARRY_RENDER_SCALE
+		tile -= APPROVED_ROWS.carry_wood.x * 4
 	if texture != atlas:
 		texture = atlas
-	position = -APPROVED_FLOOR * scale
-	region_rect = Rect2(Vector2(tile % APPROVED_COLUMNS, floori(float(tile) / APPROVED_COLUMNS)) * APPROVED_FRAME, APPROVED_FRAME)
+		scale = Vector2.ONE * display_scale(female) / render_scale
+	position = -APPROVED_FLOOR * render_scale * scale
+	var frame_size := APPROVED_FRAME * render_scale
+	region_rect = Rect2(Vector2(tile % columns, floori(float(tile) / columns)) * frame_size, frame_size)
 	shown_state = state
