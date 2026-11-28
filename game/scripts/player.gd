@@ -205,7 +205,8 @@ func _ready() -> void:
 	fit_camera()
 	update_rig()
 	hybrid = VILLAGE_HAN.new()
-	hybrid.scale = Vector2.ONE * 3.0
+	# At the village camera this is about 1.2 times the residents' standing height.
+	hybrid.scale = Vector2.ONE * 2.0
 	add_child(hybrid)
 	set_character_3d(true)
 

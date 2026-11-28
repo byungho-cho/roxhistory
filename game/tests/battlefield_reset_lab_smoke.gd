@@ -365,7 +365,7 @@ func _run() -> void:
 	await process_frame
 	if app.modal:
 		app.close_modal()
-	_check(app.world.player.hybrid.scale.is_equal_approx(Vector2(3, 3)), "Village display scale is retained")
+	_check(app.world.player.hybrid.scale.is_equal_approx(Vector2(2, 2)), "Village Han uses the calibrated display scale")
 	var world_mode: int = app.world.process_mode
 	await _check_village_idle()
 	await _check_duel()

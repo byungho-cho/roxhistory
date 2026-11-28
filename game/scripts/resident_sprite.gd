@@ -14,6 +14,7 @@ const APPROVED_ROWS := {
 }
 const APPROVED_MAN := preload("res://assets/characters/residents/res053-man.png")
 const APPROVED_WOMAN := preload("res://assets/characters/residents/res053-woman.png")
+const DISPLAY_SIZE_MULTIPLIER := 1.5
 const GRAIN_HARVEST_SECONDS := 1.2
 const WOOD_CONTACTS := [35.0 / 30.0, 65.0 / 30.0]
 var direction_index:=0
@@ -26,7 +27,7 @@ func _ready()->void:
 	region_enabled=true
 	region_filter_clip_enabled=true
 	texture_filter=CanvasItem.TEXTURE_FILTER_LINEAR
-	scale=Vector2.ONE*(.46/1.5)*4.0*(1.08 if variant=="female" else 1.16)
+	scale = Vector2.ONE * (.46 / 1.5) * 4.0 * (1.08 if variant == "female" else 1.16) * DISPLAY_SIZE_MULTIPLIER
 	_pose_approved("idle", 0.0)
 
 static func gesture_duration(gesture: String) -> float:
@@ -42,7 +43,8 @@ static func wood_contact_crossed(before: float, after: float) -> bool:
 
 func advance_walk(distance: float) -> void:
 	# The approved walk covers roughly 4.1 m (man) or 4.3 m (woman) over this cycle.
-	approved_walk_cycle = fposmod(approved_walk_cycle + distance / (211.0 if variant == "female" else 218.0), 1.0)
+	var cycle_distance := (211.0 if variant == "female" else 218.0) * DISPLAY_SIZE_MULTIPLIER
+	approved_walk_cycle = fposmod(approved_walk_cycle + distance / cycle_distance, 1.0)
 
 func pose(facing: Vector2, walking: bool, action: String, action_time: float, idle_time: float, cargo: Dictionary, gesture: String, gesture_time: float) -> void:
 	if facing.length_squared()>.01:

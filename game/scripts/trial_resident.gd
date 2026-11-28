@@ -59,14 +59,18 @@ func _ready()->void:
 		visual.ambient_offset=float(abs(resident_id.hash())%2600)/100.0
 	queue_redraw()
 func _draw()->void:
-	draw_set_transform(Vector2(4,-2),0,Vector2(1,.28));draw_circle(Vector2.ZERO,20,SceneStyle.CONTACT_COLOR);draw_set_transform(Vector2.ZERO)
+	var size_factor := RESIDENT_SPRITE.DISPLAY_SIZE_MULTIPLIER if resident_sprite else 1.0
+	draw_set_transform(Vector2(4,-2)*size_factor,0,Vector2(1,.28))
+	draw_circle(Vector2.ZERO,20*size_factor,SceneStyle.CONTACT_COLOR)
+	draw_set_transform(Vector2.ZERO)
 	if job_phase=="harvest":
-		draw_rect(Rect2(-20,-66,40,5),Color(0,0,0,.65))
-		draw_rect(Rect2(-19,-65,38*clampf(1-job_timer/(1.2 if job_kind=="farmer" else gather_seconds()),0,1),3),Color("bfd274"))
+		var bar_top := -66.0 * size_factor
+		draw_rect(Rect2(-20,bar_top,40,5),Color(0,0,0,.65))
+		draw_rect(Rect2(-19,bar_top+1,38*clampf(1-job_timer/(1.2 if job_kind=="farmer" else gather_seconds()),0,1),3),Color("bfd274"))
 	if gesture == "speak":
 		var font := ThemeDB.fallback_font
 		var mark := "…"
-		var at := Vector2(-font.get_string_size(mark, HORIZONTAL_ALIGNMENT_LEFT, -1, 25).x * .5, -86)
+		var at := Vector2(-font.get_string_size(mark, HORIZONTAL_ALIGNMENT_LEFT, -1, 25).x * .5, -86 * size_factor)
 		draw_string_outline(font, at, mark, HORIZONTAL_ALIGNMENT_LEFT, -1, 25, 4, Color("49311f"))
 		draw_string(font, at, mark, HORIZONTAL_ALIGNMENT_LEFT, -1, 25, Color("fff5d9"))
 
